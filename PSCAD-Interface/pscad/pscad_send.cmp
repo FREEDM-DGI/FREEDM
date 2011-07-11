@@ -1,0 +1,110 @@
+Component("pscad_send")
+ {
+ Desc = ""
+ FileDate = 0
+ Parameters = 
+  {
+  Category("Configuration")
+   {
+   Input("ndata",6,16,180,12,2)
+    {
+    Desc = "Number of Inputs"
+    Def = "1"
+    Data = Integer
+    Len = 10
+    Min = 1
+    }
+   Input("IP1",6,30,180,12,2)
+    {
+    Desc = "IP Address (1)"
+    Data = Integer
+    Len = 10
+    Min = 0
+    Max = 255
+    }
+   Input("IP2",6,44,180,12,2)
+    {
+    Desc = "IP Address (2)"
+    Data = Integer
+    Len = 10
+    Min = 0
+    Max = 255
+    }
+   Input("IP3",6,58,180,12,2)
+    {
+    Desc = "IP Address (3)"
+    Data = Integer
+    Len = 10
+    Min = 0
+    Max = 255
+    }
+   Input("IP4",6,72,180,12,2)
+    {
+    Desc = "IP Address (4)"
+    Data = Integer
+    Len = 10
+    Min = 0
+    Max = 255
+    }
+   Input("port",6,86,180,12,2)
+    {
+    Desc = "Port Number"
+    Data = Integer
+    Len = 10
+    Min = 0
+    Max = 65535
+    }
+   Input("dt",6,100,180,12,2)
+    {
+    Desc = "Time Step"
+    Data = Real
+    Len = 10
+    Min = 0
+    }
+   }
+  }
+
+ Nodes = 
+  {
+  Input("data:ndata",-216,0)
+   {
+   Type = Real
+   Dim  = [0]
+   }
+  Output("status",216,0)
+   {
+   Type = Integer
+   }
+  }
+
+ Graphics = 
+  {
+  Rectangle(-156,156,156,-156)
+  Pen(ByNode,ByNode,ByNode,status)
+  Line(-216,0,-156,0)
+  Pen(,Solid)
+  Line(-156,0,-176,20)
+  Line(-156,0,-176,-20)
+  Text(-208,20,"data")
+  Pen(,ByNode)
+  Line(216,0,156,0)
+  Text(228,20,"status")
+  Text(0,-12,"pscad_send")
+  }
+
+ Section(EMTDC)
+  {
+  Fortran = "\
+      IF (TIMEZERO) THEN
+            CALL PSCAD_SEND_INIT($IP1,$IP2,$IP3,$IP4,$PORT,$STATUS)
+      END IF
+
+      IF (LASTSTEP) THEN
+            CALL PSCAD_SEND_CLOSE($STATUS)
+      ELSE IF (MOD(NINT(TIME/DELT),NINT($dt/DELT)) == 0) THEN
+            CALL PSCAD_SEND($IP1,$IP2,$IP3,$IP4,$PORT,$DATA,$NDATA,$STATUS)
+      END IF"
+  Branch = ""
+  Computations = ""
+  }
+ }

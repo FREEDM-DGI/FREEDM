@@ -76,52 +76,54 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <a name="l00025"></a>00025 <span class="keyword">namespace </span>freedm {
 <a name="l00026"></a>00026 <span class="keyword">namespace </span>broker {
 <a name="l00027"></a>00027 
-<a name="l00030"></a><a class="code" href="classfreedm_1_1broker_1_1CConnectionManager.html">00030</a> <span class="keyword">class </span><a class="code" href="classfreedm_1_1broker_1_1CConnectionManager.html">CConnectionManager</a>
-<a name="l00031"></a>00031     : <span class="keyword">private</span> boost::<a class="code" href="classboost_1_1noncopyable.html">noncopyable</a>
-<a name="l00032"></a>00032 {
-<a name="l00033"></a>00033 <span class="keyword">public</span>:
-<a name="l00034"></a>00034     <span class="keyword">typedef</span> std::map&lt;std::string, std::string&gt; hostnamemap;
-<a name="l00035"></a>00035     <span class="keyword">typedef</span> std::map&lt;std::string, ConnectionPtr&gt; connectionmap;
-<a name="l00036"></a>00036     <span class="keyword">typedef</span> std::map&lt;ConnectionPtr, std::string&gt; connectionmap_r;
-<a name="l00038"></a><a class="code" href="classfreedm_1_1broker_1_1CConnectionManager.html#abc39c2dbb50a4875252bd2277477af5f">00038</a>     <a class="code" href="classfreedm_1_1broker_1_1CConnectionManager.html#abc39c2dbb50a4875252bd2277477af5f" title="Initialize the connection manager with the node uuid.">CConnectionManager</a>(<a class="code" href="classfreedm_1_1uuid.html">freedm::uuid</a> <a class="code" href="classfreedm_1_1uuid.html">uuid</a>) { std::stringstream ss; ss &lt;&lt; uuid; m_uuid = ss.str(); };
-<a name="l00039"></a>00039 
-<a name="l00041"></a>00041     <span class="keywordtype">void</span> <a class="code" href="classfreedm_1_1broker_1_1CConnectionManager.html#af66c98f9d04f182d5b6dd30d124cc09a" title="Add the specified connection to the manager and start it.">Start</a>(ConnectionPtr c);
-<a name="l00042"></a>00042 
-<a name="l00043"></a>00043     <span class="comment">//void Put(ConnectionPtr c, freedm::uuid u_ );</span>
-<a name="l00044"></a>00044     <span class="keywordtype">void</span> PutHostname(std::string u_, std::string host_);
-<a name="l00045"></a>00045     
-<a name="l00047"></a>00047     <span class="keywordtype">void</span> <a class="code" href="classfreedm_1_1broker_1_1CConnectionManager.html#a135547478bbe534ee5ba6f309ffa8ad3" title="Register a connection with the manager once it has been built.">RegisterConnection</a>(std::string <a class="code" href="classfreedm_1_1uuid.html">uuid</a>, ConnectionPtr c);
-<a name="l00048"></a>00048 
-<a name="l00050"></a>00050     <span class="keywordtype">void</span> <a class="code" href="classfreedm_1_1broker_1_1CConnectionManager.html#af6386359b0fc6f614075847c996d9e83" title="Stop the specified connection.">Stop</a>(ConnectionPtr c);
-<a name="l00051"></a>00051 
-<a name="l00053"></a>00053     <span class="keywordtype">void</span> <a class="code" href="classfreedm_1_1broker_1_1CConnectionManager.html#a157311526df63d1578ec7405b1240db3" title="Stop all connections.">StopAll</a>();
-<a name="l00054"></a>00054 
-<a name="l00056"></a>00056     std::string <a class="code" href="classfreedm_1_1broker_1_1CConnectionManager.html#a4375108e2d4b70eadd89cae6b50082ec" title="Get the hostname from the UUID.">GetHostnameByUUID</a>( std::string <a class="code" href="classfreedm_1_1uuid.html">uuid</a> ) <span class="keyword">const</span>; 
-<a name="l00057"></a>00057 
-<a name="l00059"></a>00059     ConnectionPtr <a class="code" href="classfreedm_1_1broker_1_1CConnectionManager.html#a9adb5bdf48a8ef87b0c88b538f145dfb" title="Fetch a connection pointer via UUID.">GetConnectionByUUID</a>( std::string uuid_,  boost::asio::io_service&amp; ios,  <a class="code" href="classfreedm_1_1broker_1_1CDispatcher.html">CDispatcher</a> &amp;dispatch_ );
-<a name="l00060"></a>00060 
-<a name="l00062"></a><a class="code" href="classfreedm_1_1broker_1_1CConnectionManager.html#a4ad6e26a4df464017c82b7e877b7c6a6">00062</a>     hostnamemap::iterator <a class="code" href="classfreedm_1_1broker_1_1CConnectionManager.html#a4ad6e26a4df464017c82b7e877b7c6a6" title="Get iterators to the hostname map.">GetHostnamesBegin</a>() { <span class="keywordflow">return</span> m_hostnames.begin(); };
-<a name="l00063"></a>00063     hostnamemap::iterator GetHostnamesEnd() { <span class="keywordflow">return</span> m_hostnames.end(); };
-<a name="l00064"></a>00064     hostnamemap::iterator GetHostname(std::string <a class="code" href="classfreedm_1_1uuid.html">uuid</a>) { <span class="keywordflow">return</span> m_hostnames.find(uuid); };
+<a name="l00029"></a><a class="code" href="classfreedm_1_1broker_1_1CConnectionManager.html">00029</a> <span class="keyword">class </span><a class="code" href="classfreedm_1_1broker_1_1CConnectionManager.html" title="Manages open connections so that they may be cleanly stopped.">CConnectionManager</a>
+<a name="l00030"></a>00030     : <span class="keyword">private</span> boost::<a class="code" href="classboost_1_1noncopyable.html">noncopyable</a>
+<a name="l00031"></a>00031 {
+<a name="l00032"></a>00032 <span class="keyword">public</span>:
+<a name="l00034"></a><a class="code" href="classfreedm_1_1broker_1_1CConnectionManager.html#ac8454c6a46c18314304b81c718aedf7e">00034</a>     <span class="keyword">typedef</span> std::map&lt;std::string, std::string&gt; hostnamemap;
+<a name="l00035"></a>00035     
+<a name="l00037"></a><a class="code" href="classfreedm_1_1broker_1_1CConnectionManager.html#aa751d3f25d69610d5a92780839fdbf41">00037</a>     <span class="keyword">typedef</span> std::map&lt;std::string, ConnectionPtr&gt; connectionmap;
+<a name="l00038"></a>00038 
+<a name="l00040"></a><a class="code" href="classfreedm_1_1broker_1_1CConnectionManager.html#a6c758b6629b95aa1995e9b004b318d2e">00040</a>     <span class="keyword">typedef</span> std::map&lt;ConnectionPtr, std::string&gt; connectionmap_r;
+<a name="l00041"></a>00041 
+<a name="l00043"></a><a class="code" href="classfreedm_1_1broker_1_1CConnectionManager.html#abc39c2dbb50a4875252bd2277477af5f">00043</a>     <a class="code" href="classfreedm_1_1broker_1_1CConnectionManager.html#abc39c2dbb50a4875252bd2277477af5f" title="Initialize the connection manager with the node uuid.">CConnectionManager</a>(<a class="code" href="classfreedm_1_1uuid.html">freedm::uuid</a> <a class="code" href="classfreedm_1_1uuid.html">uuid</a>) { std::stringstream ss; ss &lt;&lt; uuid; m_uuid = ss.str(); };
+<a name="l00044"></a>00044 
+<a name="l00046"></a>00046     <span class="keywordtype">void</span> <a class="code" href="classfreedm_1_1broker_1_1CConnectionManager.html#af66c98f9d04f182d5b6dd30d124cc09a" title="Add the specified connection to the manager and start it.">Start</a>(ConnectionPtr c);
+<a name="l00047"></a>00047     
+<a name="l00049"></a>00049     <span class="keywordtype">void</span> <a class="code" href="classfreedm_1_1broker_1_1CConnectionManager.html#a099fb7d607315208a243ffb5f3dbac15" title="Place a hostname and uuid into the hostname / uuid map.">PutHostname</a>(std::string u_, std::string host_);
+<a name="l00050"></a>00050     
+<a name="l00052"></a>00052     <span class="keywordtype">void</span> <a class="code" href="classfreedm_1_1broker_1_1CConnectionManager.html#a135547478bbe534ee5ba6f309ffa8ad3" title="Register a connection with the manager once it has been built.">RegisterConnection</a>(std::string <a class="code" href="classfreedm_1_1uuid.html">uuid</a>, ConnectionPtr c);
+<a name="l00053"></a>00053 
+<a name="l00055"></a>00055     <span class="keywordtype">void</span> <a class="code" href="classfreedm_1_1broker_1_1CConnectionManager.html#af6386359b0fc6f614075847c996d9e83" title="Stop the specified connection.">Stop</a>(ConnectionPtr c);
+<a name="l00056"></a>00056 
+<a name="l00058"></a>00058     <span class="keywordtype">void</span> <a class="code" href="classfreedm_1_1broker_1_1CConnectionManager.html#a157311526df63d1578ec7405b1240db3" title="Stop all connections.">StopAll</a>();
+<a name="l00059"></a>00059 
+<a name="l00061"></a>00061     std::string <a class="code" href="classfreedm_1_1broker_1_1CConnectionManager.html#a4375108e2d4b70eadd89cae6b50082ec" title="Get the hostname from the UUID.">GetHostnameByUUID</a>( std::string <a class="code" href="classfreedm_1_1uuid.html">uuid</a> ) <span class="keyword">const</span>; 
+<a name="l00062"></a>00062 
+<a name="l00064"></a>00064     ConnectionPtr <a class="code" href="classfreedm_1_1broker_1_1CConnectionManager.html#a9adb5bdf48a8ef87b0c88b538f145dfb" title="Fetch a connection pointer via UUID.">GetConnectionByUUID</a>( std::string uuid_,  boost::asio::io_service&amp; ios,  <a class="code" href="classfreedm_1_1broker_1_1CDispatcher.html">CDispatcher</a> &amp;dispatch_ );
 <a name="l00065"></a>00065 
-<a name="l00067"></a><a class="code" href="classfreedm_1_1broker_1_1CConnectionManager.html#a68077ceffdaaf73a3c978de4bfacb22f">00067</a>     connectionmap::iterator <a class="code" href="classfreedm_1_1broker_1_1CConnectionManager.html#a68077ceffdaaf73a3c978de4bfacb22f" title="Get iterators to the forward hostname map.">GetConnectionsBegin</a>() { <span class="keywordflow">return</span> m_connections.begin(); };
-<a name="l00068"></a>00068     connectionmap::iterator GetConnectionsEnd() { <span class="keywordflow">return</span> m_connections.end(); };
-<a name="l00069"></a>00069 
-<a name="l00070"></a>00070 <span class="keyword">private</span>:
-<a name="l00072"></a>00072     hostnamemap m_hostnames;
-<a name="l00074"></a>00074     connectionmap   m_connections; <span class="comment">// Forward Mapping (UUID-&gt;connection)</span>
-<a name="l00075"></a>00075     connectionmap_r m_connections_r; <span class="comment">// Reverse Mapping (connection-&gt;UUID)</span>
-<a name="l00077"></a>00077 <span class="comment"></span>    std::string m_uuid;
-<a name="l00078"></a>00078  
-<a name="l00079"></a>00079  
-<a name="l00080"></a>00080  <span class="comment">// Mutexes for protecting the handler maps above</span>
-<a name="l00081"></a>00081     boost::mutex m_Mutex;       
-<a name="l00082"></a>00082 };
-<a name="l00083"></a>00083 
-<a name="l00084"></a>00084 } <span class="comment">// namespace broker</span>
-<a name="l00085"></a>00085 } <span class="comment">// namespace freedm</span>
-<a name="l00086"></a>00086 
-<a name="l00087"></a>00087 <span class="preprocessor">#endif // CONNECTIONMANAGER_HPP</span>
+<a name="l00067"></a><a class="code" href="classfreedm_1_1broker_1_1CConnectionManager.html#a4ad6e26a4df464017c82b7e877b7c6a6">00067</a>     hostnamemap::iterator <a class="code" href="classfreedm_1_1broker_1_1CConnectionManager.html#a4ad6e26a4df464017c82b7e877b7c6a6" title="An iterator to the beginning of the hostname map.">GetHostnamesBegin</a>() { <span class="keywordflow">return</span> m_hostnames.begin(); };
+<a name="l00068"></a>00068 
+<a name="l00070"></a><a class="code" href="classfreedm_1_1broker_1_1CConnectionManager.html#ad4116eb25d9aa62e3429ff042c19b265">00070</a>     hostnamemap::iterator <a class="code" href="classfreedm_1_1broker_1_1CConnectionManager.html#ad4116eb25d9aa62e3429ff042c19b265" title="An iterator to the end of the hostname map.">GetHostnamesEnd</a>() { <span class="keywordflow">return</span> m_hostnames.end(); };
+<a name="l00071"></a>00071 
+<a name="l00073"></a><a class="code" href="classfreedm_1_1broker_1_1CConnectionManager.html#a3ab3f1eeae409213cceb735cce70aee6">00073</a>     hostnamemap::iterator <a class="code" href="classfreedm_1_1broker_1_1CConnectionManager.html#a3ab3f1eeae409213cceb735cce70aee6" title="An iterator to the specified hostname.">GetHostname</a>(std::string <a class="code" href="classfreedm_1_1uuid.html">uuid</a>) { <span class="keywordflow">return</span> m_hostnames.find(uuid); };
+<a name="l00074"></a>00074 
+<a name="l00076"></a><a class="code" href="classfreedm_1_1broker_1_1CConnectionManager.html#a68077ceffdaaf73a3c978de4bfacb22f">00076</a>     connectionmap::iterator <a class="code" href="classfreedm_1_1broker_1_1CConnectionManager.html#a68077ceffdaaf73a3c978de4bfacb22f" title="Iterator to the beginning of the connection map.">GetConnectionsBegin</a>() { <span class="keywordflow">return</span> m_connections.begin(); };
+<a name="l00077"></a>00077 
+<a name="l00079"></a><a class="code" href="classfreedm_1_1broker_1_1CConnectionManager.html#a6514c141cd42b07575aca24bcee28a3d">00079</a>     connectionmap::iterator <a class="code" href="classfreedm_1_1broker_1_1CConnectionManager.html#a6514c141cd42b07575aca24bcee28a3d" title="Iterator to the end of the connections map.">GetConnectionsEnd</a>() { <span class="keywordflow">return</span> m_connections.end(); };
+<a name="l00080"></a>00080 
+<a name="l00081"></a>00081 <span class="keyword">private</span>:
+<a name="l00083"></a>00083     <a class="code" href="classfreedm_1_1broker_1_1CConnectionManager.html#ac8454c6a46c18314304b81c718aedf7e" title="Typedef for the map which handles uuid to hostname.">hostnamemap</a> m_hostnames;
+<a name="l00085"></a>00085     <a class="code" href="classfreedm_1_1broker_1_1CConnectionManager.html#aa751d3f25d69610d5a92780839fdbf41" title="Typedef for the map which handles uuid to connection.">connectionmap</a>   m_connections;
+<a name="l00087"></a>00087     <a class="code" href="classfreedm_1_1broker_1_1CConnectionManager.html#a6c758b6629b95aa1995e9b004b318d2e" title="Typedef for the map which handles connection to uuid.">connectionmap_r</a> m_connections_r;
+<a name="l00089"></a>00089     std::string m_uuid;
+<a name="l00091"></a>00091     boost::mutex m_Mutex;       
+<a name="l00092"></a>00092 };
+<a name="l00093"></a>00093 
+<a name="l00094"></a>00094 } <span class="comment">// namespace broker</span>
+<a name="l00095"></a>00095 } <span class="comment">// namespace freedm</span>
+<a name="l00096"></a>00096 
+<a name="l00097"></a>00097 <span class="preprocessor">#endif // CONNECTIONMANAGER_HPP</span>
 </pre></div></div>
 </div>
 <!--- window showing the filter options -->
@@ -138,7 +140,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 </iframe>
 </div>
 
-<hr class="footer"/><address class="footer"><small>Generated on Wed Jul 13 2011 13:04:26 for FREEDM by&nbsp;
+<hr class="footer"/><address class="footer"><small>Generated on Wed Jul 13 2011 15:18:40 for FREEDM by&nbsp;
 <a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.7.1 </small></address>
 </body>

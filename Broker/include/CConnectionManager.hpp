@@ -25,22 +25,27 @@
 namespace freedm {
 namespace broker {
 
-/// Manages open connections so that they may be cleanly stopped when the server
-/// needs to shut down.
+/// Manages open connections so that they may be cleanly stopped
 class CConnectionManager
     : private boost::noncopyable
 {
 public:
+    /// Typedef for the map which handles uuid to hostname
     typedef std::map<std::string, std::string> hostnamemap;
+    
+    /// Typedef for the map which handles uuid to connection 
     typedef std::map<std::string, ConnectionPtr> connectionmap;
+
+    /// Typedef for the map which handles connection to uuid.
     typedef std::map<ConnectionPtr, std::string> connectionmap_r;
+
     /// Initialize the connection manager with the node uuid.
     CConnectionManager(freedm::uuid uuid) { std::stringstream ss; ss << uuid; m_uuid = ss.str(); };
 
     /// Add the specified connection to the manager and start it.
     void Start(ConnectionPtr c);
-
-    //void Put(ConnectionPtr c, freedm::uuid u_ );
+    
+    /// Place a hostname and uuid into the hostname / uuid map.
     void PutHostname(std::string u_, std::string host_);
     
     /// Register a connection with the manager once it has been built.
@@ -58,26 +63,31 @@ public:
     /// Fetch a connection pointer via UUID
     ConnectionPtr GetConnectionByUUID( std::string uuid_,  boost::asio::io_service& ios,  CDispatcher &dispatch_ );
 
-    /// Get iterators to the hostname map.
+    /// An iterator to the beginning of the hostname map
     hostnamemap::iterator GetHostnamesBegin() { return m_hostnames.begin(); };
+
+    /// An iterator to the end of the hostname map.
     hostnamemap::iterator GetHostnamesEnd() { return m_hostnames.end(); };
+
+    /// An iterator to the specified hostname.
     hostnamemap::iterator GetHostname(std::string uuid) { return m_hostnames.find(uuid); };
 
-    /// Get iterators to the forward hostname map.
+    /// Iterator to the beginning of the connection map.
     connectionmap::iterator GetConnectionsBegin() { return m_connections.begin(); };
+
+    /// Iterator to the end of the connections map.
     connectionmap::iterator GetConnectionsEnd() { return m_connections.end(); };
 
 private:
     /// Mapping from uuid to hostname.
     hostnamemap m_hostnames;
-    /// The managed connections.
-    connectionmap   m_connections; // Forward Mapping (UUID->connection)
-    connectionmap_r m_connections_r; // Reverse Mapping (connection->UUID)
+    /// Forward map (UUID->Connection)
+    connectionmap   m_connections;
+    /// Reverse map (Connection->UUID)
+    connectionmap_r m_connections_r;
     /// Node UUID
     std::string m_uuid;
- 
- 
- // Mutexes for protecting the handler maps above
+    /// Mutex for protecting the handler maps above
     boost::mutex m_Mutex;       
 };
 

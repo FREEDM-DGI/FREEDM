@@ -30,8 +30,7 @@
 /// Suggested modifications or questions about these codes 
 /// can be directed to Dr. Bruce McMillin, Department of 
 /// Computer Science, Missouri University of Science and
-/// Technology, Rolla, /// MO  65409 (ff@mst.edu).
-///
+/// Technology, Rolla, MO  65409 (ff@mst.edu).
 ////////////////////////////////////////////////////////////////////
 
 #include <boost/thread/locks.hpp>

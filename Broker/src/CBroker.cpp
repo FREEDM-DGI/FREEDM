@@ -20,8 +20,6 @@
 /// [2] Boost.Asio Examples
 ///     <http://www.boost.org/doc/libs/1_41_0/doc/html/boost_asio/examples.html>
 ///
-/// @see CBroker
-///
 /// These source code files were created at as part of the
 /// FREEDM DGI Subthrust, and are intended for use in teaching or
 /// research.  They may be freely copied, modified and redistributed
@@ -38,8 +36,7 @@
 /// Suggested modifications or questions about these codes 
 /// can be directed to Dr. Bruce McMillin, Department of 
 /// Computer Science, Missouri University of Science and
-/// Technology, Rolla, /// MO  65409 (ff@mst.edu).
-///
+/// Technology, Rolla, MO  65409 (ff@mst.edu).
 ////////////////////////////////////////////////////////////////////
 
 #include "CBroker.hpp"
@@ -50,7 +47,9 @@ CREATE_EXTERN_STD_LOGS()
 #include <boost/bind.hpp>
 #include <boost/asio/io_service.hpp>
 
+/// General FREEDM Namespace
 namespace freedm {
+    /// Broker Architecture Namespace
     namespace broker {
 
 CBroker::CBroker(const std::string& p_address, const std::string& p_port,

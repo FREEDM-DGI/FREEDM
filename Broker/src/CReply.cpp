@@ -1,13 +1,13 @@
 ///////////////////////////////////////////////////////////////////////////////
-/// @file      <filename>
+/// @file      CReply.cpp
 ///
 /// @author    Derek Ditch <derek.ditch@mst.edu>
 ///
 /// @compiler  C++
 ///
-/// @project   <PROJECT NAME>
+/// @project   FREEDM DGI
 ///
-/// @description <FILE DESCRIPTION> 
+/// @description 
 ///
 /// @license
 /// These source code files were created at as part of the
@@ -27,8 +27,7 @@
 /// Suggested modifications or questions about these codes 
 /// can be directed to Dr. Bruce McMillin, Department of 
 /// Computer Science, Missouri University of Science and
-/// Technology, Rolla, /// MO  65409 (ff@mst.edu).
-///
+/// Technology, Rolla, MO  65409 (ff@mst.edu).
 ///////////////////////////////////////////////////////////////////////////////
 
 #include "CMessage.hpp"

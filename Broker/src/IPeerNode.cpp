@@ -1,7 +1,9 @@
 //////////////////////////////////////////////////////////
 /// @file         PeerNode.cpp
 ///
-/// @author       Derek Ditch/ Ravi Akella <dpdm85@mst.edu, rcaq5c@mst.edu>
+/// @author       Derek Ditch <dpdm85@mst.edu>
+///               Ravi Akella <rcaq5c@mst.edu>
+///               Stephen Jackson <scj7t4@mst.edu>    
 ///
 /// @compiler     C++
 ///
@@ -29,7 +31,6 @@
 /// can be directed to Dr. Bruce McMillin, Department of
 /// Computer Science, Missouri University of Science and
 /// Technology, Rolla,  MO  65409, (ff@mst.edu).
-///
 /////////////////////////////////////////////////////////
 
 #include "CMessage.hpp"

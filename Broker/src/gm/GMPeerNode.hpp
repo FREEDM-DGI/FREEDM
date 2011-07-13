@@ -1,14 +1,13 @@
 //////////////////////////////////////////////////////////
 /// @file         PeerNode.hpp
 ///
-/// @author       Ravi Akella/ Derek Ditch <rcaq5c@mst.edu,
-///               dpdm85@mst.edu>
+/// @author       Stephen Jackson <scj7t4@mst.edu>
 ///
 /// @compiler     C++
 ///
 /// @project      FREEDM DGI
 ///
-/// @description  Header file for peernode.cpp
+/// @description  Gropu Management peer node.
 ///
 ///
 /// These source code files were created at as part of the
@@ -28,9 +27,7 @@
 /// Suggested modifications or questions about these codes
 /// can be directed to Dr. Bruce McMillin, Department of
 /// Computer Science, Missouri University of Science and
-/// Technology, Rolla, /// MO  65409 (ff@mst.edu).
-
-///
+/// Technology, Rolla, MO  65409 (ff@mst.edu).
 /////////////////////////////////////////////////////////
 
 #ifndef GMPEERNODE_HPP_

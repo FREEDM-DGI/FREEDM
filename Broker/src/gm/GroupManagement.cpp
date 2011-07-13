@@ -12,8 +12,6 @@
 ///
 /// @functions   
 ///
-///
-///
 /// These source code files were created at as part of the
 /// FREEDM DGI Subthrust, and are
 /// intended for use in teaching or research.  They may be
@@ -31,9 +29,7 @@
 /// Suggested modifications or questions about these codes
 /// can be directed to Dr. Bruce McMillin, Department of
 /// Computer Science, Missouri University of Science and
-/// Technology, Rolla, 
-/// MO  65409 (ff@mst.edu).
-///
+/// Technology, Rolla, MO  65409 (ff@mst.edu).
 /////////////////////////////////////////////////////////
 
 

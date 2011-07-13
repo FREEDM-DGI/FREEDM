@@ -52,6 +52,24 @@ namespace freedm {
     /// Broker Architecture Namespace
     namespace broker {
 
+///////////////////////////////////////////////////////////////////////////////
+/// CBroker::CBroker
+/// 
+/// @description The constructor for the broker, providing the initial acceptor
+/// @io provides and acceptor socket for incoming network connecitons.
+/// @peers any node running the broker architecture.
+/// @sharedmemory The dispatcher and connection manager are shared with the
+///               modules.
+/// @pre The port is free to be bound to.
+/// @post An acceptor socket is bound on the freedm port awaiting connections
+///       from other nodes.
+/// @param p_address The address to bind the listening socket to.
+/// @param p_port The port to bind the listening socket to.
+/// @param p_dispatch The message dispatcher associated with this Broker
+/// @param m_ios The ioservice used by this broker to perform socket operations
+/// @param m_conMan The connection manager used by this broker.
+/// @limiations Fails if the port is already in use.
+///////////////////////////////////////////////////////////////////////////////
 CBroker::CBroker(const std::string& p_address, const std::string& p_port,
     CDispatcher &p_dispatch, boost::asio::io_service &m_ios,
     freedm::broker::CConnectionManager &m_conMan)
@@ -76,7 +94,16 @@ CBroker::CBroker(const std::string& p_address, const std::string& p_port,
 			    boost::bind(&CBroker::HandleAccept, this,
                 boost::asio::placeholders::error));
 }
-
+///////////////////////////////////////////////////////////////////////////////
+/// CBroker::Run()
+/// @description: Calls the ioservice run (initializing the ioservice thread)
+///               and then blocks until the ioservice runs out of work.
+/// @pre: The ioservice has not been allocated a thread to operate on and has
+///       some schedule of jobs waiting to be performed (so it doesn't exit
+///       immediately.)
+/// @post: The ioservice has terminated.
+/// @return none
+///////////////////////////////////////////////////////////////////////////////
 void CBroker::Run()
 {
     Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
@@ -87,13 +114,26 @@ void CBroker::Run()
     m_ioService.run();
 }
 
-
-boost::asio::io_service& CBroker::get_io_service()
+///////////////////////////////////////////////////////////////////////////////
+/// CBroker::GetIOService
+/// @description returns a refernce to the ioservice used by the broker.
+/// @return The ioservice used by this broker.
+///////////////////////////////////////////////////////////////////////////////
+boost::asio::io_service& CBroker::GetIOService()
 {
     Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
     return m_ioService;
 }
 
+///////////////////////////////////////////////////////////////////////////////
+/// CBroker::Stop
+/// @description: Registers a stop command into the io_service's job queue.
+///               when scheduled, the stop operation will terminate all running
+///               modules and cause the ioservice.run() command to exit.
+/// @pre: The ioservice is running and processing tasks.
+/// @post: The command to stop the ioservice has been placed in the service's
+///        task queue.
+///////////////////////////////////////////////////////////////////////////////
 void CBroker::Stop()
 {
     Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
@@ -102,6 +142,16 @@ void CBroker::Stop()
     m_ioService.post(boost::bind(&CBroker::HandleStop, this));
 }
 
+///////////////////////////////////////////////////////////////////////////////
+/// CBroker::HandleAccept
+/// @description: Takes the acceptor socket which has just recieved an
+///               incoming connection and registers it with the connection
+///               manager. After doing so, it spawns a new socket to listen
+///               for the next incoming connection.
+/// @pre The acceptor socket has just recieved a new connection request.
+/// @post A new acceptor is created and a connection is added to the connection
+///       manager.
+///////////////////////////////////////////////////////////////////////////////
 void CBroker::HandleAccept(const boost::system::error_code& e)
 {
     Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
@@ -117,6 +167,13 @@ void CBroker::HandleAccept(const boost::system::error_code& e)
     }
 }
 
+///////////////////////////////////////////////////////////////////////////////
+/// CBroker::HandleStop
+/// @description Handles closing all the sockets connection managers and
+///              Services.
+/// @pre: The ioservice is running.
+/// @post: The ioservice is stopped.
+///////////////////////////////////////////////////////////////////////////////
 void CBroker::HandleStop()
 {
     Logger::Debug << __PRETTY_FUNCTION__ << std::endl;

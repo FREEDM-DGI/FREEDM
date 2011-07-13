@@ -59,7 +59,7 @@ class CConnectionManager;
 /// Represents a single CConnection from a client.
 class CConnection
     : public boost::enable_shared_from_this<CConnection>,
-    private boost::noncopyable
+      private boost::noncopyable
 {
 public:
     /// Construct a CConnection with the given io_service.
@@ -75,6 +75,7 @@ public:
     /// Stop all asynchronous operations associated with the CConnection.
     void Stop();
 
+    /// Puts a CMessage into the channel.
     void Send(CMessage p_mesg);
 
     std::string GetUUID();

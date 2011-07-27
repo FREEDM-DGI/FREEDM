@@ -39,7 +39,7 @@
 /// Suggested modifications or questions about these codes 
 /// can be directed to Dr. Bruce McMillin, Department of 
 /// Computer Science, Missouri University of Science and
-/// Technology, Rolla, /// MO  65409 (ff@mst.edu).
+/// Technology, Rolla, MO  65409 (ff@mst.edu).
 ///
 ////////////////////////////////////////////////////////////////////
 #ifndef CDISPATCHER_HPP
@@ -60,6 +60,7 @@ namespace freedm {
 
 class CMessage;
 
+/// Handles applying read and write handlers to incoming messages
 class CDispatcher
   : private boost::noncopyable
 {

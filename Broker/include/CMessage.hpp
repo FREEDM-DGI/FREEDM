@@ -28,7 +28,6 @@
 /// can be directed to Dr. Bruce McMillin, Department of
 /// Computer Science, Missour University of Science and
 /// Technology, Rolla, /// MO  65409 (ff@mst.edu).
-///
 ///////////////////////////////////////////////////////////////////////////////
 #ifndef CMESSAGE_HPP
 #define CMESSAGE_HPP

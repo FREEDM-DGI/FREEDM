@@ -20,6 +20,7 @@
 /// [2] Boost.Asio Examples
 ///     <http://www.boost.org/doc/libs/1_41_0/doc/html/boost_asio/examples.html>
 ///
+/// @license
 /// These source code files were created at as part of the
 /// FREEDM DGI Subthrust, and are intended for use in teaching or
 /// research.  They may be freely copied, modified and redistributed

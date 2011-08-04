@@ -61,7 +61,7 @@ boost::tuple<boost::tribool, InputIterator> Parse(CMessage &req,
 
 template <typename OutputIterator>
 boost::tuple< boost::tribool, OutputIterator> Synthesize( CMessage &msg,
-        unsigned int sequenceno, OutputIterator begin, size_t p_outMaxLength )
+    OutputIterator begin, size_t p_outMaxLength )
 {
     Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
     std::stringstream ss_;
@@ -84,10 +84,6 @@ boost::tuple< boost::tribool, OutputIterator> Synthesize( CMessage &msg,
     }
 
     str_ = ss_.str();
-
-    hdr = CConnectionHeader(str_,sequenceno);
-    Logger::Notice << "HEADER: " << hdr.ToString() << std::endl;
-    str_ = hdr.ToString() + str_;
 
     if( str_.length() <= p_outMaxLength )
     {

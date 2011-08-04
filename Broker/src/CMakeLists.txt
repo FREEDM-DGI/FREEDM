@@ -4,7 +4,6 @@ set(
     CBroker.cpp
     CConnection.cpp
     CConnectionManager.cpp
-    CConnectionHeader.cpp
     CDispatcher.cpp
     CMessage.cpp
     IPeerNode.cpp

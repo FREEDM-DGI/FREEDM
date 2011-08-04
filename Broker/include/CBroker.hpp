@@ -83,14 +83,8 @@ public:
     /// Handle completion of an asynchronous accept operation.
     void HandleAccept(const boost::system::error_code& e);
 
-    /// Handle a request to stop the Server.
-    void HandleStop();
-
     /// The io_service used to perform asynchronous operations.
-    boost::asio::io_service m_ioService;
-
-    /// Acceptor used to listen for incoming connections.
-    boost::asio::ip::tcp::acceptor m_acceptor;
+    boost::asio::io_service &m_ioService;
 
     /// The connection manager which owns all live connections.
     CConnectionManager &m_connManager;
@@ -98,7 +92,7 @@ public:
     /// The handler for all incoming requests.
     CDispatcher &m_dispatch;
 
-    ///The next connection to be accepted.
+    ///The Broker's pointer to the listening socket
     ConnectionPtr m_newConnection;
 };
 

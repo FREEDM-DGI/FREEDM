@@ -221,7 +221,7 @@ int main (int argc, char* argv[])
 
         
         //constructors for initial mapping
-        freedm::broker::CConnectionManager m_conManager(u_);
+        freedm::broker::CConnectionManager m_conManager(u_,std::string(hostname_));
         freedm::broker::CPhysicalDeviceManager m_phyManager;
         freedm::broker::ConnectionPtr m_newConnection;
         boost::asio::io_service m_ios;
@@ -272,7 +272,7 @@ int main (int argc, char* argv[])
 
 
         // Instantiate and register the group management module
-        freedm::GMAgent GM_ (uuidstr, broker_.get_io_service(), dispatch_, m_conManager);     
+        freedm::GMAgent GM_ (uuidstr, broker_.GetIOService(), dispatch_, m_conManager);     
         dispatch_.RegisterReadHandler( "gm", &GM_);
 
         // Instantiate and register the power management module

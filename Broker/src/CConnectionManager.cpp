@@ -47,6 +47,21 @@ namespace freedm {
 namespace broker {
 
 ///////////////////////////////////////////////////////////////////////////////
+/// CConnectionManager::CConnectionManager
+/// @description: Initializes the connection manager object
+/// @pre: None
+/// @post: Connection manager is ready for use
+/// @param uuid: The uuid of this node
+/// @param hostname: the hostname of this node
+///////////////////////////////////////////////////////////////////////////////
+CConnectionManager::CConnectionManager(freedm::uuid uuid, std::string hostname)
+{
+    std::stringstream ss;
+    ss << uuid; m_uuid = ss.str();
+    m_hostname = hostname;
+};
+
+///////////////////////////////////////////////////////////////////////////////
 /// CConnectionManager::Start
 /// @description: Performs intialization of a connection.
 /// @pre: The connection c has not been started.
@@ -56,19 +71,19 @@ namespace broker {
 void CConnectionManager::Start (ConnectionPtr c)
 {
     Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
-    c->GiveUUID(m_uuid);
     c->Start();
+    m_inchannel = c; 
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// CConnectionManager::RegisterConnection
+/// CConnectionManager::PutConnection
 /// @description Inserts a connection into the connection map.
 /// @param uuid: The uuid of the node the connection is to.
 /// @param c: The connection pointer that goes to the node in question.
 /// @pre: The connection is initialized.
 /// @post: The connection has been inserted into the connection map.
 ///////////////////////////////////////////////////////////////////////////////
-void CConnectionManager::RegisterConnection(std::string uuid, ConnectionPtr c)
+void CConnectionManager::PutConnection(std::string uuid, ConnectionPtr c)
 {
     Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
     {  
@@ -132,6 +147,7 @@ void CConnectionManager::StopAll ()
     }
     m_connections.clear();
     m_connections_r.clear();
+    Stop(m_inchannel);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -204,20 +220,17 @@ ConnectionPtr CConnectionManager::GetConnectionByUUID
     s_ = mapIt_->second;
 
     // Create a new CConnection object for this host	
-    c_.reset(new CConnection(ios, *this, dispatch_));  
+    c_.reset(new CConnection(ios, *this, dispatch_, uuid_));  
    
     // Initiate the TCP connection
     //XXX Right now, the port is hardcoded  
-    boost::asio::ip::tcp::resolver resolver(ios);
-    boost::asio::ip::tcp::resolver::query query( s_, "1870");
-    boost::asio::ip::tcp::endpoint endpoint = *resolver.resolve( query );
+    boost::asio::ip::udp::resolver resolver(ios);
+    boost::asio::ip::udp::resolver::query query( s_, "1870");
+    boost::asio::ip::udp::endpoint endpoint = *resolver.resolve( query );
     c_->GetSocket().connect( endpoint ); 
 
     //Once the connection is built, connection manager gets a call back to register it.    
-
-    c_->GiveUUID(m_uuid);
-    c_->Start();
-
+    PutConnection(uuid_,c_);
     return c_;
 }
 

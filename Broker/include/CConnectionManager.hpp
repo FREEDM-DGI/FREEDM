@@ -45,6 +45,7 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/enable_shared_from_this.hpp>
 #include "uuid.hpp"
+#include "IHandler.hpp"
 
 namespace freedm {
 namespace broker {
@@ -64,7 +65,10 @@ public:
     typedef std::map<ConnectionPtr, std::string> connectionmap_r;
 
     /// Initialize the connection manager with the node uuid.
-    CConnectionManager(freedm::uuid uuid) { std::stringstream ss; ss << uuid; m_uuid = ss.str(); };
+    CConnectionManager(freedm::uuid uuid, std::string hostname);
+
+    /// Connection manager teardown.
+    ~CConnectionManager() {  };
 
     /// Add the specified connection to the manager and start it.
     void Start(ConnectionPtr c);
@@ -73,7 +77,7 @@ public:
     void PutHostname(std::string u_, std::string host_);
     
     /// Register a connection with the manager once it has been built.
-    void RegisterConnection(std::string uuid, ConnectionPtr c);
+    void PutConnection(std::string uuid, ConnectionPtr c);
 
     /// Stop the specified connection.
     void Stop(ConnectionPtr c);
@@ -81,6 +85,12 @@ public:
     /// Stop all connections.
     void StopAll();
 
+    /// Get The UUID
+    std::string GetUUID() { return m_uuid; };
+
+    /// Get The Hostname
+    std::string GetHostname() { return m_hostname; };
+    
     /// Get the hostname from the UUID.
     std::string GetHostnameByUUID( std::string uuid ) const; 
 
@@ -105,10 +115,14 @@ public:
 private:
     /// Mapping from uuid to hostname.
     hostnamemap m_hostnames;
+    /// Hostname of this node.
+    std::string m_hostname;
     /// Forward map (UUID->Connection)
     connectionmap   m_connections;
     /// Reverse map (Connection->UUID)
     connectionmap_r m_connections_r;
+    /// Incoming messages channel
+    ConnectionPtr m_inchannel;
     /// Node UUID
     std::string m_uuid;
     /// Mutex for protecting the handler maps above

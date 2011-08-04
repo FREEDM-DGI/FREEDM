@@ -74,26 +74,21 @@ namespace freedm {
 CBroker::CBroker(const std::string& p_address, const std::string& p_port,
     CDispatcher &p_dispatch, boost::asio::io_service &m_ios,
     freedm::broker::CConnectionManager &m_conMan)
-    : m_ioService(),
-      m_acceptor(m_ioService),
+    : m_ioService(m_ios),
       m_connManager(m_conMan),
       m_dispatch(p_dispatch),
-      m_newConnection(new CConnection(m_ioService, m_connManager, m_dispatch))
+      m_newConnection(new CConnection(m_ioService, m_connManager, m_dispatch, m_conMan.GetUUID()))
 {
     Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
     // Open the acceptor with the option to reuse the address (i.e. SO_REUSEADDR).
-    boost::asio::ip::tcp::resolver resolver(m_ioService);
-    boost::asio::ip::tcp::resolver::query query( p_address, p_port);
-    boost::asio::ip::tcp::endpoint endpoint = *resolver.resolve( query );
+    boost::asio::ip::udp::resolver resolver(m_ioService);
+    boost::asio::ip::udp::resolver::query query( p_address, p_port);
+    boost::asio::ip::udp::endpoint endpoint = *resolver.resolve( query );
     
     // Listen for connections and create an event to spawn a new connection
-    m_acceptor.open(endpoint.protocol());
-    m_acceptor.set_option(boost::asio::ip::tcp::acceptor::reuse_address(true));
-    m_acceptor.bind(endpoint);
-    m_acceptor.listen();
-    m_acceptor.async_accept(m_newConnection->GetSocket(),
-			    boost::bind(&CBroker::HandleAccept, this,
-                boost::asio::placeholders::error));
+    m_newConnection->GetSocket().open(endpoint.protocol());
+    m_newConnection->GetSocket().bind(endpoint);;
+    m_connManager.Start(m_newConnection);
 }
 ///////////////////////////////////////////////////////////////////////////////
 /// CBroker::Run()
@@ -144,31 +139,6 @@ void CBroker::Stop()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// CBroker::HandleAccept
-/// @description: Takes the acceptor socket which has just recieved an
-///               incoming connection and registers it with the connection
-///               manager. After doing so, it spawns a new socket to listen
-///               for the next incoming connection.
-/// @pre The acceptor socket has just recieved a new connection request.
-/// @post A new acceptor is created and a connection is added to the connection
-///       manager.
-///////////////////////////////////////////////////////////////////////////////
-void CBroker::HandleAccept(const boost::system::error_code& e)
-{
-    Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
-    if (!e)
-    {
-        m_connManager.Start(m_newConnection);   
-        m_newConnection.reset(
-	          new CConnection(m_ioService, m_connManager, m_dispatch));
-              
-        m_acceptor.async_accept(m_newConnection->GetSocket(),
-				    boost::bind(&CBroker::HandleAccept, this,
-              boost::asio::placeholders::error));
-    }
-}
-
-///////////////////////////////////////////////////////////////////////////////
 /// CBroker::HandleStop
 /// @description Handles closing all the sockets connection managers and
 ///              Services.
@@ -181,7 +151,6 @@ void CBroker::HandleStop()
     // The server is stopped by canceling all outstanding asynchronous
     // operations. Once all operations have finished the io_service::run() call
     // will exit.
-    m_acceptor.close();
     m_connManager.StopAll();
     m_ioService.stop(); 
 }

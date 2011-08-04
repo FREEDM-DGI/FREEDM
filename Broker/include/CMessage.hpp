@@ -51,7 +51,7 @@ namespace broker {
 class CMessage
 {
 public:
-    // Status codes are modeled after HTTP/1.0 will add/remove as necessary.
+    /// Status codes are modeled after HTTP/1.0 will add/remove as necessary.
     /// The status of the reply.
     enum StatusType
     {
@@ -73,43 +73,82 @@ public:
         ServiceUnavailable = 503
     };
 
+    /// Accessor for uuid
+    std::string GetSourceUUID() { return m_srcUUID; };
+    
+    /// Accessor for hostname
+    std::string GetSourceHostname() { return m_hostname; };
+    
+    /// Accessor for sequenceno
+    unsigned int GetSequenceNumber() { return m_sequenceno; };
 
-    // Contains the source node's information
+    /// Accessor for status
+    StatusType GetStatus() { return m_status; };
+    
+    /// Accessor for submessages
+    ptree& GetSubMessages() { return m_submessages; };
+
+    /// Setter for uuid
+    void SetSourceUUID(std::string uuid) { m_srcUUID = uuid; };
+    
+    /// Setter for hostname
+    void SetSourceHostname(std::string hostname) { m_hostname = hostname; };
+
+    /// Setter for sequenceno
+    void SetSequenceNumber(unsigned int sequenceno) { m_sequenceno = sequenceno; };
+
+    /// Setter for status
+    void SetStatus(StatusType status) { m_status = status; };
+
+    /// Contains the source node's information
     std::string m_srcUUID;
 
-    // Status of the message
+    /// Status of the message
     StatusType  m_status;
 
-    // Contains all the submessages as handled by client algorithms
+    /// Contains all the submessages as handled by client algorithms
     ptree       m_submessages;
 
-    virtual ~CMessage(){ };
+    /// Deconstruct the CMessage
+    virtual ~CMessage() { };
+
+    /// Initialize a new CMessage with a status type.
     CMessage( CMessage::StatusType p_stat = CMessage::OK ) :
         m_status ( p_stat )
     {
         Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
     };
 
+    /// Copy Constructor
     CMessage( const CMessage &p_m ) :
         m_srcUUID( p_m.m_srcUUID ),
         m_status( p_m.m_status ),
-        m_submessages( p_m.m_submessages )
+        m_submessages( p_m.m_submessages ),
+        m_hostname( p_m.m_hostname ),
+        m_sequenceno( p_m.m_sequenceno )
     {
         Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
     };
 
+    /// Cmessage Equals operator
     CMessage& operator = ( const CMessage &p_m )
     {
         this->m_srcUUID = p_m.m_srcUUID;
         this->m_status = p_m.m_status;
         this->m_submessages = p_m.m_submessages;
+        this->m_hostname = p_m.m_hostname;
+        this->m_sequenceno = p_m.m_sequenceno;
         return *this;
     }
-
+    
+    /// Parse CMessage from string.
     virtual bool Load( std::istream &p_is )
         throw ( boost::property_tree::file_parser_error );
+    
+    /// Put CMessage to a stream.
     virtual void Save( std::ostream &p_os );
 
+    /// A Generic reply CMessage
     static CMessage StockReply( StatusType p_status )
     {
         Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
@@ -119,53 +158,20 @@ public:
         return reply_;
     }
 
-    // Implicit conversion operator
+    /// Implicit conversion operator
     virtual operator ptree ();
+
+    /// A way to load a CMessage from a property tree.
     explicit CMessage( const ptree &pt );
-    
-    private:
+   
+private: 
+    /// Contains the source node's hostname
+    std::string m_hostname;
+
+    /// Contains the sequence number for the sending node
     unsigned int m_sequenceno;
 
 };
-
-
-
- struct LRequest: public freedm::broker::CMessage
-{   
-     // Contains the source node's information
-    std::string m_srcUUID;
-
-    // Status of the message
-    StatusType  m_status;
-
-    // Contains all the submessages as handled by client algorithms
-    ptree       m_submessages;
-
- LRequest( CMessage::StatusType p_stat = CMessage::OK ) :
-        m_status ( p_stat )
-    {
-        Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
-    };
-       
- LRequest( const CMessage &p_m ) :
-        m_srcUUID( p_m.m_srcUUID ),
-        m_status( p_m.m_status ),
-        m_submessages( p_m.m_submessages )
-    {
-        std::stringstream ss_;
-        ss_.str("");
-	ss_.clear();
-        ss_ << "LB.Request";
-	m_submessages.put("message.submessages", ss_.str());
-        Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
-    };
-       
-};
-
-
-
-
-
 
 } // namespace broker
 } // namespace freedm

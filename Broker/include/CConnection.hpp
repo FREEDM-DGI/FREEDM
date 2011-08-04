@@ -60,13 +60,15 @@ class CConnection
     : public boost::enable_shared_from_this<CConnection>,
       private boost::noncopyable
 {
+
 public:
     /// Construct a CConnection with the given io_service.
     explicit CConnection(boost::asio::io_service& p_ioService,
-            CConnectionManager& p_manager, CDispatcher& p_dispatch);
+            CConnectionManager& p_manager, CDispatcher& p_dispatch,
+            std::string uuid);
 
-      /// Get the socket associated with the CConnection.
-    boost::asio::ip::tcp::socket& GetSocket();
+    /// Get the socket associated with the CConnection.
+    boost::asio::ip::udp::socket& GetSocket();
 
     /// Start the first asynchronous operation for the CConnection.
     void Start();
@@ -75,49 +77,38 @@ public:
     void Stop();
 
     /// Puts a CMessage into the channel.
-    void Send(CMessage p_mesg);
+    void Send(CMessage p_mesg,bool sequence=true);
 
-    std::string GetUUID();
-    
-    void SetUUID(std::string uuid);
+    /// Get Remote UUID
+    std::string GetUUID() { return m_uuid; };
 
-    void GiveUUID(std::string uuid);
-
-  private:
-
+private:
     /// Schedules Resend when the timer expires and increases timeout counter.
     void Resend(const boost::system::error_code& error);
 
+    /// Handles refiring the window.
+    void HandleResend();
+
     /// Responsible for writing acknowledgements to the stream.
-    void HandleSendACK(unsigned int sequenceno);
-    
-    /// Handle recieving the UUID at the start of a connection
-    void HandleReadUUID(const boost::system::error_code &e);
-    
-    /// Handle reading the header which outlines the length of the incoming
-    /// message.
-    void HandleReadHeader(const boost::system::error_code &e);
+    void SendACK(std::string uuid, std:: string hostname, unsigned int sequenceno);
 
+    /// Handles Notification of an acknowledment being recieved
+    void RecieveACK(unsigned int sequenceno);
+    
     /// Handle completion of a read operation.
-    void HandleRead(const boost::system::error_code& e);
-
-    /// Throws out the buffer on out of order messages.
-    void DropMessage(const boost::system::error_code& e);
+    void HandleRead(const boost::system::error_code& e, std::size_t bytes_transferred);
 
     /// Handle a send operation posted to the IO thread.
-    void HandleSend();
+    void HandleSend(CMessage msg);
 
     /// Handle completion of a write operation.
     void HandleWrite(const boost::system::error_code& e);
-
-    /// Tries to parse the headr
-    CConnectionHeader ParseHeader();
-    
-    /// Tests to see if the header is valid(ish)
-    bool CanParseHeader();
     
     /// Socket for the CConnection.
-    boost::asio::ip::tcp::socket m_socket;
+    boost::asio::ip::udp::socket m_socket;
+    
+    /// Variable used for tracking the remote endpoint of incoming messages.
+    boost::asio::ip::udp::endpoint m_endpoint;
 
     /// The manager for this CConnection.
     CConnectionManager& m_connManager;
@@ -127,31 +118,30 @@ public:
 
     /// Buffer for incoming data.
     boost::array<char, 8192> m_buffer;
-    int m_msg_len;
-
-    /// Outgoing message buffer
-    // XXX maybe not neccessary? Not sure of the I/O impacts on
-    // a single buffer
-    boost::array<char, 8192> m_outbuff;
-
+    
     /// The incoming request.
     CMessage m_message;
 
-    /// Outgoing message Queue
+    /// Outgoing message Queue, window size
     static const unsigned int WINDOWSIZE = 5;
     typedef std::pair< unsigned int, CMessage > QueueItem;
+    /// The queue of messages
     SlidingWindow< QueueItem > m_queue;
-    boost::asio::deadline_timer m_timeout; 
+    /// Timer for failed responses.
+    boost::asio::deadline_timer m_timeout;
+    /// Counter for the number of times the timeout has fired
+    /// Without success. 
     unsigned int m_timeouts;
  
     /// The UUID of the remote endpoint for the connection
     std::string m_uuid;
 
-    /// The current sequence number
-    unsigned int m_insequenceno;
+    /// The current sequence number (incoming channel only)
+    std::map<std::string,unsigned int> m_insequenceno;
+    
+    /// The sequence number used for the next outgoing message
     unsigned int m_outsequenceno;
     
-    /// The Queue of messages waiting for ack.
 };
 
 typedef boost::shared_ptr<CConnection> ConnectionPtr;

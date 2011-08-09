@@ -35,7 +35,6 @@
 
 #include "CMessage.hpp"
 #include "CDispatcher.hpp"
-#include "CConnectionHeader.hpp"
 
 #include "concurrentqueue.hpp"
 #include "SlidingWindow.hpp"

@@ -34,7 +34,6 @@
 ////////////////////////////////////////////////////////////////////
 
 #include "CDispatcher.hpp"
-#include "CConnectionHeader.hpp"
 #include "CConnection.hpp"
 #include "CConnectionManager.hpp"
 #include "CMessage.hpp"

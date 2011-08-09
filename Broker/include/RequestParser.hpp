@@ -12,7 +12,6 @@
 #define HTTP_CRequestParser_HPP
 
 #include "CMessage.hpp"
-#include "CConnectionHeader.hpp"
 #include "logger.hpp"
 CREATE_EXTERN_STD_LOGS()
 
@@ -68,7 +67,6 @@ boost::tuple< boost::tribool, OutputIterator> Synthesize( CMessage &msg,
     std::string str_;
     boost::tribool result = boost::indeterminate;
     OutputIterator last;
-    CConnectionHeader hdr; 
 
     try
     {

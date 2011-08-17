@@ -2,6 +2,8 @@
 set(
     BROKER_FILES
     CBroker.cpp
+    CReliableConnection.cpp
+    CListener.cpp
     CConnection.cpp
     CConnectionManager.cpp
     CDispatcher.cpp

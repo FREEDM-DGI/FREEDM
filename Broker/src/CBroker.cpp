@@ -77,7 +77,7 @@ CBroker::CBroker(const std::string& p_address, const std::string& p_port,
     : m_ioService(m_ios),
       m_connManager(m_conMan),
       m_dispatch(p_dispatch),
-      m_newConnection(new CConnection(m_ioService, m_connManager, m_dispatch, m_conMan.GetUUID()))
+      m_newConnection(new CListener(m_ioService, m_connManager, m_dispatch, m_conMan.GetUUID()))
 {
     Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
     // Open the acceptor with the option to reuse the address (i.e. SO_REUSEADDR).

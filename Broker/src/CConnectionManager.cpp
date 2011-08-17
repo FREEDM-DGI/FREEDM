@@ -68,7 +68,7 @@ CConnectionManager::CConnectionManager(freedm::uuid uuid, std::string hostname)
 /// @post: The connection c has been started.
 /// @param c: A connection pointer that has not been started.
 ///////////////////////////////////////////////////////////////////////////////
-void CConnectionManager::Start (ConnectionPtr c)
+void CConnectionManager::Start (CListener::ConnectionPtr c)
 {
     Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
     c->Start();
@@ -110,6 +110,7 @@ void CConnectionManager::PutHostname(std::string u_, std::string host_)
     }
 }
 
+
 ///////////////////////////////////////////////////////////////////////////////
 /// CConnectionManager::Stop
 /// @description Stops a connection and removes it from the connections maps.
@@ -117,7 +118,7 @@ void CConnectionManager::PutHostname(std::string u_, std::string host_)
 /// @post: The connection is closed and removed from the map.
 /// @param c the connection pointer to stop.
 ///////////////////////////////////////////////////////////////////////////////
-void CConnectionManager::Stop (ConnectionPtr c)
+void CConnectionManager::Stop (CConnection::ConnectionPtr c)
 {
     Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
     std::string key;
@@ -128,6 +129,20 @@ void CConnectionManager::Stop (ConnectionPtr c)
         m_connections_r.erase(c);
     }
     c->Stop();
+}
+
+///////////////////////////////////////////////////////////////////////////////
+/// CConnectionManager::Stop
+/// @description Stops the listener connection
+/// @pre: The connection is the listener connection.
+/// @post: The connection is closed.
+/// @param c the connection pointer to stop.
+///////////////////////////////////////////////////////////////////////////////
+void CConnectionManager::Stop (CListener::ConnectionPtr c)
+{
+    Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
+    c->Stop();
+    //TODO: Make the whole thing terminate if the listner says stop.
 }
 
 ///////////////////////////////////////////////////////////////////////////////

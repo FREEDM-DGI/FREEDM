@@ -64,29 +64,13 @@ namespace freedm {
 ///////////////////////////////////////////////////////////////////////////////
 CConnection::CConnection(boost::asio::io_service& p_ioService,
   CConnectionManager& p_manager, CDispatcher& p_dispatch, std::string uuid)
-  : m_socket( p_ioService),
-    m_connManager( p_manager),
-    m_dispatch( p_dispatch),
+  : CReliableConnection(p_ioService,p_manager,p_dispatch,uuid),
     m_timeout( p_ioService)
 {
     Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
-    m_uuid = uuid;
     m_outsequenceno = 0;
     m_timeouts = 0;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-/// CConnection::GetSocket
-/// @description Returns the socket used by this node.
-/// @pre None
-/// @post None
-/// @return A reference to the socket used by this connection.
-///////////////////////////////////////////////////////////////////////////////
-boost::asio::ip::udp::socket& CConnection::GetSocket()
-{
-    Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
-
-    return m_socket;
+    m_synched = false;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -99,10 +83,6 @@ boost::asio::ip::udp::socket& CConnection::GetSocket()
 void CConnection::Start()
 {
     Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
-    Logger::Notice << "Connection Started" << std::endl;
-    m_socket.async_receive_from(boost::asio::buffer(m_buffer, 8192), m_endpoint,
-        boost::bind(&CConnection::HandleRead, shared_from_this(),
-            boost::asio::placeholders::error, boost::asio::placeholders::bytes_transferred));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -118,7 +98,7 @@ void CConnection::Stop()
 {
     Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
     m_timeout.cancel();
-    m_socket.close();
+    GetSocket().close();
 }
  
 ///////////////////////////////////////////////////////////////////////////////
@@ -143,6 +123,7 @@ void CConnection::Send(CMessage p_mesg, bool sequence)
     //Make a call to the dispatcher to sign the messages
     //With a bunch of shiny stuff.
     ptree x = static_cast<ptree>(p_mesg);
+    unsigned int msgseq;
 
     //m_dispatch.HandleWrite(x);  
 
@@ -151,24 +132,31 @@ void CConnection::Send(CMessage p_mesg, bool sequence)
     // Sign the message with the hostname, uuid, and squencenumber
     if(sequence == true)
     {
-        m_outsequenceno++;
-        outmsg.SetSequenceNumber(m_outsequenceno);
+        if(m_synched == false)
+        {
+            m_synched = true;
+            SendSYN();
+        }
+        msgseq = m_outsequenceno;
+        outmsg.SetSequenceNumber(msgseq);
+        m_outsequenceno = (m_outsequenceno+1) % GetSequenceModulo();
     }
-    outmsg.SetSourceUUID(m_connManager.GetUUID()); 
-    outmsg.SetSourceHostname(m_connManager.GetHostname());
+    outmsg.SetSourceUUID(GetConnectionManager().GetUUID()); 
+    outmsg.SetSourceHostname(GetConnectionManager().GetHostname());
 
     if(sequence == true)
     {
         // If it isn't squenced then don't put it in the queue.
-        m_queue.Push( QueueItem(m_outsequenceno,outmsg) );
+        m_queue.Push( QueueItem(msgseq,outmsg) );
     }
     // Before, we would put it into a queue to be sent later, now we are going
     // to immediately write it to channel.
 
-    if(m_queue.size() <= WINDOWSIZE || sequence == false)
+    if(m_queue.size() <= GetWindowSize() || sequence == false)
     {
         // Only try to write to the socket if the window isn't already full.
         // Or it is an unsequenced message
+        
         HandleSend(outmsg);
         if(sequence == true)
         {
@@ -196,9 +184,9 @@ void CConnection::HandleSend(CMessage msg)
     it_ = m_buffer.begin();
     boost::tie( result_, it_ ) = Synthesize( msg, it_, m_buffer.end() - it_ );
 
-    m_socket.async_send(boost::asio::buffer(m_buffer,
+    GetSocket().async_send(boost::asio::buffer(m_buffer,
             (it_ - m_buffer.begin()) * sizeof(char) ), 
-        boost::bind(&CConnection::HandleWrite, shared_from_this(),
+        boost::bind(&CConnection::HandleWrite, this,
         boost::asio::placeholders::error));
 }
 
@@ -223,8 +211,8 @@ void CConnection::Resend(const boost::system::error_code& err)
         if(!m_queue.IsEmpty())
         {
             m_timeouts++;
-            m_socket.get_io_service().post(
-            boost::bind(&CConnection::HandleResend, shared_from_this()));
+            GetSocket().get_io_service().post(
+            boost::bind(&CConnection::HandleResend, this));
         }
     }
     
@@ -243,33 +231,27 @@ void CConnection::HandleResend()
     SlidingWindow<QueueItem>::iterator sit;
     sit = m_queue.begin();   
  
-    for(unsigned int i=0; sit != m_queue.end() && i < WINDOWSIZE; i++,sit++ )
+    for(unsigned int i=0; sit != m_queue.end() && i < GetWindowSize(); i++,sit++ )
     {
-        m_socket.get_io_service().post(
-        boost::bind(&CConnection::HandleSend, shared_from_this(),(*sit).second));
+        GetSocket().get_io_service().post(
+        boost::bind(&CConnection::HandleSend, this,(*sit).second));
     }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// CConnection::SendACK
-/// @description: Sends an acknowledgement of message reciept back to sender.
-/// @param uuid: The uuid to send the message to.
-/// @param hostname: The hostname to send the message to.
-/// @param sequenceno: The message number being acked.
-/// @pre: Initialized connection.
-/// @post: If the sender is not already in the hostname table it will be added.
-///   then a connection is established to that node and an acknowledgment sent.
-//////////////////////////////////////////////////////////////////////////////
-void CConnection::SendACK(std::string uuid, std:: string hostname, unsigned int sequenceno)
+/// CConnection::SendSYN
+/// @description Synchronosizes the reciever to expect the next message to have
+///   the sequence number 1
+/// @pre Initialized connection.
+/// @post Upon reciept, the reciever will expect 1 for the sequence number
+///////////////////////////////////////////////////////////////////////////////
+void CConnection::SendSYN()
 {
     Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
     freedm::broker::CMessage m_;
-    // Make sure the connection is registered:
-    m_connManager.PutHostname(uuid,hostname);
-    m_.SetStatus(freedm::broker::CMessage::Accepted);
-    m_.SetSequenceNumber(sequenceno);
-    Logger::Notice<<"Send ACK #"<<sequenceno<<std::endl;
-    m_connManager.GetConnectionByUUID(uuid, m_socket.get_io_service(), m_dispatch)->Send(m_,false);
+    m_.SetStatus(freedm::broker::CMessage::Created);
+    Logger::Notice<<"Sending SYN"<<std::endl;
+    Send(m_);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -284,96 +266,28 @@ void CConnection::SendACK(std::string uuid, std:: string hostname, unsigned int 
 void CConnection::RecieveACK(unsigned int sequenceno)
 {
     Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
-    while(!m_queue.IsEmpty() && m_queue.front().first <= sequenceno)
+    while(!m_queue.IsEmpty())
     {
-        Logger::Notice<<"ACK handled for "<<m_queue.front().first<<std::endl;
-        m_queue.pop();
+        unsigned int bounda = m_queue.front().first;
+        unsigned int boundb = (m_queue.front().first+(GetWindowSize()))%GetSequenceModulo();
+        Logger::Notice<<"ACK, bounda:"<<bounda<<" boundb:"<<boundb<<"input: "<<sequenceno<<std::endl;
+        if(bounda <= sequenceno || (sequenceno < boundb && boundb < bounda))
+        {
+            Logger::Notice<<"ACK handled for "<<m_queue.front().first<<std::endl;
+            m_queue.pop();
+            m_timeouts = 0;
+        }
+        else
+        {
+            break;
+        }
     }
     if(!m_queue.IsEmpty())
     {
-        m_socket.get_io_service().post(
-            boost::bind(&CConnection::HandleResend, shared_from_this()));
+        GetSocket().get_io_service().post(
+            boost::bind(&CConnection::HandleResend, this));
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////
-/// CConnection::HandleRead
-/// @description: The callback which accepts messages from the remote sender.
-/// @param e: The errorcode if any associated.
-/// @param bytes_transferred: The size of the datagram being read.
-/// @pre: The connection has had start called and some message has been placed
-///   in the buffer by the recieve call.
-/// @post: The message has been delivered. This means that write connections
-///   have been notified of ACK and standard messages have been redirected to
-///   their appropriate places by the dispatcher. The incoming sequence number
-///   for the source UUID has been incremented appropriately.
-///////////////////////////////////////////////////////////////////////////////
-void CConnection::HandleRead(const boost::system::error_code& e, std::size_t bytes_transferred)
-{
-    Logger::Notice << __PRETTY_FUNCTION__ << std::endl;       
-    if (!e)
-    {
-        Logger::Notice << "Handled some message." << std::endl;
-        boost::tribool result_;
-        boost::tie(result_, boost::tuples::ignore) = Parse(
-            m_message, m_buffer.data(),
-            m_buffer.data() + bytes_transferred);
-        if (result_)
-        {
-            // Unfortunately, this can't be done with the read handler
-            // So it has to be a bit messier. m_message is the incoming
-            // CMessage. We scan this for the stamp that we place on a
-            // Message before we send it with the sequence number:
-            ptree x = static_cast<ptree>(m_message); 
-            unsigned int sequenceno = m_message.GetSequenceNumber();
-            std::string uuid = m_message.GetSourceUUID();
-            std::string hostname = m_message.GetSourceHostname();
-            if(m_message.GetStatus() == freedm::broker::CMessage::Accepted)
-            {
-                Logger::Notice << "Got ACK #" << sequenceno << std::endl;
-                m_connManager.PutHostname(uuid,hostname);
-                m_connManager.GetConnectionByUUID(uuid, m_socket.get_io_service(), m_dispatch)->RecieveACK(sequenceno);
-            }
-            else
-            {
-                if(m_insequenceno.find(uuid) == m_insequenceno.end())
-                {
-                    m_insequenceno[uuid] = 0;
-                }
-                Logger::Notice << "Got Message #" << sequenceno << " expected " << m_insequenceno[uuid]+1 << std::endl;
-                if(sequenceno == m_insequenceno[uuid]+1)
-                {
-                    // The sequence number is what we expect.
-                    m_insequenceno[uuid]++;
-                    // Call on the connection manager to send the ACK to the sender.
-                    SendACK(uuid,hostname,m_insequenceno[uuid]);
-                    // Handle the request
-                    // XXX: Dr. McMillin and scj discussed how to make this secure,
-                    // specifically that messages from unknown sources should not
-                    // be accepted unless some trusted agent (like the group manager)
-                    // has accepted them. What I think I want to propose is that
-                    // write now, this is written to accept all messages, but
-                    // later we'll end in a "trust table" that epidemically
-                    // distributes trust in the system. Messages are rejected until
-                    // Trust is established or something. 
-                    m_dispatch.HandleRequest(x);
-                }
-                else
-                {
-                    SendACK(uuid,hostname,m_insequenceno[uuid]);
-                }
-            }
-        }
-        m_socket.async_receive_from(boost::asio::buffer(m_buffer, 8192), m_endpoint,
-            boost::bind(&CConnection::HandleRead, shared_from_this(),
-                boost::asio::placeholders::error, boost::asio::placeholders::bytes_transferred)); 
-    }
-    else
-    {
-        m_connManager.Stop(shared_from_this());	
-    }
-}
-
 ///////////////////////////////////////////////////////////////////////////////
 /// CConnection::HandleWrite
 /// @description: Write callback. Closes the connection on error, does nothing
@@ -392,7 +306,7 @@ void CConnection::HandleWrite(const boost::system::error_code& e)
     }
     if (e == boost::asio::error::operation_aborted)
     {
-        m_connManager.Stop(shared_from_this());
+        GetConnectionManager().Stop(CConnection::ConnectionPtr(this));
     }
 }
 

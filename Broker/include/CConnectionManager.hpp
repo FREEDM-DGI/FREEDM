@@ -36,6 +36,8 @@
 #define CONNECTIONMANAGER_HPP
 
 #include "CConnection.hpp"
+#include "CListener.hpp"
+#include "CReliableConnection.hpp"
 
 #include <set>
 #include <string>
@@ -71,8 +73,8 @@ public:
     ~CConnectionManager() {  };
 
     /// Add the specified connection to the manager and start it.
-    void Start(ConnectionPtr c);
-    
+    void Start(CListener::ConnectionPtr c);
+ 
     /// Place a hostname and uuid into the hostname / uuid map.
     void PutHostname(std::string u_, std::string host_);
     
@@ -80,7 +82,10 @@ public:
     void PutConnection(std::string uuid, ConnectionPtr c);
 
     /// Stop the specified connection.
-    void Stop(ConnectionPtr c);
+    void Stop(CConnection::ConnectionPtr c);
+    
+    /// Stop the specified connection
+    void Stop(CListener::ConnectionPtr c);
 
     /// Stop all connections.
     void StopAll();
@@ -122,7 +127,7 @@ private:
     /// Reverse map (Connection->UUID)
     connectionmap_r m_connections_r;
     /// Incoming messages channel
-    ConnectionPtr m_inchannel;
+    CListener::ConnectionPtr m_inchannel;
     /// Node UUID
     std::string m_uuid;
     /// Mutex for protecting the handler maps above

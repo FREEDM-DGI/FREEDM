@@ -30,12 +30,11 @@
 /// Technology, Rolla, MO 65409 (ff@mst.edu).
 ////////////////////////////////////////////////////////////////////
 
-#ifndef CCONNECTION_HPP
-#define CCONNECTION_HPP
+#ifndef CRELIABLECONNECTION_HPP
+#define CRELIABLECONNECTION_HPP
 
 #include "CMessage.hpp"
 #include "CDispatcher.hpp"
-#include "CReliableConnection.hpp"
 
 #include "concurrentqueue.hpp"
 #include "SlidingWindow.hpp"
@@ -47,81 +46,71 @@
 #include <boost/enable_shared_from_this.hpp>
 
 #include <iomanip>
-#include <set>
 
 namespace freedm {
     namespace broker {
 
 class CConnectionManager;
 
-/// Represents a single CConnection to a client.
-class CConnection
-    : public CReliableConnection
+/// Represents a single connection to/from a client.
+class CReliableConnection
+    : public boost::enable_shared_from_this<CReliableConnection>,
+      private boost::noncopyable
 {
-
 public:
-    /// ConnectionPtr Typedef
-    typedef boost::shared_ptr<CConnection> ConnectionPtr;
+    /// Typedef for the connection pointer
+    typedef boost::shared_ptr<CReliableConnection> ConnectionPtr;
 
     /// Construct a CConnection with the given io_service.
-    explicit CConnection(boost::asio::io_service& p_ioService,
+    explicit CReliableConnection(boost::asio::io_service& p_ioService,
             CConnectionManager& p_manager, CDispatcher& p_dispatch,
             std::string uuid);
 
+    /// Get the socket associated with the CConnection.
+    boost::asio::ip::udp::socket& GetSocket();
+
     /// Start the first asynchronous operation for the CConnection.
-    void Start();
+    virtual void Start() = 0;;
 
     /// Stop all asynchronous operations associated with the CConnection.
-    void Stop();
+    virtual void Stop() = 0;
 
-    /// Puts a CMessage into the channel.
-    void Send(CMessage p_mesg,bool sequence=true);
+    /// Get associated UUID
+    std::string GetUUID() { return m_uuid; };
 
-    /// Handles Notification of an acknowledment being recieved
-    void RecieveACK(unsigned int sequenceno);
+    /// Get Connection Manager
+    CConnectionManager& GetConnectionManager() { return m_connManager; };
+
+    /// Get the dispatcher
+    CDispatcher& GetDispatcher() { return m_dispatch; };
+
+    /// Get the out window size
+    unsigned int GetWindowSize() { return WINDOWSIZE; };
+    
+    /// Get the sequencing Modulo
+    unsigned int GetSequenceModulo() { return SEQUENCEMODULO; }
+
 private:
-    /// Has the outgoing connection been synched?
-    bool m_synched;
 
-    /// Schedules Resend when the timer expires and increases timeout counter.
-    void Resend(const boost::system::error_code& error);
+    /// Outgoing message Queue, window size
+    static const unsigned int WINDOWSIZE = 5;
 
-    /// Handles refiring the window.
-    void HandleResend();
+    /// Sequence Modulo
+    static const unsigned int SEQUENCEMODULO = 16;
 
-    /// Sends SYN messages.
-    void SendSYN();
-    
-    /// Handle a send operation posted to the IO thread.
-    void HandleSend(CMessage msg);
+    /// Socket for the CConnection.
+    boost::asio::ip::udp::socket m_socket;
 
-    /// Handle completion of a write operation.
-    void HandleWrite(const boost::system::error_code& e);
-    
-    /// Buffer for incoming data.
-    boost::array<char, 8192> m_buffer;
-    
-    /// The incoming request.
-    CMessage m_message;
-    
-    /// Type for the queued items.
-    typedef std::pair< unsigned int, CMessage > QueueItem;
+    /// The manager for this CConnection.
+    CConnectionManager& m_connManager;
 
-    /// The queue of messages
-    SlidingWindow< QueueItem > m_queue;
-
-    /// Timer for failed responses.
-    boost::asio::deadline_timer m_timeout;
-
-    /// Counter for the number of times the timeout has fired
-    /// Without success. 
-    unsigned int m_timeouts;
+    /// The dispatcher used to process the incoming request.
+    CDispatcher& m_dispatch;
  
-    /// The sequence number used for the next outgoing message
-    unsigned int m_outsequenceno;
+    /// The UUID of the remote endpoint for the connection
+    std::string m_uuid;
 };
 
-typedef boost::shared_ptr<CConnection> ConnectionPtr;
 
     } // namespace broker
 } // namespace freedm

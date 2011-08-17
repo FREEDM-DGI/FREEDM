@@ -43,6 +43,8 @@
 #define FREEDM_BROKER_HPP
 
 #include "CConnection.hpp"
+#include "CListener.hpp"
+#include "CReliableConnection.hpp"
 #include "CConnectionManager.hpp"
 #include "CDispatcher.hpp"
 
@@ -93,7 +95,7 @@ public:
     CDispatcher &m_dispatch;
 
     ///The Broker's pointer to the listening socket
-    ConnectionPtr m_newConnection;
+    CListener::ConnectionPtr m_newConnection;
 };
 
     } // namespace broker

@@ -1,5 +1,5 @@
 ////////////////////////////////////////////////////////////////////////////////
-/// @file           driver.hpp
+/// @file           CDeviceKey.cpp
 ///
 /// @author         Thomas Roth <tprfh7@mst.edu>
 ///
@@ -7,9 +7,7 @@
 ///
 /// @project        Missouri S&T Power Research Group
 ///
-/// @description
-///
-/// @functions
+/// @see            CDeviceKey.hpp
 ///
 /// These source code files were created at the Missouri University of Science
 /// and Technology, and are intended for use in teaching or research. They may
@@ -26,11 +24,21 @@
 ///
 ////////////////////////////////////////////////////////////////////////////////
 
-#include "CSimulationServer.hpp"
+#include "CDeviceKey.hpp"
 
-int main()
+bool operator<( const CDeviceKey & p_lhs, const CDeviceKey & p_rhs )
 {
-    CSimulationServer bob("xml",4000);
-    
-    return 0;
+    return( p_lhs.m_device < p_rhs.m_device
+        || (p_lhs.m_device == p_rhs.m_device && p_lhs.m_key < p_rhs.m_key) );
+}
+
+std::ostream & operator<<( std::ostream & p_os, const CDeviceKey & p_dkey )
+{
+    return( p_os << p_dkey.m_device << " " << p_dkey.m_key );
+}
+
+CDeviceKey::CDeviceKey( const std::string & p_device, const std::string & p_key )
+    : m_device(p_device), m_key(p_key)
+{
+    // skip
 }

@@ -35,6 +35,8 @@
 
 #include <boost/ref.hpp>
 #include <boost/asio.hpp>
+#include <boost/utility.hpp>
+#include <boost/shared_ptr.hpp>
 #include <boost/lexical_cast.hpp>
 
 #include "CLineServer.hpp"
@@ -53,9 +55,14 @@
 ///     none
 ///
 ////////////////////////////////////////////////////////////////////////////////
-class CSimulationInterface
+class CSimulationInterface : private boost::noncopyable
 {
 public:
+    typedef boost::shared_ptr<CSimulationInterface> TPointer;
+    
+    static TPointer Create( boost::asio::io_service & p_service, CDeviceTable & p_command,
+        CDeviceTable & p_state, unsigned short p_port, size_t p_index );
+private:
     ////////////////////////////////////////////////////////////////////////////
     /// CSimulationInterface( io_service &, CDeviceTable &, CDeviceTable &, unsigned short, size_t )
     ///
@@ -87,7 +94,7 @@ public:
     ////////////////////////////////////////////////////////////////////////////
     CSimulationInterface( boost::asio::io_service & p_service, CDeviceTable & p_command,
         CDeviceTable & p_state, unsigned short p_port, size_t p_index );
-private:
+    
     ////////////////////////////////////////////////////////////////////////////
     /// Set( const string &, const string &, const string & )
     ///

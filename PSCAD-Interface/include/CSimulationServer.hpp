@@ -167,7 +167,7 @@ private:
     void Run();
     
     // container of external cyber interfaces
-    std::list<CSimulationInterface> m_interface;
+    std::list<CSimulationInterface::TPointer> m_interface;
     
     // service used by all the sockets
     boost::asio::io_service m_service;

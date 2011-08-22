@@ -26,10 +26,9 @@
 
 #include "CLineServer.hpp"
 
-CLineServer::TPointer CLineServer::Create( boost::asio::io_service & p_service,
-    unsigned short p_port, TSetCallback p_set, TGetCallback p_get )
+CLineServer::TPointer CLineServer::Create( boost::asio::io_service & p_service, unsigned short p_port, TSetCallback p_set, TGetCallback p_get )
 {
-    return TPointer( new CLineServer(p_service, p_port, p_set, p_get) );
+    return TPointer( new CLineServer(p_service,p_port,p_set,p_get) );
 }
 
 CLineServer::CLineServer( boost::asio::io_service & p_service,

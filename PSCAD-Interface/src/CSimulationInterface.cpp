@@ -26,6 +26,12 @@
 
 #include "CSimulationInterface.hpp"
 
+CSimulationInterface::TPointer CSimulationInterface::Create( boost::asio::io_service & p_service,
+    CDeviceTable & p_command, CDeviceTable & p_state, unsigned short p_port, size_t p_index )
+{
+    return TPointer( new CSimulationInterface(p_service,p_command,p_state,p_port,p_index) );
+}
+
 CSimulationInterface::CSimulationInterface( boost::asio::io_service & p_service,
     CDeviceTable & p_command, CDeviceTable & p_state, unsigned short p_port, size_t p_index )
     : m_command(p_command), m_state(p_state), m_index(p_index)

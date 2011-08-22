@@ -60,16 +60,6 @@ class CLineClient : private boost::noncopyable
 {
 public:
     typedef boost::shared_ptr<CLineClient> TPointer;
-    
-    ////////////////////////////////////////////////////////////////////////////
-    /// Create( io_service & )
-    ///
-    /// @description
-    ///     Returns a shared pointer to a new line client.
-    ///
-    /// @see CLineClient( io_service & )
-    ///
-    ////////////////////////////////////////////////////////////////////////////
     static TPointer Create( boost::asio::io_service & p_service );
     
     ////////////////////////////////////////////////////////////////////////////

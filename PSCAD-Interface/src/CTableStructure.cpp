@@ -85,19 +85,25 @@ CTableStructure::CTableStructure( const std::string & p_xml, const std::string &
             throw std::out_of_range( error.str() );
         }
 
+        std::cout << "Device = " << device << std::endl;
+        std::cout << "Key = " << key << std::endl;
+        std::cout << "Parent List:\n";
         // initialize the parent list
         if( parent )
         {
             // if parent specified, use parent
             plist.insert(parent.get()-1);
+            std::cout << "\t" << parent.get() << std::endl;
         }
         else
         {
             // if parent not specified, universal access
             for( size_t i = nsst; i > 0; i-- )
             {
+                std::cout << "\t" << i;
                 plist.insert(i-1);
             }
+            std::cout << std::endl;
         }
         
         // store the table entry

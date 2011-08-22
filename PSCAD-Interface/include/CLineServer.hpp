@@ -61,15 +61,6 @@ public:
     typedef boost::function< std::string ( const std::string &, const std::string & ) > TGetCallback;
     typedef boost::shared_ptr<CLineServer> TPointer;
     
-    ////////////////////////////////////////////////////////////////////////////
-    /// Create( io_service &, unsigned short, TGetCallback, TSetCallback )
-    ///
-    /// @description
-    ///     Returns a shared pointer to a new line server.
-    ///
-    /// @see CLineServer( io_service &, unsigned short, TSetCallback, TGetCallback )
-    ///
-    ////////////////////////////////////////////////////////////////////////////
     static TPointer Create( boost::asio::io_service & p_service, unsigned short p_port, TSetCallback p_set, TGetCallback p_get );
     
     ////////////////////////////////////////////////////////////////////////////
@@ -128,7 +119,7 @@ private:
     ///
     ////////////////////////////////////////////////////////////////////////////
     CLineServer( boost::asio::io_service & p_service, unsigned short p_port, TSetCallback p_set, TGetCallback p_get );
-
+    
     ////////////////////////////////////////////////////////////////////////////
     /// StartAccept
     ///

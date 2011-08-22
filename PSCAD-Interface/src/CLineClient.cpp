@@ -26,7 +26,7 @@
 
 #include "CLineClient.hpp"
 
-CLineClient::TPointer CLineClient::Create( boost::asio::io_service & p_service )
+CLineClient::TPointer Create( boost::asio::io_service & p_service )
 {
     return TPointer( new CLineClient(p_service) );
 }

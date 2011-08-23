@@ -79,13 +79,14 @@ void CLineServer::MessageHandler( const boost::system::error_code & p_error )
         std::ostream response_stream( &response );
         
         bool quit = false;
+        size_t bytes;
         
         try
         {
             while( !quit )
             {
                 // receive the request stream and get the request type
-                boost::asio::read_until( m_socket, request, "\r\n" );
+                bytes = boost::asio::read_until( m_socket, request, "\r\n" );
                 request_stream >> request_code;
                 
                 // handle different message types
@@ -94,7 +95,9 @@ void CLineServer::MessageHandler( const boost::system::error_code & p_error )
                     // split the request stream
                     request_stream >> device >> key;
                     
+                    std::cerr << "GET " << device << " " << key;
                     value = m_get(device,key);
+                    std::cerr << " " << value << std::endl;
                     
                     // format the response stream
                     if( value.empty() )
@@ -111,6 +114,7 @@ void CLineServer::MessageHandler( const boost::system::error_code & p_error )
                     // split the request stream
                     request_stream >> device >> key >> value;
                     
+                    std::cerr << "SET " << device << " " << key << " " << value << std::endl;
                     m_set(device,key,value);
                     
                     // format the response stream
@@ -118,6 +122,7 @@ void CLineServer::MessageHandler( const boost::system::error_code & p_error )
                 }
                 else if( request_code == "QUIT" )
                 {
+                    std::cerr << "QUIT" << std::endl;
                     quit = true;
                     
                     // format the response stream
@@ -131,6 +136,7 @@ void CLineServer::MessageHandler( const boost::system::error_code & p_error )
                 
                 // send the response stream
                 boost::asio::write( m_socket, response );
+                request.consume( bytes );
             }
         }
         catch( std::exception & e )

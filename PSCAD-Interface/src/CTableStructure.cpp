@@ -25,7 +25,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 #include "CTableStructure.hpp"
-#include <iostream>
+
 CTableStructure::CTableStructure( const std::string & p_xml, const std::string & p_tag )
 {
     using boost::property_tree::ptree;
@@ -99,18 +99,7 @@ CTableStructure::CTableStructure( const std::string & p_xml, const std::string &
                 plist.insert(i);
             }
         }
-        
-        std::cerr << "(" << device << "," << key << ") in " << p_tag << std::endl;
-        std::cerr << "\tmapped to array index " << index << std::endl;
-        std::cerr << "\tparent list =";
-        
-        std::set<size_t>::iterator it, end;
-        for( it = plist.begin(), end = plist.end(); it != end; it++ )
-        {
-            std::cerr << " " << *it;
-        }
-        std::cerr << std::endl;
-        
+
         // store the table entry
         m_DeviceIndex.insert( TBimap::value_type(dkey,index-1) );
         m_DeviceParent.insert( std::map< CDeviceKey, std::set<size_t> >::value_type(dkey,plist) );

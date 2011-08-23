@@ -31,11 +31,6 @@ CDeviceTable::CDeviceTable( const std::string & p_xml, const std::string & p_tag
 {
     m_length    = m_structure.GetSize();
     m_data      = new double[m_length];
-    
-    for( size_t i = 0; i < m_length; i++ )
-    {
-        m_data[i] = 0;
-    }
 }
 
 double CDeviceTable::GetValue( const CDeviceKey & p_key, size_t p_index )

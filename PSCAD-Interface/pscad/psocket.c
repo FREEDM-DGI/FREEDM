@@ -15,7 +15,7 @@
 #define ERROR_SEND      6
 #define ERROR_RECV      7
 
-#define PKT_HEADER_SIZE 4
+#define PKT_HEADER_SIZE 8
 
 #define SENDLOG "pscad_send.log"
 #define RECVLOG "pscad_recv.log"
@@ -162,14 +162,14 @@ int send_packet( int sd, const char * header, const void * data, int bytes )
     
     // get size of header
     header_size = strlen(header);
-    if( header_size > PKT_HEADER_SIZE )
+    if( header_size >= PKT_HEADER_SIZE )
     {
         errno = ERROR_HEADER;
         return -1;
     }
     
     // allocate memory for packet
-    packet_size = PKT_HEADER_SIZE + 1 + bytes;
+    packet_size = PKT_HEADER_SIZE + bytes;
     packet = (char *)malloc(packet_size);
     {
         // store header at packet front
@@ -179,7 +179,7 @@ int send_packet( int sd, const char * header, const void * data, int bytes )
         if( bytes > 0 )
         {
             // store data after packet header
-            memcpy( packet+PKT_HEADER_SIZE+1, data, bytes );
+            memcpy( packet+PKT_HEADER_SIZE, data, bytes );
         }
         
         // send packet across socket
@@ -209,24 +209,11 @@ int receive_packet( int sd, void * data, int bytes )
 void pscad_send_init__( int * ip1, int * ip2, int * ip3, int * ip4, int * port,
         int * status )
 {
-    char request[] = "RST";
     char address[16];
-    int sd;
-    
+
     // get printable ip address
     itodd( address, *ip1, *ip2, *ip3, *ip4 );
-    
-    // connect to remote simulation server
-    if( (sd = connect_to_server( address, *port )) != -1 )
-    {
-        // send the reset request
-        if( send_packet( sd, request, 0, 0 ) != -1 )
-        {
-            errno = print_header( SENDLOG, address, *port );
-        }
-    }
-    
-    *status = print_result( SENDLOG, request, 0, 0 );
+    *status = print_header( SENDLOG, address, *port );
 }
 
 void pscad_send__( int * ip1, int * ip2, int * ip3, int * ip4, int * port,

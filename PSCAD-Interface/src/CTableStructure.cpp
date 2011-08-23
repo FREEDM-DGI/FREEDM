@@ -112,7 +112,7 @@ CTableStructure::CTableStructure( const std::string & p_xml, const std::string &
         std::cerr << std::endl;
         
         // store the table entry
-        m_DeviceIndex.insert( TBimap::value_type(dkey,index) );
+        m_DeviceIndex.insert( TBimap::value_type(dkey,index-1) );
         m_DeviceParent.insert( std::map< CDeviceKey, std::set<size_t> >::value_type(dkey,plist) );
     }
 }

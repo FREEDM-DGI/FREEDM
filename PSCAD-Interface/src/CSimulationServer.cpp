@@ -27,21 +27,24 @@
 #include "CSimulationServer.hpp"
 
 CSimulationServer::CSimulationServer( const std::string & p_xml, unsigned short p_port )
-    : m_port(p_port), m_command(p_xml,"command"), m_state(p_xml,"state")
+    : m_port(p_port), m_command(p_xml,"command"), m_state(p_xml,"state"), m_quit(false)
 {
     // read the xml input file
     boost::property_tree::ptree xmlTree;
     boost::property_tree::read_xml( p_xml, xmlTree );
     size_t interfaces = xmlTree.get<size_t>("SSTCount");
-
+    
     // start each interface with a unique port / identifier
     for( size_t i = 1; i <= interfaces; i++ )
     {
-        m_interface.push_back( CSimulationInterface::Create( m_service, m_state, m_command, (p_port + i), i ) );
+        m_interface.push_back( CSimulationInterface::Create( m_service, m_command, m_state, (p_port + i), i ) );
     }
-
+    
     // start the simulation server
     m_thread = boost::thread( &CSimulationServer::Run, this );
+    
+    // start i/o service
+    m_service.run();
 }
 
 CSimulationServer::~CSimulationServer()
@@ -72,10 +75,6 @@ void CSimulationServer::Run()
     acceptor.bind( endpoint );
     acceptor.listen();
 
-    // start the shared service
-    m_service.run();
-    m_quit = false;
-
     while( !m_quit )
     {
         // TODO: this blocks - makes m_quit rather pointless
@@ -85,7 +84,7 @@ void CSimulationServer::Run()
         
         // read the header of the next received packet
         boost::asio::read( socket, boost::asio::buffer(header) );
-        
+
         // message handler based on header type
         if( strcmp( header.data(), "GET" ) == 0 )
         {

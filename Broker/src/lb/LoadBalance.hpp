@@ -48,7 +48,8 @@ using boost::property_tree::ptree;
 #include "CMessage.hpp"
 #include "Utility.hpp"
 #include "LBPeerNode.hpp"
-#include "ExtensibleLineProtocol.hpp"
+//#include "ExtensibleLineProtocol.hpp"
+#include "CLineClient.hpp"
 #include "IHandler.hpp"
 #include "uuid.hpp"
 #include "CDispatcher.hpp"
@@ -94,7 +95,7 @@ public:
     
   enum { LISTEN_PORT = 1870 };
   static 	io_service 	service_;
-  CExtensibleLineClient::Pointer client_;
+  CLineClient::TPointer client_;
   
 	// Internal
 	void SendDraftRequest();

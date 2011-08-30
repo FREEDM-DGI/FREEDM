@@ -81,6 +81,7 @@
 using boost::property_tree::ptree;
 
 #include "logger.hpp"
+
 CREATE_EXTERN_STD_LOGS()
 
 namespace freedm {
@@ -101,6 +102,7 @@ namespace freedm {
   int count =0;
   lmcount=0;
   std::string line;
+  client_ = CLineClient::Create(ios);
   if (!ldFile) {
         std::cout << "\nUnable to open load file" << std::endl;
         exit(1);
@@ -189,7 +191,29 @@ void lbAgent::LoadManage()
    //   l_Status = LPeerNode::DEMAND;
    //   else
    //   l_Status = LPeerNode::NORM;
-  
+
+  #ifdef LWI 
+    //This section is for Lenoard Wood Institute project simulation server
+
+    //first let LineClient connect to PSCAD interface.
+  const std::string hostname = "butterfly";
+  const std::string port = "4001";    
+
+    client_->Connect(hostname, port);
+
+    //read from PSCAD
+    response_ = client_->Get("vrb","powerLevel");
+    from_string<float>(P_Load, response_, std::dec);
+    Logger::Notice << "Get(vrb): " << P_Load << std::endl;
+
+    //send commands to PSCAD
+    client_->Set("vrb", "onOffSwitch", "1" );
+    from_string<float>(P_Gateway, response_, std::dec);
+    Logger::Notice << "Set(vrb):" << P_Gateway<< std::endl;
+
+    //TODO: do some calculations based upon new readings and make decisions
+  #endif
+
   LoadTable();
 
   // On Load change from Normal to Demand, broadcast the change

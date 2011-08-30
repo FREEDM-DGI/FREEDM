@@ -86,30 +86,30 @@ class lbAgent : public IReadHandler, public LPeerNode, public Templates::Singlet
 public:
 	lbAgent(std::string &uuid_, boost::asio::io_service &ios, freedm::broker::CDispatcher 								      
 	         &p_dispatch,freedm::broker::CConnectionManager &m_conManager);
-	lbAgent( const lbAgent& );
+        //lbAgent( const lbAgent& );
 	lbAgent& operator = ( const lbAgent& );
 
-    // virtual function 
-  virtual ~lbAgent();   
+        // virtual function 
+        virtual ~lbAgent();   
 	void HandleRead(const ptree& pt );
     
-  enum { LISTEN_PORT = 1870 };
-  static 	io_service 	service_;
-  CLineClient::TPointer client_;
+        enum { LISTEN_PORT = 1870 };
+        static 	io_service 	service_;
+        CLineClient::TPointer client_;
   
 	// Internal
 	void SendDraftRequest();
 	void LoadTable();
 	int  priority() const;
 
-  // Data structures for reading from simulation file 
+        // Data structures for reading from simulation file 
 	std::string gen_s[100], load_s[100], gw_s[100];
 	std::string state[100];
-  std::string entry_, key_, response_;
-  int lmcount;
+        std::string entry_, key_, response_;
+        int lmcount;
     
-  void LoadManage();
-  void add_peer(std::string &u_);
+        void LoadManage();
+        void add_peer(std::string &u_);
 
 	// Handlers
 	void LoadManage( const boost::system::error_code& err );
@@ -118,36 +118,36 @@ public:
 	//void DStandard( const boost::system::error_code &err );
 
 	// This is the main loop of the algorithm
-    int	LB();
+        int	LB();
  
 private: 
-  LPeerNodePtr get_peer(std::string uuid_);
+        LPeerNodePtr get_peer(std::string uuid_);
 
-  //These overloaded functions are obsolete?
+        //These overloaded functions are obsolete?
 	LPeerNodePtr get_peer( const int p_id );
-  LPeerNodePtr get_peer( const boost::asio::ip::address &p_addr );
-  LPeerNodePtr get_peer( const int p_id, const boost::asio::ip::address &p_addr );
+        LPeerNodePtr get_peer( const boost::asio::ip::address &p_addr );
+        LPeerNodePtr get_peer( const int p_id, const boost::asio::ip::address &p_addr );
 
-  LBPeerSet	    m_HiNodes;
-  LBPeerSet     m_NoNodes;
+        LBPeerSet	    m_HiNodes;
+        LBPeerSet     m_NoNodes;
   	LBPeerSet     m_LoNodes;
   	LBPeerSet	    l_AllPeers;
 
 	std::vector<MessagePtr> 	m_Messages;
        
-  // The handler for all incoming requests.
-  boost::asio::io_service &m_ios;
-  freedm::broker::CDispatcher &m_dispatch;
-  freedm::broker::CConnectionManager &m_connManager;
+        // The handler for all incoming requests.
+        boost::asio::io_service &m_ios;
+        freedm::broker::CDispatcher &m_dispatch;
+        freedm::broker::CConnectionManager &m_connManager;
 
 	/* IO and Timers */
 	deadline_timer		m_GlobalTimer;
 	int 				peers;
-  boost::asio::ip::udp::endpoint m_RemoteEndpoint;
+        boost::asio::ip::udp::endpoint m_RemoteEndpoint;
 
-};
+  };
 
-  }
+}//namespace freedm
 //}
 
 #endif

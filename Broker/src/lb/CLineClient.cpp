@@ -26,9 +26,9 @@
 
 #include "CLineClient.hpp"
 
-CLineClient::TPointer Create( boost::asio::io_service & p_service )
+CLineClient::TPointer CLineClient::Create( boost::asio::io_service & p_service )
 {
-    return TPointer( new CLineClient(p_service) );
+  return CLineClient::TPointer( new CLineClient(p_service) );
 }
 
 CLineClient::CLineClient( boost::asio::io_service & p_service )
@@ -37,10 +37,10 @@ CLineClient::CLineClient( boost::asio::io_service & p_service )
     // skip
 }
 
-bool CLineClient::Connect( const std::string & p_hostname, const std::string & p_service )
+bool CLineClient::Connect( const std::string p_hostname, const std::string p_port )
 {
     boost::asio::ip::tcp::resolver resolver( m_socket.get_io_service() );
-    boost::asio::ip::tcp::resolver::query query( p_hostname, p_service );
+    boost::asio::ip::tcp::resolver::query query( p_hostname, p_port );
     boost::asio::ip::tcp::resolver::iterator it = resolver.resolve(query);
     boost::asio::ip::tcp::resolver::iterator end;
     
@@ -60,8 +60,8 @@ bool CLineClient::Connect( const std::string & p_hostname, const std::string & p
     return( it != end );
 }
 
-void CLineClient::Set( const std::string & p_device, const std::string & p_key,
-    const std::string & p_value )
+void CLineClient::Set( const std::string p_device, const std::string p_key,
+    const std::string p_value )
 {
     boost::asio::streambuf request;
     std::ostream request_stream( &request );
@@ -85,7 +85,7 @@ void CLineClient::Set( const std::string & p_device, const std::string & p_key,
     }
 }
 
-std::string CLineClient::Get( const std::string & p_device, const std::string & p_key )
+std::string CLineClient::Get( const std::string p_device, const std::string p_key )
 {
     boost::asio::streambuf request;
     std::ostream request_stream( &request );

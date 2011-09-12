@@ -79,7 +79,6 @@ CListener::CListener(boost::asio::io_service& p_ioService,
 void CListener::Start()
 {
     Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
-    Logger::Notice << "Connection Started" << std::endl;
     GetSocket().async_receive_from(boost::asio::buffer(m_buffer, 8192), m_endpoint,
         boost::bind(&CListener::HandleRead, this,
             boost::asio::placeholders::error, boost::asio::placeholders::bytes_transferred));
@@ -97,7 +96,6 @@ void CListener::Start()
 void CListener::Stop()
 {
     Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
-    GetSocket().close();
 }
  
 ///////////////////////////////////////////////////////////////////////////////
@@ -118,7 +116,7 @@ void CListener::SendACK(std::string uuid, std:: string hostname, unsigned int se
     GetConnectionManager().PutHostname(uuid,hostname);
     m_.SetStatus(freedm::broker::CMessage::Accepted);
     m_.SetSequenceNumber(sequenceno);
-    Logger::Notice<<"Send ACK #"<<sequenceno<<std::endl;
+    Logger::Info<<"Send ACK #"<<sequenceno<<std::endl;
     GetConnectionManager().GetConnectionByUUID(uuid, GetSocket().get_io_service(), GetDispatcher())->Send(m_,false);
 }
 
@@ -136,17 +134,17 @@ void CListener::SendACK(std::string uuid, std:: string hostname, unsigned int se
 ///////////////////////////////////////////////////////////////////////////////
 void CListener::HandleRead(const boost::system::error_code& e, std::size_t bytes_transferred)
 {
-    Logger::Notice << __PRETTY_FUNCTION__ << std::endl;       
+    Logger::Debug << __PRETTY_FUNCTION__ << std::endl;       
     if (!e)
     {
-        Logger::Notice << "Handled some message." << std::endl;
+        Logger::Info << "Handled some message." << std::endl;
         boost::tribool result_;
         boost::tie(result_, boost::tuples::ignore) = Parse(
             m_message, m_buffer.data(),
             m_buffer.data() + bytes_transferred);
         if (result_)
         {
-            // Unfortunately, this can't be done with the read handler
+            // Unfortunately, this (sequencing) can't be done with the read handler
             // So it has to be a bit messier. m_message is the incoming
             // CMessage. We scan this for the stamp that we place on a
             // Message before we send it with the sequence number:
@@ -154,21 +152,36 @@ void CListener::HandleRead(const boost::system::error_code& e, std::size_t bytes
             unsigned int sequenceno = m_message.GetSequenceNumber();
             std::string uuid = m_message.GetSourceUUID();
             std::string hostname = m_message.GetSourceHostname();
+            #ifdef CUSTOMNETWORK
+            if((rand()%100) >= GetReliability())
+            {
+                Logger::Info<<"Incoming Packet Dropped ("<<GetReliability()
+                              <<") -> "<<uuid<<std::endl;
+                goto listen;
+            }
+            #ifdef DATAGRAM
+            else
+            {
+                goto accept;
+            }
+            #endif
+            #endif
             if(m_message.GetStatus() == freedm::broker::CMessage::Accepted)
             {
-                Logger::Notice << "Got ACK #" << sequenceno << std::endl;
+                Logger::Info << "Got ACK #" << sequenceno << std::endl;
                 GetConnectionManager().PutHostname(uuid,hostname);
                 GetConnectionManager().GetConnectionByUUID(uuid, GetSocket().get_io_service(), GetDispatcher())->RecieveACK(sequenceno);
             }
             else if(m_message.GetStatus() == freedm::broker::CMessage::Created)
             {
+                Logger::Info << "Got SYN #" << sequenceno << std::endl;
                 m_insequenceno[uuid] = sequenceno;
                 SendACK(uuid,hostname,m_insequenceno[uuid]);
             }
             else if(m_insequenceno.find(uuid) != m_insequenceno.end())
             {
-                Logger::Notice << "Got Message #" << sequenceno << " expected " 
-                               << m_insequenceno[uuid]+1 << std::endl;
+                Logger::Info << "Got Message #" << sequenceno << " expected " 
+                               << m_insequenceno[uuid]+1 % GetSequenceModulo() << std::endl;
                 if(sequenceno == (m_insequenceno[uuid]+1) % GetSequenceModulo())
                 {
                     // The sequence number is what we expect.
@@ -184,6 +197,7 @@ void CListener::HandleRead(const boost::system::error_code& e, std::size_t bytes
                     // later we'll end in a "trust table" that epidemically
                     // distributes trust in the system. Messages are rejected until
                     // Trust is established or something. 
+                    accept:
                     GetDispatcher().HandleRequest(x);
                 }
                 else
@@ -192,6 +206,7 @@ void CListener::HandleRead(const boost::system::error_code& e, std::size_t bytes
                 }
             }
         }
+        listen:
         GetSocket().async_receive_from(boost::asio::buffer(m_buffer, 8192), m_endpoint,
             boost::bind(&CListener::HandleRead, this,
                 boost::asio::placeholders::error, boost::asio::placeholders::bytes_transferred)); 

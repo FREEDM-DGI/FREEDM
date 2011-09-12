@@ -120,6 +120,10 @@ void CConnection::Send(CMessage p_mesg, bool sequence)
 {
     Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
 
+    #ifdef DATAGRAM
+    sequence = false;
+    #endif
+
     //Make a call to the dispatcher to sign the messages
     //With a bunch of shiny stuff.
     ptree x = static_cast<ptree>(p_mesg);
@@ -161,7 +165,7 @@ void CConnection::Send(CMessage p_mesg, bool sequence)
         if(sequence == true)
         {
             m_timeout.cancel();
-            m_timeout.expires_from_now(boost::posix_time::milliseconds(1000));
+            m_timeout.expires_from_now(boost::posix_time::milliseconds(500));
             m_timeout.async_wait(boost::bind(&CConnection::Resend,this,
                 boost::asio::placeholders::error));
         }
@@ -183,6 +187,15 @@ void CConnection::HandleSend(CMessage msg)
 
     it_ = m_buffer.begin();
     boost::tie( result_, it_ ) = Synthesize( msg, it_, m_buffer.end() - it_ );
+
+    #ifdef CUSTOMNETWORK
+    if((rand()%100) >= GetReliability()) 
+    {
+        Logger::Info<<"Outgoing Packet Dropped ("<<GetReliability()
+                      <<") -> "<<GetUUID()<<std::endl;
+        return;
+    }
+    #endif
 
     GetSocket().async_send(boost::asio::buffer(m_buffer,
             (it_ - m_buffer.begin()) * sizeof(char) ), 
@@ -207,12 +220,15 @@ void CConnection::Resend(const boost::system::error_code& err)
     if(!err)
     {
         Logger::Debug << "Firing Resend"<<std::endl;
-        //There was no ack, we should pretty much do send, without
         if(!m_queue.IsEmpty())
         {
             m_timeouts++;
             GetSocket().get_io_service().post(
             boost::bind(&CConnection::HandleResend, this));
+            m_timeout.cancel();
+            m_timeout.expires_from_now(boost::posix_time::milliseconds(100));
+            m_timeout.async_wait(boost::bind(&CConnection::Resend,this,
+                boost::asio::placeholders::error));
         }
     }
     
@@ -250,7 +266,7 @@ void CConnection::SendSYN()
     Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
     freedm::broker::CMessage m_;
     m_.SetStatus(freedm::broker::CMessage::Created);
-    Logger::Notice<<"Sending SYN"<<std::endl;
+    Logger::Info<<"Sending SYN"<<std::endl;
     Send(m_);
 }
 
@@ -270,10 +286,10 @@ void CConnection::RecieveACK(unsigned int sequenceno)
     {
         unsigned int bounda = m_queue.front().first;
         unsigned int boundb = (m_queue.front().first+(GetWindowSize()))%GetSequenceModulo();
-        Logger::Notice<<"ACK, bounda:"<<bounda<<" boundb:"<<boundb<<"input: "<<sequenceno<<std::endl;
+        Logger::Debug<<"ACK, bounda:"<<bounda<<" boundb:"<<boundb<<"input: "<<sequenceno<<std::endl;
         if(bounda <= sequenceno || (sequenceno < boundb && boundb < bounda))
         {
-            Logger::Notice<<"ACK handled for "<<m_queue.front().first<<std::endl;
+            Logger::Info<<"ACK handled for "<<m_queue.front().first<<std::endl;
             m_queue.pop();
             m_timeouts = 0;
         }

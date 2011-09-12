@@ -88,8 +88,7 @@ void CConnectionManager::PutConnection(std::string uuid, ConnectionPtr c)
     Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
     {  
         boost::lock_guard< boost::mutex > scopedLock_( m_Mutex );
-        m_connections.insert(std::pair<std::string,ConnectionPtr>(uuid,c));
-        m_connections_r.insert(std::pair<ConnectionPtr,std::string>(c,uuid));
+        m_connections.insert(connectionmap::value_type(uuid,c));
     }   
 }
 
@@ -103,7 +102,7 @@ void CConnectionManager::PutConnection(std::string uuid, ConnectionPtr c)
 ///////////////////////////////////////////////////////////////////////////////
 void CConnectionManager::PutHostname(std::string u_, std::string host_)
 {
-    Logger::Notice << __PRETTY_FUNCTION__ << std::endl;  
+    Logger::Debug << __PRETTY_FUNCTION__ << std::endl;  
     {
         boost::lock_guard< boost::mutex > scopedLock_( m_Mutex );
         m_hostnames.insert(std::pair<std::string, std::string>(u_, host_));  
@@ -121,12 +120,9 @@ void CConnectionManager::PutHostname(std::string u_, std::string host_)
 void CConnectionManager::Stop (CConnection::ConnectionPtr c)
 {
     Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
-    std::string key;
-    if(m_connections_r.count(c))
+    if(m_connections.right.count(c))
     {
-        key = m_connections_r[c];
-        m_connections.erase(key);
-        m_connections_r.erase(c);
+        m_connections.right.erase(c);
     }
     c->Stop();
 }
@@ -158,11 +154,11 @@ void CConnectionManager::StopAll ()
     Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
     while(m_connections.size() > 0)
     {
-      Stop((*m_connections.begin()).second); //Side effect of stop should make this map smaller
+      Stop((*m_connections.left.begin()).second); //Side effect of stop should make this map smaller
     }
     m_connections.clear();
-    m_connections_r.clear();
     Stop(m_inchannel);
+    Logger::Debug << "All Connections Closed" << std::endl;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -209,23 +205,26 @@ ConnectionPtr CConnectionManager::GetConnectionByUUID
     std::string s_;
 
     // See if there is a connection in the open connections already
-    if(m_connections.count(uuid_))
+    if(m_connections.left.count(uuid_))
     {
-        if(m_connections[uuid_]->GetSocket().is_open())
+        if(m_connections.left.at(uuid_)->GetSocket().is_open())
         {
-            Logger::Notice << "Recycling connection to " << uuid_ << std::endl;
-            return m_connections[uuid_];
+            Logger::Info << "Recycling connection to " << uuid_ << std::endl;
+            #ifdef CUSTOMNETWORK
+            LoadNetworkConfig();
+            #endif
+            return m_connections.left.at(uuid_);
         }
         else
         {
-            Logger::Notice <<" Connection to " << uuid_ << " has gone stale " << std::endl;
+            Logger::Info <<" Connection to " << uuid_ << " has gone stale " << std::endl;
             //The socket is not marked as open anymore, we
             //should stop it.
-            Stop(m_connections[uuid_]);
+            Stop(m_connections.left.at(uuid_));
         }
     }  
 
-    Logger::Notice << "Making Fresh Connection to " << uuid_ << std::endl;
+    Logger::Info << "Making Fresh Connection to " << uuid_ << std::endl;
 
     // Find the requested host from the list of known hosts
     std::map<std::string, std::string>::iterator mapIt_;
@@ -246,7 +245,27 @@ ConnectionPtr CConnectionManager::GetConnectionByUUID
 
     //Once the connection is built, connection manager gets a call back to register it.    
     PutConnection(uuid_,c_);
+    #ifdef CUSTOMNETWORK
+    LoadNetworkConfig();
+    #endif
     return c_;
+}
+
+void CConnectionManager::LoadNetworkConfig()
+{
+    boost::property_tree::ptree pt;
+    boost::property_tree::read_xml("network.xml",pt);    
+    int inreliability = pt.get("network.incoming.reliability",100);
+    m_inchannel->SetReliability(inreliability); 
+    BOOST_FOREACH(ptree::value_type & child, pt.get_child("network.outgoing"))
+    {
+        std::string uuid = child.second.get<std::string>("<xmlattr>.uuid");
+        int reliability = child.second.get<int>("reliability");
+        if(m_connections.left.count(uuid) != 0)
+        {
+            m_connections.left.at(uuid)->SetReliability(reliability);
+        }
+    }  
 }
 
 } // namespace broker

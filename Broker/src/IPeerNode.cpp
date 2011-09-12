@@ -46,6 +46,7 @@
 #include <boost/shared_ptr.hpp>
 #include <sstream>
 
+#include "CConnection.hpp"
 #include "IPeerNode.hpp"
 
 CREATE_EXTERN_STD_LOGS()
@@ -73,7 +74,7 @@ void IPeerNode::SetStatus(int status)
     m_status = status;
 }
 
-ConnectionPtr IPeerNode::GetConnection()
+broker::ConnectionPtr IPeerNode::GetConnection()
 {
     return m_connmgr.GetConnectionByUUID(m_uuid,m_ios,m_dispatch);
 }
@@ -82,10 +83,11 @@ bool IPeerNode::Send(freedm::broker::CMessage msg)
 {
     try
     {
-        ConnectionPtr c = GetConnection();
+        broker::ConnectionPtr c = GetConnection();
         if(c.get() != NULL)
         {
-            GetConnection()->Send(msg);
+            //Schedule the send with the io_service thread
+            c->Send(msg);
         }
         else
         {
@@ -104,7 +106,8 @@ bool IPeerNode::Send(freedm::broker::CMessage msg)
 
 void IPeerNode::AsyncSend(freedm::broker::CMessage msg)
 {
-    m_ios.post(boost::bind(&IPeerNode::Send, shared_from_this(), msg));
+    //Depcreciated by UDP.
+    Send(msg);
 }
 
 bool operator==(const IPeerNode& a, const IPeerNode& b)

@@ -54,13 +54,8 @@
 
 
 namespace freedm {
-namespace broker {
-  class CMessage;
-  class CConnection;
-}
 typedef boost::shared_ptr<freedm::broker::CMessage> MessagePtr;
 typedef freedm::broker::CConnectionManager& ConnManagerPtr;
-typedef boost::shared_ptr<freedm::broker::CConnection> ConnectionPtr;
 //////////////////////////////////////////////////////////
 /// class IPeerNode
 ///
@@ -117,7 +112,7 @@ class IPeerNode
         /// @description Uses the connection manager to attempt to
         ///   get a connection pointer to this node.
         /////////////////////////////////////////////////////////////
-        ConnectionPtr GetConnection();
+        broker::ConnectionPtr GetConnection();
         /////////////////////////////////////////////////////////////
         /// @fn IPeerNode::GetConnectionManager
         /// @description Returns a reference to the connection manager

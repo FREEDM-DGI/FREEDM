@@ -90,6 +90,12 @@ public:
     /// Get the sequencing Modulo
     unsigned int GetSequenceModulo() { return SEQUENCEMODULO; }
 
+    /// Set the connection reliability for DCUSTOMNETWORK
+    void SetReliability(int r) { m_reliability = r; };
+    
+    /// Get the connection reliability for DCUSTOMNETWORK
+    int GetReliability() { return m_reliability; };
+
 private:
 
     /// Outgoing message Queue, window size
@@ -109,6 +115,9 @@ private:
  
     /// The UUID of the remote endpoint for the connection
     std::string m_uuid;
+
+    /// The reliability of the connection (FOR -DCUSTOMNETWORK)
+    int m_reliability;
 };
 
 

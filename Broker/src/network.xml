@@ -1,0 +1,14 @@
+<?zml version="1.0" encoding="UTF-8" ?>
+<network>
+<incoming>
+    <reliability>100</reliabilty>
+</incoming>
+<outgoing>
+<channel uuid='xyz'>
+    <reliability>100</reliability>
+</channel>
+<channel uuid='abc'>
+    <reliability>100</reliability>
+</channel>
+</outgoing>
+</network>

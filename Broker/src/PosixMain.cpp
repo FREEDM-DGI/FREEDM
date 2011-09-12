@@ -328,9 +328,7 @@ int main (int argc, char* argv[])
         pthread_sigmask(SIG_SETMASK, &old_mask, 0); 
         
         Logger::Info << "Starting thread of Modules" << std::endl;
-        boost::thread thread2_( boost::bind(&freedm::GMAgent::Run, &GM_)      
-        //                      , boost::bind(&freedm::lbAgent::LB, &LB_)
-                              );
+        boost::thread thread2_( boost::bind(&freedm::GMAgent::Run, &GM_) );
 
         // Wait for signal indicating time to shut down.
         sigset_t wait_mask;
@@ -343,11 +341,17 @@ int main (int argc, char* argv[])
         sigwait(&wait_mask, &sig);
         std::cout << "Shutting down cleanly." << std::endl;
 
+        // Stop the modules
+        GM_.Stop();
+
         // Stop the server.
         broker_.Stop();
        
+        // Bring in threads.
         thread_.join();
         thread2_.join();
+    
+        std::cout << "Goodbye..." << std::endl;
     }
     catch (std::exception& e)
     {

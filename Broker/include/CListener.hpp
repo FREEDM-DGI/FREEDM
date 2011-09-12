@@ -98,8 +98,7 @@ private:
     std::map<std::string,unsigned int> m_insequenceno;
 
     /// Have I seen a sync for a connection?
-    std::map<std::string, bool> m_synched;
-    
+    std::map<std::string, bool> m_synched;   
 };
 
 

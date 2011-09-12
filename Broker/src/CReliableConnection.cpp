@@ -68,6 +68,7 @@ CReliableConnection::CReliableConnection(boost::asio::io_service& p_ioService,
     m_uuid(uuid)
 {
     Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
+    m_reliability = 100;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

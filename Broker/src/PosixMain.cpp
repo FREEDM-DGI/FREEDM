@@ -49,7 +49,6 @@ namespace po = boost::program_options;
 
 #include "CDispatcher.hpp"
 #include "CBroker.hpp"
-#include "CUUIDHandler.hpp"
 #include "gm/GroupManagement.hpp"
 #include "lb/LoadBalance.hpp"
 #include "CConnectionManager.hpp"
@@ -251,14 +250,11 @@ int main (int argc, char* argv[])
                        << std::endl;
 
 
-        // Instantiate UUID handler
-        freedm::broker::CUUIDHandler uuidHandler_( u_ );
-
         // Instantiate Dispatcher for message delivery 
         freedm::broker::CDispatcher dispatch_;
     
         // Register UUID handler
-        dispatch_.RegisterWriteHandler( "any", &uuidHandler_ );
+        //dispatch_.RegisterWriteHandler( "any", &uuidHandler_ );
 
         // Run server in background thread          
         freedm::broker::CBroker broker_

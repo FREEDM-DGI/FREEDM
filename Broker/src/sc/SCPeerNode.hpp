@@ -41,7 +41,6 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/thread/mutex.hpp>
 
-#include "CUUIDHandler.hpp"
 #include "uuid.hpp"
 #include "CBroker.hpp"
 #include "CConnection.hpp"

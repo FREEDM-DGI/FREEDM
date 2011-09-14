@@ -65,25 +65,31 @@ class CDispatcher
   : private boost::noncopyable
 {
 public:
+    /// Constructor for the dispatcher
     CDispatcher();
 
-    // Called upon incoming message
+    /// Called upon incoming message
     void HandleRequest( const ptree &p_mesg );
 
-    // Called prior to sending a message
+    /// Called prior to sending a message
     void HandleWrite( ptree &p_mesg );
 
+    /// Registers a handler that will be called with HandleRequest
     void RegisterReadHandler( const std::string &p_type,
             IReadHandler *p_handler );
 
+    /// Registers a handler that will be called with HandleWrite
     void RegisterWriteHandler( const std::string &p_type,
             IWriteHandler *p_handler );
 private:
+    /// All the registered read handlers.
     std::map< const std::string, IReadHandler *> m_readHandlers;
+
+    /// All the registered write handlers.
     std::map< const std::string, IWriteHandler *> m_writeHandlers;
  
 
-    // Mutexes for protecting the handler maps above
+    /// Mutexes for protecting the handler maps above
     boost::mutex m_rMutex,
                  m_wMutex;
 

@@ -52,8 +52,10 @@ class CPhysicalDeviceManager
     : private boost::noncopyable
 {
 public:
+    /// A typedef for the mapping of identifier to device ptrs
     typedef std::map<IPhysicalDevice::Identifier,
                      IPhysicalDevice::DevicePtr> PhysicalDeviceSet;
+    /// A typedef providing and iertaror for this object
     typedef PhysicalDeviceSet::iterator iterator;
     /// Initialize the physical device manger
     CPhysicalDeviceManager();

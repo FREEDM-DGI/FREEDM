@@ -50,17 +50,17 @@ using boost::property_tree::ptree;
 namespace freedm {
     namespace broker {
 ///////////////////////////////////////////////////////////////////////////////
-/// CConnection::CConnection
-/// @description: Constructor for the CConnection object. Since the change to
+/// @fn CConnection::CConnection
+/// @description Constructor for the CConnection object. Since the change to
 ///   udp, this object can act either as a listener or sender (but not both)
 ///   to have the object behave as a listener, Start() should be called on it.
-/// @pre: An initialized socket is ready to be converted to a connection.
-/// @post: A new CConnection object is initialized.
-/// @param p_ioService: The socket to use for the connection.
-/// @param p_manager: The related connection manager that tracks this object.
-/// @param p_dispatch: The dispatcher responsible for applying read/write 
+/// @pre An initialized socket is ready to be converted to a connection.
+/// @post A new CConnection object is initialized.
+/// @param p_ioService The socket to use for the connection.
+/// @param p_manager The related connection manager that tracks this object.
+/// @param p_dispatch The dispatcher responsible for applying read/write 
 ///   handlers to messages.
-/// @param uuid: The uuid this node connects to, or what listener.
+/// @param uuid The uuid this node connects to, or what listener.
 ///////////////////////////////////////////////////////////////////////////////
 CConnection::CConnection(boost::asio::io_service& p_ioService,
   CConnectionManager& p_manager, CDispatcher& p_dispatch, std::string uuid)
@@ -74,11 +74,11 @@ CConnection::CConnection(boost::asio::io_service& p_ioService,
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// CConnection::Start
-/// @description: Starts the recieve routine which causes this socket to behave
+/// @fn CConnection::Start
+/// @description Starts the recieve routine which causes this socket to behave
 ///   as a listener.
-/// @pre: The object is initialized.
-/// @post: The connection is asynchronously waiting for messages.
+/// @pre The object is initialized.
+/// @post The connection is asynchronously waiting for messages.
 ///////////////////////////////////////////////////////////////////////////////
 void CConnection::Start()
 {
@@ -86,12 +86,12 @@ void CConnection::Start()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// CConnection::Stop
-/// @description: Stops the socket and cancels the timeout timer. Does not
+/// @fn CConnection::Stop
+/// @description Stops the socket and cancels the timeout timer. Does not
 ///   need to be called on a listening connection (ie one that has had
 ///   Start() called on it.
-/// @pre: Any initialized CConnection object.
-/// @post: The underlying socket is closed and the message timeout timer is
+/// @pre Any initialized CConnection object.
+/// @post The underlying socket is closed and the message timeout timer is
 ///        cancelled.
 ///////////////////////////////////////////////////////////////////////////////
 void CConnection::Stop()
@@ -102,17 +102,17 @@ void CConnection::Stop()
 }
  
 ///////////////////////////////////////////////////////////////////////////////
-/// CConnection::Send
-/// @description: Given a message and wether or not it should be sequenced,
+/// @fn CConnection::Send
+/// @description Given a message and wether or not it should be sequenced,
 ///   write that message to the channel.
-/// @pre: The CConnection object is initialized.
-/// @post: If the window is in not full, the message will have been written to
+/// @pre The CConnection object is initialized.
+/// @post If the window is in not full, the message will have been written to
 ///   to the channel. Before being sent the message has been signed with the
 ///   UUID, source hostname and sequence number (if it is being sequenced).
 ///   If the message is being sequenced  and the window is not already full,
 ///   the timeout timer is cancelled and reset.
-/// @param p_mesg: A CMessage to write to the channel.
-/// @param sequence: if true, the message will be sequenced and reliably
+/// @param p_mesg A CMessage to write to the channel.
+/// @param sequence if true, the message will be sequenced and reliably
 ///   delievered in order. Otherwise it is immediately fired and forgotten.
 ///   this is mostly meant for use with ACKs. True by default.
 ///////////////////////////////////////////////////////////////////////////////
@@ -173,11 +173,11 @@ void CConnection::Send(CMessage p_mesg, bool sequence)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// CConnection::HandleSend
-/// @description: This function synthesizes the input CMessage and writes it to
+/// @fn CConnection::HandleSend
+/// @description This function synthesizes the input CMessage and writes it to
 ///   the channel.
-/// @pre: The CConnection is initialized.
-/// @post: A CMessage has been written to the socket for this connection.
+/// @pre The CConnection is initialized.
+/// @post A CMessage has been written to the socket for this connection.
 ///////////////////////////////////////////////////////////////////////////////
 void CConnection::HandleSend(CMessage msg)
 {
@@ -204,14 +204,14 @@ void CConnection::HandleSend(CMessage msg)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// CConnection::Resend
-/// @description: The callback for the timeout timer. If the timeout timer
+/// @fn CConnection::Resend
+/// @description The callback for the timeout timer. If the timeout timer
 ///   expires and the message queue is not empty, this function marks that
 ///   there was a timeout and calls the HandleResend method to refire the
 ///   window. Otherwise, this function simply exits.
-/// @param err: The error code for the expiring timer.
-/// @pre: The timeout timer has just expired or been cancelled.
-/// @post: If the timer was not cancelled and there are messages in the queue
+/// @param err The error code for the expiring timer.
+/// @pre The timeout timer has just expired or been cancelled.
+/// @post If the timer was not cancelled and there are messages in the queue
 ///   the queue is resent.
 ///////////////////////////////////////////////////////////////////////////////
 void CConnection::Resend(const boost::system::error_code& err)
@@ -235,11 +235,11 @@ void CConnection::Resend(const boost::system::error_code& err)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// CConnection::HandleResend
-/// @description: After being called, this method sends up WINDOWSIZE messages
+/// @fn CConnection::HandleResend
+/// @description After being called, this method sends up WINDOWSIZE messages
 ///   to retry delievery.
-/// @pre: Initialized CConnection.
-/// @post: Upto WINDOWSIZE messages are rewritten to the channel.
+/// @pre Initialized CConnection.
+/// @post Upto WINDOWSIZE messages are rewritten to the channel.
 ///////////////////////////////////////////////////////////////////////////////
 void CConnection::HandleResend()
 {
@@ -255,7 +255,7 @@ void CConnection::HandleResend()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// CConnection::SendSYN
+/// @fn CConnection::SendSYN
 /// @description Synchronosizes the reciever to expect the next message to have
 ///   the sequence number 1
 /// @pre Initialized connection.
@@ -271,13 +271,13 @@ void CConnection::SendSYN()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// CConnection::RecieveACK
-/// @description: Handler for recieving acknowledgments from a sender.
-/// @pre: Initialized connection.
-/// @post: The message with sequence number has been acknowledged and all
+/// @fn CConnection::RecieveACK
+/// @description Handler for recieving acknowledgments from a sender.
+/// @pre Initialized connection.
+/// @post The message with sequence number has been acknowledged and all
 ///   messages sent before that message have been considered acknowledged as
 ///   well.
-/// @param sequenceno: The message to consider as acknowledged.
+/// @param sequenceno The message to consider as acknowledged.
 ///////////////////////////////////////////////////////////////////////////////
 void CConnection::RecieveACK(unsigned int sequenceno)
 {
@@ -305,12 +305,12 @@ void CConnection::RecieveACK(unsigned int sequenceno)
     }
 }
 ///////////////////////////////////////////////////////////////////////////////
-/// CConnection::HandleWrite
-/// @description: Write callback. Closes the connection on error, does nothing
+/// @fn CConnection::HandleWrite
+/// @description Write callback. Closes the connection on error, does nothing
 ///   otherwise.
-/// @param e: The error that occured if any.
-/// @pre: A message has been written to the channel.
-/// @post: If there was an error the socket has been closed.
+/// @param e The error that occured if any.
+/// @pre A message has been written to the channel.
+/// @post If there was an error the socket has been closed.
 ///////////////////////////////////////////////////////////////////////////////
 void CConnection::HandleWrite(const boost::system::error_code& e)
 {

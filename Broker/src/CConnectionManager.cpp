@@ -47,10 +47,10 @@ namespace freedm {
 namespace broker {
 
 ///////////////////////////////////////////////////////////////////////////////
-/// CConnectionManager::CConnectionManager
+/// @fn CConnectionManager::CConnectionManager
 /// @description: Initializes the connection manager object
-/// @pre: None
-/// @post: Connection manager is ready for use
+/// @pre None
+/// @post Connection manager is ready for use
 /// @param uuid: The uuid of this node
 /// @param hostname: the hostname of this node
 ///////////////////////////////////////////////////////////////////////////////
@@ -62,11 +62,11 @@ CConnectionManager::CConnectionManager(freedm::uuid uuid, std::string hostname)
 };
 
 ///////////////////////////////////////////////////////////////////////////////
-/// CConnectionManager::Start
-/// @description: Performs intialization of a connection.
-/// @pre: The connection c has not been started.
-/// @post: The connection c has been started.
-/// @param c: A connection pointer that has not been started.
+/// @fn CConnectionManager::Start
+/// @description Performs intialization of a connection.
+/// @pre The connection c has not been started.
+/// @post The connection c has been started.
+/// @param c A connection pointer that has not been started.
 ///////////////////////////////////////////////////////////////////////////////
 void CConnectionManager::Start (CListener::ConnectionPtr c)
 {
@@ -76,12 +76,12 @@ void CConnectionManager::Start (CListener::ConnectionPtr c)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// CConnectionManager::PutConnection
+/// @fn CConnectionManager::PutConnection
 /// @description Inserts a connection into the connection map.
-/// @param uuid: The uuid of the node the connection is to.
-/// @param c: The connection pointer that goes to the node in question.
-/// @pre: The connection is initialized.
-/// @post: The connection has been inserted into the connection map.
+/// @param uuid The uuid of the node the connection is to.
+/// @param c The connection pointer that goes to the node in question.
+/// @pre The connection is initialized.
+/// @post The connection has been inserted into the connection map.
 ///////////////////////////////////////////////////////////////////////////////
 void CConnectionManager::PutConnection(std::string uuid, ConnectionPtr c)
 {
@@ -93,12 +93,12 @@ void CConnectionManager::PutConnection(std::string uuid, ConnectionPtr c)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// CConnectionManager::PutHostname
+/// @fn CConnectionManager::PutHostname
 /// @description Registers a hostname with the uuid to hostname map.
-/// @pre: None
-/// @post: The hostname is registered with the uuid to hostname map.
-/// @param u_: the uuid to enter into the map.
-/// @param host_: The hostname to enter into the map.
+/// @pre None
+/// @post The hostname is registered with the uuid to hostname map.
+/// @param u_ the uuid to enter into the map.
+/// @param host_ The hostname to enter into the map.
 ///////////////////////////////////////////////////////////////////////////////
 void CConnectionManager::PutHostname(std::string u_, std::string host_)
 {
@@ -111,10 +111,10 @@ void CConnectionManager::PutHostname(std::string u_, std::string host_)
 
 
 ///////////////////////////////////////////////////////////////////////////////
-/// CConnectionManager::Stop
+/// @fn CConnectionManager::Stop
 /// @description Stops a connection and removes it from the connections maps.
-/// @pre: The connection is in the connections map.
-/// @post: The connection is closed and removed from the map.
+/// @pre The connection is in the connections map.
+/// @post The connection is closed and removed from the map.
 /// @param c the connection pointer to stop.
 ///////////////////////////////////////////////////////////////////////////////
 void CConnectionManager::Stop (CConnection::ConnectionPtr c)
@@ -128,10 +128,10 @@ void CConnectionManager::Stop (CConnection::ConnectionPtr c)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// CConnectionManager::Stop
+/// @fn CConnectionManager::Stop
 /// @description Stops the listener connection
-/// @pre: The connection is the listener connection.
-/// @post: The connection is closed.
+/// @pre The connection is the listener connection.
+/// @post The connection is closed.
 /// @param c the connection pointer to stop.
 ///////////////////////////////////////////////////////////////////////////////
 void CConnectionManager::Stop (CListener::ConnectionPtr c)
@@ -142,11 +142,11 @@ void CConnectionManager::Stop (CListener::ConnectionPtr c)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// CConnectionManager::StopAll
-/// @description: Repeatedly pops a connection and stops it until the forward
+/// @fn CConnectionManager::StopAll
+/// @description Repeatedly pops a connection and stops it until the forward
 ///               connection map is empty, then clears the reverse map.
-/// @pre: None
-/// @post: The forward and reverse connection maps are empty, and all
+/// @pre None
+/// @post The forward and reverse connection maps are empty, and all
 ///        connections that were contained within them are stopped.
 ///////////////////////////////////////////////////////////////////////////////
 void CConnectionManager::StopAll ()
@@ -162,13 +162,13 @@ void CConnectionManager::StopAll ()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// CConnectionManager::GetHostnameByUUID
+/// @fn CConnectionManager::GetHostnameByUUID
 /// @description Tries to fetch the hostname of a given uuid from the hostnames
 ///              table.
-/// @param uuid: The uuid to look up.
+/// @param uuid The uuid to look up.
 /// @pre None
 /// @post No change.
-/// @return: The hostname of the node with that uuid or an empty string.
+/// @return The hostname of the node with that uuid or an empty string.
 ///////////////////////////////////////////////////////////////////////////////
 std::string CConnectionManager::GetHostnameByUUID(std::string uuid) const
 {
@@ -183,14 +183,14 @@ std::string CConnectionManager::GetHostnameByUUID(std::string uuid) const
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// CConnectionManager::GetConnectionByUUID
+/// @fn CConnectionManager::GetConnectionByUUID
 /// @description Constructs or retrieves from cache a connection to a specific
 ///              UUID.
-/// @param uuid_: The uuid to construct a connection to
-/// @param ios: The ioservice the connection will use.
-/// @param dispatch_: The dispatcher the connection will use
-/// @pre: None
-/// @post: If a connection has been constructed it will be put in the
+/// @param uuid_ The uuid to construct a connection to
+/// @param ios The ioservice the connection will use.
+/// @param dispatch_ The dispatcher the connection will use
+/// @pre None
+/// @post If a connection has been constructed it will be put in the
 ///        connections table and has been started. If the connection is not
 ///        constructed there is no change to the connection table.
 /// @return A pointer to the connection, or NULL if construction failed for
@@ -251,6 +251,14 @@ ConnectionPtr CConnectionManager::GetConnectionByUUID
     return c_;
 }
 
+///////////////////////////////////////////////////////////////////////////////
+/// @fn CConnectionManager::LoadNetworkConfig
+/// @description Accesses the network.xml file and parses it, setting the
+///   network reliability for all specified interfaces. Only enabled with the
+///   -DCUSTOMNETWORK compile option
+/// @pre None
+/// @post All connections in the file are modified to behave as specified.
+///////////////////////////////////////////////////////////////////////////////
 void CConnectionManager::LoadNetworkConfig()
 {
     boost::property_tree::ptree pt;

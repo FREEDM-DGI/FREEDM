@@ -54,7 +54,7 @@ namespace freedm {
 
 class CConnectionManager;
 
-/// Represents a single CConnection to a client.
+/// Represents a single outgoing connection to a client.
 class CConnection
     : public CReliableConnection
 {

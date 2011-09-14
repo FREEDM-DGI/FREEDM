@@ -44,13 +44,27 @@ CREATE_EXTERN_STD_LOGS()
 namespace freedm {
     namespace broker {
 
+///////////////////////////////////////////////////////////////////////////////
+/// @fn CDispatcher::CDispatcher
+/// @description Dispatcher constructor
+/// @pre None
+/// @post None
+///////////////////////////////////////////////////////////////////////////////
 CDispatcher::CDispatcher()
 {
     Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
 
 }
 
-// Called upon incoming message
+///////////////////////////////////////////////////////////////////////////////
+/// @fn CDispatcher::HandleRequest
+/// @description Given an input property tree determine which handlers should
+///   be given the message out of a pool of modules and deliever the message
+///   as appropriate.
+/// @pre Modules have registered their read handlers.
+/// @post Message delievered to a module
+/// @param p_mesg The message to distribute to modules
+///////////////////////////////////////////////////////////////////////////////
 void CDispatcher::HandleRequest( const ptree &p_mesg )
 {
     Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
@@ -119,8 +133,14 @@ void CDispatcher::HandleRequest( const ptree &p_mesg )
 
 }
 
-
-// Called prior to sending a message
+///////////////////////////////////////////////////////////////////////////////
+/// @fn CDispatcher::HandleWrite
+/// @description Handles calling modules write handlers which allows them to
+///   touch messages before they are sent.
+/// @pre Write handlers have been registered with the dispatcher
+/// @post The outgoing message is touched before being delivered.
+/// @param p_mesg The message to affect before sending them out.
+///////////////////////////////////////////////////////////////////////////////
 void CDispatcher::HandleWrite( ptree &p_mesg )
 {
     Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
@@ -186,6 +206,16 @@ void CDispatcher::HandleWrite( ptree &p_mesg )
     }
 }
 
+///////////////////////////////////////////////////////////////////////////////
+/// @fn CDispatcher::RegisterReadHandler
+/// @description Registers a module that provides a read handler with the
+///   dispatcher.
+/// @pre A module that inherits from IReadHandler is provided.
+/// @post A module is registered with a read handler.
+/// @param p_type the tree key used to identify which messages the module
+///   would like to recieve.
+/// @param p_handler The module which will be called to recieve the message.
+///////////////////////////////////////////////////////////////////////////////
 void CDispatcher::RegisterReadHandler( const std::string &p_type,
         IReadHandler *p_handler )
 {
@@ -201,6 +231,17 @@ void CDispatcher::RegisterReadHandler( const std::string &p_type,
     }
 }
 
+///////////////////////////////////////////////////////////////////////////////
+/// @fn CDispatcher::RegisterWriteHandler
+/// @description Registers a module that provides a write handler with the
+///   dispatcher.
+/// @pre A module that inhertis from IWriteHandler is provided
+/// @post The module will be registered to touch outgoing messages that contain
+///   the p_type key.
+/// @param p_type A ptree key that will be used to identify which messages 
+///   should be touched.
+/// @param p_handler The module that will be invoked to perform the touch
+///////////////////////////////////////////////////////////////////////////////
 void CDispatcher::RegisterWriteHandler( const std::string &p_type,
         IWriteHandler *p_handler )
 {

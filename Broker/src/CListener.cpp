@@ -50,15 +50,15 @@ using boost::property_tree::ptree;
 namespace freedm {
     namespace broker {
 ///////////////////////////////////////////////////////////////////////////////
-/// CListener::CListener
-/// @description: Constructor for the CConnection object. Since the change to
+/// @fn CListener::CListener
+/// @description Constructor for the CConnection object. Since the change to
 ///   udp, this object can act either as a listener or sender (but not both)
 ///   to have the object behave as a listener, Start() should be called on it.
-/// @pre: An initialized socket is ready to be converted to a connection.
-/// @post: A new CConnection object is initialized.
-/// @param p_ioService: The socket to use for the connection.
-/// @param p_manager: The related connection manager that tracks this object.
-/// @param p_dispatch: The dispatcher responsible for applying read/write 
+/// @pre An initialized socket is ready to be converted to a connection.
+/// @post A new CConnection object is initialized.
+/// @param p_ioService The socket to use for the connection.
+/// @param p_manager The related connection manager that tracks this object.
+/// @param p_dispatch The dispatcher responsible for applying read/write 
 ///   handlers to messages.
 /// @param uuid: The uuid this node connects to, or what listener.
 ///////////////////////////////////////////////////////////////////////////////
@@ -70,11 +70,11 @@ CListener::CListener(boost::asio::io_service& p_ioService,
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// CListener::Start
+/// @fn CListener::Start
 /// @description: Starts the recieve routine which causes this socket to behave
 ///   as a listener.
-/// @pre: The object is initialized.
-/// @post: The connection is asynchronously waiting for messages.
+/// @pre The object is initialized.
+/// @post The connection is asynchronously waiting for messages.
 ///////////////////////////////////////////////////////////////////////////////
 void CListener::Start()
 {
@@ -85,12 +85,12 @@ void CListener::Start()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// CListener::Stop
-/// @description: Stops the socket and cancels the timeout timer. Does not
+/// @fn CListener::Stop
+/// @description Stops the socket and cancels the timeout timer. Does not
 ///   need to be called on a listening connection (ie one that has had
 ///   Start() called on it.
-/// @pre: Any initialized CConnection object.
-/// @post: The underlying socket is closed and the message timeout timer is
+/// @pre Any initialized CConnection object.
+/// @post The underlying socket is closed and the message timeout timer is
 ///        cancelled.
 ///////////////////////////////////////////////////////////////////////////////
 void CListener::Stop()
@@ -99,13 +99,13 @@ void CListener::Stop()
 }
  
 ///////////////////////////////////////////////////////////////////////////////
-/// CListener::SendACK
-/// @description: Sends an acknowledgement of message reciept back to sender.
-/// @param uuid: The uuid to send the message to.
-/// @param hostname: The hostname to send the message to.
-/// @param sequenceno: The message number being acked.
-/// @pre: Initialized connection.
-/// @post: If the sender is not already in the hostname table it will be added.
+/// @fn CListener::SendACK
+/// @description Sends an acknowledgement of message reciept back to sender.
+/// @param uuid The uuid to send the message to.
+/// @param hostname The hostname to send the message to.
+/// @param sequenceno The message number being acked.
+/// @pre Initialized connection.
+/// @post If the sender is not already in the hostname table it will be added.
 ///   then a connection is established to that node and an acknowledgment sent.
 //////////////////////////////////////////////////////////////////////////////
 void CListener::SendACK(std::string uuid, std:: string hostname, unsigned int sequenceno)
@@ -121,13 +121,13 @@ void CListener::SendACK(std::string uuid, std:: string hostname, unsigned int se
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// CListener::HandleRead
-/// @description: The callback which accepts messages from the remote sender.
-/// @param e: The errorcode if any associated.
-/// @param bytes_transferred: The size of the datagram being read.
-/// @pre: The connection has had start called and some message has been placed
+/// @fn CListener::HandleRead
+/// @description The callback which accepts messages from the remote sender.
+/// @param e The errorcode if any associated.
+/// @param bytes_transferred The size of the datagram being read.
+/// @pre The connection has had start called and some message has been placed
 ///   in the buffer by the recieve call.
-/// @post: The message has been delivered. This means that write connections
+/// @post The message has been delivered. This means that write connections
 ///   have been notified of ACK and standard messages have been redirected to
 ///   their appropriate places by the dispatcher. The incoming sequence number
 ///   for the source UUID has been incremented appropriately.

@@ -19,7 +19,7 @@ if(Boost_FOUND)
     set(COMMON_FLAGS "")
     # Add DCUSTOMNETWORK for network.xml support
     # Add DDATAGRAM for UDP Datagram service w/o sequencing.
-    set(CMAKE_CXX_FLAGS "-std=c++98 ${COMMON_FLAGS}")
+    set(CMAKE_CXX_FLAGS "-std=c++98 ${COMMON_FLAGS} -DCUSTOMNETWORK -DDATAGRAM")
     
 
     # include project source directories

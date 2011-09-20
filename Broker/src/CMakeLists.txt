@@ -15,6 +15,7 @@ set(
     lb/CLineClient.cpp
     lb/LoadBalance.cpp
     lb/LBPeerNode.cpp
+    sc/CStateCollection.cpp
     )
 
 # set BROKER_VERSION macro : cp version.h.cmake version.h

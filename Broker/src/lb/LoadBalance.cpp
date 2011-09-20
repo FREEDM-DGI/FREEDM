@@ -81,7 +81,6 @@
 using boost::property_tree::ptree;
 
 #include "logger.hpp"
-
 CREATE_EXTERN_STD_LOGS()
 
 namespace freedm {
@@ -102,7 +101,6 @@ namespace freedm {
   int count =0;
   lmcount=0;
   std::string line;
-  client_ = CLineClient::Create(ios);
   if (!ldFile) {
         std::cout << "\nUnable to open load file" << std::endl;
         exit(1);
@@ -191,29 +189,7 @@ void lbAgent::LoadManage()
    //   l_Status = LPeerNode::DEMAND;
    //   else
    //   l_Status = LPeerNode::NORM;
-
-  #ifdef LWI 
-    //This section is for Lenoard Wood Institute project simulation server
-
-    //first let LineClient connect to PSCAD interface.
-  const std::string hostname = "butterfly";
-  const std::string port = "4001";    
-
-    client_->Connect(hostname, port);
-
-    //read from PSCAD
-    response_ = client_->Get("vrb","powerLevel");
-    from_string<float>(P_Load, response_, std::dec);
-    Logger::Notice << "Get(vrb): " << P_Load << std::endl;
-
-    //send commands to PSCAD
-    client_->Set("vrb", "onOffSwitch", "1" );
-    from_string<float>(P_Gateway, response_, std::dec);
-    Logger::Notice << "Set(vrb):" << P_Gateway<< std::endl;
-
-    //TODO: do some calculations based upon new readings and make decisions
-  #endif
-
+  
   LoadTable();
 
   // On Load change from Normal to Demand, broadcast the change
@@ -736,13 +712,14 @@ return;
      // "load" message is sent by the State Collection module of the source 
      // (local or remote). Repond to it by sending in your current load status
      else if(pt.get<std::string>("lb") == "load"){
-       Logger::Notice << "Current Load State requested by " << peer_->uuid_ << std::endl;
+       Logger::Notice << "Current Load State requested by " << uuid_ << std::endl;
        
        freedm::broker::CMessage m_;
        std::stringstream ss_;   
        ss_ << uuid_;
        ss_ >> m_.m_srcUUID;
-       m_.m_submessages.put("statecollection.source", ss_.str());
+       m_.m_submessages.put("sc", "load");
+       m_.m_submessages.put("sc.source", ss_.str());
        ss_.clear();
        
        if (LPeerNode::SUPPLY == l_Status){
@@ -760,11 +737,11 @@ return;
         ss_.str("Unknown");
         }
        
-       m_.m_submessages.put("statecollection.load", ss_.str());
+       m_.m_submessages.put("sc.status", ss_.str());
        
        try
            {
-             m_connManager.GetConnectionByUUID(peer_->uuid_, m_ios, m_dispatch)->Send(m_);
+             m_connManager.GetConnectionByUUID(uuid_, m_ios, m_dispatch)->Send(m_);
             }
        catch (boost::system::system_error& e)
             {

@@ -227,28 +227,48 @@ int main (int argc, char* argv[])
         boost::asio::io_service m_ios;
 
         // Intialize Devices
+	freedm::broker::CGenericDevice::DevicePtr sst(
+            new freedm::broker::CGenericDevice(m_phyManager,std::string("sst")));
+        
         freedm::broker::CGenericDevice::DevicePtr m_gendev0(
-            new freedm::broker::CGenericDevice(m_phyManager,std::string("gendev0")));
+            new freedm::broker::CGenericDevice(m_phyManager,std::string("gendev0"), 
+            freedm::broker::physicaldevices::DRER));
 
         freedm::broker::CGenericDevice::DevicePtr m_gendev1(
-            new freedm::broker::CGenericDevice(m_phyManager,std::string("gendev1")));
+            new freedm::broker::CGenericDevice(m_phyManager,std::string("gendev1"), 
+            freedm::broker::physicaldevices::DRER));
+
+        freedm::broker::CGenericDevice::DevicePtr m_stodev0(
+            new freedm::broker::CGenericDevice(m_phyManager,std::string("stodev0"), 
+            freedm::broker::physicaldevices::DESD)); 
+
+       	freedm::broker::CGenericDevice::DevicePtr m_loaddev0(
+            new freedm::broker::CGenericDevice(m_phyManager,std::string("loaddev0"),
+            freedm::broker::physicaldevices::LOAD));          
 
         // Register Devices
         m_phyManager.AddDevice(m_gendev0);
         m_phyManager.AddDevice(m_gendev1);
+        m_phyManager.AddDevice(m_stodev0);
+        m_phyManager.AddDevice(m_loaddev0);
         
         // Quick Test
-        m_gendev0->Set("Vout",3.14);
-        m_gendev1->Set("Vout",4.15);
-
+        m_gendev0->Set("vin",3.14);
+        m_gendev1->Set("vin",4.15);
+	m_stodev0->Set("vin",3);
+	m_loaddev0->Set("vin",6.2);
+	
         // And read it back
-        Logger::Notice << "Devices Check 1!"<<m_gendev0->Get("Vout")
-                       << " " << m_gendev1->Get("Vout") << std::endl;
-        
-        Logger::Notice << "Devices Check 2! "
-                       << m_phyManager.GetDevice("gendev0")->Get("Vout")
-                       << " " << m_phyManager.GetDevice("gendev1")->Get("Vout")
-                       << std::endl;
+        //Logger::Notice << "Devices Check 1!"<< m_gendev0->Get("Vin")            
+        //               << " " << m_gendev1->Get("Vin") << std::endl;
+       
+        //Logger::Notice << "Devices Check 2! "
+        //               << m_phyManager.GetDevice("stodev0")->Get("Vin")                   
+        //               << std::endl;               
+
+ 	//Logger::Notice << "Devices Check 3! "
+        //               << m_phyManager.GetDevice("loaddev0")->Get("Vin")                  
+        //               << std::endl; 
 
 
         // Instantiate Dispatcher for message delivery 
@@ -273,10 +293,10 @@ int main (int argc, char* argv[])
         dispatch_.RegisterReadHandler( "gm", &GM_);
 
         // Instantiate and register the power management module
-        freedm::lbAgent LB_ (uuidstr, broker_.GetIOService(), dispatch_, m_conManager);     
+        freedm::lbAgent LB_ (uuidstr, broker_.GetIOService(), dispatch_, m_conManager, m_phyManager);     
         dispatch_.RegisterReadHandler( "lb", &LB_);
 
-        // Instantiate and register the power management module
+        // Instantiate and register the state collection module
         freedm::SCAgent SC_ (uuidstr, broker_.GetIOService(), dispatch_, m_conManager);     
         dispatch_.RegisterReadHandler( "sc", &SC_);
 

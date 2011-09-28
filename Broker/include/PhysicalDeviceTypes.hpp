@@ -27,7 +27,7 @@
 /// Suggested modifications or questions about these codes
 /// can be directed to Dr. Bruce McMillin, Department of
 /// Computer Science, Missour University of Science and
-/// Technology, Rolla, MO  65409 (ff@mst.edu).
+/// Technology, Rolla, /// MO  65409 (ff@mst.edu).
 ///
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -40,9 +40,11 @@ namespace physicaldevices {
 
 /// Various device types, subject to expansion.
 enum DeviceType {
-    FREEDM_GENERIC
+    FREEDM_GENERIC,
+    DRER,
+    DESD,
+    LOAD
 };
-
 
         } // namespace physicaldevices
     } // namespace broker

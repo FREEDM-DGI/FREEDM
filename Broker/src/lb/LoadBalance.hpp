@@ -7,7 +7,7 @@
 ///
 /// @project      FREEDM DGI
 ///
-/// @description  Header for for program LoadBalance.cpp
+/// @description  Header for program LoadBalance.cpp
 ///
 /// @functions List of functions and external entry points
 ///
@@ -49,105 +49,81 @@ using boost::property_tree::ptree;
 #include "Utility.hpp"
 #include "LBPeerNode.hpp"
 //#include "ExtensibleLineProtocol.hpp"
-#include "CLineClient.hpp"
 #include "IHandler.hpp"
+#include "IAgent.hpp"
 #include "uuid.hpp"
 #include "CDispatcher.hpp"
 #include "CConnectionManager.hpp"
 #include "CConnection.hpp"
+
+#include "CPhysicalDeviceManager.hpp"
+#include "CGenericDevice.hpp"
 
 using boost::asio::ip::tcp;
 
 using namespace boost::asio;
 
 namespace freedm {
-  // namespace lb{
 
 // Global constants
 enum {
-	LOAD_TIMEOUT = 10,
+	LOAD_TIMEOUT = 15,
 	FAULT_TIMEOUT = 10
 };
 
 
 //////////////////////////////////////////////////////////
 /// class lbAgent
-///
-/// @description A brief description of the class
-///
-/// @limitations Any limitations for the class, or None
-///
+/// @description Declaration of lbAgent class for load balancing algorithm
+/// @limitations None
 /////////////////////////////////////////////////////////
-
-class lbAgent : public IReadHandler, public LPeerNode, public Templates::Singleton< lbAgent > {
-
-    friend class Templates::Singleton< lbAgent >;
-  
-public:
-	lbAgent(std::string &uuid_, boost::asio::io_service &ios, freedm::broker::CDispatcher 								      
-	         &p_dispatch,freedm::broker::CConnectionManager &m_conManager);
-        //lbAgent( const lbAgent& );
-	lbAgent& operator = ( const lbAgent& );
-
-        // virtual function 
-        virtual ~lbAgent();   
-	void HandleRead(const ptree& pt );
-    
-        enum { LISTEN_PORT = 1870 };
-        static 	io_service 	service_;
-        CLineClient::TPointer client_;
-  
+class lbAgent 
+  : public IReadHandler, 
+    public LPeerNode, 
+    public Templates::Singleton< lbAgent >,
+    public IAgent< boost::shared_ptr<LPeerNode> >
+{
+  friend class Templates::Singleton< lbAgent >;
+  public:
+        lbAgent();
+	lbAgent(std::string uuid_, 
+	  boost::asio::io_service &ios, 
+	  freedm::broker::CDispatcher &p_dispatch, 
+	  freedm::broker::CConnectionManager &m_conManager, 
+	  freedm::broker::CPhysicalDeviceManager &m_phyManager);
+	  lbAgent( const lbAgent& );
+	  lbAgent& operator = ( const lbAgent& );
+          virtual ~lbAgent();   
+                    
 	// Internal
 	void SendDraftRequest();
 	void LoadTable();
-	int  priority() const;
-
-        // Data structures for reading from simulation file 
-	std::string gen_s[100], load_s[100], gw_s[100];
-	std::string state[100];
-        std::string entry_, key_, response_;
-        int lmcount;
-    
         void LoadManage();
-        void add_peer(std::string &u_);
 
-	// Handlers
+        PeerNodePtr add_peer(std::string uuid);
+        PeerNodePtr get_peer(std::string uuid);
+        // Handlers
+        void HandleRead(const ptree& pt );
 	void LoadManage( const boost::system::error_code& err );
-
-	//TODO: Probable entry point for D-LMPs
-	//void DStandard( const boost::system::error_code &err );
 
 	// This is the main loop of the algorithm
         int	LB();
+        int step;
  
-private: 
-        LPeerNodePtr get_peer(std::string uuid_);
+  private: 
+        
+  	PeerSet     m_HiNodes;
+ 	PeerSet     m_NoNodes;
+  	PeerSet     m_LoNodes;
+  	PeerSet     l_AllPeers;
 
-        //These overloaded functions are obsolete?
-	LPeerNodePtr get_peer( const int p_id );
-        LPeerNodePtr get_peer( const boost::asio::ip::address &p_addr );
-        LPeerNodePtr get_peer( const int p_id, const boost::asio::ip::address &p_addr );
-
-        LBPeerSet	    m_HiNodes;
-        LBPeerSet     m_NoNodes;
-  	LBPeerSet     m_LoNodes;
-  	LBPeerSet	    l_AllPeers;
-
-	std::vector<MessagePtr> 	m_Messages;
-       
-        // The handler for all incoming requests.
-        boost::asio::io_service &m_ios;
-        freedm::broker::CDispatcher &m_dispatch;
-        freedm::broker::CConnectionManager &m_connManager;
+	// The handler for all incoming requests.
+  	freedm::broker::CPhysicalDeviceManager &m_phyDevManager;
+  	void InitiatePowerMigration(float DemandValue);
 
 	/* IO and Timers */
 	deadline_timer		m_GlobalTimer;
-	int 				peers;
-        boost::asio::ip::udp::endpoint m_RemoteEndpoint;
-
-  };
-
-}//namespace freedm
-//}
+};
+}
 
 #endif

@@ -53,6 +53,7 @@
 #include <string>
 #include <stdlib.h>
 #include <iostream>
+#include <fstream>
 
 #include <boost/asio.hpp>
 #include <boost/bind.hpp>
@@ -1133,6 +1134,11 @@ int GMAgent::Run()
 void GMAgent::Stop()
 {
     //m_localservice.stop();
+    std::ofstream actionlog;
+    actionlog.open("grouplog.dat",std::fstream::app);    
+    actionlog<<m_groupselection<<'\t'<<m_groupsformed<<'\t'
+             <<m_groupsjoined<<'\t'<<m_groupsbroken<<std::endl;            
+    actionlog.close();
 }
 
 //namespace

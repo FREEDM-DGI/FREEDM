@@ -144,6 +144,10 @@
 </dev>
 </step8>
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> working
 <step9>
  <dev id ='gendev0'>
     <vout>50</vout>

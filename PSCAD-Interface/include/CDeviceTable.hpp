@@ -35,12 +35,19 @@
 
 #include <string>
 #include <sstream>
+#include <iostream>
 #include <stdexcept>
 
 #include <boost/thread/shared_mutex.hpp>
 
+#include "logger.hpp"
 #include "CDeviceKey.hpp"
 #include "CTableStructure.hpp"
+
+CREATE_EXTERN_STD_LOGS()
+
+namespace freedm {
+namespace simulation {
 
 class CSimulationServer;
 
@@ -197,5 +204,8 @@ private:
     /// number of m_data elements
     size_t m_length;
 };
+
+} // namespace simulation
+} // namespace freedm
 
 #endif // C_DEVICE_TABLE_HPP

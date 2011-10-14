@@ -47,7 +47,13 @@
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/xml_parser.hpp>
 
+#include "logger.hpp"
 #include "CDeviceKey.hpp"
+
+CREATE_EXTERN_STD_LOGS()
+
+namespace freedm {
+namespace simulation {
 
 ////////////////////////////////////////////////////////////////////////////////
 /// CTableStructure
@@ -244,5 +250,8 @@ private:
     /// unidirectional map from device key to list of parents
     std::map< CDeviceKey, std::set<size_t> > m_DeviceParent;
 };
+
+} // namespace simulation
+} // namespace freedm
 
 #endif // C_TABLE_STRUCTURE_HPP

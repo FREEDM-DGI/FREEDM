@@ -26,6 +26,9 @@
 
 #include "CTableStructure.hpp"
 
+namespace freedm {
+namespace simulation {
+
 CTableStructure::CTableStructure( const std::string & p_xml, const std::string & p_tag )
 {
     using boost::property_tree::ptree;
@@ -136,3 +139,6 @@ bool CTableStructure::HasAccess( const CDeviceKey & p_device, size_t p_parent ) 
         return false;
     }
 }
+
+} // namespace simulation
+} // namespace freedm

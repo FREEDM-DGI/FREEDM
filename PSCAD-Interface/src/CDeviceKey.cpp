@@ -26,6 +26,9 @@
 
 #include "CDeviceKey.hpp"
 
+namespace freedm {
+namespace simulation {
+
 bool operator<( const CDeviceKey & p_lhs, const CDeviceKey & p_rhs )
 {
     return( p_lhs.m_device < p_rhs.m_device
@@ -42,3 +45,6 @@ CDeviceKey::CDeviceKey( const std::string & p_device, const std::string & p_key 
 {
     // skip
 }
+
+} // namespace simulation
+} // namespace freedm

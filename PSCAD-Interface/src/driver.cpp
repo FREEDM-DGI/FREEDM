@@ -26,10 +26,24 @@
 ///
 ////////////////////////////////////////////////////////////////////////////////
 
+#include "logger.hpp"
 #include "CSimulationServer.hpp"
 
-int main()
+using namespace freedm::simulation;
+
+CREATE_STD_LOGS()
+
+int main(int argc, char * argv[] )
 {
+    if( argc > 1 )
+    {
+        Logger::Log::setLevel(boost::lexical_cast<int>(argv[1]));
+    }
+    else
+    {
+        Logger::Log::setLevel(4);
+    }
+    
     CSimulationServer bob("xml",4000);
     
     return 0;

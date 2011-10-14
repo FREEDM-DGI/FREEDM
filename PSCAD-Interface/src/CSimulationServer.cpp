@@ -26,9 +26,14 @@
 
 #include "CSimulationServer.hpp"
 
+namespace freedm {
+namespace simulation {
+
 CSimulationServer::CSimulationServer( const std::string & p_xml, unsigned short p_port )
     : m_port(p_port), m_command(p_xml,"command"), m_state(p_xml,"state"), m_quit(false)
 {
+    Logger::Info << __PRETTY_FUNCTION__ << std::endl;
+    
     // read the xml input file
     boost::property_tree::ptree xmlTree;
     boost::property_tree::read_xml( p_xml, xmlTree );
@@ -38,10 +43,12 @@ CSimulationServer::CSimulationServer( const std::string & p_xml, unsigned short 
     for( size_t i = 1; i <= interfaces; i++ )
     {
         m_interface.push_back( CSimulationInterface::Create( m_service, m_command, m_state, (p_port + i), i ) );
+        Logger::Notice << "Initialized DGI-Interface " << i << std::endl;
     }
     
     // start the simulation server
     m_thread = boost::thread( &CSimulationServer::Run, this );
+    Logger::Notice << "Running PSCAD Interface" << std::endl;
     
     // start i/o service
     m_service.run();
@@ -49,18 +56,24 @@ CSimulationServer::CSimulationServer( const std::string & p_xml, unsigned short 
 
 CSimulationServer::~CSimulationServer()
 {
+    Logger::Info << __PRETTY_FUNCTION__ << std::endl;
+    
     // wait on the worker
     m_thread.join();
 }
 
 void CSimulationServer::Stop()
 {
+    Logger::Info << __PRETTY_FUNCTION__ << std::endl;
+    
     m_quit = true;
     m_service.stop();
 }
 
 void CSimulationServer::Run()
 {
+    Logger::Info << __PRETTY_FUNCTION__ << std::endl;
+    
     boost::array<char,HEADER_SIZE> header;
 
     // create an acceptor on the shared I/O service
@@ -68,6 +81,7 @@ void CSimulationServer::Run()
     
     // create an endpoint for IPv4 with m_port as a port number
     boost::asio::ip::tcp::endpoint endpoint( boost::asio::ip::tcp::v4(), m_port );
+    Logger::Notice << "PSCAD will use port " << m_port << std::endl;
     
     // open the acceptor at the endpoint
     acceptor.open( endpoint.protocol() );
@@ -84,23 +98,28 @@ void CSimulationServer::Run()
         
         // read the header of the next received packet
         boost::asio::read( socket, boost::asio::buffer(header) );
-
+        Logger::Debug << "PSCAD - received " << header.data() << std::endl;
+        
         // message handler based on header type
         if( strcmp( header.data(), "GET" ) == 0 )
         {
             boost::shared_lock<boost::shared_mutex> lock(m_command.m_mutex);
+            Logger::Debug << "PSCAD - obtained mutex as reader" << std::endl;
             size_t bytes = m_command.m_length * sizeof(double);
             
             // write the command table as a response
             boost::asio::write( socket, boost::asio::buffer(m_command.m_data, bytes) );
+            Logger::Debug << "PSCAD - released reader mutex" << std::endl;
         }
         else if( strcmp( header.data(), "SET" ) == 0)
         {
             boost::unique_lock<boost::shared_mutex> lock(m_state.m_mutex);
+            Logger::Debug << "PSCAD - obtained mutex as writer" << std::endl;
             size_t bytes = m_state.m_length * sizeof(double);
             
             // read the message body into the state table
             boost::asio::read( socket, boost::asio::buffer(m_state.m_data, bytes) );
+            Logger::Debug << "PSCAD - released writer mutex" << std::endl;
         }
         else if( strcmp( header.data(), "QUIT" ) == 0 )
         {
@@ -108,9 +127,13 @@ void CSimulationServer::Run()
         }
         else
         {
+            Logger::Warn << "PSCAD - received unhandled message" << std::endl;
             // bad header
         }
         
         socket.close();
     }
 }
+
+} // namespace simulation
+} // namespace freedm

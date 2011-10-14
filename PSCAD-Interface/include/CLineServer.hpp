@@ -41,6 +41,13 @@
 #include <boost/function.hpp>
 #include <boost/shared_ptr.hpp>
 
+#include "logger.hpp"
+
+CREATE_EXTERN_STD_LOGS()
+
+namespace freedm {
+namespace simulation {
+
 ////////////////////////////////////////////////////////////////////////////////
 /// CLineServer
 ///
@@ -183,6 +190,12 @@ private:
     
     /// get callback function
     TGetCallback m_get;
+    
+    /// port number for debug output
+    unsigned short m_port;
 };
+
+} // namespace simulation
+} // namespace freedm
 
 #endif // C_LINE_SERVER_HPP

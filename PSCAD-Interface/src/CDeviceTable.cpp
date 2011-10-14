@@ -26,15 +26,21 @@
 
 #include "CDeviceTable.hpp"
 
+namespace freedm {
+namespace simulation {
+
 CDeviceTable::CDeviceTable( const std::string & p_xml, const std::string & p_tag )
     : m_structure( p_xml, p_tag )
 {
+    Logger::Info << __PRETTY_FUNCTION__ << std::endl;
+    
     m_length    = m_structure.GetSize();
     m_data      = new double[m_length];
 }
 
 double CDeviceTable::GetValue( const CDeviceKey & p_key, size_t p_index )
 {
+    Logger::Info << __PRETTY_FUNCTION__ << std::endl;
     std::stringstream error;
     
     // check for read permission
@@ -46,6 +52,7 @@ double CDeviceTable::GetValue( const CDeviceKey & p_key, size_t p_index )
     
     // enter critical section of m_data as reader
     boost::shared_lock<boost::shared_mutex> lock(m_mutex);
+    Logger::Debug << "DGI-Interface " << p_index << " obtained mutex as reader" << std::endl;
     
     // convert the key to an index and return its value
     return m_data[m_structure.FindIndex(p_key)];
@@ -53,6 +60,7 @@ double CDeviceTable::GetValue( const CDeviceKey & p_key, size_t p_index )
 
 void CDeviceTable::SetValue( const CDeviceKey & p_key, size_t p_index, double p_value )
 {
+    Logger::Info << __PRETTY_FUNCTION__ << std::endl;
     std::stringstream error;
     
     // check for write permission
@@ -64,6 +72,7 @@ void CDeviceTable::SetValue( const CDeviceKey & p_key, size_t p_index, double p_
     
     // enter critical section of m_data as writer
     boost::unique_lock<boost::shared_mutex> lock(m_mutex);
+    Logger::Debug << "DGI-Interface " << p_index << " obtained mutex as writer" << std::endl;
     
     // convert the key to an index and set its value
     m_data[m_structure.FindIndex(p_key)] = p_value;
@@ -71,5 +80,9 @@ void CDeviceTable::SetValue( const CDeviceKey & p_key, size_t p_index, double p_
 
 CDeviceTable::~CDeviceTable()
 {
+    Logger::Info << __PRETTY_FUNCTION__ << std::endl;
     delete [] m_data;
 }
+
+} // namespace simulation
+} // namespace freedm

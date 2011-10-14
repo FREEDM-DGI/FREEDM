@@ -32,6 +32,7 @@
 #define C_SIMULATION_INTERFACE_CPP
 
 #include <string>
+#include <iostream>
 
 #include <boost/ref.hpp>
 #include <boost/asio.hpp>
@@ -39,8 +40,14 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/lexical_cast.hpp>
 
+#include "logger.hpp"
 #include "CLineServer.hpp"
 #include "CDeviceTable.hpp"
+
+CREATE_EXTERN_STD_LOGS()
+
+namespace freedm {
+namespace simulation {
 
 ////////////////////////////////////////////////////////////////////////////////
 /// CSimulationInterface
@@ -169,5 +176,8 @@ private:
     /// unique identifier
     size_t m_index;
 };
+
+} // namespace simulation
+} // namespace freedm
 
 #endif // C_SIMULATION_INTERFACE_CPP

@@ -26,15 +26,20 @@
 
 #include "CLineServer.hpp"
 
+namespace freedm {
+namespace simulation {
+
 CLineServer::TPointer CLineServer::Create( boost::asio::io_service & p_service, unsigned short p_port, TSetCallback p_set, TGetCallback p_get )
 {
+    Logger::Info << __PRETTY_FUNCTION__ << std::endl;
     return TPointer( new CLineServer(p_service,p_port,p_set,p_get) );
 }
 
 CLineServer::CLineServer( boost::asio::io_service & p_service,
     unsigned short p_port, TSetCallback p_set, TGetCallback p_get )
-    : m_acceptor(p_service), m_socket(p_service), m_set(p_set), m_get(p_get)
+    : m_acceptor(p_service), m_socket(p_service), m_set(p_set), m_get(p_get), m_port(p_port)
 {
+    Logger::Info << m_port << " - " << __PRETTY_FUNCTION__ << std::endl;
     boost::asio::ip::tcp::endpoint endpoint( boost::asio::ip::tcp::v4(), p_port );
     
     // open the acceptor at the endpoint
@@ -49,6 +54,7 @@ CLineServer::CLineServer( boost::asio::io_service & p_service,
 
 CLineServer::~CLineServer()
 {
+    Logger::Info << m_port << " - " << __PRETTY_FUNCTION__ << std::endl;
     // close the socket and acceptor
     if( m_acceptor.is_open() )
     {
@@ -62,6 +68,7 @@ CLineServer::~CLineServer()
 
 void CLineServer::StartAccept()
 {
+    Logger::Info << m_port << " - " << __PRETTY_FUNCTION__ << std::endl;
     // wait for next client connection, open it on m_socket, call MessageHandler
     m_acceptor.async_accept( m_socket, boost::bind( &CLineServer::MessageHandler,
         this, boost::asio::placeholders::error ) );
@@ -69,6 +76,7 @@ void CLineServer::StartAccept()
 
 void CLineServer::MessageHandler( const boost::system::error_code & p_error )
 {
+    Logger::Info << m_port << " - " << __PRETTY_FUNCTION__ << std::endl;
     if( !p_error )
     {
         boost::asio::streambuf request;
@@ -89,15 +97,14 @@ void CLineServer::MessageHandler( const boost::system::error_code & p_error )
                 bytes = boost::asio::read_until( m_socket, request, "\r\n" );
                 request_stream >> request_code;
                 
+                Logger::Debug << m_port << " - received " << request_code << std::endl;
+                
                 // handle different message types
                 if( request_code == "GET" )
                 {
                     // split the request stream
                     request_stream >> device >> key;
-                    
-                    std::cerr << "GET " << device << " " << key;
                     value = m_get(device,key);
-                    std::cerr << " " << value << std::endl;
                     
                     // format the response stream
                     if( value.empty() )
@@ -108,21 +115,23 @@ void CLineServer::MessageHandler( const boost::system::error_code & p_error )
                     {
                         response_stream << "200 OK " << value << "\r\n";
                     }
+                    Logger::Debug << m_port << " - returned " << value << " for ("
+                        << device << "," << key << ")" << std::endl;
                 }
                 else if( request_code == "SET" )
                 {
                     // split the request stream
                     request_stream >> device >> key >> value;
-                    
-                    std::cerr << "SET " << device << " " << key << " " << value << std::endl;
+
                     m_set(device,key,value);
                     
                     // format the response stream
                     response_stream << "200 OK\r\n";
+                    Logger::Debug << m_port << " - set " << value << " for ("
+                        << device << "," << key << ")" << std::endl;
                 }
                 else if( request_code == "QUIT" )
                 {
-                    std::cerr << "QUIT" << std::endl;
                     quit = true;
                     
                     // format the response stream
@@ -130,6 +139,7 @@ void CLineServer::MessageHandler( const boost::system::error_code & p_error )
                 }
                 else
                 {
+                    Logger::Warn << m_port << " - received unhandled message" << std::endl;
                     // unrecognized request type
                     response_stream << "400 BADREQUEST\r\n";
                 }
@@ -155,3 +165,6 @@ void CLineServer::MessageHandler( const boost::system::error_code & p_error )
         StartAccept();
     }
 }
+
+} // namespace simulation
+} // namespace freedm

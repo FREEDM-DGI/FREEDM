@@ -821,7 +821,8 @@ void lbAgent::HandleRead(const ptree& pt )
    std::stringstream ss_;   
    ss_ << GetUUID();
    ss_ >> m_.m_srcUUID;
-   m_.m_submessages.put("statecollection.source", ss_.str());
+   m_.m_submessages.put("sc", "load");
+   m_.m_submessages.put("sc.source", ss_.str());
    ss_.clear();
    if (LPeerNode::SUPPLY == l_Status)
    {
@@ -839,7 +840,7 @@ void lbAgent::HandleRead(const ptree& pt )
    {
      ss_.str("Unknown");
    }       
-   m_.m_submessages.put("statecollection.load", ss_.str());
+   m_.m_submessages.put("sc.status", ss_.str());
    try
    { 
      peer_->Send(m_);

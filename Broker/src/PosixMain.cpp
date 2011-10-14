@@ -92,7 +92,7 @@ int main (int argc, char* argv[])
     po::positional_options_description posOpts_;
     po::variables_map vm_;
     std::ifstream ifs_;
-    std::string cfgFile_, listenIP_, port_, uuid_, hostname_;
+    std::string cfgFile_, listenIP_, port_, uuid_, hostname_,uuidgenerator;
     int verbose_;
     bool cliVerbose_(false); // CLI options override verbosity
     freedm::uuid u_;
@@ -106,7 +106,9 @@ int main (int argc, char* argv[])
             ("version,V", "print version info")
             ("config,c", po::value<std::string>(&cfgFile_)->
                 default_value("freedm.cfg"),
-                "filename of additional configuration.");
+                "filename of additional configuration.")
+            ("generateuuid,g", po::value<std::string>(&uuidgenerator)->
+                    default_value(""), "Generate a uuid for the specified host, output it, and exit");
 
         // This is for arguments in a config file or as arguments
         configOpts_.add_options()
@@ -194,6 +196,12 @@ int main (int argc, char* argv[])
             std::cerr << visibleOpts_ << std::endl;
             return 0;
         }
+        if( vm_.count("generateuuid") )
+        {
+            u_ = freedm::uuid::from_dns(uuidgenerator);
+            std::cout<<u_<<std::endl;
+            return 0;
+        }
         if( vm_.count("version") )
         {
             std::cout << basename(argv[0])
@@ -227,7 +235,7 @@ int main (int argc, char* argv[])
         boost::asio::io_service m_ios;
 
         // Intialize Devices
-	freedm::broker::CGenericDevice::DevicePtr sst(
+        freedm::broker::CGenericDevice::DevicePtr sst(
             new freedm::broker::CGenericDevice(m_phyManager,std::string("sst")));
         
         freedm::broker::CGenericDevice::DevicePtr m_gendev0(

@@ -53,6 +53,20 @@ CGenericDevice::CGenericDevice(CPhysicalDeviceManager& phymanager, Identifier de
 {
     // Nothing to see here.
 };
+
+///////////////////////////////////////////////////////////////////////////////
+/// @fn CGenericDevice
+/// @brief A class for describing a specific device type. 
+/// @param phymanager The related physical device manager.
+/// @param deviceid The identifier for this generic device.
+/// @param devType The device type for this generic device.
+///////////////////////////////////////////////////////////////////////////////
+CGenericDevice::CGenericDevice(CPhysicalDeviceManager& phymanager, Identifier deviceid, DeviceType devType)
+            : IPhysicalDevice(phymanager,deviceid, devType)
+{
+    // Nothing to see here.
+};
+
 ///////////////////////////////////////////////////////////////////////////////
 /// @fn CGenericDevice::Get
 /// @brief Returns the value of some key in the register, or 0.0 if they key is

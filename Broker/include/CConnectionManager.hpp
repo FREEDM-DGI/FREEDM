@@ -42,6 +42,8 @@
 #include <set>
 #include <string>
 #include <map>
+#include <boost/foreach.hpp>
+#include <boost/bimap.hpp>
 #include <boost/thread/mutex.hpp>
 #include <boost/noncopyable.hpp>
 #include <boost/shared_ptr.hpp>
@@ -61,10 +63,7 @@ public:
     typedef std::map<std::string, std::string> hostnamemap;
     
     /// Typedef for the map which handles uuid to connection 
-    typedef std::map<std::string, ConnectionPtr> connectionmap;
-
-    /// Typedef for the map which handles connection to uuid.
-    typedef std::map<ConnectionPtr, std::string> connectionmap_r;
+    typedef boost::bimap<std::string, ConnectionPtr> connectionmap;
 
     /// Initialize the connection manager with the node uuid.
     CConnectionManager(freedm::uuid uuid, std::string hostname);
@@ -116,6 +115,10 @@ public:
 
     /// Iterator to the end of the connections map.
     connectionmap::iterator GetConnectionsEnd() { return m_connections.end(); };
+    
+    // Transient Network Simulation
+    /// Load a network configuration & apply it.
+    void LoadNetworkConfig();
 
 private:
     /// Mapping from uuid to hostname.
@@ -124,8 +127,6 @@ private:
     std::string m_hostname;
     /// Forward map (UUID->Connection)
     connectionmap   m_connections;
-    /// Reverse map (Connection->UUID)
-    connectionmap_r m_connections_r;
     /// Incoming messages channel
     CListener::ConnectionPtr m_inchannel;
     /// Node UUID

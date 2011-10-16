@@ -26,9 +26,13 @@
 
 #include "CSimulationInterface.hpp"
 
+namespace freedm {
+namespace simulation {
+
 CSimulationInterface::TPointer CSimulationInterface::Create( boost::asio::io_service & p_service,
     CDeviceTable & p_command, CDeviceTable & p_state, unsigned short p_port, size_t p_index )
 {
+    Logger::Info << __PRETTY_FUNCTION__ << std::endl;
     return TPointer( new CSimulationInterface(p_service,p_command,p_state,p_port,p_index) );
 }
 
@@ -36,19 +40,26 @@ CSimulationInterface::CSimulationInterface( boost::asio::io_service & p_service,
     CDeviceTable & p_command, CDeviceTable & p_state, unsigned short p_port, size_t p_index )
     : m_command(p_command), m_state(p_state), m_index(p_index)
 {
+    Logger::Info << __PRETTY_FUNCTION__ << std::endl;
     m_server = CLineServer::Create( p_service, p_port,
         boost::bind(&CSimulationInterface::Set, boost::ref(*this), _1, _2, _3),
         boost::bind(&CSimulationInterface::Get, boost::ref(*this), _1, _2) );
+    Logger::Notice << "DGI-Interface " << p_index << " will use port " << p_port << std::endl;
 }
 
 void CSimulationInterface::Set( const std::string & p_device, const std::string & p_key, const std::string & p_value )
 {
+    Logger::Info << __PRETTY_FUNCTION__ << std::endl;
     double value = boost::lexical_cast<double>(p_value);
     m_command.SetValue( CDeviceKey(p_device,p_key), m_index, value );
 }
 
 std::string CSimulationInterface::Get( const std::string & p_device, const std::string & p_key )
 {
+    Logger::Info << __PRETTY_FUNCTION__ << std::endl;
     double value = m_state.GetValue( CDeviceKey(p_device,p_key), m_index );
     return boost::lexical_cast<std::string>(value);
 }
+
+} // namespace simulation
+} // namespace freedm

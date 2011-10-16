@@ -50,7 +50,7 @@ using boost::property_tree::ptree;
 namespace freedm {
     namespace broker {
 ///////////////////////////////////////////////////////////////////////////////
-/// CReliableConnection::CReliableConnection
+/// @fn CReliableConnection::CReliableConnection
 /// @description: Constructor for the CGenericConnection object.
 /// @pre: An initialized socket is ready to be converted to a connection.
 /// @post: A new CConnection object is initialized.
@@ -68,10 +68,11 @@ CReliableConnection::CReliableConnection(boost::asio::io_service& p_ioService,
     m_uuid(uuid)
 {
     Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
+    m_reliability = 100;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// CConnection::GetSocket
+/// @fn CReliableConnection::GetSocket
 /// @description Returns the socket used by this node.
 /// @pre None
 /// @post None

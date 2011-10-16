@@ -45,6 +45,7 @@ using boost::property_tree::ptree;
 #include <vector>
 #include <boost/shared_ptr.hpp>
 #include <boost/progress.hpp>
+#include <boost/interprocess/sync/interprocess_mutex.hpp>
 
 #include "CMessage.hpp"
 #include "Utility.hpp"
@@ -87,7 +88,7 @@ class GMAgent
     GMAgent(std::string uuid_, boost::asio::io_service &ios, freedm::broker::CDispatcher &p_dispatch, freedm::broker::CConnectionManager &m_conManager);
     GMAgent(const GMAgent&);
     GMAgent& operator=(const GMAgent&);
-    virtual ~GMAgent();
+    ~GMAgent();
     
     // Internal
     void Recovery();
@@ -95,6 +96,9 @@ class GMAgent
 
     // Handlers
     virtual void HandleRead(const ptree& pt );
+    void ParseMessage(ptree pt);
+    
+    //Routines
     void Check( const boost::system::error_code& err );
     void Timeout( const boost::system::error_code& err );
     void Recovery( const boost::system::error_code& err );
@@ -116,7 +120,12 @@ class GMAgent
 
     // This is the main loop of the algorithm
     int	Run();
-    
+    void Stop();
+
+    //Get/Set   
+    //boost::asio::io_service& GetIOService() { return m_localservice; };
+   
+    //Peer Set Manipulation
     PeerNodePtr AddPeer(std::string uuid);
     PeerNodePtr AddPeer(PeerNodePtr peer);
     PeerNodePtr GetPeer(std::string uuid);
@@ -124,6 +133,7 @@ class GMAgent
   protected:
     void InviteGroupNodes( const boost::system::error_code& err, PeerSet p_tempSet );
     void Reorganize( const boost::system::error_code& err );
+    void SystemState();
 
     std::string Coordinator() const { return m_GroupLeader; }
     
@@ -141,9 +151,16 @@ class GMAgent
     unsigned int m_GrpCounter;
     
     /* IO and Timers */
-    deadline_timer m_CheckTimer;
-    deadline_timer m_TimeoutTimer;
-    deadline_timer m_GlobalTimer;
+    boost::asio::io_service m_localservice;
+    boost::interprocess::interprocess_mutex m_timerMutex;
+    deadline_timer m_timer;
+
+    // Testing Functionality:
+    int m_groupselection;
+    int m_groupsformed;
+    int m_groupsjoined;
+    int m_groupsbroken;
+    int m_rounds;
 };
 
   }

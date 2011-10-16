@@ -69,9 +69,6 @@ public:
     /// Run the Server's io_service loop.
     void Run();
  
-    /// Register a new hostname with the Broker.
-    void AddHost(std::string& p_address, std::string& p_port);
-  
     /// Return a reference to the IO Service
     boost::asio::io_service& GetIOService();
 

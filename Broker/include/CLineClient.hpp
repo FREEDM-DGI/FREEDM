@@ -82,7 +82,7 @@ public:
     ///
     /// @param
     ///     p_hostname is the hostname of the desired endpoint
-    ///     p_service is the service of the desired endpoint
+    ///     p_port is the port number of the desired endpoint
     ///
     /// @return
     ///     true if m_socket connected to the endpoint
@@ -92,7 +92,7 @@ public:
     ///     none
     ///
     ////////////////////////////////////////////////////////////////////////////
-    bool Connect( const std::string & p_hostname, const std::string & p_service );
+    bool Connect( const std::string p_hostname, const std::string p_port );
     
     ////////////////////////////////////////////////////////////////////////////
     /// Set( const string &, const string &, const string & )
@@ -122,7 +122,7 @@ public:
     ///     The precondition is not enforced.
     ///
     ////////////////////////////////////////////////////////////////////////////
-    void Set( const std::string & p_device, const std::string & p_key, const std::string & p_value );
+    void Set( const std::string p_device, const std::string p_key, const std::string p_value );
     
     ////////////////////////////////////////////////////////////////////////////
     /// Get( const string &, const string & )
@@ -154,7 +154,7 @@ public:
     ///     The precondition is not enforced.
     ///
     ////////////////////////////////////////////////////////////////////////////
-    std::string Get( const std::string & p_device, const std::string & p_key );
+    std::string Get( const std::string p_device, const std::string p_key );
     
     ////////////////////////////////////////////////////////////////////////////
     /// Quit

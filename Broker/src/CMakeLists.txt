@@ -12,9 +12,11 @@ set(
     CPhysicalDeviceManager.cpp
     CGenericDevice.cpp
     gm/GroupManagement.cpp
+    lb/CLineClient.cpp
     lb/LoadBalance.cpp
-    lb/LBPeerNode.cpp
-)
+    #lb/LBPeerNode.cpp
+    sc/CStateCollection.cpp
+    )
 
 # set BROKER_VERSION macro : cp version.h.cmake version.h
 configure_file(version.h.cmake ${CMAKE_BINARY_DIR}/src/version.h @ONLY)
@@ -22,6 +24,10 @@ configure_file(version.h.cmake ${CMAKE_BINARY_DIR}/src/version.h @ONLY)
 add_library(broker ${BROKER_FILES})
 add_executable(PosixBroker PosixMain.cpp)
 
+<<<<<<< HEAD
+
+=======
+>>>>>>> working
 # link the executable to its dependencies
 target_link_libraries(
     PosixBroker

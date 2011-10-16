@@ -122,6 +122,14 @@ namespace status_strings {
     }
 } // namespace status_strings
 
+///////////////////////////////////////////////////////////////////////////////
+/// @fn CMessage::Load
+/// @description From some stream source parse and load a CMessage.
+/// @pre Some stream resource contains a potential message.
+/// @post The message is parsed or an exception is thrown if the message is
+///   corrupt.
+/// @param p_is A stream to read the message from.
+///////////////////////////////////////////////////////////////////////////////
 bool CMessage::Load( std::istream &p_is )
     throw ( boost::property_tree::file_parser_error )
 {
@@ -163,6 +171,13 @@ bool CMessage::Load( std::istream &p_is )
 
 }
 
+///////////////////////////////////////////////////////////////////////////////
+/// @fn CMessage::Save
+/// @description Coverts the message and writes it to an out stream.
+/// @pre The message exists
+/// @post The message has been written to the input "output stream"
+/// @param p_os The output stream to write the message to.
+///////////////////////////////////////////////////////////////////////////////
 void CMessage::Save( std::ostream &p_os )
 {
     Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
@@ -175,6 +190,12 @@ void CMessage::Save( std::ostream &p_os )
     write_xml( p_os, pt );
 }
 
+///////////////////////////////////////////////////////////////////////////////
+/// @fn CMessage::operator ptree ()
+/// @description Provides a cast of the CMessage to a ptree
+/// @pre None
+/// @post Casts the message as a ptree
+///////////////////////////////////////////////////////////////////////////////
 CMessage::operator ptree ()
 {
     Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
@@ -192,6 +213,12 @@ CMessage::operator ptree ()
     return pt;
 }
 
+///////////////////////////////////////////////////////////////////////////////
+/// @fn CMessage::CMessage
+/// @description From a ptree, creates a CMessage
+/// @pre None
+/// @post The CMessage has been initalized from a ptree.
+///////////////////////////////////////////////////////////////////////////////
 CMessage::CMessage( const ptree &pt )
 {
     Logger::Debug << __PRETTY_FUNCTION__ << std::endl;

@@ -47,10 +47,10 @@ namespace freedm {
 namespace broker {
 
 ///////////////////////////////////////////////////////////////////////////////
-/// CConnectionManager::CConnectionManager
+/// @fn CConnectionManager::CConnectionManager
 /// @description: Initializes the connection manager object
-/// @pre: None
-/// @post: Connection manager is ready for use
+/// @pre None
+/// @post Connection manager is ready for use
 /// @param uuid: The uuid of this node
 /// @param hostname: the hostname of this node
 ///////////////////////////////////////////////////////////////////////////////
@@ -62,11 +62,11 @@ CConnectionManager::CConnectionManager(freedm::uuid uuid, std::string hostname)
 };
 
 ///////////////////////////////////////////////////////////////////////////////
-/// CConnectionManager::Start
-/// @description: Performs intialization of a connection.
-/// @pre: The connection c has not been started.
-/// @post: The connection c has been started.
-/// @param c: A connection pointer that has not been started.
+/// @fn CConnectionManager::Start
+/// @description Performs intialization of a connection.
+/// @pre The connection c has not been started.
+/// @post The connection c has been started.
+/// @param c A connection pointer that has not been started.
 ///////////////////////////////////////////////////////////////////////////////
 void CConnectionManager::Start (CListener::ConnectionPtr c)
 {
@@ -76,34 +76,33 @@ void CConnectionManager::Start (CListener::ConnectionPtr c)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// CConnectionManager::PutConnection
+/// @fn CConnectionManager::PutConnection
 /// @description Inserts a connection into the connection map.
-/// @param uuid: The uuid of the node the connection is to.
-/// @param c: The connection pointer that goes to the node in question.
-/// @pre: The connection is initialized.
-/// @post: The connection has been inserted into the connection map.
+/// @param uuid The uuid of the node the connection is to.
+/// @param c The connection pointer that goes to the node in question.
+/// @pre The connection is initialized.
+/// @post The connection has been inserted into the connection map.
 ///////////////////////////////////////////////////////////////////////////////
 void CConnectionManager::PutConnection(std::string uuid, ConnectionPtr c)
 {
     Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
     {  
         boost::lock_guard< boost::mutex > scopedLock_( m_Mutex );
-        m_connections.insert(std::pair<std::string,ConnectionPtr>(uuid,c));
-        m_connections_r.insert(std::pair<ConnectionPtr,std::string>(c,uuid));
+        m_connections.insert(connectionmap::value_type(uuid,c));
     }   
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// CConnectionManager::PutHostname
+/// @fn CConnectionManager::PutHostname
 /// @description Registers a hostname with the uuid to hostname map.
-/// @pre: None
-/// @post: The hostname is registered with the uuid to hostname map.
-/// @param u_: the uuid to enter into the map.
-/// @param host_: The hostname to enter into the map.
+/// @pre None
+/// @post The hostname is registered with the uuid to hostname map.
+/// @param u_ the uuid to enter into the map.
+/// @param host_ The hostname to enter into the map.
 ///////////////////////////////////////////////////////////////////////////////
 void CConnectionManager::PutHostname(std::string u_, std::string host_)
 {
-    Logger::Notice << __PRETTY_FUNCTION__ << std::endl;  
+    Logger::Debug << __PRETTY_FUNCTION__ << std::endl;  
     {
         boost::lock_guard< boost::mutex > scopedLock_( m_Mutex );
         m_hostnames.insert(std::pair<std::string, std::string>(u_, host_));  
@@ -112,30 +111,27 @@ void CConnectionManager::PutHostname(std::string u_, std::string host_)
 
 
 ///////////////////////////////////////////////////////////////////////////////
-/// CConnectionManager::Stop
+/// @fn CConnectionManager::Stop
 /// @description Stops a connection and removes it from the connections maps.
-/// @pre: The connection is in the connections map.
-/// @post: The connection is closed and removed from the map.
+/// @pre The connection is in the connections map.
+/// @post The connection is closed and removed from the map.
 /// @param c the connection pointer to stop.
 ///////////////////////////////////////////////////////////////////////////////
 void CConnectionManager::Stop (CConnection::ConnectionPtr c)
 {
     Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
-    std::string key;
-    if(m_connections_r.count(c))
+    if(m_connections.right.count(c))
     {
-        key = m_connections_r[c];
-        m_connections.erase(key);
-        m_connections_r.erase(c);
+        m_connections.right.erase(c);
     }
     c->Stop();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// CConnectionManager::Stop
+/// @fn CConnectionManager::Stop
 /// @description Stops the listener connection
-/// @pre: The connection is the listener connection.
-/// @post: The connection is closed.
+/// @pre The connection is the listener connection.
+/// @post The connection is closed.
 /// @param c the connection pointer to stop.
 ///////////////////////////////////////////////////////////////////////////////
 void CConnectionManager::Stop (CListener::ConnectionPtr c)
@@ -146,11 +142,11 @@ void CConnectionManager::Stop (CListener::ConnectionPtr c)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// CConnectionManager::StopAll
-/// @description: Repeatedly pops a connection and stops it until the forward
+/// @fn CConnectionManager::StopAll
+/// @description Repeatedly pops a connection and stops it until the forward
 ///               connection map is empty, then clears the reverse map.
-/// @pre: None
-/// @post: The forward and reverse connection maps are empty, and all
+/// @pre None
+/// @post The forward and reverse connection maps are empty, and all
 ///        connections that were contained within them are stopped.
 ///////////////////////////////////////////////////////////////////////////////
 void CConnectionManager::StopAll ()
@@ -158,21 +154,21 @@ void CConnectionManager::StopAll ()
     Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
     while(m_connections.size() > 0)
     {
-      Stop((*m_connections.begin()).second); //Side effect of stop should make this map smaller
+      Stop((*m_connections.left.begin()).second); //Side effect of stop should make this map smaller
     }
     m_connections.clear();
-    m_connections_r.clear();
     Stop(m_inchannel);
+    Logger::Debug << "All Connections Closed" << std::endl;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// CConnectionManager::GetHostnameByUUID
+/// @fn CConnectionManager::GetHostnameByUUID
 /// @description Tries to fetch the hostname of a given uuid from the hostnames
 ///              table.
-/// @param uuid: The uuid to look up.
+/// @param uuid The uuid to look up.
 /// @pre None
 /// @post No change.
-/// @return: The hostname of the node with that uuid or an empty string.
+/// @return The hostname of the node with that uuid or an empty string.
 ///////////////////////////////////////////////////////////////////////////////
 std::string CConnectionManager::GetHostnameByUUID(std::string uuid) const
 {
@@ -187,14 +183,14 @@ std::string CConnectionManager::GetHostnameByUUID(std::string uuid) const
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// CConnectionManager::GetConnectionByUUID
+/// @fn CConnectionManager::GetConnectionByUUID
 /// @description Constructs or retrieves from cache a connection to a specific
 ///              UUID.
-/// @param uuid_: The uuid to construct a connection to
-/// @param ios: The ioservice the connection will use.
-/// @param dispatch_: The dispatcher the connection will use
-/// @pre: None
-/// @post: If a connection has been constructed it will be put in the
+/// @param uuid_ The uuid to construct a connection to
+/// @param ios The ioservice the connection will use.
+/// @param dispatch_ The dispatcher the connection will use
+/// @pre None
+/// @post If a connection has been constructed it will be put in the
 ///        connections table and has been started. If the connection is not
 ///        constructed there is no change to the connection table.
 /// @return A pointer to the connection, or NULL if construction failed for
@@ -209,23 +205,26 @@ ConnectionPtr CConnectionManager::GetConnectionByUUID
     std::string s_;
 
     // See if there is a connection in the open connections already
-    if(m_connections.count(uuid_))
+    if(m_connections.left.count(uuid_))
     {
-        if(m_connections[uuid_]->GetSocket().is_open())
+        if(m_connections.left.at(uuid_)->GetSocket().is_open())
         {
-            Logger::Notice << "Recycling connection to " << uuid_ << std::endl;
-            return m_connections[uuid_];
+            Logger::Info << "Recycling connection to " << uuid_ << std::endl;
+            #ifdef CUSTOMNETWORK
+            LoadNetworkConfig();
+            #endif
+            return m_connections.left.at(uuid_);
         }
         else
         {
-            Logger::Notice <<" Connection to " << uuid_ << " has gone stale " << std::endl;
+            Logger::Info <<" Connection to " << uuid_ << " has gone stale " << std::endl;
             //The socket is not marked as open anymore, we
             //should stop it.
-            Stop(m_connections[uuid_]);
+            Stop(m_connections.left.at(uuid_));
         }
     }  
 
-    Logger::Notice << "Making Fresh Connection to " << uuid_ << std::endl;
+    Logger::Info << "Making Fresh Connection to " << uuid_ << std::endl;
 
     // Find the requested host from the list of known hosts
     std::map<std::string, std::string>::iterator mapIt_;
@@ -246,7 +245,35 @@ ConnectionPtr CConnectionManager::GetConnectionByUUID
 
     //Once the connection is built, connection manager gets a call back to register it.    
     PutConnection(uuid_,c_);
+    #ifdef CUSTOMNETWORK
+    LoadNetworkConfig();
+    #endif
     return c_;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+/// @fn CConnectionManager::LoadNetworkConfig
+/// @description Accesses the network.xml file and parses it, setting the
+///   network reliability for all specified interfaces. Only enabled with the
+///   -DCUSTOMNETWORK compile option
+/// @pre None
+/// @post All connections in the file are modified to behave as specified.
+///////////////////////////////////////////////////////////////////////////////
+void CConnectionManager::LoadNetworkConfig()
+{
+    boost::property_tree::ptree pt;
+    boost::property_tree::read_xml("network.xml",pt);    
+    int inreliability = pt.get("network.incoming.reliability",100);
+    m_inchannel->SetReliability(inreliability); 
+    BOOST_FOREACH(ptree::value_type & child, pt.get_child("network.outgoing"))
+    {
+        std::string uuid = child.second.get<std::string>("<xmlattr>.uuid");
+        int reliability = child.second.get<int>("reliability");
+        if(m_connections.left.count(uuid) != 0)
+        {
+            m_connections.left.at(uuid)->SetReliability(reliability);
+        }
+    }  
 }
 
 } // namespace broker

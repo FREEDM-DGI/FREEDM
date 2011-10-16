@@ -52,6 +52,9 @@ class CGenericDevice
         /// Constructor which takes in the manager and device id.
         CGenericDevice(CPhysicalDeviceManager& phymanager, Identifier deviceid);
 
+        /// Constructor which takes in the manager and device id along with device type
+        CGenericDevice(CPhysicalDeviceManager& phymanager, Identifier deviceid, DeviceType devType);
+
         /// Pulls the setting of some key from the inside.
         SettingValue Get(SettingKey key);
 

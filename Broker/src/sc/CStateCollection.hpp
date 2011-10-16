@@ -50,6 +50,7 @@ using boost::property_tree::ptree;
 #include "Utility.hpp"
 #include "SCPeerNode.hpp"
 //#include "ExtensibleLineProtocol.hpp"
+#include "IAgent.hpp"
 #include "IHandler.hpp"
 #include "uuid.hpp"
 #include "CDispatcher.hpp"
@@ -71,7 +72,7 @@ enum {
 //	TIMEOUT_TIMEOUT = 10,
 //	GLOBAL_TIMEOUT = 5
 
-	GLOBAL_TIMEOUT2 = 100,
+	GLOBAL_TIMEOUT2 = 50,
 	FAULT_TIMEOUT2 = 10
 };
 
@@ -81,13 +82,15 @@ enum {
 ///     
 ///////////////////////////////////////////////////////////////////////////////
 
-class SCAgent : public IReadHandler, public SCPeerNode, public Templates::Singleton< SCAgent > {
+class SCAgent : public IReadHandler, public SCPeerNode, public Templates::Singleton< SCAgent >,
+    public IAgent< boost::shared_ptr<SCPeerNode> >
+{
   friend class Templates::Singleton< SCAgent >;
   public:
     
     typedef std::pair< std::string, int >  StateVersion;
  
-    SCAgent(std::string &uuid_, boost::asio::io_service &ios, freedm::broker::CDispatcher &p_dispatch, freedm::broker::CConnectionManager &m_conManager);
+    SCAgent(std::string uuid, boost::asio::io_service &ios, freedm::broker::CDispatcher &p_dispatch, freedm::broker::CConnectionManager &m_connManager);
     SCAgent(const SCAgent&);
     SCAgent& operator=(const SCAgent&);
     virtual ~SCAgent();
@@ -95,65 +98,43 @@ class SCAgent : public IReadHandler, public SCPeerNode, public Templates::Single
     virtual void HandleRead(const ptree& pt );
 //    virtual void HandleWrite(const ptree& pt);
     
- //   enum { LISTEN_PORT = 1870 };
-    //boost::asio::io_service	p_ios;
- //   static 	io_service 	service_;
- //   CExtensibleLineClient::Pointer client_;
-    
-    // Internal
-    // void 	recovery();
     void 	Initiate();
     void	TakeSnapshot();
-    int 	priority() const;
-    bool send_to_uuid(std::string uuid, freedm::broker::CMessage m_);
+    void	StatePrint(std::map< int, ptree >& pt );
 
-    std::string uuid_as_string();
+    // Messages
+    freedm::broker::CMessage m_state();
+    freedm::broker::CMessage m_marker();
 
     // Handlers
     void Initiate(const boost::system::error_code& err);
 
     // This is the main loop of the algorithm
     int	SC();
-    void add_peer(std::string &u_);
-    void Stop();
+
+    PeerNodePtr AddPeer(std::string uuid);
+    PeerNodePtr AddPeer(PeerNodePtr peer);
+    PeerNodePtr GetPeer(std::string uuid);
     
 protected:
 
-    std::map< StateVersion, ptree >	m_history;
-//    std::map< StateVersion, ptree >::iterator it;
+    std::map< int, ptree >      collectstate;
+    std::map< int, ptree >::iterator it;
+    int countstate;
 
-    std::map< std::string, ptree >      collectstate;
-    std::map< std::string, ptree >::iterator it;
     StateVersion			m_curversion;
     ptree				m_curstate;
-    
-    SCPeerNodePtr get_peer( const int p_id );
-    SCPeerNodePtr get_peer( const boost::asio::ip::address &p_addr );
-    SCPeerNodePtr get_peer( const int p_id, const boost::asio::ip::address &p_addr );
-    SCPeerNodePtr get_peer(std::string uuid_);
 
-    SCPeerSet	m_UpNodes;
-    SCPeerSet	m_NoNodes;
-    SCPeerSet	m_LoNodes;
-    SCPeerSet	s_AllPeers;
-    
-    std::vector<MessagePtr> m_Messages;
+    PeerSet	m_AllPeers;
+
     
     /* IO and Timers */
 //    deadline_timer		m_CheckTimer;
 //    deadline_timer		m_TimeoutTimer;
     deadline_timer		m_GlobalTimer;
-    
-    //Handlers for incoming requests.
-    boost::asio::io_service &m_ios;
-    freedm::broker::CDispatcher &m_dispatch;
-    freedm::broker::CConnectionManager &m_connManager;
-    
-    int peers;
-    boost::asio::ip::udp::endpoint m_RemoteEndpoint;
+
 };
 
   }
-//}
 
 #endif

@@ -35,6 +35,7 @@
 #include <list>
 #include <string>
 #include <cstring>
+#include <iostream>
 
 #include <boost/utility.hpp>
 #include <boost/lexical_cast.hpp>
@@ -43,8 +44,14 @@
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/xml_parser.hpp>
 
+#include "logger.hpp"
 #include "CDeviceTable.hpp"
 #include "CSimulationInterface.hpp"
+
+CREATE_EXTERN_STD_LOGS()
+
+namespace freedm {
+namespace simulation {
 
 ////////////////////////////////////////////////////////////////////////////////
 /// CSimulationServer
@@ -189,5 +196,8 @@ private:
     
     static const unsigned short HEADER_SIZE = 8;
 };
+
+} // namespace simulation
+} // namespace freedm
 
 #endif // C_SIMULATION_SERVER_HPP

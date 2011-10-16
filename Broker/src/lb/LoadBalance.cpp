@@ -7,19 +7,17 @@
 ///
 /// @project      FREEDM DGI
 ///
-/// @description  Main file which includes drafting algorithm
+/// @description  Main file that includes load balancing (drafting) algorithm
 ///
-/// @functions  LoadTable()
-///                             SendDraftRequest()
-///                             LoadManage()
-///                             LoadChange()
-///                             handle_mesage()
-///                             process_message()
-///                             get_peer()
-///                             priority()
-///                             run()
-///                             add_peer()
-///
+/// @functions 	LoadManage()
+///	        SendDraftRequest()
+///		LoadTable()
+///		handle_read()
+///		get_peer()
+///		add_peer()
+///		lb()
+///	
+/// @license	
 /// These source code files were created at as part of the
 /// FREEDM DGI Subthrust, and are
 /// intended for use in teaching or research.  They may be
@@ -37,15 +35,14 @@
 /// Suggested modifications or questions about these codes
 /// can be directed to Dr. Bruce McMillin, Department of
 /// Computer Science, Missouri University of Science and
-/// Technology, Rolla, /// MO  65409 (ff@mst.edu).
+/// Technology, Rolla, 
+/// MO  65409 (ff@mst.edu).
 ///
 /////////////////////////////////////////////////////////
 
 #include "LoadBalance.hpp"
-
 #include "Utility.hpp"
 #include "CMessage.hpp"
-
 #include <algorithm>
 #include <cassert>
 #include <exception>
@@ -59,24 +56,13 @@
 
 #include <boost/asio.hpp>
 #include <boost/bind.hpp>
+#include <boost/range/adaptor/map.hpp>
 #include <boost/function.hpp>
 #include <boost/date_time/posix_time/posix_time_types.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/foreach.hpp>
 #define foreach     BOOST_FOREACH
-#define P_Migrate 1
 
-#include <vector>
-#include <boost/assign/list_of.hpp>
-
-#include <boost/serialization/string.hpp>
-#include <boost/serialization/vector.hpp>
-#include <boost/serialization/shared_ptr.hpp>
-//#include "ExtensibleLineProtocol.hpp"
-//#include "Serialization_Connection.hpp"
-
-#include "CConnection.hpp"
-#include "CBroker.hpp"
 #include <boost/property_tree/ptree.hpp>
 using boost::property_tree::ptree;
 
@@ -84,114 +70,104 @@ using boost::property_tree::ptree;
 CREATE_EXTERN_STD_LOGS()
 
 namespace freedm {
+
+///////////////////////////////////////////////////////////////////////////////
+/// lbAgent
+/// @description: Constructor for the load balancing module.
+/// @limitations: None
+/// @pre: None
+/// @post: Object initialized and ready to enter run state.
+/// @param GetUUID(): This object's uuid.
+/// @param ios: the io service this node will use to share memory
+/// @param p_dispatch: The dispatcher used by this module
+/// @param m_conManager: The connection manager to use in this class.
+/// @param m_phyManager: The physical device manager to use in this class.
+///////////////////////////////////////////////////////////////////////////////
   
-  lbAgent::lbAgent(std::string &uuid_, boost::asio::io_service &ios, freedm::broker::CDispatcher &p_dispatch, 
-                   freedm::broker::CConnectionManager &m_conManager):
-    LPeerNode(uuid_),
-    m_ios(ios),
-    m_dispatch(p_dispatch),
-    m_connManager(m_conManager),
-    m_GlobalTimer(ios)
+lbAgent::lbAgent(std::string uuid_, boost::asio::io_service &ios, 
+                 freedm::broker::CDispatcher &p_dispatch, 
+                 freedm::broker::CConnectionManager &m_conManager, 
+                 freedm::broker::CPhysicalDeviceManager &m_phyManager):
+  LPeerNode(uuid_, m_conManager, ios, p_dispatch),
+  m_phyDevManager(m_phyManager),
+  m_GlobalTimer(ios)
 {
   Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
-  LPeerNodePtr self_(this);
-  l_AllPeers.insert( self_ );  
-  // Load the contents of load file ion local data structures 
-  std::ifstream ldFile("lb/State.txt");
-  int count =0;
-  lmcount=0;
-  std::string line;
-  if (!ldFile) {
-        std::cout << "\nUnable to open load file" << std::endl;
-        exit(1);
-        }
-  while (ldFile.good())
-    {
-      std::getline(ldFile, line); 
-      //const char *begin = line.c_str();
-      if(count>=1){
-        state[count-1]=line;
-     //  if (const char *end = strchr(begin, '\n'))
-//         {
-//        std::string column1(begin, end-begin);
-//        std::string column2(end+1, end-begin+4);
-//        std::string column3(end+7, end-begin+12);
-//        gen_s[count-1] = column1;
-//        load_s[count-1] = column2;
-//        gw_s[count-1] = column3;
-//      }
-      }
-      count++;
-     } 
+  PeerNodePtr self_(this);
+  InsertInPeerSet(l_AllPeers, self_);
+  step = 0;
 }
 
-
+///////////////////////////////////////////////////////////////////////////////
+/// ~lbAgent
+/// @description: Class desctructor
+/// @pre: None
+/// @post: The object is ready to be destroyed.
+///////////////////////////////////////////////////////////////////////////////
 lbAgent::~lbAgent()
 {
 
 }
 
 ////////////////////////////////////////////////////////////
-/// LoadManage( )
-/// LoadManage( const boost::system::error_code& err )
-///
-/// @description Manages load by broadcasting load changes (DEMAND-> Normal
-///  and Normal-> DEMAND) and initiating SendDraftRequest method
-///
+/// LoadManage
+/// @description: Manages the execution of the load balancing algorithm by 
+///               broadcasting load changes (DEMAND-> Normal and Normal-> DEMAND)
+///               computed by LoadTable() and initiating SendDraftRequest()
 /// @pre: Node is not in Fail state
-///
-/// @post: Changed load should be advertised for peers to update
-///
-///
-///
-/// @return Rewrite current load on timeout
-///
-/// @limitations Not an appropriate fault injection, good for test purpose
-///
+/// @post: Restarts on timeout
+/// @return: Local load state is monitored on and specific load changes are 
+///          advertised to peers on timeout
+/// @limitations None
 /////////////////////////////////////////////////////////
-
 void lbAgent::LoadManage()
 {
   Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
   MessagePtr m_;
-  preLoad = l_Status;
-  
-  //Read the load values loaded from load file one by one
-  if(state[lmcount] == "Supply") l_Status = LPeerNode::SUPPLY;
-  else if(state[lmcount] == "Normal") l_Status = LPeerNode::NORM;
-  else if(state[lmcount] == "Demand") l_Status = LPeerNode::DEMAND;
-  //from_string<float>(P_Gen, std::string(gen_s[lmcount]), std::dec);
-  //from_string<float>(P_Load, std::string(load_s[lmcount]), std::dec);
-  //from_string<float>(P_Gateway, std::string(gw_s[lmcount]), std::dec);
-  lmcount++;  
+  preLoad = l_Status; // Remember previous load before computing current load
 
-  ///XXX:This section is for reading from simulation server
-        // response_ = client_->Get( "load" );
-        //     from_string<float>(P_Load, response_, std::dec);
-        //Logger::Notice << "Get(load): " << P_Load << std::endl;
-        //     response_ = client_->Get( "gateway" );
-        //     from_string<float>(P_Gateway, response_, std::dec);
-        //Logger::Notice << "Get(gateway):" << P_Gateway<< std::endl;
-        //     response_ = client_->Get( "battery" );
-        //     from_string<float>(B_Soc, response_, std::dec);
-        //Logger::Notice << "Get(P_pv): " << P_Gen << std::endl;
-        //     response_ = client_->Get( "pstar" );
-        //     from_string<float>(P_Star, response_, std::dec);
-        //Logger::Notice << "Get(P_Star):" << P_Star<< std::endl;
+  // Physical device information managed by Broker can be obtained as below
+  Logger::Info << "LB module identified "<< m_phyDevManager.DeviceCount()
+               << " physical devices on this node" << std::endl;
+  freedm::broker::IPhysicalDevice::DevicePtr DevPtr;
+  freedm::broker::CPhysicalDeviceManager::PhysicalDeviceSet::iterator it_;
+  for( it_ = m_phyDevManager.begin(); it_ != m_phyDevManager.end(); ++it_ )
+  {
+    DevPtr = it_->second;
+    DevPtr = m_phyDevManager.GetDevice(it_->first); 
+    Logger::Debug<< "Device ID: " << DevPtr->GetID() << ", Device Type: " 
+    		 << DevPtr->GetType()<< ", vin: " << DevPtr->Get("vin") << std::endl;                         
+  }  
 
-  //Set load state (as Demand or Normal or Supply)
-  //TODO: Find a normalization criteria to perform this
-  // Probable entry point for D-LMPs .  
-   //   CheckState(P_Load, P_Gen, B_Soc);
-   //  if((P_Load-P_Gen) < 5.5)
-   //   l_Status = LPeerNode::SUPPLY;
-   //   else if((P_Load-P_Gen) > 14)
-   //   l_Status = LPeerNode::DEMAND;
-   //   else
-   //   l_Status = LPeerNode::NORM;
-  
+  step++;
+  std::stringstream ss_;
+  ss_.clear();
+  ss_<<"simulation.step"<<step;
+  boost::property_tree::ptree pt;
+  boost::property_tree::read_xml("lb/loads.xml",pt);   
+
+    BOOST_FOREACH(ptree::value_type & child, pt.get_child(ss_.str()))
+    {
+        freedm::broker::IPhysicalDevice::Identifier devid = child.second.get<std::string>("<xmlattr>.id");
+        int type = child.second.get<int>("type"); 
+        if(type == freedm::broker::physicaldevices::DRER){           
+        m_phyDevManager.GetDevice(devid)->Set("vout", child.second.get<float>("vout"));    
+        }
+        else if(type == freedm::broker::physicaldevices::DESD){ 
+        m_phyDevManager.GetDevice(devid)->Set("vin", child.second.get<float>("vin")); 
+        m_phyDevManager.GetDevice(devid)->Set("vout", child.second.get<float>("vout"));      
+        }
+        else if(type == freedm::broker::physicaldevices::LOAD){ 
+        m_phyDevManager.GetDevice(devid)->Set("vin", child.second.get<float>("vin"));   
+        }
+        else{
+         Logger::Debug<< "Attempt to set FREEDM GENERIC DEVICE " << std::endl;
+        }
+    }
+    
+  // Call LoadTable to update load state of the system as observed by this node
   LoadTable();
-
+     
   // On Load change from Normal to Demand, broadcast the change
   if (LPeerNode::NORM == preLoad && LPeerNode::DEMAND == l_Status)
   {
@@ -199,83 +175,94 @@ void lbAgent::LoadManage()
     freedm::broker::CMessage m_;
     std::stringstream ss_;
     ss_.clear();
-    ss_ << uuid_;
+    ss_ << GetUUID();
     ss_ >> m_.m_srcUUID;
     m_.m_submessages.put("lb.source", ss_.str());
     ss_.clear();
     ss_.str("demand");
     m_.m_submessages.put("lb", ss_.str());
-     
-    Logger::Notice <<"Broadcasting Load change: NORM -> DEMAND "
-                   <<std::endl;
-    foreach( LPeerNodePtr peer_, l_AllPeers)
-        {
-        if( peer_->uuid_ == uuid_)      
-            continue;  
-        else{            
-                try
-                        {
-                         m_connManager.GetConnectionByUUID(peer_->uuid_, m_ios, m_dispatch)->Send(m_);
-                        }
-                catch (boost::system::system_error& e)
-                        {
-                        Logger::Info << "Couldn't Send Message To Peer" << std::endl;
-                        }
-                }
-        }
+    
+        
+    //Send Demand message to all nodes
+    Logger::Notice <<"Broadcasting Load change: NORM -> DEMAND " <<std::endl;
+     foreach( PeerNodePtr peer_, l_AllPeers | boost::adaptors::map_values)
+    {
+      if( peer_->GetUUID() == GetUUID())      
+	  continue;  
+      else
+      {    	 
+	try
+  	{
+   	  peer_->Send(m_);
+  	}
+  	catch (boost::system::system_error& e)
+  	{
+    	  Logger::Info << "Couldn't Send Message To Peer" << std::endl;
+   	}
+      }
+    }//end foreach
   }//endif
 
    //On load change from Demand to Normal, broadcast the change
   else if (LPeerNode::DEMAND == preLoad && LPeerNode::NORM == l_Status)
-    {   
-      freedm::broker::CMessage m_;  
-      std::stringstream ss_;
-      ss_ << uuid_;
-      ss_ >> m_.m_srcUUID;
-      m_.m_submessages.put("lb.source", ss_.str());
-      ss_.clear();
-      ss_.str("normal");
-      m_.m_submessages.put("lb", ss_.str());
-     
-      Logger::Notice <<"Broadcasting Load change: DEMAND -> NORM "
-                   <<std::endl;   
-      foreach( LPeerNodePtr peer_, l_AllPeers)
-           {
-            if( peer_->uuid_ == uuid_)
-               continue;
-            else{        
-                   try
-             {
-                m_connManager.GetConnectionByUUID(peer_->uuid_, m_ios, m_dispatch)->Send(m_);
-             }
-          catch (boost::system::system_error& e)
-             {
-                Logger::Info << "Couldn't Send Message To Peer" << std::endl;
-             }
-           }
+  {   
+    freedm::broker::CMessage m_;  
+    std::stringstream ss_;
+    ss_ << GetUUID();
+    ss_ >> m_.m_srcUUID;
+    m_.m_submessages.put("lb.source", ss_.str());
+    ss_.clear();
+    ss_.str("normal");
+    m_.m_submessages.put("lb", ss_.str());
+
+    //Send Normal message to all nodes 
+    Logger::Notice <<"Broadcasting Load change: DEMAND -> NORM " <<std::endl;   
+    foreach( PeerNodePtr peer_, l_AllPeers | boost::adaptors::map_values)
+    {
+      if( peer_->GetUUID() == GetUUID())
+         continue;
+      else
+      {    	 
+	try
+        {
+          peer_->Send(m_);
+        }
+       
+        catch (boost::system::system_error& e)
+        {
+          Logger::Info << "Couldn't Send Message To Peer" << std::endl;
+        }
       }
+     }
     }//end elseif
 
-  // If your are in Supply state, initiate draft request
+  // If your are in Supply state
   else if (LPeerNode::SUPPLY == l_Status)
-    {
-      
-      SendDraftRequest();
-      
-    }//end elseif
+  {
+    SendDraftRequest(); //initiate draft request
+  }
 
-  // If you are in Normal state, you do nothing (atleast for now )
+  // If you are in Normal state
   else if (LPeerNode::NORM == l_Status)
-    {
-      
-    }
- 
+  {
+   // Do nothing (atleast for now )
+   }
+
+  //Start the timer; on timeout, this function is called again 
   m_GlobalTimer.expires_from_now( boost::posix_time::seconds(LOAD_TIMEOUT) );
   m_GlobalTimer.async_wait( boost::bind(&lbAgent::LoadManage, this,
-                                        boost::asio::placeholders::error));
-  
-}//end function
+  					boost::asio::placeholders::error));  
+}//end LoadManage
 
+////////////////////////////////////////////////////////////
+/// LoadManage
+/// @description: Overloaded function of LoadManage
+/// @pre: Timer expired sending an error code
+/// @post: Restarts the timer
+/// @param err: Error associated with calling timer.
+/// @return: Local load state is monitored on and specific load changes are 
+///          advertised to peers on timeout
+/////////////////////////////////////////////////////////
 void lbAgent::LoadManage( const boost::system::error_code& err )
 {
   Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
@@ -287,7 +274,7 @@ void lbAgent::LoadManage( const boost::system::error_code& err )
   else if(boost::asio::error::operation_aborted == err )
     {
       Logger::Info << "LoadManage(operation_aborted error) " <<
-        __LINE__ << std::endl;
+	__LINE__ << std::endl;
     }
   else
     {
@@ -299,665 +286,617 @@ void lbAgent::LoadManage( const boost::system::error_code& err )
 
 ////////////////////////////////////////////////////////////
 /// SendDraftRequest
-///
 /// @description Advertise willingness to share load whenever you can supply
 /// @Citations: A Distributed Drafting ALgorithm for Load Balancing,
 ///             Lionel Ni, Chong Xu, Thomas Gendreau, IEEE Transactions on
-///                             Software Engineering, 1985
-///
-/// @pre: Current load of node is Supply
-///
+///				Software Engineering, 1985
+/// @pre: Current load state of this node is 'Supply'
 /// @post: Change load to Normal after migrating load, on timer
-///
-/// @return Send "request" message to first processor among demand peers list
-///
-/// @limitations Currently sends request only to the first entry in list of
-///                              demand nodes. Ideally, it should compute draft standard.
+/// @return Send "request" message to first node among demand peers list
+/// @limitations Currently broadcasts request to all the entries in the list of
+///		 demand nodes and starts to supply to the first demand node. 
+///              Ideally, it should compute draft standard to select the demand
+///		 node to supply.
 /////////////////////////////////////////////////////////
 
 void lbAgent::SendDraftRequest(){
-  Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
-  
+  Logger::Debug << __PRETTY_FUNCTION__ << std::endl;  
   if(LPeerNode::SUPPLY == l_Status)
     {
       if(m_HiNodes.empty())
-        Logger::Notice << "No known Demand nodes at the moment" <<std::endl;
-      
-      else{
-//Create new request and send it to all DEMAND nodes   
-      freedm::broker::CMessage m_;
-      std::stringstream ss_;
-      ss_.clear();
-      ss_ << uuid_;
-      ss_ >> m_.m_srcUUID;
-      m_.m_submessages.put("lb.source", ss_.str());
-      ss_.clear();
-      ss_.str("request");
-      m_.m_submessages.put("lb", ss_.str());
-
-      Logger::Notice << "Sending DraftRequest from: " << m_.m_submessages.get<std::string>("lb.source") <<std::endl;
-      foreach( LPeerNodePtr peer_, m_HiNodes)
+	Logger::Notice << "No known Demand nodes at the moment" <<std::endl;      
+      else
       {
-        if( peer_->uuid_ == uuid_)
-          continue;
-    else{        
-         try
-           {
-             m_connManager.GetConnectionByUUID(peer_->uuid_, m_ios, m_dispatch)->Send(m_);
+        //Create new request and send it to all DEMAND nodes   
+      	freedm::broker::CMessage m_;
+      	std::stringstream ss_;
+      	ss_.clear();
+      	ss_ << GetUUID();
+      	ss_ >> m_.m_srcUUID;
+      	m_.m_submessages.put("lb.source", ss_.str());
+      	ss_.clear();
+      	ss_.str("request");
+      	m_.m_submessages.put("lb", ss_.str());
+        Logger::Notice << "\nSending DraftRequest from: " << 
+        	m_.m_submessages.get<std::string>("lb.source") <<std::endl;
+        foreach( PeerNodePtr peer_, m_HiNodes | boost::adaptors::map_values)
+    	{
+	  if( peer_->GetUUID() == GetUUID())
+	     continue;
+          else
+          {    	 
+            try
+            {
+               peer_->Send(m_);
             }
          catch (boost::system::system_error& e)
            {
             Logger::Info << "Couldn't Send Message To Peer" << std::endl;
            }
          }
-      }
-      }      
-    }
-  //return;
-}//end function
+        }//end foreach
+      }//end else	     
+    }//end if
+}//end SendDraftRequest
+
+////////////////////////////////////////////////////////////
+/// InitiatePowerMigration
+/// @description Initiates 'power migration' on Draft Accept
+///              message from a demand node    
+/// @pre: Current load state of this node is 'Supply'
+/// @post: Set command(s) to reduce DESD charge 
+/// @limitations Changes significantly depending on SST's control capability; 
+///		 for now, the supply node reduces the amount of power currently 
+///		 in use to charge DESDs
+/////////////////////////////////////////////////////////
+void lbAgent::InitiatePowerMigration(float DemandValue){
+
+     freedm::broker::IPhysicalDevice::DevicePtr DevPtr;
+     freedm::broker::CPhysicalDeviceManager::PhysicalDeviceSet::iterator it_;
+     // Make a map of DESDs
+     std::map<float, freedm::broker::IPhysicalDevice::Identifier> DESDMap;
+     float V_in, V_out; // Temp variables to hold "vin" and "vout"
+
+     //Sort the DESDs by decreasing order of their "vin"s; achieved by inserting into map
+     for( it_ = m_phyDevManager.begin(); it_ != m_phyDevManager.end(); ++it_ )
+     {
+       if ((m_phyDevManager.DeviceExists(it_->first)) && 
+          (it_->second->GetType() == freedm::broker::physicaldevices::DESD))    
+       {       	
+	 DESDMap.insert(std::pair<float, freedm::broker::IPhysicalDevice::Identifier>
+	               (it_->second->Get("vin"), it_->first));             
+       }    
+     } 
+     //Use a reverse iterator on map to retrieve elements in reverse sorted order   
+     std::map<float, freedm::broker::IPhysicalDevice::Identifier >::reverse_iterator mapIt_; 
+      float temp_ = DemandValue; // temp variable to hold the P_migrate set by Demanding node
+
+     for( mapIt_ = DESDMap.rbegin(); mapIt_ != DESDMap.rend(); ++mapIt_ )
+     {
+       V_in = mapIt_->first; //load "vin" from the DESDmap
+       
+       // Using the below if-else structure, what we are doing is as follows:
+       // Use the DESD that has highest input from DRERs and reduce this input;
+       // The key assumption here is that the SST (PSCAD Model) will figure out
+       // the way to route this surplus on to the grid
+       // Next use the DESD with next highest input and so on till net demand
+       // (P_migrate) is satisfied
+       if(temp_ <= V_in)
+       {  
+         V_in = V_in - temp_;
+         //Then set the V_in accordingly on that particular device	
+         m_phyDevManager.GetDevice(mapIt_->second)->Set("vin", V_in);               
+       }
+       else 
+       {
+         temp_ = temp_ - V_in;
+         V_in = 0;
+         //Then set the vin and vout accordingly on that particular device	
+         m_phyDevManager.GetDevice(mapIt_->second)->Set("vin", V_in); 
+       }  
+     }//end for
+     
+     // Clear the DRER map
+     DESDMap.clear();
+}
 
 ////////////////////////////////////////////////////////////
 /// LoadTable
-///
 /// @description  prints load table
-///
-///
 /// @pre: All the peers should be connected
-///
 /// @post: Printed load values should be current and consistent
-///
-///
-/// @return Load table
-///
+/// @return Load table and computes Load state
 /// @limitations Only retrieves the loads of peers and prints
 ///              ,does not probe them
-///
 /////////////////////////////////////////////////////////
 
-void lbAgent::LoadTable(){
+void lbAgent::LoadTable(){    
+  std::cout <<"\n ----------- LOAD TABLE (Power Management) ------------" << std::endl;
+  std::cout <<"| " << " @ " << microsec_clock::local_time()  <<std::endl;
 
-  foreach( LPeerNodePtr self_, l_AllPeers )
-    {
-      if( self_->uuid_ == uuid_){
-        Logger::Info << "Updating local Load Table " << std::endl;
-        m_LoNodes.erase(self_);
-        m_HiNodes.erase(self_);
-        m_NoNodes.erase(self_);
-        
-        if (LPeerNode::SUPPLY == l_Status){
-          m_LoNodes.insert(self_);
-        }
-        else if (LPeerNode::NORM == l_Status){
-          m_NoNodes.insert(self_);
-        }
-        else if (LPeerNode::DEMAND == l_Status){
-          m_HiNodes.insert(self_);
-        }
-    }
-    }
+  //temp variable to compute net generation from DRERs, storage from DESDs and LOADs
+  float net_gen = 0;
+  float net_storage = 0;
+  float net_load = 0;
   
-  std::cout <<"\n -----------------------LOAD TABLE---------------------" << std::endl;
-  std::cout <<"| " << std::setw(20) << "UUID" << std::setw(27)<< "State" << std::setw(7) <<"|"<<std::endl;
-  std::cout <<"| "<< std::setw(20) << "----" << std::setw(27)<< "-----" << std::setw(7) <<"|"<<std::endl;
-  
- foreach( LPeerNodePtr p_, l_AllPeers )
+  //# devices of each type attached and alive 
+  int DRER_count = 0;
+  int DESD_count = 0;
+  int LOAD_count = 0;
+
+freedm::broker::IPhysicalDevice::DevicePtr DevPtr;
+freedm::broker::CPhysicalDeviceManager::PhysicalDeviceSet::iterator it_;
+for( it_ = m_phyDevManager.begin(); it_ != m_phyDevManager.end(); ++it_ )
     {
-      std::cout<<"| " << p_->uuid_ << std::setw(12)<< "Grp Member" <<std::setw(6) <<"|"<<std::endl;
+      //Compute Net Generation
+      if ((m_phyDevManager.DeviceExists(it_->first)) && 
+         (it_->second->GetType() == freedm::broker::physicaldevices::DRER))
+      {       	
+         net_gen += it_->second->Get("vout");   
+	 DRER_count++;          
+      }  
+      //Compute Net Storage
+      if ((m_phyDevManager.DeviceExists(it_->first)) && 
+	 (it_->second->GetType() == freedm::broker::physicaldevices::DESD))
+      {       	
+	 net_storage += it_->second->Get("vout");       
+	 DESD_count++;      
+      } 
+      //Compute Net Load
+      if ((m_phyDevManager.DeviceExists(it_->first)) && 
+	 (it_->second->GetType() == freedm::broker::physicaldevices::LOAD))
+      {       	
+	 net_load += it_->second->Get("vin");     
+	 LOAD_count++;        
+      }  
     }
 
-  foreach( LPeerNodePtr p1_, m_HiNodes )
+  P_Gen = net_gen;
+  B_Soc = net_storage;
+  P_Load = net_load;
+  P_Gateway = P_Load - P_Gen;
+  std::cout <<"| " << "Net DRER (" << DRER_count << "): " << P_Gen << std::setw(14) 
+	    << "Net DESD (" << DESD_count << "): " << B_Soc << std::endl;
+  std::cout <<"| " << "Net Load (" << LOAD_count << "): "<< P_Load << std::setw(14)
+	    << "Gateway: " << P_Gateway << std::endl;
+  std::cout <<"| ---------------------------------------------------- |" << std::endl;
+  std::cout <<"| " << std::setw(20) << "UUID" << std::setw(27)<< "State" << std::setw(7) <<"|"<< std::endl;
+  std::cout <<"| "<< std::setw(20) << "----" << std::setw(27)<< "-----" << std::setw(7) <<"|"<< std::endl;
+
+  //Compute the Load state based on the current gateway value
+  //TODO: This should be computed based on a normalized value obtained thru State Collection
+  if(P_Gateway <= 0)      l_Status = LPeerNode::SUPPLY;
+  else if(P_Gateway > 6)  {l_Status = LPeerNode::DEMAND; DemandValue = 6-P_Gateway;}
+  else 		  	  l_Status = LPeerNode::NORM;
+
+  //Update information about this node in the load table based on above computation
+  //foreach( PeerNodePtr self_, l_AllPeers )
+  foreach( PeerNodePtr self_, l_AllPeers | boost::adaptors::map_values)
+  {
+    if( self_->GetUUID() == GetUUID())
     {
-      std::cout<<"| " << p1_->uuid_ << std::setw(12)<< "Demand" <<std::setw(6) <<"|"<<std::endl;
+       EraseInPeerSet(m_LoNodes,self_);
+       EraseInPeerSet(m_HiNodes,self_);
+       EraseInPeerSet(m_NoNodes,self_);
+       if (LPeerNode::SUPPLY == l_Status)
+       {
+	  InsertInPeerSet(m_LoNodes,self_);
+       }
+       else if (LPeerNode::NORM == l_Status)
+       {
+	  InsertInPeerSet(m_NoNodes,self_);
+       }
+       else if (LPeerNode::DEMAND == l_Status)
+       {
+	  InsertInPeerSet(m_HiNodes,self_);
+       }
     }
-  foreach( LPeerNodePtr p2_, m_NoNodes )
+  }
+  
+ //Print the load information you have about the rest of the system  
+ foreach( PeerNodePtr p_, l_AllPeers | boost::adaptors::map_values)
     {
-      std::cout<<"| " << p2_->uuid_ << std::setw(12)<< "Normal" <<std::setw(6) <<"|"<<std::endl;
-    }
-  foreach( LPeerNodePtr p3_, m_LoNodes )
-    {
-      std::cout<<"| " << p3_->uuid_ << std::setw(12)<< "Supply" <<std::setw(6) <<"|"<<std::endl;
+      std::cout<<"| " << p_->GetUUID() << std::setw(12)<< "Grp Member" <<std::setw(6) <<"|"<<std::endl;
+      if (CountInPeerSet(m_HiNodes,p_) > 0 )
+        std::cout<<"| " << p_->GetUUID() << std::setw(12)<< "Demand" <<std::setw(6) <<"|"<<std::endl;
+      else if (CountInPeerSet(m_NoNodes,p_) > 0 )
+        std::cout<<"| " << p_->GetUUID() << std::setw(12)<< "Normal" <<std::setw(6) <<"|"<<std::endl;
+      else if (CountInPeerSet(m_LoNodes,p_) > 0 )
+        std::cout<<"| " << p_->GetUUID() << std::setw(12)<< "Supply" <<std::setw(6) <<"|"<<std::endl;
+      else
+        std::cout<<"| " << p_->GetUUID() << std::setw(12)<< "------" <<std::setw(6) <<"|"<<std::endl;
     }
   std::cout <<" ------------------------------------------------------" <<std::endl;
-  //std::cout<<"Current gateway Load: "<<P_Gateway<<std::endl;
-return;
-}
+  return;
+}//end LoadTable
 
 ////////////////////////////////////////////////////////////
-/// process_message
-///
-/// @description Process the incoming message and initiate an action accordingly
-/// @I/O: Enumerate specific device communication (A/D,D/A)
-/// @Peers: For concurrent programs, processes this
-///         function communicates with (can also be
-///         replicated copies of itself) and threads and
-///         interprocess/interthread communication
-///         mechanism
-/// @Shared_Memory: Enumerate shared memory blocks
-/// @Error_Handling: enumerate exceptions and recovery
-///  actions
-/// @Real-Time: For Real-Time programs, indicate
-///             periodicity, lower bound, upper bound
-/// @Citations: For algorithms and mathematical
-///               computations, cite the resource.
-///
-/// @pre: Function's precondition in terms of program
-///      variables and process statuses.
-/// @post: Function's postcondition in terms of program
-///      variables and process statuses.
-///
-/// @param: Description of parameter
-///
-/// @param
-///
-/// @return
-///
-/// @limitations
+/// HandleRead
+/// @description: handles the incoming messages meant for lb module and performs 
+///               action according to the Loadbalancing algorithm
+/// @pre: The message obtained as ptree should be intended for this module
+/// @post: The sender of the message always gets a response from this node
+/// @param pt: message (ptree) reference obtained via broker
+/// @return: multiple objectives depending on the message and power migration on 
+///          successful negotiation
+/// @limitations: Basis for setting P* is currently limited as follows:
+///               Supplier sets his DRERs and DESDs in that order in a way to 
+///               satisfy the net demand (P_Migrate); Assumption is that DRERs and DESDs 
+///               have a special setting called "vin" and "vout" to direct their
+///               output to the local system or to the grid respectively. 
+///               In the case of Demanding node, the target gateway (P*) is set on the 
+///               SST assuming that the SST within the simulation can allow the 
+///               inflow to serve the demand load; This was done so since loads cannot
+///               be controlled-so what would we set at the demand node to route 
+///               into this node, the power being "migrated" by the supplying node.
+///               Obviously, this would change in the near future
 ///
 /////////////////////////////////////////////////////////
-
- void lbAgent::HandleRead(const ptree& pt )
- {
-
-   Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
-   
-   LBPeerSet tempSet_;
-   MessagePtr m_;
-   std::string line_;
-   std::stringstream ss_;
-   LPeerNodePtr peer_;   
-   line_ = pt.get<std::string>("lb.source");
+void lbAgent::HandleRead(const ptree& pt )
+{
+  Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
+  PeerSet tempSet_;
+  MessagePtr m_;
+  std::string line_;
+  std::stringstream ss_;
+  PeerNodePtr peer_;   
+  line_ = pt.get<std::string>("lb.source");
+  Logger::Debug << "Message '" <<pt.get<std::string>("lb")<<"' received from "<< line_<<std::endl;
 
    // Evaluate the identity of the message source
-   if(line_ != uuid_)
-     {
-       // Update the peer entry, if needed
-       peer_ = get_peer(line_); 
-           if( false != peer_ )
-            {
-             Logger::Debug << "Peer already exists. Do Nothing " <<std::endl;
-            }
+   if(line_ != GetUUID())
+   {
+      Logger::Debug << "Flag " <<std::endl;
+      // Update the peer entry, if needed
+      peer_ = get_peer(line_); 
+
+       if( peer_ != NULL)
+       {
+         Logger::Debug << "Peer already exists. Do Nothing " <<std::endl;
+       }
        else
-            {
-             Logger::Debug << "Peer doesn`t exist. Add it up to LBPeerSet" <<std::endl;
-             add_peer(line_);
+       {
+         // Add the peer, if an entry wasn`t found
+	 Logger::Debug << "Peer doesn`t exist. Add it up to LBPeerSet" <<std::endl;
+	 add_peer(line_);
          peer_ = get_peer(line_);
-            }
+       }
+   }//endif   
+     
+   // If you receive a peerList from your new leader, process it and 
+   // identify your new group members
+   if(pt.get<std::string>("lb") == "peerList")
+   {
+      std::string peers_, token;
+      peers_ = pt.get<std::string>("lb.peers");
+      Logger::Notice << "\nPeer List < " << peers_ <<
+	           " > received from Group Leader: " << line_ <<std::endl;
+
+      //Update the PeerNode lists accordingly            
+
+      foreach( PeerNodePtr p_, l_AllPeers | boost::adaptors::map_values)
+      {
+        if( p_->GetUUID() == GetUUID()) continue;	   
+	EraseInPeerSet(l_AllPeers,p_);
       }
-     
-   else{
-     //Do nothing
-       } 
-  
-   // If you receive peerList from your new leader, process it and 
-   // identify of your new group members
-        if(pt.get<std::string>("lb") == "peerList")
+
+      foreach( PeerNodePtr p_, m_LoNodes | boost::adaptors::map_values)
+      {
+        if( p_->GetUUID() == GetUUID()) continue;	   
+	EraseInPeerSet(m_LoNodes,p_);
+      }
+
+      foreach( PeerNodePtr p_, m_HiNodes | boost::adaptors::map_values)
+      {
+        if( p_->GetUUID() == GetUUID()) continue;	   
+	EraseInPeerSet(m_HiNodes,p_);
+      }
+
+      foreach( PeerNodePtr p_, m_NoNodes | boost::adaptors::map_values)
+      {
+        if( p_->GetUUID() == GetUUID()) continue;	   
+	EraseInPeerSet(m_NoNodes,p_);
+      }
+      
+      // Tokenize the peer list string 
+      std::istringstream iss(peers_);
+      while ( getline(iss, token, ',') )
+      {
+      	peer_ = get_peer(token); 
+        if( false != peer_ )
+	{
+	  Logger::Debug << "LB knows this peer " <<std::endl;
+	}
+        else
+	{
+          Logger::Debug << "LB sees a new member "<< token  
+                        << " in the group " <<std::endl;
+          add_peer(token);
+	}
+      }//endwhile
+  }//end if("peerlist")
+
+  // You received a draft request    
+  else if(pt.get<std::string>("lb") == "request"  && peer_->GetUUID() != GetUUID())
+  {
+    Logger::Notice << "\nRequest message received from: " << peer_->GetUUID() << std::endl;               
+    // Just not to duplicate the peer, erase the existing entries of it               
+
+    EraseInPeerSet(m_LoNodes,peer_);
+    EraseInPeerSet(m_HiNodes,peer_);
+    EraseInPeerSet(m_NoNodes,peer_);
+    // Insert into set of Supply nodes
+
+    InsertInPeerSet(m_LoNodes,peer_);
+
+    // Create your response to the Draft request sent by the source
+    freedm::broker::CMessage m_;
+    std::stringstream ss_;
+    ss_ << GetUUID();
+    ss_ >> m_.m_srcUUID;
+    m_.m_submessages.put("lb.source", ss_.str());   
+
+    // If you are in Demand State, accept the request with a 'yes' 
+    if(LPeerNode::DEMAND == l_Status)
+    {
+      ss_.clear();
+      ss_.str("yes");
+      m_.m_submessages.put("lb", ss_.str());
+    }
+
+    // Otherwise, inform the source that you are not interested
+    // NOTE: This may change in future when we incorporate advanced economics 
+    else
+    {
+      ss_.clear();
+      ss_.str("no");
+      m_.m_submessages.put("lb", ss_.str());
+    }
+
+    
+    // Send your response         
+    if( peer_->GetUUID() != GetUUID())
+    {
+      try
+      {
+   	peer_->Send(m_);
+      }
+      catch (boost::system::system_error& e)
+      {
+   	Logger::Info << "Couldn't Send Message To Peer" << std::endl;
+      }
+    }
+  }//end if("request")
+
+  // You received a Demand message from the source 
+  else if(pt.get<std::string>("lb") == "demand"  && peer_->GetUUID() != GetUUID())
+  {
+    Logger::Notice << "\nDemand message received from: " 
+                   << pt.get<std::string>("lb.source") <<std::endl;
+    EraseInPeerSet(m_HiNodes,peer_);
+    EraseInPeerSet(m_NoNodes,peer_);
+    EraseInPeerSet(m_LoNodes,peer_);
+    InsertInPeerSet(m_HiNodes,peer_);
+  }//end if("demand")
+
+  // You received a Load change of source to Normal state
+  else if(pt.get<std::string>("lb") == "normal"  && peer_->GetUUID() != GetUUID())
+  {
+    Logger::Notice << "\nNormal message received from: " 
+                   << pt.get<std::string>("lb.source") <<std::endl;
+    EraseInPeerSet(m_NoNodes,peer_);
+    EraseInPeerSet(m_HiNodes,peer_);
+    EraseInPeerSet(m_LoNodes,peer_);
+    InsertInPeerSet(m_NoNodes,peer_);
+  }//end if("normal")
+
+ // You received a message saying the source is in Supply state, which means 
+ // you are (were, recently) in Demand state; else you would not have received it
+ else if(pt.get<std::string>("lb") == "supply"  && peer_->GetUUID() != GetUUID())
+ {
+   Logger::Notice << "\nSupply message received from: " 
+                  << pt.get<std::string>("lb.source") <<std::endl;
+   EraseInPeerSet(m_LoNodes,peer_);
+   EraseInPeerSet(m_HiNodes,peer_);
+   EraseInPeerSet(m_NoNodes,peer_);
+   InsertInPeerSet(m_LoNodes,peer_);
+ }//end if("supply")
+
+  // You received a response from source, to your draft request
+  else if(((pt.get<std::string>("lb") == "yes") || 
+         (pt.get<std::string>("lb") == "no")) && peer_->GetUUID() != GetUUID())
+  {   
+    // The response is a 'yes' 
+    if(pt.get<std::string>("lb") == "yes")
+    {
+      Logger::Notice << "(Yes) from " << peer_->GetUUID() << std::endl;
+      //Initiate drafting with a message accordingly
+      freedm::broker::CMessage m_;
+      std::stringstream ss_;   
+      ss_ << GetUUID();
+      ss_ >> m_.m_srcUUID;
+      m_.m_submessages.put("lb.source", ss_.str());
+      ss_.clear();
+      ss_.str("drafting");
+      m_.m_submessages.put("lb", ss_.str());
+      //Its better to check the status again before initiating drafting
+      if( peer_->GetUUID() != GetUUID() && LPeerNode::SUPPLY == l_Status )
+      {
+        try
         {
-                  std::string peers_, token;
-                  peers_ = pt.get<std::string>("lb.peers");
-          Logger::Notice << "Peer List: " << peers_ <<
-                   " received from Group Leader: " << line_ <<std::endl;
-          std::istringstream iss(peers_);
-
-          // Tokenize the peer list string 
-          while ( getline(iss, token, ',') )
-            {
-                  peer_ = get_peer(token); 
-                  if( false != peer_ )
-                   {
-                    Logger::Debug << "LB knows this peer " <<std::endl;
-                   }
-              else
-                   {
-                Logger::Debug << "LB sees a new member "<< token  
-                               << " in the group " <<std::endl;
-                add_peer(token);
-                   }
-            }
-         }
-
-    // You received a draft request    
-  else if(pt.get<std::string>("lb") == "request" && peer_->uuid_ != uuid_)
-     {
-       Logger::Notice << "Request message received from: " << peer_->uuid_ 
-                      <<std::endl;
-                      
-       // Just not to duplicate the peer, erase the existing entries of it               
-       m_LoNodes.erase(peer_);
-       m_HiNodes.erase(peer_);
-       m_NoNodes.erase(peer_);
-        
-       // Insert into set of Supply nodes
-       m_LoNodes.insert(peer_);
-
-       // Create your response to the Draft request sent by the source
-       freedm::broker::CMessage m_;
-       std::stringstream ss_;
-       ss_ << uuid_;
-       ss_ >> m_.m_srcUUID;
-       m_.m_submessages.put("lb.source", ss_.str());   
-
-       // If you are in Demand State, accept the request with a 'yes' 
-       if(LPeerNode::DEMAND == l_Status)
-       {
-           ss_.clear();
-           ss_.str("yes");
-           m_.m_submessages.put("lb", ss_.str());
-       }
-
-       // Otherwise, inform the source that you are not interested
-       // NOTE: This may change in future when we incorporate advanced economics 
-       else
-       {
-           ss_.clear();
-           ss_.str("no");
-           m_.m_submessages.put("lb", ss_.str());
-       }
-
-       // Send your response         
-       if( peer_->uuid_ != uuid_ )
-       {
-             try
-                        {
-                         m_connManager.GetConnectionByUUID(peer_->uuid_, m_ios, m_dispatch)->Send(m_);
-                         }
-                catch (boost::system::system_error& e)
-                        {
-                         Logger::Info << "Couldn't Send Message To Peer" << std::endl;
-                    }
-       }
-     }
-
-   // You received a Demand message from the source 
-   else if(pt.get<std::string>("lb") == "demand" && peer_->uuid_ != uuid_)
-     {
-       Logger::Notice << "Demand message received from: " 
-                      << pt.get<std::string>("lb.source") <<std::endl;
-     m_HiNodes.erase(peer_);
-     m_NoNodes.erase(peer_);
-     m_LoNodes.erase(peer_);
-     m_HiNodes.insert(peer_);
-     }
-
-   // You received a Load change of source to Normal state
-   else if(pt.get<std::string>("lb") == "normal" && peer_->uuid_ != uuid_)
-     {
-     Logger::Notice << "Normal message received from: " 
-                    << pt.get<std::string>("lb.source") <<std::endl;
-     m_NoNodes.erase(peer_);
-     m_HiNodes.erase(peer_);
-     m_LoNodes.erase(peer_);
-     m_NoNodes.insert(peer_);
-     }
-
-   // You received a message saying the source is in Supply state, which means 
-   // you are (were, recently) in Demand state; else you would not have received it
-   else if(pt.get<std::string>("lb") == "supply" && peer_->uuid_ != uuid_)
-     {
-     Logger::Notice << "Supply message received from: " 
-                    << pt.get<std::string>("lb.source") <<std::endl;
-     m_LoNodes.erase(peer_);
-     m_HiNodes.erase(peer_);
-     m_NoNodes.erase(peer_);
-     m_LoNodes.insert(peer_);
-     }
-
-   // You received a response from source, to your draft request
-   else if(((pt.get<std::string>("lb") == "yes") || (pt.get<std::string>("lb") == "no")) && peer_->uuid_ != uuid_)
-     {
-     
-     // The response is a 'yes' ; So you initiate drafting with a message accordingly
-     if(pt.get<std::string>("lb") == "yes"){
-       Logger::Notice << "(Yes) from " << peer_->uuid_ << std::endl;
-       
-       freedm::broker::CMessage m_;
-       std::stringstream ss_;   
-       ss_ << uuid_;
-       ss_ >> m_.m_srcUUID;
-       m_.m_submessages.put("lb.source", ss_.str());
-       ss_.clear();
-       ss_.str("drafting");
-       m_.m_submessages.put("lb", ss_.str());
-       
-       if( peer_->uuid_ != uuid_ && LPeerNode::SUPPLY == l_Status )
-        {
-             try
-           {
-             m_connManager.GetConnectionByUUID(peer_->uuid_, m_ios, m_dispatch)->Send(m_);
-            }
-         catch (boost::system::system_error& e)
-            {
-             Logger::Info << "Couldn't send Message To Peer" << std::endl;
-             }
+          peer_->Send(m_);
         }
-     }
+        catch (boost::system::system_error& e)
+        {
+          Logger::Info << "Couldn't send Message To Peer" << std::endl;
+        }
+       }
+    }//endif
      
     // The response is a 'No'; do nothing  
     else
-     {
-       Logger::Notice << "(No) from " << peer_->uuid_ << std::endl;
-     }
-   }
+    {
+      Logger::Notice << "(No) from " << peer_->GetUUID() << std::endl;
+    }
+  }//end if("yes/no from the demand node")
 
-   // You received a Drafting message in reponse to your Demand
-   // Ackowledge by sending an 'Accept' message
-   else if(pt.get<std::string>("lb") == "drafting" && peer_->uuid_ != uuid_)
+ //You received a Drafting message in reponse to your Demand
+ //Ackowledge by sending an 'Accept' message
+ else if(pt.get<std::string>("lb") == "drafting" && peer_->GetUUID() != GetUUID())
+ {
+   Logger::Notice << "\nDrafting message received from: " << peer_->GetUUID() << std::endl;   
+   if(LPeerNode::DEMAND == l_Status)
    {
-     Logger::Notice << "Drafting message received from: " << peer_->uuid_ << std::endl;
-     
-     if(LPeerNode::DEMAND == l_Status){
-         freedm::broker::CMessage m_;
-         std::stringstream ss_;
-         ss_ << uuid_;
-         ss_ >> m_.m_srcUUID;
-         m_.m_submessages.put("lb.source", ss_.str());
-         ss_.clear();
-         ss_.str("accept");
-         m_.m_submessages.put("lb", ss_.str());
-         
-         if( peer_->uuid_ != uuid_ && LPeerNode::DEMAND == l_Status )
-         {
-          try
-                 {
-                         m_connManager.GetConnectionByUUID(peer_->uuid_, m_ios, m_dispatch)->Send(m_);
-                 }
-          catch (boost::system::system_error& e)
-                {
-                  Logger::Info << "Couldn't Send Message To Peer" << std::endl;
-             }
+     freedm::broker::CMessage m_;
+     std::stringstream ss_;
+     ss_ << GetUUID();
+     ss_ >> m_.m_srcUUID;
+     m_.m_submessages.put("lb.source", ss_.str());
+     ss_.clear();
+     ss_.str("accept");
+     m_.m_submessages.put("lb", ss_.str()); 
+     ss_.clear();
+     ss_ << DemandValue;
+     m_.m_submessages.put("lb.value", ss_.str());
 
-           // Make necessary power setting accordingly to allow power migration
-           // TODO:Do we use P_Load or P_Gateway?
-              P_Star = P_Gateway + P_Migrate; //instead of 1
-              entry_= to_string(P_Star);
-              //std::cout<<"load entry in drafting:"<< entry_<<std::endl;
-                  // Use this to write to simulation server 
-                  // client_->Set( "pstar",entry_ );
-           Logger::Notice<<"Setting new load on SST: "<< uuid_ << std::endl; 
-           Logger::Notice<<"Migrated 1KW load from: "<< peer_->uuid_ << std::endl;
-      }
-         else
-           {
-             //Nothing; Local Load change from Demand state (Migration will not proceed)
-           }
+     if( peer_->GetUUID() != GetUUID() && LPeerNode::DEMAND == l_Status )
+     {
+       try
+       {
+   	 peer_->Send(m_);
+       }
+       catch (boost::system::system_error& e)
+       {
+  	 Logger::Info << "Couldn't Send Message To Peer" << std::endl;
+       }
+
+      // Make necessary power setting accordingly to allow power migration
+      //TODO: Set "Gateway" at the SST as below or control physical devices?
+      //TODO: Changes significantly depending on SST's control capability; 
+      //for now, the demand node doesn`t have to make any setting
+      //P_Star = P_Gateway + P_Migrate; //instead of 1
+      //m_phyDevManager.GetDevice("sst")->Set("P*", P_Star);     
+      //Logger::Notice<<" Obtaining power from: "<< peer_->GetUUID() << std::endl;
+     }
+     else
+     {
+     //Nothing; Local Load change from Demand state (Migration will not proceed)
      }
    }
+ }//end if("drafting")
 
-   // The Demand node you agreed to supply power to, is awaiting migration
-   else if(pt.get<std::string>("lb") == "accept" && peer_->uuid_ != uuid_)
-     {
-       //On acceptance of remote host to involve in drafting, this node
-       //changes to NORM from SUPPLY
-       Logger::Notice<< "Draft Accept message received from: "
-                     << peer_->uuid_<<std::endl;
-                     
-       if( LPeerNode::SUPPLY == l_Status)
-         {
-           //TODO:Do we use P_Load or P_Gateway?
-           P_Star = P_Gateway - P_Migrate; //instead of 1
-           entry_= to_string(P_Star);
-           //std::cout<<"load entry in drafting:"<< entry_<<std::endl;
-           // Use this to write to simulation server 
-           //client_->Set( "pstar",entry_ );
-           
-           Logger::Notice<<"Migrated 1KW load to: "<< peer_->uuid_
-                         << std::endl;
-         }
-       
-       else
-         {
-           Logger::Warn << "Unexpected Accept message" << std::endl;
-         }
-     }
-
-     // "load" message is sent by the State Collection module of the source 
-     // (local or remote). Repond to it by sending in your current load status
-     else if(pt.get<std::string>("lb") == "load"){
-       Logger::Notice << "Current Load State requested by " << peer_->uuid_ << std::endl;
-       
-       freedm::broker::CMessage m_;
-       std::stringstream ss_;   
-       ss_ << uuid_;
-       ss_ >> m_.m_srcUUID;
-       m_.m_submessages.put("statecollection.source", ss_.str());
-       ss_.clear();
-       
-       if (LPeerNode::SUPPLY == l_Status){
-       ss_.str("SUPPLY");
-       }
-        else if (LPeerNode::DEMAND == l_Status){
-       ss_.str("DEMAND");
-       }
-
-        else if (LPeerNode::NORM == l_Status){
-       ss_.str("NORMAL");
-       }
-
-        else{
-        ss_.str("Unknown");
-        }
-       
-       m_.m_submessages.put("statecollection.load", ss_.str());
-       
-       try
-           {
-             m_connManager.GetConnectionByUUID(peer_->uuid_, m_ios, m_dispatch)->Send(m_);
-            }
-       catch (boost::system::system_error& e)
-            {
-              Logger::Info << "Couldn't send Message To Peer" << std::endl;
-             }
-     }
-
+ // The Demand node you agreed to supply power to, is awaiting migration
+ else if(pt.get<std::string>("lb") == "accept" && peer_->GetUUID() != GetUUID())
+ {
+   //On acceptance of remote host to involve in drafting, this node
+   //changes to NORM from SUPPLY
+   float DemValue;
+   std::stringstream ss_;
+   ss_ << pt.get<std::string>("lb.value");
+   ss_ >> DemValue;
+   Logger::Notice << " Draft Accept message received from: "
+		  << peer_->GetUUID()<< "with demand of "<<DemValue << std::endl;	     
+   if( LPeerNode::SUPPLY == l_Status)
+   {
+   // Make necessary power setting accordingly to allow power migration
+      Logger::Notice<<"\nMigrating power on request from: "<< peer_->GetUUID() << std::endl;
+      InitiatePowerMigration(DemValue);
+            
+   }//end if( LPeerNode::SUPPLY == l_Status)
+     
    else
-     {
-       Logger::Warn << "Invalid Message Type" << std::endl;
-     }  
+   {
+     Logger::Warn << "Unexpected Accept message" << std::endl;
+   }
+ }//end if("accept")
+
+ // "load" message is sent by the State Collection module of the source 
+ // (local or remote). Respond to it by sending in your current load status
+ else if(pt.get<std::string>("lb") == "load")
+ {
+   peer_ = get_peer(line_);
+   Logger::Notice << "\nCurrent Load State requested by " << peer_->GetUUID() << std::endl;    
+     
+   freedm::broker::CMessage m_;
+   std::stringstream ss_;   
+   ss_ << GetUUID();
+   ss_ >> m_.m_srcUUID;
+   m_.m_submessages.put("sc", "load");
+   m_.m_submessages.put("sc.source", ss_.str());
+   ss_.clear();
+   if (LPeerNode::SUPPLY == l_Status)
+   {
+     ss_.str("SUPPLY");
+   }
+   else if (LPeerNode::DEMAND == l_Status)
+   {
+     ss_.str("DEMAND");
+   }
+   else if (LPeerNode::NORM == l_Status)
+   {
+     ss_.str("NORMAL");
+   }
+   else
+   {
+     ss_.str("Unknown");
+   }       
+   m_.m_submessages.put("sc.status", ss_.str());
+   try
+   { 
+     peer_->Send(m_);
+   }
+   catch (boost::system::system_error& e)
+   {
+     Logger::Info << "Couldn't send Message To Peer" << std::endl;
+   }
+ }//end if("load")
+
+ // Other message type is invalid within lb module
+ else
+ {
+   Logger::Warn << "Invalid Message Type" << std::endl;
  }
+ 	
+}//end function
 
-////////////////////////////////////////////////////////////
-/// LPeerNodePtr( const int p_id )
-/// LPeerNodePtr( const boost::asio::ip::address &p_addr )
-/// LPeerNodePtr( const int p_id, const boost::asio::ip::address &p_addr )
-///
-/// @description Obtains the hostnames of peers and adds them to Peer set
-/// @I/O: Enumerate specific device communication (A/D,D/A)
-/// @Peers: For concurrent programs, processes this
-///         function communicates with (can also be
-///         replicated copies of itself) and threads and
-///         interprocess/interthread communication
-///         mechanism
-/// @Shared_Memory: Enumerate shared memory blocks
-/// @Error_Handling: enumerate exceptions and recovery
-///  actions
-/// @Real-Time: For Real-Time programs, indicate
-///             periodicity, lower bound, upper bound
-/// @Citations: For algorithms and mathematical
-///               computations, cite the resource.
-///
-/// @pre: Function's precondition in terms of program
-///      variables and process statuses.
-/// @post: Function's postcondition in terms of program
-///      variables and process statuses.
-///
-/// @param: Description of parameter
-/// @return
-///
-/// @limitations
-///
-/////////////////////////////////////////////////////////
 
-LPeerNodePtr lbAgent::get_peer( const int p_id )
+lbAgent::PeerNodePtr lbAgent::get_peer(std::string uuid)
 {
-        boost::asio::ip::address tmp_;
-        return get_peer( p_id, tmp_ );
+  PeerSet::iterator it = l_AllPeers.find(uuid);
+  if(it != l_AllPeers.end())
+  {
+    return it->second;   
+  }
+  else
+  {
+    return PeerNodePtr();
+  }
 }
 
-LPeerNodePtr lbAgent::get_peer( const boost::asio::ip::address &p_addr )
-{
-        return get_peer( 0, p_addr );
-}
-
-LPeerNodePtr lbAgent::get_peer( const int p_id,
-                const boost::asio::ip::address &p_addr )
-{
-        Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
-
-        // find_LBpeer fp_pred;
-
-//      boost::asio::ip::udp::endpoint end_( p_addr, 0 );
-//      LBPeerSet p_;
-//      p_.insert( LPeerNodePtr(new LPeerNode(p_id, end_)));
-
-        LPeerNodePtr ret_;
-
-//      LBPeerSet::iterator i_ =
-//              std::search( l_AllPeers.begin(), l_AllPeers.end(),
-//                                      p_.begin(), p_.end(), fp_pred );
-
-//      if( l_AllPeers.end() != i_ )
-//      {
-//              ret_ = *i_;
-//      }
-
-        return ret_;
-}
-
-LPeerNodePtr lbAgent::get_peer(std::string uuid_)
-{
-        Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
-
-        find_LBpeer fp_pred;
-        LBPeerSet p_;
-        p_.insert( LPeerNodePtr(new LPeerNode(uuid_)));
-
-        LPeerNodePtr ret_;
-
-        LBPeerSet::iterator i_ =
-                std::search( l_AllPeers.begin(), l_AllPeers.end(),
-                                        p_.begin(), p_.end(), fp_pred );
-
-        if( l_AllPeers.end() != i_ )
-        {
-                ret_ = *i_;
-        }
-
-        return ret_;
-}
-
-
-////////////////////////////////////////////////////////////
-/// priority()
-///
-/// @description Assigns a random numeric to every host as NodeID
-///
-/// @pre: instance of lbAgent should be instantiated
-///
-/// @post: Node is assigned an ID
-///
-///
-/// @param: Description of parameter
-///
-/// @param
-///
-/// @return
-///
-/// @limitations
-///
-/////////////////////////////////////////////////////////
-int lbAgent::priority() const
-{
-        Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
-
-        return m_NodeID;
-}
-
-////////////////////////////////////////////////////////////
-/// add_peer()
-///
-/// @description Adds a specified peer to list of existing peers and
-///                              establishes connection
-/// @Peers:
-///
-/// @Shared_Memory:
-/// @Error_Handling:
-///
-/// @Real-Time:
-///
-/// @Citations:
-///
-///
-/// @pre:
-///
-/// @post:
-///
-///
-/// @param: hostname, port
-///
-/// @return
-///
-/// @limitations
-///
-/////////////////////////////////////////////////////////
-
-void lbAgent::add_peer(std::string &u_)
+lbAgent::PeerNodePtr lbAgent::add_peer(std::string uuid)
 {
   Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
-  Logger::Info << "Adding peer:" << u_ << std::endl;
-  LPeerNodePtr tmp_;
-  tmp_.reset( new LPeerNode(u_));
-  l_AllPeers.insert( tmp_);
-  m_NoNodes.insert(tmp_);
-  return;
+  PeerNodePtr tmp_;
+  tmp_.reset(new LPeerNode(uuid,GetConnectionManager(),GetIOService(),GetDispatcher()));
+  InsertInPeerSet(l_AllPeers,tmp_);
+  InsertInPeerSet(m_NoNodes,tmp_);
+  return tmp_;
 }
-
-
 ////////////////////////////////////////////////////////////
-/// run()
-///
+/// LB
 /// @description Main function which initiates the algorithm
-///
-/// @pre: connections to peers should be instantiated
-///
-/// @post: execution of drafting algorithm
-///
-///
-/// @return
-///
-/// @limitations
-///
+/// @limitations None
+/// @pre: connections to peers should be instantiated (Broker does that)
+/// @post: initiation of drafting algorithm
 /////////////////////////////////////////////////////////
 int lbAgent::LB()
 {
   Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
-  
-  
-  //Ideally, DGI process should query and obtain these values from the
-  //Simulation through the ExtensibleServer interface
-  
-//          response_ = client_->Get( "load" );
-//          from_string<float>(P_Load, response_, std::dec);
-//          Logger::Notice << "Get(load):" << P_Load << std::endl;
-//          response_ = client_->Get( "gateway" );
-//          from_string<float>(P_Gateway, response_, std::dec);
-//          Logger::Notice << "Get(gateway):" << P_Gateway<< std::endl;
-//          response_ = client_->Get( "battery" );
-//          from_string<float>(B_Soc, response_, std::dec);
-//          Logger::Notice << "Get(Battery_SOC)(This is P_Pv for now):" << B_Soc<< std::endl;
-//          response_ = client_->Get( "pstar" );
-//          from_string<float>(P_Star, response_, std::dec);
-    
-// Logger::Notice << "Get(P_Star):" << P_Star<< std::endl;
-// //std::cout<<"load entry in drafting:"<< entry_<<std::endl;
-// P_Star = P_Gateway;
-// entry_= to_string(P_Star);
-// client_->Set( "pstar",entry_ );
-// Logger::Notice << "Set(P_Star):" << P_Star<< std::endl;
-  
-  //Logger::Notice << "Initial P*:"<<P_Load << std::endl;
-  
+   
   // This initializes the algorithm
   LoadManage();
 
   return 0;
 }
+
 }

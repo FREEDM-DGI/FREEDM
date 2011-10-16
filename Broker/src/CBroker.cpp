@@ -54,8 +54,7 @@ namespace freedm {
     namespace broker {
 
 ///////////////////////////////////////////////////////////////////////////////
-/// CBroker::CBroker
-/// 
+/// @fn CBroker::CBroker
 /// @description The constructor for the broker, providing the initial acceptor
 /// @io provides and acceptor socket for incoming network connecitons.
 /// @peers any node running the broker architecture.
@@ -91,13 +90,13 @@ CBroker::CBroker(const std::string& p_address, const std::string& p_port,
     m_connManager.Start(m_newConnection);
 }
 ///////////////////////////////////////////////////////////////////////////////
-/// CBroker::Run()
-/// @description: Calls the ioservice run (initializing the ioservice thread)
+/// @fn CBroker::Run()
+/// @description Calls the ioservice run (initializing the ioservice thread)
 ///               and then blocks until the ioservice runs out of work.
-/// @pre: The ioservice has not been allocated a thread to operate on and has
+/// @pre  The ioservice has not been allocated a thread to operate on and has
 ///       some schedule of jobs waiting to be performed (so it doesn't exit
 ///       immediately.)
-/// @post: The ioservice has terminated.
+/// @post The ioservice has terminated.
 /// @return none
 ///////////////////////////////////////////////////////////////////////////////
 void CBroker::Run()
@@ -111,7 +110,7 @@ void CBroker::Run()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// CBroker::GetIOService
+/// @fn CBroker::GetIOService
 /// @description returns a refernce to the ioservice used by the broker.
 /// @return The ioservice used by this broker.
 ///////////////////////////////////////////////////////////////////////////////
@@ -122,12 +121,12 @@ boost::asio::io_service& CBroker::GetIOService()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// CBroker::Stop
-/// @description: Registers a stop command into the io_service's job queue.
+/// @fn CBroker::Stop
+/// @description  Registers a stop command into the io_service's job queue.
 ///               when scheduled, the stop operation will terminate all running
 ///               modules and cause the ioservice.run() command to exit.
-/// @pre: The ioservice is running and processing tasks.
-/// @post: The command to stop the ioservice has been placed in the service's
+/// @pre The ioservice is running and processing tasks.
+/// @post The command to stop the ioservice has been placed in the service's
 ///        task queue.
 ///////////////////////////////////////////////////////////////////////////////
 void CBroker::Stop()
@@ -139,7 +138,7 @@ void CBroker::Stop()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// CBroker::HandleStop
+/// @fn CBroker::HandleStop
 /// @description Handles closing all the sockets connection managers and
 ///              Services.
 /// @pre: The ioservice is running.

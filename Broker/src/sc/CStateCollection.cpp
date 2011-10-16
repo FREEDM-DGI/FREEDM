@@ -7,7 +7,8 @@
 ///
 /// @project      FREEDM DGI
 ///
-/// @description  Main file which includes drafting algorithm
+/// @description  Main file which include Chandy-Lamport  
+///		  snapshot algorithm to collect states
 ///
 /// @functions   Initiate()
 ///        	 HandleRead()
@@ -38,6 +39,7 @@
 /////////////////////////////////////////////////////////
 
 #include "CStateCollection.hpp"
+#include "SCPeerNode.hpp"
 
 #include "Utility.hpp"
 #include "CMessage.hpp"
@@ -56,6 +58,7 @@
 #include <boost/asio.hpp>
 #include <boost/bind.hpp>
 #include <boost/function.hpp>
+#include <boost/range/adaptor/map.hpp>
 #include <boost/date_time/posix_time/posix_time_types.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/foreach.hpp>
@@ -83,120 +86,122 @@ CREATE_EXTERN_STD_LOGS()
 
 #include <map>
 
+///////////////////////////////////////////////////////////////////////////////////
+/// Chandy-Lamport snapshot algorithm
+///
+/// @description: Each node that wants to initiate the state collection records its 
+///		  local state and sends a marker message to all other peer nodes. 
+///		  Upon receiving a marker, peer nodes record their local states 
+///		  and record any message from other nodes until that node has recorded
+///		  its state (these messages belong to the channel between the nodes).
+/////////////////////////////////////////////////////////////////////////////////
+
+
+
 namespace freedm {
   //  namespace sc{
 
-SCAgent::SCAgent(std::string &uuid_, boost::asio::io_service &ios,
+SCAgent::SCAgent(std::string uuid, boost::asio::io_service &ios,
                freedm::broker::CDispatcher &p_dispatch,
-               freedm::broker::CConnectionManager &m_conManager):
-  SCPeerNode(uuid_),
-  m_ios(ios),
-  m_dispatch(p_dispatch),
-  m_connManager(m_conManager),
+               freedm::broker::CConnectionManager &m_connManager):
+  SCPeerNode(uuid, m_connManager, ios, p_dispatch),
   m_GlobalTimer(ios),
-  m_curversion(uuid_, 0)
+  m_curversion("default", 0),
+  countstate(0)
 {
   Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
-  SCPeerNodePtr self_(this);
-  s_AllPeers.insert( self_ );
+  PeerNodePtr self_(this);
+  AddPeer( self_ );
 }
 
 SCAgent::~SCAgent()
 {
 }
 
-/*****
-  These are functions written by ...
-******/
-std::string SCAgent::uuid_as_string()
-{
-    std::stringstream ss_;
-    ss_ << uuid_;
-    return ss_.str();
-}
-
-bool SCAgent::send_to_uuid(std::string uuid, freedm::broker::CMessage m_)
-{
-  //This gives a wrapper with support for failing to send a message
-  Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
-  try
-  {
-    m_connManager.GetConnectionByUUID(uuid,m_ios,m_dispatch)->Send(m_);
-  }
-  catch (boost::system::system_error& e)
-  {
-    Logger::Info << "Couldn't Send Message To Peer" << std::endl;
-    return false;
-  }
-  Logger::Debug << "Sent Message to Peer" << std::endl;
-  return true;
-}
-
-
 /****
   This is the standard(ish) code
 ****/
 
+///////////////////////////////////////////////////////////////////////////////
+/// 
+/// @description: prepare maker message 
+/// @pre: This node is in a group.
+/// @post: No Change.
+/// @return: A CMessage with the contents of maker (UUID + Int)
+///////////////////////////////////////////////////////////////////////////////
+
+freedm::broker::CMessage SCAgent::m_marker()
+{
+  freedm::broker::CMessage m_;
+  m_.m_submessages.put("sc", "marker");
+  m_.m_submessages.put("sc.source", GetUUID());
+  m_.m_submessages.put("sc.id", m_curversion.second);
+  return m_;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+/// 
+/// @description: Pack state messages received from other modules 
+/// @pre: This node is in a group.
+/// @post: No Change.
+/// @return: A CMessage with the contents of source and id
+///////////////////////////////////////////////////////////////////////////////
+
+freedm::broker::CMessage SCAgent::m_state()
+{
+	freedm::broker::CMessage m_;
+	m_.m_submessages.put("sc", "state");
+	m_.m_submessages.put("sc.source", GetUUID());
+	m_.m_submessages.put("sc.id", m_curversion.second);
+        return m_;
+}
+
+
+///////////////////////////////////////////////////////////////////
+/// @description: Initiator redcord its local state and broadcast marker 
+///
+///
+//////////////////////////////////////////////////////////////////
+
+
 void SCAgent::Initiate()
 {
   Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
-/*
-  if ((int)collectstate.size()!=0)
-  {
-	Logger::Notice << "collectstate's size is " << (int) collectstate.size() << std::endl;
-	std::cout << "--------------------collectstate-----------------" << std::endl;
-	for (it = collectstate.begin(); it != collectstate.end(); it++)
-	{
-		std::cout << "source: " << (*it).second.get<std::string>("sc.lb.source") << "state: " << (*it).second.get<std::string>("sc.lb.status") << std::endl;
-	}
-	std::cout << "-----------------------------------------------" << std::endl;
-  }
-*/
+
   collectstate.clear();
+  countstate = 0;
+  m_curversion.first = GetUUID();
+  m_curversion.second = 0;
 
-Logger::Notice << " ------------ INITIAL, current peerList : -------------- "<<std::endl;
-	foreach(SCPeerNodePtr peer_, s_AllPeers)
+  Logger::Notice << " ------------ INITIAL, current peerList : -------------- "<<std::endl;
+	foreach(PeerNodePtr peer_, m_AllPeers | boost::adaptors::map_values)
 	{
-		Logger::Notice << peer_->uuid_ <<std::endl;
+		Logger::Notice << peer_->GetUUID() <<std::endl;
 	}	
-Logger::Notice << " --------------------------------------------- "<<std::endl;
+  Logger::Notice << " --------------------------------------------- "<<std::endl;
 
+  //collect local state (reach module such as LoadBalance to collect status)
+  //send request to LoadBalance
+  Logger::Notice << "TakeSnapshot: send request to load balance module" <<std::endl;
+  TakeSnapshot();
 
-//  if (m_Status == SCPeerNode::Sleeping)
-//  {
-	std::stringstream ss_;
-	std::string line_;
-	//collect local state (reach module such as LoadBalance to collect status)
-	//send request to LoadBalance
-        Logger::Notice << "TakeSnapshot: send request to load balance module" <<std::endl;
-	TakeSnapshot();
-
-	//prepare marker tagged with UUID + Int
-	freedm::broker::CMessage m_;
-	m_.m_submessages.put("sc", "marker");
-//        m_.m_submessage.put("sc.source", m_curversion.first);
-	m_.m_submessages.put("sc.source", uuid_as_string());
-	m_.m_submessages.put("sc.id", m_curversion.second);
-
-  	Logger::Notice << "maker is ready from " << uuid_as_string() << std::endl;
+  //prepare marker tagged with UUID + Int
+  Logger::Notice << "maker is ready from " << GetUUID() << std::endl;
+  freedm::broker::CMessage m_ = m_marker();
  	
-	//send tagged marker to all other peers
-	foreach(SCPeerNodePtr peer_, s_AllPeers)
-	{
-	    if (peer_->uuid_ != uuid_)
-		//continue;
-		{Logger::Notice << "Sending marker to " << peer_->uuid_ << std::endl;
-	         send_to_uuid(peer_->uuid_, m_);}
-	}//end foreach
+  //send tagged marker to all other peers
+  foreach(PeerNodePtr peer_, m_AllPeers | boost::adaptors::map_values)
+  {
+	if (peer_->GetUUID()!= GetUUID())
+	//continue;
+	{Logger::Notice << "Sending marker to " << peer_->GetUUID() << std::endl;
+//	 send_to_uuid(peer_->uuid_, m_);
+	 peer_->AsyncSend(m_);
+	}
+  }//end foreach
 
-	m_curversion.second++;
-//  }
+  m_curversion.second++;
 
-//  else if (m_Status == SCPeerNode::Collecting)
-//  {
-	//TODO
-//  }
-  
   m_GlobalTimer.expires_from_now(boost::posix_time::seconds(GLOBAL_TIMEOUT2));
   m_GlobalTimer.async_wait( boost::bind(&SCAgent::Initiate, this, boost::asio::placeholders::error));
 }
@@ -223,34 +228,70 @@ void SCAgent::Initiate( const boost::system::error_code& err )
 }
 
 
+///////////////////////////////////////////////////////////////////
+/// @description: TakeSnapshot is used to collect state (Now it only reaches 
+///      	  LoadBalance module) 
+///
+///
+//////////////////////////////////////////////////////////////////
+
 void SCAgent::TakeSnapshot()
 {
-	//collect local state (reach module such as LoadBalance to collect status)
-	freedm::broker::CMessage m_;
-	m_.m_submessages.put("lb", "load");
-	m_.m_submessages.put("lb.source", uuid_as_string());
-	send_to_uuid(uuid_, m_);
+  //collect local state (reach module such as LoadBalance to collect status)
+  freedm::broker::CMessage m_;
+  m_.m_submessages.put("lb", "load");
+  m_.m_submessages.put("lb.source", GetUUID());
+  AsyncSend(m_);
 }
 
+
+///////////////////////////////////////////////////////////////////
+/// @description: StatePrint is used to print out collected states
+///
+///
+///
+//////////////////////////////////////////////////////////////////
+void SCAgent::StatePrint(std::map< int, ptree >& pt)
+{
+
+	Logger::Notice << "collectstate's size is " << (int) pt.size() << std::endl;
+	std::cout << "--------------------collectstate-----------------" << std::endl;
+	for (it = pt.begin(); it != pt.end(); it++)
+	{
+	    if((*it).second.get<std::string>("sc.type")== "LB_STATE")
+	    {
+		std::cout << countstate << " source: " << (*it).second.get<std::string>("sc.lb.source") << " " << (*it).second.get<std::string>("sc.type") << " " <<(*it).second.get<std::string>("sc.lb.status") << std::endl;
+	    }
+	    else if ((*it).second.get<std::string>("sc.type")== "Message")
+	    {
+		std::cout << countstate << " from " << (*it).second.get<std::string>("sc.ms.source") << " to " << (*it).second.get<std::string>("sc.ms.destin") << (*it).second.get<std::string>("sc.type") << " " << (*it).second.get<std::string>("sc.ms.status") << std::endl;		
+	    }//end if
+	}//end for
+	std::cout << "----------------------------------------------------------" << std::endl;
+}
+
+
+///////////////////////////////////////////////////////////////////
+/// @description: HandleRead will be called upon every incoming message.
+///
+///
+//////////////////////////////////////////////////////////////////
 
 void SCAgent::HandleRead(const ptree& pt )
 {
   Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
 
-  SCPeerSet tempSet_;
-  std::string coord_;
-  MessagePtr m_;
   std::string line_;
   std::stringstream ss_;
-  SCPeerNodePtr peer_;
-
+  PeerNodePtr peer_;
+  //incomingVer_ records the coming marker
   StateVersion incomingVer_;
 
-
+  //check the coming peer node
   line_ = pt.get<std::string>("sc.source");
-  if(line_ != uuid_)
+  if(line_ != GetUUID())
   {
-    peer_ = get_peer(line_);
+    peer_ = GetPeer(line_);
     if(peer_ != NULL)
     {
       Logger::Debug << "Peer already exists. Do Nothing " <<std::endl;
@@ -258,184 +299,177 @@ void SCAgent::HandleRead(const ptree& pt )
     else
     {
       Logger::Debug << "PeerPeer doesn't exist. Add it up to PeerSet" <<std::endl;
-      add_peer(line_);
-      peer_ = get_peer(line_);
-    }
-  }
+      AddPeer(line_);
+      peer_ = GetPeer(line_);
+    }//end if
+  }//end if
 
 ///////////////////////////////////////////////////////////////////////////
-//get group list from groupmanager
+//get group peerlist from groupmanager
 //////////////////////////////////////////////////////////////////////////
-	if(pt.get<std::string>("sc") == "peerList")
-     	{
-
-  		  std::string peers_, token;
-		  peers_ = pt.get<std::string>("sc.peers");
-          Logger::Notice << "Peer List: " << peers_ <<
+  if(pt.get<std::string>("sc") == "peerList")
+  {
+  	std::string peers_, token;
+	peers_ = pt.get<std::string>("sc.peers");
+        Logger::Notice << "Peer List: " << peers_ <<
 	           " received from Group Leader: " << line_ <<std::endl;
           std::istringstream iss(peers_);
 
-	foreach(SCPeerNodePtr peer_, s_AllPeers)
+	foreach(PeerNodePtr peer_, m_AllPeers | boost::adaptors::map_values)
 	{
-		if (peer_->uuid_ != uuid_)
-		s_AllPeers.erase(peer_);
+		if (peer_->GetUUID() != GetUUID())
+//		m_AllPeers.erase(peer_);
+		EraseInPeerSet(m_AllPeers,peer_);
 	}
 
          // Tokenize the peer list string 
-          while ( getline(iss, token, ',') )
-            {
-          	  peer_ = get_peer(token); 
-
-	          if( false != peer_ )
-	           {
-	            Logger::Notice << "SC knows this peer " <<std::endl;
-	           }
-                   else
-	           {
-                Logger::Notice << "SC sees a new member "<< token  
+        while ( getline(iss, token, ',') )
+        {
+        	peer_ = GetPeer(token); 
+	        if( false != peer_ )
+	        {
+	        	Logger::Notice << "SC knows this peer " <<std::endl;
+	        }
+                else
+	        {
+                	Logger::Notice << "SC sees a new member "<< token  
                                << " in the group " <<std::endl;
-                add_peer(token);
-	           }
-
-            }// end while(...)
-	}// end if
-
+                	AddPeer(token);
+	        }//end if
+         }// end while(...)
+  }// end if
 
 
-
-  if (m_Status == SCPeerNode::Sleeping)
-  {
-  	if (pt.get<std::string>("sc") == "load")
-  	{
+  //check receiving messages
+  if (pt.get<std::string>("sc") == "load")
+  {	
+	//receive load balance status
   	Logger::Notice << "receive load balance status from " << pt.get<std::string>("sc.source") << " " << pt.get<std::string>("sc.status") << std::endl;
-	//save lb state
+
+	//prepare state message
+
+	freedm::broker::CMessage m_ = m_state();
+	m_.m_submessages.put("sc.lb.status", pt.get<std::string>("sc.status"));
+
+
+	if (m_curversion.first != GetUUID())
+	{//send status back to initiator if maker
+	    if(GetPeer(m_curversion.first)!=0)
+	    {
+	    GetPeer(m_curversion.first)->AsyncSend(m_);
+	    }
+	    else
+	    {
+        	Logger::Notice << "Error: couldn't send to " << m_curversion.first << std::endl;			
+	    }
+	}
+	else
+	{//save lb state to collectstate
+	m_curstate.put("sc.type", "LB_STATE");
 	m_curstate.put("sc.lb.status", pt.get<std::string>("sc.status"));
 	m_curstate.put("sc.lb.source", pt.get<std::string>("sc.source"));
-	collectstate.insert(std::pair<std::string, ptree>(pt.get<std::string>("sc.source"), m_curstate));
-	//increment state version
-	//m_curversion.second +=1;
-	
-  	}	
 
-	//check if this is a marker message
-	else if (pt.get<std::string>("sc") == "marker")
-	{// marker value is present, this initiates a collection request
+	collectstate.insert(std::pair<int, ptree>(countstate, m_curstate));
+	countstate++;
+	//state print out
+	StatePrint(collectstate);
 
-  	    Logger::Notice << "Received message is a maker! " << std::endl;
-	    //transit to collection state
-	    m_Status = SCPeerNode::Collecting;
+	}//end if
+  }	
 
-	 // read the incoming version from marker
-	 incomingVer_.first = pt.get<std::string>("sc.source");
-	 incomingVer_.second = pt.get<unsigned int>("sc.id");
+  //check if this is a marker message
+  else if (pt.get<std::string>("sc") == "marker")
+  {
+	// marker value is present, this initiates a collection request
+  	Logger::Notice << "Received message is a maker! " << std::endl;
 
-	 m_curversion = incomingVer_;
+	// read the incoming version from marker
+	incomingVer_.first = pt.get<std::string>("sc.source");
+	incomingVer_.second = pt.get<unsigned int>("sc.id");
+	// assign incoming version to current version, this trace the latest marker
+	m_curversion = incomingVer_;
 
- 	 Logger::Notice << "marker is " << m_curversion.first << " " << m_curversion.second << std::endl;
+ 	Logger::Notice << "marker is " << m_curversion.first << " " << m_curversion.second << std::endl;
 
 	//collect local state (reach module such as LoadBalance to collect status)
 	TakeSnapshot();
-	}
+	//send back to initiator (in Load part)
+  }
 
-	else if (pt.get<std::string>("sc") == "state")
-	{//message feedback
+  //check if this is a response state
+  else if (pt.get<std::string>("sc") == "state")
+  {
+	//message feedback
 	Logger::Notice << "receive status from peer " << pt.get<std::string>("sc.source") << std::endl;
 	//message save
 	line_ = pt.get<std::string>("sc.lb.status");
 	m_curstate.put("sc.lb.status", line_);
-	m_curstate.put("sc.lb.source", pt.get<std::string>("sc.source"));	
-	collectstate.insert(std::pair<std::string, ptree>(pt.get<std::string>("sc.source"), m_curstate));
-	//increment state version
-	//m_curversion.second +=1;
+	m_curstate.put("sc.lb.source", pt.get<std::string>("sc.source"));
+	m_curstate.put("sc.type", "LB_STATE");	
+	collectstate.insert(std::pair<int, ptree>(countstate, m_curstate));
+	countstate++;
+	//state print out
+	StatePrint(collectstate);
 
-	Logger::Notice << "collectstate's size is " << (int) collectstate.size() << std::endl;
-	std::cout << "--------------------collectstate, maker is " <<  m_curversion.first << " " << m_curversion.second << "-----------------" << std::endl;
-	for (it = collectstate.begin(); it != collectstate.end(); it++)
-	{
-		std::cout << "source: " << (*it).second.get<std::string>("sc.lb.source") << "state: " << (*it).second.get<std::string>("sc.lb.status") << std::endl;
-	}
-	std::cout << "----------------------------------------------------------" << std::endl;
-
-
-	}
+  }
+  else if (pt.get<std::string>("sc") == "transit")
+  {	
+	m_curstate.put("sc.ms.status", pt.get<std::string>("sc.intransit"));
+	m_curstate.put("sc.ms.source", pt.get<std::string>("sc.source"));
+	m_curstate.put("sc.ms.destin", pt.get<std::string>("sc.destin"));
+	m_curstate.put("sc.type", "Message");	
+	collectstate.insert(std::pair<int, ptree>(countstate, m_curstate));
+	countstate++;	
+	//state print out
+	StatePrint(collectstate);
 
   }
 
-else if (m_Status == SCPeerNode::Collecting)
-{
-  	if (pt.get<std::string>("sc") == "load")
-  	{
-  	Logger::Notice << "receive status from peer " << pt.get<std::string>("sc.source") << " " << pt.get<std::string>("sc.status") << std::endl;
+  else //message in transit
+  {	
+	//save message in transit 
+	Logger::Notice << "receive message in transit: " << pt.get<std::string>("sc") << " from" << pt.get<std::string>("sc.source") << std::endl;
 
-	//message save???????????
-	m_curstate.put("sc.lb.status", pt.get<std::string>("sc.status"));
-	m_curstate.put("sc.lb.source", pt.get<std::string>("sc.source"));
-	collectstate.insert(std::pair<std::string, ptree>(pt.get<std::string>("sc.source"), m_curstate));
 
-	//send status back to initiator
-	freedm::broker::CMessage m_;
-	m_.m_submessages.put("sc", "state");
-	m_.m_submessages.put("sc.source", uuid_as_string());
-	m_.m_submessages.put("sc.id", m_curversion.second);
-	m_.m_submessages.put("sc.lb.status", pt.get<std::string>("sc.status"));
+    if (m_curversion.first == "default")
+    {
+	//no marker from this node
+     }
+    else
+    {
+	Logger::Notice << "current version of marker is: " << m_curversion.first << std::endl;
 
-	if (m_curversion.first != uuid_as_string())
-	    {
-	        send_to_uuid(m_curversion.first, m_);
-	    }
-	
-  	}	
-
-	//This retriefs the marker value
-	else if (pt.get<std::string>("sc") == "marker")
-	{// marker value is present
-
-		 // read the incoming version
-		 incomingVer_.first = pt.get<std::string>("sc.source");
-		 incomingVer_.second = pt.get<unsigned int>("sc.id");
-
-		 if(m_curversion == incomingVer_)
-		 {// we've already logged this version, ignore
-			Logger::Notice << "receive same marker again, ignore" << std::endl;
-		 }
-		 else
-		 {//check if this marker is newer than m_curversion in m_history
-		  //if it is new, then call initiate()?	
-		  //receive a different marker
-		 Logger::Notice << "receive a different marker" << std::endl;
-		 m_curversion = incomingVer_;
-		 //collect local state (reach module such as LoadBalance to collect status)
-		 TakeSnapshot();
-
-	 	 }
-
-	}
-	else if (pt.get<std::string>("sc") == "state")
-	{//message feedback
-	Logger::Notice << "receive status from peer " << pt.get<std::string>("sc.source") << " " <<pt.get<int>("sc.id") << std::endl;
-	//message save
-	line_ = pt.get<std::string>("sc.lb.status");
-	m_curstate.put("sc.lb.status", line_);
-	m_curstate.put("sc.lb.source", pt.get<std::string>("sc.source"));
-	collectstate.insert(std::pair<std::string, ptree>(pt.get<std::string>("sc.source"), m_curstate));
-	//increment state version
-	//m_curversion.second +=1;
-
-	Logger::Notice << "collectstate's size is " << (int) collectstate.size() << std::endl;
-	std::cout << "--------------------collectstate, maker is " <<  m_curversion.first << " " << m_curversion.second << "-----------------" << std::endl;
-	for (it = collectstate.begin(); it != collectstate.end(); it++)
+	if (m_curversion.first != GetUUID())
 	{
-		std::cout << "source: " << (*it).second.get<std::string>("sc.lb.source") << "state: " << (*it).second.get<std::string>("sc.lb.status") << std::endl;
-	}
-	std::cout << "----------------------------------------------------------" << std::endl;
+	//prepare the message
+	freedm::broker::CMessage m_;
+	m_.m_submessages.put("sc.ms.source", pt.get<std::string>("sc.source"));
+	m_.m_submessages.put("sc.ms.destin", GetUUID());
+	m_.m_submessages.put("sc", "transit");
+	m_.m_submessages.put("sc.intransit", pt.get<std::string>("sc"));
+	    if(GetPeer(m_curversion.first)!=0)
+	    {//send back to initiator
+	        GetPeer(m_curversion.first)->AsyncSend(m_);
+	    }
+	    else
+	    {
+        	Logger::Notice << "Error: couldn't send back to " << m_curversion.first << std::endl;		
+	    }
 	}	
 	else
-	{//message in transit
-		Logger::Notice << "receive status" << pt.get<std::string>("sc") << std::endl;
-	} 
+	{//save message in collectstate
+	    m_curstate.put("sc.ms.status", pt.get<std::string>("sc"));
+	    m_curstate.put("sc.ms.source", pt.get<std::string>("sc.source"));
+	    m_curstate.put("sc.ms.destin", GetUUID());
+	    m_curstate.put("sc.type", "Message");	
+	    collectstate.insert(std::pair<int, ptree>(countstate, m_curstate));
+	    countstate++;	
+	    //state print out
+	    StatePrint(collectstate);
 
-}
-
+	}//end if
+    }//end if (m_curversion.first != 0)		
+  }
   
 }
 
@@ -470,92 +504,34 @@ else if (m_Status == SCPeerNode::Collecting)
 /// @limitations
 ///
 /////////////////////////////////////////////////////////
-
-SCPeerNodePtr SCAgent::get_peer( const int p_id )
-{
-  boost::asio::ip::address tmp_;
-  return get_peer( p_id, tmp_ );
-}
-
-SCPeerNodePtr SCAgent::get_peer( const boost::asio::ip::address &p_addr )
-{
-  return get_peer( 0, p_addr );
-}
-
-SCPeerNodePtr SCAgent::get_peer( const int p_id,
-		const boost::asio::ip::address &p_addr )
-{
-	Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
-
-	SCPeerNodePtr ret_;
-	return ret_;
-}
-
-SCPeerNodePtr SCAgent::get_peer(std::string uuid_)
-{
-	Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
-
-	find_SCpeer fp_pred;
-	SCPeerSet p_;
-	p_.insert( SCPeerNodePtr(new SCPeerNode(uuid_)));
-
-	SCPeerNodePtr ret_;
-
-	SCPeerSet::iterator i_ =
-		std::search( s_AllPeers.begin(), s_AllPeers.end(),
-					p_.begin(), p_.end(), fp_pred );
-
-	if( s_AllPeers.end() != i_ )
-	{
-		ret_ = *i_;
-	}
-
-	return ret_;
-}
-
-////////////////////////////////////////////////////////////
-/// priority()
-///
-/// @description Assigns a random numeric to every host as NodeID
-///
-/// @pre: instance of SCAgent should be instantiated
-///
-/// @post: Node is assigned an ID
-///
-///
-/// @param: Description of parameter
-///
-/// @param
-///
-/// @return
-///
-/// @limitations
-///
-/////////////////////////////////////////////////////////
-int SCAgent::priority() const
+SCAgent::PeerNodePtr SCAgent::AddPeer(std::string uuid)
 {
   Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
-
-  return m_NodeID;
+  PeerNodePtr tmp_;
+  tmp_.reset(new SCPeerNode(uuid,GetConnectionManager(),GetIOService(),GetDispatcher()));
+  InsertInPeerSet(m_AllPeers,tmp_);
+  return tmp_;
 }
 
-void SCAgent::add_peer(std::string &u_)
+SCAgent::PeerNodePtr SCAgent::AddPeer(PeerNodePtr peer)
 {
-  Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
-  SCPeerNodePtr tmp_;
-  tmp_.reset( new SCPeerNode(u_));
-  s_AllPeers.insert( tmp_);
-  m_UpNodes.insert(tmp_);
-  return;
+  InsertInPeerSet(m_AllPeers,peer);
+  return peer;
+}
+SCAgent::PeerNodePtr SCAgent::GetPeer(std::string uuid)
+{
+  PeerSet::iterator it = m_AllPeers.find(uuid);
+  if(it != m_AllPeers.end())
+  {
+    return it->second;   
+  }
+  else
+  {
+    return PeerNodePtr();
+  }
 }
 
-void SCAgent::Stop()
-{
-    Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
-    // Post a call to the stop function so that CBroker::stop() is safe to call
-    // from any thread.
-    m_ios.stop();
-}
+
 
 ////////////////////////////////////////////////////////////
 /// run()
@@ -576,21 +552,6 @@ int SCAgent::SC()
 {
   Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
 
-/*
-  std::map<std::string, std::string>::iterator mapIt_;
-
-  for( mapIt_ = m_connManager.mapCon_.begin(); mapIt_ != m_connManager.mapCon_.end(); ++mapIt_ )
-  {
-	  std::string host_ = mapIt_->first;
-	  add_peer(const_cast<std::string&>(mapIt_->first));
-  }
-
-  foreach( SCPeerNodePtr p_,  s_AllPeers )
-  {
-      Logger::Notice << p_->uuid_ << "\t added to peer set" <<std::endl;
-      peers++;
-  }
-*/
  
   Initiate();
 

@@ -49,9 +49,9 @@ namespace po = boost::program_options;
 
 #include "CDispatcher.hpp"
 #include "CBroker.hpp"
-#include "CUUIDHandler.hpp"
 #include "gm/GroupManagement.hpp"
 #include "lb/LoadBalance.hpp"
+#include "sc/CStateCollection.hpp"
 #include "CConnectionManager.hpp"
 #include "CPhysicalDeviceManager.hpp"
 #include "CGenericDevice.hpp"
@@ -227,38 +227,55 @@ int main (int argc, char* argv[])
         boost::asio::io_service m_ios;
 
         // Intialize Devices
+	freedm::broker::CGenericDevice::DevicePtr sst(
+            new freedm::broker::CGenericDevice(m_phyManager,std::string("sst")));
+        
         freedm::broker::CGenericDevice::DevicePtr m_gendev0(
-            new freedm::broker::CGenericDevice(m_phyManager,std::string("gendev0")));
+            new freedm::broker::CGenericDevice(m_phyManager,std::string("gendev0"), 
+            freedm::broker::physicaldevices::DRER));
 
         freedm::broker::CGenericDevice::DevicePtr m_gendev1(
-            new freedm::broker::CGenericDevice(m_phyManager,std::string("gendev1")));
+            new freedm::broker::CGenericDevice(m_phyManager,std::string("gendev1"), 
+            freedm::broker::physicaldevices::DRER));
+
+        freedm::broker::CGenericDevice::DevicePtr m_stodev0(
+            new freedm::broker::CGenericDevice(m_phyManager,std::string("stodev0"), 
+            freedm::broker::physicaldevices::DESD)); 
+
+       	freedm::broker::CGenericDevice::DevicePtr m_loaddev0(
+            new freedm::broker::CGenericDevice(m_phyManager,std::string("loaddev0"),
+            freedm::broker::physicaldevices::LOAD));          
 
         // Register Devices
         m_phyManager.AddDevice(m_gendev0);
         m_phyManager.AddDevice(m_gendev1);
+        m_phyManager.AddDevice(m_stodev0);
+        m_phyManager.AddDevice(m_loaddev0);
         
         // Quick Test
-        m_gendev0->Set("Vout",3.14);
-        m_gendev1->Set("Vout",4.15);
-
+        m_gendev0->Set("vin",3.14);
+        m_gendev1->Set("vin",4.15);
+	m_stodev0->Set("vin",3);
+	m_loaddev0->Set("vin",6.2);
+	
         // And read it back
-        Logger::Notice << "Devices Check 1!"<<m_gendev0->Get("Vout")
-                       << " " << m_gendev1->Get("Vout") << std::endl;
-        
-        Logger::Notice << "Devices Check 2! "
-                       << m_phyManager.GetDevice("gendev0")->Get("Vout")
-                       << " " << m_phyManager.GetDevice("gendev1")->Get("Vout")
-                       << std::endl;
+        //Logger::Notice << "Devices Check 1!"<< m_gendev0->Get("Vin")            
+        //               << " " << m_gendev1->Get("Vin") << std::endl;
+       
+        //Logger::Notice << "Devices Check 2! "
+        //               << m_phyManager.GetDevice("stodev0")->Get("Vin")                   
+        //               << std::endl;               
 
+ 	//Logger::Notice << "Devices Check 3! "
+        //               << m_phyManager.GetDevice("loaddev0")->Get("Vin")                  
+        //               << std::endl; 
 
-        // Instantiate UUID handler
-        freedm::broker::CUUIDHandler uuidHandler_( u_ );
 
         // Instantiate Dispatcher for message delivery 
         freedm::broker::CDispatcher dispatch_;
     
         // Register UUID handler
-        dispatch_.RegisterWriteHandler( "any", &uuidHandler_ );
+        //dispatch_.RegisterWriteHandler( "any", &uuidHandler_ );
 
         // Run server in background thread          
         freedm::broker::CBroker broker_
@@ -276,8 +293,12 @@ int main (int argc, char* argv[])
         dispatch_.RegisterReadHandler( "gm", &GM_);
 
         // Instantiate and register the power management module
-        //freedm::lbAgent LB_ (uuidstr, broker_.get_io_service(), dispatch_, m_conManager);     
-        //dispatch_.RegisterReadHandler( "lb", &LB_);
+        freedm::lbAgent LB_ (uuidstr, broker_.GetIOService(), dispatch_, m_conManager, m_phyManager);     
+        dispatch_.RegisterReadHandler( "lb", &LB_);
+
+        // Instantiate and register the state collection module
+        freedm::SCAgent SC_ (uuidstr, broker_.GetIOService(), dispatch_, m_conManager);     
+        dispatch_.RegisterReadHandler( "sc", &SC_);
 
         // The peerlist should be passed into constructors as references or pointers
         // to each submodule to allow sharing peers. NOTE this requires thread-safe
@@ -329,7 +350,8 @@ int main (int argc, char* argv[])
         
         Logger::Info << "Starting thread of Modules" << std::endl;
         boost::thread thread2_( boost::bind(&freedm::GMAgent::Run, &GM_)      
-        //                      , boost::bind(&freedm::lbAgent::LB, &LB_)
+                              , boost::bind(&freedm::lbAgent::LB, &LB_)
+                              , boost::bind(&freedm::SCAgent::SC, &SC_)
                               );
 
         // Wait for signal indicating time to shut down.
@@ -343,11 +365,17 @@ int main (int argc, char* argv[])
         sigwait(&wait_mask, &sig);
         std::cout << "Shutting down cleanly." << std::endl;
 
+        // Stop the modules
+        GM_.Stop();
+
         // Stop the server.
         broker_.Stop();
        
+        // Bring in threads.
         thread_.join();
         thread2_.join();
+    
+        std::cout << "Goodbye..." << std::endl;
     }
     catch (std::exception& e)
     {

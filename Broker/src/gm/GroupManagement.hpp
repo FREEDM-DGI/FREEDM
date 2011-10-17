@@ -57,6 +57,8 @@ using boost::property_tree::ptree;
 #include "CConnectionManager.hpp"
 #include "CConnection.hpp"
 
+#include "Stopwatch.hpp"
+
 using boost::asio::ip::tcp;
 
 using namespace boost::asio;
@@ -161,6 +163,8 @@ class GMAgent
     int m_groupsjoined;
     int m_groupsbroken;
     int m_rounds;
+    Stopwatch m_electiontimer;
+    Stopwatch m_ingrouptimer;
 };
 
   }

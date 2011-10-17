@@ -45,7 +45,16 @@ def wait_sim(runtime='10m'):
     local("sleep %s" % runtime)
     print "Done Waiting"
 
-def setup_sim(expconfig):
+def get_uuid():
     with cd(SRC_DIR):
-        put(expconfig,'./network.xml')
+        result = run("./PosixBroker -u")
+    return str(result).strip()
+
+def setup_sim(expconfig):
+    """
+    There is currently a bug with fabric.
+    with cd(SRC_DIR):
+    Doesn't work.
+    """
+    put(expconfig,'/home/scj7t4/FREEDM/Broker/src/network.xml')
 

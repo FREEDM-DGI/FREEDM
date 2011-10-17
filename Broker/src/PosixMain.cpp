@@ -108,7 +108,8 @@ int main (int argc, char* argv[])
                 default_value("freedm.cfg"),
                 "filename of additional configuration.")
             ("generateuuid,g", po::value<std::string>(&uuidgenerator)->
-                    default_value(""), "Generate a uuid for the specified host, output it, and exit");
+                    default_value(""), "Generate a uuid for the specified host, output it, and exit")
+            ("uuid,u","Print this node's generated uuid and exit");
 
         // This is for arguments in a config file or as arguments
         configOpts_.add_options()
@@ -123,7 +124,7 @@ int main (int argc, char* argv[])
                     "enable verbose output (optionally specify level)");
 
         hiddenOpts_.add_options()
-            ("uuid", po::value<std::string>(&uuid_),
+            ("setuuid", po::value<std::string>(&uuid_),
                     "UUID for this host");
 
         // Specify positional arguments
@@ -196,8 +197,12 @@ int main (int argc, char* argv[])
             std::cerr << visibleOpts_ << std::endl;
             return 0;
         }
-        if( vm_.count("generateuuid") )
+        if(uuidgenerator != "" || vm_.count("uuid"))
         {
+            if(uuidgenerator == "")
+            {
+                uuidgenerator = boost::asio::ip::host_name();
+            }
             u_ = freedm::uuid::from_dns(uuidgenerator);
             std::cout<<u_<<std::endl;
             return 0;
@@ -301,13 +306,14 @@ int main (int argc, char* argv[])
         dispatch_.RegisterReadHandler( "gm", &GM_);
 
         // Instantiate and register the power management module
+        /*
         freedm::lbAgent LB_ (uuidstr, broker_.GetIOService(), dispatch_, m_conManager, m_phyManager);     
         dispatch_.RegisterReadHandler( "lb", &LB_);
 
         // Instantiate and register the state collection module
         freedm::SCAgent SC_ (uuidstr, broker_.GetIOService(), dispatch_, m_conManager);     
         dispatch_.RegisterReadHandler( "sc", &SC_);
-
+        */
         // The peerlist should be passed into constructors as references or pointers
         // to each submodule to allow sharing peers. NOTE this requires thread-safe
         // access, as well. Shouldn't be too hard since it will mostly be read-only
@@ -358,8 +364,8 @@ int main (int argc, char* argv[])
         
         Logger::Info << "Starting thread of Modules" << std::endl;
         boost::thread thread2_( boost::bind(&freedm::GMAgent::Run, &GM_)      
-                              , boost::bind(&freedm::lbAgent::LB, &LB_)
-                              , boost::bind(&freedm::SCAgent::SC, &SC_)
+          //                    , boost::bind(&freedm::lbAgent::LB, &LB_)
+            //                  , boost::bind(&freedm::SCAgent::SC, &SC_)
                               );
 
         // Wait for signal indicating time to shut down.

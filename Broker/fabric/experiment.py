@@ -43,6 +43,22 @@ class Experiment(object):
         return self.expcounter
     def __repr__(self):
         return str(self.expcounter)
+    def tsv_head(self):
+        seen = []
+        out = []
+        for (hostx,uuidx) in self.host2uuid.iteritems():
+            for (hosty,uuidy) in self.host2uuid.iteritems():
+                if uuidy in seen:
+                    continue
+                if len(out) == 0:
+                    tmp = "#"
+                else:
+                    tmp = ""
+                tmp +="%sx%s" % (hostx,hosty)
+                out.append(tmp)
+        return "\t".join(out)
+    def tsv_entry(self):
+        return "\t".join([str(x) for x in self.expcounter])
     def generate_files(self):
         filedict = dict()
         m = self.maptonetwork()

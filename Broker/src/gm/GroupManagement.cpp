@@ -183,7 +183,9 @@ GMAgent::GMAgent(std::string p_uuid, boost::asio::io_service &p_ios,
                freedm::broker::CDispatcher &p_dispatch,
                freedm::broker::CConnectionManager &p_conManager):
   GMPeerNode(p_uuid,p_conManager,p_ios,p_dispatch),
-  m_timer(p_ios)
+  m_timer(p_ios),
+  m_electiontimer(),
+  m_ingrouptimer()
 {
   Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
   AddPeer(GetUUID());
@@ -425,6 +427,10 @@ void GMAgent::Recovery()
 {
   Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
   std::stringstream ss_;
+  Logger::Notice << "Stopping in group timer "<<__LINE__<<std::endl;
+  m_ingrouptimer.Stop();
+  Logger::Notice << "Stopping election timer "<<__LINE__<<std::endl;
+  m_electiontimer.Stop();
   SetStatus(GMPeerNode::ELECTION);
   Logger::Notice << "+ State Change ELECTION : "<<__LINE__<<std::endl;
   m_GrpCounter++;
@@ -562,6 +568,12 @@ void GMAgent::Premerge( const boost::system::error_code &err )
         list_change = true;
         EraseInPeerSet(m_UpNodes,peer_);
         Logger::Info << "No response from peer: "<<peer_->GetUUID()<<std::endl;
+        // If the list has become empty, stop the timer:
+        if(m_UpNodes.size() == 0)
+        {
+          Logger::Notice << "Stopping in group timer "<<__LINE__<<std::endl;
+          m_ingrouptimer.Stop();
+        }
       }
     }
     if(list_change)
@@ -652,6 +664,8 @@ void GMAgent::Merge( const boost::system::error_code& err )
     // This proc forms a new group by inviting Coordinators in CoordinatorSet
     SetStatus(GMPeerNode::ELECTION);
     Logger::Notice << "+ State Change ELECTION : "<<__LINE__<<std::endl;
+    Logger::Notice << "Starting election timer "<<__LINE__<<std::endl;
+    m_electiontimer.Start();
     // Update GroupID
     m_GrpCounter++;
     m_GroupID = m_GrpCounter;
@@ -765,7 +779,14 @@ void GMAgent::Reorganize( const boost::system::error_code& err )
     SetStatus(GMPeerNode::NORMAL);
     Logger::Notice << "+ State change: NORMAL: " << __LINE__ << std::endl;
     m_groupsformed++;
-
+    Logger::Notice << "Upnodes size: "<<m_UpNodes.size()<<std::endl;
+    if(m_UpNodes.size() != 0)
+    {
+        Logger::Notice << "Starting in group timer "<<__LINE__<<std::endl;
+        m_ingrouptimer.Start();
+    }
+    Logger::Notice << "Stopping election timer "<<__LINE__<<std::endl;
+    m_electiontimer.Stop();
     // Send new membership list to group members 
     PushPeerList();
 
@@ -943,6 +964,8 @@ void GMAgent::HandleRead(broker::CMessage msg)
       tempSet_ = m_UpNodes;
       SetStatus(GMPeerNode::ELECTION);
       Logger::Notice << "+ State Change ELECTION : "<<__LINE__<<std::endl;
+      Logger::Notice << "Starting election timer "<<__LINE__<<std::endl;
+      m_electiontimer.Start();
       m_GroupID = pt.get<unsigned int>("gm.groupid");
       m_GroupLeader = pt.get<std::string>("gm.groupleader");
       Logger::Notice << "Changed group: " << m_GroupID << " (" << m_GroupLeader << ") " << std::endl;
@@ -986,6 +1009,10 @@ void GMAgent::HandleRead(broker::CMessage msg)
     {
       SetStatus(GMPeerNode::NORMAL);
       Logger::Notice << "+ State change: NORMAL: " << __LINE__ << std::endl;
+      Logger::Notice << "Starting in group timer "<<__LINE__<<std::endl;
+      m_ingrouptimer.Start();
+      Logger::Notice << "Stopping election timer "<<__LINE__<<std::endl;
+      m_electiontimer.Stop();
       m_groupsjoined++;
       // We are no longer the Coordinator, we must run Timeout()
       Logger::Info << "TIMER: Canceling TimeoutTimer : " << __LINE__ << std::endl;
@@ -1133,11 +1160,15 @@ int GMAgent::Run()
 
 void GMAgent::Stop()
 {
+    m_electiontimer.Stop();
+    m_ingrouptimer.Stop();
     //m_localservice.stop();
     std::ofstream actionlog;
     actionlog.open("grouplog.dat",std::fstream::app);    
     actionlog<<m_groupselection<<'\t'<<m_groupsformed<<'\t'
-             <<m_groupsjoined<<'\t'<<m_groupsbroken<<std::endl;            
+             <<m_groupsjoined<<'\t'<<m_groupsbroken;
+    actionlog<<'\t'<<m_electiontimer.TotalElapsed()
+             <<'\t'<<m_ingrouptimer.TotalElapsed()<<std::endl;            
     actionlog.close();
 }
 

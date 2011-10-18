@@ -42,7 +42,7 @@ if __name__ == "__main__":
     host2uuid = map_hosts_to_uuids(options.hostnames)
     #PREPARE THE EXPERIMENT
     exp = experiment.Experiment(host2uuid,options.granularity)
-    f = open(options.outputfile,'w')
+    f = open(options.outputfile,'w',0)
     f.write(exp.tsv_head()+"\n")
     while 1:
         f.write(exp.tsv_entry()+"\n")
@@ -50,15 +50,17 @@ if __name__ == "__main__":
         for (host,fd) in hostlist.iteritems():
             with settings(host_string=host):
                 fabfile.setup_sim(fd)
+      
         for (host,fd) in hostlist.iteritems():
             with settings(host_string=host):
                 if not options.dryrun:
-                    fabfile.start_sim(fd)
+                    fabfile.start_sim(options.time)
                 else:
                     print "Skipping start_sim; dry run."
         with settings(host_string='localhost'):
             if not options.dryrun:
-                fabfile.wait_sim() 
+                fabfile.wait_sim(options.time)
+      
         if exp.next() == None:
             break
     disconnect_all2()

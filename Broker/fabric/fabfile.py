@@ -4,8 +4,8 @@ env.key_filename = ["/home/scj7t4/.ssh/id_rsa"]
 env.warn_only = True
 
 BOOST_ROOT = '~/boost'
-BROKER_DIR = '~/FREEDM/Broker'
-SRC_DIR = '~/FREEDM/Broker/src'
+BROKER_DIR = '/home/scj7t4/FREEDM/Broker'
+SRC_DIR = '/home/scj7t4/FREEDM/Broker/src'
 
 def host_type():
     run('uname -s')
@@ -34,9 +34,15 @@ def build():
     with cd(SRC_DIR):
         run("BOOST_ROOT='%s' make" % BOOST_ROOT)
 
-def start_sim(runtime='10m'):
+def start_sim(runtime='10m',detach=True):
     with cd(SRC_DIR):
-        result = run("screen -dR test timeout %s ./PosixBroker" % runtime)
+        run("pwd")
+        opts = "-S"
+        if detach is True:
+            opts = "-dmS"
+        cmd = "screen %s test timeout %s ./PosixBroker" % (opts,runtime)
+        print cmd
+        result = run(cmd,pty=False)
         if result.return_code != 0:
             print "Test failed with error code."
 

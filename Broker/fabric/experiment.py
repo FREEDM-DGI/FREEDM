@@ -50,12 +50,15 @@ class Experiment(object):
             for (hosty,uuidy) in self.host2uuid.iteritems():
                 if uuidy in seen:
                     continue
+                if uuidx == uuidy:
+                    continue
                 if len(out) == 0:
                     tmp = "#"
                 else:
                     tmp = ""
                 tmp +="%sx%s" % (hostx,hosty)
                 out.append(tmp)
+                seen.append(uuidx)
         return "\t".join(out)
     def tsv_entry(self):
         return "\t".join([str(x) for x in self.expcounter])

@@ -964,6 +964,8 @@ void GMAgent::ParseMessage(ptree pt)
       tempSet_ = m_UpNodes;
       SetStatus(GMPeerNode::ELECTION);
       Logger::Notice << "+ State Change ELECTION : "<<__LINE__<<std::endl;
+      Logger::Notice << "Stopping group timer "<<__LINE__<<std::endl;
+      m_ingrouptimer.Stop();
       Logger::Notice << "Starting election timer "<<__LINE__<<std::endl;
       m_electiontimer.Start();
       m_GroupID = pt.get<unsigned int>("gm.groupid");

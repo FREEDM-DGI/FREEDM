@@ -569,12 +569,12 @@ void GMAgent::Premerge( const boost::system::error_code &err )
         EraseInPeerSet(m_UpNodes,peer_);
         Logger::Info << "No response from peer: "<<peer_->GetUUID()<<std::endl;
         // If the list has become empty, stop the timer:
-        if(m_UpNodes.size() == 0)
-        {
-          Logger::Notice << "Stopping in group timer "<<__LINE__<<std::endl;
-          m_ingrouptimer.Stop();
-        }
       }
+    }
+    if(m_UpNodes.size() == 0)
+    {
+      Logger::Notice << "Stopping in group timer "<<__LINE__<<std::endl;
+      m_ingrouptimer.Stop();
     }
     if(list_change)
     {
@@ -666,6 +666,8 @@ void GMAgent::Merge( const boost::system::error_code& err )
     Logger::Notice << "+ State Change ELECTION : "<<__LINE__<<std::endl;
     Logger::Notice << "Starting election timer "<<__LINE__<<std::endl;
     m_electiontimer.Start();
+    Logger::Notice << "Stopping in group timer "<<__LINE__<<std::endl;
+    m_ingrouptimer.Stop();
     // Update GroupID
     m_GrpCounter++;
     m_GroupID = m_GrpCounter;

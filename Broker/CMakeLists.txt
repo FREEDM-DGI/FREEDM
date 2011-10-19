@@ -28,6 +28,7 @@ find_package(Boost REQUIRED COMPONENTS system thread program_options serializati
 if(Boost_FOUND)
     # add the boost libraries to the project
     include_directories(${Boost_INCLUDE_DIRS})
+    set(Boost_USE_STATIC_LIBS OFF)
     link_directories(${Boost_LIBRARY_DIRS})
 
     # set C++ compiler flags

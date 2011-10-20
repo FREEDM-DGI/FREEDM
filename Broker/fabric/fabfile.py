@@ -34,13 +34,10 @@ def build():
     with cd(SRC_DIR):
         run("BOOST_ROOT='%s' make" % BOOST_ROOT)
 
-def start_sim(runtime='10m',detach=True):
+def start_sim(runtime='10m'):
     with cd(SRC_DIR):
         run("pwd")
-        opts = "-S"
-        if detach is True:
-            opts = "-dmS"
-        cmd = "screen %s test timeout %s ./PosixBroker" % (opts,runtime)
+        cmd = "screen -dmS test ./PosixBroker"
         print cmd
         result = run(cmd,pty=False)
         if result.return_code != 0:
@@ -50,6 +47,9 @@ def wait_sim(runtime='10m'):
     print "Waiting for test."
     local("sleep %s" % runtime)
     print "Done Waiting"
+
+def end_sim():
+    run("killall PosixBroker -u scj7t4")
 
 def get_uuid():
     with cd(SRC_DIR):

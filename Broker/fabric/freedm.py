@@ -60,7 +60,19 @@ if __name__ == "__main__":
         with settings(host_string='localhost'):
             if not options.dryrun:
                 fabfile.wait_sim(options.time)
-      
+                print "Sending TERM"
+        
+        for (host,fd) in hostlist.iteritems():
+            with settings(host_string=host):
+                if not options.dryrun:
+                    fabfile.end_sim()
+                
+        with settings(host_string='localhost'):
+            if not options.dryrun:
+                print "Waiting...",
+                fabfile.wait_sim('10s')    
+                print "Done!"    
+ 
         if exp.next() == None:
             break
     disconnect_all2()

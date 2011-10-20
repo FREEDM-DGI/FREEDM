@@ -27,6 +27,11 @@ def get_and_add_keys(keyfile='id_rsa'):
     local('cat tmp_key >> ~/.ssh/authorized_keys2')
     local('rm tmp_key')
 
+def put_key_authorization(keyfile='~/.ssh/id_rsa.pub'):
+    put(keyfile,'tmp_key')
+    run('cat tmp_key >> ~/.ssh/authorized_keys2')
+    run('rm tmp_key') 
+
 def clone_from_host(gitpath):
     run('git clone %s' % gitpath)
 

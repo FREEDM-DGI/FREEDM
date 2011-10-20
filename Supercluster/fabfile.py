@@ -31,7 +31,6 @@ def clone_from_host(gitpath):
     run('git clone %s' % gitpath)
 
 def install_package(pkgname):
-    sudo("apt-get update")
     sudo("apt-get install %s" % pkgname)
 
 def put_file(local,remote):

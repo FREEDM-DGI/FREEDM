@@ -36,7 +36,8 @@
 #include <string>
 #include <cstring>
 #include <iostream>
-
+#include <boost/shared_ptr.hpp>
+#include <boost/make_shared.hpp>
 #include <boost/utility.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/thread/mutex.hpp>
@@ -172,7 +173,9 @@ private:
     ///
     ////////////////////////////////////////////////////////////////////////////
     void Run();
-    
+
+    void StartDGIProcess(unsigned short p_port, size_t p_index);
+
     // container of external cyber interfaces
     std::list<CSimulationInterface::TPointer> m_interface;
     
@@ -194,7 +197,7 @@ private:
     // flag for termination
     bool m_quit;
     
-    static const unsigned short HEADER_SIZE = 8;
+    static const unsigned short HEADER_SIZE = 5;
 };
 
 } // namespace simulation

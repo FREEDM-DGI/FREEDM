@@ -15,7 +15,7 @@
 #define ERROR_SEND      6
 #define ERROR_RECV      7
 
-#define PKT_HEADER_SIZE 8
+#define PKT_HEADER_SIZE 5
 
 #define SENDLOG "pscad_send.log"
 #define RECVLOG "pscad_recv.log"
@@ -174,7 +174,7 @@ int send_packet( int sd, const char * header, const void * data, int bytes )
     {
         // store header at packet front
         memcpy( packet, header, header_size );
-        packet[header_size+1] = '\0';
+        packet[header_size] = '\0';
 
         if( bytes > 0 )
         {

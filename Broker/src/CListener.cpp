@@ -160,12 +160,6 @@ void CListener::HandleRead(const boost::system::error_code& e, std::size_t bytes
                 goto listen;
             }
             #endif
-            if(m_message.GetAcceptAlways() == true)
-            {
-                GetDispatcher().HandleRequest(x);
-                Logger::Notice<<"Got an unsequenced message"<<std::endl;
-                goto listen;
-            }
             if(m_message.GetStatus() == freedm::broker::CMessage::Accepted)
             {
                 Logger::Info << "Got ACK #" << sequenceno << std::endl;
@@ -178,6 +172,11 @@ void CListener::HandleRead(const boost::system::error_code& e, std::size_t bytes
                 Logger::Info << "Got SYN #" << sequenceno << std::endl;
                 m_insequenceno[uuid] = sequenceno;
                 SendACK(uuid,hostname,m_insequenceno[uuid]);
+            }
+            else if(m_message.GetAcceptAlways() == true)
+            {
+                GetDispatcher().HandleRequest(x);
+                Logger::Notice<<"Got an unsequenced message"<<std::endl;
             }
             else if(m_insequenceno.find(uuid) != m_insequenceno.end())
             {
@@ -206,6 +205,7 @@ void CListener::HandleRead(const boost::system::error_code& e, std::size_t bytes
                     SendACK(uuid,hostname,m_insequenceno[uuid]);
                 }
             }
+
         }
         listen:
         GetSocket().async_receive_from(boost::asio::buffer(m_buffer, 8192), m_endpoint,

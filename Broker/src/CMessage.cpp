@@ -209,6 +209,7 @@ CMessage::operator ptree ()
     pt.put("message.port",m_remotehost.port );
     pt.put("message.sequenceno", m_sequenceno );
     pt.put("message.status", m_status  );
+    pt.put("message.accept", m_accept );
     pt.add_child("message.submessages", m_submessages );
 
     return pt;
@@ -231,6 +232,7 @@ CMessage::CMessage( const ptree &pt )
         m_remotehost.hostname = pt.get< std::string >("message.hostname");
         m_remotehost.port = pt.get< std::string >("message.port");
         m_sequenceno = pt.get< unsigned int >("message.sequenceno");
+        m_accept = pt.get< bool >("message.accept");
 
         m_status = static_cast< StatusType >
             (pt.get< unsigned int >("message.status"));

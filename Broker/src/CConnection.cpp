@@ -124,6 +124,8 @@ void CConnection::Send(CMessage p_mesg, int max_retries)
     max_retries = 0;
     #endif
 
+    Logger::Notice<<"Sending with max retries: "<<max_retries<<std::endl;
+
     //Make a call to the dispatcher to sign the messages
     //With a bunch of shiny stuff.
     ptree x = static_cast<ptree>(p_mesg);
@@ -168,6 +170,7 @@ void CConnection::Send(CMessage p_mesg, int max_retries)
         // it is inside the queue.
         // The max_retries == 0 (Unsequenced case) the out sequence number is a
         // Don't care 
+        Logger::Notice<<"Sending a unsequenced message = "<<outmsg.GetAcceptAlways()<<std::endl;
         HandleSend(outmsg,(m_outsequenceno+m_queue.size()) % GetSequenceModulo());
         if(max_retries != 0)
         {

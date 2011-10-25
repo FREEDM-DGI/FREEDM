@@ -162,7 +162,9 @@ void CListener::HandleRead(const boost::system::error_code& e, std::size_t bytes
             #endif
             if(m_message.GetAcceptAlways() == true)
             {
-                goto accept;
+                GetDispatcher().HandleRequest(x);
+                Logger::Notice<<"Got an unsequenced message"<<std::endl;
+                goto listen;
             }
             if(m_message.GetStatus() == freedm::broker::CMessage::Accepted)
             {

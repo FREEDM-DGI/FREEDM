@@ -116,8 +116,8 @@ void CListener::SendACK(std::string uuid, remotehost hostname, unsigned int sequ
     GetConnectionManager().PutHostname(uuid,hostname);
     m_.SetStatus(freedm::broker::CMessage::Accepted);
     m_.SetSequenceNumber(sequenceno);
-    Logger::Debug<<"Send ACK #"<<sequenceno<<std::endl;
-    GetConnectionManager().GetConnectionByUUID(uuid, GetSocket().get_io_service(), GetDispatcher())->Send(m_,false);
+    Logger::Info<<"Send ACK #"<<sequenceno<<std::endl;
+    GetConnectionManager().GetConnectionByUUID(uuid, GetSocket().get_io_service(), GetDispatcher())->Send(m_,0);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

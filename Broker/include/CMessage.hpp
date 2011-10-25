@@ -82,6 +82,9 @@ public:
     /// Accessor for sequenceno
     unsigned int GetSequenceNumber() { return m_sequenceno; };
 
+    /// Accessor for accept always flag
+    bool GetAcceptAlways() { return m_accept; };
+
     /// Accessor for status
     StatusType GetStatus() { return m_status; };
     
@@ -96,6 +99,9 @@ public:
 
     /// Setter for sequenceno
     void SetSequenceNumber(unsigned int sequenceno) { m_sequenceno = sequenceno; };
+
+    /// Setter for accept always flag
+    void SetAcceptAlways(bool accept) { m_accept = accept; };
 
     /// Setter for status
     void SetStatus(StatusType status) { m_status = status; };
@@ -117,6 +123,7 @@ public:
         m_status ( p_stat )
     {
         Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
+        m_accept = false;
     };
 
     /// Copy Constructor
@@ -125,7 +132,8 @@ public:
         m_status( p_m.m_status ),
         m_submessages( p_m.m_submessages ),
         m_hostname( p_m.m_hostname ),
-        m_sequenceno( p_m.m_sequenceno )
+        m_sequenceno( p_m.m_sequenceno ),
+        m_accept( p_m.m_accept )
     {
         Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
     };
@@ -138,6 +146,7 @@ public:
         this->m_submessages = p_m.m_submessages;
         this->m_hostname = p_m.m_hostname;
         this->m_sequenceno = p_m.m_sequenceno;
+        this->m_accept = p_m.m_accept;
         return *this;
     }
     
@@ -171,6 +180,7 @@ private:
     /// Contains the sequence number for the sending node
     unsigned int m_sequenceno;
 
+    bool m_accept;
 };
 
 } // namespace broker

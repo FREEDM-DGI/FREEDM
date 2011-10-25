@@ -159,18 +159,17 @@ void CListener::HandleRead(const boost::system::error_code& e, std::size_t bytes
                               <<") -> "<<uuid<<std::endl;
                 goto listen;
             }
-            #ifdef DATAGRAM
-            else
+            #endif
+            if(m_message.GetAcceptAlways() == true)
             {
                 goto accept;
             }
-            #endif
-            #endif
             if(m_message.GetStatus() == freedm::broker::CMessage::Accepted)
             {
                 Logger::Info << "Got ACK #" << sequenceno << std::endl;
                 GetConnectionManager().PutHostname(uuid,hostname);
-                GetConnectionManager().GetConnectionByUUID(uuid, GetSocket().get_io_service(), GetDispatcher())->RecieveACK(sequenceno);
+                GetConnectionManager().GetConnectionByUUID(uuid, GetSocket().get_io_service(),
+                    GetDispatcher())->RecieveACK(sequenceno);
             }
             else if(m_message.GetStatus() == freedm::broker::CMessage::Created)
             {

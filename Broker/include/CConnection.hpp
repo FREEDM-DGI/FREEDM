@@ -75,11 +75,15 @@ public:
     void Stop();
 
     /// Puts a CMessage into the channel.
-    void Send(CMessage p_mesg,bool sequence=true);
+    void Send(CMessage p_mesg,int max_retries=30);
 
     /// Handles Notification of an acknowledment being recieved
     void RecieveACK(unsigned int sequenceno);
+
 private:
+    /// Remove messages which don't have any retries left from the queue.
+    void FlushExpiredMessages();
+
     /// Has the outgoing connection been synched?
     bool m_synched;
 
@@ -93,7 +97,7 @@ private:
     void SendSYN();
     
     /// Handle a send operation posted to the IO thread.
-    void HandleSend(CMessage msg);
+    void HandleSend(CMessage msg, unsigned int sequenceno);
 
     /// Handle completion of a write operation.
     void HandleWrite(const boost::system::error_code& e);
@@ -105,7 +109,7 @@ private:
     CMessage m_message;
     
     /// Type for the queued items.
-    typedef std::pair< unsigned int, CMessage > QueueItem;
+    typedef std::pair<int, CMessage > QueueItem;
 
     /// The queue of messages
     SlidingWindow< QueueItem > m_queue;

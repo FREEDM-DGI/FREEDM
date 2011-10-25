@@ -90,6 +90,9 @@ public:
     /// Get the sequencing Modulo
     unsigned int GetSequenceModulo() { return SEQUENCEMODULO; }
 
+    /// Get the time between refires
+    unsigned int GetRefireWindow() { return REFIRE_WINDOW; }
+
     /// Set the connection reliability for DCUSTOMNETWORK
     void SetReliability(int r) { m_reliability = r; };
     
@@ -104,6 +107,9 @@ private:
     /// Sequence Modulo
     static const unsigned int SEQUENCEMODULO = 16;
 
+    /// Time between refires, in milliseconds.
+    static const unsigned int REFIRE_WINDOW = 100;
+    
     /// Socket for the CConnection.
     boost::asio::ip::udp::socket m_socket;
 

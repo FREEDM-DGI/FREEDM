@@ -151,6 +151,7 @@ void CConnection::Send(CMessage p_mesg, int max_retries)
     {
         // If it isn't squenced then don't put it in the queue.
         m_queue.Push( QueueItem(max_retries,outmsg) );
+        outmsg.SetAcceptAlways(false);
     }
     else
     {
@@ -304,7 +305,7 @@ void CConnection::RecieveACK(unsigned int sequenceno)
         {
             unsigned int bounda = m_outsequenceno;
             unsigned int boundb = (m_outsequenceno+(GetWindowSize()))%GetSequenceModulo();
-            Logger::Debug<<"ACK, bounda:"<<bounda<<" boundb:"<<boundb<<"input: "<<sequenceno<<std::endl;
+            Logger::Notice<<"ACK, bounda:"<<bounda<<" boundb:"<<boundb<<"input: "<<sequenceno<<std::endl;
             if(bounda <= sequenceno || (sequenceno < boundb && boundb < bounda))
             {
                 // Pop out the front of the queue.

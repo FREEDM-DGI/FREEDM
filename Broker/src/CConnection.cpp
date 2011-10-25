@@ -295,16 +295,14 @@ void CConnection::SendSYN()
 ///////////////////////////////////////////////////////////////////////////////
 void CConnection::RecieveACK(unsigned int sequenceno)
 {
-    Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger::Notice << __PRETTY_FUNCTION__ << std::endl;
     while(!m_queue.IsEmpty())
     {
         // Assumption 1: An ack for a message you have already gotten an ACK
         // For is garbage:
         if(sequenceno < m_outsequenceno)
         {
-            Logger::Debug<<"ACK handled for "<<m_queue.front().first<<std::endl;
-            m_queue.pop();
-            m_timeouts = 0;
+            Logger::Notice <<"ACK:"<<sequenceno<<"<"<<m_outsequenceno<<std::endl;
             break;
         }
         else

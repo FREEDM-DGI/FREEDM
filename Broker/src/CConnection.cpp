@@ -172,7 +172,7 @@ void CConnection::Send(CMessage p_mesg, int max_retries)
         // The max_retries == 0 (Unsequenced case) the out sequence number is a
         // Don't care 
         Logger::Notice<<"Sending a unsequenced message = "<<outmsg.GetAcceptAlways()<<std::endl;
-        Logger::Notice<<"Sending with seq number "<<m_outsequenceno+m_queue.size()<<std::endl;
+        Logger::Notice<<"Sending with seq number "<<m_outsequenceno << "+" <<m_queue.size()<<std::endl;
         HandleSend(outmsg,(m_outsequenceno+m_queue.size()) % GetSequenceModulo());
         if(max_retries != 0)
         {

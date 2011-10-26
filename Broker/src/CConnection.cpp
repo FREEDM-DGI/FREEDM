@@ -148,6 +148,7 @@ void CConnection::Send(CMessage p_mesg, int max_retries)
     // Set the source information for the message
     outmsg.SetSourceUUID(GetConnectionManager().GetUUID()); 
     outmsg.SetSourceHostname(GetConnectionManager().GetHostname());
+    outmsg.SetSendTimeNow();
 
     if(max_retries != 0)
     {

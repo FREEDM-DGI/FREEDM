@@ -45,6 +45,7 @@
 #include <boost/noncopyable.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/enable_shared_from_this.hpp>
+#include <boost/date_time/posix_time/posix_time.hpp>
 
 #include <iomanip>
 
@@ -98,7 +99,7 @@ private:
     std::map<std::string,unsigned int> m_insequenceno;
 
     /// Have I seen a sync for a connection?
-    std::map<std::string, bool> m_synched;   
+    std::map<std::string, boost::posix_time::ptime> m_synched;   
 };
 
 

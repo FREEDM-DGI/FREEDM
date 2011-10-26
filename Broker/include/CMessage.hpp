@@ -35,6 +35,8 @@
 #include <boost/asio.hpp>
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/xml_parser.hpp>
+#include <boost/date_time/posix_time/posix_time.hpp>
+#include <boost/date_time/gregorian/gregorian.hpp>
 
 using boost::property_tree::ptree;
 
@@ -85,6 +87,12 @@ public:
     /// Accessor for accept always flag
     bool GetAcceptAlways() { return m_accept; };
 
+    /// Accessor for the send timestamp
+    boost::posix_time::ptime GetSendTime() { return m_send_timestamp; };
+
+    /// Accessor for the expires timestamp
+    boost::posix_time::ptime GetExpiresTime() { return m_expires_timestamp; };
+
     /// Accessor for status
     StatusType GetStatus() { return m_status; };
     
@@ -105,6 +113,12 @@ public:
 
     /// Setter for status
     void SetStatus(StatusType status) { m_status = status; };
+
+    /// Setter for send time.
+    void SetSendTimeNow() { m_send_timestamp = boost::posix_time::microsec_clock::local_time(); }
+    
+    /// Setter for expire time
+    void SetExpireTime(ptime expires) { m_expires_timestamp = expires; };
 
     /// Contains the source node's information
     std::string m_srcUUID;
@@ -133,7 +147,9 @@ public:
         m_submessages( p_m.m_submessages ),
         m_hostname( p_m.m_hostname ),
         m_sequenceno( p_m.m_sequenceno ),
-        m_accept( p_m.m_accept )
+        m_accept( p_m.m_accept ),
+        m_send_timestamp ( p_m.m_send_timestamp ),
+        m_expires_timestamp ( p_m.m_expires_timestamp )    
     {
         Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
     };
@@ -147,6 +163,8 @@ public:
         this->m_hostname = p_m.m_hostname;
         this->m_sequenceno = p_m.m_sequenceno;
         this->m_accept = p_m.m_accept;
+        this->m_send_timestamp = p_m.m_send_timestamp;
+        this->m_expires_timestamp = p_m.m_expires_timestamp;
         return *this;
     }
     
@@ -180,6 +198,13 @@ private:
     /// Contains the sequence number for the sending node
     unsigned int m_sequenceno;
 
+    /// Send timestamp
+    boost::posix_time::ptime m_send_timestamp;
+    
+    /// Expires timestamp
+    boost::posix_time::ptime m_expires_timestamp;
+
+    /// Flag this message to always be accepted.
     bool m_accept;
 };
 

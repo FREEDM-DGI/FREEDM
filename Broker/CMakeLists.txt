@@ -8,19 +8,18 @@ set(ALT_BUILD_VERSION "Unversioned")
 option(BUILD_TESTS "Enable the building and running of unit tests." OFF)
 
 # find the required boost libraries
-find_package(Boost REQUIRED COMPONENTS system thread program_options serialization)
+find_package(Boost REQUIRED COMPONENTS system thread program_options serialization date_time)
 
 if(Boost_FOUND)
     # add the boost libraries to the project
     include_directories(${Boost_INCLUDE_DIRS})
-    set(Boost_USE_STATIC_LIBS OFF)
     link_directories(${Boost_LIBRARY_DIRS})
 
     # set C++ compiler flags
     set(COMMON_FLAGS "")
     # Add DCUSTOMNETWORK for network.xml support
     # Add DDATAGRAM for UDP Datagram service w/o sequencing.
-    set(CMAKE_CXX_FLAGS "-std=c++98 ${COMMON_FLAGS} -DCUSTOMNETWORK -DDATAGRAM")
+    set(CMAKE_CXX_FLAGS "-std=c++98 ${COMMON_FLAGS} -DCUSTOMNETWORK")
     
 
     # include project source directories

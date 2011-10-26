@@ -169,8 +169,13 @@ void CListener::HandleRead(const boost::system::error_code& e, std::size_t bytes
             }
             else if(m_message.GetStatus() == freedm::broker::CMessage::Created)
             {
-                Logger::Info << "Got SYN #" << sequenceno << std::endl;
-                m_insequenceno[uuid] = sequenceno;
+                // Accept the sync if we aren't already synced OR the sync is newer.
+                if(m_synched.find(uuid) == m_synched.end() || m_synched[uuid] < m_message.GetSendTime())
+                {
+                    Logger::Info << "Got SYN #" << sequenceno << std::endl;
+                    m_insequenceno[uuid] = sequenceno;
+                    m_synched[uuid] = m_message.GetSendTime();
+                }
                 SendACK(uuid,hostname,m_insequenceno[uuid]);
             }
             else if(m_message.GetAcceptAlways() == true)

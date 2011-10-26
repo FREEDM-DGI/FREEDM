@@ -210,6 +210,8 @@ CMessage::operator ptree ()
     pt.put("message.sequenceno", m_sequenceno );
     pt.put("message.status", m_status  );
     pt.put("message.accept", m_accept );
+    pt.put("message.send_time", boost::posix_time::to_iso_string(m_send_timestamp));
+    pt.put("message.expires", boost::posix_time::to_iso_string(m_expires_timestamp));
     pt.add_child("message.submessages", m_submessages );
 
     return pt;
@@ -226,6 +228,7 @@ CMessage::CMessage( const ptree &pt )
     Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
     try
     {
+        std::string time_tmp;
         // Get the source host's ID and store it in the m_src variable.
         // An exception is thrown if "message.source" does not exist.
         m_srcUUID = pt.get< std::string >("message.source");
@@ -233,6 +236,10 @@ CMessage::CMessage( const ptree &pt )
         m_remotehost.port = pt.get< std::string >("message.port");
         m_sequenceno = pt.get< unsigned int >("message.sequenceno");
         m_accept = pt.get< bool >("message.accept");
+        time_tmp = pt.get< std::string >("message.send_time");
+        m_send_timestamp = boost::posix_time::from_iso_string(time_tmp);
+        time_tmp = pt.get< std::string >("message.expires");
+        m_expires_timestamp = boost::posix_time::from_iso_string(time_tmp);
 
         m_status = static_cast< StatusType >
             (pt.get< unsigned int >("message.status"));

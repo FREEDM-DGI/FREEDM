@@ -240,11 +240,24 @@ CMessage::CMessage( const ptree &pt )
         m_hostname = pt.get< std::string >("message.hostname");
         m_sequenceno = pt.get< unsigned int >("message.sequenceno");
         m_accept = pt.get< bool >("message.accept");
-        time_tmp = pt.get< std::string >("message.send_time");
-        m_send_timestamp = boost::posix_time::from_iso_string(time_tmp);
-        time_tmp = pt.get< std::string >("message.expires");
-        m_expires_timestamp = boost::posix_time::from_iso_string(time_tmp);
-
+        try
+        {
+            time_tmp = pt.get< std::string >("message.send_time");
+            m_send_timestamp = boost::posix_time::from_iso_string(time_tmp);
+        }
+        catch(boost::bad_lexical_cast e)
+        {
+            // Do nothing.
+        }
+        try
+        {
+            time_tmp = pt.get< std::string >("message.expires");
+            m_expires_timestamp = boost::posix_time::from_iso_string(time_tmp);
+        }
+        catch(boost::bad_lexical_cast e)
+        {
+            // Do nothing.
+        }
         m_status = static_cast< StatusType >
             (pt.get< unsigned int >("message.status"));
 

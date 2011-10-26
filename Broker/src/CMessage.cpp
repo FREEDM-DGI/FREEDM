@@ -204,14 +204,20 @@ CMessage::operator ptree ()
     using boost::property_tree::ptree;
     ptree pt;
 
+    std::string send_ts = boost::posix_time::to_iso_string(m_send_timestamp);
+    std::string expires_ts = boost::posix_time::to_iso_string(m_expires_timestamp);
+
+    Logger::Debug << "Send ts " << send_ts << std::endl;
+    Logger::Debug << "Expire ts " << expires_ts << std::endl;
+
     pt.put("message.source", m_srcUUID );
     pt.put("message.hostname", m_remotehost.hostname );
     pt.put("message.port",m_remotehost.port );
     pt.put("message.sequenceno", m_sequenceno );
     pt.put("message.status", m_status  );
     pt.put("message.accept", m_accept );
-    pt.put("message.send_time", boost::posix_time::to_iso_string(m_send_timestamp));
-    pt.put("message.expires", boost::posix_time::to_iso_string(m_expires_timestamp));
+    pt.put("message.send_time", send_ts);
+    pt.put("message.expires", expires_ts);
     pt.add_child("message.submessages", m_submessages );
 
     return pt;

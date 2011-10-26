@@ -176,6 +176,10 @@ void CListener::HandleRead(const boost::system::error_code& e, std::size_t bytes
                     m_insequenceno[uuid] = sequenceno;
                     m_synched[uuid] = m_message.GetSendTime();
                 }
+                else
+                {
+                    Logger::Info << "Ignored Syn #" << sequenceno << std::endl;
+                }
                 SendACK(uuid,hostname,m_insequenceno[uuid]);
             }
             else if(m_message.GetAcceptAlways() == true)

@@ -153,7 +153,6 @@ void CConnection::Send(CMessage p_mesg, int max_retries)
     if(max_retries != 0)
     {
         // If it isn't squenced then don't put it in the queue.
-        m_queue.Push( QueueItem(max_retries,outmsg) );
         outmsg.SetAcceptAlways(false);
     }
     else
@@ -176,6 +175,7 @@ void CConnection::Send(CMessage p_mesg, int max_retries)
         HandleSend(outmsg,(m_outsequenceno+m_queue.size()) % GetSequenceModulo());
         if(max_retries != 0)
         {
+            m_queue.Push( QueueItem(max_retries,outmsg) );
             m_timeout.cancel();
             m_timeout.expires_from_now(boost::posix_time::milliseconds(GetRefireWindow()));
             m_timeout.async_wait(boost::bind(&CConnection::Resend,this,

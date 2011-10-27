@@ -205,7 +205,7 @@ CMessage::operator ptree ()
     ptree pt;
 
     std::string send_ts = boost::posix_time::to_iso_string(m_send_timestamp);
-    std::string expires_ts = boost::posix_time::to_iso_string(m_expires_timestamp);
+    std::string expires_ts = boost::posix_time::to_simple_string(m_expires_in);
 
     Logger::Debug << "Send ts " << send_ts << std::endl;
     Logger::Debug << "Expire ts " << expires_ts << std::endl;
@@ -252,7 +252,7 @@ CMessage::CMessage( const ptree &pt )
         try
         {
             time_tmp = pt.get< std::string >("message.expires");
-            m_expires_timestamp = boost::posix_time::from_iso_string(time_tmp);
+            m_expires_in = boost::posix_time::duration_from_string(time_tmp);
         }
         catch(boost::bad_lexical_cast e)
         {

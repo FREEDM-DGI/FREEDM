@@ -91,7 +91,13 @@ public:
     boost::posix_time::ptime GetSendTime() { return m_send_timestamp; };
 
     /// Accessor for the expires timestamp
-    boost::posix_time::ptime GetExpiresTime() { return m_expires_timestamp; };
+    boost::posix_time::ptime GetExpiresTime() { return m_send_timestamp+m_expires_in; };
+
+    /// Accessor for the expires duration
+    boost::posix_time::time_duration GetExpiresIn() { return m_expires_in; };
+
+    /// Accessor for expiration status
+    bool IsExpired() { return boost::posix_time::microsec_clock::universal_time() > GetExpiresTime(); };
 
     /// Accessor for status
     StatusType GetStatus() { return m_status; };
@@ -115,10 +121,10 @@ public:
     void SetStatus(StatusType status) { m_status = status; };
 
     /// Setter for send time.
-    void SetSendTimeNow() { m_send_timestamp = boost::posix_time::microsec_clock::local_time(); }
+    void SetSendTimeNow() { m_send_timestamp = boost::posix_time::microsec_clock::universal_time(); }
     
     /// Setter for expire time
-    void SetExpireTime(ptime expires) { m_expires_timestamp = expires; };
+    void SetExpiresIn(boost::posix_time::time_duration expires) { m_expires_in = expires; };
 
     /// Contains the source node's information
     std::string m_srcUUID;
@@ -138,6 +144,7 @@ public:
     {
         Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
         m_accept = false;
+        m_expires_in = boost::posix_time::seconds(30);
     };
 
     /// Copy Constructor
@@ -149,7 +156,7 @@ public:
         m_sequenceno( p_m.m_sequenceno ),
         m_accept( p_m.m_accept ),
         m_send_timestamp ( p_m.m_send_timestamp ),
-        m_expires_timestamp ( p_m.m_expires_timestamp )    
+        m_expires_in ( p_m.m_expires_in )    
     {
         Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
     };
@@ -164,7 +171,7 @@ public:
         this->m_sequenceno = p_m.m_sequenceno;
         this->m_accept = p_m.m_accept;
         this->m_send_timestamp = p_m.m_send_timestamp;
-        this->m_expires_timestamp = p_m.m_expires_timestamp;
+        this->m_expires_in = p_m.m_expires_in;
         return *this;
     }
     
@@ -202,7 +209,7 @@ private:
     boost::posix_time::ptime m_send_timestamp;
     
     /// Expires timestamp
-    boost::posix_time::ptime m_expires_timestamp;
+    boost::posix_time::time_duration m_expires_in;
 
     /// Flag this message to always be accepted.
     bool m_accept;

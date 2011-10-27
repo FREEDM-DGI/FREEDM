@@ -37,7 +37,6 @@
 #include "CDispatcher.hpp"
 #include "CReliableConnection.hpp"
 
-#include "SlidingWindow.hpp"
 #include "types/remotehost.hpp"
 
 #include <boost/asio.hpp>
@@ -48,6 +47,7 @@
 
 #include <iomanip>
 #include <set>
+#include <deque>
 
 namespace freedm {
     namespace broker {
@@ -112,7 +112,7 @@ private:
     typedef std::pair<int, CMessage > QueueItem;
 
     /// The queue of messages
-    SlidingWindow< QueueItem > m_queue;
+    std::deque< QueueItem > m_queue;
 
     /// Timer for failed responses.
     boost::asio::deadline_timer m_timeout;
@@ -123,6 +123,9 @@ private:
  
     /// The sequence number used for the next outgoing message
     unsigned int m_outsequenceno;
+
+    /// The sequence number of the front of the queue.
+    unsigned int m_queueno;
 };
 
 typedef boost::shared_ptr<CConnection> ConnectionPtr;

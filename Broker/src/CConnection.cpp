@@ -69,6 +69,7 @@ CConnection::CConnection(boost::asio::io_service& p_ioService,
 {
     Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
     m_outsequenceno = 0;
+    m_queueno = 0;
     m_timeouts = 0;
     m_synched = false;
 }
@@ -116,12 +117,15 @@ void CConnection::Stop()
 ///   delievered in order. Otherwise it is immediately fired and forgotten.
 ///   this is mostly meant for use with ACKs. True by default.
 ///////////////////////////////////////////////////////////////////////////////
-void CConnection::Send(CMessage p_mesg, int max_retries)
+void CConnection::Send(CMessage p_mesg)
 {
     Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
 
+    boost::posix_time::time_duration max_retries = p_mesg.GetExpiresIn();
+
     #ifdef DATAGRAM
-    max_retries = 0;
+    max_retries = boost::posix_time::seconds(0);
+    p_mesg.SetExpiresIn(boost::posix_time::seconds(0));
     #endif
 
     Logger::Notice<<"Sending with max retries: "<<max_retries<<std::endl;
@@ -136,7 +140,7 @@ void CConnection::Send(CMessage p_mesg, int max_retries)
     CMessage outmsg(x);
 
     // If the message doesn't have 0 retries, send it regardless.
-    if(max_retries != 0)
+    if(ttl != boost::posix_time::seconds(0))
     {
         if(m_synched == false)
         {
@@ -149,8 +153,9 @@ void CConnection::Send(CMessage p_mesg, int max_retries)
     outmsg.SetSourceUUID(GetConnectionManager().GetUUID()); 
     outmsg.SetSourceHostname(GetConnectionManager().GetHostname());
     outmsg.SetSendTimeNow();
+    
 
-    if(max_retries != 0)
+    if(ttl != boost::posix_time::seconds(0))
     {
         // If it isn't squenced then don't put it in the queue.
         outmsg.SetAcceptAlways(false);
@@ -162,7 +167,7 @@ void CConnection::Send(CMessage p_mesg, int max_retries)
     // Before, we would put it into a queue to be sent later, now we are going
     // to immediately write it to channel.
 
-    if(m_queue.size() <= GetWindowSize() || max_retries == 0)
+    if(m_queue.size() <= GetWindowSize() || max_retries == boost::posix_time::seconds(0))
     {
         // Only try to write to the socket if the window isn't already full.
         // Or it is an unsequenced message
@@ -171,16 +176,20 @@ void CConnection::Send(CMessage p_mesg, int max_retries)
         // The max_retries == 0 (Unsequenced case) the out sequence number is a
         // Don't care 
         Logger::Notice<<"Sending a unsequenced message = "<<outmsg.GetAcceptAlways()<<std::endl;
-        Logger::Notice<<"Sending with seq number "<<m_outsequenceno << "+" <<m_queue.size()<<std::endl;
-        HandleSend(outmsg,(m_outsequenceno+m_queue.size()) % GetSequenceModulo());
+        Logger::Notice<<"Sending with seq number "<<m_outsequenceno<<std::endl;
+        HandleSend(outmsg,(m_outsequenceno));
         if(max_retries != 0)
         {
-            m_queue.Push( QueueItem(max_retries,outmsg) );
+            m_queue.push_back(outmsg);
             m_timeout.cancel();
             m_timeout.expires_from_now(boost::posix_time::milliseconds(GetRefireWindow()));
             m_timeout.async_wait(boost::bind(&CConnection::Resend,this,
                 boost::asio::placeholders::error));
         }
+    }
+    if(max_retries != boost::posix_time::seconds(0))
+    {
+        m_outsequenceno = (m_outsequenceno+1) % GetSequenceModulo();
     }
 }
 
@@ -233,7 +242,7 @@ void CConnection::Resend(const boost::system::error_code& err)
     if(!err)
     {
         Logger::Debug << "Firing Resend"<<std::endl;
-        if(!m_queue.IsEmpty())
+        if(!m_queue.empty())
         {
             m_timeouts++;
             GetSocket().get_io_service().post(
@@ -261,10 +270,9 @@ void CConnection::HandleResend()
  
     for(unsigned int i=0; sit != m_queue.end() && i < GetWindowSize(); i++,sit++ )
     {
-        if((*sit).first > 0) (*sit).first--;
         GetSocket().get_io_service().post(
         boost::bind(&CConnection::HandleSend, this,(*sit).second,
-            (m_outsequenceno+i) % GetSequenceModulo()));
+            (m_queueno+i) % GetSequenceModulo()));
     }
     
     FlushExpiredMessages();
@@ -282,6 +290,9 @@ void CConnection::SendSYN()
     Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
     freedm::broker::CMessage m_;
     m_.SetStatus(freedm::broker::CMessage::Created);
+    // Sync queueno to sequenceno
+    if(m_queue.empty())
+        m_queueno = m_sequenceno;
     Logger::Info<<"Sending SYN"<<std::endl;
     Send(m_,-1); /// The message MUST be delivered.
 }
@@ -295,40 +306,43 @@ void CConnection::SendSYN()
 ///   well.
 /// @param sequenceno The message to consider as acknowledged.
 ///////////////////////////////////////////////////////////////////////////////
-void CConnection::RecieveACK(unsigned int sequenceno)
+void CConnection::RecieveACK(unsigned int sequenceno,boost::posix_time::ptime ts)
 {
     Logger::Notice << __PRETTY_FUNCTION__ << std::endl;
-    while(!m_queue.IsEmpty())
+    if(ts >= m_synctime)
     {
-        // Assumption 1: An ack for a message you have already gotten an ACK
-        // For is garbage:
-        if(sequenceno < m_outsequenceno)
+        while(!m_queue.empty())
         {
-            Logger::Notice <<"ACK:"<<sequenceno<<"<"<<m_outsequenceno<<std::endl;
-            break;
-        }
-        else
-        {
-            unsigned int bounda = m_outsequenceno;
-            unsigned int boundb = (m_outsequenceno+(GetWindowSize()))%GetSequenceModulo();
-            Logger::Notice<<"ACK, bounda:"<<bounda<<" boundb:"<<boundb<<"input: "<<sequenceno<<std::endl;
-            if(bounda <= sequenceno || (sequenceno < boundb && boundb < bounda))
+            // Assumption 1: An ack for a message you have already gotten an ACK
+            // For is garbage:
+            if(sequenceno < m_outsequenceno)
             {
-                // Pop out the front of the queue.
-                m_queue.pop();
-                // increment the out sequence number to keep the same seqno for
-                // the next message:
-                m_outsequenceno = (m_outsequenceno+1) % GetSequenceModulo();
-                // Reset the number of timeouts
-                m_timeouts = 0;
+                Logger::Notice <<"ACK:"<<sequenceno<<"<"<<m_outsequenceno<<std::endl;
+                break;
             }
             else
             {
-                break;
+                unsigned int bounda = m_queueno;
+                unsigned int boundb = (m_queueno+(GetWindowSize()))%GetSequenceModulo();
+                Logger::Notice<<"ACK, bounda:"<<bounda<<" boundb:"<<boundb<<"input: "<<sequenceno<<std::endl;
+                if(bounda <= sequenceno || (sequenceno < boundb && boundb < bounda))
+                {
+                    // Pop out the front of the queue.
+                    m_queue.pop_front();
+                    // increment the out sequence number to keep the same seqno for
+                    // the next message:
+                    m_queueno = (m_queueno+1) % GetSequenceModulo();
+                    // Reset the number of timeouts
+                    m_timeouts = 0;
+                }
+                else
+                {
+                    break;
+                }
             }
         }
     }
-    if(!m_queue.IsEmpty())
+    if(!m_queue.empty())
     {
         GetSocket().get_io_service().post(
             boost::bind(&CConnection::HandleResend, this));
@@ -372,10 +386,55 @@ void CConnection::FlushExpiredMessages()
     for(int i = 0; i < qsize; i++)
     {
         tmp = m_queue.front();    
-        m_queue.pop();
-        if(tmp.first != 0)
+        m_queue.pop_front();
+        // The first WINDOWSIZE messages are OUTSTANDING
+        // They cannot be removed
+        if(!tmp.IsExpired() || i < GetWindowSize())
         {
-            m_queue.Push(tmp);
+            m_queue.push_back(tmp);
+        }
+        else
+        {
+            // The next message that gets sent should have a lesser sequence number
+            if(m_sequenceno == 0)
+            {
+                m_sequenceno = GetSequenceModulo()-1;
+            }
+            else
+            {
+                m_sequenceno--;
+            }
+        }
+    }
+    bool valid = false;
+    /// Check to see if the whole window is expired.
+    for(int i =0; i < GetWindowSize() && i < m_queue.size(); i++)
+    {
+        if(m_queue.front().first != 0 && m_queue.front().GetStatus() == freedm::broker::CMessage::Created)
+        {
+            valid = true;
+            break;
+        }
+    }
+    if(valid == false)
+    {
+        // Drop all the outstanding messages.
+        std::dequeue<QueueItem> tmpqueue = m_queue;
+        for(int i=0; i < GetWindowSize() && i < tmpqueue.size(); i++)
+        {
+            tmpqueue.pop_front();
+        }
+        // Clear the old queue.
+        m_queue.clear();
+        // Re sync.
+        SendSYN();
+        // Fix the message queue
+        while(!tmpqueue.empty())
+        {
+            m_queue.push_back(tmpqueue.front());
+            tmpqueue.pop_front();
+            //Adjust the sequenceno
+            m_sequenceno = (m_sequenceno+1) % GetSequenceModulo();
         }
     }
 }

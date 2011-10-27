@@ -38,15 +38,15 @@ CDeviceTable::CDeviceTable( const std::string & p_xml, const std::string & p_tag
     m_data      = new double[m_length];
 }
 
-double CDeviceTable::GetValue( const CDeviceKey & p_key, size_t p_index )
+double CDeviceTable::GetValue( const CDeviceKey & p_dkey, size_t p_index )
 {
     Logger::Info << __PRETTY_FUNCTION__ << std::endl;
     std::stringstream error;
     
     // check for read permission
-    if( !m_structure.HasAccess(p_key,p_index) )
+    if( !m_structure.HasAccess(p_dkey,p_index) )
     {
-        error << p_index << " does not have access to " << p_key;
+        error << p_index << " does not have access to " << p_dkey;
         throw std::logic_error( error.str() );
     }
     
@@ -55,18 +55,18 @@ double CDeviceTable::GetValue( const CDeviceKey & p_key, size_t p_index )
     Logger::Debug << "DGI-Interface " << p_index << " obtained mutex as reader" << std::endl;
     
     // convert the key to an index and return its value
-    return m_data[m_structure.FindIndex(p_key)];
+    return m_data[m_structure.FindIndex(p_dkey)];
 }
 
-void CDeviceTable::SetValue( const CDeviceKey & p_key, size_t p_index, double p_value )
+void CDeviceTable::SetValue( const CDeviceKey & p_dkey, size_t p_index, double p_value )
 {
     Logger::Info << __PRETTY_FUNCTION__ << std::endl;
     std::stringstream error;
     
     // check for write permission
-    if( !m_structure.HasAccess(p_key,p_index) )
+    if( !m_structure.HasAccess(p_dkey,p_index) )
     {
-        error << p_index << " does not have access to " << p_key;
+        error << p_index << " does not have access to " << p_dkey;
         throw std::logic_error( error.str() );
     }
     
@@ -75,7 +75,7 @@ void CDeviceTable::SetValue( const CDeviceKey & p_key, size_t p_index, double p_
     Logger::Debug << "DGI-Interface " << p_index << " obtained mutex as writer" << std::endl;
     
     // convert the key to an index and set its value
-    m_data[m_structure.FindIndex(p_key)] = p_value;
+    m_data[m_structure.FindIndex(p_dkey)] = p_value;
 }
 
 CDeviceTable::~CDeviceTable()

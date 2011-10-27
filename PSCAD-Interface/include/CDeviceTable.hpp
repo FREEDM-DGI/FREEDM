@@ -110,15 +110,15 @@ public:
     ///     or an invalid device key.
     ///
     /// @pre
-    ///     p_key exists as a table entry in m_structure
-    ///     p_index has access to p_key in m_structure
+    ///     p_dkey exists as a table entry in m_structure
+    ///     p_index has access to p_dkey in m_structure
     ///
     /// @post
     ///     m_mutex is obtained with unique access
     ///     one element of m_data is modified
     ///
     /// @param
-    ///     p_key is used to determine the table entry to modify
+    ///     p_dkey is used to determine the table entry to modify
     ///     p_index is the unique identifier of the requester
     ///     p_value is the new value for the table entry
     ///
@@ -128,7 +128,7 @@ public:
     ///     assumption has been violated.
     ///
     ////////////////////////////////////////////////////////////////////////////
-    void SetValue( const CDeviceKey & p_key, size_t p_index, double p_value );
+    void SetValue( const CDeviceKey & p_dkey, size_t p_index, double p_value );
     
     ////////////////////////////////////////////////////////////////////////////
     /// GetValue( const CDeviceKey &, size_t )
@@ -145,18 +145,18 @@ public:
     ///     or an invalid device key.
     ///
     /// @pre
-    ///     p_key exists as a table entry in m_structure
-    ///     p_index has access to p_key in m_structure
+    ///     p_dkey exists as a table entry in m_structure
+    ///     p_index has access to p_dkey in m_structure
     ///
     /// @post
     ///     m_mutex is obtained with shared access
     ///
     /// @param
-    ///     p_key is the index for the value in the table
+    ///     p_dkey is the index for the value in the table
     ///     p_index is the unique identifier of the requester
     ///
     /// @return
-    ///     m_data element that corresponds to p_key
+    ///     m_data element that corresponds to p_dkey
     ///
     /// @limitations
     ///     This function assumes CTableStructure checks against indexes larger
@@ -164,7 +164,7 @@ public:
     ///     assumption has been violated.
     ///
     ////////////////////////////////////////////////////////////////////////////
-    double GetValue( const CDeviceKey & p_key, size_t p_index );
+    double GetValue( const CDeviceKey & p_dkey, size_t p_index );
 
     ////////////////////////////////////////////////////////////////////////////
     /// ~CDeviceTable

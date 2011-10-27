@@ -38,11 +38,14 @@ CSimulationServer::CSimulationServer( const std::string & p_xml, unsigned short 
     boost::property_tree::ptree xmlTree;
     boost::property_tree::read_xml( p_xml, xmlTree );
     size_t interfaces = xmlTree.get<size_t>("SSTCount");
-    
+    std::list<boost::shared_ptr<boost::thread> > thread_pool;
+
     // start each interface with a unique port / identifier
     for( size_t i = 1; i <= interfaces; i++ )
     {
-        m_interface.push_back( CSimulationInterface::Create( m_service, m_command, m_state, (p_port + i), i ) );
+        thread_pool.push_back(boost::make_shared<boost::thread>(&CSimulationServer::StartDGIProcess, this, p_port+i, i
+));
+
         Logger::Notice << "Initialized DGI-Interface " << i << std::endl;
     }
     
@@ -53,6 +56,16 @@ CSimulationServer::CSimulationServer( const std::string & p_xml, unsigned short 
     // start i/o service
     m_service.run();
 }
+
+void CSimulationServer::StartDGIProcess(unsigned short p_port,size_t p_index)
+{
+  boost::asio::io_service dgi_service;
+  
+  CSimulationInterface::TPointer dgi=CSimulationInterface::Create(dgi_service, m_command, m_state, p_port, p_index);
+  dgi_service.run();
+}
+
+
 
 CSimulationServer::~CSimulationServer()
 {
@@ -98,6 +111,10 @@ void CSimulationServer::Run()
         
         // read the header of the next received packet
         boost::asio::read( socket, boost::asio::buffer(header) );
+
+	//hard code the null character
+	header[3]='\0';
+
         Logger::Debug << "PSCAD - received " << header.data() << std::endl;
         
         // message handler based on header type

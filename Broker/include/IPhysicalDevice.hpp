@@ -96,7 +96,7 @@ class IPhysicalDevice
         
         /// Gets the manager associated with this device.
         CPhysicalDeviceManager& GetManager() { return m_manager; }; 
-    private:
+    protected:
         /// The manager who is tracking this device.
         CPhysicalDeviceManager& m_manager;
         

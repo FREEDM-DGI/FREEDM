@@ -152,25 +152,25 @@ public:
     ///     none
     ///
     /// @Error_Handling
-    ///     Throws an exception if p_device is not stored in the table.
+    ///     Throws an exception if p_dkey is not stored in the table.
     ///
     /// @pre
-    ///     p_device was listed in the XML Input file for this instance
+    ///     p_dkey was listed in the XML Input file for this instance
     ///
     /// @post
     ///     none
     ///
     /// @param
-    ///     p_device is the device key to convert into an index
+    ///     p_dkey is the device key to convert into an index
     ///
     /// @return
-    ///     index corresponding to p_device
+    ///     index corresponding to p_dkey
     ///
     /// @limitations
     ///     none
     ///
     ////////////////////////////////////////////////////////////////////////////
-    size_t FindIndex( const CDeviceKey & p_device ) const;
+    size_t FindIndex( const CDeviceKey & p_dkey ) const;
     
     ////////////////////////////////////////////////////////////////////////////
     /// FindDevice( size_t ) const
@@ -221,12 +221,12 @@ public:
     ///     none
     ///
     /// @param
-    ///     p_device is the device key to check for access
+    ///     p_dkey is the device key to check for access
     ///     p_parent is the index of the parent SST seeking access
     ///
     /// @return
-    ///     true if p_parent has access to p_device
-    ///     false if p_device is not stored in the table
+    ///     true if p_parent has access to p_dkey
+    ///     false if p_dkey is not stored in the table
     ///     false if p_parent is an unrecognized parent index
     ///     false otherwise
     ///
@@ -234,7 +234,7 @@ public:
     ///     none
     ///
     ////////////////////////////////////////////////////////////////////////////
-    bool HasAccess( const CDeviceKey & p_device, size_t p_parent ) const;
+    bool HasAccess( const CDeviceKey & p_dkey, size_t p_parent ) const;
 private:
     struct SDevice {};
     struct SIndex {};

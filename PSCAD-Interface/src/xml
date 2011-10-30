@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<SSTCount>3</SSTCount>
+<state>
+  <entry index = "1">
+    <device>pv1</device>
+    <key>powerLevel</key>
+    <parent>1</parent>
+  </entry> 
+  <entry index = "2">
+    <device>battery1</device>
+    <key>powerLevel</key>
+    <parent>1</parent>
+  </entry>
+  <entry index = "3">
+    <device>load1</device>
+    <key>powerLevel</key>
+    <parent>1</parent>
+  </entry>
+  <entry index = "4">
+    <device>load2</device>
+    <key>powerLevel</key>
+    <parent>2</parent>
+  </entry>
+  <entry index = "5">
+    <device>pv3</device>
+    <key>currentLevel</key>
+    <parent>3</parent>
+  </entry>
+</state>
+<command>
+  <entry index = "1">
+    <device>pv1</device>
+    <key>onOffSwitch</key>
+    <parent>1</parent>
+  </entry>
+  <entry index = "2">
+    <device>battery1</device>
+    <key>onOffSwitch</key>
+    <parent>1</parent>
+  </entry>
+  <entry index = "3">
+    <device>load1</device>
+    <key>onOffSwitch</key>
+    <parent>1</parent>
+  </entry>
+  <entry index = "4">
+    <device>load2</device>
+    <key>onOffSwitch</key>
+    <parent>2</parent>
+  </entry>
+  <entry index = "5">
+    <device>battery2</device>
+    <key>onOffSwitch</key>
+    <parent>2</parent>
+  </entry>
+  <entry index = "6">
+    <device>dieselGenerator3</device>
+    <key>onOffSwitch</key>
+    <parent>3</parent>
+  </entry>
+</command>

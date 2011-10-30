@@ -55,7 +55,16 @@ namespace freedm {
 
 			/// Sets the value of some key to PSCAD.
 			void Set(SettingKey key, SettingValue value);
-    
+
+		        //turn the device on
+		        virtual void turnOn() = 0;
+
+		        //turn the device off
+		        virtual void turnOff() = 0;
+
+		        //get the power level of the device
+		        virtual SettingValue get_powerLevel() = 0;
+        
 		private:
 			///pointer to lineClient
 			CLineClient::TPointer m_lineClient;

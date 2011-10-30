@@ -78,6 +78,15 @@ class IPhysicalDevice
 
         /// Sets the value of some key to the input value.
         virtual void Set(SettingKey key, SettingValue value) = 0;
+
+        //turn the device on
+        virtual void turnOn() = 0;
+
+        //turn the device off
+        virtual void turnOff() = 0;
+
+        //get the power level of the device
+        virtual SettingValue get_powerLevel() = 0;
         
         /// Locks the provided mutex.
         virtual void Lock() { m_mutex.lock(); };

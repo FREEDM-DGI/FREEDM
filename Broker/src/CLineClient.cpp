@@ -26,6 +26,9 @@
 
 #include "CLineClient.hpp"
 
+namespace freedm{
+  namespace broker{
+
 CLineClient::TPointer CLineClient::Create( boost::asio::io_service & p_service )
 {
   return CLineClient::TPointer( new CLineClient(p_service) );
@@ -146,3 +149,6 @@ CLineClient::~CLineClient()
         Quit();
     }
 }
+
+  }//namespace broker
+}//namespace freedm

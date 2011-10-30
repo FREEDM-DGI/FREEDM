@@ -11,8 +11,12 @@ set(
     IPeerNode.cpp
     CPhysicalDeviceManager.cpp
     CGenericDevice.cpp
+    CLineClient.cpp
+    CPSCADDevice.cpp
+    CPVDevice.cpp
+    CBatteryDevice.cpp
+    CLoadDevice.cpp
     gm/GroupManagement.cpp
-    lb/CLineClient.cpp
     lb/LoadBalance.cpp
     #lb/LBPeerNode.cpp
     sc/CStateCollection.cpp

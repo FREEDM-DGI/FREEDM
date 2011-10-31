@@ -207,7 +207,7 @@ int main (int argc, char* argv[])
             std::cerr << visibleOpts_ << std::endl;
             return 0;
         }
-        if( vm_.count("generateuuid") )
+        if( uuidgenerator != "" )
         {
             u_ = freedm::uuid::from_dns(uuidgenerator);
             std::cout<<u_<<std::endl;

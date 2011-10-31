@@ -46,8 +46,6 @@ namespace broker {
 
 class IPhysicalDevice;
 
-/// Manages open connections so that they may be cleanly stopped when the server
-/// needs to shut down.
 class CPhysicalDeviceManager
     : private boost::noncopyable
 {

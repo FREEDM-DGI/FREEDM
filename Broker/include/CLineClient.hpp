@@ -43,6 +43,8 @@
 #include <boost/utility.hpp>
 #include <boost/shared_ptr.hpp>
 
+namespace freedm{
+  namespace broker{
 ////////////////////////////////////////////////////////////////////////////////
 /// CLineClient
 ///
@@ -236,5 +238,8 @@ private:
     /// socket to line protocol server
     boost::asio::ip::tcp::socket m_socket;
 };
+
+  }//namespace broker
+}//namespace freedm
 
 #endif // C_LINE_CLIENT

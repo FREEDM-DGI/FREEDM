@@ -19,7 +19,8 @@ if(Boost_FOUND)
     set(COMMON_FLAGS "")
     # Add DCUSTOMNETWORK for network.xml support
     # Add DDATAGRAM for UDP Datagram service w/o sequencing.
-    set(CMAKE_CXX_FLAGS "-std=c++98 ${COMMON_FLAGS}")
+    # Add DDISABLELINECLIENT to remove start up for the lineclient and those devices.
+    set(CMAKE_CXX_FLAGS "-std=c++98 ${COMMON_FLAGS} -DDISABLELINECLIENT")
     
 
     # include project source directories

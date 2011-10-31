@@ -136,9 +136,9 @@ void lbAgent::LoadManage()
     DevPtr = it_->second;
     DevPtr = m_phyDevManager.GetDevice(it_->first); 
     Logger::Debug<< "Device ID: " << DevPtr->GetID() << ", Device Type: " 
-    		 << DevPtr->GetType()<< ", vin: " << DevPtr->Get("vin") << std::endl;                         
+    		 << DevPtr->GetType()<< ", power level: " << DevPtr->get_powerLevel() << std::endl;                         
   }  
-
+  /*
   step++;
   std::stringstream ss_;
   ss_.clear();
@@ -164,7 +164,7 @@ void lbAgent::LoadManage()
          Logger::Debug<< "Attempt to set FREEDM GENERIC DEVICE " << std::endl;
         }
     }
-    
+  */    
   // Call LoadTable to update load state of the system as observed by this node
   LoadTable();
      
@@ -340,7 +340,7 @@ void lbAgent::SendDraftRequest(){
 }//end SendDraftRequest
 
 ////////////////////////////////////////////////////////////
-/// InitiatePowerMigration
+/// InitiatePowerMigration *************need to change for LWI*********
 /// @description Initiates 'power migration' on Draft Accept
 ///              message from a demand node    
 /// @pre: Current load state of this node is 'Supply'
@@ -364,7 +364,7 @@ void lbAgent::InitiatePowerMigration(float DemandValue){
           (it_->second->GetType() == freedm::broker::physicaldevices::DESD))    
        {       	
 	 DESDMap.insert(std::pair<float, freedm::broker::IPhysicalDevice::Identifier>
-	               (it_->second->Get("vin"), it_->first));             
+			(it_->second->get_powerLevel(), it_->first));             
        }    
      } 
      //Use a reverse iterator on map to retrieve elements in reverse sorted order   
@@ -385,14 +385,14 @@ void lbAgent::InitiatePowerMigration(float DemandValue){
        {  
          V_in = V_in - temp_;
          //Then set the V_in accordingly on that particular device	
-         m_phyDevManager.GetDevice(mapIt_->second)->Set("vin", V_in);               
+         //m_phyDevManager.GetDevice(mapIt_->second)->Set("vin", V_in);               
        }
        else 
        {
          temp_ = temp_ - V_in;
          V_in = 0;
          //Then set the vin and vout accordingly on that particular device	
-         m_phyDevManager.GetDevice(mapIt_->second)->Set("vin", V_in); 
+         //m_phyDevManager.GetDevice(mapIt_->second)->Set("vin", V_in); 
        }  
      }//end for
      
@@ -431,22 +431,22 @@ for( it_ = m_phyDevManager.begin(); it_ != m_phyDevManager.end(); ++it_ )
       //Compute Net Generation
       if ((m_phyDevManager.DeviceExists(it_->first)) && 
          (it_->second->GetType() == freedm::broker::physicaldevices::DRER))
-      {       	
-         net_gen += it_->second->Get("vout");   
+	{ //********need to make these work**************      	
+	  net_gen += it_->second->get_powerLevel();   
 	 DRER_count++;          
       }  
       //Compute Net Storage
       if ((m_phyDevManager.DeviceExists(it_->first)) && 
 	 (it_->second->GetType() == freedm::broker::physicaldevices::DESD))
       {       	
-	 net_storage += it_->second->Get("vout");       
+	net_storage += it_->second->get_powerLevel();       
 	 DESD_count++;      
       } 
       //Compute Net Load
       if ((m_phyDevManager.DeviceExists(it_->first)) && 
 	 (it_->second->GetType() == freedm::broker::physicaldevices::LOAD))
       {       	
-	 net_load += it_->second->Get("vin");     
+	net_load += it_->second->get_powerLevel();     
 	 LOAD_count++;        
       }  
     }
@@ -466,7 +466,7 @@ for( it_ = m_phyDevManager.begin(); it_ != m_phyDevManager.end(); ++it_ )
   //Compute the Load state based on the current gateway value
   //TODO: This should be computed based on a normalized value obtained thru State Collection
   if(P_Gateway <= 0)      l_Status = LPeerNode::SUPPLY;
-  else if(P_Gateway > 6)  {l_Status = LPeerNode::DEMAND; DemandValue = 6-P_Gateway;}
+  else if(P_Gateway > 1)  {l_Status = LPeerNode::DEMAND; DemandValue = 1-P_Gateway;}
   else 		  	  l_Status = LPeerNode::NORM;
 
   //Update information about this node in the load table based on above computation

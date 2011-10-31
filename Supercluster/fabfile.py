@@ -4,6 +4,7 @@ env.key_filename = ["/home/scj7t4/.ssh/id_supercluster"]
 env.warn_only = False
 env.hosts = ['r-facts3.device.mst.edu','r-facts4.device.mst.edu',
              'r-facts5.device.mst.edu','r-facts6.device.mst.edu']
+#env.user = 'root'
 
 def host_type():
     run('uname -s')
@@ -13,9 +14,10 @@ def change_and_check():
         run('pwd')
 
 def create_user(username):
-    sudo('useradd -G adm,dialout,cdrom,plugdev,lpadmin,sambashare -p powerpuff %s' % username)
+    sudo('useradd -G lp,wheel,video,audio,optical,storage,power,users -m %s' % username)
+    sudo('passwd %s' % username)
     sudo('usermod -L %s' % username)
-    sudo('chage -d 0' % username)
+    sudo('chage -d 0 %s' % username)
     sudo('usermod -U %s' % username)
 
 def generate_keys(passphrase,keyfile='~/.ssh/id_rsa'):
@@ -28,15 +30,20 @@ def get_and_add_keys(keyfile='id_rsa'):
     local('rm tmp_key')
 
 def put_key_authorization(keyfile='~/.ssh/id_rsa.pub'):
+    run('mkdir -p .ssh')
     put(keyfile,'tmp_key')
-    run('cat tmp_key >> ~/.ssh/authorized_keys2')
+    run('cat tmp_key >> ~/.ssh/authorized_keys')
     run('rm tmp_key') 
 
 def clone_from_host(gitpath):
     run('git clone %s' % gitpath)
 
 def install_package(pkgname):
-    sudo("apt-get install %s" % pkgname)
+    cmd = "pacman --noprogressbar -S %s" % pkgname
+    if env.user != "root":
+        sudo(cmd)
+    else:
+        run(cmd)
 
 def put_file(local,remote):
     put(local,remote)

@@ -255,7 +255,6 @@ int main (int argc, char* argv[])
         //interHost is the hostname of the machine that will run the PSCAD-INTERFACE code.
         //interPort is the port number this DGI and PSCAD-INTERFACE communicate in.
         m_lineClient->Connect(interHost, interPort);
-        std::cout<<"CONNECTED!!!!!!!!!!!!!!!!!!!!!!!!!"<<std::endl;
 
         // Intialize Devices
         broker::CPVDevice::PVDevicePtr pv1(new broker::CPVDevice(m_lineClient, m_phyManager, std::string("pv1")));

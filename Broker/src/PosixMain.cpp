@@ -100,8 +100,8 @@ int main (int argc, char* argv[])
     std::ifstream ifs_;
     std::string cfgFile_, listenIP_, port_, uuid_, hostname_,uuidgenerator;
     // Line Client options
-    std::string interHost = "IFACE";
-    std::string interPort = "4001";
+    std::string interHost;
+    std::string interPort;
     int verbose_;
     bool cliVerbose_(false); // CLI options override verbosity
     freedm::uuid u_;

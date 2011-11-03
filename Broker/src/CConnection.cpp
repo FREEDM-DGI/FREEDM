@@ -39,7 +39,7 @@
 #include "CMessage.hpp"
 #include "RequestParser.hpp"
 #include "logger.hpp"
-
+#include "config.hpp"
 
 #include <vector>
 

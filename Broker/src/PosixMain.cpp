@@ -64,6 +64,7 @@ namespace po = boost::program_options;
 using namespace freedm;
 
 #include "logger.hpp"
+#include "config.hpp"
 #include "uuid.hpp"
 #include "version.h"
 

@@ -38,6 +38,7 @@
 #include <boost/thread/locks.hpp>
 
 #include "logger.hpp"
+#include "config.hpp"
 CREATE_EXTERN_STD_LOGS()
 
 #include <algorithm>

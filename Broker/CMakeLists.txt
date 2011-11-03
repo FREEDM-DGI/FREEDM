@@ -5,7 +5,18 @@ project(Broker)
 set(ALT_BUILD_VERSION "Unversioned")
 
 # configurable project options
+# TUTORIAL on how to add a new option:
+#   add the option below with a help message defaulted to OFF
+#   add the option to Broker/include/cmake.hpp.cmake as #cmakedefine OPTION
+#   activate / deactivate the option as described in the message below
+message("This project uses custom CMake settings:"
+    "\n\tView the available settings with cmake -LH"
+    "\n\tChange a setting with -DSETTING=ON/OFF")
 option(BUILD_TESTS "Enable the building and running of unit tests." OFF)
+option(SHOW_WARNINGS "warnings displayed during project compile" OFF)
+option(CUSTOMNETWORK "for network.xml support" OFF)
+option(DATAGRAM "for UDP Datagram service w/o sequencing" OFF)
+option(DISABLELINECLIENT "to remove start up for the lineclient and those devices" OFF)
 
 # find the required boost libraries
 find_package(Boost REQUIRED COMPONENTS system thread program_options serialization)
@@ -17,11 +28,18 @@ if(Boost_FOUND)
 
     # set C++ compiler flags
     set(COMMON_FLAGS "")
-    # Add DCUSTOMNETWORK for network.xml support
-    # Add DDATAGRAM for UDP Datagram service w/o sequencing.
-    # Add DDISABLELINECLIENT to remove start up for the lineclient and those devices.
-    set(CMAKE_CXX_FLAGS "-std=c++98 ${COMMON_FLAGS}")
-    
+
+    set(WARNING_FLAGS "")
+    if(SHOW_WARNINGS)
+        set(WARNING_FLAGS "-W -Wall -pedantic")
+    endif(SHOW_WARNINGS)
+
+    set(CMAKE_CXX_FLAGS "-std=c++98 ${COMMON_FLAGS} ${WARNING_FLAGS}")
+
+    # generate the configuration file
+    CONFIGURE_FILE(
+        ${CMAKE_BINARY_DIR}/include/config.hpp.cmake
+        ${CMAKE_BINARY_DIR}/include/config.hpp )
 
     # include project source directories
     include_directories("${CMAKE_BINARY_DIR}/include")

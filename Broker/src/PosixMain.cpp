@@ -54,12 +54,7 @@ namespace po = boost::program_options;
 #include "sc/CStateCollection.hpp"
 #include "CConnectionManager.hpp"
 #include "CPhysicalDeviceManager.hpp"
-#include "CGenericDevice.hpp"
-#include "CLineClient.hpp"
-#include "CPSCADDevice.hpp"
-#include "CPVDevice.hpp"
-#include "CBatteryDevice.hpp"
-#include "CLoadDevice.hpp"
+#include "CDeviceFactory.hpp"
 
 using namespace freedm;
 
@@ -246,27 +241,17 @@ int main (int argc, char* argv[])
         freedm::broker::ConnectionPtr m_newConnection;
         boost::asio::io_service m_ios;
 
-        //create LineClient that will connect to the PSCAD-INTERFACE's 
-        //lineServer and transmit data/cmds back and forth between DGI 
-        //and PSCAD simulation.
+        // create the device factory
+        // interHost is the hostname of the machine that runs the simulation
+        // interPort is the port number this DGI and simulation communicate in
+        freedm::broker::CDeviceFactory factory(
+            m_phyManager, m_ios, interHost, interPort );
 
-        #ifndef DISABLELINECLIENT
-        broker::CLineClient::TPointer m_lineClient = broker::CLineClient::Create(m_ios);
+        // Create Devices
+        factory.CreateDevice( "solar", "pv1" );
+        factory.CreateDevice( "battery", "battery1" );
+        factory.CreateDevice( "load", "load1" );
 
-        //interHost is the hostname of the machine that will run the PSCAD-INTERFACE code.
-        //interPort is the port number this DGI and PSCAD-INTERFACE communicate in.
-        m_lineClient->Connect(interHost, interPort);
-
-        // Intialize Devices
-        broker::CPVDevice::PVDevicePtr pv1(new broker::CPVDevice(m_lineClient, m_phyManager, std::string("pv1")));
-        broker::CBatteryDevice::BatteryDevicePtr battery1(new broker::CBatteryDevice(m_lineClient, m_phyManager, std::string("battery1")));
-        broker::CLoadDevice::LoadDevicePtr load1(new broker::CLoadDevice(m_lineClient, m_phyManager, std::string("load1")));
-
-        // Register Devices
-        m_phyManager.AddDevice(pv1);
-        m_phyManager.AddDevice(battery1);
-        m_phyManager.AddDevice(load1);
-        #endif
         //quick test
         //pv1->turnOn();
         //double pvPower = pv1->get_powerLevel();

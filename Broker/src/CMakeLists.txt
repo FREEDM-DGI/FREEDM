@@ -20,6 +20,9 @@ set(
     lb/LoadBalance.cpp
     #lb/LBPeerNode.cpp
     sc/CStateCollection.cpp
+    CDeviceFactory.cpp
+    CPSCADFactory.cpp
+    CGenericFactory.cpp
     )
 
 # set BROKER_VERSION macro : cp version.h.cmake version.h

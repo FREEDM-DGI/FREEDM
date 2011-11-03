@@ -9,14 +9,18 @@ set(ALT_BUILD_VERSION "Unversioned")
 #   add the option below with a help message defaulted to OFF
 #   add the option to Broker/include/cmake.hpp.cmake as #cmakedefine OPTION
 #   activate / deactivate the option as described in the message below
-message("This project uses custom CMake settings:"
-    "\n\tView the available settings with cmake -LH"
-    "\n\tChange a setting with -DSETTING=ON/OFF")
 option(BUILD_TESTS "Enable the building and running of unit tests." OFF)
 option(SHOW_WARNINGS "warnings displayed during project compile" OFF)
 option(CUSTOMNETWORK "for network.xml support" OFF)
 option(DATAGRAM "for UDP Datagram service w/o sequencing" OFF)
-option(DISABLELINECLIENT "to remove start up for the lineclient and those devices" OFF)
+option(USE_DEVICE_PSCAD "Enable the PSCAD simulation interface" OFF)
+option(SHOW_MESSAGES "Enable help messages during cmake execution" ON)
+
+if(SHOW_MESSAGES)
+    message("This project uses custom CMake settings:"
+        "\n\tView the available settings with cmake -LH"
+        "\n\tChange a setting with -DSETTING=ON/OFF")
+endif(SHOW_MESSAGES)
 
 # find the required boost libraries
 find_package(Boost REQUIRED COMPONENTS system thread program_options serialization)

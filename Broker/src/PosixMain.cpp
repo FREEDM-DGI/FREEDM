@@ -252,16 +252,16 @@ int main (int argc, char* argv[])
         factory.CreateDevice( "battery", "battery1" );
         factory.CreateDevice( "load", "load1" );
 
-        //quick test
-        //pv1->turnOn();
-        //double pvPower = pv1->get_powerLevel();
+        //quick test, these code should be in state connection eventually
+        double pvPower = m_phyManager.GetDevice("pv1")->get_powerLevel();
 
-        //battery1->turnOn();
-        //double batteryPower = battery1->get_powerLevel();
+        m_phyManager.GetDevice("battery1")->turnOn();
+        double batteryPower = m_phyManager.GetDevice("battery1")->get_powerLevel();
 
-        //load1->turnOn();
-        //double loadPower = load1->get_powerLevel();
+        m_phyManager.GetDevice("load1")->turnOn();
+        double loadPower = m_phyManager.GetDevice("load1")->get_powerLevel();
 
+        
         // Instantiate Dispatcher for message delivery 
         freedm::broker::CDispatcher dispatch_;
 

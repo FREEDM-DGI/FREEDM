@@ -136,8 +136,9 @@ void lbAgent::LoadManage()
     DevPtr = it_->second;
     DevPtr = m_phyDevManager.GetDevice(it_->first); 
     Logger::Debug<< "Device ID: " << DevPtr->GetID() << ", Device Type: " 
-    		 << DevPtr->GetType()<< ", power level: " << DevPtr->get_powerLevel() << std::endl;                         
-  }  
+    		 << DevPtr->GetType()<< ", power level: " << DevPtr->Get("powerlevel") << std::endl;                         
+  } 
+
   /*
   step++;
   std::stringstream ss_;
@@ -364,9 +365,10 @@ void lbAgent::InitiatePowerMigration(float DemandValue){
           (it_->second->GetType() == freedm::broker::physicaldevices::DESD))    
        {       	
 	 DESDMap.insert(std::pair<float, freedm::broker::IPhysicalDevice::Identifier>
-			(it_->second->get_powerLevel(), it_->first));             
+			(it_->second->Get("powerlevel"), it_->first));             
        }    
      } 
+
      //Use a reverse iterator on map to retrieve elements in reverse sorted order   
      std::map<float, freedm::broker::IPhysicalDevice::Identifier >::reverse_iterator mapIt_; 
       float temp_ = DemandValue; // temp variable to hold the P_migrate set by Demanding node
@@ -432,21 +434,21 @@ for( it_ = m_phyDevManager.begin(); it_ != m_phyDevManager.end(); ++it_ )
       if ((m_phyDevManager.DeviceExists(it_->first)) && 
          (it_->second->GetType() == freedm::broker::physicaldevices::DRER))
 	{ //********need to make these work**************      	
-	  net_gen += it_->second->get_powerLevel();   
+	  net_gen += it_->second->Get("powerlevel");   
 	 DRER_count++;          
       }  
       //Compute Net Storage
       if ((m_phyDevManager.DeviceExists(it_->first)) && 
 	 (it_->second->GetType() == freedm::broker::physicaldevices::DESD))
       {       	
-	net_storage += it_->second->get_powerLevel();       
+	net_storage += it_->second->Get("powerlevel");       
 	 DESD_count++;      
       } 
       //Compute Net Load
       if ((m_phyDevManager.DeviceExists(it_->first)) && 
 	 (it_->second->GetType() == freedm::broker::physicaldevices::LOAD))
       {       	
-	net_load += it_->second->get_powerLevel();     
+	net_load += it_->second->Get("powerlevel");     
 	 LOAD_count++;        
       }  
     }

@@ -1,11 +1,12 @@
 ///////////////////////////////////////////////////////////////////////////////
-/// @file      CGenericDevice.hpp
+/// @file       CDeviceGeneric.hpp
 ///
-/// @author    Stephen Jackson <scj7t4@mst.edu>
+/// @author     Stephen Jackson <scj7t4@mst.edu>
+///             Thomas Roth <tprfh7@mst.edu>
 ///
-/// @compiler  C++
+/// @compiler   C++
 ///
-/// @project   FREEDM DGI
+/// @project    FREEDM DGI
 ///
 /// @description A generic physical device driver
 ///
@@ -30,43 +31,33 @@
 /// Technology, Rolla, /// MO  65409 (ff@mst.edu).
 ///////////////////////////////////////////////////////////////////////////////
 
-#ifndef CGENERICDEVICE_HPP
-#define CGENERICDEVICE_HPP
+#ifndef C_DEVICE_GENERIC_HPP
+#define C_DEVICE_GENERIC_HPP
 
 #include "IPhysicalDevice.hpp"
-#include "PhysicalDeviceTypes.hpp"
-
-#include <boost/noncopyable.hpp>
-#include <boost/shared_ptr.hpp>
-#include <boost/enable_shared_from_this.hpp>
-#include <boost/thread.hpp>
+#include "PhysicalDeviceTypesObsolete.hpp"
 
 namespace freedm {
 namespace broker {
 
 /// Very basic generic device with a register to set and get values from.
-class CGenericDevice
-    : public IPhysicalDevice
+class CDeviceGeneric : virtual public IPhysicalDevice
 {
     public:
         /// Constructor which takes in the manager and device id.
-        CGenericDevice(CPhysicalDeviceManager& phymanager, Identifier deviceid);
-
-        /// Constructor which takes in the manager and device id along with device type
-        CGenericDevice(CPhysicalDeviceManager& phymanager, Identifier deviceid, DeviceType devType);
+        CDeviceGeneric(CPhysicalDeviceManager& phymanager, Identifier deviceid);
 
         /// Pulls the setting of some key from the inside.
         SettingValue Get(SettingKey key);
 
         /// Sets the value of some key to the input value.
         void Set(SettingKey key, SettingValue value);
-        
     private:
         /// The Settings Register
         std::map<SettingKey,SettingValue> m_register;
 };
 
-    } // Namespace broker
+} // namespace broker
 } // namespace freedm
 
-#endif
+#endif // C_DEVICE_GENERIC_HPP

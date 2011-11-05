@@ -1,5 +1,5 @@
 ///////////////////////////////////////////////////////////////////////////////
-/// @file           CPSCADFactory.cpp
+/// @file           CDeviceFactoryGeneric.cpp
 ///
 /// @author         Thomas Roth <tprfh7@mst.edu>
 ///
@@ -7,7 +7,7 @@
 ///
 /// @project        FREEDM DGI
 ///
-/// @description    Factory for production of PSCAD-enabled devices
+/// @description    Factory for production of generic test devices
 ///
 /// @license
 /// These source code files were created at as part of the
@@ -30,44 +30,37 @@
 /// Technology, Rolla, /// MO  65409 (ff@mst.edu).
 ///////////////////////////////////////////////////////////////////////////////
 
-#include "CPSCADFactory.hpp"
+#include "CDeviceFactoryGeneric.hpp"
 
 namespace freedm {
 namespace broker {
 
-/// Creates an instance of a PSCAD device factory
-CPSCADFactory::CPSCADFactory( CPhysicalDeviceManager & p_devman,
-    boost::asio::io_service & p_ios, const std::string & p_host,
-    const std::string & p_port )
+/// Creates an instance of a generic device factory
+CDeviceFactoryGeneric::CDeviceFactoryGeneric( CPhysicalDeviceManager & p_devman )
     : m_manager(p_devman)
-    , m_client(CLineClient::Create(p_ios))
 {
     Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
-    
-    // connect to the simulation server
-    m_client->Connect(p_host,p_port);
 }
 
-/// Creates the family of PSCAD-enabled devices
-void CPSCADFactory::CreateDevice( const std::string & p_type,
+/// Creates the family of generic devices
+void CDeviceFactoryGeneric::CreateDevice( const std::string & p_type,
     const IPhysicalDevice::Identifier & p_devid )
 {
     Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
-    
-    DevicePtr device;
-    
-    // create the device dependent on its type
+    IPhysicalDevice::DevicePtr device;
+
+    // do work
     if( p_type == "solar" )
     {
-        device = DevicePtr(new CPVDevice( m_client, m_manager, p_devid ));
+        device = IPhysicalDevice::DevicePtr(new devices::IDevicePVGeneric(m_manager, p_devid));
     }
     else if( p_type == "load" )
     {
-        device = DevicePtr(new CLoadDevice( m_client, m_manager, p_devid ));
+        device = IPhysicalDevice::DevicePtr(new devices::IDeviceLoadGeneric(m_manager, p_devid));
     }
     else if( p_type == "battery" )
     {
-        device = DevicePtr(new CBatteryDevice( m_client, m_manager, p_devid ));
+        device = IPhysicalDevice::DevicePtr(new devices::IDeviceBatteryGeneric(m_manager, p_devid));
     }
     else
     {

@@ -57,7 +57,6 @@ using boost::property_tree::ptree;
 #include "CConnection.hpp"
 
 #include "CPhysicalDeviceManager.hpp"
-#include "CGenericDevice.hpp"
 
 using boost::asio::ip::tcp;
 

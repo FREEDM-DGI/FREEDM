@@ -1,5 +1,5 @@
 ///////////////////////////////////////////////////////////////////////////////
-/// @file           CDeviceFactory.hpp
+/// @file           CDeviceFactoryPSCAD.hpp
 ///
 /// @author         Thomas Roth <tprfh7@mst.edu>
 ///
@@ -7,7 +7,7 @@
 ///
 /// @project        FREEDM DGI
 ///
-/// @description    Stores and manages an instance of a device factory
+/// @description    Factory for production of PSCAD-enabled devices
 ///
 /// @license
 /// These source code files were created at as part of the
@@ -30,45 +30,48 @@
 /// Technology, Rolla, /// MO  65409 (ff@mst.edu).
 ///////////////////////////////////////////////////////////////////////////////
 
-#ifndef C_DEVICE_FACTORY_HPP
-#define C_DEVICE_FACTORY_HPP
+#ifndef C_DEVICE_FACTORY_PSCAD_HPP
+#define C_DEVICE_FACTORY_PSCAD_HPP
 
 #include <string>
 
-#include <boost/shared_ptr.hpp>
+#include <boost/noncopyable.hpp>
 #include <boost/asio/io_service.hpp>
 
 #include "logger.hpp"
+#include "CLineClient.hpp"
 #include "ICreateDevice.hpp"
 #include "IPhysicalDevice.hpp"
-
-#include "CDeviceFactoryGeneric.hpp"
-#include "CDeviceFactoryPSCAD.hpp"
+#include "PhysicalDeviceTypes.hpp"
+#include "CPhysicalDeviceManager.hpp"
 
 CREATE_EXTERN_STD_LOGS()
 
 namespace freedm {
 namespace broker {
 
-class CPhysicalDeviceManager;
-
-class CDeviceFactory : public ICreateDevice
+/// Factory for production of PSCAD-enabled devices
+class CDeviceFactoryPSCAD : public ICreateDevice, private boost::noncopyable
 {
 public:
-    /// Creates an instance of a device factory
-    CDeviceFactory( CPhysicalDeviceManager & p_devman,
+    /// Creates an instance of a PSCAD device factory
+    CDeviceFactoryPSCAD( CPhysicalDeviceManager & p_devman,
         boost::asio::io_service & p_ios, const std::string & p_host,
         const std::string & p_port );
 
-    /// Delegates the creation of a device to the managed device factory
+    /// Creates the family of PSCAD-enabled devices
     virtual void CreateDevice( const std::string & p_type,
         const IPhysicalDevice::Identifier & p_devid );
 private:
-    /// Instance of a device factory used to create devices
-    boost::shared_ptr<ICreateDevice> m_factory;
+    /// Device manager to store created devices
+    CPhysicalDeviceManager & m_manager;
+    
+    /// Client to the PSCAD simulation server
+    CLineClient::TPointer m_client;
 };
 
 } // namespace broker
 } // namespace freedm
 
-#endif // C_DEVICE_FACTORY_HPP
+#endif // C_DEVICE_FACTORY_PSCAD_HPP
+

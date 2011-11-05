@@ -45,10 +45,10 @@ CDeviceFactory::CDeviceFactory( CPhysicalDeviceManager & p_devman,
     
 #if defined USE_DEVICE_PSCAD
     Logger::Info << "Initialized to use PSCAD devices" << std::endl;
-    m_factory.reset(new CPSCADFactory( p_devman, p_ios, p_host, p_port ));
+    m_factory.reset(new CDeviceFactoryPSCAD( p_devman, p_ios, p_host, p_port ));
 #else
     Logger::Info << "Initialized to use generic devices" << std::endl;
-    m_factory.reset(new CGenericFactory( p_devman ));
+    m_factory.reset(new CDeviceFactoryGeneric( p_devman ));
 #endif
 }
 

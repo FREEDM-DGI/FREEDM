@@ -1,11 +1,12 @@
 ///////////////////////////////////////////////////////////////////////////////
-/// @file      CGenericDevice.cpp
+/// @file       CDeviceGeneric.cpp
 ///
-/// @author    Stephen Jackson <scj7t4@mst.edu>
+/// @author     Stephen Jackson <scj7t4@mst.edu>
+///             Thomas Roth <tprfh7@mst.edu>
 ///
-/// @compiler  C++
+/// @compiler   C++
 ///
-/// @project   FREEDM DGI
+/// @project    FREEDM DGI
 ///
 /// @description A generic physical device driver
 ///
@@ -30,51 +31,32 @@
 /// Technology, Rolla, MO  65409 (ff@mst.edu).
 ///////////////////////////////////////////////////////////////////////////////
 
-#include "CGenericDevice.hpp"
-
-#include <boost/noncopyable.hpp>
-#include <boost/shared_ptr.hpp>
-#include <boost/enable_shared_from_this.hpp>
-#include <boost/thread.hpp>
+#include "CDeviceGeneric.hpp"
 
 namespace freedm {
 namespace broker {
 
-
 ///////////////////////////////////////////////////////////////////////////////
-/// @fn CGenericDevice
+/// @fn CDeviceGeneric
 /// @brief A class for describing some very generic device. The device type is
 ///        always FREEDM_GENERIC
 /// @param phymanager The related physical device manager.
 /// @param deviceid The identifier for this generic device.
 ///////////////////////////////////////////////////////////////////////////////
-CGenericDevice::CGenericDevice(CPhysicalDeviceManager& phymanager, Identifier deviceid)
+CDeviceGeneric::CDeviceGeneric(CPhysicalDeviceManager& phymanager, Identifier deviceid)
             : IPhysicalDevice(phymanager,deviceid,physicaldevices::FREEDM_GENERIC)
 {
     // Nothing to see here.
 };
 
 ///////////////////////////////////////////////////////////////////////////////
-/// @fn CGenericDevice
-/// @brief A class for describing a specific device type. 
-/// @param phymanager The related physical device manager.
-/// @param deviceid The identifier for this generic device.
-/// @param devType The device type for this generic device.
-///////////////////////////////////////////////////////////////////////////////
-CGenericDevice::CGenericDevice(CPhysicalDeviceManager& phymanager, Identifier deviceid, DeviceType devType)
-            : IPhysicalDevice(phymanager,deviceid, devType)
-{
-    // Nothing to see here.
-};
-
-///////////////////////////////////////////////////////////////////////////////
-/// @fn CGenericDevice::Get
+/// @fn CDeviceGeneric::Get
 /// @brief Returns the value of some key in the register, or 0.0 if they key is
 ///        not defined.
 /// @param key The key to retrieve from the register.
 /// @return The value in the register or 0.0 if the key hasn't been defined.
 ///////////////////////////////////////////////////////////////////////////////
-CGenericDevice::SettingValue CGenericDevice::Get(SettingKey key)
+CDeviceGeneric::SettingValue CDeviceGeneric::Get(SettingKey key)
 {
     std::map<SettingKey,SettingValue>::iterator ri = m_register.find(key);
     if(ri != m_register.end())
@@ -82,15 +64,15 @@ CGenericDevice::SettingValue CGenericDevice::Get(SettingKey key)
     return 0.0;
 };
 ///////////////////////////////////////////////////////////////////////////////
-/// @fn CGenericDevice::Set
+/// @fn CDeviceGeneric::Set
 /// @brief Sets the value of some key to to a new value
 /// @param key The key to change.
 /// @param value The value to set the key to.
 ///////////////////////////////////////////////////////////////////////////////
-void CGenericDevice::Set(SettingKey key, SettingValue value)
+void CDeviceGeneric::Set(SettingKey key, SettingValue value)
 {
     m_register[key] = value;
 };
 
-    } // namespace broker
+} // namespace broker
 } // namespace freedm

@@ -1,13 +1,14 @@
 ///////////////////////////////////////////////////////////////////////////////
-/// @file           CGenericFactory.hpp
+/// @file       IDevicePV.hpp
 ///
-/// @author         Thomas Roth <tprfh7@mst.edu>
+/// @author     Yaxi Liu <ylztf@mst.edu>
+///             Thomas Roth <tprfh7@mst.edu>
 ///
-/// @compiler       C++
+/// @compiler   C++
 ///
-/// @project        FREEDM DGI
+/// @project    FREEDM DGI
 ///
-/// @description    Factory for production of generic test devices
+/// @description The abstract base for physical solar panels.
 ///
 /// @license
 /// These source code files were created at as part of the
@@ -27,46 +28,42 @@
 /// Suggested modifications or questions about these codes
 /// can be directed to Dr. Bruce McMillin, Department of
 /// Computer Science, Missour University of Science and
-/// Technology, Rolla, /// MO  65409 (ff@mst.edu).
+/// Technology, Rolla, MO  65409 (ff@mst.edu).
 ///////////////////////////////////////////////////////////////////////////////
 
-#ifndef C_GENERIC_FACTORY_HPP
-#define C_GENERIC_FACTORY_HPP
+#ifndef I_DEVICE_PV_HPP
+#define I_DEVICE_PV_HPP
 
-#include <string>
+#include <boost/shared_ptr.hpp>
 
-#include "logger.hpp"
-#include "ICreateDevice.hpp"
 #include "IPhysicalDevice.hpp"
-#include "CPhysicalDeviceManager.hpp"
-
-#include "CGenericDevice.hpp"
-
-CREATE_EXTERN_STD_LOGS()
+#include "PhysicalDeviceTypesObsolete.hpp"
 
 namespace freedm {
 namespace broker {
 
-/// Factory for production of generic test devices
-class CGenericFactory : public ICreateDevice
+class IDevicePV : virtual public IPhysicalDevice
 {
 public:
-    /// Creates an instance of a generic device factory
-    CGenericFactory( CPhysicalDeviceManager & p_devman );
-
-    /// Creates the family of generic devices
-    virtual void CreateDevice( const std::string & p_type,
-        const IPhysicalDevice::Identifier & p_devid );
-private:
-    /// Convenience type for device pointers
-    typedef IPhysicalDevice::DevicePtr DevicePtr;
+    /// Shared pointer to an instance of a solar panel
+    typedef boost::shared_ptr<IDevicePV> DevicePtr;
     
-    /// Device manager to store created devices
-    CPhysicalDeviceManager & m_manager;
+    /// Constructor which takes in the manager and device id.
+    IDevicePV(CPhysicalDeviceManager& phymanager, Identifier deviceid)
+        : IPhysicalDevice(phymanager,deviceid,physicaldevices::DRER) {}
+    
+    /// get the generated power level of the solar panels
+    virtual SettingValue get_powerLevel();
+    
+    /// activate the solar panel
+    virtual void turnOn();
+    
+    /// deactivate the solar panel
+    virtual void turnOff();
+private:
 };
 
 } // namespace broker
 } // namespace freedm
 
-#endif // C_GENERIC_FACTORY_HPP
-
+#endif // I_DEVICE_PV_HPP

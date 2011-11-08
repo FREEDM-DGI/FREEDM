@@ -75,7 +75,7 @@ class LPeerNode : public IPeerNode {
 	float 		B_Soc;
 	float		P_Star;
 	float 		P_Gateway; 
-	float           DemandValue;
+	float       DemandValue;
 
 	LPeerNode::EStatus       l_Status;
 	LPeerNode::EStatus	 preLoad;

@@ -37,6 +37,7 @@
 
 #include <string>
 #include <map>
+#include <list>
 #include <boost/noncopyable.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/enable_shared_from_this.hpp>
@@ -74,7 +75,38 @@ public:
     
     /// Gives a count of connected devices
     size_t DeviceCount() const;
+    
+    /// Structure of typedefs for GetDevicesOfType
+    template <class DeviceType>
+    struct PhysicalDevice
+    {
+        /// Container type returned by the GetDevicesOfType function
+        typedef std::list<typename DeviceType::DevicePtr> Container;
+        
+        /// Iterator to the container type
+        typedef typename Container::iterator iterator;
+    };
+    
+    /// Selects all the devices of a given type
+    template <class DeviceType>
+    typename PhysicalDevice<DeviceType>::Container GetDevicesOfType()
+    {
+        typename PhysicalDevice<DeviceType>::Container result;
+        typename DeviceType::DevicePtr next_device;
+        iterator it = m_devices.begin();
+        iterator end = m_devices.end();
+        
+        for( ; it != end; it++ )
+        {
+            // attempt to convert each managed device to DeviceType
+            if( next_device = device::device_cast<DeviceType>(it->second) )
+            {
+                result.push_back(next_device);
+            }
+        }
 
+        return result;
+    }
 private:
     /// Mapping From Identifer To Device Set
     PhysicalDeviceSet m_devices;

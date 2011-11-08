@@ -325,7 +325,7 @@ void lbAgent::SendDraftRequest()
       Logger::Notice << "\nSending DraftRequest from: "
           << m_.m_submessages.get<std::string>("lb.source") <<std::endl;
       foreach( PeerNodePtr peer_, m_HiNodes | boost::adaptors::map_values)
-    	{
+      {
         if( peer_->GetUUID() == GetUUID())
         {
           continue;
@@ -359,9 +359,11 @@ void lbAgent::SendDraftRequest()
 void lbAgent::InitiatePowerMigration(broker::device::SettingValue DemandValue)
 {
   typedef std::map<broker::device::SettingValue,broker::device::Identifier> DeviceMap;
-  
-  broker::device::CDevice::DevicePtr DevPtr;
-  broker::CPhysicalDeviceManager::PhysicalDeviceSet::iterator it_;
+  typedef broker::device::CDeviceDESD DESD;
+
+  // Container and iterators for the result of GetDevicesOfType
+  broker::CPhysicalDeviceManager::PhysicalDevice<DESD>::Container DESDContainer;
+  broker::CPhysicalDeviceManager::PhysicalDevice<DESD>::iterator it, end;
   
   // Make a map of DESDs
   DeviceMap DESDMap;
@@ -370,13 +372,10 @@ void lbAgent::InitiatePowerMigration(broker::device::SettingValue DemandValue)
   broker::device::SettingValue V_in, V_out;
 
   //Sort the DESDs by decreasing order of their "vin"s; achieved by inserting into map
-  for( it_ = m_phyDevManager.begin(); it_ != m_phyDevManager.end(); ++it_ )
-  {
-    if ((m_phyDevManager.DeviceExists(it_->first)) &&
-       (broker::device::device_cast<broker::device::CDeviceDESD>(it_->second)))
-    {       	
-      DESDMap.insert( DeviceMap::value_type(it_->second->Get("powerLevel"), it_->first) );             
-    }    
+  DESDContainer = m_phyDevManager.GetDevicesOfType<DESD>();
+  for( it = DESDContainer.begin(), end = DESDContainer.end(); it != end; it++ )   
+  {  
+    DESDMap.insert( DeviceMap::value_type((*it)->Get("powerLevel"), (*it)->GetID()) );
   } 
 
   //Use a reverse iterator on map to retrieve elements in reverse sorted order   
@@ -423,47 +422,52 @@ void lbAgent::InitiatePowerMigration(broker::device::SettingValue DemandValue)
 ///              ,does not probe them
 /////////////////////////////////////////////////////////
 void lbAgent::LoadTable()
-{    
-  std::cout <<"\n ----------- LOAD TABLE (Power Management) ------------" << std::endl;
-  std::cout <<"| " << " @ " << microsec_clock::local_time()  <<std::endl;
+{
+  // device typedef for convenience
+  typedef broker::device::CDeviceDRER DRER;
+  typedef broker::device::CDeviceDESD DESD;
+  typedef broker::device::CDeviceLOAD LOAD;
 
+  // Container and iterators for the result of GetDevicesOfType
+  broker::CPhysicalDeviceManager::PhysicalDevice<DRER>::Container DRERContainer;
+  broker::CPhysicalDeviceManager::PhysicalDevice<DESD>::Container DESDContainer;
+  broker::CPhysicalDeviceManager::PhysicalDevice<LOAD>::Container LOADContainer;
+  broker::CPhysicalDeviceManager::PhysicalDevice<DRER>::iterator rit, rend;
+  broker::CPhysicalDeviceManager::PhysicalDevice<DESD>::iterator sit, send;
+  broker::CPhysicalDeviceManager::PhysicalDevice<LOAD>::iterator lit, lend;
+  
+  // populate the device containers
+  DRERContainer = m_phyDevManager.GetDevicesOfType<DRER>();
+  DESDContainer = m_phyDevManager.GetDevicesOfType<DESD>();
+  LOADContainer = m_phyDevManager.GetDevicesOfType<LOAD>();
+  
+  //# devices of each type attached and alive 
+  int DRER_count = DRERContainer.size();
+  int DESD_count = DESDContainer.size();
+  int LOAD_count = LOADContainer.size();
+  
   //temp variable to compute net generation from DRERs, storage from DESDs and LOADs
   broker::device::SettingValue net_gen = 0;
   broker::device::SettingValue net_storage = 0;
   broker::device::SettingValue net_load = 0;
-  
-  //# devices of each type attached and alive 
-  int DRER_count = 0;
-  int DESD_count = 0;
-  int LOAD_count = 0;
 
-  broker::device::CDevice::DevicePtr DevPtr;
-  broker::CPhysicalDeviceManager::PhysicalDeviceSet::iterator it_;
-  for( it_ = m_phyDevManager.begin(); it_ != m_phyDevManager.end(); ++it_ )
+  // calculate the net generation for each family of devices
+  for( rit = DRERContainer.begin(), rend = DRERContainer.end(); rit != rend; rit++ )
   {
-    //Compute Net Generation
-    if((m_phyDevManager.DeviceExists(it_->first)) && 
-      (broker::device::device_cast<broker::device::CDeviceDRER>(it_->second)))
-    { //********need to make these work**************      	
-      net_gen += it_->second->Get("powerLevel");   
-      DRER_count++;          
-    }  
-    //Compute Net Storage
-    if((m_phyDevManager.DeviceExists(it_->first)) && 
-      (broker::device::device_cast<broker::device::CDeviceDESD>(it_->second)))
-    {       	
-      net_storage += it_->second->Get("powerLevel");       
-      DESD_count++;      
-    } 
-    //Compute Net Load
-    if((m_phyDevManager.DeviceExists(it_->first)) && 
-      (broker::device::device_cast<broker::device::CDeviceLOAD>(it_->second)))
-    {       	
-      net_load += it_->second->Get("powerLevel");     
-      LOAD_count++;        
-    }  
+    net_gen += (*rit)->Get("powerLevel");
+  }
+  for( sit = DESDContainer.begin(), send = DESDContainer.end(); sit != send; sit++ )
+  {
+    net_storage += (*sit)->Get("powerLevel");
+  }
+  for( lit = LOADContainer.begin(), lend = LOADContainer.end(); lit != lend; lit++ )
+  {
+    net_load += (*lit)->Get("powerLevel");
   }
 
+  std::cout <<"\n ----------- LOAD TABLE (Power Management) ------------" << std::endl;
+  std::cout <<"| " << " @ " << microsec_clock::local_time()  <<std::endl;
+  
   P_Gen = net_gen;
   B_Soc = net_storage;
   P_Load = net_load;

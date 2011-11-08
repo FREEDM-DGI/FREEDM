@@ -66,13 +66,15 @@ void CSUConnection::Send(CMessage msg)
 
     outmsg.SetSourceUUID(GetConnectionManager().GetUUID());
     outmsg.SetSourceHostname(GetConnectionManager().GetHostname());
+    outmsg.SetProtocol(GetIdentifier());
+    outmst.SetSendTimestampNow();
 
-    QueueItem x;
+    QueueItem q;
 
-    x.ret = MAX_RETRIES;
-    x.msg = outmsg;
+    q.ret = MAX_RETRIES;
+    q.msg = outmsg;
 
-    m_window.push_back(x);
+    m_window.push_back(q);
     
     if(m_queue.size() <= WINDOW_SIZE)
     {
@@ -166,6 +168,8 @@ void CSUConnection::SendACK(const CMessage &msg)
     outmsg.SetSourceHostname(GetConnectionManager().GetHostname());
     outmsg.SetStatus(freedm::broker::CMessage::Accepted);
     outmsg.SetSequenceNumber(sequenceno);
+    outmsg.SetProtocol(GetIdentifier());
+    outmsg.SetSendTimestampNow();
     Write(outmsg);
 }
 

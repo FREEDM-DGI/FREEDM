@@ -10,19 +10,16 @@ set(
     CMessage.cpp
     IPeerNode.cpp
     CPhysicalDeviceManager.cpp
-    IDeviceBattery.cpp
-    IDeviceLoad.cpp
-    IDevicePV.cpp
-    CDeviceGeneric.cpp
-    CDevicePSCAD.cpp
-    CLineClient.cpp
-    CDeviceFactory.cpp
-    CDeviceFactoryGeneric.cpp
-    CDeviceFactoryPSCAD.cpp
     gm/GroupManagement.cpp
     lb/LoadBalance.cpp
     #lb/LBPeerNode.cpp
     sc/CStateCollection.cpp
+    CDeviceStructureGeneric.cpp
+    CDeviceStructurePSCAD.cpp
+    CDeviceFactory.cpp
+    CDeviceLWI.cpp
+    CDevice.cpp
+    CLineClient.cpp
     )
 
 # set BROKER_VERSION macro : cp version.h.cmake version.h

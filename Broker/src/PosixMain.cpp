@@ -56,9 +56,6 @@ namespace po = boost::program_options;
 #include "CPhysicalDeviceManager.hpp"
 #include "CDeviceFactory.hpp"
 
-#include "PhysicalDeviceTypesObsolete.hpp"
-#include "IPhysicalDevice.hpp"
-
 using namespace freedm;
 
 #include "logger.hpp"
@@ -247,16 +244,16 @@ int main (int argc, char* argv[])
         // create the device factory
         // interHost is the hostname of the machine that runs the simulation
         // interPort is the port number this DGI and simulation communicate in
-        freedm::broker::CDeviceFactory factory(
+        freedm::broker::device::CDeviceFactory factory(
             m_phyManager, m_ios, interHost, interPort );
 
         // Create Devices
-        factory.CreateDevice( "solar", "pv1" );
-        factory.CreateDevice( "battery", "battery1" );
-        factory.CreateDevice( "load", "load1" );
+        factory.CreateDevice<freedm::broker::device::CDeviceLWI_PV>( "pv1" );
+        factory.CreateDevice<freedm::broker::device::CDeviceLWI_Battery>( "battery1" );
+        factory.CreateDevice<freedm::broker::device::CDeviceLWI_Load>( "load1" );
 
         // verify old code actually works still (maybe)
-        if( m_phyManager.GetDevice("pv1")->GetType() == freedm::broker::physicaldevices::DRER )
+        if( freedm::broker::device::device_cast<freedm::broker::device::CDeviceDRER>(m_phyManager.GetDevice("pv1")) )
         {
             Logger::Info << "Solar Works!" << std::endl;
         }
@@ -264,7 +261,7 @@ int main (int argc, char* argv[])
         {
             Logger::Info << "Solar Broke!" << std::endl;
         }
-        if( m_phyManager.GetDevice("battery1")->GetType() == freedm::broker::physicaldevices::DESD )
+        if( freedm::broker::device::device_cast<freedm::broker::device::CDeviceDESD>(m_phyManager.GetDevice("battery1")) )
         {
             Logger::Info << "Battery Works!" << std::endl;
         }
@@ -272,7 +269,7 @@ int main (int argc, char* argv[])
         {
             Logger::Info << "Battery Broke!" << std::endl;
         }
-        if( m_phyManager.GetDevice("load1")->GetType() == freedm::broker::physicaldevices::LOAD )
+        if( freedm::broker::device::device_cast<freedm::broker::device::CDeviceLOAD>(m_phyManager.GetDevice("load1")) )
         {
             Logger::Info << "Load Works!" << std::endl;
         }
@@ -282,9 +279,9 @@ int main (int argc, char* argv[])
         }
         
         // verify the new word may work
-        m_phyManager.GetDevice("pv1")->Set("powerlevel",10.5);
-        Logger::Info << "Power Level = " << m_phyManager.GetDevice("pv1")->Get("powerlevel") << std::endl;
-        Logger::Info << "Power Level = " << freedm::broker::device_cast<freedm::broker::IDevicePV>(m_phyManager.GetDevice("pv1"))->get_powerLevel() << std::endl;
+        m_phyManager.GetDevice("pv1")->Set("powerLevel",10.5);
+        Logger::Info << "Power Level = " << m_phyManager.GetDevice("pv1")->Get("powerLevel") << std::endl;
+        Logger::Info << "Power Level = " << freedm::broker::device::device_cast<freedm::broker::device::CDeviceLWI_PV>(m_phyManager.GetDevice("pv1"))->get_powerLevel() << std::endl;
         
         // Instantiate Dispatcher for message delivery 
         freedm::broker::CDispatcher dispatch_;

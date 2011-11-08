@@ -1,13 +1,14 @@
 ////////////////////////////////////////////////////////////////////////////////
-/// @file           CDeviceFactory.cpp
+/// @file           CDeviceStructureGeneric.hpp
 ///
-/// @author         Thomas Roth <tprfh7@mst.edu>
+/// @author         Stephen Jackson <scj7t4@mst.edu>
+///                 Thomas Roth <tprfh7@mst.edu>
 ///
 /// @compiler       C++
 ///
 /// @project        FREEDM DGI
 ///
-/// @description    Handles the creation of devices and their structures
+/// @description    Generic physical device driver
 ///
 /// @license
 /// These source code files were created at the Missouri University of Science
@@ -24,36 +25,37 @@
 /// Science and Technology, Rolla, MO 65401 <ff@mst.edu>.
 ////////////////////////////////////////////////////////////////////////////////
 
-#include "CDeviceFactory.hpp"
-#include "config.hpp"
+#ifndef C_DEVICE_STRUCTURE_GENERIC_HPP
+#define C_DEVICE_STRUCTURE_GENERIC_HPP
+
+#include <map>
+
+#include "IPhysicalDevice.hpp"
 
 namespace freedm {
 namespace broker {
 namespace device {
 
-/// Creates an instance of a device factory
-CDeviceFactory::CDeviceFactory( CPhysicalDeviceManager & manager,
-    boost::asio::io_service & ios, const std::string & host,
-    const std::string & port )
-    : m_manager(manager)
-    , m_client(CLineClient::Create(ios))
+////////////////////////////////////////////////////////////////////////////////
+/// @class CDeviceStructureGeneric
+/// @description Generic device with a register to store device settings
+////////////////////////////////////////////////////////////////////////////////
+class CDeviceStructureGeneric
+    : public IDeviceStructure
 {
-#if defined USE_DEVICE_PSCAD
-    // connect to the simulation server
-    m_client->Connect(host,port);
-#endif
-}
-
-/// Creates the internal structure of the device
-IDeviceStructure::DevicePtr CDeviceFactory::CreateStructure()
-{
-#if defined USE_DEVICE_PSCAD
-    return IDeviceStructure::DevicePtr( new CDeviceStructurePSCAD(m_client) );
-#else
-    return IDeviceStructure::DevicePtr( new CDeviceStructureGeneric() );
-#endif
-}
+public:
+    /// Gets the setting of some key from the register
+    virtual SettingValue Get( const SettingKey & key );
+    
+    /// Sets the value of some key in the register
+    virtual void Set( const SettingKey & key, const SettingValue & value );
+private:
+    /// Register of current device settings
+    std::map<SettingKey,SettingValue> m_register;
+};
 
 } // namespace device
-} // namespace freedm
 } // namespace broker
+} // namespace freedm
+
+#endif // C_DEVICE_STRUCTURE_GENERIC_HPP

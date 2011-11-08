@@ -57,6 +57,7 @@ using boost::property_tree::ptree;
 #include "CConnection.hpp"
 
 #include "CPhysicalDeviceManager.hpp"
+#include "PhysicalDeviceTypes.hpp"
 
 using boost::asio::ip::tcp;
 
@@ -118,7 +119,7 @@ class lbAgent
 
 	// The handler for all incoming requests.
   	freedm::broker::CPhysicalDeviceManager &m_phyDevManager;
-  	void InitiatePowerMigration(float DemandValue);
+  	void InitiatePowerMigration(broker::device::SettingValue DemandValue);
 
 	/* IO and Timers */
 	deadline_timer		m_GlobalTimer;

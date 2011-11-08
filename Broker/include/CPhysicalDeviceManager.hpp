@@ -33,7 +33,7 @@
 #ifndef PHYSICALDEVICEMANAGER_HPP
 #define PHYSICALDEVICEMANAGER_HPP
 
-#include "IPhysicalDevice.hpp"
+#include "CDevice.hpp"
 
 #include <string>
 #include <map>
@@ -44,35 +44,33 @@
 namespace freedm {
 namespace broker {
 
-class IPhysicalDevice;
-
 class CPhysicalDeviceManager
     : private boost::noncopyable
 {
 public:
     /// A typedef for the mapping of identifier to device ptrs
-    typedef std::map<IPhysicalDevice::Identifier,
-                     IPhysicalDevice::DevicePtr> PhysicalDeviceSet;
+    typedef std::map<device::Identifier,
+                     device::CDevice::DevicePtr> PhysicalDeviceSet;
     /// A typedef providing and iertaror for this object
     typedef PhysicalDeviceSet::iterator iterator;
     /// Initialize the physical device manger
     CPhysicalDeviceManager();
 
     /// Add the specified device to the manager.
-    void AddDevice(IPhysicalDevice::DevicePtr resource);
+    void AddDevice(device::CDevice::DevicePtr resource);
 
     /// Remove a device by its identifier 
-    void RemoveDevice(IPhysicalDevice::Identifier devid);
+    void RemoveDevice(device::Identifier devid);
     
     /// Devices iterator
     iterator begin() { return m_devices.begin(); };
     iterator end() { return m_devices.end(); };
 
     /// Get A Device By ID
-    IPhysicalDevice::DevicePtr GetDevice(IPhysicalDevice::Identifier devid);
+    device::CDevice::DevicePtr GetDevice(device::Identifier devid);
 
     /// Tests to see if a device exists
-    bool DeviceExists(IPhysicalDevice::Identifier devid) const;
+    bool DeviceExists(device::Identifier devid) const;
     
     /// Gives a count of connected devices
     size_t DeviceCount() const;

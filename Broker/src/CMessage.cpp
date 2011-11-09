@@ -122,6 +122,160 @@ namespace status_strings {
     }
 } // namespace status_strings
 
+
+/// Initialize a new CMessage with a status type.
+CMessage( CMessage::StatusType p_stat)
+    : m_status ( p_stat )
+{
+    Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
+}
+
+/// A Generic reply CMessage
+static CMessage StockReply( StatusType p_status )
+{
+    Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
+    CMessage reply_;
+    reply_.m_status = p_status;
+
+    return reply_;
+}
+
+/// Copy Constructor
+CMessage( const CMessage &p_m ) :
+    m_srcUUID( p_m.m_srcUUID ),
+    m_status( p_m.m_status ),
+    m_submessages( p_m.m_submessages ),
+    m_hostname( p_m.m_hostname ),
+    m_sequenceno( p_m.m_sequenceno ),
+    m_properties( p_m.m_properties ),
+    m_protocol( p_m.m_protocol ),
+    m_sendtime( p_m.m_sendtime ),
+    m_expiretime( p_m.m_expiretime )
+{
+    Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
+};
+
+/// Cmessage Equals operator
+CMessage& operator = ( const CMessage &p_m )
+{
+    this->m_srcUUID = p_m.m_srcUUID;
+    this->m_status = p_m.m_status;
+    this->m_submessages = p_m.m_submessages;
+    this->m_hostname = p_m.m_hostname;
+    this->m_sequenceno = p_m.m_sequenceno;
+    this->m_properties = p_m.m_properties;
+    this->m_protocol = p_m.m_protocol;
+    this->m_sendtime = p_m.m_sendtime;
+    this->m_expiretime = p_m.m_expiretime;
+    return *this;
+}
+
+//Accessors and Junk
+
+/// Accessor for uuid
+std::string CMessage::GetSourceUUID()
+{
+     return m_srcUUID;
+}
+
+/// Accessor for hostname
+remotehost CMessage::GetSourceHostname()
+{
+    return m_hostname;
+}
+
+/// Accessor for sequenceno
+unsigned int CMessage::GetSequenceNumber()
+{
+    return m_sequenceno;
+}
+
+/// Accessor for status
+StatusType CMessage::GetStatus()
+{
+    return m_status;
+}
+
+/// Accessor for submessages
+ptree& CMessage::GetSubMessages()
+{
+    return m_submessages;
+}
+
+/// Setter for uuid
+void CMessage::SetSourceUUID(std::string uuid)
+{
+    m_srcUUID = uuid;
+}
+
+/// Setter for hostname
+void CMessage::SetSourceHostname(remotehost hostname)
+{
+    m_hostname = hostname;
+}
+
+/// Setter for sequenceno
+void CMessage::SetSequenceNumber(unsigned int sequenceno)
+{
+    m_sequenceno = sequenceno;
+}
+
+/// Setter for status
+void CMessage::SetStatus(StatusType status)
+{
+    m_status = status;
+}
+
+/// Setter for the timestamp
+void SetSendTimestampNow()
+{
+    m_sendtime = boost::posix_time::microsec_clock::universal_time();
+}
+
+/// Setter b for the timestamp
+void SetSendTimestamp(boost::posix_time::ptime p)
+{
+    m_sendtime = p;
+}
+
+/// Setter for the expiration time
+void SetExpireTime(boost::posix_time::ptime p)
+{
+    m_expiretime = p;
+}
+
+
+/// Setter b for the expiration time
+void SetExpireTimeFromNow(boost::posix_time::time_duration t)
+{
+    m_expiretime = boost::posix_time::microsec_clock::universal_time();
+    m_expiretime += t;
+}
+
+/// Getter for the expire time
+boost::posix_time::ptime GetExpireTime()
+{
+    return m_expiretime;
+}
+
+///Test to see if a message is expired.
+bool IsExpired()
+{
+    return m_expiretime < boost::posix_time::microsec_clock::universal_time();
+}
+
+/// Set the protocol properties
+void SetProtocolProperties(ptree x)
+{
+    m_properties = x;
+}
+
+/// Get the protocol properties
+ptree GetProtocolProperties()
+{
+    return m_properties;
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 /// @fn CMessage::Load
 /// @description From some stream source parse and load a CMessage.
@@ -215,9 +369,9 @@ CMessage::operator ptree ()
     pt.put("message.port",m_remotehost.port );
     pt.put("message.sequenceno", m_sequenceno );
     pt.put("message.status", m_status  );
-    pt.put("message.accept", m_accept );
-    pt.put("message.send_time", send_ts);
-    pt.put("message.expires", expires_ts);
+    pt.put("message.sendtime",m_sendtime );
+    pt.put("message.expiretiem",m_expiretime );
+    pt.add_child("message.properties", m_properties );
     pt.add_child("message.submessages", m_submessages );
 
     return pt;
@@ -241,6 +395,7 @@ CMessage::CMessage( const ptree &pt )
         m_remotehost.hostname = pt.get< std::string >("message.hostname");
         m_remotehost.port = pt.get< std::string >("message.port");
         m_sequenceno = pt.get< unsigned int >("message.sequenceno");
+<<<<<<< HEAD
         m_accept = pt.get< bool >("message.accept");
         try
         {
@@ -260,6 +415,11 @@ CMessage::CMessage( const ptree &pt )
         {
             // Do nothing.
         }
+=======
+        m_sendtime = pt.get< boost::posix_time::ptime >("message.sendtime");
+        m_expiretime = pt.get< boost::posix_time::ptime >("mesage.expiretime");
+
+>>>>>>> Added thrilling new functionality to CMESSAGE
         m_status = static_cast< StatusType >
             (pt.get< unsigned int >("message.status"));
 
@@ -267,6 +427,7 @@ CMessage::CMessage( const ptree &pt )
         // in the m_modules set. These indicate sub-ptrees that algorithm
         // modules have added.
         m_submessages = pt.get_child("message.submessages");
+        m_properties = pt.get_child("message.properties");
 
     }
     catch( boost::property_tree::ptree_error &e )

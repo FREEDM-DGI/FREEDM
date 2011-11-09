@@ -74,31 +74,97 @@ public:
     };
 
     /// Accessor for uuid
-    std::string GetSourceUUID() { return m_srcUUID; };
-    
+    std::string GetSourceUUID();
+
     /// Accessor for hostname
-    std::string GetSourceHostname() { return m_hostname; };
+    std::string GetSourceHostname();
     
     /// Accessor for sequenceno
-    unsigned int GetSequenceNumber() { return m_sequenceno; };
+    unsigned int GetSequenceNumber();
 
     /// Accessor for status
-    StatusType GetStatus() { return m_status; };
+    StatusType GetStatus();
     
     /// Accessor for submessages
-    ptree& GetSubMessages() { return m_submessages; };
+    ptree& GetSubMessages();
 
     /// Setter for uuid
-    void SetSourceUUID(std::string uuid) { m_srcUUID = uuid; };
+    void SetSourceUUID(std::string uuid);
     
     /// Setter for hostname
-    void SetSourceHostname(std::string hostname) { m_hostname = hostname; };
+    void SetSourceHostname(std::string hostname);
 
     /// Setter for sequenceno
-    void SetSequenceNumber(unsigned int sequenceno) { m_sequenceno = sequenceno; };
+    void SetSequenceNumber(unsigned int sequenceno);
 
     /// Setter for status
-    void SetStatus(StatusType status) { m_status = status; };
+    void SetStatus(StatusType status);
+
+    /// Setter for the protocol
+    void SetProtocol(std::string protocol);
+
+    /// Getter for the protocol
+    std::string GetProtocol();
+
+    /// Setter for the timestamp
+    void SetSendTimestampNow();
+    
+    /// Setter b for the timestamp
+    void SetSendTimestamp(boost::posix_time::ptime p);
+
+    /// Setter for the expiration time
+    void SetExpireTime(boost::posix_time::ptime p);
+
+    /// Setter b for expiration time
+    void SetExpireTimeFromNow(boost::posix_time::time_duration t);
+
+    /// Get the expire time
+    boost::posix_time::ptime GetExpireTime();
+
+    /// Set the protocol properties
+    void SetProtocolProperties(ptree x);
+
+    /// Get the protocol properties
+    ptree GetProtocolProperties();
+
+    /// Test to see if the message is expired
+    bool IsExpired();
+
+    /// Deconstruct the CMessage
+    virtual ~CMessage() { };
+
+    /// Initialize a new CMessage with a status type.
+    CMessage( CMessage::StatusType p_stat = CMessage::OK );
+
+    /// Copy Constructor
+    CMessage( const CMessage &p_m );
+
+    /// Cmessage Equals operator
+    CMessage& operator = ( const CMessage &p_m );
+    
+    /// Parse CMessage from string.
+    virtual bool Load( std::istream &p_is )
+        throw ( boost::property_tree::file_parser_error );
+    
+    /// Put CMessage to a stream.
+    virtual void Save( std::ostream &p_os );
+
+    /// A Generic reply CMessage
+    static CMessage StockReply( StatusType p_status );
+
+    /// Implicit conversion operator
+    virtual operator ptree ();
+
+    /// A way to load a CMessage from a property tree.
+    explicit CMessage( const ptree &pt );
+
+   
+private: 
+    /// Contains the source node's hostname
+    std::string m_hostname;
+
+    /// Contains the sequence number for the sending node
+    unsigned int m_sequenceno;
 
     /// Contains the source node's information
     std::string m_srcUUID;
@@ -109,68 +175,17 @@ public:
     /// Contains all the submessages as handled by client algorithms
     ptree       m_submessages;
 
-    /// Deconstruct the CMessage
-    virtual ~CMessage() { };
+    /// Container for all the protocol properties
+    ptree       m_properties;
 
-    /// Initialize a new CMessage with a status type.
-    CMessage( CMessage::StatusType p_stat = CMessage::OK ) :
-        m_status ( p_stat )
-    {
-        Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
-    };
+    /// The protocol this message is using.
+    std::string m_protocol;
 
-    /// Copy Constructor
-    CMessage( const CMessage &p_m ) :
-        m_srcUUID( p_m.m_srcUUID ),
-        m_status( p_m.m_status ),
-        m_submessages( p_m.m_submessages ),
-        m_hostname( p_m.m_hostname ),
-        m_sequenceno( p_m.m_sequenceno )
-    {
-        Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
-    };
-
-    /// Cmessage Equals operator
-    CMessage& operator = ( const CMessage &p_m )
-    {
-        this->m_srcUUID = p_m.m_srcUUID;
-        this->m_status = p_m.m_status;
-        this->m_submessages = p_m.m_submessages;
-        this->m_hostname = p_m.m_hostname;
-        this->m_sequenceno = p_m.m_sequenceno;
-        return *this;
-    }
+    /// The time the message was sent
+    boost::posix_time::ptime m_sendtime;
     
-    /// Parse CMessage from string.
-    virtual bool Load( std::istream &p_is )
-        throw ( boost::property_tree::file_parser_error );
-    
-    /// Put CMessage to a stream.
-    virtual void Save( std::ostream &p_os );
-
-    /// A Generic reply CMessage
-    static CMessage StockReply( StatusType p_status )
-    {
-        Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
-        CMessage reply_;
-        reply_.m_status = p_status;
-
-        return reply_;
-    }
-
-    /// Implicit conversion operator
-    virtual operator ptree ();
-
-    /// A way to load a CMessage from a property tree.
-    explicit CMessage( const ptree &pt );
-   
-private: 
-    /// Contains the source node's hostname
-    std::string m_hostname;
-
-    /// Contains the sequence number for the sending node
-    unsigned int m_sequenceno;
-
+    /// The time the message will expire
+    boost::posix_time::ptime m_expiretime;
 };
 
 } // namespace broker

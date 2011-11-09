@@ -36,9 +36,8 @@
 #include "CMessage.hpp"
 #include "CDispatcher.hpp"
 #include "CReliableConnection.hpp"
-
-#include "SlidingWindow.hpp"
 #include "types/remotehost.hpp"
+#include "CConnection.hpp"
 
 #include <boost/asio.hpp>
 #include <boost/array.hpp>
@@ -75,11 +74,7 @@ public:
 
     /// Get Remote UUID
     std::string GetUUID() { return m_uuid; };
-
 private:
-    /// Responsible for writing acknowledgements to the stream.
-    void SendACK(std::string uuid, remotehost hostname, unsigned int sequenceno);
-
     /// Handle completion of a read operation.
     void HandleRead(const boost::system::error_code& e, std::size_t bytes_transferred);
 
@@ -94,12 +89,6 @@ private:
 
     /// The UUID of the remote endpoint for the connection
     std::string m_uuid;
-
-    /// The current sequence number (incoming channel only)
-    std::map<std::string,unsigned int> m_insequenceno;
-
-    /// Have I seen a sync for a connection?
-    std::map<std::string, boost::posix_time::ptime> m_synched;   
 };
 
 

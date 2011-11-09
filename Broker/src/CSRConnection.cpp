@@ -32,6 +32,8 @@
 
 #include "CSRConnection.hpp"
 #include "CMessage.hpp"
+#include "CConnectionManager.hpp"
+#include "IProtocol.hpp"
 
 #include <boost/asio.hpp>
 #include <boost/array.hpp>
@@ -56,7 +58,7 @@ namespace freedm {
 /////////////////////////////////////////////////////////////////////////////// 
 CSRConnection::CSRConnection(CConnection *  conn)
     : IProtocol(conn), 
-      m_timeout(conn->GetSocket())
+      m_timeout(conn->GetSocket().get_io_service())
 {
     //Sequence Numbers
     m_outseq = 0;
@@ -103,21 +105,21 @@ void CSRConnection::Send(CMessage msg)
     outmsg.SetSequenceNumber(msgseq);
     m_outseq = (m_outseq+1) % SEQUENCE_MODULO;
 
-    outmsg.SetSourceUUID(GetConnectionManager().GetUUID());
-    outmsg.SetSourceHostname(GetConnectionManager().GetHostname());
+    outmsg.SetSourceUUID(GetConnection()->GetConnectionManager().GetUUID());
+    outmsg.SetSourceHostname(GetConnection()->GetConnectionManager().GetHostname());
     outmsg.SetProtocol(GetIdentifier());
     outmsg.SetSendTimestampNow();
 
     m_window.push_back(outmsg);
     
-    if(m_queue.size() == 0)
+    if(m_window.size() == 0)
     {
         m_killable = true;
         Write(outmsg);
         m_timeout.cancel();
         m_timeout.expires_from_now(boost::posix_time::milliseconds(15));
         m_timeout.async_wait(boost::bind(&CSRConnection::Resend,this,
-            boost::asio::placeholders.error)); 
+            boost::asio::placeholders::error)); 
     }
 }
 
@@ -143,7 +145,7 @@ void CSRConnection::Send(CMessage msg)
 ///          timer is not re-set.
 /// @param err The timer error code. If the err is 0 then the timer expired
 ///////////////////////////////////////////////////////////////////////////////
-void CSRConnection::Resend(boost::system::error_code& err)
+void CSRConnection::Resend(const boost::system::error_code& err)
 {
     if(!err)
     {
@@ -161,8 +163,8 @@ void CSRConnection::Resend(boost::system::error_code& err)
                 Write(m_currentack);
                 m_timeout.cancel();
                 m_timeout.expires_from_now(boost::posix_time::milliseconds(15));
-                m_timeout.async_wait(boost;:bind(&CSRConnection::Resend,this
-                    boost::asio::placeholders.error));
+                m_timeout.async_wait(boost::bind(&CSRConnection::Resend,this,
+                    boost::asio::placeholders::error));
             }
         }
         while(m_window.size() > 0 && m_window.front().IsExpired())
@@ -200,8 +202,8 @@ void CSRConnection::Resend(boost::system::error_code& err)
             m_killable = true;
             m_timeout.cancel();
             m_timeout.expires_from_now(boost::posix_time::milliseconds(15));
-            m_timeout.async_wait(boost;:bind(&CSRConnection::Resend,this
-                boost::asio::placeholders.error));
+            m_timeout.async_wait(boost::bind(&CSRConnection::Resend,this,
+                boost::asio::placeholders::error));
         }
     }
 }
@@ -227,7 +229,7 @@ void CSRConnection::RecieveACK(const CMessage &msg)
     {
         // Assuming hash collisions are small, we will check the hash
         // of the front message. On hit, we can accept the acknowledge.
-        unsigned int fseq = m_window.front().msg.GetSequenceNumber();
+        unsigned int fseq = m_window.front().GetSequenceNumber();
         if(fseq == seq && m_window.front().GetHash() == hash)
         {
             m_window.pop_front();
@@ -236,7 +238,8 @@ void CSRConnection::RecieveACK(const CMessage &msg)
     }
     if(m_window.size() > 0)
     {
-        Resend(0);
+        boost::system::error_code x;
+        Resend(x);
     }
 }
 
@@ -309,17 +312,17 @@ bool CSRConnection::Recieve(const CMessage &msg)
         }
         m_inseq = (msg.GetSequenceNumber()+1)%SEQUENCE_MODULO;
         m_insynctime = msg.GetSendTimestamp();
-        m_inresync++;
+        m_inresyncs++;
         return false;
     }
-    if(insync == false)
+    if(m_insync == false)
     {
         //If the connection hasn't been synchronized, we want to
         //tell them it is a bad request so they know they need to sync.
         freedm::broker::CMessage outmsg;
         // Presumably, if we are here, the connection is registered 
-        outmsg.SetSourceUUID(GetConnectionManager().GetUUID());
-        outmsg.SetSourceHostname(GetConnectionManager().GetHostname());
+        outmsg.SetSourceUUID(GetConnection()->GetConnectionManager().GetUUID());
+        outmsg.SetSourceHostname(GetConnection()->GetConnectionManager().GetHostname());
         outmsg.SetStatus(freedm::broker::CMessage::BadRequest);
         outmsg.SetSequenceNumber(m_inresyncs%SEQUENCE_MODULO);
         outmsg.SetProtocol(GetIdentifier());
@@ -345,7 +348,7 @@ bool CSRConnection::Recieve(const CMessage &msg)
         ptree pp = msg.GetProtocolProperties();
         killed = pp.get<unsigned int>("src.killed");
     }
-    catch(ptree_bad_path e)
+    catch(std::exception &e)
     {
         //pass
     }
@@ -393,7 +396,7 @@ bool CSRConnection::Recieve(const CMessage &msg)
         }
         
     }
-    catch(ptree_bad_path e)
+    catch(std::exception &e)
     {
         if(m_killwindow.size() > 0)
         {
@@ -406,7 +409,7 @@ bool CSRConnection::Recieve(const CMessage &msg)
         }
     }
     //Consider the window you expect to see
-    if(msg.GetSequenceNumber == m_inseq)
+    if(msg.GetSequenceNumber() == m_inseq)
     {
         m_insync = true;
         m_inseq = (m_inseq+1)%2;
@@ -437,23 +440,23 @@ void CSRConnection::SendACK(const CMessage &msg)
     unsigned int seq = msg.GetSequenceNumber();
     freedm::broker::CMessage outmsg;
     ptree pp;
-    pp.set("src.hash",msg.GetHash());
+    pp.put("src.hash",msg.GetHash());
     // Presumably, if we are here, the connection is registered 
-    outmsg.SetSourceUUID(GetConnectionManager().GetUUID());
-    outmsg.SetSourceHostname(GetConnectionManager().GetHostname());
+    outmsg.SetSourceUUID(GetConnection()->GetConnectionManager().GetUUID());
+    outmsg.SetSourceHostname(GetConnection()->GetConnectionManager().GetHostname());
     outmsg.SetStatus(freedm::broker::CMessage::Accepted);
-    outmsg.SetSequenceNumber(sequenceno);
+    outmsg.SetSequenceNumber(seq);
     outmsg.SetSendTimestampNow();
     outmsg.SetProtocol(GetIdentifier());
     outmsg.SetProtocolProperties(pp);
-    outmsg.SetExpireTime(msg.GetExpireTime())
+    outmsg.SetExpireTime(msg.GetExpireTime());
     Write(outmsg);
     m_currentack = outmsg;
     /// Hook into resend until the message expires.
     m_timeout.cancel();
     m_timeout.expires_from_now(boost::posix_time::milliseconds(15));
-    m_timeout.async_wait(boost;:bind(&CSRConnection::Resend,this
-        boost::asio::placeholders.error));
+    m_timeout.async_wait(boost::bind(&CSRConnection::Resend,this,
+        boost::asio::placeholders::error));
 }
 
 void CSRConnection::SendSYN()
@@ -478,9 +481,9 @@ void CSRConnection::SendSYN()
         }
     }
     // Presumably, if we are here, the connection is registered 
-    outmsg.SetSourceUUID(GetConnectionManager().GetUUID());
-    outmsg.SetSourceHostname(GetConnectionManager().GetHostname());
-    outmsg.SetStatus(freedm::broker::CMessage::Createed);
+    outmsg.SetSourceUUID(GetConnection()->GetConnectionManager().GetUUID());
+    outmsg.SetSourceHostname(GetConnection()->GetConnectionManager().GetHostname());
+    outmsg.SetStatus(freedm::broker::CMessage::Created);
     outmsg.SetSequenceNumber(seq);
     outmsg.SetSendTimestampNow();
     outmsg.SetProtocol(GetIdentifier());
@@ -490,8 +493,8 @@ void CSRConnection::SendSYN()
     /// Hook into resend until the message expires.
     m_timeout.cancel();
     m_timeout.expires_from_now(boost::posix_time::milliseconds(15));
-    m_timeout.async_wait(boost;:bind(&CSRConnection::Resend,this
-        boost::asio::placeholders.error));
+    m_timeout.async_wait(boost::bind(&CSRConnection::Resend,this,
+        boost::asio::placeholders::error));
 }
 
     }

@@ -52,7 +52,7 @@
 namespace freedm {
     namespace broker {
 
-class CConnectionManager;
+class IProtocol;
 
 /// Represents a single outgoing connection to a client.
 class CConnection
@@ -75,57 +75,21 @@ public:
     void Stop();
 
     /// Puts a CMessage into the channel.
-    void Send(CMessage p_mesg,int max_retries=30);
+    void Send(CMessage p_mesg);
 
     /// Handles Notification of an acknowledment being recieved
-    void RecieveACK(unsigned int sequenceno);
+    void RecieveACK(const CMessage &msg);
 
+    /// Handler that calls the correct protocol for accept logic
+    bool Recieve(const CMessage &msg);
 private:
-    /// Remove messages which don't have any retries left from the queue.
-    void FlushExpiredMessages();
-
-    /// Has the outgoing connection been synched?
-    bool m_synched;
-
-    /// Schedules Resend when the timer expires and increases timeout counter.
-    void Resend(const boost::system::error_code& error);
-
-    /// Handles refiring the window.
-    void HandleResend();
-
-    /// Sends SYN messages.
-    void SendSYN();
+    typedef boost::shared_ptr<IProtocol> ProtocolPtr;
+    typedef std::map<std::string,ProtocolPtr> ProtocolMap;
+    /// Protocol Handler Map
+    ProtocolMap m_protocols;
     
-    /// Handle a send operation posted to the IO thread.
-    void HandleSend(CMessage msg, unsigned int sequenceno);
-
-    /// Handle completion of a write operation.
-    void HandleWrite(const boost::system::error_code& e);
-    
-    /// Buffer for incoming data.
-    boost::array<char, 8192> m_buffer;
-    
-    /// The incoming request.
-    CMessage m_message;
-    
-    /// Type for the queued items.
-    typedef std::pair<int, CMessage > QueueItem;
-
-    /// The queue of messages
-    std::deque< QueueItem > m_queue;
-
-    /// Timer for failed responses.
-    boost::asio::deadline_timer m_timeout;
-
-    /// Counter for the number of times the timeout has fired
-    /// Without success. 
-    unsigned int m_timeouts;
- 
-    /// The sequence number used for the next outgoing message
-    unsigned int m_outsequenceno;
-
-    /// The sequence number of the front of the queue.
-    unsigned int m_queueno;
+    /// Default protocol
+    std::string m_defaultprotocol;
 };
 
 typedef boost::shared_ptr<CConnection> ConnectionPtr;

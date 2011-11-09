@@ -32,6 +32,8 @@
 
 #include "CSUConnection.hpp"
 #include "CMessage.hpp"
+#include "CConnectionManager.hpp"
+#include "IProtocol.hpp"
 
 #include <boost/asio.hpp>
 #include <boost/array.hpp>
@@ -46,7 +48,8 @@ namespace freedm {
     namespace broker {
 
 CSUConnection::CSUConnection(CConnection *  conn)
-    : IProtocol(conn), m_timeout(conn->GetSocket())
+    : IProtocol(conn),
+      m_timeout(conn->GetSocket().get_io_service())
 {
     m_outseq = 0;
     m_inseq = 0;
@@ -64,10 +67,10 @@ void CSUConnection::Send(CMessage msg)
     outmsg.SetSequenceNumber(msgseq);
     m_outseq = (m_outseq+1) % SEQUENCE_MODULO;
 
-    outmsg.SetSourceUUID(GetConnectionManager().GetUUID());
-    outmsg.SetSourceHostname(GetConnectionManager().GetHostname());
+    outmsg.SetSourceUUID(GetConnection()->GetConnectionManager().GetUUID());
+    outmsg.SetSourceHostname(GetConnection()->GetConnectionManager().GetHostname());
     outmsg.SetProtocol(GetIdentifier());
-    outmst.SetSendTimestampNow();
+    outmsg.SetSendTimestampNow();
 
     QueueItem q;
 
@@ -76,17 +79,17 @@ void CSUConnection::Send(CMessage msg)
 
     m_window.push_back(q);
     
-    if(m_queue.size() <= WINDOW_SIZE)
+    if(m_window.size() <= WINDOW_SIZE)
     {
         Write(outmsg);
         m_timeout.cancel();
         m_timeout.expires_from_now(boost::posix_time::milliseconds(50));
         m_timeout.async_wait(boost::bind(&CSUConnection::Resend,this,
-            boost::asio::placeholders.error)); 
+            boost::asio::placeholders::error)); 
     }
 }
 
-void CSUConnection::Resend(boost::system::error_code& err)
+void CSUConnection::Resend(const boost::system::error_code& err)
 {
     if(!err)
     {
@@ -94,7 +97,8 @@ void CSUConnection::Resend(boost::system::error_code& err)
         int writes = 0;
         for(int i=0; i < ws; i++)
         {
-            QueueItem f = m_window.pop_front();
+            QueueItem f = m_window.front();
+            m_window.pop_front();
             if(f.ret > 0 && writes < WINDOW_SIZE)
             {        
                 Write(f.msg);
@@ -107,8 +111,8 @@ void CSUConnection::Resend(boost::system::error_code& err)
         {
             m_timeout.cancel();
             m_timeout.expires_from_now(boost::posix_time::milliseconds(50));
-            m_timeout.async_wait(boost;:bind(&CSUConnection::Resend,this
-                boost::asio::placeholders.error));
+            m_timeout.async_wait(boost::bind(&CSUConnection::Resend,this,
+                boost::asio::placeholders::error));
         }
     }
 }
@@ -132,18 +136,16 @@ void CSUConnection::RecieveACK(const CMessage &msg)
     }
     if(m_window.size() > 0)
     {
-        m_timeout.cancel();
-        m_timeout.expires_from_now(boost::posix_time::milliseconds(50));
-        m_timeout.async_wait(boost;:bind(&CSUConnection::Resend,this
-            boost::asio::placeholders.error));
+        boost::system::error_code x;
+        Resend(x);
     }
 }
 
-void CSUConnection::Recieve(const CMessage &msg)
+bool CSUConnection::Recieve(const CMessage &msg)
 {
     //Consider the window you expect to see
     unsigned int bounda = m_inseq;
-    unsigned int boundb = (fseq+WINDOW_SIZE*m_acceptmod)%SEQUENCE_MODULO;
+    unsigned int boundb = (m_inseq+WINDOW_SIZE*m_acceptmod)%SEQUENCE_MODULO;
     unsigned int seq = msg.GetSequenceNumber();
     if(bounda <= seq || (seq < boundb and boundb < bounda))
     {
@@ -164,10 +166,10 @@ void CSUConnection::SendACK(const CMessage &msg)
     unsigned int seq = msg.GetSequenceNumber();
     freedm::broker::CMessage outmsg;
     // Presumably, if we are here, the connection is registered 
-    outmsg.SetSourceUUID(GetConnectionManager().GetUUID());
-    outmsg.SetSourceHostname(GetConnectionManager().GetHostname());
+    outmsg.SetSourceUUID(GetConnection()->GetConnectionManager().GetUUID());
+    outmsg.SetSourceHostname(GetConnection()->GetConnectionManager().GetHostname());
     outmsg.SetStatus(freedm::broker::CMessage::Accepted);
-    outmsg.SetSequenceNumber(sequenceno);
+    outmsg.SetSequenceNumber(seq);
     outmsg.SetProtocol(GetIdentifier());
     outmsg.SetSendTimestampNow();
     Write(outmsg);

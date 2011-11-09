@@ -33,14 +33,16 @@
 #ifndef IPROTOCOL_HPP
 #define IPROTOCOL_HPP
 
-#include "CConnection.hpp"
 #include "CMessage.hpp"
+#include "RequestParser.hpp"
+#include "CConnection.hpp"
 
 #include <boost/asio.hpp>
 #include <boost/array.hpp>
 #include <boost/noncopyable.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/enable_shared_from_this.hpp>
+#include <boost/logic/tribool.hpp>
 
 #include <iomanip>
 #include <set>
@@ -50,10 +52,13 @@ namespace freedm {
 
 /// A connection protocol
 class IProtocol
+    : private boost::noncopyable
 {
     public:
         /// Initializes the protocol with the underlying connection
-        IProtocol(CConnection * conn);
+        IProtocol(CConnection * conn) : m_conn(conn) { };
+        /// Destroy all humans
+        virtual ~IProtocol() { };
         /// Public write to channel function
         virtual void Send(CMessage msg) = 0;
         /// Public facing function that handles marking ACKS
@@ -62,6 +67,8 @@ class IProtocol
         virtual bool Recieve(const CMessage &msg) = 0;
         /// Handles Writing an ack for the input message to the channel
         virtual void SendACK(const CMessage &msg) = 0;
+        /// Handles Stopping the timers etc
+        virtual void Stop() = 0;
         /// Returns the identifier for this protocol
         virtual std::string GetIdentifier() = 0;
         /// Returns a pointer to the underlying connection.
@@ -69,31 +76,11 @@ class IProtocol
     protected:
         /// Callback for when a write completes.
         virtual void WriteCallback(const boost::system::error_code& e) { }
-    private:
         /// Handles writing the message to the underlying connection
-        virtual void Write(CMessage msg)
-        {
-            Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
-            boost::tribool result_;
-            boost::array<char, 8192>::iterator it_;
-
-            it_ = m_buffer.begin();
-            boost::tie(result_, it_)=Synthesize(msg, it_, m_buffer.end() - it_ );
-
-            #ifdef CUSTOMNETWORK
-            if((rand()%100) >= GetConnection()->GetReliability()) 
-            {
-                Logger::Info<<"Outgoing Packet Dropped ("<<GetReliability()
-                              <<") -> "<<GetUUID()<<std::endl;
-                return;
-            }
-            #endif
-
-            GetConnection->GetSocket().async_send(boost::asio::buffer(m_buffer,
-                    (it_ - m_buffer.begin()) * sizeof(char) ), 
-                    boost::bind(&IProtocol::WriteCallback, this,
-                    boost::asio::placeholders::error));
-        }
+        virtual void Write(CMessage msg);
+    private:
+        /// Write buffer
+        boost::array<char, 8192> m_buffer;
         /// The underlying and related connection object.
         CConnection * m_conn;
 };

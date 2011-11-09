@@ -38,6 +38,8 @@
 #include "CConnectionManager.hpp"
 #include "CMessage.hpp"
 #include "RequestParser.hpp"
+#include "CSRConnection.hpp"
+#include "CSUConnection.hpp"
 #include "logger.hpp"
 #include "config.hpp"
 
@@ -64,13 +66,15 @@ namespace freedm {
 ///////////////////////////////////////////////////////////////////////////////
 CConnection::CConnection(boost::asio::io_service& p_ioService,
   CConnectionManager& p_manager, CDispatcher& p_dispatch, std::string uuid)
-  : CReliableConnection(p_ioService,p_manager,p_dispatch,uuid),
-    m_timeout( p_ioService)
+  : CReliableConnection(p_ioService,p_manager,p_dispatch,uuid)
 {
     Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
-    m_outsequenceno = 0;
-    m_timeouts = 0;
-    m_synched = false;
+    m_protocols.insert(ProtocolMap::value_type(CSUConnection::Identifier(),
+        ProtocolPtr(new CSUConnection(this))));
+    m_protocols.insert(ProtocolMap::value_type(CSRConnection::Identifier(),
+        ProtocolPtr(new CSRConnection(this))));
+    m_defaultprotocol = CSUConnection::Identifier();
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -96,8 +100,12 @@ void CConnection::Start()
 ///////////////////////////////////////////////////////////////////////////////
 void CConnection::Stop()
 {
+    ProtocolMap::iterator sit;
+    for(sit = m_protocols.begin(); sit != m_protocols.end(); sit++)
+    {
+        (*sit).second->Stop();
+    }   
     Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
-    m_timeout.cancel();
     GetSocket().close();
 }
  
@@ -112,162 +120,18 @@ void CConnection::Stop()
 ///   If the message is being sequenced  and the window is not already full,
 ///   the timeout timer is cancelled and reset.
 /// @param p_mesg A CMessage to write to the channel.
-/// @param sequence if true, the message will be sequenced and reliably
-///   delievered in order. Otherwise it is immediately fired and forgotten.
-///   this is mostly meant for use with ACKs. True by default.
 ///////////////////////////////////////////////////////////////////////////////
-void CConnection::Send(CMessage p_mesg, bool sequence)
+void CConnection::Send(CMessage p_mesg)
 {
     Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
 
-    #ifdef DATAGRAM
-    sequence = false;
-    #endif
-
-    //Make a call to the dispatcher to sign the messages
-    //With a bunch of shiny stuff.
-    ptree x = static_cast<ptree>(p_mesg);
-    unsigned int msgseq;
-
-    //m_dispatch.HandleWrite(x);  
-
-    CMessage outmsg(x);
-
-    // Sign the message with the hostname, uuid, and squencenumber
-    if(sequence == true)
-    {
-        if(m_synched == false)
-        {
-            m_synched = true;
-            SendSYN();
-        }
-        msgseq = m_outsequenceno;
-        outmsg.SetSequenceNumber(msgseq);
-        m_outsequenceno = (m_outsequenceno+1) % GetSequenceModulo();
-    }
-    outmsg.SetSourceUUID(GetConnectionManager().GetUUID()); 
-    outmsg.SetSourceHostname(GetConnectionManager().GetHostname());
-
-    if(sequence == true)
-    {
-        // If it isn't squenced then don't put it in the queue.
-        m_queue.Push( QueueItem(msgseq,outmsg) );
-    }
-    // Before, we would put it into a queue to be sent later, now we are going
-    // to immediately write it to channel.
-
-    if(m_queue.size() <= GetWindowSize() || sequence == false)
-    {
-        // Only try to write to the socket if the window isn't already full.
-        // Or it is an unsequenced message
-        
-        HandleSend(outmsg);
-        if(sequence == true)
-        {
-            m_timeout.cancel();
-            m_timeout.expires_from_now(boost::posix_time::milliseconds(500));
-            m_timeout.async_wait(boost::bind(&CConnection::Resend,this,
-                boost::asio::placeholders::error));
-        }
-    }
-}
-
-///////////////////////////////////////////////////////////////////////////////
-/// @fn CConnection::HandleSend
-/// @description This function synthesizes the input CMessage and writes it to
-///   the channel.
-/// @pre The CConnection is initialized.
-/// @post A CMessage has been written to the socket for this connection.
-///////////////////////////////////////////////////////////////////////////////
-void CConnection::HandleSend(CMessage msg)
-{
-    Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
-    boost::tribool result_;
-    boost::array<char, 8192>::iterator it_;
-
-    it_ = m_buffer.begin();
-    boost::tie( result_, it_ ) = Synthesize( msg, it_, m_buffer.end() - it_ );
-
-    #ifdef CUSTOMNETWORK
-    if((rand()%100) >= GetReliability()) 
-    {
-        Logger::Info<<"Outgoing Packet Dropped ("<<GetReliability()
-                      <<") -> "<<GetUUID()<<std::endl;
-        return;
-    }
-    #endif
-
-    GetSocket().async_send(boost::asio::buffer(m_buffer,
-            (it_ - m_buffer.begin()) * sizeof(char) ), 
-        boost::bind(&CConnection::HandleWrite, this,
-        boost::asio::placeholders::error));
-}
-
-///////////////////////////////////////////////////////////////////////////////
-/// @fn CConnection::Resend
-/// @description The callback for the timeout timer. If the timeout timer
-///   expires and the message queue is not empty, this function marks that
-///   there was a timeout and calls the HandleResend method to refire the
-///   window. Otherwise, this function simply exits.
-/// @param err The error code for the expiring timer.
-/// @pre The timeout timer has just expired or been cancelled.
-/// @post If the timer was not cancelled and there are messages in the queue
-///   the queue is resent.
-///////////////////////////////////////////////////////////////////////////////
-void CConnection::Resend(const boost::system::error_code& err)
-{
-    Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
-    if(!err)
-    {
-        Logger::Debug << "Firing Resend"<<std::endl;
-        if(!m_queue.IsEmpty())
-        {
-            m_timeouts++;
-            GetSocket().get_io_service().post(
-            boost::bind(&CConnection::HandleResend, this));
-            m_timeout.cancel();
-            m_timeout.expires_from_now(boost::posix_time::milliseconds(100));
-            m_timeout.async_wait(boost::bind(&CConnection::Resend,this,
-                boost::asio::placeholders::error));
-        }
-    }
+    ProtocolMap::iterator sit = m_protocols.find(p_mesg.GetProtocol());    
     
-}
-
-///////////////////////////////////////////////////////////////////////////////
-/// @fn CConnection::HandleResend
-/// @description After being called, this method sends up WINDOWSIZE messages
-///   to retry delievery.
-/// @pre Initialized CConnection.
-/// @post Upto WINDOWSIZE messages are rewritten to the channel.
-///////////////////////////////////////////////////////////////////////////////
-void CConnection::HandleResend()
-{
-    Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
-    SlidingWindow<QueueItem>::iterator sit;
-    sit = m_queue.begin();   
- 
-    for(unsigned int i=0; sit != m_queue.end() && i < GetWindowSize(); i++,sit++ )
+    if(sit == m_protocols.end())
     {
-        GetSocket().get_io_service().post(
-        boost::bind(&CConnection::HandleSend, this,(*sit).second));
+        sit = m_protocols.find(m_defaultprotocol);
     }
-}
-
-///////////////////////////////////////////////////////////////////////////////
-/// @fn CConnection::SendSYN
-/// @description Synchronosizes the reciever to expect the next message to have
-///   the sequence number 1
-/// @pre Initialized connection.
-/// @post Upon reciept, the reciever will expect 1 for the sequence number
-///////////////////////////////////////////////////////////////////////////////
-void CConnection::SendSYN()
-{
-    Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
-    freedm::broker::CMessage m_;
-    m_.SetStatus(freedm::broker::CMessage::Created);
-    Logger::Info<<"Sending SYN"<<std::endl;
-    Send(m_);
+    (*sit).second->Send(p_mesg);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -277,53 +141,35 @@ void CConnection::SendSYN()
 /// @post The message with sequence number has been acknowledged and all
 ///   messages sent before that message have been considered acknowledged as
 ///   well.
-/// @param sequenceno The message to consider as acknowledged.
+/// @param msg The message to consider as acknnowledged
 ///////////////////////////////////////////////////////////////////////////////
-void CConnection::RecieveACK(unsigned int sequenceno)
+void CConnection::RecieveACK(const CMessage &msg)
 {
-    Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
-    while(!m_queue.IsEmpty())
+    std::string protocol = msg.GetProtocol();
+    ProtocolMap::iterator sit = m_protocols.find(protocol);
+    if(sit != m_protocols.end())
     {
-        unsigned int bounda = m_queue.front().first;
-        unsigned int boundb = (m_queue.front().first+(GetWindowSize()))%GetSequenceModulo();
-        Logger::Debug<<"ACK, bounda:"<<bounda<<" boundb:"<<boundb<<"input: "<<sequenceno<<std::endl;
-        if(bounda <= sequenceno || (sequenceno < boundb && boundb < bounda))
-        {
-            Logger::Info<<"ACK handled for "<<m_queue.front().first<<std::endl;
-            m_queue.pop();
-            m_timeouts = 0;
-        }
-        else
-        {
-            break;
-        }
-    }
-    if(!m_queue.IsEmpty())
-    {
-        GetSocket().get_io_service().post(
-            boost::bind(&CConnection::HandleResend, this));
+        (*sit).second->RecieveACK(msg);
     }
 }
-///////////////////////////////////////////////////////////////////////////////
-/// @fn CConnection::HandleWrite
-/// @description Write callback. Closes the connection on error, does nothing
-///   otherwise.
-/// @param e The error that occured if any.
-/// @pre A message has been written to the channel.
-/// @post If there was an error the socket has been closed.
-///////////////////////////////////////////////////////////////////////////////
-void CConnection::HandleWrite(const boost::system::error_code& e)
-{
-    Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
 
-    if (!e)
+///////////////////////////////////////////////////////////////////////////////
+/// @fn CConnection::Recieve
+/// @description Handler for determineing if a recieved message should be ACKd
+/// @pre Initialized connection.
+/// @post The message with sequence number has been acknowledged and all
+///   messages sent before that message have been considered acknowledged as
+///   well.
+/// @param msg The message to consider as acknnowledged
+///////////////////////////////////////////////////////////////////////////////
+bool CConnection::Recieve(const CMessage &msg)
+{
+    ProtocolMap::iterator sit = m_protocols.find(msg.GetProtocol());
+    if(sit != m_protocols.end())
     {
-        //All good
+        return (*sit).second->Recieve(msg);
     }
-    if (e == boost::asio::error::operation_aborted)
-    {
-        GetConnectionManager().Stop(CConnection::ConnectionPtr(this));
-    }
+    return false;
 }
 
     } // namespace broker

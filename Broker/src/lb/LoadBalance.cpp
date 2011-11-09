@@ -176,7 +176,6 @@ void lbAgent::LoadManage()
     std::stringstream ss_;
     ss_.clear();
     ss_ << GetUUID();
-    ss_ >> m_.m_srcUUID;
     m_.m_submessages.put("lb.source", ss_.str());
     ss_.clear();
     ss_.str("demand");
@@ -211,7 +210,6 @@ void lbAgent::LoadManage()
     broker::CMessage m_;  
     std::stringstream ss_;
     ss_ << GetUUID();
-    ss_ >> m_.m_srcUUID;
     m_.m_submessages.put("lb.source", ss_.str());
     ss_.clear();
     ss_.str("normal");
@@ -317,7 +315,6 @@ void lbAgent::SendDraftRequest()
       std::stringstream ss_;
       ss_.clear();
       ss_ << GetUUID();
-      ss_ >> m_.m_srcUUID;
       m_.m_submessages.put("lb.source", ss_.str());
       ss_.clear();
       ss_.str("request");
@@ -680,7 +677,6 @@ void lbAgent::HandleRead(const ptree& pt )
     broker::CMessage m_;
     std::stringstream ss_;
     ss_ << GetUUID();
-    ss_ >> m_.m_srcUUID;
     m_.m_submessages.put("lb.source", ss_.str());   
 
     // If you are in Demand State, accept the request with a 'yes' 
@@ -761,7 +757,6 @@ void lbAgent::HandleRead(const ptree& pt )
       broker::CMessage m_;
       std::stringstream ss_;   
       ss_ << GetUUID();
-      ss_ >> m_.m_srcUUID;
       m_.m_submessages.put("lb.source", ss_.str());
       ss_.clear();
       ss_.str("drafting");
@@ -797,7 +792,6 @@ void lbAgent::HandleRead(const ptree& pt )
       broker::CMessage m_;
       std::stringstream ss_;
       ss_ << GetUUID();
-      ss_ >> m_.m_srcUUID;
       m_.m_submessages.put("lb.source", ss_.str());
       ss_.clear();
       ss_.str("accept");
@@ -867,7 +861,6 @@ void lbAgent::HandleRead(const ptree& pt )
     broker::CMessage m_;
     std::stringstream ss_;   
     ss_ << GetUUID();
-    ss_ >> m_.m_srcUUID;
     m_.m_submessages.put("sc", "load");
     m_.m_submessages.put("sc.source", ss_.str());
     ss_.clear();

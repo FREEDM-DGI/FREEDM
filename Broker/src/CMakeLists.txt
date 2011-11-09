@@ -4,8 +4,11 @@ set(
     CBroker.cpp
     CReliableConnection.cpp
     CListener.cpp
-    CConnection.cpp
     CConnectionManager.cpp
+    IProtocol.cpp
+    CSRConnection.cpp
+    CSUConnection.cpp
+    CConnection.cpp
     CDispatcher.cpp
     CMessage.cpp
     IPeerNode.cpp

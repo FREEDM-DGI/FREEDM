@@ -23,7 +23,7 @@ if(SHOW_MESSAGES)
 endif(SHOW_MESSAGES)
 
 # find the required boost libraries
-find_package(Boost REQUIRED COMPONENTS system thread program_options serialization)
+find_package(Boost REQUIRED COMPONENTS system thread program_options serialization date_time)
 
 if(Boost_FOUND)
     # add the boost libraries to the project

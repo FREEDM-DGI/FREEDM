@@ -30,11 +30,12 @@
 /// Technology, Rolla, MO 65409 (ff@mst.edu).
 ////////////////////////////////////////////////////////////////////
 
-#ifndef CSUCONNECTION_HPP
-#define CSUCONNECTION_HPP
+#ifndef CSRCONNECTION_HPP
+#define CSRCONNECTION_HPP
 
 #include "IProtocol.hpp"
 #include "CMessage.hpp"
+#include "CConnection.hpp"
 
 #include <boost/asio.hpp>
 #include <boost/array.hpp>
@@ -48,12 +49,15 @@
 namespace freedm {
     namespace broker {
 
+
 /// A reliable connection protocol with sweet as expirations.
-class CSUConnection : public IProtocol
+class CSRConnection : public IProtocol
 {
     public:
         /// Initializes the protocol with the underlying connection
-        CSUConnection(CConnection * conn);
+        CSRConnection(CConnection * conn);
+        /// Destructor
+        virtual ~CSRConnection() { };
         /// Public facing send function that sends a message
         void Send(CMessage msg);
         /// Public facing function that handles marking down ACKs for sent messages
@@ -64,11 +68,15 @@ class CSUConnection : public IProtocol
         void SendACK(const CMessage &msg);
         /// Sends a synchronizer
         void SendSYN();
+        /// Stops the timers
+        void Stop() { m_timeout.cancel(); };
+        /// Returns the identifier
+        std::string GetIdentifier() { return Identifier(); };
         /// Returns the identifier for this protocol.
-        std::string GetIdentifier() { return "SRC" };
+        static std::string Identifier() { return "SRC"; };
     private:
         /// Resend outstanding messages
-        void Resend(boost::system::error_code& err);
+        void Resend(const boost::system::error_code& err);
         /// Timeout for resends
         boost::asio::deadline_timer m_timeout;
         /// The current ack to flood with
@@ -94,9 +102,9 @@ class CSUConnection : public IProtocol
         /// The hash to... MURDER.
         size_t m_killhash;
         /// The window
-        deque<CMessage> m_window;
+        std::deque<CMessage> m_window;
         /// Kill window
-        deque<size_t> m_killwindow;
+        std::deque<size_t> m_killwindow;
         /// Kill window size
         static const unsigned int KILLWINDOW_SIZE = 6;
         /// Sequence modulo

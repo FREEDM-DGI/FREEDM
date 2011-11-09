@@ -35,6 +35,7 @@
 
 #include "IProtocol.hpp"
 #include "CMessage.hpp"
+#include "CConnection.hpp"
 
 #include <boost/asio.hpp>
 #include <boost/array.hpp>
@@ -54,6 +55,8 @@ class CSUConnection : public IProtocol
     public:
         /// Initializes the protocol with the underlying connection
         CSUConnection(CConnection * conn);
+        /// Destructor
+        virtual ~CSUConnection() { };
         /// Public facing send function that sends a message
         void Send(CMessage msg);
         /// Public facing function that handles marking down ACKs for sent messages
@@ -62,11 +65,15 @@ class CSUConnection : public IProtocol
         bool Recieve(const CMessage &msg);
         /// Handles Writing an ack for the input message to the channel
         void SendACK(const CMessage &msg);
+        /// Stops the timers
+        void Stop() { m_timeout.cancel(); };
+        /// Returns the identifier
+        std::string GetIdentifier() { return Identifier(); };
         /// Returns the identifier for this protocol.
-        std::string GetIdentifier() { return "SUC" };
+        static std::string Identifier() { return "SUC"; };
     private:
         /// Resend outstanding messages
-        void Resend(boost::system::error_code& err);
+        void Resend(const boost::system::error_code& err);
         /// Timeout for resends
         boost::asio::deadline_timer m_timeout;
         /// The expected next in sequence number
@@ -87,7 +94,7 @@ class CSUConnection : public IProtocol
             CMessage msg; //the message in queue
         };
         /// The window
-        deque<QueueItem> m_window;
+        std::deque<QueueItem> m_window;
 };
 
     }

@@ -35,6 +35,7 @@
 CREATE_EXTERN_STD_LOGS()
 
 #include <boost/foreach.hpp>
+#include <boost/functional/hash.hpp>
 #define foreach BOOST_FOREACH
 
 #include <boost/property_tree/ptree.hpp>
@@ -124,24 +125,14 @@ namespace status_strings {
 
 
 /// Initialize a new CMessage with a status type.
-CMessage( CMessage::StatusType p_stat)
+CMessage::CMessage( CMessage::StatusType p_stat)
     : m_status ( p_stat )
 {
     Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
 }
 
-/// A Generic reply CMessage
-static CMessage StockReply( StatusType p_status )
-{
-    Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
-    CMessage reply_;
-    reply_.m_status = p_status;
-
-    return reply_;
-}
-
 /// Copy Constructor
-CMessage( const CMessage &p_m ) :
+CMessage::CMessage( const CMessage &p_m ) :
     m_srcUUID( p_m.m_srcUUID ),
     m_status( p_m.m_status ),
     m_submessages( p_m.m_submessages ),
@@ -156,7 +147,7 @@ CMessage( const CMessage &p_m ) :
 };
 
 /// Cmessage Equals operator
-CMessage& operator = ( const CMessage &p_m )
+CMessage& CMessage::operator = ( const CMessage &p_m )
 {
     this->m_srcUUID = p_m.m_srcUUID;
     this->m_status = p_m.m_status;
@@ -173,25 +164,25 @@ CMessage& operator = ( const CMessage &p_m )
 //Accessors and Junk
 
 /// Accessor for uuid
-std::string CMessage::GetSourceUUID()
+std::string CMessage::GetSourceUUID() const
 {
      return m_srcUUID;
 }
 
 /// Accessor for hostname
-std::string CMessage::GetSourceHostname()
+std::string CMessage::GetSourceHostname() const
 {
     return m_hostname;
 }
 
 /// Accessor for sequenceno
-unsigned int CMessage::GetSequenceNumber()
+unsigned int CMessage::GetSequenceNumber() const
 {
     return m_sequenceno;
 }
 
 /// Accessor for status
-StatusType CMessage::GetStatus()
+CMessage::StatusType CMessage::GetStatus() const
 {
     return m_status;
 }
@@ -227,53 +218,81 @@ void CMessage::SetStatus(StatusType status)
 }
 
 /// Setter for the timestamp
-void SetSendTimestampNow()
+void CMessage::SetSendTimestampNow()
 {
     m_sendtime = boost::posix_time::microsec_clock::universal_time();
 }
 
 /// Setter b for the timestamp
-void SetSendTimestamp(boost::posix_time::ptime p)
+void CMessage::SetSendTimestamp(boost::posix_time::ptime p)
 {
     m_sendtime = p;
 }
 
+/// Getter for the send time
+boost::posix_time::ptime CMessage::GetSendTimestamp() const
+{
+    return m_sendtime;
+}
+
 /// Setter for the expiration time
-void SetExpireTime(boost::posix_time::ptime p)
+void CMessage::SetExpireTime(boost::posix_time::ptime p)
 {
     m_expiretime = p;
 }
 
 
 /// Setter b for the expiration time
-void SetExpireTimeFromNow(boost::posix_time::time_duration t)
+void CMessage::SetExpireTimeFromNow(boost::posix_time::time_duration t)
 {
     m_expiretime = boost::posix_time::microsec_clock::universal_time();
     m_expiretime += t;
 }
 
 /// Getter for the expire time
-boost::posix_time::ptime GetExpireTime()
+boost::posix_time::ptime CMessage::GetExpireTime() const
 {
     return m_expiretime;
 }
 
 ///Test to see if a message is expired.
-bool IsExpired()
+bool CMessage::IsExpired() const
 {
     return m_expiretime < boost::posix_time::microsec_clock::universal_time();
 }
 
 /// Set the protocol properties
-void SetProtocolProperties(ptree x)
+void CMessage::SetProtocolProperties(ptree x)
 {
     m_properties = x;
 }
 
 /// Get the protocol properties
-ptree GetProtocolProperties()
+ptree CMessage::GetProtocolProperties() const
 {
     return m_properties;
+}
+
+/// Getter for the protocol
+std::string CMessage::GetProtocol() const
+{
+    return m_protocol;
+}
+
+// Protocol Setter
+void CMessage::SetProtocol(std::string protocol)
+{
+    m_protocol = protocol;
+}
+
+/// Get the message hash!
+size_t CMessage::GetHash() const
+{
+    std::stringstream ss;
+    boost::hash<std::string> string_hash;
+    write_xml(ss,m_submessages);
+    ss<<GetSendTimestamp();
+    return string_hash(ss.str());
 }
 
 ///////////////////////////////////////////////////////////////////////////////

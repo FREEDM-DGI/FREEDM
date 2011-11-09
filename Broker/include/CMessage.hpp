@@ -74,16 +74,16 @@ public:
     };
 
     /// Accessor for uuid
-    std::string GetSourceUUID();
+    std::string GetSourceUUID() const;
 
     /// Accessor for hostname
-    std::string GetSourceHostname();
+    std::string GetSourceHostname() const;
     
     /// Accessor for sequenceno
-    unsigned int GetSequenceNumber();
+    unsigned int GetSequenceNumber() const;
 
     /// Accessor for status
-    StatusType GetStatus();
+    StatusType GetStatus() const;
     
     /// Accessor for submessages
     ptree& GetSubMessages();
@@ -104,13 +104,16 @@ public:
     void SetProtocol(std::string protocol);
 
     /// Getter for the protocol
-    std::string GetProtocol();
+    std::string GetProtocol() const;
 
     /// Setter for the timestamp
     void SetSendTimestampNow();
     
     /// Setter b for the timestamp
     void SetSendTimestamp(boost::posix_time::ptime p);
+
+    /// Getter for the send time
+    boost::posix_time::ptime GetSendTimestamp() const;
 
     /// Setter for the expiration time
     void SetExpireTime(boost::posix_time::ptime p);
@@ -119,16 +122,19 @@ public:
     void SetExpireTimeFromNow(boost::posix_time::time_duration t);
 
     /// Get the expire time
-    boost::posix_time::ptime GetExpireTime();
+    boost::posix_time::ptime GetExpireTime() const;
 
     /// Set the protocol properties
     void SetProtocolProperties(ptree x);
 
     /// Get the protocol properties
-    ptree GetProtocolProperties();
+    ptree GetProtocolProperties() const;
 
     /// Test to see if the message is expired
-    bool IsExpired();
+    bool IsExpired() const;
+
+    /// Get hash of the message contents salted with send time?
+    size_t GetHash() const;
 
     /// Deconstruct the CMessage
     virtual ~CMessage() { };
@@ -149,15 +155,24 @@ public:
     /// Put CMessage to a stream.
     virtual void Save( std::ostream &p_os );
 
-    /// A Generic reply CMessage
-    static CMessage StockReply( StatusType p_status );
+    /// A Generic reply CMessage DEPRECIATED.
+    static CMessage StockReply( StatusType p_status )
+    {
+        Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
+        CMessage reply_;
+        reply_.m_status = p_status;
 
+        return reply_;
+    };
+    
     /// Implicit conversion operator
     virtual operator ptree ();
 
     /// A way to load a CMessage from a property tree.
     explicit CMessage( const ptree &pt );
 
+    /// Contains all the submessages as handled by client algorithms
+    ptree       m_submessages;
    
 private: 
     /// Contains the source node's hostname
@@ -171,9 +186,6 @@ private:
 
     /// Status of the message
     StatusType  m_status;
-
-    /// Contains all the submessages as handled by client algorithms
-    ptree       m_submessages;
 
     /// Container for all the protocol properties
     ptree       m_properties;

@@ -73,7 +73,7 @@ CConnection::CConnection(boost::asio::io_service& p_ioService,
         ProtocolPtr(new CSUConnection(this))));
     m_protocols.insert(ProtocolMap::value_type(CSRConnection::Identifier(),
         ProtocolPtr(new CSRConnection(this))));
-    m_defaultprotocol = CSUConnection::Identifier();
+    m_defaultprotocol = CSRConnection::Identifier();
 
 }
 
@@ -167,7 +167,11 @@ bool CConnection::Recieve(const CMessage &msg)
     ProtocolMap::iterator sit = m_protocols.find(msg.GetProtocol());
     if(sit != m_protocols.end())
     {
-        return (*sit).second->Recieve(msg);
+        bool x = (*sit).second->Recieve(msg);
+        if(x)
+        {
+            (*sit).second->SendACK(msg);
+        }
     }
     return false;
 }

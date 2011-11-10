@@ -258,7 +258,7 @@ boost::posix_time::ptime CMessage::GetExpireTime() const
 ///Test to see if a message is expired.
 bool CMessage::IsExpired() const
 {
-    return m_expiretime < boost::posix_time::microsec_clock::universal_time();
+    return (m_expiretime < boost::posix_time::microsec_clock::universal_time());
 }
 
 /// Set the protocol properties

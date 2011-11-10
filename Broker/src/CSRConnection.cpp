@@ -110,6 +110,7 @@ void CSRConnection::Send(CMessage msg)
     outmsg.SetSourceHostname(GetConnection()->GetConnectionManager().GetHostname());
     outmsg.SetProtocol(GetIdentifier());
     outmsg.SetSendTimestampNow();
+    outmsg.SetExpireTimeFromNow(boost::posix_time::seconds(3));
 
     m_window.push_back(outmsg);
     
@@ -162,6 +163,7 @@ void CSRConnection::Resend(const boost::system::error_code& err)
         {
             if(!m_currentack.IsExpired())
             {
+                Logger::Notice<<"Resending ACK"<<std::endl;
                 Write(m_currentack);
                 m_timeout.cancel();
                 m_timeout.expires_from_now(boost::posix_time::milliseconds(REFIRE_TIME));
@@ -236,7 +238,7 @@ void CSRConnection::RecieveACK(const CMessage &msg)
         if(fseq == seq && m_window.front().GetHash() == hash)
         {
             m_window.pop_front();
-            m_killable = false; //Head of window isn't killable; it hasn't been written.
+            m_killable = false; //Head of window isn't killable; it hasn't been written.    
         }
     }
     if(m_window.size() > 0)
@@ -417,14 +419,15 @@ bool CSRConnection::Recieve(const CMessage &msg)
     //Consider the window you expect to see
     if(msg.GetSequenceNumber() == m_inseq)
     {
+        Logger::Notice<<"RECIEVE ACCEPT NORMAL"<<std::endl;
         m_insync = true;
-        m_inseq = (m_inseq+1)%2;
+        m_inseq = (m_inseq+1)%SEQUENCE_MODULO;
         return true;
     }
     else if(killed)
     {
         //m_inseq will be right for the next expected message.
-        m_inseq = (msg.GetSequenceNumber()+1)%2;
+        m_inseq = (msg.GetSequenceNumber()+1)%SEQUENCE_MODULO;
         return true;
     }
     // Justin case.
@@ -457,6 +460,7 @@ void CSRConnection::SendACK(const CMessage &msg)
     outmsg.SetProtocol(GetIdentifier());
     outmsg.SetProtocolProperties(pp);
     outmsg.SetExpireTime(msg.GetExpireTime());
+    Logger::Notice<<"Set Expire time to "<<msg.GetExpireTime()<<std::endl;
     Write(outmsg);
     m_currentack = outmsg;
     /// Hook into resend until the message expires.

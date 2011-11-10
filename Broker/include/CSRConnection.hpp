@@ -106,9 +106,11 @@ class CSRConnection : public IProtocol
         /// Kill window
         std::deque<size_t> m_killwindow;
         /// Kill window size
-        static const unsigned int KILLWINDOW_SIZE = 6;
+        static const unsigned int KILLWINDOW_SIZE = 8;
         /// Sequence modulo
         static const unsigned int SEQUENCE_MODULO = 1024;
+        /// Refire time in MS
+        static const unsigned int REFIRE_TIME = 1000;
 };
 
     }

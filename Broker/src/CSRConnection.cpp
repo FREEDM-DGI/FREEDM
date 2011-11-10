@@ -117,7 +117,7 @@ void CSRConnection::Send(CMessage msg)
         m_killable = true;
         Write(outmsg);
         m_timeout.cancel();
-        m_timeout.expires_from_now(boost::posix_time::milliseconds(15));
+        m_timeout.expires_from_now(boost::posix_time::milliseconds(REFIRE_TIME));
         m_timeout.async_wait(boost::bind(&CSRConnection::Resend,this,
             boost::asio::placeholders::error)); 
     }
@@ -162,7 +162,7 @@ void CSRConnection::Resend(const boost::system::error_code& err)
             {
                 Write(m_currentack);
                 m_timeout.cancel();
-                m_timeout.expires_from_now(boost::posix_time::milliseconds(15));
+                m_timeout.expires_from_now(boost::posix_time::milliseconds(REFIRE_TIME));
                 m_timeout.async_wait(boost::bind(&CSRConnection::Resend,this,
                     boost::asio::placeholders::error));
             }
@@ -201,7 +201,7 @@ void CSRConnection::Resend(const boost::system::error_code& err)
             // Head of window can be killed.
             m_killable = true;
             m_timeout.cancel();
-            m_timeout.expires_from_now(boost::posix_time::milliseconds(15));
+            m_timeout.expires_from_now(boost::posix_time::milliseconds(REFIRE_TIME));
             m_timeout.async_wait(boost::bind(&CSRConnection::Resend,this,
                 boost::asio::placeholders::error));
         }
@@ -454,7 +454,7 @@ void CSRConnection::SendACK(const CMessage &msg)
     m_currentack = outmsg;
     /// Hook into resend until the message expires.
     m_timeout.cancel();
-    m_timeout.expires_from_now(boost::posix_time::milliseconds(15));
+    m_timeout.expires_from_now(boost::posix_time::milliseconds(REFIRE_TIME));
     m_timeout.async_wait(boost::bind(&CSRConnection::Resend,this,
         boost::asio::placeholders::error));
 }
@@ -492,7 +492,7 @@ void CSRConnection::SendSYN()
     m_outsync = true;
     /// Hook into resend until the message expires.
     m_timeout.cancel();
-    m_timeout.expires_from_now(boost::posix_time::milliseconds(15));
+    m_timeout.expires_from_now(boost::posix_time::milliseconds(REFIRE_TIME));
     m_timeout.async_wait(boost::bind(&CSRConnection::Resend,this,
         boost::asio::placeholders::error));
 }

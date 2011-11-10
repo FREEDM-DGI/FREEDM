@@ -313,6 +313,8 @@ bool CSRConnection::Recieve(const CMessage &msg)
         m_inseq = (msg.GetSequenceNumber()+1)%SEQUENCE_MODULO;
         m_insynctime = msg.GetSendTimestamp();
         m_inresyncs++;
+        m_insync = true;
+        SendACK(msg);
         return false;
     }
     if(m_insync == false)

@@ -415,7 +415,14 @@ CMessage::CMessage( const ptree &pt )
         m_remotehost.port = pt.get< std::string >("message.port");
         m_sequenceno = pt.get< unsigned int >("message.sequenceno");
         m_sendtime = pt.get< boost::posix_time::ptime >("message.sendtime");
-        m_expiretime = pt.get< boost::posix_time::ptime >("mesage.expiretime");
+        try
+        {
+           m_expiretime = pt.get< boost::posix_time::ptime >("mesage.expiretime");
+        }
+        catch( boost::property_tree::ptree_error &e )
+        {
+            m_expiretime = ptime();
+        }
 
         m_status = static_cast< StatusType >
             (pt.get< unsigned int >("message.status"));

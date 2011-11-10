@@ -91,6 +91,7 @@ CSRConnection::CSRConnection(CConnection *  conn)
 ///////////////////////////////////////////////////////////////////////////////
 void CSRConnection::Send(CMessage msg)
 {
+    Logger::Notice << __PRETTY_FUNCTION__ << std::endl;
     ptree x = static_cast<ptree>(msg);
     unsigned int msgseq;
 
@@ -147,7 +148,7 @@ void CSRConnection::Send(CMessage msg)
 ///////////////////////////////////////////////////////////////////////////////
 void CSRConnection::Resend(const boost::system::error_code& err)
 {
-    Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger::Notice << __PRETTY_FUNCTION__ << std::endl;
     if(!err)
     {
         boost::posix_time::ptime now;
@@ -223,6 +224,7 @@ void CSRConnection::Resend(const boost::system::error_code& err)
 ///////////////////////////////////////////////////////////////////////////////
 void CSRConnection::RecieveACK(const CMessage &msg)
 {
+    Logger::Notice << __PRETTY_FUNCTION__ << std::endl;
     unsigned int seq = msg.GetSequenceNumber();
     ptree pp = msg.GetProtocolProperties();
     size_t hash = pp.get<size_t>("src.hash");
@@ -289,6 +291,7 @@ void CSRConnection::RecieveACK(const CMessage &msg)
 ///////////////////////////////////////////////////////////////////////////////
 bool CSRConnection::Recieve(const CMessage &msg)
 {
+    Logger::Notice << __PRETTY_FUNCTION__ << std::endl;
     size_t kill = 0;
     bool killed = false; //If true, we should accept any inseq
     if(msg.GetStatus() == freedm::broker::CMessage::BadRequest)
@@ -440,6 +443,7 @@ bool CSRConnection::Recieve(const CMessage &msg)
 ///////////////////////////////////////////////////////////////////////////////
 void CSRConnection::SendACK(const CMessage &msg)
 {
+    Logger::Notice << __PRETTY_FUNCTION__ << std::endl;
     unsigned int seq = msg.GetSequenceNumber();
     freedm::broker::CMessage outmsg;
     ptree pp;
@@ -464,6 +468,7 @@ void CSRConnection::SendACK(const CMessage &msg)
 
 void CSRConnection::SendSYN()
 {
+    Logger::Notice << __PRETTY_FUNCTION__ << std::endl;
     unsigned int seq = m_outseq;
     freedm::broker::CMessage outmsg;
     if(m_window.size() == 0)

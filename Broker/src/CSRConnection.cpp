@@ -147,6 +147,7 @@ void CSRConnection::Send(CMessage msg)
 ///////////////////////////////////////////////////////////////////////////////
 void CSRConnection::Resend(const boost::system::error_code& err)
 {
+    Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
     if(!err)
     {
         boost::posix_time::ptime now;

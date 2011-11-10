@@ -113,7 +113,7 @@ void CListener::Stop()
 ///////////////////////////////////////////////////////////////////////////////
 void CListener::HandleRead(const boost::system::error_code& e, std::size_t bytes_transferred)
 {
-    Logger::Debug << __PRETTY_FUNCTION__ << std::endl;       
+    Logger::Notice << __PRETTY_FUNCTION__ << std::endl;       
     if (!e)
     {
         Logger::Info << "Handled some message." << std::endl;

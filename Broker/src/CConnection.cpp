@@ -166,7 +166,11 @@ bool CConnection::Recieve(const CMessage &msg)
     ProtocolMap::iterator sit = m_protocols.find(msg.GetProtocol());
     if(sit != m_protocols.end())
     {
-        return (*sit).second->Recieve(msg);
+        bool x = (*sit).second->Recieve(msg);
+        if(x)
+        {
+            (*sit).second->SendACK(msg);
+        }
     }
     return false;
 }

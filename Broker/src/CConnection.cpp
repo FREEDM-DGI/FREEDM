@@ -163,9 +163,11 @@ void CConnection::RecieveACK(const CMessage &msg)
 ///////////////////////////////////////////////////////////////////////////////
 bool CConnection::Recieve(const CMessage &msg)
 {
+    Logger::Notice << "MSG Protocol " << msg.GetProtocol() << std::endl;
     ProtocolMap::iterator sit = m_protocols.find(msg.GetProtocol());
     if(sit != m_protocols.end())
     {
+        Logger::Notice<<"Found Protocol"<<std::endl;
         bool x = (*sit).second->Recieve(msg);
         if(x)
         {

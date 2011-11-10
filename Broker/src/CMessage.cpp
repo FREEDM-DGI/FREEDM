@@ -390,6 +390,7 @@ CMessage::operator ptree ()
     pt.put("message.status", m_status  );
     pt.put("message.sendtime",m_sendtime );
     pt.put("message.expiretiem",m_expiretime );
+    pt.put("message.protocol",m_protocol );    
     pt.add_child("message.properties", m_properties );
     pt.add_child("message.submessages", m_submessages );
 
@@ -414,6 +415,7 @@ CMessage::CMessage( const ptree &pt )
         m_remotehost.hostname = pt.get< std::string >("message.hostname");
         m_remotehost.port = pt.get< std::string >("message.port");
         m_sequenceno = pt.get< unsigned int >("message.sequenceno");
+        m_protocol = pt.get< std::string >("message.protocol");
         m_sendtime = pt.get< boost::posix_time::ptime >("message.sendtime");
         try
         {

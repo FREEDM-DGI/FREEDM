@@ -172,7 +172,9 @@ bool CConnection::Recieve(const CMessage &msg)
         bool x = (*sit).second->Recieve(msg);
         if(x)
         {
+            Logger::Notice<<"ACK REGULAR MESSAGE"<<std::endl;
             (*sit).second->SendACK(msg);
+            return true;
         }
     }
     return false;

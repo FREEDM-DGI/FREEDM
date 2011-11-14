@@ -97,14 +97,16 @@ class CSRConnection : public IProtocol
         unsigned int m_outlastresync;
         /// Marks if we should send the kill hash.
         bool m_sendkills;
-        /// Marks if we can kill the head of the queue
-        bool m_killable;
         /// The hash to... MURDER.
-        size_t m_killhash;
+        unsigned int  m_sendkill;
         /// The window
         std::deque<CMessage> m_window;
         /// Kill window
-        std::deque<size_t> m_killwindow;
+        unsigned int m_kill;
+        /// Use the kill variable?
+        bool m_usekill;
+        /// The timestamp of the last killed message, forward relation
+        boost::posix_time::ptime killstamp;
         /// Kill window size
         static const unsigned int KILLWINDOW_SIZE = 8;
         /// Sequence modulo

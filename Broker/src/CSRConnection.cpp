@@ -70,9 +70,12 @@ CSRConnection::CSRConnection(CConnection *  conn)
     //Outbound message sequencing
     m_outsync = false;
     m_outlastresync = SEQUENCE_MODULO;
-    // Message killing
+    // Message killing (SEND)
     m_sendkills = false;
-    m_killable = false;
+    m_sendkill = 0;
+    // Message Killing (RECV)
+    m_kill = 0;
+    m_usekill = false;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -116,7 +119,6 @@ void CSRConnection::Send(CMessage msg)
     
     if(m_window.size() == 0)
     {
-        m_killable = true;
         Write(outmsg);
         m_timeout.cancel();
         m_timeout.expires_from_now(boost::posix_time::milliseconds(REFIRE_TIME));
@@ -149,15 +151,13 @@ void CSRConnection::Send(CMessage msg)
 ///////////////////////////////////////////////////////////////////////////////
 void CSRConnection::Resend(const boost::system::error_code& err)
 {
+    unsigned int oldfront = 0;
     Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
     if(!err)
     {
         boost::posix_time::ptime now;
         now = boost::posix_time::microsec_clock::universal_time();
-        bool firstcheck = true;
         CMessage ack;
-        bool pushack = false;
-        bool killed = false;
         // Check if the front of the queue is an ACK
         if(m_currentack.GetStatus() == freedm::broker::CMessage::Accepted)
         {
@@ -170,21 +170,28 @@ void CSRConnection::Resend(const boost::system::error_code& err)
                     boost::asio::placeholders::error));
             }
         }
+        if(m_window.size() > 0)
+        {
+            oldfront = m_window.front().GetSequenceNumber();
+        }
         while(m_window.size() > 0 && m_window.front().IsExpired())
         {
-            if(firstcheck == true && m_killable == true)
-            {
-                //First message in the window should be the only one
-                //ever to have been written.
-                m_sendkills = true;
-                m_killhash = m_window.front().GetHash();
-                killed = true;
-            }
-            firstcheck = false;
+            //First message in the window should be the only one
+            //ever to have been written.
+            m_sendkills = true;
+            m_sendkill = m_window.front().GetSequenceNumber();
             m_window.pop_front();
         }
         if(m_window.size() > 0)
         {
+            if(oldfront > m_window.front().GetSequenceNumber())
+            {
+                // If we have expired a message and caused the seqnos
+                // to wrap, we resync the connection. This shouldn't
+                // happen very often.
+                m_outlastresync = m_window.front().GetSequenceNumber();
+                SendSYN();
+            }
             if(m_sendkills)
             {
                 //Killhash should be set to the last message we tried to send
@@ -196,13 +203,11 @@ void CSRConnection::Resend(const boost::system::error_code& err)
                 //them. If a message is flagged with src.killed, the reciever
                 //Should accept w/o considering the sequenceno
                 ptree x;
-                x.put("src.kill",m_killhash);
-                x.put("src.killed",killed);
+                x.put("src.kill",m_kill);
                 m_window.front().SetProtocolProperties(x);
             }
             Write(m_window.front());
             // Head of window can be killed.
-            m_killable = true;
             m_timeout.cancel();
             m_timeout.expires_from_now(boost::posix_time::milliseconds(REFIRE_TIME));
             m_timeout.async_wait(boost::bind(&CSRConnection::Resend,this,
@@ -237,7 +242,6 @@ void CSRConnection::RecieveACK(const CMessage &msg)
         if(fseq == seq && m_window.front().GetHash() == hash)
         {
             m_window.pop_front();
-            m_killable = false; //Head of window isn't killable; it hasn't been written.    
         }
     }
     if(m_window.size() > 0)
@@ -293,8 +297,9 @@ void CSRConnection::RecieveACK(const CMessage &msg)
 bool CSRConnection::Recieve(const CMessage &msg)
 {
     Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
-    size_t kill = 0;
+    unsigned int kill = 0;
     bool killed = false; //If true, we should accept any inseq
+    int previous_expected = 0;
     if(msg.GetStatus() == freedm::broker::CMessage::BadRequest)
     {
         //See if we are already trying to sync:
@@ -336,16 +341,6 @@ bool CSRConnection::Recieve(const CMessage &msg)
         Write(outmsg);
         return false;
     }
-    if(msg.IsExpired())
-    {
-        return false;
-    }
-    // See if this message matches any of our outstanding kills
-    for(int i=0; i < m_killwindow.size(); i++)
-    {
-        if(msg.GetHash() == m_killwindow[i])
-            return false;
-    }
     //See if the message before this one was killed:
     //The killed flag being set indicates this message comes
     //directly after a kill. Any message sent directly after
@@ -353,69 +348,23 @@ bool CSRConnection::Recieve(const CMessage &msg)
     try
     {
         ptree pp = msg.GetProtocolProperties();
-        killed = pp.get<unsigned int>("src.killed");
+        kill = pp.get<unsigned int>("src.kill");
     }
     catch(std::exception &e)
     {
-        //pass
-    }
-    // See if there are any new kills.
-    try
-    {
-        ptree pp = msg.GetProtocolProperties();
-        kill = pp.get<size_t>("src.kill");
-        //Since the kill is repeated, a message can't be arriving in order
-        //if its kill is in the kill window (but not at the end) OR it
-        //doesn't have a kill when the killwindow is not empty.
-        for(int i=0; i < m_killwindow.size(); i++)
-        {
-            if(m_killwindow[i] != kill && i == m_killwindow.size()-1)
-            {
-                m_killwindow.push_back(kill);
-                if(m_killwindow.size() > KILLWINDOW_SIZE)
-                {
-                    m_killwindow.pop_front();
-                }
-                break;
-            }
-            else if(m_killwindow[i] == kill && i == m_killwindow.size()-1)
-            {
-                // We have recieved a message. Its kill code is the last
-                // message we have noted for killing. This means it has to
-                // come after the message that we originally recieved the
-                // kill code for. In this case, that message must have had
-                // the kill flag set. If we see the kill flag set in this
-                // circumstance then, we can assume its a repeat of a mess-
-                // we have already recieved. And since a kill flag means an
-                // abitrary accept, we will reject it under the assumption
-                // We have seen it before. Otherwise, we can tentatively
-                // accept the message.
-                if(killed == true)
-                    return false;
-                else
-                    break;
-            }
-            // The kill that we have been given is not the back of the list
-            if(m_killwindow[i] == kill)
-            {
-                return false;
-            }
-        }
-        
-    }
-    catch(std::exception &e)
-    {
-        if(m_killwindow.size() > 0)
-        {
-            // We use the kill code to help detect casualility;
-            // We have been sent a message with no kill code, but
-            // We expect to see one, since once a message has been
-            // Killed, the messages will ALWAYS have a kill message
-            // In them.
-            return false;
-        }
+        kill = msg.GetSequenceNumber();
     }
     //Consider the window you expect to see
+    // If the killed message is the one immediately preceeding this
+    // message in terms of sequence number we should accept it
+    if(msg.GetSequenceNumber() == 0)
+    {
+        previous_expected = SEQUENCE_MODULO-1;
+    }
+    else
+    {
+        previous_expected = msg.GetSequenceNumber()-1;
+    }
     if(msg.GetSequenceNumber() == m_inseq)
     {
         Logger::Notice<<"RECIEVE ACCEPT NORMAL"<<std::endl;
@@ -423,10 +372,12 @@ bool CSRConnection::Recieve(const CMessage &msg)
         m_inseq = (m_inseq+1)%SEQUENCE_MODULO;
         return true;
     }
-    else if(killed)
+    else if(kill == previous_expected && kill > m_kill)
     {
         //m_inseq will be right for the next expected message.
         m_inseq = (msg.GetSequenceNumber()+1)%SEQUENCE_MODULO;
+        m_kill = kill;
+        m_usekill = true;
         return true;
     }
     // Justin case.
@@ -480,6 +431,11 @@ void CSRConnection::SendSYN()
     }
     else
     {
+        //Don't bother if front of queue is already a SYN
+        if(m_window.front().GetStatus() == CMessage::Created)
+        {
+            return;
+        }
         //Set it as the seq before the front of queue
         seq = m_window.front().GetSequenceNumber();
         if(seq == 0)
@@ -491,6 +447,7 @@ void CSRConnection::SendSYN()
             seq--;
         }
     }
+    m_usekill = false;
     // Presumably, if we are here, the connection is registered 
     outmsg.SetSourceUUID(GetConnection()->GetConnectionManager().GetUUID());
     outmsg.SetSourceHostname(GetConnection()->GetConnectionManager().GetHostname());

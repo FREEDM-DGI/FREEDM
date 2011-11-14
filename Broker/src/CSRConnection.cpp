@@ -163,7 +163,6 @@ void CSRConnection::Resend(const boost::system::error_code& err)
         {
             if(!m_currentack.IsExpired())
             {
-                Logger::Notice<<"Resending ACK"<<std::endl;
                 Write(m_currentack);
                 m_timeout.cancel();
                 m_timeout.expires_from_now(boost::posix_time::milliseconds(REFIRE_TIME));

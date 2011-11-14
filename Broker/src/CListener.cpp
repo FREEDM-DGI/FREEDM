@@ -116,7 +116,6 @@ void CListener::HandleRead(const boost::system::error_code& e, std::size_t bytes
     Logger::Notice << __PRETTY_FUNCTION__ << std::endl;       
     if (!e)
     {
-        Logger::Info << "Handled some message." << std::endl;
         boost::tribool result_;
         boost::tie(result_, boost::tuples::ignore) = Parse(
             m_message, m_buffer.data(),

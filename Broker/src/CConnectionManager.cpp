@@ -230,7 +230,6 @@ ConnectionPtr CConnectionManager::GetConnectionByUUID
     {
         if(m_connections.left.at(uuid_)->GetSocket().is_open())
         {
-            Logger::Debug << "Recycling connection to " << uuid_ << std::endl;
             #ifdef CUSTOMNETWORK
             LoadNetworkConfig();
             #endif

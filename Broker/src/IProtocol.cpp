@@ -32,6 +32,7 @@
 
 #include "IProtocol.hpp"
 #include "CConnection.hpp"
+#include "config.hpp"
 
 namespace freedm {
     namespace broker {

@@ -113,7 +113,7 @@ void CSRConnection::Send(CMessage msg)
     outmsg.SetSourceHostname(GetConnection()->GetConnectionManager().GetHostname());
     outmsg.SetProtocol(GetIdentifier());
     outmsg.SetSendTimestampNow();
-    outmsg.SetExpireTimeFromNow(boost::posix_time::seconds(3));
+    outmsg.SetExpireTimeFromNow(boost::posix_time::seconds(10));
 
     m_window.push_back(outmsg);
     

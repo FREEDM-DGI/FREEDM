@@ -85,9 +85,9 @@ class CSUConnection : public IProtocol
         /// The number of retries
         const static unsigned int MAX_RETRIES = 15;
         /// The window size
-        const static unsigned int WINDOW_SIZE = 16;
+        const static unsigned int WINDOW_SIZE = 8;
         /// The sequence modulo
-        const static unsigned int SEQUENCE_MODULO = 1024;
+        const static unsigned int SEQUENCE_MODULO = 16;
         /// Queue item
         struct QueueItem {
             int ret; //The retries remaining

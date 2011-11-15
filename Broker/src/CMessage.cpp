@@ -245,11 +245,8 @@ void CMessage::SetExpireTime(boost::posix_time::ptime p)
 /// Setter b for the expiration time
 void CMessage::SetExpireTimeFromNow(boost::posix_time::time_duration t)
 {
-    std::cout<<"Intiailizing Clock!!"<<std::endl;
     m_expiretime = boost::posix_time::microsec_clock::universal_time();
-    std::cout<<"Expire time before adjust "<<m_expiretime<<std::endl;
     m_expiretime += t;
-    std::cout<<"Final Expire time "<<m_expiretime<<std::endl;
 }
 
 /// Getter for the expire time

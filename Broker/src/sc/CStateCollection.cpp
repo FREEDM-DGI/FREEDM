@@ -106,7 +106,7 @@ SCAgent::SCAgent(std::string uuid, boost::asio::io_service &ios,
                freedm::broker::CConnectionManager &m_connManager):
   SCPeerNode(uuid, m_connManager, ios, p_dispatch),
   m_GlobalTimer(ios),
-  m_curversion(uuid, 0),
+  m_curversion("default", 0),
   countstate(0)
 {
   Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
@@ -429,6 +429,14 @@ void SCAgent::HandleRead(const ptree& pt )
   {	
 	//save message in transit 
 	Logger::Notice << "receive message in transit: " << pt.get<std::string>("sc") << " from" << pt.get<std::string>("sc.source") << std::endl;
+
+
+    if (m_curversion.first == "default")
+    {
+	//no marker from this node
+     }
+    else
+    {
 	Logger::Notice << "current version of marker is: " << m_curversion.first << std::endl;
 
 	if (m_curversion.first != GetUUID())
@@ -459,7 +467,8 @@ void SCAgent::HandleRead(const ptree& pt )
 	    //state print out
 	    StatePrint(collectstate);
 
-	}//end if		
+	}//end if
+    }//end if (m_curversion.first != 0)		
   }
   
 }

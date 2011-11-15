@@ -31,7 +31,6 @@
 ////////////////////////////////////////////////////////////////////
 
 #include "CPhysicalDeviceManager.hpp"
-#include "IPhysicalDevice.hpp"
 
 #include "logger.hpp"
 CREATE_EXTERN_STD_LOGS()
@@ -59,7 +58,7 @@ CPhysicalDeviceManager::CPhysicalDeviceManager()
 ///       retrieve
 /// @param resource a IPhysicalDevice::DevicePtr to the device.
 ///////////////////////////////////////////////////////////////////////////////
-void CPhysicalDeviceManager::AddDevice(IPhysicalDevice::DevicePtr resource)
+void CPhysicalDeviceManager::AddDevice(device::CDevice::DevicePtr resource)
 {
     m_devices[resource->GetID()] = resource;
 }
@@ -71,7 +70,7 @@ void CPhysicalDeviceManager::AddDevice(IPhysicalDevice::DevicePtr resource)
 /// @post The device with the matching identifier is removed from the table.
 /// @param devid The identifier which will be used to specify the device removed
 ///////////////////////////////////////////////////////////////////////////////
-void CPhysicalDeviceManager::RemoveDevice(IPhysicalDevice::Identifier devid)
+void CPhysicalDeviceManager::RemoveDevice(device::Identifier devid)
 {
     m_devices.erase(devid);
 }
@@ -83,8 +82,8 @@ void CPhysicalDeviceManager::RemoveDevice(IPhysicalDevice::Identifier devid)
 /// @post No change
 /// @return A DevicePtr to the device, or NULL if the device wasn't found.
 ///////////////////////////////////////////////////////////////////////////////
-IPhysicalDevice::DevicePtr CPhysicalDeviceManager::GetDevice(
-    IPhysicalDevice::Identifier devid)
+device::CDevice::DevicePtr CPhysicalDeviceManager::GetDevice(
+    device::Identifier devid)
 {
     iterator di = m_devices.find(devid);
     if(di != m_devices.end())
@@ -93,7 +92,7 @@ IPhysicalDevice::DevicePtr CPhysicalDeviceManager::GetDevice(
     }
     else
     {
-        return IPhysicalDevice::DevicePtr();
+        return device::CDevice::DevicePtr();
     }
 }
 
@@ -105,7 +104,7 @@ IPhysicalDevice::DevicePtr CPhysicalDeviceManager::GetDevice(
 /// @param devid The device to look for.
 /// @return True if the device is in the device table, false otherwise
 ///////////////////////////////////////////////////////////////////////////////
-bool CPhysicalDeviceManager::DeviceExists(IPhysicalDevice::Identifier devid) const
+bool CPhysicalDeviceManager::DeviceExists(device::Identifier devid) const
 {
     if(m_devices.count(devid))
         return true;

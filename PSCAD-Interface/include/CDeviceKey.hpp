@@ -36,6 +36,9 @@
 #include <string>
 #include <fstream>
 
+namespace freedm {
+namespace simulation {
+
 class CDeviceKey;
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -153,5 +156,8 @@ private:
     /// variable of interest
     std::string m_key;
 };
+
+} // namespace simulation
+} // namespace freedm
 
 #endif // C_DEVICE_KEY_HPP

@@ -38,6 +38,7 @@
 #include <boost/thread/locks.hpp>
 
 #include "logger.hpp"
+#include "config.hpp"
 CREATE_EXTERN_STD_LOGS()
 
 #include <algorithm>
@@ -209,7 +210,6 @@ ConnectionPtr CConnectionManager::GetConnectionByUUID
     {
         if(m_connections.left.at(uuid_)->GetSocket().is_open())
         {
-            Logger::Info << "Recycling connection to " << uuid_ << std::endl;
             #ifdef CUSTOMNETWORK
             LoadNetworkConfig();
             #endif

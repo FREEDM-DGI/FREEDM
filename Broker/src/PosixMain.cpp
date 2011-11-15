@@ -54,10 +54,12 @@ namespace po = boost::program_options;
 #include "sc/CStateCollection.hpp"
 #include "CConnectionManager.hpp"
 #include "CPhysicalDeviceManager.hpp"
-#include "CGenericDevice.hpp"
+#include "CDeviceFactory.hpp"
+
 using namespace freedm;
 
 #include "logger.hpp"
+#include "config.hpp"
 #include "uuid.hpp"
 #include "version.h"
 
@@ -83,19 +85,22 @@ int main (int argc, char* argv[])
     Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
     // Variable Declaration
     po::options_description genOpts_("General Options"),
-                            configOpts_("Configuration"),
-                            hiddenOpts_("hidden"),
-                            visibleOpts_,
-                            cliOpts_,
-                            cfgOpts_;
+        configOpts_("Configuration"),
+        hiddenOpts_("hidden"),
+        visibleOpts_,
+        cliOpts_,
+        cfgOpts_;
 
     po::positional_options_description posOpts_;
     po::variables_map vm_;
     std::ifstream ifs_;
     std::string cfgFile_, listenIP_, port_, uuid_, hostname_,uuidgenerator;
+    // Line Client options
+    std::string interHost;
+    std::string interPort;
     int verbose_;
     bool cliVerbose_(false); // CLI options override verbosity
-    freedm::uuid u_;
+    uuid u_;
     
     // Load Config Files
     try
@@ -105,8 +110,7 @@ int main (int argc, char* argv[])
             ("help,h", "print usage help (this screen)")
             ("version,V", "print version info")
             ("config,c", po::value<std::string>(&cfgFile_)->
-                default_value("freedm.cfg"),
-                "filename of additional configuration.")
+                default_value("freedm.cfg"),"filename of additional configuration.")
             ("generateuuid,g", po::value<std::string>(&uuidgenerator)->
                     default_value(""), "Generate a uuid for the specified host, output it, and exit")
             ("uuid,u","Print this node's generated uuid and exit");
@@ -114,14 +118,18 @@ int main (int argc, char* argv[])
         // This is for arguments in a config file or as arguments
         configOpts_.add_options()
             ("add-host", po::value<std::vector<std::string> >()->
-                    composing(), "peer hostname:port pair")
+             composing(), "peer hostname:port pair")
             ("address", po::value<std::string>(&listenIP_)->
-                    default_value("0.0.0.0"), "IP interface to listen on")
+             default_value("0.0.0.0"), "IP interface to listen on")
             ("port,p", po::value<std::string>(&port_)->
-                    default_value("1870"), "TCP port to listen on")
+             default_value("1870"), "TCP port to listen on")
+            ("lineclient-host,l", po::value<std::string>(&interHost)->
+             default_value(""),"Hostname to use for the lineclient to connect.")
+            ("lineclient-port,q", po::value<std::string>(&interPort)->
+             default_value("4001"),"The port to use for the lineclient to connect.")
             ("verbose,v", po::value<int>(&verbose_)->
-                    implicit_value(5)->default_value(3),
-                    "enable verbose output (optionally specify level)");
+             implicit_value(5)->default_value(3),
+             "enable verbose output (optionally specify level)");
 
         hiddenOpts_.add_options()
             ("setuuid", po::value<std::string>(&uuid_),
@@ -146,7 +154,7 @@ int main (int argc, char* argv[])
 
         // Add them all to the mapping component
         po::store(po::command_line_parser(argc, argv)
-            .options(cliOpts_).positional(posOpts_).run(), vm_);
+                  .options(cliOpts_).positional(posOpts_).run(), vm_);
         po::notify(vm_);
 
         // XXX If submodules have added custom commandline options,
@@ -166,7 +174,7 @@ int main (int argc, char* argv[])
         {
             if( !vm_["config"].defaulted() )
             { // User specified a config file, so we should let
-              // them know that we can't load it
+                // them know that we can't load it
                 Logger::Error << "Unable to load config file: "
                               << cfgFile_ << std::endl;
                 return -1;
@@ -210,17 +218,17 @@ int main (int argc, char* argv[])
         if( vm_.count("version") )
         {
             std::cout << basename(argv[0])
-                << " (FREEDM DGI Revision "
-                << BROKER_VERSION << ")" << std::endl
-                << "Copyright (C) 2011 Missouri S & T. "
-                << "All rights reserved."
-                << std::endl;
+                      << " (FREEDM DGI Revision "
+                      << BROKER_VERSION << ")" << std::endl
+                      << "Copyright (C) 2011 Missouri S & T. "
+                      << "All rights reserved."
+                      << std::endl;
             return 0;
         }
 
         if( vm_.count("uuid") )
         {
-            u_ = freedm::uuid(uuid_);
+            u_ = uuid(uuid_);
             Logger::Info << "Loaded UUID: " << u_ << std::endl;
         }
         else
@@ -228,70 +236,83 @@ int main (int argc, char* argv[])
             // Try to resolve the host's dns name
             hostname_ = boost::asio::ip::host_name();
             Logger::Info << "Hostname: " << hostname_ << std::endl;
-            u_ = freedm::uuid::from_dns(hostname_);
+            u_ = uuid::from_dns(hostname_);
             Logger::Info << "Generated UUID: " << u_ << std::endl;
         }
 
-        
-        //constructors for initial mapping
-        freedm::broker::CConnectionManager m_conManager(u_,std::string(hostname_));
-        freedm::broker::CPhysicalDeviceManager m_phyManager;
-        freedm::broker::ConnectionPtr m_newConnection;
-        boost::asio::io_service m_ios;
-
-        // Intialize Devices
-        freedm::broker::CGenericDevice::DevicePtr sst(
-            new freedm::broker::CGenericDevice(m_phyManager,std::string("sst")));
-        
-        freedm::broker::CGenericDevice::DevicePtr m_gendev0(
-            new freedm::broker::CGenericDevice(m_phyManager,std::string("gendev0"), 
-            freedm::broker::physicaldevices::DRER));
-
-        freedm::broker::CGenericDevice::DevicePtr m_gendev1(
-            new freedm::broker::CGenericDevice(m_phyManager,std::string("gendev1"), 
-            freedm::broker::physicaldevices::DRER));
-
-        freedm::broker::CGenericDevice::DevicePtr m_stodev0(
-            new freedm::broker::CGenericDevice(m_phyManager,std::string("stodev0"), 
-            freedm::broker::physicaldevices::DESD)); 
-
-       	freedm::broker::CGenericDevice::DevicePtr m_loaddev0(
-            new freedm::broker::CGenericDevice(m_phyManager,std::string("loaddev0"),
-            freedm::broker::physicaldevices::LOAD));          
-
-        // Register Devices
-        m_phyManager.AddDevice(m_gendev0);
-        m_phyManager.AddDevice(m_gendev1);
-        m_phyManager.AddDevice(m_stodev0);
-        m_phyManager.AddDevice(m_loaddev0);
-        
-        // Quick Test
-        m_gendev0->Set("vin",3.14);
-        m_gendev1->Set("vin",4.15);
-	m_stodev0->Set("vin",3);
-	m_loaddev0->Set("vin",6.2);
-	
-        // And read it back
-        //Logger::Notice << "Devices Check 1!"<< m_gendev0->Get("Vin")            
-        //               << " " << m_gendev1->Get("Vin") << std::endl;
-       
-        //Logger::Notice << "Devices Check 2! "
-        //               << m_phyManager.GetDevice("stodev0")->Get("Vin")                   
-        //               << std::endl;               
-
- 	//Logger::Notice << "Devices Check 3! "
-        //               << m_phyManager.GetDevice("loaddev0")->Get("Vin")                  
-        //               << std::endl; 
-
-
-        // Instantiate Dispatcher for message delivery 
-        freedm::broker::CDispatcher dispatch_;
     
+        //constructors for initial mapping
+        broker::CConnectionManager m_conManager(u_,std::string(hostname_));
+        broker::CPhysicalDeviceManager m_phyManager;
+        broker::ConnectionPtr m_newConnection;
+        boost::asio::io_service m_ios;
+        
+        // create the device factory
+        // interHost is the hostname of the machine that runs the simulation
+        // interPort is the port number this DGI and simulation communicate in
+        broker::device::CDeviceFactory factory(
+            m_phyManager, m_ios, interHost, interPort );
+
+        // Create Devices
+        factory.CreateDevice<broker::device::CDeviceLWI_PV>( "pv1" );
+        factory.CreateDevice<broker::device::CDeviceLWI_Battery>( "battery1" );
+        factory.CreateDevice<broker::device::CDeviceLWI_Load>( "load1" );
+        factory.CreateDevice<broker::device::CDeviceLWI_Load>( "load2" );
+
+        // verify old code actually works still (maybe)
+        if( broker::device::device_cast<broker::device::CDeviceDRER>(m_phyManager.GetDevice("pv1")) )
+        {
+            Logger::Info << "Solar Works!" << std::endl;
+        }
+        else
+        {
+            Logger::Error << "Solar Broke!" << std::endl;
+        }
+        if( broker::device::device_cast<broker::device::CDeviceDESD>(m_phyManager.GetDevice("battery1")) )
+        {
+            Logger::Info << "Battery Works!" << std::endl;
+        }
+        else
+        {
+            Logger::Error << "Battery Broke!" << std::endl;
+        }
+        if( broker::device::device_cast<broker::device::CDeviceLOAD>(m_phyManager.GetDevice("load1")) )
+        {
+            Logger::Info << "Load Works!" << std::endl;
+        }
+        else
+        {
+            Logger::Error << "Load Broke!" << std::endl;
+        }
+        if( broker::device::device_cast<broker::device::CDeviceLOAD>(m_phyManager.GetDevice("pv1")) )
+        {
+            Logger::Error << "Device Cast Broke!" << std::endl;
+        }
+        
+        // verify the new word may work
+        m_phyManager.GetDevice("pv1")->Set("powerLevel",10.5);
+        Logger::Info << "Power Level = " << m_phyManager.GetDevice("pv1")->Get("powerLevel") << std::endl;
+        Logger::Info << "Power Level = " << broker::device::device_cast<broker::device::CDeviceLWI_PV>(m_phyManager.GetDevice("pv1"))->get_powerLevel() << std::endl;
+        
+        // check the device manager cast function
+        broker::CPhysicalDeviceManager::PhysicalDevice<broker::device::CDeviceLOAD>::Container result;
+        broker::CPhysicalDeviceManager::PhysicalDevice<broker::device::CDeviceLOAD>::iterator it, end;
+
+        result = m_phyManager.GetDevicesOfType<broker::device::CDeviceLOAD>();
+        Logger::Info << "Found " << result.size() << " loads" << std::endl;
+        for( it = result.begin(), end = result.end(); it != end; it++ )
+        {
+            Logger::Info << (*it)->GetID() << std::endl;
+        }
+        
+        // Instantiate Dispatcher for message delivery 
+        broker::CDispatcher dispatch_;
+
         // Register UUID handler
         //dispatch_.RegisterWriteHandler( "any", &uuidHandler_ );
 
         // Run server in background thread          
-        freedm::broker::CBroker broker_
+        broker::CBroker broker_
             (listenIP_, port_, dispatch_, m_ios, m_conManager);
 
         // Load the UUID into string
@@ -302,18 +323,17 @@ int main (int argc, char* argv[])
 
 
         // Instantiate and register the group management module
-        freedm::GMAgent GM_ (uuidstr, broker_.GetIOService(), dispatch_, m_conManager);     
+        GMAgent GM_ (uuidstr, broker_.GetIOService(), dispatch_, m_conManager);     
         dispatch_.RegisterReadHandler( "gm", &GM_);
 
         // Instantiate and register the power management module
-        /*
-        freedm::lbAgent LB_ (uuidstr, broker_.GetIOService(), dispatch_, m_conManager, m_phyManager);     
-        dispatch_.RegisterReadHandler( "lb", &LB_);
+        //lbAgent LB_ (uuidstr, broker_.GetIOService(), dispatch_, m_conManager, m_phyManager);     
+        //dispatch_.RegisterReadHandler( "lb", &LB_);
 
         // Instantiate and register the state collection module
-        freedm::SCAgent SC_ (uuidstr, broker_.GetIOService(), dispatch_, m_conManager);     
-        dispatch_.RegisterReadHandler( "sc", &SC_);
-        */
+        //SCAgent SC_ (uuidstr, broker_.GetIOService(), dispatch_, m_conManager);     
+        //dispatch_.RegisterReadHandler( "sc", &SC_);
+
         // The peerlist should be passed into constructors as references or pointers
         // to each submodule to allow sharing peers. NOTE this requires thread-safe
         // access, as well. Shouldn't be too hard since it will mostly be read-only
@@ -327,13 +347,13 @@ int main (int argc, char* argv[])
                 if( idx_ == std::string::npos )
                 {   // Not found!
                     std::cerr << "Uncorrectly formatted host in config file: "<< 
-                    s_ << std::endl;
+                        s_ << std::endl;
                     continue;
                 }
                 std::string host_(s_.begin(), s_.begin() + idx_),
-                port1_(s_.begin() + (idx_ + 1), s_.end());
+                    port1_(s_.begin() + (idx_ + 1), s_.end());
                 // Construct the UUID of host from its DNS
-                freedm::uuid u1_ = freedm::uuid::from_dns(host_);
+                uuid u1_ = uuid::from_dns(host_);
                 //Load the UUID into string        
                 std::stringstream uu_;
                 uu_ << u1_;
@@ -357,16 +377,16 @@ int main (int argc, char* argv[])
 
         Logger::Info << "Starting CBroker thread" << std::endl;
         boost::thread thread_
-            (boost::bind(&freedm::broker::CBroker::Run, &broker_));
+            (boost::bind(&broker::CBroker::Run, &broker_));
 
         // Restore previous signals.
         pthread_sigmask(SIG_SETMASK, &old_mask, 0); 
-        
+    
         Logger::Info << "Starting thread of Modules" << std::endl;
-        boost::thread thread2_( boost::bind(&freedm::GMAgent::Run, &GM_)      
-          //                    , boost::bind(&freedm::lbAgent::LB, &LB_)
-            //                  , boost::bind(&freedm::SCAgent::SC, &SC_)
-                              );
+        boost::thread thread2_( boost::bind(&GMAgent::Run, &GM_)      
+          //                      , boost::bind(&lbAgent::LB, &LB_)
+            //                    , boost::bind(&SCAgent::SC, &SC_)
+                                );
 
         // Wait for signal indicating time to shut down.
         sigset_t wait_mask;
@@ -384,11 +404,11 @@ int main (int argc, char* argv[])
 
         // Stop the server.
         broker_.Stop();
-       
+   
         // Bring in threads.
         thread_.join();
         thread2_.join();
-    
+
         std::cout << "Goodbye..." << std::endl;
     }
     catch (std::exception& e)

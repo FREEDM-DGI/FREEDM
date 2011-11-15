@@ -35,7 +35,9 @@
 #include <list>
 #include <string>
 #include <cstring>
-
+#include <iostream>
+#include <boost/shared_ptr.hpp>
+#include <boost/make_shared.hpp>
 #include <boost/utility.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/thread/mutex.hpp>
@@ -43,8 +45,14 @@
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/xml_parser.hpp>
 
+#include "logger.hpp"
 #include "CDeviceTable.hpp"
 #include "CSimulationInterface.hpp"
+
+CREATE_EXTERN_STD_LOGS()
+
+namespace freedm {
+namespace simulation {
 
 ////////////////////////////////////////////////////////////////////////////////
 /// CSimulationServer
@@ -165,7 +173,9 @@ private:
     ///
     ////////////////////////////////////////////////////////////////////////////
     void Run();
-    
+
+    void StartDGIProcess(unsigned short p_port, size_t p_index);
+
     // container of external cyber interfaces
     std::list<CSimulationInterface::TPointer> m_interface;
     
@@ -187,7 +197,10 @@ private:
     // flag for termination
     bool m_quit;
     
-    static const unsigned short HEADER_SIZE = 8;
+    static const unsigned short HEADER_SIZE = 5;
 };
+
+} // namespace simulation
+} // namespace freedm
 
 #endif // C_SIMULATION_SERVER_HPP

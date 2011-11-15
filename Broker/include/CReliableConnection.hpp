@@ -70,7 +70,7 @@ public:
     boost::asio::ip::udp::socket& GetSocket();
 
     /// Start the first asynchronous operation for the CConnection.
-    virtual void Start() = 0;;
+    virtual void Start() = 0;
 
     /// Stop all asynchronous operations associated with the CConnection.
     virtual void Stop() = 0;
@@ -83,16 +83,7 @@ public:
 
     /// Get the dispatcher
     CDispatcher& GetDispatcher() { return m_dispatch; };
-
-    /// Get the out window size
-    unsigned int GetWindowSize() { return WINDOWSIZE; };
     
-    /// Get the sequencing Modulo
-    unsigned int GetSequenceModulo() { return SEQUENCEMODULO; }
-
-    /// Get the time between refires
-    unsigned int GetRefireWindow() { return REFIRE_WINDOW; }
-
     /// Set the connection reliability for DCUSTOMNETWORK
     void SetReliability(int r) { m_reliability = r; };
     
@@ -100,16 +91,6 @@ public:
     int GetReliability() { return m_reliability; };
 
 private:
-
-    /// Outgoing message Queue, window size
-    static const unsigned int WINDOWSIZE = 5;
-
-    /// Sequence Modulo
-    static const unsigned int SEQUENCEMODULO = 16;
-
-    /// Time between refires, in milliseconds.
-    static const unsigned int REFIRE_WINDOW = 100;
-    
     /// Socket for the CConnection.
     boost::asio::ip::udp::socket m_socket;
 

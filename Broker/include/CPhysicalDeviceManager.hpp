@@ -33,10 +33,11 @@
 #ifndef PHYSICALDEVICEMANAGER_HPP
 #define PHYSICALDEVICEMANAGER_HPP
 
-#include "IPhysicalDevice.hpp"
+#include "CDevice.hpp"
 
 #include <string>
 #include <map>
+#include <list>
 #include <boost/noncopyable.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/enable_shared_from_this.hpp>
@@ -44,41 +45,68 @@
 namespace freedm {
 namespace broker {
 
-class IPhysicalDevice;
-
-/// Manages open connections so that they may be cleanly stopped when the server
-/// needs to shut down.
 class CPhysicalDeviceManager
     : private boost::noncopyable
 {
 public:
     /// A typedef for the mapping of identifier to device ptrs
-    typedef std::map<IPhysicalDevice::Identifier,
-                     IPhysicalDevice::DevicePtr> PhysicalDeviceSet;
+    typedef std::map<device::Identifier,
+                     device::CDevice::DevicePtr> PhysicalDeviceSet;
     /// A typedef providing and iertaror for this object
     typedef PhysicalDeviceSet::iterator iterator;
     /// Initialize the physical device manger
     CPhysicalDeviceManager();
 
     /// Add the specified device to the manager.
-    void AddDevice(IPhysicalDevice::DevicePtr resource);
+    void AddDevice(device::CDevice::DevicePtr resource);
 
     /// Remove a device by its identifier 
-    void RemoveDevice(IPhysicalDevice::Identifier devid);
+    void RemoveDevice(device::Identifier devid);
     
     /// Devices iterator
     iterator begin() { return m_devices.begin(); };
     iterator end() { return m_devices.end(); };
 
     /// Get A Device By ID
-    IPhysicalDevice::DevicePtr GetDevice(IPhysicalDevice::Identifier devid);
+    device::CDevice::DevicePtr GetDevice(device::Identifier devid);
 
     /// Tests to see if a device exists
-    bool DeviceExists(IPhysicalDevice::Identifier devid) const;
+    bool DeviceExists(device::Identifier devid) const;
     
     /// Gives a count of connected devices
     size_t DeviceCount() const;
+    
+    /// Structure of typedefs for GetDevicesOfType
+    template <class DeviceType>
+    struct PhysicalDevice
+    {
+        /// Container type returned by the GetDevicesOfType function
+        typedef std::list<typename DeviceType::DevicePtr> Container;
+        
+        /// Iterator to the container type
+        typedef typename Container::iterator iterator;
+    };
+    
+    /// Selects all the devices of a given type
+    template <class DeviceType>
+    typename PhysicalDevice<DeviceType>::Container GetDevicesOfType()
+    {
+        typename PhysicalDevice<DeviceType>::Container result;
+        typename DeviceType::DevicePtr next_device;
+        iterator it = m_devices.begin();
+        iterator end = m_devices.end();
+        
+        for( ; it != end; it++ )
+        {
+            // attempt to convert each managed device to DeviceType
+            if( next_device = device::device_cast<DeviceType>(it->second) )
+            {
+                result.push_back(next_device);
+            }
+        }
 
+        return result;
+    }
 private:
     /// Mapping From Identifer To Device Set
     PhysicalDeviceSet m_devices;

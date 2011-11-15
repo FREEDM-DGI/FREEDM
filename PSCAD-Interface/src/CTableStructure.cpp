@@ -26,6 +26,9 @@
 
 #include "CTableStructure.hpp"
 
+namespace freedm {
+namespace simulation {
+
 CTableStructure::CTableStructure( const std::string & p_xml, const std::string & p_tag )
 {
     using boost::property_tree::ptree;
@@ -106,10 +109,10 @@ CTableStructure::CTableStructure( const std::string & p_xml, const std::string &
     }
 }
 
-size_t CTableStructure::FindIndex( const CDeviceKey & p_device ) const
+size_t CTableStructure::FindIndex( const CDeviceKey & p_dkey ) const
 {
-    // search by device for the requested p_device 
-    return( m_DeviceIndex.by<SDevice>().at(p_device) );
+    // search by device for the requested p_dkey 
+    return( m_DeviceIndex.by<SDevice>().at(p_dkey) );
 }
 
 const CDeviceKey & CTableStructure::FindDevice( size_t p_index ) const
@@ -118,12 +121,12 @@ const CDeviceKey & CTableStructure::FindDevice( size_t p_index ) const
     return( m_DeviceIndex.by<SIndex>().at(p_index) );
 }
 
-bool CTableStructure::HasAccess( const CDeviceKey & p_device, size_t p_parent ) const
+bool CTableStructure::HasAccess( const CDeviceKey & p_dkey, size_t p_parent ) const
 {
     std::map< CDeviceKey, std::set<size_t> >::const_iterator it;
     
-    // search the table for p_device
-    it = m_DeviceParent.find(p_device);
+    // search the table for p_dkey
+    it = m_DeviceParent.find(p_dkey);
     
     if( it != m_DeviceParent.end() )
     {
@@ -136,3 +139,6 @@ bool CTableStructure::HasAccess( const CDeviceKey & p_device, size_t p_parent ) 
         return false;
     }
 }
+
+} // namespace simulation
+} // namespace freedm

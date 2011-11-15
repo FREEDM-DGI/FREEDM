@@ -113,7 +113,7 @@ void CListener::Stop()
 ///////////////////////////////////////////////////////////////////////////////
 void CListener::HandleRead(const boost::system::error_code& e, std::size_t bytes_transferred)
 {
-    Logger::Notice << __PRETTY_FUNCTION__ << std::endl;       
+    Logger::Debug << __PRETTY_FUNCTION__ << std::endl;       
     if (!e)
     {
         boost::tribool result_;
@@ -134,8 +134,6 @@ void CListener::HandleRead(const boost::system::error_code& e, std::size_t bytes
             #ifdef CUSTOMNETWORK
             if((rand()%100) >= GetReliability())
             {
-                Logger::Info<<"Incoming Packet Dropped ("<<GetReliability()
-                              <<") -> "<<uuid<<std::endl;
                 goto listen;
             }
             #endif
@@ -145,6 +143,7 @@ void CListener::HandleRead(const boost::system::error_code& e, std::size_t bytes
             }
             else if(conn->Recieve(m_message))
             {
+                Logger::Notice<<"Accepted message "<<m_message.GetHash()<<":"<<m_message.GetSequenceNumber()<<std::endl;
                 GetDispatcher().HandleRequest(x);
             }
         }

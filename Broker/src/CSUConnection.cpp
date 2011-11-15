@@ -79,7 +79,7 @@ void CSUConnection::Send(CMessage msg)
 
     m_window.push_back(q);
     
-    if(m_window.size() <= WINDOW_SIZE)
+    if(m_window.size() < WINDOW_SIZE)
     {
         Write(outmsg);
         m_timeout.cancel();
@@ -105,7 +105,15 @@ void CSUConnection::Resend(const boost::system::error_code& err)
                 writes++;
                 f.ret--;
             }
-            if(f.ret > 0) m_window.push_back(f);
+            if(f.ret > 0)
+            {
+                 m_window.push_back(f);
+            }
+            else
+            {
+                Logger::Notice<<"Gave Up Sending (No Retries) "<<f.msg.GetHash()
+                              <<":"<<f.msg.GetSequenceNumber()<<std::endl;
+            }
         }
         if(m_window.size() > 0)
         {
@@ -150,7 +158,7 @@ bool CSUConnection::Recieve(const CMessage &msg)
     if(bounda <= seq || (seq < boundb and boundb < bounda))
     {
         m_acceptmod = 1;
-        m_inseq = seq;
+        m_inseq = seq+1;
         return true;
     }
     if(m_acceptmod <= SEQUENCE_MODULO/WINDOW_SIZE)

@@ -49,8 +49,8 @@ void IProtocol::Write(CMessage msg)
     #ifdef CUSTOMNETWORK
     if((rand()%100) >= GetConnection()->GetReliability()) 
     {
-        Logger::Info<<"Outgoing Packet Dropped ("<<GetReliability()
-                      <<") -> "<<GetUUID()<<std::endl;
+        Logger::Info<<"Outgoing Packet Dropped ("<<GetConnection->GetReliability()
+                      <<") -> "<<GetConnection->GetUUID()<<std::endl;
         return;
     }
     #endif

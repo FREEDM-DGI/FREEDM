@@ -113,7 +113,7 @@ void CSRConnection::Send(CMessage msg)
     outmsg.SetSourceHostname(GetConnection()->GetConnectionManager().GetHostname());
     outmsg.SetProtocol(GetIdentifier());
     outmsg.SetSendTimestampNow();
-    outmsg.SetExpireTimeFromNow(boost::posix_time::seconds(10));
+    outmsg.SetExpireTimeFromNow(boost::posix_time::seconds(3));
 
     m_window.push_back(outmsg);
     
@@ -180,6 +180,8 @@ void CSRConnection::Resend(const boost::system::error_code& err)
             //ever to have been written.
             m_sendkills = true;
             m_sendkill = m_window.front().GetSequenceNumber();
+            Logger::Notice<<"Message Expired: "<<m_window.front().GetHash()
+                          <<":"<<m_window.front().GetSequenceNumber()<<std::endl;
             m_window.pop_front();
         }
         if(m_window.size() > 0)
@@ -367,7 +369,6 @@ bool CSRConnection::Recieve(const CMessage &msg)
     }
     if(msg.GetSequenceNumber() == m_inseq)
     {
-        Logger::Notice<<"RECIEVE ACCEPT NORMAL"<<std::endl;
         m_insync = true;
         m_inseq = (m_inseq+1)%SEQUENCE_MODULO;
         return true;
@@ -410,7 +411,6 @@ void CSRConnection::SendACK(const CMessage &msg)
     outmsg.SetProtocol(GetIdentifier());
     outmsg.SetProtocolProperties(pp);
     outmsg.SetExpireTime(msg.GetExpireTime());
-    Logger::Notice<<"Set Expire time to "<<msg.GetExpireTime()<<std::endl;
     Write(outmsg);
     m_currentack = outmsg;
     /// Hook into resend until the message expires.

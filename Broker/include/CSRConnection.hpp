@@ -107,10 +107,8 @@ class CSRConnection : public IProtocol
         bool m_usekill;
         /// The timestamp of the last killed message, forward relation
         boost::posix_time::ptime killstamp;
-        /// Kill window size
-        static const unsigned int KILLWINDOW_SIZE = 8;
         /// Sequence modulo
-        static const unsigned int SEQUENCE_MODULO = 1024;
+        static const unsigned int SEQUENCE_MODULO = 16;
         /// Refire time in MS
         static const unsigned int REFIRE_TIME = 75;
 };

@@ -144,6 +144,7 @@ void CConnection::Send(CMessage p_mesg)
 ///////////////////////////////////////////////////////////////////////////////
 void CConnection::RecieveACK(const CMessage &msg)
 {
+    Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
     std::string protocol = msg.GetProtocol();
     ProtocolMap::iterator sit = m_protocols.find(protocol);
     if(sit != m_protocols.end())
@@ -163,15 +164,13 @@ void CConnection::RecieveACK(const CMessage &msg)
 ///////////////////////////////////////////////////////////////////////////////
 bool CConnection::Recieve(const CMessage &msg)
 {
-    Logger::Notice << "MSG Protocol " << msg.GetProtocol() << std::endl;
+    Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
     ProtocolMap::iterator sit = m_protocols.find(msg.GetProtocol());
     if(sit != m_protocols.end())
     {
-        Logger::Notice<<"Found Protocol"<<std::endl;
         bool x = (*sit).second->Recieve(msg);
         if(x)
         {
-            Logger::Notice<<"ACK REGULAR MESSAGE"<<std::endl;
             (*sit).second->SendACK(msg);
             return true;
         }

@@ -205,7 +205,8 @@ CMessage::operator ptree ()
     ptree pt;
 
     pt.put("message.source", m_srcUUID );
-    pt.put("message.hostname", m_hostname );
+    pt.put("message.hostname", m_remotehost.hostname );
+    pt.put("message.port",m_remotehost.port );
     pt.put("message.sequenceno", m_sequenceno );
     pt.put("message.status", m_status  );
     pt.add_child("message.submessages", m_submessages );
@@ -227,7 +228,8 @@ CMessage::CMessage( const ptree &pt )
         // Get the source host's ID and store it in the m_src variable.
         // An exception is thrown if "message.source" does not exist.
         m_srcUUID = pt.get< std::string >("message.source");
-        m_hostname = pt.get< std::string >("message.hostname");
+        m_remotehost.hostname = pt.get< std::string >("message.hostname");
+        m_remotehost.port = pt.get< std::string >("message.port");
         m_sequenceno = pt.get< unsigned int >("message.sequenceno");
 
         m_status = static_cast< StatusType >

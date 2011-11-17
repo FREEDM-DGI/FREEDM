@@ -103,7 +103,7 @@ class lbAgent
         PeerNodePtr add_peer(std::string uuid);
         PeerNodePtr get_peer(std::string uuid);
         // Handlers
-        void HandleRead(const ptree& pt );
+        void HandleRead(broker::CMessage msg);
 	void LoadManage( const boost::system::error_code& err );
 
 	// This is the main loop of the algorithm

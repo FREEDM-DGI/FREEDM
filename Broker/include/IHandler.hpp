@@ -1,6 +1,7 @@
 #ifndef IHANDLER_HPP
 #define IHANDLER_HPP
 
+#include "CMessage.hpp"
 
 namespace boost {
     namespace system {
@@ -26,7 +27,7 @@ public:
     virtual ~IReadHandler(){}
 
     /// Handle completion of a read operation.
-    virtual void HandleRead(const ptree &p_tree) = 0;
+    virtual void HandleRead(freedm::broker::CMessage msg) = 0;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

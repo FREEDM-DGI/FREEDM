@@ -37,8 +37,8 @@
 #include "CDispatcher.hpp"
 #include "CReliableConnection.hpp"
 
-#include "concurrentqueue.hpp"
 #include "SlidingWindow.hpp"
+#include "types/remotehost.hpp"
 
 #include <boost/asio.hpp>
 #include <boost/array.hpp>
@@ -77,7 +77,7 @@ public:
 
 private:
     /// Responsible for writing acknowledgements to the stream.
-    void SendACK(std::string uuid, std:: string hostname, unsigned int sequenceno);
+    void SendACK(std::string uuid, remotehost hostname, unsigned int sequenceno);
 
     /// Handle completion of a read operation.
     void HandleRead(const boost::system::error_code& e, std::size_t bytes_transferred);

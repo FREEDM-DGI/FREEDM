@@ -55,6 +55,7 @@ namespace po = boost::program_options;
 #include "CConnectionManager.hpp"
 #include "CPhysicalDeviceManager.hpp"
 #include "CDeviceFactory.hpp"
+#include "CGlobalConfiguration.hpp"
 
 using namespace freedm;
 
@@ -234,7 +235,17 @@ int main (int argc, char* argv[])
             Logger::Info << "Generated UUID: " << u_ << std::endl;
         }
 
-    
+        std::stringstream ss2;
+        std::string uuidstr2;
+        ss2 << u_;
+        ss2 >> uuidstr2;
+        
+        /// Prepare the global Configuration
+        CGlobalConfiguration::instance().SetHostname(hostname_);
+        CGlobalConfiguration::instance().SetUUID(uuidstr2);
+        CGlobalConfiguration::instance().SetListenPort(port_);
+        CGlobalConfiguration::instance().SetListenAddress(listenIP_);   
+ 
         //constructors for initial mapping
         broker::CConnectionManager m_conManager(u_,std::string(hostname_));
         broker::CPhysicalDeviceManager m_phyManager;
@@ -354,15 +365,17 @@ int main (int argc, char* argv[])
                 // Add the UUID to the list of known hosts
                 //XXX This mechanism sould change to allow dynamically arriving 
                 //nodes with UUIDS not constructed using their DNS names   
-                m_conManager.PutHostname(uu_.str(), host_);
+                m_conManager.PutHostname(uu_.str(), host_,port1_);
             }                                                                                               
         } 
         else 
         {
             Logger::Info << "Not adding any hosts on startup." << std::endl;
         }    
+        
         // Add the local connection to the hostname list
-        m_conManager.PutHostname(uuidstr,"localhost");
+        m_conManager.PutHostname(uuidstr,"localhost",port_);
+        
         // Block all signals for background thread.
         sigset_t new_mask;
         sigfillset(&new_mask);

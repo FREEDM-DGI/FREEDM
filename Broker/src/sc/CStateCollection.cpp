@@ -277,7 +277,7 @@ void SCAgent::StatePrint(std::map< int, ptree >& pt)
 ///
 //////////////////////////////////////////////////////////////////
 
-void SCAgent::HandleRead(const ptree& pt )
+void SCAgent::HandleRead(broker::CMessage msg)
 {
   Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
 
@@ -286,9 +286,10 @@ void SCAgent::HandleRead(const ptree& pt )
   PeerNodePtr peer_;
   //incomingVer_ records the coming marker
   StateVersion incomingVer_;
+  ptree pt = msg.GetSubMessages();
 
   //check the coming peer node
-  line_ = pt.get<std::string>("sc.source");
+  line_ = msg.GetSourceUUID();
   if(line_ != GetUUID())
   {
     peer_ = GetPeer(line_);
@@ -307,10 +308,10 @@ void SCAgent::HandleRead(const ptree& pt )
 ///////////////////////////////////////////////////////////////////////////
 //get group peerlist from groupmanager
 //////////////////////////////////////////////////////////////////////////
-  if(pt.get<std::string>("sc") == "peerList")
+  if(pt.get<std::string>("any","NOEXCEPTION") == "peerList")
   {
   	std::string peers_, token;
-	peers_ = pt.get<std::string>("sc.peers");
+	peers_ = pt.get<std::string>("any.peers");
         Logger::Notice << "Peer List: " << peers_ <<
 	           " received from Group Leader: " << line_ <<std::endl;
           std::istringstream iss(peers_);
@@ -339,6 +340,11 @@ void SCAgent::HandleRead(const ptree& pt )
          }// end while(...)
   }// end if
 
+  // If there isn't an sc message, just leave.
+  if(pt.get<std::string>("sc","NOEXCEPTION") == "NOEXCEPTION")
+  {
+    return;
+  }
 
   //check receiving messages
   if (pt.get<std::string>("sc") == "load")

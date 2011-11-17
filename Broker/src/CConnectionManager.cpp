@@ -57,9 +57,9 @@ namespace broker {
 ///////////////////////////////////////////////////////////////////////////////
 CConnectionManager::CConnectionManager(freedm::uuid uuid, std::string hostname)
 {
-    std::stringstream ss;
-    ss << uuid; m_uuid = ss.str();
-    m_hostname = hostname;
+    m_uuid = CGlobalConfiguration::instance().GetUUID();
+    m_hostname.hostname = CGlobalConfiguration::instance().GetHostname();
+    m_hostname.port = CGlobalConfiguration::instance().GetListenPort();
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -101,16 +101,35 @@ void CConnectionManager::PutConnection(std::string uuid, ConnectionPtr c)
 /// @param u_ the uuid to enter into the map.
 /// @param host_ The hostname to enter into the map.
 ///////////////////////////////////////////////////////////////////////////////
-void CConnectionManager::PutHostname(std::string u_, std::string host_)
+void CConnectionManager::PutHostname(std::string u_, std::string host_, std::string port)
 {
     Logger::Debug << __PRETTY_FUNCTION__ << std::endl;  
     {
         boost::lock_guard< boost::mutex > scopedLock_( m_Mutex );
-        m_hostnames.insert(std::pair<std::string, std::string>(u_, host_));  
+        remotehost x;
+        x.hostname = host_;
+        x.port = port;
+        m_hostnames.insert(std::pair<std::string, remotehost>(u_, x));  
     }
 }
 
 
+///////////////////////////////////////////////////////////////////////////////
+/// @fn CConnectionManager::PutHostname
+/// @description Registers a hostname with the uuid to hostname map.
+/// @pre None
+/// @post The hostname is registered with the uuid to hostname map.
+/// @param u_ the uuid to enter into the map.
+/// @param host_ The hostname to enter into the map.
+///////////////////////////////////////////////////////////////////////////////
+void CConnectionManager::PutHostname(std::string u_, remotehost host_)
+{
+    Logger::Debug << __PRETTY_FUNCTION__ << std::endl;  
+    {
+        boost::lock_guard< boost::mutex > scopedLock_( m_Mutex );
+        m_hostnames.insert(std::pair<std::string, remotehost>(u_, host_));  
+    }
+}
 ///////////////////////////////////////////////////////////////////////////////
 /// @fn CConnectionManager::Stop
 /// @description Stops a connection and removes it from the connections maps.
@@ -171,7 +190,7 @@ void CConnectionManager::StopAll ()
 /// @post No change.
 /// @return The hostname of the node with that uuid or an empty string.
 ///////////////////////////////////////////////////////////////////////////////
-std::string CConnectionManager::GetHostnameByUUID(std::string uuid) const
+remotehost CConnectionManager::GetHostnameByUUID(std::string uuid) const
 {
     if(m_hostnames.count(uuid))
     {
@@ -179,7 +198,8 @@ std::string CConnectionManager::GetHostnameByUUID(std::string uuid) const
     }
     else
     {
-        return "";
+        remotehost x;
+        return x;
     }
 }
 
@@ -203,14 +223,14 @@ ConnectionPtr CConnectionManager::GetConnectionByUUID
     Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
 
     ConnectionPtr c_;  
-    std::string s_;
+    std::string s_,port;
 
     // See if there is a connection in the open connections already
     if(m_connections.left.count(uuid_))
     {
         if(m_connections.left.at(uuid_)->GetSocket().is_open())
         {
-            Logger::Info << "Recycling connection to " << uuid_ << std::endl;
+            Logger::Debug << "Recycling connection to " << uuid_ << std::endl;
             #ifdef CUSTOMNETWORK
             LoadNetworkConfig();
             #endif
@@ -218,7 +238,7 @@ ConnectionPtr CConnectionManager::GetConnectionByUUID
         }
         else
         {
-            Logger::Info <<" Connection to " << uuid_ << " has gone stale " << std::endl;
+            Logger::Warn <<" Connection to " << uuid_ << " has gone stale " << std::endl;
             //The socket is not marked as open anymore, we
             //should stop it.
             Stop(m_connections.left.at(uuid_));
@@ -228,11 +248,12 @@ ConnectionPtr CConnectionManager::GetConnectionByUUID
     Logger::Info << "Making Fresh Connection to " << uuid_ << std::endl;
 
     // Find the requested host from the list of known hosts
-    std::map<std::string, std::string>::iterator mapIt_;
+    std::map<std::string, remotehost>::iterator mapIt_;
     mapIt_ = m_hostnames.find(uuid_);
     if(mapIt_ == m_hostnames.end())
         return ConnectionPtr();
-    s_ = mapIt_->second;
+    s_ = mapIt_->second.hostname;
+    port = mapIt_->second.port;
 
     // Create a new CConnection object for this host	
     c_.reset(new CConnection(ios, *this, dispatch_, uuid_));  
@@ -240,7 +261,7 @@ ConnectionPtr CConnectionManager::GetConnectionByUUID
     // Initiate the TCP connection
     //XXX Right now, the port is hardcoded  
     boost::asio::ip::udp::resolver resolver(ios);
-    boost::asio::ip::udp::resolver::query query( s_, "1870");
+    boost::asio::ip::udp::resolver::query query( s_, port);
     boost::asio::ip::udp::endpoint endpoint = *resolver.resolve( query );
     c_->GetSocket().connect( endpoint ); 
 

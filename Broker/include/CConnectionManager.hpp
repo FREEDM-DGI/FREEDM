@@ -38,6 +38,8 @@
 #include "CConnection.hpp"
 #include "CListener.hpp"
 #include "CReliableConnection.hpp"
+#include "types/remotehost.hpp"
+#include "CGlobalConfiguration.hpp"
 
 #include <set>
 #include <string>
@@ -60,7 +62,7 @@ class CConnectionManager
 {
 public:
     /// Typedef for the map which handles uuid to hostname
-    typedef std::map<std::string, std::string> hostnamemap;
+    typedef std::map<std::string, remotehost> hostnamemap;
     
     /// Typedef for the map which handles uuid to connection 
     typedef boost::bimap<std::string, ConnectionPtr> connectionmap;
@@ -75,8 +77,11 @@ public:
     void Start(CListener::ConnectionPtr c);
  
     /// Place a hostname and uuid into the hostname / uuid map.
-    void PutHostname(std::string u_, std::string host_);
-    
+    void PutHostname(std::string u_, std::string host_, std::string port);
+   
+    /// Place a hostname and uuid into the hostname / uuid map.
+    void PutHostname(std::string u_, remotehost host_);
+ 
     /// Register a connection with the manager once it has been built.
     void PutConnection(std::string uuid, ConnectionPtr c);
 
@@ -93,10 +98,10 @@ public:
     std::string GetUUID() { return m_uuid; };
 
     /// Get The Hostname
-    std::string GetHostname() { return m_hostname; };
+    remotehost GetHostname() { return m_hostname; };
     
     /// Get the hostname from the UUID.
-    std::string GetHostnameByUUID( std::string uuid ) const; 
+    remotehost GetHostnameByUUID( std::string uuid ) const; 
 
     /// Fetch a connection pointer via UUID
     ConnectionPtr GetConnectionByUUID( std::string uuid_,  boost::asio::io_service& ios,  CDispatcher &dispatch_ );
@@ -124,7 +129,7 @@ private:
     /// Mapping from uuid to hostname.
     hostnamemap m_hostnames;
     /// Hostname of this node.
-    std::string m_hostname;
+    remotehost m_hostname;
     /// Forward map (UUID->Connection)
     connectionmap   m_connections;
     /// Incoming messages channel

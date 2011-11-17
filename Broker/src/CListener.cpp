@@ -108,7 +108,7 @@ void CListener::Stop()
 /// @post If the sender is not already in the hostname table it will be added.
 ///   then a connection is established to that node and an acknowledgment sent.
 //////////////////////////////////////////////////////////////////////////////
-void CListener::SendACK(std::string uuid, std:: string hostname, unsigned int sequenceno)
+void CListener::SendACK(std::string uuid, remotehost hostname, unsigned int sequenceno)
 {
     Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
     freedm::broker::CMessage m_;
@@ -116,7 +116,7 @@ void CListener::SendACK(std::string uuid, std:: string hostname, unsigned int se
     GetConnectionManager().PutHostname(uuid,hostname);
     m_.SetStatus(freedm::broker::CMessage::Accepted);
     m_.SetSequenceNumber(sequenceno);
-    Logger::Info<<"Send ACK #"<<sequenceno<<std::endl;
+    Logger::Debug<<"Send ACK #"<<sequenceno<<std::endl;
     GetConnectionManager().GetConnectionByUUID(uuid, GetSocket().get_io_service(), GetDispatcher())->Send(m_,false);
 }
 
@@ -137,7 +137,7 @@ void CListener::HandleRead(const boost::system::error_code& e, std::size_t bytes
     Logger::Debug << __PRETTY_FUNCTION__ << std::endl;       
     if (!e)
     {
-        Logger::Info << "Handled some message." << std::endl;
+        Logger::Debug << "Handled some message." << std::endl;
         boost::tribool result_;
         boost::tie(result_, boost::tuples::ignore) = Parse(
             m_message, m_buffer.data(),
@@ -151,7 +151,7 @@ void CListener::HandleRead(const boost::system::error_code& e, std::size_t bytes
             ptree x = static_cast<ptree>(m_message); 
             unsigned int sequenceno = m_message.GetSequenceNumber();
             std::string uuid = m_message.GetSourceUUID();
-            std::string hostname = m_message.GetSourceHostname();
+            remotehost hostname = m_message.GetSourceHostname();
             #ifdef CUSTOMNETWORK
             if((rand()%100) >= GetReliability())
             {
@@ -168,7 +168,7 @@ void CListener::HandleRead(const boost::system::error_code& e, std::size_t bytes
             #endif
             if(m_message.GetStatus() == freedm::broker::CMessage::Accepted)
             {
-                Logger::Info << "Got ACK #" << sequenceno << std::endl;
+                Logger::Debug << "Got ACK #" << sequenceno << std::endl;
                 GetConnectionManager().PutHostname(uuid,hostname);
                 GetConnectionManager().GetConnectionByUUID(uuid, GetSocket().get_io_service(), GetDispatcher())->RecieveACK(sequenceno);
             }
@@ -180,7 +180,7 @@ void CListener::HandleRead(const boost::system::error_code& e, std::size_t bytes
             }
             else if(m_insequenceno.find(uuid) != m_insequenceno.end())
             {
-                Logger::Info << "Got Message #" << sequenceno << " expected " 
+                Logger::Debug << "Got Message #" << sequenceno << " expected " 
                                << m_insequenceno[uuid]+1 % GetSequenceModulo() << std::endl;
                 if(sequenceno == (m_insequenceno[uuid]+1) % GetSequenceModulo())
                 {
@@ -198,7 +198,7 @@ void CListener::HandleRead(const boost::system::error_code& e, std::size_t bytes
                     // distributes trust in the system. Messages are rejected until
                     // Trust is established or something. 
                     accept:
-                    GetDispatcher().HandleRequest(x);
+                    GetDispatcher().HandleRequest(m_message);
                 }
                 else
                 {

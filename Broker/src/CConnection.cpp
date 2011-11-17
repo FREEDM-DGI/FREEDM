@@ -289,7 +289,7 @@ void CConnection::RecieveACK(unsigned int sequenceno)
         Logger::Debug<<"ACK, bounda:"<<bounda<<" boundb:"<<boundb<<"input: "<<sequenceno<<std::endl;
         if(bounda <= sequenceno || (sequenceno < boundb && boundb < bounda))
         {
-            Logger::Info<<"ACK handled for "<<m_queue.front().first<<std::endl;
+            Logger::Debug<<"ACK handled for "<<m_queue.front().first<<std::endl;
             m_queue.pop();
             m_timeouts = 0;
         }

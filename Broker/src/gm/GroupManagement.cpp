@@ -331,18 +331,16 @@ freedm::broker::CMessage GMAgent::PeerList()
 	ss_ >> m_.m_srcUUID;
 	//m_.m_submessages.put("lb.source", ss_.str());
 	//m_.m_submessages.put("lb", "peerList");
-	m_.m_submessages.put("sc.source", ss_.str());
-	m_.m_submessages.put("sc", "peerList");
+	m_.m_submessages.put("any.source", ss_.str());
+	m_.m_submessages.put("any", "peerList");
 	ss_.clear();
 	foreach( PeerNodePtr peer_, m_UpNodes | boost::adaptors::map_values)
-  {
+    {
 		ss_ << ",";
 		ss_ << peer_->GetUUID();
 	}
-	//m_.m_submessages.put("lb.peers", ss_.str());
-	//Logger::Debug << "Group List contains: " << m_.m_submessages.get<std::string>("lb.peers") << std::endl;
-	m_.m_submessages.put("sc.peers", ss_.str());
-	Logger::Debug << "Group List contains: " << m_.m_submessages.get<std::string>("sc.peers") << std::endl;
+	m_.m_submessages.put("any.peers", ss_.str());
+	Logger::Debug << "Group List contains: " << m_.m_submessages.get<std::string>("any.peers") << std::endl;
   return m_;
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -841,15 +839,7 @@ void GMAgent::Timeout( const boost::system::error_code& err )
   }
 }
 
-void GMAgent::HandleRead(const ptree& pt)
-{
-    //Takes the input and pushes it back into the "local" io_service to
-    //make sure that all gm actions run in the same thread.
-    GetIOService().post(boost::bind(&GMAgent::ParseMessage,
-         this, pt));    
-}
-
-void GMAgent::ParseMessage(ptree pt)
+void GMAgent::HandleRead(broker::CMessage msg)
 {
   Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
 
@@ -859,9 +849,10 @@ void GMAgent::ParseMessage(ptree pt)
   std::string line_;
   std::stringstream ss_;
   PeerNodePtr peer_;
-  std::string msg_source = pt.get<std::string>("gm.source");
-  
-  line_ = pt.get<std::string>("gm.source");
+  std::string msg_source = msg.GetSourceUUID();
+  ptree pt = msg.GetSubMessages();
+ 
+  line_ = msg_source;
   if(line_ != GetUUID())
   {
     peer_ = GetPeer(line_);
@@ -875,7 +866,16 @@ void GMAgent::ParseMessage(ptree pt)
       peer_ = AddPeer(line_);
     }
   }
-    
+
+  try
+  {
+    std::string x = pt.get<std::string>("gm");
+  }
+  catch(boost::property_tree::ptree_bad_path &e)
+  {
+    return;
+  }
+ 
   if(pt.get<std::string>("gm") == "Accept")
   {
     unsigned int msg_group = pt.get<unsigned int>("gm.groupid");
@@ -1112,7 +1112,7 @@ int GMAgent::Run()
 {
   Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
 
-  std::map<std::string, std::string>::iterator mapIt_;
+  std::map<std::string, broker::remotehost>::iterator mapIt_;
 
   for( mapIt_ = GetConnectionManager().GetHostnamesBegin(); mapIt_ != GetConnectionManager().GetHostnamesEnd(); ++mapIt_ )
   {

@@ -46,7 +46,6 @@ namespace freedm {
 namespace broker {
 
 class CPhysicalDeviceManager
-    : private boost::noncopyable
 {
 public:
     /// A typedef for the mapping of identifier to device ptrs

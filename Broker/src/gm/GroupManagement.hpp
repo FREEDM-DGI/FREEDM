@@ -56,6 +56,7 @@ using boost::property_tree::ptree;
 #include "CDispatcher.hpp"
 #include "CConnectionManager.hpp"
 #include "CConnection.hpp"
+#include "types/remotehost.hpp"
 
 using boost::asio::ip::tcp;
 
@@ -95,8 +96,7 @@ class GMAgent
     bool IsCoordinator() const { return (Coordinator() == GetUUID()); };
 
     // Handlers
-    virtual void HandleRead(const ptree& pt );
-    void ParseMessage(ptree pt);
+    virtual void HandleRead(broker::CMessage msg );
     
     //Routines
     void Check( const boost::system::error_code& err );

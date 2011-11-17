@@ -36,6 +36,8 @@
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/xml_parser.hpp>
 
+#include "types/remotehost.hpp"
+
 using boost::property_tree::ptree;
 
 #include <string>
@@ -77,7 +79,7 @@ public:
     std::string GetSourceUUID() { return m_srcUUID; };
     
     /// Accessor for hostname
-    std::string GetSourceHostname() { return m_hostname; };
+    remotehost GetSourceHostname() { return m_remotehost; };
     
     /// Accessor for sequenceno
     unsigned int GetSequenceNumber() { return m_sequenceno; };
@@ -92,7 +94,7 @@ public:
     void SetSourceUUID(std::string uuid) { m_srcUUID = uuid; };
     
     /// Setter for hostname
-    void SetSourceHostname(std::string hostname) { m_hostname = hostname; };
+    void SetSourceHostname(remotehost hostname) { m_remotehost = hostname; };
 
     /// Setter for sequenceno
     void SetSequenceNumber(unsigned int sequenceno) { m_sequenceno = sequenceno; };
@@ -124,7 +126,7 @@ public:
         m_srcUUID( p_m.m_srcUUID ),
         m_status( p_m.m_status ),
         m_submessages( p_m.m_submessages ),
-        m_hostname( p_m.m_hostname ),
+        m_remotehost( p_m.m_remotehost ),
         m_sequenceno( p_m.m_sequenceno )
     {
         Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
@@ -136,7 +138,7 @@ public:
         this->m_srcUUID = p_m.m_srcUUID;
         this->m_status = p_m.m_status;
         this->m_submessages = p_m.m_submessages;
-        this->m_hostname = p_m.m_hostname;
+        this->m_remotehost = p_m.m_remotehost;
         this->m_sequenceno = p_m.m_sequenceno;
         return *this;
     }
@@ -166,7 +168,7 @@ public:
    
 private: 
     /// Contains the source node's hostname
-    std::string m_hostname;
+    remotehost m_remotehost;
 
     /// Contains the sequence number for the sending node
     unsigned int m_sequenceno;

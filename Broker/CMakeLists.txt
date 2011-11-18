@@ -32,7 +32,6 @@ if(Boost_FOUND)
 
     # set C++ compiler flags
     set(COMMON_FLAGS "")
-
     set(WARNING_FLAGS "")
     if(SHOW_WARNINGS)
         set(WARNING_FLAGS "-W -Wall -pedantic")

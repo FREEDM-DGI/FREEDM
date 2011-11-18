@@ -136,7 +136,7 @@ CMessage::CMessage( const CMessage &p_m ) :
     m_srcUUID( p_m.m_srcUUID ),
     m_status( p_m.m_status ),
     m_submessages( p_m.m_submessages ),
-    m_hostname( p_m.m_hostname ),
+    m_remotehost( p_m.m_remotehost ),
     m_sequenceno( p_m.m_sequenceno ),
     m_properties( p_m.m_properties ),
     m_protocol( p_m.m_protocol ),
@@ -152,7 +152,7 @@ CMessage& CMessage::operator = ( const CMessage &p_m )
     this->m_srcUUID = p_m.m_srcUUID;
     this->m_status = p_m.m_status;
     this->m_submessages = p_m.m_submessages;
-    this->m_hostname = p_m.m_hostname;
+    this->m_remotehost = p_m.m_remotehost;
     this->m_sequenceno = p_m.m_sequenceno;
     this->m_properties = p_m.m_properties;
     this->m_protocol = p_m.m_protocol;
@@ -172,7 +172,7 @@ std::string CMessage::GetSourceUUID() const
 /// Accessor for hostname
 remotehost CMessage::GetSourceHostname() const
 {
-    return m_hostname;
+    return m_remotehost;
 }
 
 /// Accessor for sequenceno
@@ -202,7 +202,7 @@ void CMessage::SetSourceUUID(std::string uuid)
 /// Setter for hostname
 void CMessage::SetSourceHostname(remotehost hostname)
 {
-    m_hostname = hostname;
+    m_remotehost = hostname;
 }
 
 /// Setter for sequenceno
@@ -377,19 +377,13 @@ CMessage::operator ptree ()
     using boost::property_tree::ptree;
     ptree pt;
 
-    std::string send_ts = boost::posix_time::to_iso_string(m_send_timestamp);
-    std::string expires_ts = boost::posix_time::to_simple_string(m_expires_in);
-
-    Logger::Debug << "Send ts " << send_ts << std::endl;
-    Logger::Debug << "Expire ts " << expires_ts << std::endl;
-
     pt.put("message.source", m_srcUUID );
     pt.put("message.hostname", m_remotehost.hostname );
     pt.put("message.port",m_remotehost.port );
     pt.put("message.sequenceno", m_sequenceno );
     pt.put("message.status", m_status  );
     pt.put("message.sendtime",m_sendtime );
-    pt.put("message.expiretiem",m_expiretime );
+    pt.put("message.expiretime",m_expiretime );
     pt.put("message.protocol",m_protocol );    
     pt.add_child("message.properties", m_properties );
     pt.add_child("message.submessages", m_submessages );

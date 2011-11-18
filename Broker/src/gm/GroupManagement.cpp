@@ -42,6 +42,7 @@
 
 #include "Utility.hpp"
 #include "CMessage.hpp"
+#include "types/remotehost.hpp"
 
 #include <algorithm>
 #include <cassert>
@@ -180,12 +181,12 @@ unsigned int GMAgent::MurmurHash2 ( const void * p_key, int p_len)
 /// @param p_conManager: The connection manager to use in this class.
 ///////////////////////////////////////////////////////////////////////////////
 GMAgent::GMAgent(std::string p_uuid, boost::asio::io_service &p_ios,
-               freedm::broker::CDispatcher &p_dispatch,
-               freedm::broker::CConnectionManager &p_conManager):
-  GMPeerNode(p_uuid,p_conManager,p_ios,p_dispatch),
-  m_timer(p_ios),
-  m_electiontimer(),
-  m_ingrouptimer()
+    freedm::broker::CDispatcher &p_dispatch,
+    freedm::broker::CConnectionManager &p_conManager)
+    : GMPeerNode(p_uuid,p_conManager,p_ios,p_dispatch),
+    m_timer(p_ios),
+    m_electiontimer(),
+    m_ingrouptimer()
 {
     Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
     AddPeer(GetUUID());
@@ -328,23 +329,24 @@ freedm::broker::CMessage GMAgent::AreYouThere()
 freedm::broker::CMessage GMAgent::PeerList()
 {
     freedm::broker::CMessage m_;
-	std::stringstream ss_;
-	ss_.clear();
-	ss_ << GetUUID();
-	ss_ >> m_.m_srcUUID;
-	//m_.m_submessages.put("lb.source", ss_.str());
-	//m_.m_submessages.put("lb", "peerList");
-	m_.m_submessages.put("any.source", ss_.str());
-	m_.m_submessages.put("any", "peerList");
-	ss_.clear();
-	foreach( PeerNodePtr peer_, m_UpNodes | boost::adaptors::map_values)
+    std::stringstream ss_;
+    ss_.clear();
+    ss_ << GetUUID();
+    //m_.m_submessages.put("lb.source", ss_.str());
+    //m_.m_submessages.put("lb", "peerList");
+    m_.m_submessages.put("sc.source", ss_.str());
+    m_.m_submessages.put("sc", "peerList");
+    ss_.clear();
+    foreach( PeerNodePtr peer_, m_UpNodes | boost::adaptors::map_values)
     {
-		ss_ << ",";
-		ss_ << peer_->GetUUID();
-	}
-	m_.m_submessages.put("any.peers", ss_.str());
-	Logger::Debug << "Group List contains: " << m_.m_submessages.get<std::string>("any.peers") << std::endl;
-  return m_;
+        ss_ << ",";
+        ss_ << peer_->GetUUID();
+    }
+    //m_.m_submessages.put("lb.peers", ss_.str());
+    //Logger::Debug << "Group List contains: " << m_.m_submessages.get<std::string>("lb.peers") << std::endl;
+    m_.m_submessages.put("sc.peers", ss_.str());
+    Logger::Debug << "Group List contains: " << m_.m_submessages.get<std::string>("sc.peers") << std::endl;
+    return m_;
 }
 ///////////////////////////////////////////////////////////////////////////////
 /// SystemState
@@ -572,8 +574,8 @@ void GMAgent::Premerge( const boost::system::error_code &err )
         }
         if(m_UpNodes.size() == 0)
         {
-          Logger::Notice << "Stopping in group timer "<<__LINE__<<std::endl;
-          m_ingrouptimer.Stop();
+            Logger::Notice << "Stopping in group timer "<<__LINE__<<std::endl;
+            m_ingrouptimer.Stop();
         }
         if(list_change)
         {
@@ -775,13 +777,12 @@ void GMAgent::Reorganize( const boost::system::error_code& err )
                 continue;
             peer_->AsyncSend(m_);
         }
-
         // sufficiently_long_Timeout; maybe Reorganize if something blows up
         SetStatus(GMPeerNode::NORMAL);
         Logger::Notice << "+ State change: NORMAL: " << __LINE__ << std::endl;
         m_groupsformed++;
-
         Logger::Notice << "Upnodes size: "<<m_UpNodes.size()<<std::endl;
+        
         if(m_UpNodes.size() != 0)
         {
             Logger::Notice << "Starting in group timer "<<__LINE__<<std::endl;
@@ -863,15 +864,7 @@ void GMAgent::Timeout( const boost::system::error_code& err )
     }
 }
  
-void GMAgent::HandleRead(const ptree& pt)
-{
-        //Takes the input and pushes it back into the "local" io_service to
-        //make sure that all gm actions run in the same thread.
-        GetIOService().post(boost::bind(&GMAgent::ParseMessage,
-                 this, pt));        
-}
-
-void GMAgent::ParseMessage(broker::CMessage msg)
+void GMAgent::HandleRead(broker::CMessage msg)
 {
     Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
 
@@ -973,11 +966,12 @@ void GMAgent::ParseMessage(broker::CMessage msg)
             coord_ = Coordinator();
             tempSet_ = m_UpNodes;
             SetStatus(GMPeerNode::ELECTION);
+            Logger::Notice << "+ State Change ELECTION : "<<__LINE__<<std::endl;
             Logger::Notice << "Stopping group timer "<<__LINE__<<std::endl;
             m_ingrouptimer.Stop();
             Logger::Notice << "Starting election timer "<<__LINE__<<std::endl;
             m_electiontimer.Start();
-            Logger::Notice << "+ State Change ELECTION : "<<__LINE__<<std::endl;
+            
             m_GroupID = pt.get<unsigned int>("gm.groupid");
             m_GroupLeader = pt.get<std::string>("gm.groupleader");
             Logger::Notice << "Changed group: " << m_GroupID << " (" << m_GroupLeader << ") " << std::endl;
@@ -1155,7 +1149,7 @@ int GMAgent::Run()
 {
     Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
 
-    std::map<std::string, std::string>::iterator mapIt_;
+    std::map<std::string, broker::remotehost>::iterator mapIt_;
 
     for( mapIt_ = GetConnectionManager().GetHostnamesBegin();
         mapIt_ != GetConnectionManager().GetHostnamesEnd(); ++mapIt_ )

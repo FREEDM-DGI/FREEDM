@@ -5,6 +5,24 @@ class Experiment(object):
         self.expcounter = [0] * ((len(host2uuid) * (len(host2uuid)-1))/2)
         self.host2uuid = host2uuid
         self.granularity = granularity
+        self.fixed = dict()
+
+    def fix_edge(self,tuuidx,tuuidy,value):
+        index = 0
+        seen = []
+        for (hostx,uuidx) in self.host2uuid.iteritems():
+            for (hostx,uuidy) in self.host2uuid.iteritems():
+                if uuidx == uuidy:
+                    continue
+                if uuidy in seen:
+                    continue
+                if (tuuidx == uuidx and tuuidy == uuidy) or (tuuidx == uuidy and tuuidy == uuidx):
+                    self.fixed[(tuuidx,tuuidy)] = (index,value)
+                    self.expcounter[index] = value
+                    return
+                index += 1
+                seen.append(uuidx)
+                
     def maptonetwork(self):
         out = dict()
         index = 0
@@ -25,11 +43,19 @@ class Experiment(object):
                 seen.append(uuidx)
         assert index == len(self.expcounter), 'Did not use all exp settings'
         return out
+
     def next(self,default=None):
         index = 0
-        if self.expcounter == [100]*(len(self.expcounter)):
+        max_v = [100]*(len(self.expcounter))
+        for (key,(indexa,value)) in self.fixed.iteritems():
+            max_v[indexa] = value
+        if self.expcounter == max_v:
             return default
         while index < len(self.expcounter):
+            if index in [indexa for (key,(indexa,value)) in self.fixed.iteritems()]:
+                #Don't change values we've fixed.
+                index += 1
+                continue
             if self.expcounter[index] == 100:
                 self.expcounter[index] = 0
                 index += 1
@@ -41,6 +67,7 @@ class Experiment(object):
         for x in self.expcounter:
             assert x <= 100, "Experiment has overrun"
         return self.expcounter
+
     def __repr__(self):
         return str(self.expcounter)
     def tsv_head(self):
@@ -78,7 +105,11 @@ if __name__ == "__main__":
     dictthing = {'google.com':'goog','amazon.com':'amaz','movingpictures.com':'mvpc','rush.com':'rush'}
     x = Experiment(dictthing,20)
     i = 0
-    if 0:
+    x.fix_edge('goog','amaz',50)
+    x.fix_edge('mvpc','rush',100)
+    x.fix_edge('goog','rush',0)
+    x.fix_edge('amaz','mvpc',0)
+    if 1:
         while x.next() != None:
             print x
             i += 1

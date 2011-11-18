@@ -1,8 +1,8 @@
 //////////////////////////////////////////////////////////
-/// @file                 GroupManagement.cpp
+/// @file GroupManagement.cpp
 ///
-/// @author             Derek Ditch <derek.ditch@mst.edu>
-///                             Stephen Jackson <scj7t4@mst.edu>
+/// @author Derek Ditch <derek.ditch@mst.edu>
+///         Stephen Jackson <scj7t4@mst.edu>
 ///
 /// @compiler         C++
 ///
@@ -1005,7 +1005,7 @@ void GMAgent::ParseMessage(broker::CMessage msg)
             m_timerMutex.lock();
             m_timer.expires_from_now(boost::posix_time::seconds(TIMEOUT_TIMEOUT));
             m_timer.async_wait(boost::bind(&GMAgent::Recovery, 
-                                                                    this, boost::asio::placeholders::error));        
+                this, boost::asio::placeholders::error));        
             m_timerMutex.unlock();
         }
         else
@@ -1032,7 +1032,7 @@ void GMAgent::ParseMessage(broker::CMessage msg)
             // We used to set a timeout timer here but cancelling the timer should accomplish the same thing.
             m_timer.expires_from_now(boost::posix_time::seconds(TIMEOUT_TIMEOUT));
             m_timer.async_wait(boost::bind(&GMAgent::Timeout, this,
-                                                                        boost::asio::placeholders::error));
+                boost::asio::placeholders::error));
             m_timerMutex.unlock();
         }
         else

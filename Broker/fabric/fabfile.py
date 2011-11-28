@@ -51,6 +51,9 @@ def wait_sim(runtime='10m'):
 def end_sim():
     run("killall PosixBroker -u scj7t4")
 
+def end_sim2():
+    run("killall -9 PosixBroker -u scj7t4")
+
 def get_uuid():
     with cd(SRC_DIR):
         result = run("./PosixBroker -u")

@@ -66,7 +66,18 @@ if __name__ == "__main__":
             with settings(host_string=host):
                 if not options.dryrun:
                     fabfile.end_sim()
+        
+        with settings(host_string='localhost'):
+            if not options.dryrun:
+                print "Waiting...",
+                fabfile.wait_sim('10s')    
+                print "Done!"    
                 
+        for (host,fd) in hostlist.iteritems():
+            with settings(host_string=host):
+                if not options.dryrun:
+                    fabfile.end_sim2()
+        
         with settings(host_string='localhost'):
             if not options.dryrun:
                 print "Waiting...",

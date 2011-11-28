@@ -69,7 +69,7 @@ public:
     CDispatcher();
 
     /// Called upon incoming message
-    void HandleRequest( const ptree &p_mesg );
+    void HandleRequest( CMessage msg );
 
     /// Called prior to sending a message
     void HandleWrite( ptree &p_mesg );

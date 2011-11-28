@@ -564,7 +564,7 @@ void lbAgent::LoadTable()
 ///               Obviously, this would change in the near future
 ///
 /////////////////////////////////////////////////////////
-void lbAgent::HandleRead(const ptree& pt )
+void lbAgent::HandleRead(broker::CMessage msg)
 {
   Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
   PeerSet tempSet_;
@@ -572,8 +572,9 @@ void lbAgent::HandleRead(const ptree& pt )
   std::string line_;
   std::stringstream ss_;
   PeerNodePtr peer_;   
-  line_ = pt.get<std::string>("lb.source");
-  Logger::Debug << "Message '" <<pt.get<std::string>("lb")<<"' received from "<< line_<<std::endl;
+  line_ = msg.GetSourceUUID();
+  ptree pt = msg.GetSubMessages();
+  Logger::Debug << "Message '" <<pt.get<std::string>("lb","NOEXECPTION")<<"' received from "<< line_<<std::endl;
 
   // Evaluate the identity of the message source
   if(line_ != GetUUID())
@@ -597,10 +598,10 @@ void lbAgent::HandleRead(const ptree& pt )
      
   // If you receive a peerList from your new leader, process it and 
   // identify your new group members
-  if(pt.get<std::string>("lb") == "peerList")
+  if(pt.get<std::string>("any","NOEXCEPTION") == "peerList")
   {
     std::string peers_, token;
-    peers_ = pt.get<std::string>("lb.peers");
+    peers_ = pt.get<std::string>("any.peers");
     Logger::Notice << "\nPeer List < " << peers_ <<
            " > received from Group Leader: " << line_ <<std::endl;
 
@@ -659,7 +660,11 @@ void lbAgent::HandleRead(const ptree& pt )
       }
     }//endwhile
   }//end if("peerlist")
-
+  // If there isn't an lb message, just leave.
+  else if(pt.get<std::string>("lb","NOEXCEPTION") == "NOEXCEPTION")
+  {
+    return;
+  }
   // You received a draft request    
   else if(pt.get<std::string>("lb") == "request"  && peer_->GetUUID() != GetUUID())
   {

@@ -1,8 +1,8 @@
 //////////////////////////////////////////////////////////
-/// @file                 GroupManagement.cpp
+/// @file GroupManagement.cpp
 ///
-/// @author             Derek Ditch <derek.ditch@mst.edu>
-///                             Stephen Jackson <scj7t4@mst.edu>
+/// @author Derek Ditch <derek.ditch@mst.edu>
+///         Stephen Jackson <scj7t4@mst.edu>
 ///
 /// @compiler         C++
 ///
@@ -42,6 +42,7 @@
 
 #include "Utility.hpp"
 #include "CMessage.hpp"
+#include "types/remotehost.hpp"
 
 #include <algorithm>
 #include <cassert>
@@ -776,12 +777,12 @@ void GMAgent::Reorganize( const boost::system::error_code& err )
                 continue;
             peer_->AsyncSend(m_);
         }
-
         // sufficiently_long_Timeout; maybe Reorganize if something blows up
         SetStatus(GMPeerNode::NORMAL);
         Logger::Notice << "+ State change: NORMAL: " << __LINE__ << std::endl;
         m_groupsformed++;
         Logger::Notice << "Upnodes size: "<<m_UpNodes.size()<<std::endl;
+        
         if(m_UpNodes.size() != 0)
         {
             Logger::Notice << "Starting in group timer "<<__LINE__<<std::endl;
@@ -862,16 +863,8 @@ void GMAgent::Timeout( const boost::system::error_code& err )
         throw boost::system::system_error(err);
     }
 }
-
-void GMAgent::HandleRead(const ptree& pt)
-{
-        //Takes the input and pushes it back into the "local" io_service to
-        //make sure that all gm actions run in the same thread.
-        GetIOService().post(boost::bind(&GMAgent::ParseMessage,
-                 this, pt));        
-}
-
-void GMAgent::ParseMessage(ptree pt)
+ 
+void GMAgent::HandleRead(broker::CMessage msg)
 {
     Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
 
@@ -881,9 +874,10 @@ void GMAgent::ParseMessage(ptree pt)
     std::string line_;
     std::stringstream ss_;
     PeerNodePtr peer_;
-    std::string msg_source = pt.get<std::string>("gm.source");
+    std::string msg_source = msg.GetSourceUUID();
+    ptree pt = msg.GetSubMessages();
     
-    line_ = pt.get<std::string>("gm.source");
+    line_ = msg_source;
     if(line_ != GetUUID())
     {
         peer_ = GetPeer(line_);
@@ -898,6 +892,15 @@ void GMAgent::ParseMessage(ptree pt)
         }
     }
         
+    try
+    {
+      std::string x = pt.get<std::string>("gm");
+    }
+    catch(boost::property_tree::ptree_bad_path &e)
+    {
+      return;
+    }
+
     if(pt.get<std::string>("gm") == "Accept")
     {
         unsigned int msg_group = pt.get<unsigned int>("gm.groupid");
@@ -968,6 +971,7 @@ void GMAgent::ParseMessage(ptree pt)
             m_ingrouptimer.Stop();
             Logger::Notice << "Starting election timer "<<__LINE__<<std::endl;
             m_electiontimer.Start();
+            
             m_GroupID = pt.get<unsigned int>("gm.groupid");
             m_GroupLeader = pt.get<std::string>("gm.groupleader");
             Logger::Notice << "Changed group: " << m_GroupID << " (" << m_GroupLeader << ") " << std::endl;
@@ -995,7 +999,7 @@ void GMAgent::ParseMessage(ptree pt)
             m_timerMutex.lock();
             m_timer.expires_from_now(boost::posix_time::seconds(TIMEOUT_TIMEOUT));
             m_timer.async_wait(boost::bind(&GMAgent::Recovery, 
-                                                                    this, boost::asio::placeholders::error));        
+                this, boost::asio::placeholders::error));        
             m_timerMutex.unlock();
         }
         else
@@ -1011,18 +1015,18 @@ void GMAgent::ParseMessage(ptree pt)
         {
             SetStatus(GMPeerNode::NORMAL);
             Logger::Notice << "+ State change: NORMAL: " << __LINE__ << std::endl;
+            m_groupsjoined++;
             Logger::Notice << "Starting in group timer "<<__LINE__<<std::endl;
             m_ingrouptimer.Start();
             Logger::Notice << "Stopping election timer "<<__LINE__<<std::endl;
             m_electiontimer.Stop();
-            m_groupsjoined++;
             // We are no longer the Coordinator, we must run Timeout()
             Logger::Info << "TIMER: Canceling TimeoutTimer : " << __LINE__ << std::endl;
             m_timerMutex.lock();
             // We used to set a timeout timer here but cancelling the timer should accomplish the same thing.
             m_timer.expires_from_now(boost::posix_time::seconds(TIMEOUT_TIMEOUT));
             m_timer.async_wait(boost::bind(&GMAgent::Timeout, this,
-                                                                        boost::asio::placeholders::error));
+                boost::asio::placeholders::error));
             m_timerMutex.unlock();
         }
         else
@@ -1145,7 +1149,7 @@ int GMAgent::Run()
 {
     Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
 
-    std::map<std::string, std::string>::iterator mapIt_;
+    std::map<std::string, broker::remotehost>::iterator mapIt_;
 
     for( mapIt_ = GetConnectionManager().GetHostnamesBegin();
         mapIt_ != GetConnectionManager().GetHostnamesEnd(); ++mapIt_ )

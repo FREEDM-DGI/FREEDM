@@ -36,6 +36,7 @@
 #include "CMessage.hpp"
 #include "CDispatcher.hpp"
 #include "CReliableConnection.hpp"
+#include "types/remotehost.hpp"
 #include "CConnection.hpp"
 
 #include <boost/asio.hpp>

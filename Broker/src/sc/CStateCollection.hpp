@@ -95,7 +95,7 @@ class SCAgent : public IReadHandler, public SCPeerNode, public Templates::Single
     SCAgent& operator=(const SCAgent&);
     virtual ~SCAgent();
 
-    virtual void HandleRead(const ptree& pt );
+    virtual void HandleRead(broker::CMessage msg);
 //    virtual void HandleWrite(const ptree& pt);
     
     void 	Initiate();

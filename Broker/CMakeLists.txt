@@ -43,7 +43,7 @@ if(Boost_FOUND)
     CONFIGURE_FILE(
         ${CMAKE_BINARY_DIR}/include/config.hpp.cmake
         ${CMAKE_BINARY_DIR}/include/config.hpp )
-
+    
     # include project source directories
     include_directories("${CMAKE_BINARY_DIR}/include")
     include_directories("${CMAKE_BINARY_DIR}/src")

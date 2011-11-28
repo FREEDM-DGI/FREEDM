@@ -63,15 +63,16 @@ CDispatcher::CDispatcher()
 ///   as appropriate.
 /// @pre Modules have registered their read handlers.
 /// @post Message delievered to a module
-/// @param p_mesg The message to distribute to modules
+/// @param msg The message to distribute to modules
 ///////////////////////////////////////////////////////////////////////////////
-void CDispatcher::HandleRequest( const ptree &p_mesg )
+void CDispatcher::HandleRequest(CMessage msg)
 {
     Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
     ptree sub_;
     ptree::const_iterator it_;
     std::map< std::string, IReadHandler *>::const_iterator mapIt_;
     std::string key_;
+    ptree p_mesg = static_cast<ptree>(msg);
 
     try
     {
@@ -84,7 +85,14 @@ void CDispatcher::HandleRequest( const ptree &p_mesg )
              mapIt_ != m_readHandlers.upper_bound( "any" );
              ++mapIt_ )
         {
-            (mapIt_->second)->HandleRead( p_mesg );
+            try
+            {
+                (mapIt_->second)->HandleRead( msg );
+            }
+            catch( boost::property_tree::ptree_bad_path &e )
+            {
+                Logger::Warn<<"Module failed to read message"<<std::endl;
+            }
         }
 	        
 	      // Loop through all submessages of this message to call its
@@ -99,21 +107,40 @@ void CDispatcher::HandleRequest( const ptree &p_mesg )
             // handlers of that key. If the key doesn't exist in the
             // map, lower_bound(key) == upper_bound(key).
             key_ = it_->first;
-            for( mapIt_ = m_readHandlers.lower_bound( key_ );
-                    mapIt_ != m_readHandlers.upper_bound(key_);
-                    ++mapIt_ )
+            // Special keyword any which gives the submessage to all modules.
+            if( key_ == "any")
             {
-                // XXX Not sure if the handler needs the full message
-                (mapIt_->second)->HandleRead( p_mesg.get_child("message.submessages"));
+                for( mapIt_ =  m_readHandlers.begin(); 
+                     mapIt_ != m_readHandlers.end();
+                     ++mapIt_)
+                {
+                    try
+                    {
+                        (mapIt_->second)->HandleRead(msg);
+                    }
+                    catch( boost::property_tree::ptree_bad_path &e )
+                    {
+                        Logger::Warn<<"Module failed to read message (any field)"<<std::endl;
+                    }
+                }
             }
-
-            if( m_readHandlers.lower_bound( key_ ) == 
-                m_readHandlers.upper_bound( key_)     )
+            else
             {
-                // Just log this for now
-                Logger::Debug << "Submessage '" << key_ << "' had no read handlers.";
-            }
+                for( mapIt_ = m_readHandlers.lower_bound( key_ );
+                        mapIt_ != m_readHandlers.upper_bound(key_);
+                        ++mapIt_ )
+                {
+                    // XXX Not sure if the handler needs the full message
+                    (mapIt_->second)->HandleRead(msg);
+                }
 
+                if( m_readHandlers.lower_bound( key_ ) == 
+                    m_readHandlers.upper_bound( key_)     )
+                {
+                    // Just log this for now
+                    Logger::Debug << "Submessage '" << key_ << "' had no read handlers.";
+                }
+            }
         }
         // XXX Should anything be done if the message didn't
         // have any submessages? 

@@ -1,3 +1,6 @@
+#ifndef STOPWATCH_HPP
+#define STOPWATCH_HPP
+
 #include "boost/date_time/posix_time/posix_time.hpp"
 #include <iostream>
 
@@ -36,3 +39,5 @@ class Stopwatch
         bool timer_running;
         boost::posix_time::time_duration elapsed;
 };
+
+#endif

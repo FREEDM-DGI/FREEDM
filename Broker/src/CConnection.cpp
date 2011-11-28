@@ -153,6 +153,7 @@ void CConnection::RecieveACK(const CMessage &msg)
     }
 }
 
+
 ///////////////////////////////////////////////////////////////////////////////
 /// @fn CConnection::Recieve
 /// @description Handler for determineing if a recieved message should be ACKd
@@ -177,7 +178,6 @@ bool CConnection::Recieve(const CMessage &msg)
     }
     return false;
 }
-
 
     } // namespace broker
 } // namespace freedm

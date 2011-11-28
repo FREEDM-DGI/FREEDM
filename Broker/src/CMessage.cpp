@@ -136,7 +136,7 @@ CMessage::CMessage( const CMessage &p_m ) :
     m_srcUUID( p_m.m_srcUUID ),
     m_status( p_m.m_status ),
     m_submessages( p_m.m_submessages ),
-    m_hostname( p_m.m_hostname ),
+    m_remotehost( p_m.m_remotehost ),
     m_sequenceno( p_m.m_sequenceno ),
     m_properties( p_m.m_properties ),
     m_protocol( p_m.m_protocol ),
@@ -152,7 +152,7 @@ CMessage& CMessage::operator = ( const CMessage &p_m )
     this->m_srcUUID = p_m.m_srcUUID;
     this->m_status = p_m.m_status;
     this->m_submessages = p_m.m_submessages;
-    this->m_hostname = p_m.m_hostname;
+    this->m_remotehost = p_m.m_remotehost;
     this->m_sequenceno = p_m.m_sequenceno;
     this->m_properties = p_m.m_properties;
     this->m_protocol = p_m.m_protocol;
@@ -170,9 +170,9 @@ std::string CMessage::GetSourceUUID() const
 }
 
 /// Accessor for hostname
-std::string CMessage::GetSourceHostname() const
+remotehost CMessage::GetSourceHostname() const
 {
-    return m_hostname;
+    return m_remotehost;
 }
 
 /// Accessor for sequenceno
@@ -200,9 +200,9 @@ void CMessage::SetSourceUUID(std::string uuid)
 }
 
 /// Setter for hostname
-void CMessage::SetSourceHostname(std::string hostname)
+void CMessage::SetSourceHostname(remotehost hostname)
 {
-    m_hostname = hostname;
+    m_remotehost = hostname;
 }
 
 /// Setter for sequenceno
@@ -378,7 +378,8 @@ CMessage::operator ptree ()
     ptree pt;
 
     pt.put("message.source", m_srcUUID );
-    pt.put("message.hostname", m_hostname );
+    pt.put("message.hostname", m_remotehost.hostname );
+    pt.put("message.port",m_remotehost.port );
     pt.put("message.sequenceno", m_sequenceno );
     pt.put("message.status", m_status  );
     pt.put("message.sendtime",m_sendtime );
@@ -405,7 +406,8 @@ CMessage::CMessage( const ptree &pt )
         // Get the source host's ID and store it in the m_src variable.
         // An exception is thrown if "message.source" does not exist.
         m_srcUUID = pt.get< std::string >("message.source");
-        m_hostname = pt.get< std::string >("message.hostname");
+        m_remotehost.hostname = pt.get< std::string >("message.hostname");
+        m_remotehost.port = pt.get< std::string >("message.port");
         m_sequenceno = pt.get< unsigned int >("message.sequenceno");
         m_protocol = pt.get< std::string >("message.protocol");
         m_sendtime = pt.get< boost::posix_time::ptime >("message.sendtime");

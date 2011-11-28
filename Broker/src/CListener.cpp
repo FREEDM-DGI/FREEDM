@@ -123,7 +123,7 @@ void CListener::HandleRead(const boost::system::error_code& e, std::size_t bytes
         {
             ptree x = static_cast<ptree>(m_message);
             std::string uuid = m_message.GetSourceUUID();
-            std::string hostname = m_message.GetSourceHostname();
+            remotehost hostname = m_message.GetSourceHostname();
             ///Make sure the hostname is registered:
             GetConnectionManager().PutHostname(uuid,hostname);                        
             ///Get the pointer to the connection:
@@ -144,7 +144,7 @@ void CListener::HandleRead(const boost::system::error_code& e, std::size_t bytes
             {
                 Logger::Notice<<"Accepted message "<<m_message.GetHash()<<":"
                               <<m_message.GetSequenceNumber()<<std::endl;
-                GetDispatcher().HandleRequest(x);
+                GetDispatcher().HandleRequest(m_message);
             }
 
         }

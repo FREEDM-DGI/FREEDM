@@ -37,6 +37,8 @@
 #include "CDispatcher.hpp"
 #include "CReliableConnection.hpp"
 
+#include "types/remotehost.hpp"
+
 #include <boost/asio.hpp>
 #include <boost/array.hpp>
 #include <boost/noncopyable.hpp>

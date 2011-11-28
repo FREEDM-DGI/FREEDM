@@ -38,6 +38,8 @@
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/date_time/gregorian/gregorian.hpp>
 
+#include "types/remotehost.hpp"
+
 using boost::property_tree::ptree;
 
 #include <string>
@@ -79,7 +81,7 @@ public:
     std::string GetSourceUUID() const;
 
     /// Accessor for hostname
-    std::string GetSourceHostname() const;
+    remotehost GetSourceHostname() const;
     
     /// Accessor for sequenceno
     unsigned int GetSequenceNumber() const;
@@ -94,7 +96,7 @@ public:
     void SetSourceUUID(std::string uuid);
     
     /// Setter for hostname
-    void SetSourceHostname(std::string hostname);
+    void SetSourceHostname(remotehost hostname);
 
     /// Setter for sequenceno
     void SetSequenceNumber(unsigned int sequenceno);
@@ -178,7 +180,7 @@ public:
    
 private: 
     /// Contains the source node's hostname
-    std::string m_hostname;
+    remotehost m_remotehost;
 
     /// Contains the sequence number for the sending node
     unsigned int m_sequenceno;

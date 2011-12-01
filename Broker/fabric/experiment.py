@@ -7,9 +7,11 @@ class Experiment(object):
         self.granularity = granularity
         self.fixed = dict()
 
-    def fix_edge(self,tuuidx,tuuidy,value):
+    def fix_edge(self,host1,host2,value):
         index = 0
         seen = []
+	tuuidx = self.host2uuid[host1]
+	tuuidy = self.host2uuid[host2]
         for (hostx,uuidx) in self.host2uuid.iteritems():
             for (hostx,uuidy) in self.host2uuid.iteritems():
                 if uuidx == uuidy:

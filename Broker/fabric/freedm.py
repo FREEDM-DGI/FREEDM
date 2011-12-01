@@ -42,9 +42,13 @@ if __name__ == "__main__":
     host2uuid = map_hosts_to_uuids(options.hostnames)
     #PREPARE THE EXPERIMENT
     exp = experiment.Experiment(host2uuid,options.granularity)
+    #Hack until I fix stuff
+    exp.fix_edge(options.hostnames[0],options.hostnames[2],100)
+    exp.fix_edge(options.hostnames[1],options.hostnames[3],100)
     f = open(options.outputfile,'w',0)
     f.write(exp.tsv_head()+"\n")
     while 1:
+        print exp.expcounter
         f.write(exp.tsv_entry()+"\n")
         hostlist = exp.generate_files()
         for (host,fd) in hostlist.iteritems():

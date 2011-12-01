@@ -34,12 +34,11 @@ def build():
     with cd(SRC_DIR):
         run("BOOST_ROOT='%s' make" % BOOST_ROOT)
 
-def start_sim(runtime='10m'):
+@parallel
+def start_sim(runtime='10m',timeout='10s'):
     with cd(SRC_DIR):
-        run("pwd")
-        cmd = "screen -dmS test ./PosixBroker"
-        print cmd
-        result = run(cmd,pty=False)
+        cmd = "timeout %s -k %s ./PosixBroker" % (runtime,timeout)
+        result = run(cmd)
         if result.return_code != 0:
             print "Test failed with error code."
 
@@ -48,11 +47,13 @@ def wait_sim(runtime='10m'):
     local("sleep %s" % runtime)
     print "Done Waiting"
 
-def end_sim():
-    run("killall PosixBroker -u scj7t4")
-
-def end_sim2():
-    run("killall -9 PosixBroker -u scj7t4")
+@parallel
+def end_sim(force=False):
+    if force:
+        k = "-9"
+    else:
+        k = ""
+    run("killall %s PosixBroker -u scj7t4" % k)
 
 def get_uuid():
     with cd(SRC_DIR):

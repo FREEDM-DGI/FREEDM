@@ -3,6 +3,7 @@ from fabric.api import *
 from optparse import OptionParser
 from os.path import expanduser
 import subprocess
+import time
 
 import network
 import fabfile
@@ -47,6 +48,7 @@ if __name__ == "__main__":
     exp.fix_edge(options.hostnames[1],options.hostnames[3],100)
     f = open(options.outputfile,'w',0)
     f.write(exp.tsv_head()+"\n")
+    hs = ",".join(options.hostnames)
     while 1:
         print exp.expcounter
         f.write(exp.tsv_entry()+"\n")
@@ -54,39 +56,15 @@ if __name__ == "__main__":
         for (host,fd) in hostlist.iteritems():
             with settings(host_string=host):
                 fabfile.setup_sim(fd)
-      
-        for (host,fd) in hostlist.iteritems():
-            with settings(host_string=host):
-                if not options.dryrun:
-                    fabfile.start_sim(options.time)
-                else:
-                    print "Skipping start_sim; dry run."
-        with settings(host_string='localhost'):
+    
+        with settings(host_string=hs):
             if not options.dryrun:
-                fabfile.wait_sim(options.time)
-                print "Sending TERM"
-        
-        for (host,fd) in hostlist.iteritems():
-            with settings(host_string=host):
-                if not options.dryrun:
-                    fabfile.end_sim()
-        
-        with settings(host_string='localhost'):
-            if not options.dryrun:
-                print "Waiting...",
-                fabfile.wait_sim('10s')    
-                print "Done!"    
-                
-        for (host,fd) in hostlist.iteritems():
-            with settings(host_string=host):
-                if not options.dryrun:
-                    fabfile.end_sim2()
-        
-        with settings(host_string='localhost'):
-            if not options.dryrun:
-                print "Waiting...",
-                fabfile.wait_sim('10s')    
-                print "Done!"    
+                fabfile.start_sim(options.time)
+            else:
+                print "Skipping start_sim; dry run."
+
+        print "All runs should now be dead. Sleeping to let everything clean."
+        time.sleep(10)
  
         if exp.next() == None:
             break

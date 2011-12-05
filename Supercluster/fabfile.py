@@ -22,7 +22,10 @@ def create_user(username):
 
 def generate_keys(passphrase,keyfile='~/.ssh/id_rsa'):
     with cd('~/.ssh'):
-        run('ssh-keygen -t rsa -N %s -f %s' % (passphrase,keyfile))
+        if passphrase and len(passphrase) > 0: 
+            run('ssh-keygen -t rsa -N %s -f %s' % (passphrase,keyfile))
+        else:
+            run('ssh-keygen -t rsa -f %s' % (keyfile))
 
 def get_and_add_keys(keyfile='id_rsa'):
     get('~/.ssh/%s.pub' % keyfile,'tmp_key')

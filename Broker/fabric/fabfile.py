@@ -7,6 +7,8 @@ BOOST_ROOT = '~/boost'
 BROKER_DIR = '/home/scj7t4/FREEDM/Broker'
 SRC_DIR = '/home/scj7t4/FREEDM/Broker/src'
 
+env.key_filename = ["/home/scj7t4/.ssh/id_supercluster"]
+
 def host_type():
     run('uname -s')
 
@@ -37,7 +39,7 @@ def build():
 @parallel
 def start_sim(runtime='10m',timeout='10s'):
     with cd(SRC_DIR):
-        cmd = "timeout %s -k %s ./PosixBroker" % (runtime,timeout)
+        cmd = "timeout -k %s %s ./PosixBroker" % (timeout,runtime)
         result = run(cmd)
         if result.return_code != 0:
             print "Test failed with error code."

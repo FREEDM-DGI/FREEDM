@@ -33,6 +33,7 @@ def map_hosts_to_uuids(hostlist):
     return uuids
 
 if __name__ == "__main__":
+
     parser = generate_parser()
     (options,args) = parser.parse_args()
     if options.hostfile != None:
@@ -40,6 +41,8 @@ if __name__ == "__main__":
         options.hostnames = f.readlines()
         options.hostnames = [ x.strip() for x in options.hostnames ]
         f.close()
+    env.hosts = options.hostnames
+
     host2uuid = map_hosts_to_uuids(options.hostnames)
     #PREPARE THE EXPERIMENT
     exp = experiment.Experiment(host2uuid,options.granularity)
@@ -57,11 +60,13 @@ if __name__ == "__main__":
             with settings(host_string=host):
                 fabfile.setup_sim(fd)
     
-        with settings(host_string=hs):
-            if not options.dryrun:
-                fabfile.start_sim(options.time)
-            else:
-                print "Skipping start_sim; dry run."
+        if not options.dryrun:
+            #This simplifies the operations and lets us "spy" on the running tasks.
+            cmd = ['fab','-H', ",".join(options.hostnames), "start_sim:%s" % options.time, "--linewise" ]
+            #Uses suprocess to run the sim
+            subprocess.call(cmd)
+        else:
+            print "Skipping start_sim; dry run."
 
         print "All runs should now be dead. Sleeping to let everything clean."
         time.sleep(10)

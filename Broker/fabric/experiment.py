@@ -1,14 +1,62 @@
+"""
+@author Stephen Jackson <scj7t4@mst.edu>
+@compiler python2
+@project FREEDM Deployment
+@description This class creates a psuedo-generator for network settings for
+    firing off many short runs of various network settings rapidly.
+@license These source code files were created at as part of the
+    FREEDM DGI Subthrust, and are intended for use in teaching or
+    research.  They may be freely copied, modified and redistributed
+    as long as modified versions are clearly marked as such and
+    this notice is not removed.
+
+    Neither the authors nor the FREEDM Project nor the
+    National Science Foundation
+    make any warranty, express or implied, nor assumes
+    any legal responsibility for the accuracy,
+    completeness or usefulness of these codes or any
+    information distributed with these codes.
+
+    Suggested modifications or questions about these codes 
+    can be directed to Dr. Bruce McMillin, Department of 
+    Computer Science, Missouri University of Science and
+    Technology, Rolla, MO  65409 (ff@mst.edu).
+"""
 import network
 
 class Experiment(object):
+    """
+    An object which can be iterated to produce various network settings files.
+    Given a set of hostnames and a granularity, this script will produce fileIO
+    descriptors which can be written to network.xml files to simulate various
+    network settings.
+    """
     def __init__(self,host2uuid,granularity):
+        """
+        Intializes the experiment object by generating an experiment counter.
+        
+        @param host2uuid A dictionary mapping hostnames to UUIDs
+        @param granularity How much to step for each experiment
+        """
         self.expcounter = [0] * ((len(host2uuid) * (len(host2uuid)-1))/2)
         self.host2uuid = host2uuid
         self.granularity = granularity
         self.fixed = dict()
-        self.bussed = []
 
     def fix_edge(self,host1,host2,value):
+        """
+        When called, sets the edge between host1 and host2 to have a fixed
+        value In the current experiment and all those that follow, that
+        network connection will remain at the value specified.
+
+        Although the freedm.xml file supports more complex network bus
+        descriptions (such as unsymmetric channels) this software only
+        supports generating symmertric channels.
+        
+        @param host1 The first host to as source vertex.
+        @param host2 The second host to use a destination vertex.
+        @param value The reliability value to set the channel to. (0-100)
+        """
         index = 0
         seen = []
         tuuidx = self.host2uuid[host1]
@@ -26,9 +74,14 @@ class Experiment(object):
                 index += 1
                 seen.append(uuidx)
 
-    def make_bus(self,host1,host)    
-            
     def maptonetwork(self):
+        """
+        This function will return a dictionary of dictionaries, which provides
+        a table of the network settings for the current step of the experiment.
+        
+        @return A dictionary of dictionaries keyed as [sourcehost][desthost]
+            whose value is the reliability of that network edge.
+        """
         out = dict()
         index = 0
         seen = []
@@ -50,6 +103,15 @@ class Experiment(object):
         return out
 
     def next(self,default=None):
+        """
+        Increments the experiment counter. If there are no more experiments
+        left to be run, default will be returned (or None) if default has
+        not been provided
+        
+        @param default the value to return if there are no more experiments
+            to produce.
+        @ereturn the new value of expcounter
+        """
         index = 0
         max_v = [100]*(len(self.expcounter))
         for (key,(indexa,value)) in self.fixed.iteritems():
@@ -74,8 +136,19 @@ class Experiment(object):
         return self.expcounter
 
     def __repr__(self):
+        """
+        Allows converting this object to a string. Debugging purposes only;
+        this does not serialize the object.
+        
+        @return The experiment counter as a string.
+        """
         return str(self.expcounter)
     def tsv_head(self):
+        """
+        Generates the header for a TSV experiment data file.
+
+        @preturn The header for the experiment data.
+        """
         seen = []
         out = []
         for (hostx,uuidx) in self.host2uuid.iteritems():
@@ -93,8 +166,20 @@ class Experiment(object):
                 seen.append(uuidx)
         return "\t".join(out)
     def tsv_entry(self):
+        """
+        Generates an entry of the experiment tsv file.
+        
+        @return a tab seperated string of the current experiment settings.
+        """
         return "\t".join([str(x) for x in self.expcounter])
     def generate_files(self):
+        """
+        Generates the all the file descriptors for the all the network.xml
+        files for the current stage of the experiment.
+        
+        @return A dictionary of fileio objects that can be written into the
+            hosts network.xml files.
+        """
         filedict = dict()
         m = self.maptonetwork()
         for (k,v) in m.iteritems():

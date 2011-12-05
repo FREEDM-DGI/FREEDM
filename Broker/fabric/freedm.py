@@ -1,6 +1,6 @@
 #!/usr/bin/python2
 from fabric.api import *
-from optparse import OptionParser
+from optparse import OptionParser,OptionGroup
 from os.path import expanduser
 import subprocess
 import time
@@ -11,12 +11,34 @@ import experiment
 
 def generate_parser():
     parser = OptionParser()
-    parser.add_option("-f","--hostname-file",dest="hostfile",help="File containing Hostnames's used in the test, one per line.")
-    parser.add_option("-d","--dry-run",action="store_true",dest="dryrun",default=False,help="Don't actually issue the run experiment commands, simply prepare the experiments.")
-    parser.add_option("-n","--hostname",dest="hostnames",action="append",help="UUIDs to use for this experiment set.")
-    parser.add_option("-o","--output-file",dest="outputfile",default="exp.dat",help="File to write the experiment table to, if not provided, defaults to exp.dat")
-    parser.add_option("-g","--granularity",dest="granularity",default=5,type="int",help="The simulator will run experiments with a step up or down in the granularity for each network connection.")
-    parser.add_option("-t","--time",dest="time",default="10m",help="The option that will be provided to the unix command timeout to terminate cases.")
+    parser.add_option("-f","--hostname-file",dest="hostfile",
+        help="File containing Hostnames's used in the test, one per line.")
+    parser.add_option("-d","--dry-run",action="store_true",dest="dryrun",
+        default=False, help="Don't actually issue the DGI startup commands, "
+                            "just show the procedure.")
+    parser.add_option("-n","--hostname",dest="hostnames",action="append",
+        help="UUIDs to use for this experiment set.")
+    parser.add_option("-t","--time",dest="time",default=None,
+        help="The option that will be provided to the unix command"
+             "timeout to terminate the run. Fomrat is of an argument to the"
+             "UNIX timeout command. e.g. 10m for a 10 minute run.")
+    parser.add_option("-c","--line-client",dest="lineclient",
+        help="If specified, indicates the hostname which should be connected"
+             "to in order to start the line server")
+    parser.add_option("-e","--experiment",dest="experiment",action="store_true",
+        help="Enable experiment mode, which can be used to observe the affects"
+             "of network link reliability on the system")
+    expgroup = OptionGroup(parser, "Network Experiments", 
+        "These options will only be used in network experiment mode (-e). In"
+        "this mode, the program will run for a specified period of time with"
+        "incrementing network settings (from 0 up to full reliability")
+    expgroup.add_option("-o","--output-file",dest="outputfile",default="exp.dat",
+        help="File to write the experiment table to, if not provided, "
+             "defaults to exp.dat")
+    expgroup.add_option("-g","--granularity",dest="granularity",default=5,type="int",
+        help="The simulator will run experiments with a step up or down in the"
+             "granularity for each network connection.")
+    parser.add_option_group(expgroup)
     return parser
 
 def disconnect_all2():

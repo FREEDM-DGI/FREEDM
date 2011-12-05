@@ -2,6 +2,13 @@ import xml.dom.minidom
 from StringIO import StringIO
 
 def create_network_file(in_reliability,out_reliability):
+    """
+    Generates a StringIO (good for writing to files) xml file of the current
+    experimental settings.
+    
+    @param in_reliabilty The reliability of the listening socket.
+    @param out_reliability The reliability of the outbound channels.
+    """
     doc = xml.dom.minidom.Document()
     net = doc.createElement("network")
     doc.appendChild(net)

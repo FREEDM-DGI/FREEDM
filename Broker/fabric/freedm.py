@@ -1,6 +1,7 @@
 #!/usr/bin/python2
 from fabric.api import *
 from optparse import OptionParser,OptionGroup
+import ConfigParser
 from os.path import expanduser
 import subprocess
 import time
@@ -11,34 +12,11 @@ import experiment
 
 def generate_parser():
     parser = OptionParser()
-    parser.add_option("-f","--hostname-file",dest="hostfile",
-        help="File containing Hostnames's used in the test, one per line.")
+    parser.add_option("-f","--config-file",dest="configfile",
+        default="tardis.cfg" help="Config file to use.")
     parser.add_option("-d","--dry-run",action="store_true",dest="dryrun",
-        default=False, help="Don't actually issue the DGI startup commands, "
-                            "just show the procedure.")
-    parser.add_option("-n","--hostname",dest="hostnames",action="append",
-        help="UUIDs to use for this experiment set.")
-    parser.add_option("-t","--time",dest="time",default=None,
-        help="The option that will be provided to the unix command"
-             "timeout to terminate the run. Fomrat is of an argument to the"
-             "UNIX timeout command. e.g. 10m for a 10 minute run.")
-    parser.add_option("-c","--line-client",dest="lineclient",
-        help="If specified, indicates the hostname which should be connected"
-             "to in order to start the line server")
-    parser.add_option("-e","--experiment",dest="experiment",action="store_true",
-        help="Enable experiment mode, which can be used to observe the affects"
-             "of network link reliability on the system")
-    expgroup = OptionGroup(parser, "Network Experiments", 
-        "These options will only be used in network experiment mode (-e). In"
-        "this mode, the program will run for a specified period of time with"
-        "incrementing network settings (from 0 up to full reliability")
-    expgroup.add_option("-o","--output-file",dest="outputfile",default="exp.dat",
-        help="File to write the experiment table to, if not provided, "
-             "defaults to exp.dat")
-    expgroup.add_option("-g","--granularity",dest="granularity",default=5,type="int",
-        help="The simulator will run experiments with a step up or down in the"
-             "granularity for each network connection.")
-    parser.add_option_group(expgroup)
+                      default=False,help="Don't actually issue the run"
+                      "commands.")
     return parser
 
 def disconnect_all2():
@@ -55,36 +33,67 @@ def map_hosts_to_uuids(hostlist):
     return uuids
 
 if __name__ == "__main__":
-
     parser = generate_parser()
     (options,args) = parser.parse_args()
-    if options.hostfile != None:
-        f = open(options.hostfile)
-        options.hostnames = f.readlines()
-        options.hostnames = [ x.strip() for x in options.hostnames ]
-        f.close()
-    env.hosts = options.hostnames
 
-    host2uuid = map_hosts_to_uuids(options.hostnames)
+    config = ConfigParser.ConfigParser()
+    config.read(options.configfile)
+
+    hostnames = []
+    line = config.getboolean('lineserver','enable')
+    if line:
+        linehost = config.get('lineserver','host')
+        tmp = linehost.split(":")
+        if len(tmp) != 2:
+            print "Line host needs to be in the form hostname:port"
+            exit(1)
+        linehost = (tmp[0],tmp[1])
+        linepath = config.get('lineserver','path')
+    exp = config.getboolean('networkexp','enable')
+    if exp:
+        granularity = config.get('networkexp','granularity')
+
+    default_port = config.get('options','default_port')
+
+    for i in xrange(20000):
+        section = "host"+str(i)
+        if not config.has_section(section):
+            break
+        tmp = config.get(section,'host',0)
+        tmp2 = config.get(section,'path',0)
+        tmp3 = tmp.split(":")
+        if len(tmp3) == 1:
+            tmp3.append(default_port)
+        if len(tmp3) == 0:
+            print "Need a hostname/port for entry %s" % section
+            exit(1)
+        r = (tmp3[0],tmp3[1],tmp2)
+        hostnames.append(r)
+
+
+
+    host2uuid = map_hosts_to_uuids([ x[0] for x in hostnames ])
     #PREPARE THE EXPERIMENT
-    exp = experiment.Experiment(host2uuid,options.granularity)
-    #Hack until I fix stuff
-    exp.fix_edge(options.hostnames[0],options.hostnames[2],100)
-    exp.fix_edge(options.hostnames[1],options.hostnames[3],100)
-    f = open(options.outputfile,'w',0)
-    f.write(exp.tsv_head()+"\n")
-    hs = ",".join(options.hostnames)
+    if exp:
+        exp = experiment.Experiment(host2uuid,options.granularity)
+        #Hack until I fix stuff
+        #exp.fix_edge(options.hostnames[0],options.hostnames[2],100)
+        #exp.fix_edge(options.hostnames[1],options.hostnames[3],100)
+        f = open(options.outputfile,'w',0)
+        f.write(exp.tsv_head()+"\n")
     while 1:
-        print exp.expcounter
-        f.write(exp.tsv_entry()+"\n")
-        hostlist = exp.generate_files()
-        for (host,fd) in hostlist.iteritems():
-            with settings(host_string=host):
-                fabfile.setup_sim(fd)
+        if exp:
+            print exp.expcounter
+            f.write(exp.tsv_entry()+"\n")
+            hostlist = exp.generate_files()
+            for (host,fd) in hostlist.iteritems():
+                with settings(host_string=host):
+                    fabfile.setup_sim(fd)
     
         if not options.dryrun:
             #This simplifies the operations and lets us "spy" on the running tasks.
-            cmd = ['fab','-H', ",".join(options.hostnames), "start_sim:%s" % options.time, "--linewise" ]
+            cmd = ['fab','-H', ",".join([ x[0] for x in hostnames]),
+                   "start_sim:%s" % options.time, "--linewise" ]
             #Uses suprocess to run the sim
             subprocess.call(cmd)
         else:
@@ -93,6 +102,6 @@ if __name__ == "__main__":
         print "All runs should now be dead. Sleeping to let everything clean."
         time.sleep(10)
  
-        if exp.next() == None:
+        if not exp or exp.next() == None:
             break
     disconnect_all2()

@@ -6,12 +6,13 @@ class Experiment(object):
         self.host2uuid = host2uuid
         self.granularity = granularity
         self.fixed = dict()
+        self.bussed = []
 
     def fix_edge(self,host1,host2,value):
         index = 0
         seen = []
-	tuuidx = self.host2uuid[host1]
-	tuuidy = self.host2uuid[host2]
+        tuuidx = self.host2uuid[host1]
+        tuuidy = self.host2uuid[host2]
         for (hostx,uuidx) in self.host2uuid.iteritems():
             for (hostx,uuidy) in self.host2uuid.iteritems():
                 if uuidx == uuidy:
@@ -24,7 +25,9 @@ class Experiment(object):
                     return
                 index += 1
                 seen.append(uuidx)
-                
+
+    def make_bus(self,host1,host)    
+            
     def maptonetwork(self):
         out = dict()
         index = 0

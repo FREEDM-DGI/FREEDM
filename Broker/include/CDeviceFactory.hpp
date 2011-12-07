@@ -42,10 +42,7 @@ namespace freedm {
 namespace broker {
 namespace device {
 
-////////////////////////////////////////////////////////////////////////////////
-/// @class CDeviceFactory
-/// @description Creates devices and their internal structures
-////////////////////////////////////////////////////////////////////////////////
+/// Creates devices and their internal structures
 class CDeviceFactory
     : private boost::noncopyable
 {

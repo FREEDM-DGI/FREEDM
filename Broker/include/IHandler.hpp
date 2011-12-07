@@ -12,6 +12,9 @@ namespace boost {
 #include <boost/property_tree/ptree_fwd.hpp>
 using boost::property_tree::ptree;
 
+///An interface for an object which can handle recieving incoming messages
+class IReadHandler
+{
 ///////////////////////////////////////////////////////////////////////////////
 /// @class IReadHandler
 ///
@@ -21,8 +24,6 @@ using boost::property_tree::ptree;
 /// incoming message with a matching body section.
 ///
 ///////////////////////////////////////////////////////////////////////////////
-class IReadHandler
-{
 public:
     virtual ~IReadHandler(){}
 
@@ -30,6 +31,9 @@ public:
     virtual void HandleRead(freedm::broker::CMessage msg) = 0;
 };
 
+/// An interface for an object which writes on outgoing messages
+class IWriteHandler
+{
 ///////////////////////////////////////////////////////////////////////////////
 /// @class IWriteHandler
 ///
@@ -45,8 +49,6 @@ public:
 ///
 /// Note: This interface may change
 ///////////////////////////////////////////////////////////////////////////////
-class IWriteHandler
-{
 public:
     virtual ~IWriteHandler(){}
 

@@ -60,8 +60,7 @@ class CBroker : private boost::noncopyable
 {
 
 public:
-    /// Initialize the broker and begin accepting connections and messages from
-    /// other nodes and modules.
+    /// Initialize the broker and begin accepting connections and messages 
     explicit CBroker(const std::string& address, const std::string& port,
                    CDispatcher& p_dispatch, boost::asio::io_service &m_ios,
                    freedm::broker::CConnectionManager &m_conMan);

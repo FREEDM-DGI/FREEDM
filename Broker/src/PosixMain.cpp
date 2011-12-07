@@ -336,7 +336,7 @@ int main (int argc, char* argv[])
         dispatch_.RegisterReadHandler( "lb", &LB_);
 
         // Instantiate and register the state collection module
-        SCAgent SC_ (uuidstr, broker_.GetIOService(), dispatch_, m_conManager);     
+        SCAgent SC_ (uuidstr, broker_.GetIOService(), dispatch_, m_conManager, m_phyManager);     
         dispatch_.RegisterReadHandler( "sc", &SC_);
 
         // The peerlist should be passed into constructors as references or pointers

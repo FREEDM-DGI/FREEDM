@@ -106,6 +106,8 @@ class lbAgent
         void HandleRead(broker::CMessage msg);
 	void LoadManage( const boost::system::error_code& err );
 
+        void	StatePrint(const ptree& pt);//test collected state(Li)
+
 	// This is the main loop of the algorithm
         int	LB();
         int step;

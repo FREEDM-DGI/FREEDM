@@ -42,10 +42,7 @@ class CPhysicalDeviceManager;
 
 namespace device {
 
-////////////////////////////////////////////////////////////////////////////////
-/// @class CDeviceLWI
-/// @description Common implementation of LWI devices
-////////////////////////////////////////////////////////////////////////////////
+/// Common implementation of LWI devices
 class CDeviceLWI
     : public virtual CDevice
 {
@@ -72,10 +69,7 @@ public:
     SettingValue get_powerLevel();
 };
 
-////////////////////////////////////////////////////////////////////////////////
-/// @class CDeviceLWI_Battery
-/// @description Physical batteries for the LWI project
-////////////////////////////////////////////////////////////////////////////////
+/// Physical batteries for the LWI project
 class CDeviceLWI_Battery
     : public CDeviceLWI
     , public CDeviceDESD
@@ -96,10 +90,7 @@ public:
     virtual ~CDeviceLWI_Battery() {}
 };
 
-////////////////////////////////////////////////////////////////////////////////
-/// @class CDeviceLWI_Load
-/// @description Physical loads for the LWI project
-////////////////////////////////////////////////////////////////////////////////
+/// Physical loads for the LWI project
 class CDeviceLWI_Load
     : public CDeviceLWI
     , public CDeviceLOAD
@@ -120,10 +111,7 @@ public:
     virtual ~CDeviceLWI_Load() {}
 };
 
-////////////////////////////////////////////////////////////////////////////////
-/// @class CDeviceLWI_PV
-/// @description Solar panels for the LWI project
-////////////////////////////////////////////////////////////////////////////////
+/// Solar panels for the LWI project
 class CDeviceLWI_PV
     : public CDeviceLWI
     , public CDeviceDRER

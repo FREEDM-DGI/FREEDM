@@ -122,6 +122,8 @@ int main (int argc, char* argv[])
              default_value("0.0.0.0"), "IP interface to listen on")
             ("port,p", po::value<std::string>(&port_)->
              default_value("1870"), "TCP port to listen on")
+            ("add-device,d", po::value<std::vector<std::string> >()->
+            composing(), "physical device name")
             ("lineclient-host,l", po::value<std::string>(&interHost)->
              default_value(""),"Hostname to use for the lineclient to connect.")
             ("lineclient-port,q", po::value<std::string>(&interPort)->
@@ -257,58 +259,29 @@ int main (int argc, char* argv[])
         // interPort is the port number this DGI and simulation communicate in
         broker::device::CDeviceFactory factory(
             m_phyManager, m_ios, interHost, interPort );
-
+        
         // Create Devices
-        factory.CreateDevice<broker::device::CDeviceLWI_PV>( "pv1" );
-        factory.CreateDevice<broker::device::CDeviceLWI_Battery>( "battery1" );
-        factory.CreateDevice<broker::device::CDeviceLWI_Load>( "load1" );
-        factory.CreateDevice<broker::device::CDeviceLWI_Load>( "load2" );
-
-        // verify old code actually works still (maybe)
-        if( broker::device::device_cast<broker::device::CDeviceDRER>(m_phyManager.GetDevice("pv1")) )
+        if (vm_.count("add-device") > 0) 
         {
-            Logger::Info << "Solar Works!" << std::endl;
-        }
-        else
+            std::vector< std::string > device_list =
+                vm_["add-device"].as< std::vector<std::string> >();
+            foreach(std::string &devid, device_list)
+            {
+                if( m_phyManager.DeviceExists( devid ) )
+                {
+                    Logger::Warn << "Duplicate device: " << devid << std::endl;
+                }
+                else
+                {
+                    factory.CreateDevice<broker::device::CDeviceDESD>( devid );
+                    Logger::Info << "Added device: " << devid << std::endl;
+                }
+            }                                                                                               
+        } 
+        else 
         {
-            Logger::Error << "Solar Broke!" << std::endl;
-        }
-        if( broker::device::device_cast<broker::device::CDeviceDESD>(m_phyManager.GetDevice("battery1")) )
-        {
-            Logger::Info << "Battery Works!" << std::endl;
-        }
-        else
-        {
-            Logger::Error << "Battery Broke!" << std::endl;
-        }
-        if( broker::device::device_cast<broker::device::CDeviceLOAD>(m_phyManager.GetDevice("load1")) )
-        {
-            Logger::Info << "Load Works!" << std::endl;
-        }
-        else
-        {
-            Logger::Error << "Load Broke!" << std::endl;
-        }
-        if( broker::device::device_cast<broker::device::CDeviceLOAD>(m_phyManager.GetDevice("pv1")) )
-        {
-            Logger::Error << "Device Cast Broke!" << std::endl;
-        }
-        
-        // verify the new word may work
-        m_phyManager.GetDevice("pv1")->Set("powerLevel",10.5);
-        Logger::Info << "Power Level = " << m_phyManager.GetDevice("pv1")->Get("powerLevel") << std::endl;
-        Logger::Info << "Power Level = " << broker::device::device_cast<broker::device::CDeviceLWI_PV>(m_phyManager.GetDevice("pv1"))->get_powerLevel() << std::endl;
-        
-        // check the device manager cast function
-        broker::CPhysicalDeviceManager::PhysicalDevice<broker::device::CDeviceLOAD>::Container result;
-        broker::CPhysicalDeviceManager::PhysicalDevice<broker::device::CDeviceLOAD>::iterator it, end;
-
-        result = m_phyManager.GetDevicesOfType<broker::device::CDeviceLOAD>();
-        Logger::Info << "Found " << result.size() << " loads" << std::endl;
-        for( it = result.begin(), end = result.end(); it != end; it++ )
-        {
-            Logger::Info << (*it)->GetID() << std::endl;
-        }
+            Logger::Info << "No physical devices specified" << std::endl;
+        }   
         
         // Instantiate Dispatcher for message delivery 
         broker::CDispatcher dispatch_;

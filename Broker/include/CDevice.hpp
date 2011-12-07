@@ -55,10 +55,7 @@ boost::shared_ptr<TargetType> device_cast( ObjectType object )
     return boost::dynamic_pointer_cast<TargetType>(object);
 }
 
-////////////////////////////////////////////////////////////////////////////////
-/// @class CDevice
-/// @description Physical device with implementation delegated to private member
-////////////////////////////////////////////////////////////////////////////////
+/// Physical device with implementation delegated to private member
 class CDevice
     : public IDeviceGet
     , public IDeviceSet

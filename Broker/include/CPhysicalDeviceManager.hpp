@@ -45,6 +45,7 @@
 namespace freedm {
 namespace broker {
 
+/// Provides a container that manages physical device instances
 class CPhysicalDeviceManager
 {
 public:

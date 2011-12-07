@@ -6,10 +6,11 @@
 namespace freedm {
 namespace broker {
 
+/// A container which lists the hostname and and port of a peer.
 struct remotehost
 {
-    std::string hostname;
-    std::string port;
+    std::string hostname; /// Remote endpoint hostnames
+    std::string port; /// Remote endpoint port
 };
 
 }

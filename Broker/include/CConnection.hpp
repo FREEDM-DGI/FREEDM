@@ -37,8 +37,8 @@
 #include "CDispatcher.hpp"
 #include "CReliableConnection.hpp"
 
-#include "SlidingWindow.hpp"
 #include "types/remotehost.hpp"
+#include "SlidingWindow.hpp"
 
 #include <boost/asio.hpp>
 #include <boost/array.hpp>

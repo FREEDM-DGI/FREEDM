@@ -40,10 +40,7 @@ class CPhysicalDeviceManager;
 
 namespace device {
 
-////////////////////////////////////////////////////////////////////////////////
-/// @class CDeviceDRER
-/// @description Implementation of distributed renewable energy resources
-////////////////////////////////////////////////////////////////////////////////
+/// Implementation of distributed renewable energy resources
 class CDeviceDRER
     : public virtual CDevice
 {

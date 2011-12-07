@@ -49,21 +49,16 @@
 
 namespace freedm {
 
-//////////////////////////////////////////////////////////
-/// class CPeerNode
-///
-/// @description A brief description of the class
-///
-/// @limitations Any limitations for the class, or None
-///
-/////////////////////////////////////////////////////////
+/// A container for an individual group management peer
 class GMPeerNode : public IPeerNode {
     public:
-      GMPeerNode(std::string uuid, ConnManagerPtr connmgr,
+        /// Constructs a peer.
+        GMPeerNode(std::string uuid, ConnManagerPtr connmgr,
             boost::asio::io_service& ios,
             freedm::broker::CDispatcher& dispatch) :
                 IPeerNode(uuid,connmgr,ios,dispatch) {};
-      enum { NORMAL,DOWN,RECOVERY,REORGANIZATION,ELECTION };
+        /// States this peer can be in.
+        enum { NORMAL,DOWN,RECOVERY,REORGANIZATION,ELECTION };
 };
 
 } // End freedm

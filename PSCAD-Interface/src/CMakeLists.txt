@@ -20,6 +20,4 @@ add_library (MYLIB ${MYFILES})
 add_executable (driver driver.cpp)
 
 # link the executable to its dependencies
-target_link_libraries (driver ${Boost_THREAD_LIBRARY})
-target_link_libraries (driver ${Boost_SYSTEM_LIBRARY})
-target_link_libraries (driver MYLIB)
+target_link_libraries (driver MYLIB ${Boost_THREAD_LIBRARY} ${Boost_SYSTEM_LIBRARY})

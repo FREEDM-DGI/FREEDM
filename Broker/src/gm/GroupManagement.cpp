@@ -332,6 +332,7 @@ freedm::broker::CMessage GMAgent::PeerList()
 	//m_.m_submessages.put("lb.source", ss_.str());
 	//m_.m_submessages.put("lb", "peerList");
 	m_.m_submessages.put("any.source", ss_.str());
+    m_.m_submessages.put("any.coordinator",GetUUID());
 	m_.m_submessages.put("any", "peerList");
 	ss_.clear();
 	foreach( PeerNodePtr peer_, m_UpNodes | boost::adaptors::map_values)

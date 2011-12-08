@@ -318,16 +318,23 @@ void SCAgent::TakeSnapshot()
 
    } 
 */
-  float PowerValue;
-  m_phyDevManager.GetDevice("pv1")->Set("powerLevel",1.5);
-  Logger::Info << "Power Level = " << m_phyDevManager.GetDevice("pv1")->Get("powerLevel") << std::endl;
-  PowerValue = m_phyDevManager.GetDevice("pv1")->Get("powerLevel");
+  typedef broker::device::CDeviceDESD SST;
+  broker::CPhysicalDeviceManager::PhysicalDevice<SST>::Container list;
+  broker::CPhysicalDeviceManager::PhysicalDevice<SST>::iterator it, end;
+  broker::device::SettingValue PowerValue = 0;
+  
+  // calculate the gateway from the list of local SSTs (should only be one)
+  list = m_phyDevManager.GetDevicesOfType<SST>();
+  for( it = list.begin(), end = list.end(); it != end; it++ )
+  {
+    PowerValue += (*it)->Get("powerLevel");
+  }
+  Logger::Info << "Power Level = " << PowerValue << std::endl;
 
   //get gateway value from SST and save into a CMessage (here use a fake one)
   m_curstate.put("sc.type", "gateway");
   m_curstate.put("sc.gateway", PowerValue);
   m_curstate.put("sc.source", GetUUID());
-
 }
 
 

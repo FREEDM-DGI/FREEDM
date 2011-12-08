@@ -58,6 +58,7 @@ using boost::property_tree::ptree;
 #include "CConnection.hpp"
 
 #include "CPhysicalDeviceManager.hpp"
+#include "PhysicalDeviceTypes.hpp"
 
 #include <map>
 

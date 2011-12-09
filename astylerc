@@ -8,7 +8,7 @@
 #    ubuntu example: sudo apt-get install astyle
 #
 # 2. Copy this file to your home directory and make it a hidden file
-#    cp astyle ~/.astylerc
+#    cp astylerc ~/.astylerc
 #
 # 3. Stylize your code using astyle
 #    astyle <code-to-format>

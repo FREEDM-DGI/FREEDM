@@ -50,8 +50,9 @@
 //CREATE_EXTERN_STD_LOGS();
 
 
-namespace freedm {
-  
+namespace freedm
+{
+
 //////////////////////////////////////////////////////////
 /// class SCPeerNode
 ///
@@ -61,13 +62,14 @@ namespace freedm {
 ///
 /////////////////////////////////////////////////////////
 
-class SCPeerNode : public IPeerNode {
+class SCPeerNode : public IPeerNode
+{
     public:
         SCPeerNode(std::string uuid, ConnManagerPtr connmgr,
-		 boost::asio::io_service& ios, 
-		 freedm::broker::CDispatcher& dispatch):
-			IPeerNode(uuid, connmgr, ios, dispatch) {};
-	enum EStatus {Sleeping = 0,Collecting};
+                   boost::asio::io_service& ios,
+                   freedm::broker::CDispatcher& dispatch):
+            IPeerNode(uuid, connmgr, ios, dispatch) {};
+        enum EStatus {Sleeping = 0,Collecting};
 };
 
 } // End freedm

@@ -111,14 +111,37 @@ void CSimulationServer::Run()
         
         // read the header of the next received packet
         boost::asio::read( socket, boost::asio::buffer(header) );
-
-	//hard code the null character
-	header[3]='\0';
-
         Logger::Debug << "PSCAD - received " << header.data() << std::endl;
         
         // message handler based on header type
-        if( strcmp( header.data(), "GET" ) == 0 )
+        if( strcmp( header.data(), "RST" ) == 0 )
+        {
+            boost::unique_lock<boost::shared_mutex> lockA(m_state.m_mutex);
+            boost::unique_lock<boost::shared_mutex> lockB(m_command.m_mutex);
+            Logger::Debug << "PSCAD - obtained mutex as writer" << std::endl;
+            size_t bytes = m_state.m_length * sizeof(double);
+            
+            // read the message body into the state table
+            boost::asio::read( socket, boost::asio::buffer(m_state.m_data, bytes) );
+            
+            // copy the message body into the command table
+            if( m_state.m_length != m_command.m_length )
+            {
+                // this implementation requires m_state == m_command
+                Logger::Error << "Failed to handle RST message: " << 
+                    "state and command are not uniform" << std::endl;
+            }
+            else
+            {
+                for( size_t i = 0; i < m_state.m_length; i++ )
+                {
+                    m_command.m_data[i] = m_state.m_data[i];
+                }
+            }
+            
+            Logger::Debug << "PSCAD - released writer mutex" << std::endl;
+        }
+        else if( strcmp( header.data(), "GET" ) == 0 )
         {
             boost::shared_lock<boost::shared_mutex> lock(m_command.m_mutex);
             Logger::Debug << "PSCAD - obtained mutex as reader" << std::endl;
@@ -145,7 +168,6 @@ void CSimulationServer::Run()
         else
         {
             Logger::Warn << "PSCAD - received unhandled message" << std::endl;
-            // bad header
         }
         
         socket.close();

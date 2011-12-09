@@ -207,13 +207,27 @@ int receive_packet( int sd, void * data, int bytes )
 }
 
 void pscad_send_init__( int * ip1, int * ip2, int * ip3, int * ip4, int * port,
-        int * status )
+        double * data, int * length, int * status )
 {
+    char request[] = "RST";
     char address[16];
+    int sd;
 
     // get printable ip address
     itodd( address, *ip1, *ip2, *ip3, *ip4 );
-    *status = print_header( SENDLOG, address, *port );
+    print_header( SENDLOG, address, *port );
+
+    // connect to remote simulation server
+    if( (sd = connect_to_server( address, *port )) != -1 )
+    {
+        // send the RST request and corresponding data
+        if( send_packet( sd, request, data, (*length)*sizeof(double) ) != -1 )
+        {
+            errno = 0;  // reset errno on success
+        }
+    }
+    
+    *status = print_result( SENDLOG, request, data, *length );
 }
 
 void pscad_send__( int * ip1, int * ip2, int * ip3, int * ip4, int * port,
@@ -235,7 +249,7 @@ void pscad_send__( int * ip1, int * ip2, int * ip3, int * ip4, int * port,
             errno = 0;  // reset errno on success
         }
     }
-    
+        
     *status = print_result( SENDLOG, request, data, *length );
 }
 

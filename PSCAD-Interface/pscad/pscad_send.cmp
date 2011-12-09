@@ -61,48 +61,54 @@ Component("pscad_send")
     Len = 10
     Min = 0
     }
+   Input("delay",6,114,180,12,2)
+    {
+    Desc = "Time Delay"
+    Data = Real
+    Len = 10
+    Min = 0
+    }
    }
   }
 
  Nodes = 
   {
+  Output("status",216,0)
+   {
+   Type = Integer
+   }
   Input("data:ndata",-216,0)
    {
    Type = Real
    Dim  = [0]
-   }
-  Output("status",216,0)
-   {
-   Type = Integer
    }
   }
 
  Graphics = 
   {
   Rectangle(-156,156,156,-156)
-  Pen(ByNode,ByNode,ByNode,status)
+  Pen(ByNode,ByNode,ByNode,data:ndata)
+  Line(216,0,156,0)
+  Text(228,20,"status")
+  Text(0,-12,"pscad_send")
   Line(-216,0,-156,0)
   Pen(,Solid)
   Line(-156,0,-176,20)
   Line(-156,0,-176,-20)
   Text(-208,20,"data")
-  Pen(,ByNode)
-  Line(216,0,156,0)
-  Text(228,20,"status")
-  Text(0,-12,"pscad_send")
   }
 
  Section(EMTDC)
   {
   Fortran = "\
-      IF (TIMEZERO) THEN
-            CALL PSCAD_SEND_INIT($IP1,$IP2,$IP3,$IP4,$PORT,$STATUS)
-      END IF
-
-      IF (LASTSTEP) THEN
-            CALL PSCAD_SEND_CLOSE($STATUS)
-      ELSE IF (MOD(NINT(TIME/DELT),NINT($dt/DELT)) == 0) THEN
-            CALL PSCAD_SEND($IP1,$IP2,$IP3,$IP4,$PORT,$DATA,$NDATA,$STATUS)
+      IF (NINT(TIME/DELT) == NINT($DELAY/DELT)) THEN
+            CALL PSCAD_SEND_INIT($IP1,$IP2,$IP3,$IP4,$PORT,$DATA,$NDATA,$STATUS)
+      ELSE IF (TIME > $DELAY) THEN
+            IF (LASTSTEP) THEN
+                  CALL PSCAD_SEND_CLOSE($STATUS)
+            ELSE IF (MOD(NINT(TIME/DELT),NINT($dt/DELT)) == 0) THEN
+                  CALL PSCAD_SEND($IP1,$IP2,$IP3,$IP4,$PORT,$DATA,$NDATA,$STATUS)
+            END IF
       END IF"
   Branch = ""
   Computations = ""

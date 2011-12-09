@@ -4,8 +4,8 @@
 #ifndef IAGENT_HPP_
 #define IAGENT_HPP_
 
-/// Common functions useful for all sorts of modules
 template<class T>
+/// Common functions useful for all sorts of broker modules
 class IAgent
 {
     public:

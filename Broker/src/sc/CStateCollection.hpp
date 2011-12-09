@@ -57,6 +57,9 @@ using boost::property_tree::ptree;
 #include "CConnectionManager.hpp"
 #include "CConnection.hpp"
 
+#include "CPhysicalDeviceManager.hpp"
+#include "PhysicalDeviceTypes.hpp"
+
 #include <map>
 
 using boost::asio::ip::tcp;
@@ -73,7 +76,7 @@ enum {
 //	GLOBAL_TIMEOUT = 5
 
 	GLOBAL_TIMEOUT2 = 50,
-	FAULT_TIMEOUT2 = 10
+	TIMEOUT_TIMEOUT2 = 5
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -90,24 +93,26 @@ class SCAgent : public IReadHandler, public SCPeerNode, public Templates::Single
     
     typedef std::pair< std::string, int >  StateVersion;
  
-    SCAgent(std::string uuid, boost::asio::io_service &ios, freedm::broker::CDispatcher &p_dispatch, freedm::broker::CConnectionManager &m_connManager);
+    SCAgent(std::string uuid, boost::asio::io_service &ios, freedm::broker::CDispatcher &p_dispatch, freedm::broker::CConnectionManager &m_connManager, freedm::broker::CPhysicalDeviceManager &m_phyManager);
     SCAgent(const SCAgent&);
     SCAgent& operator=(const SCAgent&);
     virtual ~SCAgent();
 
-    virtual void HandleRead(broker::CMessage msg);
-//    virtual void HandleWrite(const ptree& pt);
+//  void HandleRead(const ptree& pt );
+//  void HandleWrite(const ptree& pt);
+
+
+   virtual void HandleRead(broker::CMessage msg);
     
     void 	Initiate();
     void	TakeSnapshot();
-    void	StatePrint(std::map< int, ptree >& pt );
 
     // Messages
     freedm::broker::CMessage m_state();
     freedm::broker::CMessage m_marker();
 
     // Handlers
-    void Initiate(const boost::system::error_code& err);
+    void StateResponse(const boost::system::error_code& err);
 
     // This is the main loop of the algorithm
     int	SC();
@@ -121,17 +126,19 @@ protected:
     std::map< int, ptree >      collectstate;
     std::map< int, ptree >::iterator it;
     int countstate;
+    std::string module;
 
     StateVersion			m_curversion;
     ptree				m_curstate;
 
+    freedm::broker::CPhysicalDeviceManager &m_phyDevManager;
     PeerSet	m_AllPeers;
 
     
     /* IO and Timers */
 //    deadline_timer		m_CheckTimer;
-//    deadline_timer		m_TimeoutTimer;
-    deadline_timer		m_GlobalTimer;
+    deadline_timer		m_TimeoutTimer;
+//    deadline_timer		m_GlobalTimer;
 
 };
 

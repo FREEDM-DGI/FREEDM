@@ -76,12 +76,7 @@ enum {
 	GLOBAL_TIMEOUT = 5
 };
 
-///////////////////////////////////////////////////////////////////////////////
-///	@class			CAgent
-///	@description	Declaration of Garcia-Molina Invitation Leader Election
-///		algorithm.
-///////////////////////////////////////////////////////////////////////////////
-
+///	Declaration of Garcia-Molina Invitation Leader Election algorithm.
 class GMAgent
   : public IReadHandler, public GMPeerNode,
     public Templates::Singleton< GMAgent >, 
@@ -89,81 +84,128 @@ class GMAgent
 {
   friend class Templates::Singleton< GMAgent >;
   public:
+    /// Default constructor
     GMAgent();
+    /// Constructor for using this object as a module.
     GMAgent(std::string uuid_, boost::asio::io_service &ios, freedm::broker::CDispatcher &p_dispatch, freedm::broker::CConnectionManager &m_conManager);
+    /// Copy constructor for the module
     GMAgent(const GMAgent&);
+    /// Copy constructor for the module
     GMAgent& operator=(const GMAgent&);
+    /// Module destructor
     ~GMAgent();
     
     // Internal
+    /// Resets the algorithm to the default startup state.
     void Recovery();
+    /// Returns true if this node considers itself a coordinator
     bool IsCoordinator() const { return (Coordinator() == GetUUID()); };
 
     // Handlers
+    /// Handles recieving incoming messages.
     virtual void HandleRead(broker::CMessage msg );
     
     //Routines
+    /// Checks for other up leaders
     void Check( const boost::system::error_code& err );
+    /// Checks that the leader is still alive and working
     void Timeout( const boost::system::error_code& err );
+    /// Handles no response from timeout message
     void Recovery( const boost::system::error_code& err );
+    /// Waits a time period determined by UUID for merge
     void Premerge( const boost::system::error_code &err );
+    /// Sends invitations to all known nodes.
     void Merge( const boost::system::error_code& err );
+    /// Sends the peer list to all group members.
     void PushPeerList();
     
     // Messages
+    /// Creates AYC Message.
     freedm::broker::CMessage AreYouCoordinator();
+    /// Creates Group Invitation Message
     freedm::broker::CMessage Invitation();
+    /// Creates Ready Message
     freedm::broker::CMessage Ready();
+    /// Creates A Response message
     freedm::broker::CMessage Response(std::string msg,std::string type);
+    /// Creates an Accept Message
     freedm::broker::CMessage Accept();
+    /// Creates a AYT, used for Timeout
     freedm::broker::CMessage AreYouThere();
+    /// Generates a peer list
     freedm::broker::CMessage PeerList();
  
     //Utility
+    /// Converts the UUID to an integer for PreMerge
     unsigned int MurmurHash2(const void * key, int len);
 
     // This is the main loop of the algorithm
+    /// Called to start the system
     int	Run();
+    /// Called on program termination
     void Stop();
 
     //Get/Set   
     //boost::asio::io_service& GetIOService() { return m_localservice; };
    
     //Peer Set Manipulation
+    /// Adds a peer to the peer set from UUID
     PeerNodePtr AddPeer(std::string uuid);
+    /// Adds a peer from a pointer to a peer node object
     PeerNodePtr AddPeer(PeerNodePtr peer);
+    /// Gets a pointer to a peer from UUID.
     PeerNodePtr GetPeer(std::string uuid);
 
   protected:
+    /// Sends invitations to all group members
     void InviteGroupNodes( const boost::system::error_code& err, PeerSet p_tempSet );
+    /// Puts the system into the working state
     void Reorganize( const boost::system::error_code& err );
+    /// Outputs information about the current state to the logger.
     void SystemState();
 
+    /// Returns the coordinators uuid.
     std::string Coordinator() const { return m_GroupLeader; }
     
+    /// Nodes In My Group
     PeerSet	m_UpNodes;
+    /// Known Coordinators
     PeerSet m_Coordinators;
+    /// All known peers
     PeerSet	m_AllPeers;
+    /// Nodes expecting AYC response from
     PeerSet m_AYCResponse;
+    /// Nodes expecting AYT response from
     PeerSet m_AYTResponse;
     
     // Mutex for protecting the m_UpNodes above
   	boost::mutex pList_Mutex;
     
+    /// The ID number of the current group (Never initialized for fun)
     unsigned int m_GroupID;
+    /// The uuid of the group leader
     std::string  m_GroupLeader;
+    /// The number of groups being formed
     unsigned int m_GrpCounter;
     
     /* IO and Timers */
+    /// The io_service used.
     boost::asio::io_service m_localservice;
+    /// A mutex to make the timers threadsafe
     boost::interprocess::interprocess_mutex m_timerMutex;
+    /// A timer for stepping through the election process
     deadline_timer m_timer;
 
     // Testing Functionality:
+    /// Counts the number of elections
     int m_groupselection;
+    /// Counts the number of groups formed
     int m_groupsformed;
+    /// Counts the number of groups this node as accepted invites to.
     int m_groupsjoined;
+    /// Counts the number of groups this node has left
     int m_groupsbroken;
+    /// The number of elections that have occured.
     int m_rounds;
     Stopwatch m_electiontimer;
     Stopwatch m_ingrouptimer;

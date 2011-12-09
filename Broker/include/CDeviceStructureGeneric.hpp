@@ -36,10 +36,7 @@ namespace freedm {
 namespace broker {
 namespace device {
 
-////////////////////////////////////////////////////////////////////////////////
-/// @class CDeviceStructureGeneric
-/// @description Generic device with a register to store device settings
-////////////////////////////////////////////////////////////////////////////////
+/// Generic device with a register to store device settings
 class CDeviceStructureGeneric
     : public IDeviceStructure
 {

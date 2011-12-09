@@ -45,21 +45,22 @@
 
 namespace freedm{
   namespace broker{
-////////////////////////////////////////////////////////////////////////////////
-/// CLineClient
-///
-/// @description
-///     Client side of a line protocol with three requests: GET, SET and QUIT.
-///     The GET and SET commands operate on (Device,Key) pairs, where Device is
-///     the unique identifier of some physical hardware and Key is the variable
-///     name of that hardware to be manipulated.
-///
-/// @limitations
-///     none
-///
-////////////////////////////////////////////////////////////////////////////////
+/// Provides an interface for communicating commands to a PSCAD model
 class CLineClient : private boost::noncopyable
 {
+    ////////////////////////////////////////////////////////////////////////////////
+    /// CLineClient
+    ///
+    /// @description
+    ///     Client side of a line protocol with three requests: GET, SET and QUIT.
+    ///     The GET and SET commands operate on (Device,Key) pairs, where Device is
+    ///     the unique identifier of some physical hardware and Key is the variable
+    ///     name of that hardware to be manipulated.
+    ///
+    /// @limitations
+    ///     none
+    ///
+    ////////////////////////////////////////////////////////////////////////////////
 public:
     typedef boost::shared_ptr<CLineClient> TPointer;
     static TPointer Create( boost::asio::io_service & p_service );

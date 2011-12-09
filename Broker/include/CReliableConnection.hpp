@@ -36,9 +36,6 @@
 #include "CMessage.hpp"
 #include "CDispatcher.hpp"
 
-#include "concurrentqueue.hpp"
-#include "SlidingWindow.hpp"
-
 #include <boost/asio.hpp>
 #include <boost/array.hpp>
 #include <boost/noncopyable.hpp>
@@ -52,7 +49,7 @@ namespace freedm {
 
 class CConnectionManager;
 
-/// Represents a single connection to/from a client.
+/// Represents a single connection to from a client.
 class CReliableConnection
     : public boost::enable_shared_from_this<CReliableConnection>,
       private boost::noncopyable

@@ -40,10 +40,7 @@ class CPhysicalDeviceManager;
 
 namespace device {
 
-////////////////////////////////////////////////////////////////////////////////
-/// @class CDeviceDESD
-/// @description Implementation of distributed energy storage devices
-////////////////////////////////////////////////////////////////////////////////
+/// Implementation of distributed energy storage devices
 class CDeviceDESD
     : public virtual CDevice
 {

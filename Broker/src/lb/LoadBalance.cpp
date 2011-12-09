@@ -126,6 +126,14 @@ void lbAgent::LoadManage()
   MessagePtr m_;
   preLoad = l_Status; // Remember previous load before computing current load
 
+//test interface with state collection
+  freedm::broker::CMessage m_cs;
+  m_cs.m_submessages.put("sc", "request");
+  m_cs.m_submessages.put("sc.source", GetUUID());
+  m_cs.m_submessages.put("sc.module", "lb");
+  get_peer(GetUUID())->Send(m_cs);
+
+
   // Physical device information managed by Broker can be obtained as below
   Logger::Info << "LB module identified "<< m_phyDevManager.DeviceCount()
                << " physical devices on this node" << std::endl;
@@ -858,8 +866,11 @@ void lbAgent::HandleRead(broker::CMessage msg)
 
   // "load" message is sent by the State Collection module of the source 
   // (local or remote). Respond to it by sending in your current load status
-  else if(pt.get<std::string>("lb") == "load")
+  else if(pt.get<std::string>("lb") == "gateway")
   {
+    StatePrint(pt);
+
+/*
     peer_ = get_peer(line_);
     Logger::Notice << "\nCurrent Load State requested by " << peer_->GetUUID() << std::endl;    
      
@@ -894,6 +905,9 @@ void lbAgent::HandleRead(broker::CMessage msg)
     {
       Logger::Info << "Couldn't send Message To Peer" << std::endl;
     }
+
+*/
+
   }//end if("load")
 
   // Other message type is invalid within lb module
@@ -927,6 +941,20 @@ lbAgent::PeerNodePtr lbAgent::add_peer(std::string uuid)
   InsertInPeerSet(m_NoNodes,tmp_);
   return tmp_;
 }
+
+/////////test collected states
+void lbAgent::StatePrint(const ptree& pt)
+{	
+	Logger::Notice << "Collected states are " << std::endl;
+ 	std::cout << "--------------------collectstate--------------------------" << std::endl;
+
+	std::cout << "gateway values are " << pt.get<std::string>("gateway")<< std::endl;
+
+	std::cout << "----------------------------------------------------------" << std::endl;
+}
+
+
+
 ////////////////////////////////////////////////////////////
 /// LB
 /// @description Main function which initiates the algorithm

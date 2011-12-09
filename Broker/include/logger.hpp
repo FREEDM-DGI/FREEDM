@@ -12,14 +12,17 @@ using namespace boost::posix_time;
 
 namespace Logger {
 
+/// Logging Output Software
 class Log : public boost::iostreams::sink
 {
 public:
+    /// Constructor; prepares a log of a specifed level.
     Log( int level_, const char * name_, std::ostream *out_= &std::clog ) :
         m_level(level_), m_name( name_ ), m_ostream( out_ )
     {
     };
 
+    /// Wrtes from a character array into the logger stream
     std::streamsize write( const char* s, std::streamsize n)
     {
         if( m_filter >= m_level ){
@@ -32,16 +35,17 @@ public:
         return n;
     };
     
+    /// Sets the output level, if the logger level is less, then it won't be output
     static void setLevel( const int p_level )
     {
         m_filter = p_level;
     }
 
 private:
-    static int m_filter;
-    const int m_level;
-    const std::string m_name;
-    std::ostream *m_ostream;
+    static int m_filter; /// The level of logger to output
+    const int m_level; /// The level of this logger
+    const std::string m_name; /// String name of this logger
+    std::ostream *m_ostream; // Output stream to use.
 };
 
 }

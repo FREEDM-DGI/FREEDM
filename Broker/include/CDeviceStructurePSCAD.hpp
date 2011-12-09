@@ -38,10 +38,7 @@ namespace broker {
 namespace device {
 
 
-////////////////////////////////////////////////////////////////////////////////
-/// @class CDeviceStructurePSCAD
-/// @description PSCAD device with a line client to query device settings
-////////////////////////////////////////////////////////////////////////////////
+/// PSCAD device with a line client to query device settings
 class CDeviceStructurePSCAD
     : public IDeviceStructure
 {

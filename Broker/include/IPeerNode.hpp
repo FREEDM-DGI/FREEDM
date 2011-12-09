@@ -55,21 +55,22 @@
 namespace freedm {
 typedef boost::shared_ptr<freedm::broker::CMessage> MessagePtr;
 typedef freedm::broker::CConnectionManager& ConnManagerPtr;
-//////////////////////////////////////////////////////////
-/// class IPeerNode
-///
-/// @description A container intended to be used generically to provide
-///              basic IO and stracking of peer used in FREEDM agents.
-///
-/// @limitations This class is meant to be extended to be a specific
-///              peer type for an agent, which is then further extended
-///              to become an agent itself. See the generic agent interface.
-///
-/////////////////////////////////////////////////////////
+/// Base interface for agents/broker modules
 class IPeerNode
   : public boost::enable_shared_from_this<IPeerNode>
   , private boost::noncopyable
 {
+        //////////////////////////////////////////////////////////
+        /// class IPeerNode
+        ///
+        /// @description A container intended to be used generically to provide
+        ///              basic IO and stracking of peer used in FREEDM agents.
+        ///
+        /// @limitations This class is meant to be extended to be a specific
+        ///              peer type for an agent, which is then further extended
+        ///              to become an agent itself. See the generic agent interface.
+        ///
+        /////////////////////////////////////////////////////////
     public:
         IPeerNode(std::string uuid, ConnManagerPtr connmgr,
             boost::asio::io_service& ios, freedm::broker::CDispatcher& dispatch);

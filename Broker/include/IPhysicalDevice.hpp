@@ -43,10 +43,7 @@ typedef std::string SettingKey;
 /// Type of the value for device settings
 typedef double SettingValue;
 
-////////////////////////////////////////////////////////////////////////////////
-/// @class IDeviceGet
-/// @description Defines the interface of the device get value function
-////////////////////////////////////////////////////////////////////////////////
+/// Defines the interface of the device get value function
 class IDeviceGet
 {
 public:
@@ -57,10 +54,7 @@ public:
     virtual SettingValue Get( const SettingKey & key ) = 0;
 };
 
-////////////////////////////////////////////////////////////////////////////////
-/// @class IDeviceSet
-/// @description Defines the interface of the device set value function
-////////////////////////////////////////////////////////////////////////////////
+/// Defines the interface of the device set value function
 class IDeviceSet
 {
 public:
@@ -71,10 +65,7 @@ public:
     virtual void Set( const SettingKey & key, const SettingValue & value ) = 0;
 };
 
-////////////////////////////////////////////////////////////////////////////////
-/// @class IDeviceStructure
-/// @description Defines the interface of the device implementation scheme
-////////////////////////////////////////////////////////////////////////////////
+/// Defines the interface of the device implementation scheme
 class IDeviceStructure
     : public IDeviceGet
     , public IDeviceSet

@@ -9,4 +9,4 @@ Makefile
 src/version.h
 src/PosixBroker
 *.[oa]
-src/src
+driver

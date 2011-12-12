@@ -113,7 +113,8 @@ int main (int argc, char* argv[])
             ("config,c", po::value<std::string>(&cfgFile_)->
                 default_value("freedm.cfg"),"filename of additional configuration.")
             ("generateuuid,g", po::value<std::string>(&uuidgenerator)->
-                default_value(""), "Generate a uuid for the specified host, output it, and exit");
+                default_value(""), "Generate a uuid for the specified host, output it, and exit")
+            ("uuid,u","Print this node's generated uuid and exit");
         // This is for arguments in a config file or as arguments
         configOpts_.add_options()
             ("add-host", po::value<std::vector<std::string> >()->
@@ -133,8 +134,8 @@ int main (int argc, char* argv[])
              "enable verbose output (optionally specify level)");
 
         hiddenOpts_.add_options()
-            ("uuid", po::value<std::string>(&uuid_),
-             "UUID for this host");
+            ("setuuid", po::value<std::string>(&uuid_),	
+                    "UUID for this host");
 
         // Specify positional arguments
         posOpts_.add("address", 1).add("port", 1);
@@ -206,9 +207,13 @@ int main (int argc, char* argv[])
             std::cerr << visibleOpts_ << std::endl;
             return 0;
         }
-        if( uuidgenerator != "" )
+        if( uuidgenerator != "" || vm_.count("uuid"))
         {
-            u_ = uuid::from_dns(uuidgenerator);
+            if(uuidgenerator == "")
+            {
+                uuidgenerator = boost::asio::ip::host_name();
+            }
+            u_ = freedm::uuid::from_dns(uuidgenerator);
             std::cout<<u_<<std::endl;
             return 0;
         }

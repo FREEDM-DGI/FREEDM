@@ -1,7 +1,7 @@
 from fabric.api import *
 from os.path import join
 
-env.key_filename = ["/home/scj7t4/.ssh/id_rsa"]
+#env.key_filename = ["/home/scj7t4/.ssh/id_rsa"]
 env.warn_only = True
 
 def host_type():
@@ -32,9 +32,9 @@ def build():
         run("BOOST_ROOT='%s' make" % BOOST_ROOT)
 
 @parallel
-def start_sim(path, runtime='10m',timeout='10s'):
+def start_sim(path):
     with cd(join(path,"Broker/src/")):
-        cmd = "timeout -k %s %s ./PosixBroker" % (timeout,runtime)
+        cmd = "./PosixBroker"
         result = run(cmd)
         if result.return_code != 0:
             print "Test failed with error code."

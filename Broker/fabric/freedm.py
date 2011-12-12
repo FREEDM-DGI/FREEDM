@@ -25,10 +25,10 @@ def disconnect_all2():
         connections[key].close()
         del connections[key]
 
-def map_hosts_to_uuids(path,hostlist):
+def map_hosts_to_uuids(path,hostlist,keyfile):
     uuids = dict()
     for host in hostlist:
-        with settings(host_string=host):
+        with settings(host_string=host,key_filename=keyfile):
             uuids.setdefault(host,fabfile.get_uuid(path))
     return uuids
 
@@ -41,23 +41,20 @@ if __name__ == "__main__":
 
     hostnames = []
     line = config.getboolean('lineserver','enable')
-    """
     if line:
         linehost = config.get('lineserver','host')
-        tmp = linehost.split(":")
-        if len(tmp) != 2:
-            print "Line host needs to be in the form hostname:port"
-            exit(1)
-        linehost = (tmp[0],tmp[1])
+    
     """
     exp = config.getboolean('networkexp','enable')
     if exp:
         granularity = config.get('networkexp','granularity')
         outputfile = config.get('networkexp','outputfile')
+    """
+    exp = False
 
     path = config.get('options','path')
+    keyfile = expanduser(config.get('options','keyfile'))
     #default_port = config.get('options','default_port')
-    runtime = config.get('options','runtime')
 
     for i in xrange(20000):
         section = "host"+str(i)
@@ -86,13 +83,13 @@ if __name__ == "__main__":
             print "%s..." % (i+1)
             time.sleep(1)
 
-        cmd = ['fab','-H',"linehost","start_linehost:%s" % path, "--linewise"]
+        cmd = ['fab','-H',"linehost","start_linehost:%s" % path,"-i",keyfile, "--linewise"]
         if not options.dryrun:
             x = subprocess.Popen(cmd)
 
         raw_input("Press Enter to continue...")
 
-    host2uuid = map_hosts_to_uuids(path,[ x[0] for x in hostnames ])
+    host2uuid = map_hosts_to_uuids(path,[ x[0] for x in hostnames ],keyfile)
     #PREPARE THE EXPERIMENT
     if exp:
         exp = experiment.Experiment(host2uuid,options.granularity)
@@ -114,9 +111,17 @@ if __name__ == "__main__":
         if not options.dryrun:
             #This simplifies the operations and lets us "spy" on the running tasks.
             cmd = ['fab','-H', ",".join([ x[0] for x in hostnames]),
-                   "start_sim:%s,%s" % (path,runtime), "--linewise" ]
+                   "start_sim:%s" % (path), "--linewise", "-i", keyfile ]
             #Uses suprocess to run the sim
-            subprocess.call(cmd)
+            try:
+                p = subprocess.Popen(cmd)
+                while not p.poll():
+                    time.sleep(1)
+            except (KeyboardInterrupt,SystemExit):
+                print "Terminating sim"
+                p.terminate()
+                p.wait()
+                break
         else:
             print "Skipping start_sim; dry run."
 
@@ -125,4 +130,11 @@ if __name__ == "__main__":
  
         if not exp or exp.next() == None:
             break
+    """
+    cmd = ['fab','-H', ",".join([ x[0] for x in hostnames]),
+           "end_sim", "--linewise", "-i", keyfile ]
+    #Uses suprocess to end the sim
+    p = subprocess.call(cmd)
+    """
+    print "Disconnecting"
     disconnect_all2()

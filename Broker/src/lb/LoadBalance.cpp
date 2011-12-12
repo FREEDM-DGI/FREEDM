@@ -362,58 +362,22 @@ void lbAgent::SendDraftRequest()
 /////////////////////////////////////////////////////////
 void lbAgent::InitiatePowerMigration(broker::device::SettingValue DemandValue)
 {
-  typedef std::map<broker::device::SettingValue,broker::device::Identifier> DeviceMap;
-  typedef broker::device::CDeviceDRER SST;
+    typedef broker::device::CDeviceDRER SST;
+    broker::CPhysicalDeviceManager::PhysicalDevice<SST>::Container list;
+    broker::CPhysicalDeviceManager::PhysicalDevice<SST>::iterator it, end;
 
-  // Container and iterators for the result of GetDevicesOfType
-  broker::CPhysicalDeviceManager::PhysicalDevice<SST>::Container container;
-  broker::CPhysicalDeviceManager::PhysicalDevice<SST>::iterator it, end;
-  
-  // Make a map of SSTs
-  DeviceMap map;
-
-  // Temp variables to hold "vin" and "vout"
-  broker::device::SettingValue V_in, V_out;
-
-  //Sort the DESDs by decreasing order of their "vin"s; achieved by inserting into map
-  container = m_phyDevManager.GetDevicesOfType<SST>();
-  for( it = container.begin(), end = container.end(); it != end; it++ )   
-  {
-    map.insert( DeviceMap::value_type((*it)->Get("powerLevel"), (*it)->GetID()) );
-  } 
-
-  //Use a reverse iterator on map to retrieve elements in reverse sorted order   
-  DeviceMap::reverse_iterator mapIt_; 
-  // temp variable to hold the P_migrate set by Demanding node
-  broker::device::SettingValue temp_ = DemandValue;
-  
-  for( mapIt_ = map.rbegin(); mapIt_ != map.rend(); ++mapIt_ )
-  {
-    V_in = mapIt_->first; //load "vin" from the DESDmap
-   
-    // Using the below if-else structure, what we are doing is as follows:
-    // Use the DESD that has highest input from DRERs and reduce this input;
-    // The key assumption here is that the SST (PSCAD Model) will figure out
-    // the way to route this surplus on to the grid
-    // Next use the DESD with next highest input and so on till net demand
-    // (P_migrate) is satisfied
-    if(temp_ <= V_in)
-    {  
-      V_in = V_in - temp_;
-      //Then set the V_in accordingly on that particular device	
-      m_phyDevManager.GetDevice(mapIt_->second)->Set("powerLevel", V_in);               
-    }
-    else 
+    list = m_phyDevManager.GetDevicesOfType<SST>();
+    for( it = list.begin(), end = list.end(); it != end; it++ )
     {
-      temp_ = temp_ - V_in;
-      V_in = 0;
-      //Then set the vin and vout accordingly on that particular device	
-      m_phyDevManager.GetDevice(mapIt_->second)->Set("powerLevel", V_in); 
-    }  
-  }//end for
-
-  // Clear the DRER map
-  map.clear();
+        if( -DemandValue <= -P_Gateway - *m_normal )
+        {
+            (*it)->Set("powerLevel", -P_Gateway + DemandValue);
+        }
+        else
+        {
+            (*it)->Set("powerLevel", *m_normal);
+        }
+    }
 }
 
 ////////////////////////////////////////////////////////////
@@ -485,11 +449,11 @@ void lbAgent::LoadTable()
   std::cout <<"| "<< std::setw(20) << "----" << std::setw(27)<< "-----" << std::setw(7) <<"|"<< std::endl;
 
   //Compute the Load state based on the current gateway value
-  if(m_normal && P_Gateway < (*m_normal)-NORMAL_TOLERANCE)
+  if(m_normal && P_Gateway < -(*m_normal)-NORMAL_TOLERANCE)
   {
     l_Status = LPeerNode::SUPPLY;
   }
-  else if(m_normal && P_Gateway > (*m_normal)+NORMAL_TOLERANCE)
+  else if(m_normal && P_Gateway > -(*m_normal)+NORMAL_TOLERANCE)
   {
     l_Status = LPeerNode::DEMAND;
     DemandValue = -1;

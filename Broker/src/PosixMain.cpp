@@ -278,7 +278,7 @@ int main (int argc, char* argv[])
                 }
                 else
                 {
-                    factory.CreateDevice<broker::device::CDeviceDESD>( devid );
+                    factory.CreateDevice<broker::device::CDeviceDRER>( devid );
                     Logger::Info << "Added device: " << devid << std::endl;
                 }
             }                                                                                               

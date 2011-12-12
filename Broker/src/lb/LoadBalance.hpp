@@ -44,6 +44,7 @@ using boost::property_tree::ptree;
 #include <vector>
 #include <boost/shared_ptr.hpp>
 #include <boost/progress.hpp>
+#include <boost/optional/optional.hpp>
 
 #include "CMessage.hpp"
 #include "Utility.hpp"
@@ -64,6 +65,9 @@ using boost::asio::ip::tcp;
 using namespace boost::asio;
 
 namespace freedm {
+
+const unsigned int STATE_TIMEOUT = 20;
+const double NORMAL_TOLERANCE = 0.5;
 
 // Global constants
 enum {
@@ -106,8 +110,6 @@ class lbAgent
         void HandleRead(broker::CMessage msg);
 	void LoadManage( const boost::system::error_code& err );
 
-        void	StatePrint(const ptree& pt);//test collected state(Li)
-
 	// This is the main loop of the algorithm
         int	LB();
         int step;
@@ -125,6 +127,30 @@ class lbAgent
 
 	/* IO and Timers */
 	deadline_timer		m_GlobalTimer;
+    
+    /// timer until next periodic state collection
+    deadline_timer      m_StateTimer;
+
+    /// flag to indicate group leadership position
+    bool m_leader;
+    
+    /// normalized gateway value
+    boost::optional<double> m_normal;
+    
+    /// sets an asynchronous timer for state collection
+    void StartStateTimer( unsigned int delay );
+    
+    /// handles the next periodic state collection call
+    void HandleStateTimer( const boost::system::error_code & error );
+    
+    /// call to state collection
+    void CollectState();
+    
+    /// calculate the normal value of collected state
+    void StateNormalize( const ptree & pt );
+    
+    /// update internal normalized gateway value
+    void UpdateNormal( const ptree & pt );
 };
 }
 

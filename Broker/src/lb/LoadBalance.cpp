@@ -90,12 +90,16 @@ lbAgent::lbAgent(std::string uuid_, boost::asio::io_service &ios,
                  broker::CPhysicalDeviceManager &m_phyManager):
   LPeerNode(uuid_, m_conManager, ios, p_dispatch),
   m_phyDevManager(m_phyManager),
-  m_GlobalTimer(ios)
+  m_GlobalTimer(ios),
+  m_StateTimer(ios),
+  m_leader(false)
 {
   Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
   PeerNodePtr self_(this);
   InsertInPeerSet(l_AllPeers, self_);
   step = 0;
+  
+  StartStateTimer( STATE_TIMEOUT );
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -125,14 +129,6 @@ void lbAgent::LoadManage()
   Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
   MessagePtr m_;
   preLoad = l_Status; // Remember previous load before computing current load
-
-//test interface with state collection
-  freedm::broker::CMessage m_cs;
-  m_cs.m_submessages.put("sc", "request");
-  m_cs.m_submessages.put("sc.source", GetUUID());
-  m_cs.m_submessages.put("sc.module", "lb");
-  get_peer(GetUUID())->Send(m_cs);
-
 
   // Physical device information managed by Broker can be obtained as below
   Logger::Info << "LB module identified "<< m_phyDevManager.DeviceCount()
@@ -489,12 +485,11 @@ void lbAgent::LoadTable()
   std::cout <<"| "<< std::setw(20) << "----" << std::setw(27)<< "-----" << std::setw(7) <<"|"<< std::endl;
 
   //Compute the Load state based on the current gateway value
-  //TODO: This should be computed based on a normalized value obtained thru State Collection
-  if(P_Gateway <= 0)
+  if(m_normal && P_Gateway < (*m_normal)-NORMAL_TOLERANCE)
   {
     l_Status = LPeerNode::SUPPLY;
   }
-  else if(P_Gateway > 1)
+  else if(m_normal && P_Gateway > (*m_normal)+NORMAL_TOLERANCE)
   {
     l_Status = LPeerNode::DEMAND;
     DemandValue = 1-P_Gateway;
@@ -611,13 +606,20 @@ void lbAgent::HandleRead(broker::CMessage msg)
   // identify your new group members
   if(pt.get<std::string>("any","NOEXCEPTION") == "peerList")
   {
-    std::string peers_, token;
+    std::string peers_, token, coord;
     peers_ = pt.get<std::string>("any.peers");
+    coord = pt.get<std::string>("any.coordinator");
     Logger::Notice << "\nPeer List < " << peers_ <<
-           " > received from Group Leader: " << line_ <<std::endl;
-
+           " > from Group Leader: " << coord <<std::endl;
+    
+    //Update the group coordinator
+    m_leader = (coord == GetUUID());
+    if( m_leader )
+    {
+        CollectState();
+    }
+    
     //Update the PeerNode lists accordingly            
-
     foreach( PeerNodePtr p_, l_AllPeers | boost::adaptors::map_values)
     {
       if( p_->GetUUID() == GetUUID())
@@ -874,7 +876,7 @@ void lbAgent::HandleRead(broker::CMessage msg)
   // (local or remote). Respond to it by sending in your current load status
   else if(pt.get<std::string>("lb") == "gateway")
   {
-    StatePrint(pt);
+    StateNormalize(pt);
 
 /*
     peer_ = get_peer(line_);
@@ -916,7 +918,10 @@ void lbAgent::HandleRead(broker::CMessage msg)
 */
 
   }//end if("load")
-
+  else if(pt.get<std::string>("lb") == "normalBroadcast")
+  {
+    UpdateNormal(pt);
+  }
   // Other message type is invalid within lb module
   else
   {
@@ -949,19 +954,6 @@ lbAgent::PeerNodePtr lbAgent::add_peer(std::string uuid)
   return tmp_;
 }
 
-/////////test collected states
-void lbAgent::StatePrint(const ptree& pt)
-{	
-	Logger::Notice << "Collected states are " << std::endl;
- 	std::cout << "--------------------collectstate--------------------------" << std::endl;
-
-	std::cout << "gateway values are " << pt.get<std::string>("gateway")<< std::endl;
-
-	std::cout << "----------------------------------------------------------" << std::endl;
-}
-
-
-
 ////////////////////////////////////////////////////////////
 /// LB
 /// @description Main function which initiates the algorithm
@@ -977,6 +969,88 @@ int lbAgent::LB()
   LoadManage();
 
   return 0;
+}
+
+void lbAgent::StartStateTimer( unsigned int delay )
+{
+    Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
+    
+    m_StateTimer.expires_from_now( boost::posix_time::seconds(delay) );
+    m_StateTimer.async_wait( boost::bind(&lbAgent::HandleStateTimer,
+            this, boost::asio::placeholders::error) );
+}
+
+void lbAgent::HandleStateTimer( const boost::system::error_code & error )
+{
+    Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
+    
+    if( !error && m_leader )
+    {
+        CollectState();
+    }
+    StartStateTimer( STATE_TIMEOUT );
+}
+
+void lbAgent::CollectState()
+{
+    Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
+    
+    freedm::broker::CMessage m_cs;
+    m_cs.m_submessages.put("sc", "request");
+    m_cs.m_submessages.put("sc.source", GetUUID());
+    m_cs.m_submessages.put("sc.module", "lb");
+    get_peer(GetUUID())->Send(m_cs);
+    
+    Logger::Info << "Sent state request from loadbalance" << std::endl;
+}
+
+void lbAgent::StateNormalize( const ptree & pt )
+{
+    Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
+    
+    std::istringstream iss( pt.get<std::string>("gateway") );
+    std::string gateway_str;
+    double gateway = 0;
+    int count = 0;
+    
+    while( getline( iss, gateway_str, ',' ) )
+    {
+        gateway += boost::lexical_cast<double>(gateway_str);
+        count++;
+    }
+    m_normal.reset(count != 0 ? gateway / count : 0);
+    Logger::Info << "Calculated normal value as " << *m_normal << std::endl;
+    
+    // format the normal message
+    broker::CMessage msg;
+    std::string value = boost::lexical_cast<std::string>(*m_normal);
+    msg.m_submessages.put("lb","normalBroadcast");
+    msg.m_submessages.put("lb.value",value);
+
+    // Broadcast normal value to all nodes
+    Logger::Notice << "Broadcasting Normal Gateway: " << *m_normal << std::endl;
+    foreach( PeerNodePtr peer, l_AllPeers | boost::adaptors::map_values )
+    {
+        if( peer->GetUUID() != GetUUID() )
+        {
+            try
+            {
+                peer->Send(msg);
+            }
+            catch( boost::system::system_error & e )
+            {
+                Logger::Info << "Couldn't Send Message To Peer" << std::endl;
+            }
+        }
+    }
+}
+
+void lbAgent::UpdateNormal( const ptree & pt )
+{
+    Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
+    
+    m_normal.reset(pt.get<double>("lb.value"));
+    Logger::Notice << "Received new normal: " << *m_normal << std::endl;
 }
 
 } // namespace freedm

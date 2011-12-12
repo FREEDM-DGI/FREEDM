@@ -312,7 +312,7 @@ void SCAgent::TakeSnapshot()
     
        }
     */
-    typedef broker::device::CDeviceDESD SST;
+    typedef broker::device::CDeviceDRER SST;
     broker::CPhysicalDeviceManager::PhysicalDevice<SST>::Container list;
     broker::CPhysicalDeviceManager::PhysicalDevice<SST>::iterator it, end;
     broker::device::SettingValue PowerValue = 0;

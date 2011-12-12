@@ -363,31 +363,31 @@ void lbAgent::SendDraftRequest()
 void lbAgent::InitiatePowerMigration(broker::device::SettingValue DemandValue)
 {
   typedef std::map<broker::device::SettingValue,broker::device::Identifier> DeviceMap;
-  typedef broker::device::CDeviceDESD DESD;
+  typedef broker::device::CDeviceDRER SST;
 
   // Container and iterators for the result of GetDevicesOfType
-  broker::CPhysicalDeviceManager::PhysicalDevice<DESD>::Container DESDContainer;
-  broker::CPhysicalDeviceManager::PhysicalDevice<DESD>::iterator it, end;
+  broker::CPhysicalDeviceManager::PhysicalDevice<SST>::Container container;
+  broker::CPhysicalDeviceManager::PhysicalDevice<SST>::iterator it, end;
   
-  // Make a map of DESDs
-  DeviceMap DESDMap;
+  // Make a map of SSTs
+  DeviceMap map;
 
   // Temp variables to hold "vin" and "vout"
   broker::device::SettingValue V_in, V_out;
 
   //Sort the DESDs by decreasing order of their "vin"s; achieved by inserting into map
-  DESDContainer = m_phyDevManager.GetDevicesOfType<DESD>();
-  for( it = DESDContainer.begin(), end = DESDContainer.end(); it != end; it++ )   
-  {  
-    DESDMap.insert( DeviceMap::value_type((*it)->Get("powerLevel"), (*it)->GetID()) );
+  container = m_phyDevManager.GetDevicesOfType<SST>();
+  for( it = container.begin(), end = container.end(); it != end; it++ )   
+  {
+    map.insert( DeviceMap::value_type((*it)->Get("powerLevel"), (*it)->GetID()) );
   } 
 
   //Use a reverse iterator on map to retrieve elements in reverse sorted order   
   DeviceMap::reverse_iterator mapIt_; 
   // temp variable to hold the P_migrate set by Demanding node
   broker::device::SettingValue temp_ = DemandValue;
-
-  for( mapIt_ = DESDMap.rbegin(); mapIt_ != DESDMap.rend(); ++mapIt_ )
+  
+  for( mapIt_ = map.rbegin(); mapIt_ != map.rend(); ++mapIt_ )
   {
     V_in = mapIt_->first; //load "vin" from the DESDmap
    
@@ -401,19 +401,19 @@ void lbAgent::InitiatePowerMigration(broker::device::SettingValue DemandValue)
     {  
       V_in = V_in - temp_;
       //Then set the V_in accordingly on that particular device	
-      //m_phyDevManager.GetDevice(mapIt_->second)->Set("vin", V_in);               
+      m_phyDevManager.GetDevice(mapIt_->second)->Set("powerLevel", V_in);               
     }
     else 
     {
       temp_ = temp_ - V_in;
       V_in = 0;
       //Then set the vin and vout accordingly on that particular device	
-      //m_phyDevManager.GetDevice(mapIt_->second)->Set("vin", V_in); 
+      m_phyDevManager.GetDevice(mapIt_->second)->Set("powerLevel", V_in); 
     }  
   }//end for
 
   // Clear the DRER map
-  DESDMap.clear();
+  map.clear();
 }
 
 ////////////////////////////////////////////////////////////
@@ -492,7 +492,7 @@ void lbAgent::LoadTable()
   else if(m_normal && P_Gateway > (*m_normal)+NORMAL_TOLERANCE)
   {
     l_Status = LPeerNode::DEMAND;
-    DemandValue = 1-P_Gateway;
+    DemandValue = -1;
   }
   else
   {
@@ -836,9 +836,18 @@ void lbAgent::HandleRead(broker::CMessage msg)
         //TODO: Set "Gateway" at the SST as below or control physical devices?
         //TODO: Changes significantly depending on SST's control capability; 
         //for now, the demand node doesn`t have to make any setting
-        //P_Star = P_Gateway + P_Migrate; //instead of 1
-        //m_phyDevManager.GetDevice("sst")->Set("P*", P_Star);     
-        //Logger::Notice<<" Obtaining power from: "<< peer_->GetUUID() << std::endl;
+        P_Star = -P_Gateway + 1; //instead of 1
+
+        typedef broker::device::CDeviceDRER SST;
+        broker::CPhysicalDeviceManager::PhysicalDevice<SST>::Container list;
+        broker::CPhysicalDeviceManager::PhysicalDevice<SST>::iterator it, end;
+
+        list = m_phyDevManager.GetDevicesOfType<SST>();
+        for( it = list.begin(), end = list.end(); it != end; it++ )
+        {
+            (*it)->Set("powerLevel", P_Star);
+        }
+        Logger::Notice<<" Obtaining power from: "<< peer_->GetUUID() << std::endl;
       }
       else
       {

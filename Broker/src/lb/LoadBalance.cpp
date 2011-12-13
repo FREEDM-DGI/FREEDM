@@ -805,10 +805,12 @@ void lbAgent::HandleRead(broker::CMessage msg)
         typedef broker::device::CDeviceDRER SST;
         broker::CPhysicalDeviceManager::PhysicalDevice<SST>::Container list;
         broker::CPhysicalDeviceManager::PhysicalDevice<SST>::iterator it, end;
-
+        
         list = m_phyDevManager.GetDevicesOfType<SST>();
+        Logger::Notice << "Found " << list.size() << " devices" << std::endl;
         for( it = list.begin(), end = list.end(); it != end; it++ )
         {
+            Logger::Notice << "P_Star = " << P_Star << std::endl;
             (*it)->Set("powerLevel", P_Star);
         }
         Logger::Notice<<" Obtaining power from: "<< peer_->GetUUID() << std::endl;

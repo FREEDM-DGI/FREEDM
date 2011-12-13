@@ -173,7 +173,7 @@ void lbAgent::LoadManage()
   LoadTable();
      
   // On Load change from Normal to Demand, broadcast the change
-  if (LPeerNode::NORM == preLoad && LPeerNode::DEMAND == l_Status)
+  if (l_Status != preLoad && LPeerNode::DEMAND == l_Status)
   {
       // Create Demand message and send it to all nodes
     broker::CMessage m_;
@@ -210,7 +210,7 @@ void lbAgent::LoadManage()
   }//endif
 
    //On load change from Demand to Normal, broadcast the change
-  else if (LPeerNode::DEMAND == preLoad && LPeerNode::NORM == l_Status)
+  else if (l_Status != preLoad && LPeerNode::NORM == l_Status)
   {   
     broker::CMessage m_;  
     std::stringstream ss_;

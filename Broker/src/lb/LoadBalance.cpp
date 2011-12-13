@@ -444,6 +444,7 @@ void lbAgent::LoadTable()
 	    << "Net DESD (" << DESD_count << "): " << B_Soc << std::endl;
   std::cout <<"| " << "Net Load (" << LOAD_count << "): "<< P_Load << std::setw(14)
 	    << "Gateway: " << P_Gateway << std::endl;
+  std::cout << "| Normal = " << m_normal << std::endl;
   std::cout <<"| ---------------------------------------------------- |" << std::endl;
   std::cout <<"| " << std::setw(20) << "UUID" << std::setw(27)<< "State" << std::setw(7) <<"|"<< std::endl;
   std::cout <<"| "<< std::setw(20) << "----" << std::setw(27)<< "-----" << std::setw(7) <<"|"<< std::endl;

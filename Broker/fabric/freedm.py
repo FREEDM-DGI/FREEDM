@@ -54,6 +54,7 @@ if __name__ == "__main__":
 
     path = config.get('options','path')
     keyfile = expanduser(config.get('options','keyfile'))
+    user = expanduser(config.get('options','user'))
     #default_port = config.get('options','default_port')
 
     for i in xrange(20000):
@@ -83,7 +84,7 @@ if __name__ == "__main__":
             print "%s..." % (i+1)
             time.sleep(1)
 
-        cmd = ['fab','-H',linehost,"start_linehost:%s" % path,"-i",keyfile, "--linewise"]
+        cmd = ['fab','-H',linehost,"start_linehost:%s" % path,"-i",keyfile,"-u",user, "--linewise"]
         if not options.dryrun:
             x = subprocess.Popen(cmd)
 
@@ -111,7 +112,7 @@ if __name__ == "__main__":
         if not options.dryrun:
             #This simplifies the operations and lets us "spy" on the running tasks.
             cmd = ['fab','-H', ",".join([ x[0] for x in hostnames]),
-                   "start_sim:%s" % (path), "--linewise", "-i", keyfile ]
+                   "start_sim:%s" % (path), "--linewise", "-i", keyfile,"-u",user ]
             #Uses suprocess to run the sim
             try:
                 p = subprocess.Popen(cmd)

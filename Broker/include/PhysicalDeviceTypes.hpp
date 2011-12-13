@@ -32,5 +32,6 @@
 #include "CDeviceDESD.hpp"
 #include "CDeviceDRER.hpp"
 #include "CDeviceLOAD.hpp"
+#include "CDeviceSST.hpp"
 
 #endif // PHYSICAL_DEVICE_TYPES

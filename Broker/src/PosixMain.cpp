@@ -113,8 +113,7 @@ int main (int argc, char* argv[])
             ("config,c", po::value<std::string>(&cfgFile_)->
                 default_value("freedm.cfg"),"filename of additional configuration.")
             ("generateuuid,g", po::value<std::string>(&uuidgenerator)->
-                default_value(""), "Generate a uuid for the specified host, output it, and exit")
-            ("uuid,u","Print this node's generated uuid and exit");
+                default_value(""), "Generate a uuid for the specified host, output it, and exit");
         // This is for arguments in a config file or as arguments
         configOpts_.add_options()
             ("add-host", po::value<std::vector<std::string> >()->
@@ -124,7 +123,7 @@ int main (int argc, char* argv[])
             ("port,p", po::value<std::string>(&port_)->
              default_value("1870"), "TCP port to listen on")
             ("add-device,d", po::value<std::vector<std::string> >()->
-            composing(), "physical device name")
+            composing(), "physical device name:type pair")
             ("lineclient-host,l", po::value<std::string>(&interHost)->
              default_value(""),"Hostname to use for the lineclient to connect.")
             ("lineclient-port,q", po::value<std::string>(&interPort)->
@@ -134,8 +133,8 @@ int main (int argc, char* argv[])
              "enable verbose output (optionally specify level)");
 
         hiddenOpts_.add_options()
-            ("setuuid", po::value<std::string>(&uuid_),	
-                    "UUID for this host");
+            ("uuid", po::value<std::string>(&uuid_),
+             "UUID for this host");
 
         // Specify positional arguments
         posOpts_.add("address", 1).add("port", 1);
@@ -207,13 +206,9 @@ int main (int argc, char* argv[])
             std::cerr << visibleOpts_ << std::endl;
             return 0;
         }
-        if( uuidgenerator != "" || vm_.count("uuid"))
+        if( uuidgenerator != "" )
         {
-            if(uuidgenerator == "")
-            {
-                uuidgenerator = boost::asio::ip::host_name();
-            }
-            u_ = freedm::uuid::from_dns(uuidgenerator);
+            u_ = uuid::from_dns(uuidgenerator);
             std::cout<<u_<<std::endl;
             return 0;
         }
@@ -268,21 +263,48 @@ int main (int argc, char* argv[])
         // Create Devices
         if (vm_.count("add-device") > 0) 
         {
-            std::vector< std::string > device_list =
+
+	std::vector< std::string > device_list =
                 vm_["add-device"].as< std::vector<std::string> >();
-            foreach(std::string &devid, device_list)
+            foreach(std::string &devid, device_list )
             {
-                if( m_phyManager.DeviceExists( devid ) )
-                {
-                    Logger::Warn << "Duplicate device: " << devid << std::endl;
-                }
-                else
-                {
-                    factory.CreateDevice<broker::device::CDeviceDRER>( devid );
+                int idx_ = devid.find(':');
+                if( idx_ == std::string::npos )
+                {                      
+		    factory.CreateDevice<broker::device::CDevice>( devid );
                     Logger::Info << "Added device: " << devid << std::endl;
+                    continue;
                 }
-            }                                                                                               
+                std::string DevName_(devid.begin(), devid.begin() + idx_),
+                        DevType_(devid.begin() + (idx_ + 1), devid.end());
+
+	        if( m_phyManager.DeviceExists( DevName_ ) )
+                {
+                    Logger::Warn << "Duplicate device: " << DevName_ << std::endl;
+                }
+                else if(DevType_ == "DRER")
+                {
+                    factory.CreateDevice<broker::device::CDeviceDRER>( DevName_ );
+                    Logger::Info << "Added DRER device: " << DevName_ << std::endl;
+                }  
+                else if(DevType_ == "DESD")
+                {
+                    factory.CreateDevice<broker::device::CDeviceDESD>( DevName_ );
+                    Logger::Info << "Added DESD device: " << DevName_ << std::endl;
+                }  
+   		else if(DevType_ == "LOAD")
+                {
+                    factory.CreateDevice<broker::device::CDeviceLOAD>( DevName_ );
+                    Logger::Info << "Added LOAD device: " << DevName_ << std::endl;
+                }  
+		else if(DevType_ == "SST")
+                {
+                    factory.CreateDevice<broker::device::CDeviceSST>( DevName_ );
+                    Logger::Info << "Added SST: " << DevName_ << std::endl;
+                }  
+            }                                                                                           
         } 
+
         else 
         {
             Logger::Info << "No physical devices specified" << std::endl;

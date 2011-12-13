@@ -1,379 +1,387 @@
 <?zml version="1.0" encoding="UTF-8" ?>
 <simulation>
 <step1>
+
+<dev id ='sst'>
+    <powerLevel>0</powerLevel>
+</dev>
+
  <dev id ='gendev0'>
-    <vout>25</vout>
-    <type>1</type>
+    <powerLevel>25</powerLevel>
 </dev>
 
 <dev id='stodev0'>
-    <vin>25</vin>
-     <vout>25</vout>
-    <type>2</type>
+    <powerLevel>25</powerLevel>
 </dev>
 
 <dev id='loaddev0'>
-    <vin>25</vin>
-    <type>3</type>
+    <powerLevel>25</powerLevel>
 </dev>
 </step1>
 
 <step2 >
+
+<dev id ='sst'>
+    <powerLevel>0</powerLevel>
+</dev>
+
+
  <dev id ='gendev0'>
-    <vout>50</vout>
-    <type>1</type>
+    <powerLevel>50</powerLevel>
 </dev>
 
 <dev id='stodev0'>
-    <vin>50</vin>
-     <vout>31</vout>
-    <type>2</type>
+    <powerLevel>50</powerLevel>
 </dev>
 
 <dev id='loaddev0'>
-    <vin>50</vin>
-    <type>3</type>
+    <powerLevel>50</powerLevel>
 </dev>
 </step2>
 
 <step3 >
+
+<dev id ='sst'>
+    <powerLevel>15</powerLevel>
+</dev>
+
+
  <dev id ='gendev0'>
-    <vout>30</vout>
-    <type>1</type>
+    <powerLevel>30</powerLevel>
 </dev>
 
 <dev id='stodev0'>
-    <vin>20</vin>
-     <vout>17</vout>
-    <type>2</type>
+    <powerLevel>20</powerLevel>
 </dev>
 
 <dev id='loaddev0'>
-    <vin>15</vin>
-    <type>3</type>
+    <powerLevel>15</powerLevel>
 </dev>
 </step3>
 
 <step4>
+
+<dev id ='sst'>
+    <powerLevel>27</powerLevel>
+</dev>
+
+
  <dev id ='gendev0'>
-    <vout>13</vout>
-    <type>1</type>
+    <powerLevel>13</powerLevel>
 </dev>
 
 <dev id='stodev0'>
-    <vin>50</vin>
-     <vout>51</vout>
-    <type>2</type>
+    <powerLevel>50</powerLevel>
 </dev>
 
 <dev id='loaddev0'>
-    <vin>40</vin>
-    <type>3</type>
+    <powerLevel>40</powerLevel>
 </dev>
 </step4>
 
 <step5>
+
+<dev id ='sst'>
+    <powerLevel>15</powerLevel>
+</dev>
+
+
  <dev id ='gendev0'>
-    <vout>20</vout>
-    <type>1</type>
+    <powerLevel>20</powerLevel>
 </dev>
 
 <dev id='stodev0'>
-    <vin>30</vin>
-     <vout>21</vout>
-    <type>2</type>
+    <powerLevel>30</powerLevel>
 </dev>
 
 <dev id='loaddev0'>
-    <vin>35</vin>
-    <type>3</type>
+    <powerLevel>35</powerLevel>
 </dev>
 </step5>
 
 <step6>
+
+<dev id ='sst'>
+    <powerLevel>15</powerLevel>
+</dev>
+
+
  <dev id ='gendev0'>
-    <vout>15</vout>
-    <type>1</type>
+    <powerLevel>15</powerLevel>
 </dev>
 
 <dev id='stodev0'>
-    <vin>20</vin>
-     <vout>31</vout>
-    <type>2</type>
+    <powerLevel>20</powerLevel>
 </dev>
 
 <dev id='loaddev0'>
-    <vin>30</vin>
-    <type>3</type>
+    <powerLevel>30</powerLevel>
 </dev>
 </step6>
 
 <step7>
+
+<dev id ='sst'>
+    <powerLevel>15</powerLevel>
+</dev>
+
+
  <dev id ='gendev0'>
-    <vout>35</vout>
-    <type>1</type>
+    <powerLevel>35</powerLevel>
 </dev>
 
 <dev id='stodev0'>
-    <vin>30</vin>
-     <vout>51</vout>
-    <type>2</type>
+    <powerLevel>30</powerLevel>
 </dev>
 
 <dev id='loaddev0'>
-    <vin>50</vin>
-    <type>3</type>
+    <powerLevel>50</powerLevel>
 </dev>
 </step7>
 
 <step8>
+
+<dev id ='sst'>
+    <powerLevel>0</powerLevel>
+</dev>
+
+
  <dev id ='gendev0'>
-    <vout>50</vout>
-    <type>1</type>
+    <powerLevel>50</powerLevel>
 </dev>
 
 <dev id='stodev0'>
-    <vin>50</vin>
-     <vout>51</vout>
-    <type>2</type>
+    <powerLevel>50</powerLevel>
 </dev>
 
 <dev id='loaddev0'>
-    <vin>50</vin>
-    <type>3</type>
+    <powerLevel>50</powerLevel>
 </dev>
 </step8>
 
 <step9>
+
+<dev id ='sst'>
+    <powerLevel>0</powerLevel>
+</dev>
+
+
  <dev id ='gendev0'>
-    <vout>50</vout>
-    <type>1</type>
+    <powerLevel>50</powerLevel>
 </dev>
 
 <dev id='stodev0'>
-    <vin>50</vin>
-     <vout>51</vout>
-    <type>2</type>
+    <powerLevel>50</powerLevel>
 </dev>
 
 <dev id='loaddev0'>
-    <vin>50</vin>
-    <type>3</type>
+    <powerLevel>50</powerLevel>
 </dev>
 </step9>
 
 <step10>
+
+<dev id ='sst'>
+    <powerLevel>0</powerLevel>
+</dev>
+
+
  <dev id ='gendev0'>
-    <vout>50</vout>
-    <type>1</type>
+    <powerLevel>50</powerLevel>
 </dev>
 
 <dev id='stodev0'>
-    <vin>50</vin>
-     <vout>51</vout>
-    <type>2</type>
+    <powerLevel>50</powerLevel>
 </dev>
 
 <dev id='loaddev0'>
-    <vin>50</vin>
-    <type>3</type>
+    <powerLevel>50</powerLevel>
 </dev>
 </step10>
 
 <step11>
+<dev id ='sst'>
+    <powerLevel>1</powerLevel>
+</dev>
  <dev id ='gendev0'>
-    <vout>50</vout>
-    <type>1</type>
+    <powerLevel>50</powerLevel>
 </dev>
 
 <dev id='stodev0'>
-    <vin>50</vin>
-     <vout>51</vout>
-    <type>2</type>
+    <powerLevel>50</powerLevel>
 </dev>
 
 <dev id='loaddev0'>
-    <vin>50</vin>
-    <type>3</type>
+    <powerLevel>50</powerLevel>
 </dev>
 </step11>
 
 <step12>
+<dev id ='sst'>
+    <powerLevel>-1</powerLevel>
+</dev>
  <dev id ='gendev0'>
-    <vout>50</vout>
-    <type>1</type>
+    <powerLevel>50</powerLevel>
 </dev>
 
 <dev id='stodev0'>
-    <vin>50</vin>
-     <vout>51</vout>
-    <type>2</type>
+    <powerLevel>50</powerLevel>
 </dev>
 
 <dev id='loaddev0'>
-    <vin>50</vin>
-    <type>3</type>
+    <powerLevel>50</powerLevel>
 </dev>
 </step12>
 
 <step13>
+<dev id ='sst'>
+    <powerLevel>-23</powerLevel>
+</dev>
  <dev id ='gendev0'>
-    <vout>50</vout>
-    <type>1</type>
+    <powerLevel>50</powerLevel>
 </dev>
 
 <dev id='stodev0'>
-    <vin>50</vin>
-     <vout>51</vout>
-    <type>2</type>
+    <powerLevel>50</powerLevel>
 </dev>
 
 <dev id='loaddev0'>
-    <vin>50</vin>
-    <type>3</type>
+    <powerLevel>50</powerLevel>
 </dev>
 </step13>
 
 <step14>
+<dev id ='sst'>
+    <powerLevel>-3</powerLevel>
+</dev>
  <dev id ='gendev0'>
-    <vout>50</vout>
-    <type>1</type>
+    <powerLevel>50</powerLevel>
 </dev>
 
 <dev id='stodev0'>
-    <vin>50</vin>
-     <vout>51</vout>
-    <type>2</type>
+    <powerLevel>50</powerLevel>
 </dev>
 
 <dev id='loaddev0'>
-    <vin>50</vin>
-    <type>3</type>
+    <powerLevel>50</powerLevel>
 </dev>
 </step14>
 
 <step15>
+<dev id ='sst'>
+    <powerLevel>-6</powerLevel>
+</dev>
  <dev id ='gendev0'>
-    <vout>50</vout>
-    <type>1</type>
+    <powerLevel>50</powerLevel>
 </dev>
 
 <dev id='stodev0'>
-    <vin>50</vin>
-     <vout>51</vout>
-    <type>2</type>
+    <powerLevel>50</powerLevel>
 </dev>
 
 <dev id='loaddev0'>
-    <vin>50</vin>
-    <type>3</type>
+    <powerLevel>50</powerLevel>
 </dev>
 </step15>
 
 <step16>
+<dev id ='sst'>
+    <powerLevel>-19</powerLevel>
+</dev>
  <dev id ='gendev0'>
-    <vout>50</vout>
-    <type>1</type>
+    <powerLevel>50</powerLevel>
 </dev>
 
 <dev id='stodev0'>
-    <vin>50</vin>
-     <vout>51</vout>
-    <type>2</type>
+    <powerLevel>50</powerLevel>
 </dev>
 
 <dev id='loaddev0'>
-    <vin>50</vin>
-    <type>3</type>
+    <powerLevel>50</powerLevel>
 </dev>
 </step16>
 
 <step17>
+<dev id ='sst'>
+    <powerLevel>-12</powerLevel>
+</dev>
  <dev id ='gendev0'>
-    <vout>50</vout>
-    <type>1</type>
+    <powerLevel>50</powerLevel>
 </dev>
 
 <dev id='stodev0'>
-    <vin>50</vin>
-     <vout>51</vout>
-    <type>2</type>
+    <powerLevel>50</powerLevel>
 </dev>
 
 <dev id='loaddev0'>
-    <vin>50</vin>
-    <type>3</type>
+    <powerLevel>50</powerLevel>
 </dev>
 </step17>
 
 <step18>
+<dev id ='sst'>
+    <powerLevel>-11</powerLevel>
+</dev>
  <dev id ='gendev0'>
-    <vout>50</vout>
-    <type>1</type>
+    <powerLevel>50</powerLevel>
 </dev>
 
 <dev id='stodev0'>
-    <vin>50</vin>
-     <vout>51</vout>
-    <type>2</type>
+    <powerLevel>50</powerLevel>
 </dev>
 
 <dev id='loaddev0'>
-    <vin>50</vin>
-    <type>3</type>
+    <powerLevel>50</powerLevel>
 </dev>
 </step18>
 
 <step19>
+<dev id ='sst'>
+    <powerLevel>-15</powerLevel>
+</dev>
  <dev id ='gendev0'>
-    <vout>50</vout>
-    <type>1</type>
+    <powerLevel>50</powerLevel>
 </dev>
 
 <dev id='stodev0'>
-    <vin>50</vin>
-     <vout>51</vout>
-    <type>2</type>
+    <powerLevel>50</powerLevel>
 </dev>
 
 <dev id='loaddev0'>
-    <vin>50</vin>
-    <type>3</type>
+    <powerLevel>50</powerLevel>
 </dev>
 </step19>
 
 <step20>
+<dev id ='sst'>
+    <powerLevel>-25</powerLevel>
+</dev>
  <dev id ='gendev0'>
-    <vout>50</vout>
-    <type>1</type>
+    <powerLevel>50</powerLevel>
 </dev>
 
 <dev id='stodev0'>
-    <vin>50</vin>
-     <vout>51</vout>
-    <type>2</type>
+    <powerLevel>50</powerLevel>
 </dev>
 
 <dev id='loaddev0'>
-    <vin>50</vin>
-    <type>3</type>
+    <powerLevel>50</powerLevel>
 </dev>
 </step20>
 
 <step21>
  <dev id ='gendev0'>
-    <vout>50</vout>
+    <powerLevel>50</powerLevel>
     <type>1</type>
 </dev>
 
 <dev id='stodev0'>
-    <vin>50</vin>
-     <vout>51</vout>
+    <powerLevel>50</powerLevel>
     <type>2</type>
 </dev>
 
 <dev id='loaddev0'>
-    <vin>50</vin>
+    <powerLevel>50</powerLevel>
     <type>3</type>
 </dev>
 </step21>

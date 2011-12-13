@@ -800,8 +800,7 @@ void lbAgent::HandleRead(broker::CMessage msg)
         //TODO: Set "Gateway" at the SST as below or control physical devices?
         //TODO: Changes significantly depending on SST's control capability; 
         //for now, the demand node doesn`t have to make any setting
-        P_Star = -P_Gateway + 1; //instead of 1
-
+        //P_Star = -P_Gateway + 1; //instead of 1
         typedef broker::device::CDeviceDRER SST;
         broker::CPhysicalDeviceManager::PhysicalDevice<SST>::Container list;
         broker::CPhysicalDeviceManager::PhysicalDevice<SST>::iterator it, end;
@@ -810,6 +809,7 @@ void lbAgent::HandleRead(broker::CMessage msg)
         Logger::Notice << "Found " << list.size() << " devices" << std::endl;
         for( it = list.begin(), end = list.end(); it != end; it++ )
         {
+            P_Star = (*it)->Get("powerLevel") + 1;
             Logger::Notice << "P_Star = " << P_Star << std::endl;
             (*it)->Set("powerLevel", P_Star);
         }

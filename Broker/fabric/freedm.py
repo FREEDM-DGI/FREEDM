@@ -83,15 +83,15 @@ if __name__ == "__main__":
             print "%s..." % (i+1)
             time.sleep(1)
 
-        cmd = ['fab','-H',"linehost","start_linehost:%s" % path,"-i",keyfile, "--linewise"]
+        cmd = ['fab','-H',linehost,"start_linehost:%s" % path,"-i",keyfile, "--linewise"]
         if not options.dryrun:
             x = subprocess.Popen(cmd)
 
         raw_input("Press Enter to continue...")
 
-    host2uuid = map_hosts_to_uuids(path,[ x[0] for x in hostnames ],keyfile)
     #PREPARE THE EXPERIMENT
     if exp:
+        host2uuid = map_hosts_to_uuids(path,[ x[0] for x in hostnames ],keyfile)
         exp = experiment.Experiment(host2uuid,options.granularity)
         #Hack until I fix stuff
         #exp.fix_edge(options.hostnames[0],options.hostnames[2],100)

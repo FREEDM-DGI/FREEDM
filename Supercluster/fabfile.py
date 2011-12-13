@@ -70,9 +70,9 @@ def pull_checkout(branch='master'):
             run('git checkout %s' % branch)
         run('git pull')
  
-def build():
+def build(options=""):
     with cd('~/FREEDM/Broker'):
-        run("cmake .")
+        run("cmake . %s" % options)
     with cd('~/FREEDM/Broker/src'):
         run("make")
 

@@ -39,7 +39,7 @@ def start_sim(path):
         if result.return_code != 0:
             print "Test failed with error code."
 
-def start_lineclient(path):
+def start_linehost(path):
     with cd(join(path,"PSCAD-Interface/src/")):
         cmd = "./driver"
         run(cmd)

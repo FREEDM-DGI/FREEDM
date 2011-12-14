@@ -122,10 +122,6 @@ SCAgent::~SCAgent()
 {
 }
 
-/****
-  This is the standard(ish) code
-****/
-
 ///////////////////////////////////////////////////////////////////////////////
 /// Marker
 /// @description: maker message
@@ -187,7 +183,8 @@ void SCAgent::Initiate()
     }
     Logger::Debug << " --------------------------------------------- "<<std::endl;
     //physical device information
-    Logger::Debug << "SC module identified "<< m_phyDevManager.DeviceCount()
+    Logger::Status << "State Collection is running" << std::endl;
+    Logger::Status << "SC module identified "<< m_phyDevManager.DeviceCount()
                   << " physical devices on this node" << std::endl;
     //collect states of local devices
     Logger::Info << "TakeSnapshot: collect states of " << GetUUID() << std::endl;
@@ -196,7 +193,7 @@ void SCAgent::Initiate()
     collectstate.insert(std::pair<int, ptree>(countstate, m_curstate));
     countstate++;
     //prepare marker tagged with UUID + Int
-    Logger::Info << "maker is ready from " << GetUUID() << std::endl;
+    Logger::Info << "marker is ready from " << GetUUID() << std::endl;
     freedm::broker::CMessage m_ = m_marker();
     //send tagged marker to all other peers
     foreach(PeerNodePtr peer_, m_AllPeers | boost::adaptors::map_values)
@@ -238,7 +235,7 @@ void SCAgent::StateResponse( const boost::system::error_code& err)
         //only its own state
         if (countstate == 1)
         {
-            Logger::Info << "only collect its own state" << std::endl;
+            Logger::Warn << "State Collection: No Responses" << std::endl;
             ss_ << collectstate.begin()->second.get<std::string>("sc.gateway");
         }
         //collect states from all peers
@@ -256,6 +253,7 @@ void SCAgent::StateResponse( const boost::system::error_code& err)
         //not collect states from all peers
         else
         {
+            Logger::Warn << "State Collection: Not all peers responded." << std::endl;
             for (it = collectstate.begin(); it != collectstate.end(); it++)
             {
                 str_ = (*it).second.get<std::string>("sc.source");
@@ -263,13 +261,15 @@ void SCAgent::StateResponse( const boost::system::error_code& err)
                 
                 if(it == m_AllPeers.end())
                 {
-                    Logger::Info << str_ << " is not sending its state back!" << std::endl;
+                    //Pass
+                    //Logger::Warn << str_ << " is not sending its state back!" << std::endl;
                 }
             }
         }//end if countstate
         
         //send collect states to the request module
         Logger::Info << "sending request state back to " << module << std::endl;
+        Logger::Status << "State collection complete. Gateway: " << ss_.str() <<std::endl;
         m_.m_submessages.put(module, "gateway");
         //m_.m_submessages.put("lb.source", GetUUID());
         m_.m_submessages.put("gateway", ss_.str());
@@ -277,6 +277,7 @@ void SCAgent::StateResponse( const boost::system::error_code& err)
     }
     else if(boost::asio::error::operation_aborted == err )
     {
+        Logger::Error << "State Collection Did Not Complete Successfully" << std::endl;
         Logger::Info << "StateResponse(operation_aborted error) " <<
                      __LINE__ << std::endl;
     }

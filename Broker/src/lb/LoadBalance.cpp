@@ -131,7 +131,7 @@ void lbAgent::LoadManage()
   preLoad = l_Status; // Remember previous load before computing current load
 
   // Physical device information managed by Broker can be obtained as below
-  Logger::Info << "LB module identified "<< m_phyDevManager.DeviceCount()
+  Logger::Notice << "LB module identified "<< m_phyDevManager.DeviceCount()
                << " physical devices on this node" << std::endl;
   broker::device::CDevice::DevicePtr DevPtr;
   broker::CPhysicalDeviceManager::PhysicalDeviceSet::iterator it_;
@@ -433,21 +433,21 @@ void lbAgent::LoadTable()
     net_load += (*lit)->Get("powerLevel");
   }
 
-  std::cout <<"\n ----------- LOAD TABLE (Power Management) ------------" << std::endl;
-  std::cout <<"| " << " @ " << microsec_clock::local_time()  <<std::endl;
+  Logger::Status <<"\n ----------- LOAD TABLE (Power Management) ------------" << std::endl;
+  Logger::Status <<"| " << " @ " << microsec_clock::local_time()  <<std::endl;
   
   P_Gen = net_gen;
   B_Soc = net_storage;
   P_Load = net_load;
   P_Gateway = P_Load - P_Gen;
-  std::cout <<"| " << "Net DRER (" << DRER_count << "): " << P_Gen << std::setw(14) 
+  Logger::Status <<"| " << "Net DRER (" << DRER_count << "): " << P_Gen << std::setw(14) 
 	    << "Net DESD (" << DESD_count << "): " << B_Soc << std::endl;
-  std::cout <<"| " << "Net Load (" << LOAD_count << "): "<< P_Load << std::setw(14)
+  Logger::Status <<"| " << "Net Load (" << LOAD_count << "): "<< P_Load << std::setw(14)
 	    << "Gateway: " << P_Gateway << std::endl;
-  std::cout << "| Normal = " << m_normal << std::endl;
-  std::cout <<"| ---------------------------------------------------- |" << std::endl;
-  std::cout <<"| " << std::setw(20) << "UUID" << std::setw(27)<< "State" << std::setw(7) <<"|"<< std::endl;
-  std::cout <<"| "<< std::setw(20) << "----" << std::setw(27)<< "-----" << std::setw(7) <<"|"<< std::endl;
+  Logger::Status << "| Normal = " << m_normal << std::endl;
+  Logger::Status <<"| ---------------------------------------------------- |" << std::endl;
+  Logger::Status <<"| " << std::setw(20) << "UUID" << std::setw(27)<< "State" << std::setw(7) <<"|"<< std::endl;
+  Logger::Status <<"| "<< std::setw(20) << "----" << std::setw(27)<< "-----" << std::setw(7) <<"|"<< std::endl;
 
   //Compute the Load state based on the current gateway value
   if(m_normal && P_Gateway < -(*m_normal)-NORMAL_TOLERANCE)
@@ -491,22 +491,22 @@ void lbAgent::LoadTable()
   //Print the load information you have about the rest of the system  
   foreach( PeerNodePtr p_, l_AllPeers | boost::adaptors::map_values)
   {
-    std::cout<<"| " << p_->GetUUID() << std::setw(12)<< "Grp Member" <<std::setw(6) <<"|"<<std::endl;
+    Logger::Info<<"| " << p_->GetUUID() << std::setw(12)<< "Grp Member" <<std::setw(6) <<"|"<<std::endl;
     if (CountInPeerSet(m_HiNodes,p_) > 0 )
     {
-      std::cout<<"| " << p_->GetUUID() << std::setw(12)<< "Demand" <<std::setw(6) <<"|"<<std::endl;
+      Logger::Status<<"| " << p_->GetUUID() << std::setw(12)<< "Demand" <<std::setw(6) <<"|"<<std::endl;
     }
     else if (CountInPeerSet(m_NoNodes,p_) > 0 )
     {
-      std::cout<<"| " << p_->GetUUID() << std::setw(12)<< "Normal" <<std::setw(6) <<"|"<<std::endl;
+      Logger::Status<<"| " << p_->GetUUID() << std::setw(12)<< "Normal" <<std::setw(6) <<"|"<<std::endl;
     }
     else if (CountInPeerSet(m_LoNodes,p_) > 0 )
     {
-      std::cout<<"| " << p_->GetUUID() << std::setw(12)<< "Supply" <<std::setw(6) <<"|"<<std::endl;
+      Logger::Status<<"| " << p_->GetUUID() << std::setw(12)<< "Supply" <<std::setw(6) <<"|"<<std::endl;
     }
     else
     {
-      std::cout<<"| " << p_->GetUUID() << std::setw(12)<< "------" <<std::setw(6) <<"|"<<std::endl;
+      Logger::Status<<"| " << p_->GetUUID() << std::setw(12)<< "------" <<std::setw(6) <<"|"<<std::endl;
     }
   }
   std::cout <<" ------------------------------------------------------" <<std::endl;
@@ -814,7 +814,7 @@ void lbAgent::HandleRead(broker::CMessage msg)
             Logger::Notice << "P_Star = " << P_Star << std::endl;
             (*it)->Set("powerLevel", P_Star);
         }
-        Logger::Notice<<" Obtaining power from: "<< peer_->GetUUID() << std::endl;
+        Logger::Status<<" Obtaining power from: "<< peer_->GetUUID() << std::endl;
       }
       else
       {
@@ -837,7 +837,7 @@ void lbAgent::HandleRead(broker::CMessage msg)
     if( LPeerNode::SUPPLY == l_Status)
     {
       // Make necessary power setting accordingly to allow power migration
-      Logger::Notice<<"\nMigrating power on request from: "<< peer_->GetUUID() << std::endl;
+      Logger::Status<<"Migrating power on request from: "<< peer_->GetUUID() << std::endl;
       InitiatePowerMigration(DemValue);
             
     }//end if( LPeerNode::SUPPLY == l_Status)
@@ -977,7 +977,7 @@ void lbAgent::CollectState()
     m_cs.m_submessages.put("sc.module", "lb");
     get_peer(GetUUID())->Send(m_cs);
     
-    Logger::Info << "Sent state request from loadbalance" << std::endl;
+    Logger::Status << "Load Balance: Requesting State Collection" << std::endl;
 }
 
 void lbAgent::StateNormalize( const ptree & pt )
@@ -1004,7 +1004,7 @@ void lbAgent::StateNormalize( const ptree & pt )
     msg.m_submessages.put("lb.value",value);
 
     // Broadcast normal value to all nodes
-    Logger::Notice << "Broadcasting Normal Gateway: " << *m_normal << std::endl;
+    Logger::Status << "Broadcasting Normal Gateway: " << *m_normal << std::endl;
     foreach( PeerNodePtr peer, l_AllPeers | boost::adaptors::map_values )
     {
         if( peer->GetUUID() != GetUUID() )

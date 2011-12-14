@@ -184,7 +184,7 @@ int main (int argc, char* argv[])
             else
             {
                 // File doesn't exist or couldn't open it for read.
-                Logger::Notice << "Config file doesn't exist. "
+                Logger::Warn << "Config file doesn't exist. "
                                << "Skipping." << std::endl;
             }
         }
@@ -279,13 +279,13 @@ int main (int argc, char* argv[])
                 else
                 {
                     factory.CreateDevice<broker::device::CDeviceDRER>( devid );
-                    Logger::Info << "Added device: " << devid << std::endl;
+                    Logger::Notice << "Added device: " << devid << std::endl;
                 }
             }                                                                                               
         } 
         else 
         {
-            Logger::Info << "No physical devices specified" << std::endl;
+            Logger::Status << "No physical devices specified" << std::endl;
         }   
         
         // Instantiate Dispatcher for message delivery 
@@ -348,7 +348,7 @@ int main (int argc, char* argv[])
         } 
         else 
         {
-            Logger::Info << "Not adding any hosts on startup." << std::endl;
+            Logger::Warn << "Not adding any hosts on startup." << std::endl;
         }    
         
         // Add the local connection to the hostname list
@@ -360,14 +360,14 @@ int main (int argc, char* argv[])
         sigset_t old_mask;
         pthread_sigmask(SIG_BLOCK, &new_mask, &old_mask);
 
-        Logger::Info << "Starting CBroker thread" << std::endl;
+        Logger::Debug << "Starting CBroker thread" << std::endl;
         boost::thread thread_
             (boost::bind(&broker::CBroker::Run, &broker_));
 
         // Restore previous signals.
         pthread_sigmask(SIG_SETMASK, &old_mask, 0); 
     
-        Logger::Info << "Starting thread of Modules" << std::endl;
+        Logger::Debug << "Starting thread of Modules" << std::endl;
         boost::thread thread2_( boost::bind(&GMAgent::Run, &GM_)      
                                 , boost::bind(&lbAgent::LB, &LB_)
                                 , boost::bind(&SCAgent::SC, &SC_)
@@ -382,7 +382,6 @@ int main (int argc, char* argv[])
         pthread_sigmask(SIG_BLOCK, &wait_mask, 0);
         int sig = 0;
         sigwait(&wait_mask, &sig);
-        std::cout << "Shutting down cleanly." << std::endl;
 
         // Stop the modules
         GM_.Stop();
@@ -393,8 +392,6 @@ int main (int argc, char* argv[])
         // Bring in threads.
         thread_.join();
         thread2_.join();
-
-        std::cout << "Goodbye..." << std::endl;
     }
     catch (std::exception& e)
     {

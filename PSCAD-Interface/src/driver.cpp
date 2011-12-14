@@ -26,25 +26,64 @@
 ///
 ////////////////////////////////////////////////////////////////////////////////
 
+#include <string>
+#include <iostream>
+#include <boost/program_options.hpp>
+
 #include "logger.hpp"
 #include "CSimulationServer.hpp"
 
 using namespace freedm::simulation;
+namespace po = boost::program_options;
 
 CREATE_STD_LOGS()
 
 int main(int argc, char * argv[] )
 {
-    if( argc > 1 )
+    po::options_description options("Configurable Settings");
+    std::ifstream configuration;
+    po::variables_map vmap;
+    std::string cfg, xml;
+    unsigned short port;
+    int verbose;
+    
+    options.add_options()
+        ("help,h", "print help message")
+        ("config,c", po::value<std::string>(&cfg)->default_value("simserv.cfg"),
+                "filename of configurable settings")
+        ("xml,x", po::value<std::string>(&xml)->default_value("simserv.xml"),
+                "filename of XML device specification")
+        ("port,p", po::value<unsigned short>(&port)->default_value(4000),
+                "port number for PSCAD interface")
+        ("verbose,v", po::value<int>(&verbose)->default_value(3),
+                "amount of debug output to produce")
+        ;
+    
+    po::store( po::parse_command_line(argc, argv, options), vmap );
+    po::notify(vmap);
+    
+    if( vmap.count("help") > 0 )
     {
-        Logger::Log::setLevel(boost::lexical_cast<int>(argv[1]));
+        std::cout << options << std::endl;
     }
     else
     {
-        Logger::Log::setLevel(4);
+        configuration.open( cfg.c_str() );
+        if( configuration )
+        {
+            po::store( parse_config_file(configuration, options), vmap );
+            po::notify(vmap);
+            
+            configuration.close();
+        }
+        else
+        {
+            std::cerr << "Warning: failed to open " << cfg.c_str() << std::endl;
+        }
+        
+        Logger::Log::setLevel(verbose);
+        CSimulationServer bob( xml, port );
     }
-    
-    CSimulationServer bob("xml",4000);
     
     return 0;
 }

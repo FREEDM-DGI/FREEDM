@@ -100,7 +100,7 @@ sub GetHostnamePort
     # match 'Token = Hostname:Port' where # denotes a comment
     #   [ \f\r\t]*  match any amount of non-newline whitespace
     #   [^#\n]+     match at least one non-comment non-newline
-    if( $string =~ /^$token[ \f\r\t]*=[ \f\r\t]*([^#\n]+):([^#\n]+)/mi )
+    if( $string =~ /^[ \f\r\t]*$token[ \f\r\t]*=[ \f\r\t]*([^#\n]+):([^#\n]+)/mi )
     {
         ($hostname,$port) = CheckHostnamePort($1,$2);
     }
@@ -255,7 +255,7 @@ sub CreateFreedmConfig
     $string .= "\n";
     
     # add the simulation server
-    $string .= &LineClient();
+    $string .= &LineClient($instance);
     $string .= "\n";
     
     return $string;
@@ -297,16 +297,23 @@ sub AddSelf
 
 # brief:    generates the lineclient entries for freedm.cfg
 # pre:      $HOST[0] and $PORT[0] must be set to the lineclient values
+# pre:      passed index must reference an entry in @TOKEN
 # post:     none
+# param:    0, @TOKEN index for the machine running the script
 # return:   lineclient entries for freedm.cfg
 sub LineClient
 {
+    # get parameters
+    my $index = $_[0];
     my $string = '';
+    
+    # calculate the numeric port number
+    my $port = $PORT[0] + $index;
     
     $string .= "# Hostname of the lineclient simulation server\n";
     $string .= "lineclient-host=$HOST[0]\n";
     $string .= "# TCP port number of the lineclient simulation server\n";
-    $string .= "lineclient-port=$PORT[0]\n";
+    $string .= "lineclient-port=$port\n";
     
     return $string;
 }

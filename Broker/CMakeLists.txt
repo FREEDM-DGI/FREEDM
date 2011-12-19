@@ -9,21 +9,42 @@ set(ALT_BUILD_VERSION "Unversioned")
 #   add the option below with a help message defaulted to OFF
 #   add the option to Broker/include/cmake.hpp.cmake as #cmakedefine OPTION
 #   activate / deactivate the option as described in the message below
-option(BUILD_TESTS "Enable the building and running of unit tests." OFF)
 option(SHOW_WARNINGS "warnings displayed during project compile" OFF)
 option(CUSTOMNETWORK "for network.xml support" OFF)
 option(DATAGRAM "for UDP Datagram service w/o sequencing" OFF)
 option(USE_DEVICE_PSCAD "Enable the PSCAD simulation interface" ON)
-option(SHOW_MESSAGES "Enable help messages during cmake execution" ON)
 
-if(SHOW_MESSAGES)
-    message("This project uses custom CMake settings:"
-        "\n\tView the available settings with cmake -LH"
-        "\n\tChange a setting with -DSETTING=ON/OFF")
-endif(SHOW_MESSAGES)
+# find the perl executable
+message(STATUS "Checking for perl installation")
+find_program(PERL_EXEC perl)
+
+if(PERL_EXEC)
+    set(SCRIPT "${CMAKE_BINARY_DIR}/configure.pl")
+    set(INFILE "${CMAKE_BINARY_DIR}/hostname.cfg")
+    
+    # check for required input file
+    if(NOT EXISTS ${INFILE})
+        message(FATAL_ERROR "Missing required file ${INFILE}")
+    endif()
+    
+    # execute the perl configure script
+    message(STATUS "Running configure.pl to generate src/freedm.cfg")
+    execute_process(
+        COMMAND ${PERL_EXEC} ${SCRIPT} ${INFILE}
+        RESULT_VARIABLE CONFIGURE_RESULT
+    )
+    
+    # check the script result
+    if(${CONFIGURE_RESULT} MATCHES "1")
+        message(FATAL_ERROR "Failed to generate freedm.cfg")
+    endif()
+else(PERL_EXEC)
+    message(FATAL_ERROR "Failed to find perl installation")
+endif(PERL_EXEC)
 
 # find the required boost libraries
-find_package(Boost REQUIRED COMPONENTS system thread program_options serialization)
+message(STATUS "Checking for boost installation")
+find_package(Boost 1.44.0 COMPONENTS REQUIRED system thread program_options serialization)
 
 if(Boost_FOUND)
     # add the boost libraries to the project
@@ -51,11 +72,4 @@ if(Boost_FOUND)
 
     # goto src/CMakeLists.txt
     add_subdirectory( src )
-
-    if(BUILD_TESTS)
-        enable_testing()
-
-        # goto test/CMakeLists.txt
-        add_subdirectory(test)
-    endif(BUILD_TESTS)
 endif(Boost_FOUND)

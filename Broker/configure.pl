@@ -128,7 +128,7 @@ sub CheckHostnamePort
     #       [A-Z\d-]    i for case-insensitive
     #   maximum length of 63 characters
     #       {1,63}      1 to 63 chars
-    if( $hostname !~ /^(?!-)[A-Z\d-]{1,63}(?<!-)$/i )
+    if( $hostname !~ /^(?!-)[A-Z\d\-\.]{1,63}(?<!-)$/i )
     {
         print "WARNING: Invalid Hostname, $hostname\n";
         $hostname = '';

@@ -293,7 +293,7 @@ sub AddSelf
     $string .= "add-device=SST$index\n";
     $string .= "\n";
     $string .= "# Set the debug output level (0 = minimal, 7 = maximal)\n";
-    $string .= "verbose 5\n";
+    $string .= "verbose=5\n";
     
     return $string;
 }

@@ -1,0 +1,380 @@
+<?zml version="1.0" encoding="UTF-8" ?>
+<simulation>
+<step1>
+ <dev id ='gendev0'>
+    <vout>25</vout>
+    <type>1</type>
+</dev>
+
+<dev id='stodev0'>
+    <vin>25</vin>
+     <vout>25</vout>
+    <type>2</type>
+</dev>
+
+<dev id='loaddev0'>
+    <vin>25</vin>
+    <type>3</type>
+</dev>
+</step1>
+
+<step2 >
+ <dev id ='gendev0'>
+    <vout>50</vout>
+    <type>1</type>
+</dev>
+
+<dev id='stodev0'>
+    <vin>50</vin>
+     <vout>31</vout>
+    <type>2</type>
+</dev>
+
+<dev id='loaddev0'>
+    <vin>50</vin>
+    <type>3</type>
+</dev>
+</step2>
+
+<step3 >
+ <dev id ='gendev0'>
+    <vout>30</vout>
+    <type>1</type>
+</dev>
+
+<dev id='stodev0'>
+    <vin>20</vin>
+     <vout>17</vout>
+    <type>2</type>
+</dev>
+
+<dev id='loaddev0'>
+    <vin>15</vin>
+    <type>3</type>
+</dev>
+</step3>
+
+<step4>
+ <dev id ='gendev0'>
+    <vout>13</vout>
+    <type>1</type>
+</dev>
+
+<dev id='stodev0'>
+    <vin>50</vin>
+     <vout>51</vout>
+    <type>2</type>
+</dev>
+
+<dev id='loaddev0'>
+    <vin>40</vin>
+    <type>3</type>
+</dev>
+</step4>
+
+<step5>
+ <dev id ='gendev0'>
+    <vout>20</vout>
+    <type>1</type>
+</dev>
+
+<dev id='stodev0'>
+    <vin>30</vin>
+     <vout>21</vout>
+    <type>2</type>
+</dev>
+
+<dev id='loaddev0'>
+    <vin>35</vin>
+    <type>3</type>
+</dev>
+</step5>
+
+<step6>
+ <dev id ='gendev0'>
+    <vout>15</vout>
+    <type>1</type>
+</dev>
+
+<dev id='stodev0'>
+    <vin>20</vin>
+     <vout>31</vout>
+    <type>2</type>
+</dev>
+
+<dev id='loaddev0'>
+    <vin>30</vin>
+    <type>3</type>
+</dev>
+</step6>
+
+<step7>
+ <dev id ='gendev0'>
+    <vout>35</vout>
+    <type>1</type>
+</dev>
+
+<dev id='stodev0'>
+    <vin>30</vin>
+     <vout>51</vout>
+    <type>2</type>
+</dev>
+
+<dev id='loaddev0'>
+    <vin>50</vin>
+    <type>3</type>
+</dev>
+</step7>
+
+<step8>
+ <dev id ='gendev0'>
+    <vout>50</vout>
+    <type>1</type>
+</dev>
+
+<dev id='stodev0'>
+    <vin>50</vin>
+     <vout>51</vout>
+    <type>2</type>
+</dev>
+
+<dev id='loaddev0'>
+    <vin>50</vin>
+    <type>3</type>
+</dev>
+</step8>
+
+<step9>
+ <dev id ='gendev0'>
+    <vout>50</vout>
+    <type>1</type>
+</dev>
+
+<dev id='stodev0'>
+    <vin>50</vin>
+     <vout>51</vout>
+    <type>2</type>
+</dev>
+
+<dev id='loaddev0'>
+    <vin>50</vin>
+    <type>3</type>
+</dev>
+</step9>
+
+<step10>
+ <dev id ='gendev0'>
+    <vout>50</vout>
+    <type>1</type>
+</dev>
+
+<dev id='stodev0'>
+    <vin>50</vin>
+     <vout>51</vout>
+    <type>2</type>
+</dev>
+
+<dev id='loaddev0'>
+    <vin>50</vin>
+    <type>3</type>
+</dev>
+</step10>
+
+<step11>
+ <dev id ='gendev0'>
+    <vout>50</vout>
+    <type>1</type>
+</dev>
+
+<dev id='stodev0'>
+    <vin>50</vin>
+     <vout>51</vout>
+    <type>2</type>
+</dev>
+
+<dev id='loaddev0'>
+    <vin>50</vin>
+    <type>3</type>
+</dev>
+</step11>
+
+<step12>
+ <dev id ='gendev0'>
+    <vout>50</vout>
+    <type>1</type>
+</dev>
+
+<dev id='stodev0'>
+    <vin>50</vin>
+     <vout>51</vout>
+    <type>2</type>
+</dev>
+
+<dev id='loaddev0'>
+    <vin>50</vin>
+    <type>3</type>
+</dev>
+</step12>
+
+<step13>
+ <dev id ='gendev0'>
+    <vout>50</vout>
+    <type>1</type>
+</dev>
+
+<dev id='stodev0'>
+    <vin>50</vin>
+     <vout>51</vout>
+    <type>2</type>
+</dev>
+
+<dev id='loaddev0'>
+    <vin>50</vin>
+    <type>3</type>
+</dev>
+</step13>
+
+<step14>
+ <dev id ='gendev0'>
+    <vout>50</vout>
+    <type>1</type>
+</dev>
+
+<dev id='stodev0'>
+    <vin>50</vin>
+     <vout>51</vout>
+    <type>2</type>
+</dev>
+
+<dev id='loaddev0'>
+    <vin>50</vin>
+    <type>3</type>
+</dev>
+</step14>
+
+<step15>
+ <dev id ='gendev0'>
+    <vout>50</vout>
+    <type>1</type>
+</dev>
+
+<dev id='stodev0'>
+    <vin>50</vin>
+     <vout>51</vout>
+    <type>2</type>
+</dev>
+
+<dev id='loaddev0'>
+    <vin>50</vin>
+    <type>3</type>
+</dev>
+</step15>
+
+<step16>
+ <dev id ='gendev0'>
+    <vout>50</vout>
+    <type>1</type>
+</dev>
+
+<dev id='stodev0'>
+    <vin>50</vin>
+     <vout>51</vout>
+    <type>2</type>
+</dev>
+
+<dev id='loaddev0'>
+    <vin>50</vin>
+    <type>3</type>
+</dev>
+</step16>
+
+<step17>
+ <dev id ='gendev0'>
+    <vout>50</vout>
+    <type>1</type>
+</dev>
+
+<dev id='stodev0'>
+    <vin>50</vin>
+     <vout>51</vout>
+    <type>2</type>
+</dev>
+
+<dev id='loaddev0'>
+    <vin>50</vin>
+    <type>3</type>
+</dev>
+</step17>
+
+<step18>
+ <dev id ='gendev0'>
+    <vout>50</vout>
+    <type>1</type>
+</dev>
+
+<dev id='stodev0'>
+    <vin>50</vin>
+     <vout>51</vout>
+    <type>2</type>
+</dev>
+
+<dev id='loaddev0'>
+    <vin>50</vin>
+    <type>3</type>
+</dev>
+</step18>
+
+<step19>
+ <dev id ='gendev0'>
+    <vout>50</vout>
+    <type>1</type>
+</dev>
+
+<dev id='stodev0'>
+    <vin>50</vin>
+     <vout>51</vout>
+    <type>2</type>
+</dev>
+
+<dev id='loaddev0'>
+    <vin>50</vin>
+    <type>3</type>
+</dev>
+</step19>
+
+<step20>
+ <dev id ='gendev0'>
+    <vout>50</vout>
+    <type>1</type>
+</dev>
+
+<dev id='stodev0'>
+    <vin>50</vin>
+     <vout>51</vout>
+    <type>2</type>
+</dev>
+
+<dev id='loaddev0'>
+    <vin>50</vin>
+    <type>3</type>
+</dev>
+</step20>
+
+<step21>
+ <dev id ='gendev0'>
+    <vout>50</vout>
+    <type>1</type>
+</dev>
+
+<dev id='stodev0'>
+    <vin>50</vin>
+     <vout>51</vout>
+    <type>2</type>
+</dev>
+
+<dev id='loaddev0'>
+    <vin>50</vin>
+    <type>3</type>
+</dev>
+</step21>
+</simulation>

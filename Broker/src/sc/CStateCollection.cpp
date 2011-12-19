@@ -12,7 +12,7 @@
 ///
 /// @functions   Initiate()
 ///          HandleRead()
-///      TakeSnapshot()
+///          TakeSnapshot()
 ///          StateResponse()
 ///          GetPeer()
 ///          AddPeer()
@@ -65,7 +65,7 @@
 #include <boost/foreach.hpp>
 
 #define foreach     BOOST_FOREACH
-#define P_Migrate 1
+
 
 #include <vector>
 #include <boost/assign/list_of.hpp>
@@ -122,16 +122,13 @@ SCAgent::~SCAgent()
 {
 }
 
-/****
-  This is the standard(ish) code
-****/
 
 ///////////////////////////////////////////////////////////////////////////////
 /// Marker
-/// @description: maker message
+/// @description: marker message
 /// @pre: CMessage
 /// @post: No changes
-/// @return: A CMessage with the contents of maker (UUID + Int)
+/// @return: A CMessage with the contents of marker (UUID + Int)
 ///////////////////////////////////////////////////////////////////////////////
 
 freedm::broker::CMessage SCAgent::m_marker()
@@ -196,7 +193,7 @@ void SCAgent::Initiate()
     collectstate.insert(std::pair<int, ptree>(countstate, m_curstate));
     countstate++;
     //prepare marker tagged with UUID + Int
-    Logger::Info << "maker is ready from " << GetUUID() << std::endl;
+    Logger::Info << "marker is ready from " << GetUUID() << std::endl;
     freedm::broker::CMessage m_ = m_marker();
     //send tagged marker to all other peers
     foreach(PeerNodePtr peer_, m_AllPeers | boost::adaptors::map_values)
@@ -217,7 +214,7 @@ void SCAgent::Initiate()
 
 ///////////////////////////////////////////////////////////////////////////////
 /// StateResponse
-/// @description: This function deal with the collectstate and prepare state sending back.
+/// @description: This function deals with the collectstate and prepare state sending back.
 /// @pre: Some timer leading to this function has expired or been canceled.
 /// @post: If the timer has expired, StateResponse begins
 /// @param: The error code associated with the calling timer.
@@ -268,24 +265,24 @@ void SCAgent::StateResponse( const boost::system::error_code& err)
             }
         }//end if countstate
         
-        //send collect states to the request module
+        //send collect states to the requested module
         Logger::Info << "sending request state back to " << module << std::endl;
         m_.m_submessages.put(module, "gateway");
         //m_.m_submessages.put("lb.source", GetUUID());
         m_.m_submessages.put("gateway", ss_.str());
         GetPeer(GetUUID())->AsyncSend(m_);
     }
-    else if(boost::asio::error::operation_aborted == err )
-    {
-        Logger::Info << "StateResponse(operation_aborted error) " <<
-                     __LINE__ << std::endl;
-    }
-    else
-    {
-        /* An error occurred or timer was canceled */
-        Logger::Error << err << std::endl;
-        throw boost::system::system_error(err);
-    }
+   else if(boost::asio::error::operation_aborted == err )
+   {
+       Logger::Info << "StateResponse(operation_aborted error) " <<
+                    __LINE__ << std::endl;
+   }
+   else
+   {
+       /* An error occurred or timer was canceled */
+       Logger::Error << err << std::endl;
+       throw boost::system::system_error(err);
+   }
 }
 
 
@@ -294,25 +291,14 @@ void SCAgent::StateResponse( const boost::system::error_code& err)
 /// @description: TakeSnapshot is used to collect states of devices
 /// @pre: None
 /// @post: get gateway value from SST
+/// @limitation: currently, it is used to collect only the gateway values
 ///
 //////////////////////////////////////////////////////////////////
 void SCAgent::TakeSnapshot()
 {
-    //read powerlevels of PV, battery and load (double get_powerlevel)
-    //and save into a CMessage
-    /*
-      broker::device::CDevice::DevicePtr DevPtr;
-      broker::CPhysicalDeviceManager::PhysicalDeviceSet::iterator it_;
-    
-      for( it_ = m_phyDevManager.begin(); it_ != m_phyDevManager.end(); ++it_ )
-      {
-        DevPtr = it_->second;
-        DevPtr = m_phyDevManager.GetDevice(it_->first);
-        Logger::Info << "Device ID: " << DevPtr->GetID() << ", power level: " << DevPtr->Get("powerlevel") << std::endl;
-    
-       }
-    */
-    typedef broker::device::CDeviceDRER SST;
+   
+   /*
+    typedef broker::device::CDeviceDESD SST;
     broker::CPhysicalDeviceManager::PhysicalDevice<SST>::Container list;
     broker::CPhysicalDeviceManager::PhysicalDevice<SST>::iterator it, end;
     broker::device::SettingValue PowerValue = 0;
@@ -323,11 +309,14 @@ void SCAgent::TakeSnapshot()
     {
         PowerValue += (*it)->Get("powerLevel");
     }
-    
-    Logger::Info << "Power Level = " << PowerValue << std::endl;
+     Logger::Info << "Power Level = " << PowerValue << std::endl;
+   */
+
+    typedef broker::device::CDeviceSST SST;
+    broker::CPhysicalDeviceManager::PhysicalDevice<SST>::Container SSTContainer;
     //get gateway value from SST and save into a CMessage (here use a fake one)
     m_curstate.put("sc.type", "gateway");
-    m_curstate.put("sc.gateway", PowerValue);
+    m_curstate.put("sc.gateway", (*SSTContainer.begin())->Get("powerLevel"));
     m_curstate.put("sc.source", GetUUID());
 }
 
@@ -347,10 +336,11 @@ void SCAgent::HandleRead(broker::CMessage msg)
     std::stringstream ss_;
     PeerNodePtr peer_;
     ptree pt = msg.GetSubMessages();
+
     //incomingVer_ records the coming version of the marker
     StateVersion incomingVer_;
+
     //check the coming peer node
-    //line_ = pt.get<std::string>("sc.source");
     line_ = msg.GetSourceUUID();
     
     if(line_ != GetUUID())
@@ -369,7 +359,6 @@ void SCAgent::HandleRead(broker::CMessage msg)
         }//end if
     }//end if
     
-    ///////////////////////////////////////////////////////////////////////////
     
     //receive peerlist from groupmanager
     if(pt.get<std::string>("any","NOEXCEPTION") == "peerList")
@@ -402,32 +391,35 @@ void SCAgent::HandleRead(broker::CMessage msg)
             }//end if
         }// end while(...)
     }// end if
+
     // If there isn't an sc message, just leave.
     else if(pt.get<std::string>("sc","NOEXCEPTION") == "NOEXCEPTION")
     {
         return;
     }
+
     //receive state request for gateway
     else if (pt.get<std::string>("sc") == "request")
     {
         //extract request source from "LB" or "GM"
         module = pt.get<std::string>("sc.module");
         //call initiate to start state collection
-        Logger::Info << "Receiving state request from " << module << " ( " << pt.get<std::string>("sc.source")
-                     << " ) " << " for gateway" << std::endl;
+        Logger::Notice << "Receiving state request from " << module << " ( " << pt.get<std::string>("sc.source")
+                     << " ) " << " for gateway values" << std::endl;
         Initiate();
     }
+
     //check if this is a marker message
     else if (pt.get<std::string>("sc") == "marker")
     {
         // marker value is present, this initiates a collection request
-        Logger::Info << "Received message is a maker! " << std::endl;
+        Logger::Info << "Received message is a marker! " << std::endl;
         // read the incoming version from marker
         incomingVer_.first = pt.get<std::string>("sc.source");
         incomingVer_.second = pt.get<unsigned int>("sc.id");
         // assign incoming version to current version, this trace the latest marker
         m_curversion = incomingVer_;
-        Logger::Info << "marker is " << m_curversion.first << " " << m_curversion.second << std::endl;
+        Logger::Info << "Marker is " << m_curversion.first << " " << m_curversion.second << std::endl;
         //physical device information
         Logger::Debug << "SC module identified "<< m_phyDevManager.DeviceCount()
                       << " physical devices on this node" << std::endl;

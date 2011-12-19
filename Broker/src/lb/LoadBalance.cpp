@@ -63,6 +63,9 @@
 #include <boost/foreach.hpp>
 #define foreach     BOOST_FOREACH
 
+#define P_Migrate 1
+#define simfile 1 //1 if exists, else 0
+
 #include <boost/property_tree/ptree.hpp>
 using boost::property_tree::ptree;
 
@@ -90,16 +93,12 @@ lbAgent::lbAgent(std::string uuid_, boost::asio::io_service &ios,
                  broker::CPhysicalDeviceManager &m_phyManager):
   LPeerNode(uuid_, m_conManager, ios, p_dispatch),
   m_phyDevManager(m_phyManager),
-  m_GlobalTimer(ios),
-  m_StateTimer(ios),
-  m_leader(false)
+  m_GlobalTimer(ios)
 {
   Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
   PeerNodePtr self_(this);
   InsertInPeerSet(l_AllPeers, self_);
-  step = 0;
-  
-  StartStateTimer( STATE_TIMEOUT );
+  step=0;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -130,6 +129,8 @@ void lbAgent::LoadManage()
   MessagePtr m_;
   preLoad = l_Status; // Remember previous load before computing current load
 
+
+/*
   // Physical device information managed by Broker can be obtained as below
   Logger::Info << "LB module identified "<< m_phyDevManager.DeviceCount()
                << " physical devices on this node" << std::endl;
@@ -141,34 +142,31 @@ void lbAgent::LoadManage()
     DevPtr = m_phyDevManager.GetDevice(it_->first); 
     Logger::Debug << "Device ID: " << DevPtr->GetID() << std::endl;                         
   } 
-
-  /*
+*/
+  //Read from simulation file if it exists
+if(1 == simfile){
+  boost::property_tree::ptree pt;
   step++;
   std::stringstream ss_;
   ss_.clear();
   ss_<<"simulation.step"<<step;
-  boost::property_tree::ptree pt;
-  boost::property_tree::read_xml("lb/loads.xml",pt);   
-
-    BOOST_FOREACH(ptree::value_type & child, pt.get_child(ss_.str()))
+  boost::property_tree::read_xml("lb/loads.xml",pt); 
+  BOOST_FOREACH(ptree::value_type & child, pt.get_child(ss_.str()))
     {
-        broker::IPhysicalDevice::Identifier devid = child.second.get<std::string>("<xmlattr>.id");
-        int type = child.second.get<int>("type"); 
-        if(type == broker::physicaldevices::DRER){           
-        m_phyDevManager.GetDevice(devid)->Set("vout", child.second.get<float>("vout"));    
-        }
-        else if(type == broker::physicaldevices::DESD){ 
-        m_phyDevManager.GetDevice(devid)->Set("vin", child.second.get<float>("vin")); 
-        m_phyDevManager.GetDevice(devid)->Set("vout", child.second.get<float>("vout"));      
-        }
-        else if(type == broker::physicaldevices::LOAD){ 
-        m_phyDevManager.GetDevice(devid)->Set("vin", child.second.get<float>("vin"));   
-        }
-        else{
-         Logger::Debug<< "Attempt to set FREEDM GENERIC DEVICE " << std::endl;
-        }
-    }
-  */    
+      m_phyDevManager.GetDevice(child.second.get<std::string>("<xmlattr>.id"))
+		   ->Set("powerLevel", child.second.get<float>("powerLevel"));         
+    } 
+}
+
+  //Compute the Normal and push it to the group members if you are the leader
+ if(Leader == GetUUID()){
+  //test interface with state collection
+  freedm::broker::CMessage m_cs;
+  m_cs.m_submessages.put("sc", "request");
+  m_cs.m_submessages.put("sc.source", GetUUID());
+  m_cs.m_submessages.put("sc.module", "lb");
+  get_peer(GetUUID())->Send(m_cs);
+ }
   // Call LoadTable to update load state of the system as observed by this node
   LoadTable();
      
@@ -362,22 +360,76 @@ void lbAgent::SendDraftRequest()
 /////////////////////////////////////////////////////////
 void lbAgent::InitiatePowerMigration(broker::device::SettingValue DemandValue)
 {
-    typedef broker::device::CDeviceDRER SST;
-    broker::CPhysicalDeviceManager::PhysicalDevice<SST>::Container list;
-    broker::CPhysicalDeviceManager::PhysicalDevice<SST>::iterator it, end;
+  typedef std::map<broker::device::SettingValue,broker::device::Identifier> DeviceMap;
+  typedef broker::device::CDeviceDESD DESD;
 
-    list = m_phyDevManager.GetDevicesOfType<SST>();
-    for( it = list.begin(), end = list.end(); it != end; it++ )
-    {
-        if( -DemandValue <= -P_Gateway - *m_normal )
-        {
-            (*it)->Set("powerLevel", -P_Gateway + DemandValue);
-        }
-        else
-        {
-            (*it)->Set("powerLevel", *m_normal);
-        }
+  // Container and iterators for the result of GetDevicesOfType
+  broker::CPhysicalDeviceManager::PhysicalDevice<DESD>::Container DESDContainer;
+  broker::CPhysicalDeviceManager::PhysicalDevice<DESD>::iterator it, end;
+  
+  // Make a map of DESDs
+  DeviceMap DESDMap;
+
+  // Temp variables to hold "vin" and "vout"
+  broker::device::SettingValue V_in, V_out;
+
+  //Sort the DESDs by decreasing order of their "vin"s; achieved by inserting into map
+  DESDContainer = m_phyDevManager.GetDevicesOfType<DESD>();
+  for( it = DESDContainer.begin(), end = DESDContainer.end(); it != end; it++ )   
+  {  
+    DESDMap.insert( DeviceMap::value_type((*it)->Get("powerLevel"), (*it)->GetID()) );
+  } 
+
+  //Use a reverse iterator on map to retrieve elements in reverse sorted order   
+  DeviceMap::reverse_iterator mapIt_; 
+  // temp variable to hold the P_migrate set by Demanding node
+  broker::device::SettingValue temp_ = DemandValue;
+
+  for( mapIt_ = DESDMap.rbegin(); mapIt_ != DESDMap.rend(); ++mapIt_ )
+  {
+    V_in = mapIt_->first; //load "vin" from the DESDmap
+   
+    // Using the below if-else structure, what we are doing is as follows:
+    // Use the DESD that has highest input from DRERs and reduce this input;
+    // The key assumption here is that the SST (PSCAD Model) will figure out
+    // the way to route this surplus on to the grid
+    // Next use the DESD with next highest input and so on till net demand
+    // (P_migrate) is satisfied
+    if(temp_ <= V_in)
+    {  
+      V_in = V_in - temp_;
+      //Then set the V_in accordingly on that particular device	
+      //m_phyDevManager.GetDevice(mapIt_->second)->Set("vin", V_in);               
     }
+    else 
+    {
+      temp_ = temp_ - V_in;
+      V_in = 0;
+      //Then set the vin and vout accordingly on that particular device	
+      //m_phyDevManager.GetDevice(mapIt_->second)->Set("vin", V_in); 
+    }  
+  }//end for
+
+  // Clear the DRER map
+  DESDMap.clear();
+}
+
+
+////////////////////////////////////////////////////////////
+/// Basic_PStar
+/// @description Initiates 'power migration' on Draft Accept
+///              message from a demand node    
+/// @pre: Current load state of this node is 'Supply'
+/// @post: Set command(s) to reduce DESD charge 
+/// @limitations Changes significantly depending on SST's control capability; 
+///		 for now, the supply node reduces the amount of power currently 
+///		 in use to charge DESDs
+/////////////////////////////////////////////////////////
+void lbAgent::Basic_PStar()
+{
+float setGateway = m_phyDevManager.GetDevice("sst")->Get("powerLevel");
+setGateway += P_Migrate;
+m_phyDevManager.GetDevice("sst")->Set("powerLevel", setGateway); 
 }
 
 ////////////////////////////////////////////////////////////
@@ -395,11 +447,13 @@ void lbAgent::LoadTable()
   typedef broker::device::CDeviceDRER DRER;
   typedef broker::device::CDeviceDESD DESD;
   typedef broker::device::CDeviceLOAD LOAD;
+  typedef broker::device::CDeviceSST SST;
 
   // Container and iterators for the result of GetDevicesOfType
   broker::CPhysicalDeviceManager::PhysicalDevice<DRER>::Container DRERContainer;
   broker::CPhysicalDeviceManager::PhysicalDevice<DESD>::Container DESDContainer;
   broker::CPhysicalDeviceManager::PhysicalDevice<LOAD>::Container LOADContainer;
+  broker::CPhysicalDeviceManager::PhysicalDevice<SST>::Container SSTContainer;
   broker::CPhysicalDeviceManager::PhysicalDevice<DRER>::iterator rit, rend;
   broker::CPhysicalDeviceManager::PhysicalDevice<DESD>::iterator sit, send;
   broker::CPhysicalDeviceManager::PhysicalDevice<LOAD>::iterator lit, lend;
@@ -407,7 +461,8 @@ void lbAgent::LoadTable()
   // populate the device containers
   DRERContainer = m_phyDevManager.GetDevicesOfType<DRER>();
   DESDContainer = m_phyDevManager.GetDevicesOfType<DESD>();
-  LOADContainer = m_phyDevManager.GetDevicesOfType<LOAD>();
+  LOADContainer = m_phyDevManager.GetDevicesOfType<LOAD>(); 
+  SSTContainer = m_phyDevManager.GetDevicesOfType<SST>(); 
   
   //# devices of each type attached and alive 
   int DRER_count = DRERContainer.size();
@@ -439,7 +494,9 @@ void lbAgent::LoadTable()
   P_Gen = net_gen;
   B_Soc = net_storage;
   P_Load = net_load;
-  P_Gateway = P_Load - P_Gen;
+  //P_Gateway = P_Load - P_Gen;
+  //P_Gateway = m_phyDevManager.GetDevice("sst")->Get("powerLevel");
+  P_Gateway = (*SSTContainer.begin())->Get("powerLevel");
   std::cout <<"| " << "Net DRER (" << DRER_count << "): " << P_Gen << std::setw(14) 
 	    << "Net DESD (" << DESD_count << "): " << B_Soc << std::endl;
   std::cout <<"| " << "Net Load (" << LOAD_count << "): "<< P_Load << std::setw(14)
@@ -449,14 +506,15 @@ void lbAgent::LoadTable()
   std::cout <<"| "<< std::setw(20) << "----" << std::setw(27)<< "-----" << std::setw(7) <<"|"<< std::endl;
 
   //Compute the Load state based on the current gateway value
-  if(m_normal && P_Gateway < -(*m_normal)-NORMAL_TOLERANCE)
+  //TODO: This should be computed based on a normalized value obtained thru State Collection
+  if(P_Gateway <= 0)
   {
     l_Status = LPeerNode::SUPPLY;
   }
-  else if(m_normal && P_Gateway > -(*m_normal)+NORMAL_TOLERANCE)
+  else if(P_Gateway > CNorm)
   {
     l_Status = LPeerNode::DEMAND;
-    DemandValue = -1;
+    DemandValue = P_Gateway- CNorm;
   }
   else
   {
@@ -490,7 +548,7 @@ void lbAgent::LoadTable()
   //Print the load information you have about the rest of the system  
   foreach( PeerNodePtr p_, l_AllPeers | boost::adaptors::map_values)
   {
-    std::cout<<"| " << p_->GetUUID() << std::setw(12)<< "Grp Member" <<std::setw(6) <<"|"<<std::endl;
+    //std::cout<<"| " << p_->GetUUID() << std::setw(12)<< "Grp Member" <<std::setw(6) <<"|"<<std::endl;
     if (CountInPeerSet(m_HiNodes,p_) > 0 )
     {
       std::cout<<"| " << p_->GetUUID() << std::setw(12)<< "Demand" <<std::setw(6) <<"|"<<std::endl;
@@ -511,6 +569,47 @@ void lbAgent::LoadTable()
   std::cout <<" ------------------------------------------------------" <<std::endl;
   return;
 }//end LoadTable
+
+////////////////////////////////////////////////////////////
+/// SendNormal
+/// @description  Compute Normal if you are the Leader and push
+///               it to the group members
+/// @pre: You should be the leader
+/// @post: The group members receive the computed normal
+/// @return 
+/// @limitations 
+/////////////////////////////////////////////////////////
+void lbAgent::SendNormal(float Normal){
+ Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
+ if(Leader == GetUUID()){
+ Logger::Notice <<"Sending Computed Normal to the group members: " <<std::endl;
+ broker::CMessage m_;
+    std::stringstream ss_;
+    ss_.clear();
+    ss_ << GetUUID();
+    ss_ >> m_.m_srcUUID;
+    m_.m_submessages.put("lb.source", ss_.str());
+    ss_.clear();
+    ss_.str("ComputedNormal");
+    m_.m_submessages.put("lb", ss_.str());
+    ss_.clear();
+    ss_ << Normal;
+    ss_.str();
+    m_.m_submessages.put("lb.cnorm", ss_.str());
+    foreach( PeerNodePtr peer_, l_AllPeers | boost::adaptors::map_values)
+    {
+      try
+        {
+          peer_->Send(m_);
+        }
+      catch (boost::system::system_error& e)
+        {
+          Logger::Info << "Couldn't Send Message To Peer" << std::endl;
+        }
+    }//end foreach
+}
+
+}
 
 ////////////////////////////////////////////////////////////
 /// HandleRead
@@ -570,20 +669,13 @@ void lbAgent::HandleRead(broker::CMessage msg)
   // identify your new group members
   if(pt.get<std::string>("any","NOEXCEPTION") == "peerList")
   {
-    std::string peers_, token, coord;
+    std::string peers_, token;
     peers_ = pt.get<std::string>("any.peers");
-    coord = pt.get<std::string>("any.coordinator");
     Logger::Notice << "\nPeer List < " << peers_ <<
-           " > from Group Leader: " << coord <<std::endl;
-    
-    //Update the group coordinator
-    m_leader = (coord == GetUUID());
-    if( m_leader )
-    {
-        CollectState();
-    }
-    
+           " > received from Group Leader: " << line_ <<std::endl;
+    Leader = line_;
     //Update the PeerNode lists accordingly            
+
     foreach( PeerNodePtr p_, l_AllPeers | boost::adaptors::map_values)
     {
       if( p_->GetUUID() == GetUUID())
@@ -800,18 +892,9 @@ void lbAgent::HandleRead(broker::CMessage msg)
         //TODO: Set "Gateway" at the SST as below or control physical devices?
         //TODO: Changes significantly depending on SST's control capability; 
         //for now, the demand node doesn`t have to make any setting
-        P_Star = -P_Gateway + 1; //instead of 1
-
-        typedef broker::device::CDeviceDRER SST;
-        broker::CPhysicalDeviceManager::PhysicalDevice<SST>::Container list;
-        broker::CPhysicalDeviceManager::PhysicalDevice<SST>::iterator it, end;
-
-        list = m_phyDevManager.GetDevicesOfType<SST>();
-        for( it = list.begin(), end = list.end(); it != end; it++ )
-        {
-            (*it)->Set("powerLevel", P_Star);
-        }
-        Logger::Notice<<" Obtaining power from: "<< peer_->GetUUID() << std::endl;
+        //P_Star = P_Gateway + P_Migrate; //instead of 1
+        //m_phyDevManager.GetDevice("sst")->Set("P*", P_Star);     
+        //Logger::Notice<<" Obtaining power from: "<< peer_->GetUUID() << std::endl;
       }
       else
       {
@@ -835,7 +918,8 @@ void lbAgent::HandleRead(broker::CMessage msg)
     {
       // Make necessary power setting accordingly to allow power migration
       Logger::Notice<<"\nMigrating power on request from: "<< peer_->GetUUID() << std::endl;
-      InitiatePowerMigration(DemValue);
+      //InitiatePowerMigration(DemValue);
+      Basic_PStar();
             
     }//end if( LPeerNode::SUPPLY == l_Status)
      
@@ -849,7 +933,23 @@ void lbAgent::HandleRead(broker::CMessage msg)
   // (local or remote). Respond to it by sending in your current load status
   else if(pt.get<std::string>("lb") == "gateway")
   {
-    StateNormalize(pt);
+   Logger::Notice << " Gateway values of all peers received from state collection module "<<
+     std::endl;
+   std::string gateway_token, gateway_string;
+   std::stringstream ss_;
+   gateway_string = pt.get<std::string>("gateway");
+   int peer_count;
+   float agg_gateway, gw_value;
+   std::istringstream iss(gateway_string);
+   while ( getline(iss, gateway_token, ',') )
+      {
+         peer_count++;
+         ss_ << gateway_token;
+         ss_ >> gw_value;
+         agg_gateway+= gw_value;
+      }
+   CNorm =  agg_gateway/peer_count;
+   SendNormal(CNorm);
 
 /*
     peer_ = get_peer(line_);
@@ -890,11 +990,19 @@ void lbAgent::HandleRead(broker::CMessage msg)
 
 */
 
-  }//end if("load")
-  else if(pt.get<std::string>("lb") == "normalBroadcast")
+  }//end if("gateway")
+
+
+ else if(pt.get<std::string>("lb") == "ComputedNormal")
   {
-    UpdateNormal(pt);
+ std::stringstream ss_;
+ ss_ << pt.get<std::string>("lb.cnorm");
+ ss_ >> CNorm;
+ Logger::Notice << " Computed Normal " << CNorm << "received from "<< 
+                 pt.get<std::string>("lb.source") << std::endl;
+ LoadTable();
   }
+
   // Other message type is invalid within lb module
   else
   {
@@ -927,6 +1035,7 @@ lbAgent::PeerNodePtr lbAgent::add_peer(std::string uuid)
   return tmp_;
 }
 
+
 ////////////////////////////////////////////////////////////
 /// LB
 /// @description Main function which initiates the algorithm
@@ -942,88 +1051,6 @@ int lbAgent::LB()
   LoadManage();
 
   return 0;
-}
-
-void lbAgent::StartStateTimer( unsigned int delay )
-{
-    Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
-    
-    m_StateTimer.expires_from_now( boost::posix_time::seconds(delay) );
-    m_StateTimer.async_wait( boost::bind(&lbAgent::HandleStateTimer,
-            this, boost::asio::placeholders::error) );
-}
-
-void lbAgent::HandleStateTimer( const boost::system::error_code & error )
-{
-    Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
-    
-    if( !error && m_leader )
-    {
-        CollectState();
-    }
-    StartStateTimer( STATE_TIMEOUT );
-}
-
-void lbAgent::CollectState()
-{
-    Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
-    
-    freedm::broker::CMessage m_cs;
-    m_cs.m_submessages.put("sc", "request");
-    m_cs.m_submessages.put("sc.source", GetUUID());
-    m_cs.m_submessages.put("sc.module", "lb");
-    get_peer(GetUUID())->Send(m_cs);
-    
-    Logger::Info << "Sent state request from loadbalance" << std::endl;
-}
-
-void lbAgent::StateNormalize( const ptree & pt )
-{
-    Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
-    
-    std::istringstream iss( pt.get<std::string>("gateway") );
-    std::string gateway_str;
-    double gateway = 0;
-    int count = 0;
-    
-    while( getline( iss, gateway_str, ',' ) )
-    {
-        gateway += boost::lexical_cast<double>(gateway_str);
-        count++;
-    }
-    m_normal.reset(count != 0 ? gateway / count : 0);
-    Logger::Info << "Calculated normal value as " << *m_normal << std::endl;
-    
-    // format the normal message
-    broker::CMessage msg;
-    std::string value = boost::lexical_cast<std::string>(*m_normal);
-    msg.m_submessages.put("lb","normalBroadcast");
-    msg.m_submessages.put("lb.value",value);
-
-    // Broadcast normal value to all nodes
-    Logger::Notice << "Broadcasting Normal Gateway: " << *m_normal << std::endl;
-    foreach( PeerNodePtr peer, l_AllPeers | boost::adaptors::map_values )
-    {
-        if( peer->GetUUID() != GetUUID() )
-        {
-            try
-            {
-                peer->Send(msg);
-            }
-            catch( boost::system::system_error & e )
-            {
-                Logger::Info << "Couldn't Send Message To Peer" << std::endl;
-            }
-        }
-    }
-}
-
-void lbAgent::UpdateNormal( const ptree & pt )
-{
-    Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
-    
-    m_normal.reset(pt.get<double>("lb.value"));
-    Logger::Notice << "Received new normal: " << *m_normal << std::endl;
 }
 
 } // namespace freedm

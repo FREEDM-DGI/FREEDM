@@ -430,6 +430,12 @@ void GMAgent::Recovery()
   m_GrpCounter++;
   m_GroupID = m_GrpCounter;
   m_GroupLeader = GetUUID();
+  foreach( PeerNodePtr peer_, m_AllPeers | boost::adaptors::map_values)
+  {
+    if( peer_->GetUUID() == GetUUID())
+      continue;
+    peer_->GetConnection()->Stop();
+  }
   Logger::Notice << "Changed group: "<< m_GroupID<<" ("<< m_GroupLeader <<")"<<std::endl;
   // Empties the UpList
   m_UpNodes.clear();
@@ -562,6 +568,7 @@ void GMAgent::Premerge( const boost::system::error_code &err )
         list_change = true;
         EraseInPeerSet(m_UpNodes,peer_);
         Logger::Info << "No response from peer: "<<peer_->GetUUID()<<std::endl;
+        peer_->GetConnection()->Stop();
       }
     }
     if(list_change)

@@ -206,7 +206,7 @@ int receive_packet( int sd, void * data, int bytes )
     return data_size;
 }
 
-void pscad_send_init__( int * ip1, int * ip2, int * ip3, int * ip4, int * port,
+void pscad_send_init_( int * ip1, int * ip2, int * ip3, int * ip4, int * port,
         double * data, int * length, int * status )
 {
     char request[] = "RST";
@@ -230,7 +230,7 @@ void pscad_send_init__( int * ip1, int * ip2, int * ip3, int * ip4, int * port,
     *status = print_result( SENDLOG, request, data, *length );
 }
 
-void pscad_send__( int * ip1, int * ip2, int * ip3, int * ip4, int * port,
+void pscad_send_( int * ip1, int * ip2, int * ip3, int * ip4, int * port,
         double * data, int * length, int * status )
 {
     char request[] = "SET";
@@ -253,12 +253,12 @@ void pscad_send__( int * ip1, int * ip2, int * ip3, int * ip4, int * port,
     *status = print_result( SENDLOG, request, data, *length );
 }
 
-void pscad_send_close__( int * status )
+void pscad_send_close_( int * status )
 {
     *status = print_footer( SENDLOG );
 }
 
-void pscad_recv_init__( int * ip1, int * ip2, int * ip3, int * ip4, int * port,
+void pscad_recv_init_( int * ip1, int * ip2, int * ip3, int * ip4, int * port,
         int * status )
 {
     char address[16];
@@ -268,7 +268,7 @@ void pscad_recv_init__( int * ip1, int * ip2, int * ip3, int * ip4, int * port,
     *status = print_header( RECVLOG, address, *port );
 }
 
-void pscad_recv__( int * ip1, int * ip2, int * ip3, int * ip4, int * port,
+void pscad_recv_( int * ip1, int * ip2, int * ip3, int * ip4, int * port,
         double * data, int * length, int * status )
 {
     char request[] = "GET";
@@ -295,7 +295,7 @@ void pscad_recv__( int * ip1, int * ip2, int * ip3, int * ip4, int * port,
     *status = print_result( RECVLOG, request, data, *length );
 }
 
-void pscad_recv_close__( int * status )
+void pscad_recv_close_( int * status )
 {
     *status = print_footer( RECVLOG );
 }

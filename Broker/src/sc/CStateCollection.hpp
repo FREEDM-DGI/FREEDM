@@ -125,9 +125,15 @@ class SCAgent : public IReadHandler, public SCPeerNode, public Templates::Single
         
     protected:
     
-        std::map< int, ptree >      collectstate;
-        std::map< int, ptree >::iterator it;
+        //std::map< int, ptree >      collectstate;
+	std::map<StateVersion, ptree> collectstate;
+        //std::map< int, ptree >::iterator it;
+	std::map<StateVersion, ptree>::iterator it;
         int countstate;
+	int countmarker;
+
+	bool NotifyToSave;
+
         std::string module;
         
         StateVersion            m_curversion;

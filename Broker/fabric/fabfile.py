@@ -1,8 +1,13 @@
 from fabric.api import *
-from os.path import join
 
 env.key_filename = ["/home/scj7t4/.ssh/id_rsa"]
 env.warn_only = True
+
+BOOST_ROOT = '~/boost'
+BROKER_DIR = '/home/scj7t4/FREEDM/Broker'
+SRC_DIR = '/home/scj7t4/FREEDM/Broker/src'
+
+env.key_filename = ["/home/scj7t4/.ssh/id_supercluster"]
 
 def host_type():
     run('uname -s')
@@ -11,8 +16,8 @@ def change_and_check():
     with cd('/tmp'):
         run('pwd')
 
-def pull_checkout(path,branch='master'):
-    with cd(join(path,"Broker/src/")):
+def pull_checkout(branch='master'):
+    with cd(SRC_DIR):
         result = run('git branch | grep %s' % branch)
         if result.return_code != 0:
             result = run('git branch -r | grep %s' % branch)
@@ -32,17 +37,12 @@ def build():
         run("BOOST_ROOT='%s' make" % BOOST_ROOT)
 
 @parallel
-def start_sim(path, runtime='10m',timeout='10s'):
-    with cd(join(path,"Broker/src/")):
+def start_sim(runtime='10m',timeout='10s'):
+    with cd(SRC_DIR):
         cmd = "timeout -k %s %s ./PosixBroker" % (timeout,runtime)
         result = run(cmd)
         if result.return_code != 0:
             print "Test failed with error code."
-
-def start_lineclient(path):
-    with cd(join(path,"PSCAD-Interface/src/")):
-        cmd = "./driver"
-        run(cmd)
 
 def wait_sim(runtime='10m'):
     print "Waiting for test."
@@ -55,18 +55,18 @@ def end_sim(force=False):
         k = "-9"
     else:
         k = ""
-    run("killall %s PosixBroker" % k)
+    run("killall %s PosixBroker -u scj7t4" % k)
 
-def get_uuid(path):
-    with cd(join(path,"Broker/src/")):
+def get_uuid():
+    with cd(SRC_DIR):
         result = run("./PosixBroker -u")
     return str(result).strip()
 
-def setup_sim(path,expconfig):
+def setup_sim(expconfig):
     """
     There is currently a bug with fabric.
     with cd(SRC_DIR):
     Doesn't work.
     """
-    put(expconfig, join(path,"/Broker/src/network.xml"))
+    put(expconfig,'/home/scj7t4/FREEDM/Broker/src/network.xml')
 

@@ -194,6 +194,8 @@ GMAgent::GMAgent(std::string p_uuid, boost::asio::io_service &p_ios,
     m_groupsbroken = 0;
     m_groupselection = 0;
     m_groupsjoined = 0;
+    m_membership = 0;
+    m_membershipchecks = 0;
     #ifdef RANDOM_PREMERGE
         srand(time(0)); 
     #endif
@@ -582,6 +584,8 @@ void GMAgent::Premerge( const boost::system::error_code &err )
         {
             PushPeerList();
         }
+        m_membership += m_UpNodes.size();
+        m_membershipchecks++;
         m_AYCResponse.clear();
         if( 0 < m_Coordinators.size() )
         {
@@ -793,6 +797,8 @@ void GMAgent::Reorganize( const boost::system::error_code& err )
         m_electiontimer.Stop();
         // Send new membership list to group members 
         PushPeerList();
+        m_membership += m_UpNodes.size();
+        m_membershipchecks++;
 
         // Back to work
         Logger::Info << "TIMER: Setting CheckTimer (Check): " << __LINE__ << std::endl;
@@ -1179,7 +1185,8 @@ void GMAgent::Stop()
     actionlog<<m_groupselection<<'\t'<<m_groupsformed<<'\t'
              <<m_groupsjoined<<'\t'<<m_groupsbroken;
     actionlog<<'\t'<<m_electiontimer.TotalElapsed()
-             <<'\t'<<m_ingrouptimer.TotalElapsed()<<std::endl;            
+             <<'\t'<<m_ingrouptimer.TotalElapsed();
+    actionlog<<'\t'<<(m_membership*1.0)/m_membershipchecks<<std::endl;
     actionlog.close();
 }
 

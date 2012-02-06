@@ -207,6 +207,10 @@ class GMAgent
     int m_groupsbroken;
     /// The number of elections that have occured.
     int m_rounds;
+    /// The running total of group membership.
+    int m_membership;
+    /// The number of times we've checked it
+    int m_membershipchecks;
     Stopwatch m_electiontimer;
     Stopwatch m_ingrouptimer;
 };

@@ -30,6 +30,11 @@ class Stopwatch
         {
             return timer_running;
         }
+        void Reset()
+        {
+            timer_running = false;
+            elapsed = time_duration(0,0,0,0);
+        }
         std::string TotalElapsed()
         {
             return boost::posix_time::to_simple_string(elapsed);

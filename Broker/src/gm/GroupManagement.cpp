@@ -170,6 +170,36 @@ unsigned int GMAgent::MurmurHash2 ( const void * p_key, int p_len)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+/// StartMonitor
+/// Sets all the monitor variables to a state ready for data collection
+///////////////////////////////////////////////////////////////////////////////
+void GMAgent::StartMonitor( const boost::system::error_code& err )
+{
+    m_electiontimer.Reset();
+    m_ingrouptimer.Reset();
+    m_groupsbroken = 0;
+    if(m_UpNodes.size() > 1)
+    {
+        if(!IsCoordinator())
+        {
+            m_groupsjoined = 1;
+        }
+        else
+        {
+            m_groupsformed = 1;
+            m_groupselection = 1;
+        }
+        m_ingrouptimer.Start();
+    }
+    if(GetStatus() == GMPeerNode::ELECTION)
+    {
+        m_electiontimer.Start();
+    }
+    m_membership = m_UpNodes.size();
+    m_membershipchecks = 1;
+}
+
+///////////////////////////////////////////////////////////////////////////////
 /// GMAgent
 /// @description: Constructor for the group management module.
 /// @limitations: None
@@ -185,6 +215,7 @@ GMAgent::GMAgent(std::string p_uuid, boost::asio::io_service &p_ios,
     freedm::broker::CConnectionManager &p_conManager)
     : GMPeerNode(p_uuid,p_conManager,p_ios,p_dispatch),
     m_timer(p_ios),
+    m_transient(p_ios),
     m_electiontimer(),
     m_ingrouptimer()
 {
@@ -455,6 +486,8 @@ void GMAgent::Recovery()
     m_timer.expires_from_now( boost::posix_time::seconds(CHECK_TIMEOUT) );
     m_timer.async_wait( boost::bind(&GMAgent::Check, this, boost::asio::placeholders::error));
     m_timerMutex.unlock();
+    m_transient.expires_from_now( boost::posix_time::seconds(3*CHECK_TIMEOUT) );
+    m_transient.async_wait( boost::bind(&GMAgent::StartMonitor, this, boost::asio::placeholders::error));
 }
 
 ///////////////////////////////////////////////////////////////////////////////

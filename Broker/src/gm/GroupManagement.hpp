@@ -163,7 +163,8 @@ class GMAgent
     void Reorganize( const boost::system::error_code& err );
     /// Outputs information about the current state to the logger.
     void SystemState();
-
+    /// Start the monitor after transient is over
+    void StartMonitor( const boost::system::error_code& err );
     /// Returns the coordinators uuid.
     std::string Coordinator() const { return m_GroupLeader; }
     
@@ -195,7 +196,9 @@ class GMAgent
     boost::interprocess::interprocess_mutex m_timerMutex;
     /// A timer for stepping through the election process
     deadline_timer m_timer;
-
+    /// What I like to call the TRANSIENT ELIMINATOR
+    deadline_timer m_transient;
+    
     // Testing Functionality:
     /// Counts the number of elections
     int m_groupselection;

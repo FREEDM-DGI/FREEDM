@@ -133,6 +133,8 @@ void CListener::HandleRead(const boost::system::error_code& e, std::size_t bytes
             #ifdef CUSTOMNETWORK
             if((rand()%100) >= GetReliability())
             {
+                Logger::Notice<<"Dropped datagram "<<m_message.GetHash()<<":"
+                              <<m_message.GetSequenceNumber()<<std::endl;
                 goto listen;
             }
             #endif

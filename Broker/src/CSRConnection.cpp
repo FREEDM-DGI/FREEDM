@@ -120,10 +120,8 @@ void CSRConnection::Send(CMessage msg)
     if(m_window.size() == 1)
     {
         Write(outmsg);
-        m_timeout.cancel();
-        m_timeout.expires_from_now(boost::posix_time::milliseconds(REFIRE_TIME));
-        m_timeout.async_wait(boost::bind(&CSRConnection::Resend,this,
-            boost::asio::placeholders::error)); 
+        boost::system::error_code x;
+        Resend(x);
     }
 }
 
@@ -152,7 +150,7 @@ void CSRConnection::Send(CMessage msg)
 void CSRConnection::Resend(const boost::system::error_code& err)
 {
     unsigned int oldfront = 0;
-    Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger::Info << __PRETTY_FUNCTION__ << std::endl;
     if(!err)
     {
         boost::posix_time::ptime now;
@@ -459,10 +457,8 @@ void CSRConnection::SendSYN()
     m_window.push_front(outmsg);
     m_outsync = true;
     /// Hook into resend until the message expires.
-    m_timeout.cancel();
-    m_timeout.expires_from_now(boost::posix_time::milliseconds(REFIRE_TIME));
-    m_timeout.async_wait(boost::bind(&CSRConnection::Resend,this,
-        boost::asio::placeholders::error));
+    boost::system::error_code x;
+    Resend(x);
 }
 
     }

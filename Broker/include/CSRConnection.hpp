@@ -110,7 +110,7 @@ class CSRConnection : public IProtocol
         /// Sequence modulo
         static const unsigned int SEQUENCE_MODULO = 16;
         /// Refire time in MS
-        static const unsigned int REFIRE_TIME = 75;
+        static const unsigned int REFIRE_TIME = 10;
 };
 
     }

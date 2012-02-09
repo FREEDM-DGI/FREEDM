@@ -117,7 +117,7 @@ void CSRConnection::Send(CMessage msg)
 
     m_window.push_back(outmsg);
     
-    if(m_window.size() == 0)
+    if(m_window.size() == 1)
     {
         Write(outmsg);
         m_timeout.cancel();

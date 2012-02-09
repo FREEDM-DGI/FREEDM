@@ -74,8 +74,8 @@ CSRConnection::CSRConnection(CConnection *  conn)
     m_sendkills = false;
     m_sendkill = 0;
     // Message Killing (RECV)
-    m_kill = 0;
     m_usekill = false;
+    m_kill = 0;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -150,7 +150,7 @@ void CSRConnection::Send(CMessage msg)
 void CSRConnection::Resend(const boost::system::error_code& err)
 {
     unsigned int oldfront = 0;
-    Logger::Info << __PRETTY_FUNCTION__ << std::endl;
+    Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
     if(!err)
     {
         boost::posix_time::ptime now;
@@ -177,7 +177,6 @@ void CSRConnection::Resend(const boost::system::error_code& err)
             //First message in the window should be the only one
             //ever to have been written.
             m_sendkills = true;
-            m_sendkill = m_window.front().GetSequenceNumber();
             Logger::Notice<<"Message Expired: "<<m_window.front().GetHash()
                           <<":"<<m_window.front().GetSequenceNumber()<<std::endl;
             m_window.pop_front();
@@ -190,6 +189,8 @@ void CSRConnection::Resend(const boost::system::error_code& err)
                 // to wrap, we resync the connection. This shouldn't
                 // happen very often.
                 m_outlastresync = m_window.front().GetSequenceNumber();
+                //If we wrap, don't send kills
+                m_sendkills = false;
                 SendSYN();
             }
             if(m_sendkills)
@@ -203,7 +204,7 @@ void CSRConnection::Resend(const boost::system::error_code& err)
                 //them. If a message is flagged with src.killed, the reciever
                 //Should accept w/o considering the sequenceno
                 ptree x;
-                x.put("src.kill",m_kill);
+                x.put("src.kill",m_sendkill);
                 m_window.front().SetProtocolProperties(x);
             }
             Write(m_window.front());
@@ -241,6 +242,7 @@ void CSRConnection::RecieveACK(const CMessage &msg)
         unsigned int fseq = m_window.front().GetSequenceNumber();
         if(fseq == seq && m_window.front().GetHash() == hash)
         {
+            m_sendkill = fseq; 
             m_window.pop_front();
         }
     }
@@ -349,34 +351,26 @@ bool CSRConnection::Recieve(const CMessage &msg)
     {
         ptree pp = msg.GetProtocolProperties();
         kill = pp.get<unsigned int>("src.kill");
+        m_usekill = true;
     }
     catch(std::exception &e)
     {
         kill = msg.GetSequenceNumber();
+        m_usekill = false;
     }
     //Consider the window you expect to see
     // If the killed message is the one immediately preceeding this
     // message in terms of sequence number we should accept it
-    if(msg.GetSequenceNumber() == 0)
-    {
-        previous_expected = SEQUENCE_MODULO-1;
-    }
-    else
-    {
-        previous_expected = msg.GetSequenceNumber()-1;
-    }
     if(msg.GetSequenceNumber() == m_inseq)
     {
         m_insync = true;
         m_inseq = (m_inseq+1)%SEQUENCE_MODULO;
         return true;
     }
-    else if(kill == previous_expected && kill > m_kill)
+    else if((kill+1) % SEQUENCE_MODULO >= m_inseq)
     {
         //m_inseq will be right for the next expected message.
         m_inseq = (msg.GetSequenceNumber()+1)%SEQUENCE_MODULO;
-        m_kill = kill;
-        m_usekill = true;
         return true;
     }
     // Justin case.

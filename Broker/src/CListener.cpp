@@ -140,6 +140,8 @@ void CListener::HandleRead(const boost::system::error_code& e, std::size_t bytes
             #endif
             if(m_message.GetStatus() == freedm::broker::CMessage::Accepted)
             {
+                Logger::Notice<<"Recieved ACK"<<m_message.GetHash()<<":"
+                                <<m_message.GetSequenceNumber()<<std::endl;
                 conn->RecieveACK(m_message);
             }
             else if(conn->Recieve(m_message))
@@ -148,7 +150,11 @@ void CListener::HandleRead(const boost::system::error_code& e, std::size_t bytes
                               <<m_message.GetSequenceNumber()<<std::endl;
                 GetDispatcher().HandleRequest(m_message);
             }
-
+            else
+            {
+                Logger::Notice<<"Rejected message "<<m_message.GetHash()<<":"
+                              <<m_message.GetSequenceNumber()<<std::endl;
+            }
         }
         listen:
         GetSocket().async_receive_from(boost::asio::buffer(m_buffer, 8192), m_endpoint,

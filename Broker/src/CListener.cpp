@@ -140,7 +140,9 @@ void CListener::HandleRead(const boost::system::error_code& e, std::size_t bytes
             #endif
             if(m_message.GetStatus() == freedm::broker::CMessage::Accepted)
             {
-                Logger::Notice<<"Recieved ACK"<<m_message.GetHash()<<":"
+                ptree pp = m_message.GetProtocolProperties();
+                size_t hash = pp.get<size_t>("src.hash");
+                Logger::Notice<<"Recieved ACK"<<hash<<":"
                                 <<m_message.GetSequenceNumber()<<std::endl;
                 conn->RecieveACK(m_message);
             }
@@ -150,7 +152,7 @@ void CListener::HandleRead(const boost::system::error_code& e, std::size_t bytes
                               <<m_message.GetSequenceNumber()<<std::endl;
                 GetDispatcher().HandleRequest(m_message);
             }
-            else
+            else if(m_message.GetStatus() != freedm::broker::CMessage::Created)
             {
                 Logger::Notice<<"Rejected message "<<m_message.GetHash()<<":"
                               <<m_message.GetSequenceNumber()<<std::endl;

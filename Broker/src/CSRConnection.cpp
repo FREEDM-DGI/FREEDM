@@ -73,9 +73,6 @@ CSRConnection::CSRConnection(CConnection *  conn)
     // Message killing (SEND)
     m_sendkills = false;
     m_sendkill = 0;
-    // Message Killing (RECV)
-    m_usekill = false;
-    m_kill = 0;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -113,7 +110,7 @@ void CSRConnection::Send(CMessage msg)
     outmsg.SetSourceHostname(GetConnection()->GetConnectionManager().GetHostname());
     outmsg.SetProtocol(GetIdentifier());
     outmsg.SetSendTimestampNow();
-    outmsg.SetExpireTimeFromNow(boost::posix_time::seconds(3));
+    outmsg.SetExpireTimeFromNow(boost::posix_time::milliseconds(3000));
 
     m_window.push_back(outmsg);
     
@@ -133,18 +130,16 @@ void CSRConnection::Send(CMessage msg)
 ///       upheld:
 ///       1) An ack for a message that has not yet expired has been resent and
 ///          a timer to call resend has been set.
-///       2) A message has expired for the first time and the message has been
-///          written to the channel. This flips the sendkills
-///          flag to one, indicating the protocol should begin appending the
-///          kill field and the killed field to all outgoing messages.
-///       3) A Message has expired, and it has been sent before, The killhash
-///          member variable is set to the hash of that message. All messages
-///          will note this message was killed until another message is marked
-///          as killed.
-///       4) The window is non-empty and a message is written to the channel,
-///          the m_killable flag is set to true. The timer is set to resend
-///       5) The window is empty and no message is set to the channel, the
+///       2) Message(s) has/have expired and are removed from the queue. The
+///          flag to send kills is set.
+///       3) The window is empty and no message is set to the channel, the
 ///          timer is not re-set.
+///       4) A message expired and then next message will cause the sequence
+///          numbers to wrap, (or they have wrapped since the last time a message
+///          was successfully sent) so a sync is inserted at the front of the queue
+///          to skip that case on the reciever side. The sendkill flag is cleared
+///          and the sendkill value is cleared.
+///       5) If there is still a message to resend, the timer is reset.
 /// @param err The timer error code. If the err is 0 then the timer expired
 ///////////////////////////////////////////////////////////////////////////////
 void CSRConnection::Resend(const boost::system::error_code& err)
@@ -183,7 +178,7 @@ void CSRConnection::Resend(const boost::system::error_code& err)
         }
         if(m_window.size() > 0)
         {
-            if(oldfront > m_window.front().GetSequenceNumber())
+            if(m_sendkills &&  m_sendkill > m_window.front().GetSequenceNumber())
             {
                 // If we have expired a message and caused the seqnos
                 // to wrap, we resync the connection. This shouldn't
@@ -191,18 +186,13 @@ void CSRConnection::Resend(const boost::system::error_code& err)
                 m_outlastresync = m_window.front().GetSequenceNumber();
                 //If we wrap, don't send kills
                 m_sendkills = false;
+                m_sendkill = 0;
                 SendSYN();
             }
             if(m_sendkills)
             {
-                //Killhash should be set to the last message we tried to send
-                //but wasn't accepted before the message expired. Since we
-                //only ever have one outstanding message at time, we will keep
-                //sending the hash of the last in channel message we killed.
-                //On the reciever side, we will use some data structure to track
-                //the last several killed messages. If we see them, we will drop
-                //them. If a message is flagged with src.killed, the reciever
-                //Should accept w/o considering the sequenceno
+                // kill will be set to the last message accepted by reciever
+                // (and whose ack has been recieved)
                 ptree x;
                 x.put("src.kill",m_sendkill);
                 m_window.front().SetProtocolProperties(x);
@@ -256,52 +246,46 @@ void CSRConnection::RecieveACK(const CMessage &msg)
 ///////////////////////////////////////////////////////////////////////////////
 /// CSRConnection::Recieve
 /// @description Accepts a message into the protocol, if that message should
-///   be accepted.
+///   be accepted. If this function returns true, the message is passed to
+///   the dispatcher. Since this message accepts SYNs there might be times
+///   when processing and state changes but the message is marked as "rejected"
+///   this is normal.
 /// @pre Accept logic can be complicated, there are several scenarios that
 ///      should be addressed.
-///      1) The protocol has never recieved a message, and the first message
-///         is recieved with or without a kill flag.
-///      2) The protocol recieves a message without a killed flag (or the flag
-///         has been set to false) with or without a kill hash.
-///      3) The protocl recieves a message with a killed flag and a kill hash
-///      4) A message arrives out of order, with a kill flag and hash
-///      5) A message arrives out of order, without a kill flag.
-///      6) A message arrives out of order, with a kill hash but no flag.
-/// @post Cases are handled as followed:
-///      1) The recieved message is accepted as the first message, and the
-///         connection is marked as synchronized.
-///      2) If the message is what we expect to see in terms of sequence numbers
-///         it is accepted.
-///      3) For 3, we assume the message arrives in the correct order. Therefore,
-///         since it claims to be informing the protocol of a newly killed message
-///         the hash it gives will not appear in the kill window. The hash is
-///         appended to the kill window and the message is accepted.
-///      4) For 4, an out of order message would appear after another message
-///         has killed it, it will be dropped. However, if another message kills 
-///         the message that kills it,  we can't conclude that the message is out of
-///         order. Presumably then the message would arrive after its expiration
-///         time (the message would have expired, and the message that killed it
-///         would also have expired) If clocks are well set and running UTC,
-///         it is highly unlikely this end (reciever) would not discard the
-///         message as expired.
-///      5) Scenario A) The message arrives out of order after expiring. A message
-///         that kills it or kills the killer has come and been excepted. This means
-///         that the protocol is expecting every subsequent message to include kill
-///         messages. The out of order message would not be accepted on the basis
-///         that it is missing casual information.
-///         Scenario B) The message arives out of order before expiring. In this
-///         case we rely on the sequence modulo to be sufficently large to prevent
-///         a false accept.
-///      6) A Message without a kill flag is subject to the same sequence checking
-///         as five.
+///      1) A bad request has been recieved
+///      2) A SYN message is recieved for the first time
+///      3) A SYN message is recieved as a duplicate.
+///      4) A Message has been recieved before the connection has been synced.
+///      5) A Message has been recieved with the expected sequenceno with or
+///         without a kill flag.
+///      6) A message has been recieved with a kill flag. The kill is greater
+///         than the expected sequence number
+///      7) A message has been recieved with a kill flag. The kill is less than
+///         the expected sequence number. However, the message's number is less
+///         than the expected sequence number
+///      8) A message has been received with a kill flag. The kill is less than
+///         the expected sequence number and the message's sequence number is
+///         greater than the expected sequence number.
+/// @post Cases are handled as follows:
+///      1) The connection is resynced.
+///      2) The message is ACKed, the send time of the sync is noted, and the
+///         connection is synced.
+///      3) The SYN is ignored.
+///      4) A bad request message is generated and sent to the source.
+///      5) The message is accepted.
+///      6) The message is rejected. Kills should only ever be less than the
+///         expected sequence number unless the message is arrived out of order
+///      7) The message is simply old but still arriving at the socket, and can
+///         be rejected.
+///      8) The message should be accepted because one or more message expired
+///         in the gap of sequence numbers.
 /// @return True if the message is accepted, false otherwise.
 ///////////////////////////////////////////////////////////////////////////////
 bool CSRConnection::Recieve(const CMessage &msg)
 {
     Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
     unsigned int kill = 0;
-    bool killed = false; //If true, we should accept any inseq
-    int previous_expected = 0;
+    bool usekill = false; //If true, we should accept any inseq
     if(msg.GetStatus() == freedm::broker::CMessage::BadRequest)
     {
         //See if we are already trying to sync:
@@ -343,20 +327,18 @@ bool CSRConnection::Recieve(const CMessage &msg)
         Write(outmsg);
         return false;
     }
-    //See if the message before this one was killed:
-    //The killed flag being set indicates this message comes
-    //directly after a kill. Any message sent directly after
-    //A kill should be accepted
+    // See if the message contains kill data. If it does, read it and mark
+    // we should use it. 
     try
     {
         ptree pp = msg.GetProtocolProperties();
         kill = pp.get<unsigned int>("src.kill");
-        m_usekill = true;
+        usekill = true;
     }
     catch(std::exception &e)
     {
         kill = msg.GetSequenceNumber();
-        m_usekill = false;
+        usekill = false;
     }
     //Consider the window you expect to see
     // If the killed message is the one immediately preceeding this
@@ -367,11 +349,17 @@ bool CSRConnection::Recieve(const CMessage &msg)
         m_inseq = (m_inseq+1)%SEQUENCE_MODULO;
         return true;
     }
-    else if((kill+1) % SEQUENCE_MODULO >= m_inseq)
+    else if(usekill == true && kill< m_inseq
+            && msg.GetSequenceNumber() > m_inseq)
     {
         //m_inseq will be right for the next expected message.
         m_inseq = (msg.GetSequenceNumber()+1)%SEQUENCE_MODULO;
         return true;
+    }
+    else if(usekill == true)
+    {
+        Logger::Notice<<"KILL: "<<kill<<" INSEQ "<<m_inseq<<" SEQ: "
+                      <<msg.GetSequenceNumber()<<std::endl;
     }
     // Justin case.
     return false;
@@ -402,6 +390,7 @@ void CSRConnection::SendACK(const CMessage &msg)
     outmsg.SetSendTimestampNow();
     outmsg.SetProtocol(GetIdentifier());
     outmsg.SetProtocolProperties(pp);
+    Logger::Notice<<"Generating ACK. Source exp time "<<msg.GetExpireTime()<<std::endl;
     outmsg.SetExpireTime(msg.GetExpireTime());
     Write(outmsg);
     m_currentack = outmsg;
@@ -412,6 +401,13 @@ void CSRConnection::SendACK(const CMessage &msg)
         boost::asio::placeholders::error));
 }
 
+///////////////////////////////////////////////////////////////////////////////
+/// CSRConnection::SendSYN
+/// @description Composes an SYN and writes it to the channel.
+/// @param The message to SYN.
+/// @pre A message has been accepted.
+/// @post A syn has been written to the channel
+///////////////////////////////////////////////////////////////////////////////
 void CSRConnection::SendSYN()
 {
     Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
@@ -439,7 +435,6 @@ void CSRConnection::SendSYN()
             seq--;
         }
     }
-    m_usekill = false;
     // Presumably, if we are here, the connection is registered 
     outmsg.SetSourceUUID(GetConnection()->GetConnectionManager().GetUUID());
     outmsg.SetSourceHostname(GetConnection()->GetConnectionManager().GetHostname());

@@ -178,7 +178,7 @@ void GMAgent::StartMonitor( const boost::system::error_code& err )
     m_electiontimer.Reset();
     m_ingrouptimer.Reset();
     m_groupsbroken = 0;
-    if(m_UpNodes.size() > 1)
+    if(m_UpNodes.size() > 0 || (!IsCoordinator() && GetStatus() == GMPeerNode::NORMAL))
     {
         if(!IsCoordinator())
         {
@@ -486,8 +486,6 @@ void GMAgent::Recovery()
     m_timer.expires_from_now( boost::posix_time::seconds(CHECK_TIMEOUT) );
     m_timer.async_wait( boost::bind(&GMAgent::Check, this, boost::asio::placeholders::error));
     m_timerMutex.unlock();
-    m_transient.expires_from_now( boost::posix_time::seconds(3*CHECK_TIMEOUT) );
-    m_transient.async_wait( boost::bind(&GMAgent::StartMonitor, this, boost::asio::placeholders::error));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1205,6 +1203,8 @@ int GMAgent::Run()
     Recovery();
     //m_localservice.post(boost::bind(&GMAgent::Recovery,this));
     //m_localservice.run();
+    m_transient.expires_from_now( boost::posix_time::seconds(60) );
+    m_transient.async_wait( boost::bind(&GMAgent::StartMonitor, this, boost::asio::placeholders::error));
     return 0;
 }
 
@@ -1219,7 +1219,7 @@ void GMAgent::Stop()
              <<m_groupsjoined<<'\t'<<m_groupsbroken;
     actionlog<<'\t'<<m_electiontimer.TotalElapsed()
              <<'\t'<<m_ingrouptimer.TotalElapsed();
-    actionlog<<'\t'<<(m_membership*1.0)/m_membershipchecks<<std::endl;
+    actionlog<<'\t'<<m_membership<<'\t'<<m_membershipchecks<<std::endl;
     actionlog.close();
 }
 

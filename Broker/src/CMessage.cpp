@@ -413,7 +413,7 @@ CMessage::CMessage( const ptree &pt )
         m_sendtime = pt.get< boost::posix_time::ptime >("message.sendtime");
         try
         {
-           m_expiretime = pt.get< boost::posix_time::ptime >("mesage.expiretime");
+           m_expiretime = pt.get< boost::posix_time::ptime >("message.expiretime");
         }
         catch( boost::property_tree::ptree_error &e )
         {

@@ -101,16 +101,10 @@ class CSRConnection : public IProtocol
         unsigned int  m_sendkill;
         /// The window
         std::deque<CMessage> m_window;
-        /// Kill window
-        unsigned int m_kill;
-        /// Use the kill variable?
-        bool m_usekill;
-        /// The timestamp of the last killed message, forward relation
-        boost::posix_time::ptime killstamp;
         /// Sequence modulo
-        static const unsigned int SEQUENCE_MODULO = 16;
+        static const unsigned int SEQUENCE_MODULO = 1024;
         /// Refire time in MS
-        static const unsigned int REFIRE_TIME = 10;
+        static const unsigned int REFIRE_TIME = 25;
 };
 
     }

@@ -195,7 +195,7 @@ void GMAgent::StartMonitor( const boost::system::error_code& err )
     {
         m_electiontimer.Start();
     }
-    m_membership = m_UpNodes.size();
+    m_membership = m_UpNodes.size()+1;
     m_membershipchecks = 1;
 }
 
@@ -365,21 +365,15 @@ freedm::broker::CMessage GMAgent::PeerList()
 	std::stringstream ss_;
 	ss_.clear();
 	ss_ << GetUUID();
-	//m_.m_submessages.put("lb.source", ss_.str());
-	//m_.m_submessages.put("lb", "peerList");
 	m_.m_submessages.put("any.source", ss_.str());
     m_.m_submessages.put("any.coordinator",GetUUID());
-	m_.m_submessages.put("any", "peerList");
+	m_.m_submessages.put("any","PeerList");
 	ss_.clear();
 	foreach( PeerNodePtr peer_, m_UpNodes | boost::adaptors::map_values)
     {
-        ss_ << ",";
-        ss_ << peer_->GetUUID();
+        m_.m_submessages.add("any.peers.peer",peer_->GetUUID());
     }
-    //m_.m_submessages.put("lb.peers", ss_.str());
-    //Logger::Debug << "Group List contains: " << m_.m_submessages.get<std::string>("lb.peers") << std::endl;
-    m_.m_submessages.put("sc.peers", ss_.str());
-    Logger::Debug << "Group List contains: " << m_.m_submessages.get<std::string>("sc.peers") << std::endl;
+    m_.m_submessages.add("any.peers.peer",GetUUID());
     return m_;
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -614,9 +608,9 @@ void GMAgent::Premerge( const boost::system::error_code &err )
         if(list_change)
         {
             PushPeerList();
+            m_membership += m_UpNodes.size()+1;
+            m_membershipchecks++;
         }
-        m_membership += m_UpNodes.size();
-        m_membershipchecks++;
         m_AYCResponse.clear();
         if( 0 < m_Coordinators.size() )
         {
@@ -806,13 +800,12 @@ void GMAgent::Reorganize( const boost::system::error_code& err )
         Logger::Notice << "+ State change: REORGANIZATION: " << __LINE__    << std::endl; 
         // Send Ready msg to all up nodes in this group
         freedm::broker::CMessage m_ = Ready();
-        Logger::Info <<"SEND: Sending out Ready from"<<std::endl;
-        foreach( PeerNodePtr peer_, m_UpNodes | boost::adaptors::map_values)
-        {
-            if( peer_->GetUUID() == GetUUID())
-                continue;
-            peer_->AsyncSend(m_);
-        }
+        Logger::Info <<"SEND: Sending out Ready"<<std::endl;
+        // Send new membership list to group members 
+        // Peerlist is the new READY
+        PushPeerList();
+        m_membership += m_UpNodes.size()+1;
+        m_membershipchecks++;
         // sufficiently_long_Timeout; maybe Reorganize if something blows up
         SetStatus(GMPeerNode::NORMAL);
         Logger::Notice << "+ State change: NORMAL: " << __LINE__ << std::endl;
@@ -826,10 +819,6 @@ void GMAgent::Reorganize( const boost::system::error_code& err )
         }
         Logger::Notice << "Stopping election timer "<<__LINE__<<std::endl;
         m_electiontimer.Stop();
-        // Send new membership list to group members 
-        PushPeerList();
-        m_membership += m_UpNodes.size();
-        m_membershipchecks++;
 
         // Back to work
         Logger::Info << "TIMER: Setting CheckTimer (Check): " << __LINE__ << std::endl;
@@ -930,6 +919,48 @@ void GMAgent::HandleRead(broker::CMessage msg)
         }
     }
         
+    try
+    {
+        if(pt.get<std::string>("any") == "PeerList")
+        {
+            Logger::Info << "RECV: PeerList (Ready) message from " <<msg_source << std::endl;
+            if(msg_source == m_GroupLeader && GetStatus() == GMPeerNode::REORGANIZATION)
+            {
+                SetStatus(GMPeerNode::NORMAL);
+                Logger::Notice << "+ State change: NORMAL: " << __LINE__ << std::endl;
+                m_groupsjoined++;
+                Logger::Notice << "Starting in group timer "<<__LINE__<<std::endl;
+                m_ingrouptimer.Start();
+                Logger::Notice << "Stopping election timer "<<__LINE__<<std::endl;
+                m_electiontimer.Stop();
+                // We are no longer the Coordinator, we must run Timeout()
+                Logger::Info << "TIMER: Canceling TimeoutTimer : " << __LINE__ << std::endl;
+                m_timerMutex.lock();
+                // We used to set a timeout timer here but cancelling the
+                // timer should accomplish the same thing.
+                m_timer.expires_from_now(boost::posix_time::seconds(TIMEOUT_TIMEOUT));
+                m_timer.async_wait(boost::bind(&GMAgent::Timeout, this,
+                    boost::asio::placeholders::error));
+                m_timerMutex.unlock();
+            }
+            m_UpNodes.clear();
+            foreach(ptree::value_type &v, pt.get_child("any.peers"))
+            {
+                if(v.second.data() != GetUUID())
+                {
+                    InsertInPeerSet(m_UpNodes,GetPeer(v.second.data()));
+                }
+            }
+            m_membership += m_UpNodes.size()+1;
+            m_membershipchecks++;
+            Logger::Notice<<"Updated Peer Set."<<std::endl;
+        }
+    }
+    catch(boost::property_tree::ptree_bad_path &e)
+    {
+
+    }    
+
     try
     {
       std::string x = pt.get<std::string>("gm");
@@ -1048,29 +1079,7 @@ void GMAgent::HandleRead(broker::CMessage msg)
     }
     else if(pt.get<std::string>("gm") == "Ready")
     {
-        Logger::Info << "RECV: Ready message from " <<msg_source << std::endl;
-        if(msg_source == m_GroupLeader && GetStatus() == GMPeerNode::REORGANIZATION)
-        {
-            SetStatus(GMPeerNode::NORMAL);
-            Logger::Notice << "+ State change: NORMAL: " << __LINE__ << std::endl;
-            m_groupsjoined++;
-            Logger::Notice << "Starting in group timer "<<__LINE__<<std::endl;
-            m_ingrouptimer.Start();
-            Logger::Notice << "Stopping election timer "<<__LINE__<<std::endl;
-            m_electiontimer.Stop();
-            // We are no longer the Coordinator, we must run Timeout()
-            Logger::Info << "TIMER: Canceling TimeoutTimer : " << __LINE__ << std::endl;
-            m_timerMutex.lock();
-            // We used to set a timeout timer here but cancelling the timer should accomplish the same thing.
-            m_timer.expires_from_now(boost::posix_time::seconds(TIMEOUT_TIMEOUT));
-            m_timer.async_wait(boost::bind(&GMAgent::Timeout, this,
-                boost::asio::placeholders::error));
-            m_timerMutex.unlock();
-        }
-        else
-        {
-            Logger::Warn << "Unexpected ready message from "<<msg_source<<std::endl;
-        }
+        // Removed
     }
     else if(pt.get<std::string>("gm") == "Response")
     {

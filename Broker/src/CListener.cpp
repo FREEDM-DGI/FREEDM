@@ -142,13 +142,13 @@ void CListener::HandleRead(const boost::system::error_code& e, std::size_t bytes
             {
                 ptree pp = m_message.GetProtocolProperties();
                 size_t hash = pp.get<size_t>("src.hash");
-                Logger::Notice<<"Recieved ACK"<<hash<<":"
+                Logger::Debug<<"Recieved ACK"<<hash<<":"
                                 <<m_message.GetSequenceNumber()<<std::endl;
                 conn->RecieveACK(m_message);
             }
             else if(conn->Recieve(m_message))
             {
-                Logger::Notice<<"Accepted message "<<m_message.GetHash()<<":"
+                Logger::Debug<<"Accepted message "<<m_message.GetHash()<<":"
                               <<m_message.GetSequenceNumber()<<std::endl;
                 GetDispatcher().HandleRequest(m_message);
             }

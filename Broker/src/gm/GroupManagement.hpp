@@ -135,10 +135,6 @@ class GMAgent
     /// Generates a peer list
     freedm::broker::CMessage PeerList();
  
-    //Utility
-    /// Converts the UUID to an integer for PreMerge
-    unsigned int MurmurHash2(const void * key, int len);
-
     // This is the main loop of the algorithm
     /// Called to start the system
     int	Run();

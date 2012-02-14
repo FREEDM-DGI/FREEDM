@@ -63,6 +63,7 @@
 #include <boost/date_time/posix_time/posix_time_types.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/foreach.hpp>
+#include <boost/functional/hash.hpp>
 #define foreach         BOOST_FOREACH
 #define P_Migrate 1
 
@@ -73,11 +74,8 @@
 #include <boost/serialization/vector.hpp>
 #include <boost/serialization/shared_ptr.hpp>
 
-//#include "Serialization_Connection.hpp"
 #include "CConnection.hpp"
 #include "CBroker.hpp"
-//#include "ExtensibleLineProtocol.hpp"
-//using boost::asio::ip::tcp;
 
 #include <boost/property_tree/ptree.hpp>
 using boost::property_tree::ptree;
@@ -88,86 +86,6 @@ CREATE_EXTERN_STD_LOGS()
 namespace freedm {
     //    namespace gm{
 
-
-///////////////////////////////////////////////////////////////////////////////
-/// MurmurHash2
-///
-/// @description: A very small and fast hashing function used to convert UUIDs
-///                             into unsigned integers in some functions
-/// @limitations: See function body for comments from original author
-/// @citations: http://sites.google.com/site/murmurhash/
-/// @return: A hashed version of the input.
-/// @pre: See limitations
-/// @post: Gives out a hash of the input
-/// @param p_key: The memory to hash.
-/// @param p_len: The length, in bytes of the memory to hash.
-/////////////////////////////////////////////////////////////////////////////// 
-unsigned int GMAgent::MurmurHash2 ( const void * p_key, int p_len)
-{
-    //-----------------------------------------------------------------------------
-    // MurmurHash2, by Austin Appleby
-
-    // Note - This code makes a few assumptions about how your machine behaves -
-
-    // 1. We can read a 4-byte value from any address without crashing
-    // 2. sizeof(int) == 4
-
-    // And it has a few limitations -
-
-    // 1. It will not work incrementally.
-    // 2. It will not produce the same results on little-endian and big-endian
-    //        machines.
-
-    unsigned int seed = 1061988; //Happy Birthday
-
-    // 'm' and 'r' are mixing constants generated offline.
-    // They're not really 'magic', they just happen to work well.
-
-    const unsigned int m = 0x5bd1e995;
-    const int r = 24;
-
-    // Initialize the hash to a 'random' value
-
-    unsigned int h = seed ^ p_len;
-
-    // Mix 4 bytes at a time into the hash
-
-    const unsigned char * data = (const unsigned char *)p_key;
-
-    while(p_len >= 4)
-    {
-        unsigned int k = *(unsigned int *)data;
-
-        k *= m; 
-        k ^= k >> r; 
-        k *= m; 
-        
-        h *= m; 
-        h ^= k;
-
-        data += 4;
-        p_len -= 4;
-    }
-    
-    // Handle the last few bytes of the input array
-
-    switch(p_len)
-    {
-    case 3: h ^= data[2] << 16;
-    case 2: h ^= data[1] << 8;
-    case 1: h ^= data[0];
-                    h *= m;
-    };
-
-    // Do a few final mixes of the hash to ensure the last few
-    // bytes are well-incorporated.
-
-    h ^= h >> 13;
-    h *= m;
-    h ^= h >> 15;
-
-    return h;
-}
 
 ///////////////////////////////////////////////////////////////////////////////
 /// StartMonitor
@@ -617,11 +535,12 @@ void GMAgent::Premerge( const boost::system::error_code &err )
             m_groupselection++;
             //This uses appleby's MurmurHash2 to make a unsigned int of the uuid
             //This becomes that nodes priority.
-            unsigned int myPriority = MurmurHash2(GetUUID().c_str(),GetUUID().length());
+            boost::hash<std::string> string_hash;
+            unsigned int myPriority = string_hash(GetUUID());
             unsigned int maxPeer_ = 0;
             foreach( PeerNodePtr peer_, m_Coordinators | boost::adaptors::map_values)
             {
-                unsigned int temp = MurmurHash2(peer_->GetUUID().c_str(),peer_->GetUUID().length());
+                unsigned int temp = string_hash(peer_->GetUUID());
                 if(temp > maxPeer_)
                 {
                     maxPeer_ = temp;

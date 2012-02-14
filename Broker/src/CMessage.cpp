@@ -242,6 +242,15 @@ void CMessage::SetExpireTime(boost::posix_time::ptime p)
 }
 
 
+/// Checks to see if an expire time is set
+bool CMessage::HasExpireTime()
+{
+    boost::posix_time::ptime p;
+    if(m_expiretime != p)
+        return true;
+    return false;
+}
+
 /// Setter b for the expiration time
 void CMessage::SetExpireTimeFromNow(boost::posix_time::time_duration t)
 {

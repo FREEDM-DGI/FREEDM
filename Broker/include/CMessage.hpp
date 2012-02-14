@@ -119,6 +119,9 @@ public:
     /// Getter for the send time
     boost::posix_time::ptime GetSendTimestamp() const;
 
+    /// Check For An Expire Time
+    bool HasExpireTime();
+
     /// Setter for the expiration time
     void SetExpireTime(boost::posix_time::ptime p);
 

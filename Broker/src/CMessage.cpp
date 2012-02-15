@@ -126,7 +126,7 @@ namespace status_strings {
 
 /// Initialize a new CMessage with a status type.
 CMessage::CMessage( CMessage::StatusType p_stat)
-    : m_status ( p_stat )
+    : m_status ( p_stat ), m_never_expires(false)
 {
     Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
 }
@@ -141,7 +141,8 @@ CMessage::CMessage( const CMessage &p_m ) :
     m_properties( p_m.m_properties ),
     m_protocol( p_m.m_protocol ),
     m_sendtime( p_m.m_sendtime ),
-    m_expiretime( p_m.m_expiretime )
+    m_expiretime( p_m.m_expiretime ),
+    m_never_expires( p_m.m_never_expires ) 
 {
     Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
 };
@@ -158,6 +159,7 @@ CMessage& CMessage::operator = ( const CMessage &p_m )
     this->m_protocol = p_m.m_protocol;
     this->m_sendtime = p_m.m_sendtime;
     this->m_expiretime = p_m.m_expiretime;
+    this->m_never_expires = p_m.m_never_expires;
     return *this;
 }
 
@@ -249,6 +251,20 @@ bool CMessage::HasExpireTime()
     if(m_expiretime != p)
         return true;
     return false;
+}
+
+/// Is an expire time set?
+bool CMessage::IsExpireTimeSet()
+{
+    if(HasExpireTime() or m_never_expires == true)
+        return true;
+    return false;
+}
+
+/// Sets that the message should not have an expire time
+void CMessage::SetNeverExpires(bool set)
+{
+    m_never_expires = set;
 }
 
 /// Setter b for the expiration time
@@ -428,7 +444,10 @@ CMessage::CMessage( const ptree &pt )
         {
             m_expiretime = ptime();
         }
-
+        if(HasExpireTime())
+        {
+            m_never_expires = true;
+        }
         m_status = static_cast< StatusType >
             (pt.get< unsigned int >("message.status"));
 

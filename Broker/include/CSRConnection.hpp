@@ -94,7 +94,7 @@ class CSRConnection : public IProtocol
         /// Marks if we've sent the outsync for this connection
         bool m_outsync;
         /// Keeps track of the last resync that we've seen
-        unsigned int m_outlastresync;
+        boost::posix_time::ptime m_outsynctime;
         /// Marks if we should send the kill hash.
         bool m_sendkills;
         /// The hash to... MURDER.

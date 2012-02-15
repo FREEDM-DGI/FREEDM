@@ -69,7 +69,6 @@ CSRConnection::CSRConnection(CConnection *  conn)
     m_inresyncs = 0;
     //Outbound message sequencing
     m_outsync = false;
-    m_outlastresync = SEQUENCE_MODULO;
     // Message killing (SEND)
     m_sendkills = false;
     m_sendkill = 0;
@@ -186,8 +185,7 @@ void CSRConnection::Resend(const boost::system::error_code& err)
                 // If we have expired a message and caused the seqnos
                 // to wrap, we resync the connection. This shouldn't
                 // happen very often.
-                m_outlastresync = m_window.front().GetSequenceNumber();
-                //If we wrap, don't send kills
+                // If we wrap, don't send kills
                 m_sendkills = false;
                 m_sendkill = 0;
                 SendSYN();
@@ -294,10 +292,14 @@ bool CSRConnection::Recieve(const CMessage &msg)
         //See if we are already trying to sync:
         if(m_window.front().GetStatus() != freedm::broker::CMessage::Created)
         {
-            if(m_outlastresync != msg.GetSequenceNumber())
+            if(m_outsynctime != msg.GetSendTimestamp())
             {
-                m_outlastresync = msg.GetSequenceNumber();
+                m_outsynctime = msg.GetSendTimestamp();
                 SendSYN();
+            }
+            else
+            {
+                Logger::Notice<<"Already synced for this time"<<std::endl;
             }
         }
         return false;
@@ -308,7 +310,9 @@ bool CSRConnection::Recieve(const CMessage &msg)
         if(msg.GetSendTimestamp() == m_insynctime)
         {
             return false;
+            Logger::Notice<<"Duplicate Sync"<<std::endl;
         }
+        Logger::Notice<<"Got Sync"<<std::endl;
         m_inseq = (msg.GetSequenceNumber()+1)%SEQUENCE_MODULO;
         m_insynctime = msg.GetSendTimestamp();
         m_inresyncs++;
@@ -318,6 +322,7 @@ bool CSRConnection::Recieve(const CMessage &msg)
     }
     if(m_insync == false)
     {
+        Logger::Notice<<"Connection Needs Resync"<<std::endl;
         //If the connection hasn't been synchronized, we want to
         //tell them it is a bad request so they know they need to sync.
         freedm::broker::CMessage outmsg;
@@ -326,6 +331,7 @@ bool CSRConnection::Recieve(const CMessage &msg)
         outmsg.SetSourceHostname(GetConnection()->GetConnectionManager().GetHostname());
         outmsg.SetStatus(freedm::broker::CMessage::BadRequest);
         outmsg.SetSequenceNumber(m_inresyncs%SEQUENCE_MODULO);
+        outmsg.SetSendTimestamp(msg.GetSendTimestamp());
         outmsg.SetProtocol(GetIdentifier());
         Write(outmsg);
         return false;
@@ -348,7 +354,7 @@ bool CSRConnection::Recieve(const CMessage &msg)
     // message in terms of sequence number we should accept it
     if(msg.GetSequenceNumber() == m_inseq)
     {
-        m_insync = true;
+        //m_insync = true;
         m_inseq = (m_inseq+1)%SEQUENCE_MODULO;
         return true;
     }

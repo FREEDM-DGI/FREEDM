@@ -69,13 +69,6 @@ using namespace boost::asio;
 namespace freedm {
   // namespace gm{
 
-// Global constants
-enum {
-	CHECK_TIMEOUT = 10,
-	TIMEOUT_TIMEOUT = 10,
-	GLOBAL_TIMEOUT = 5
-};
-
 ///	Declaration of Garcia-Molina Invitation Leader Election algorithm.
 class GMAgent
   : public IReadHandler, public GMPeerNode,
@@ -127,7 +120,8 @@ class GMAgent
     /// Creates Ready Message
     freedm::broker::CMessage Ready();
     /// Creates A Response message
-    freedm::broker::CMessage Response(std::string msg,std::string type);
+    freedm::broker::CMessage Response(std::string payload,std::string type,
+        const boost::posix_time::ptime& exp);
     /// Creates an Accept Message
     freedm::broker::CMessage Accept();
     /// Creates a AYT, used for Timeout
@@ -212,6 +206,11 @@ class GMAgent
     int m_membershipchecks;
     Stopwatch m_electiontimer;
     Stopwatch m_ingrouptimer;
+
+    // Timeouts
+    boost::posix_time::time_duration CHECK_TIMEOUT;
+    boost::posix_time::time_duration TIMEOUT_TIMEOUT;
+    boost::posix_time::time_duration GLOBAL_TIMEOUT;
 };
 
   }

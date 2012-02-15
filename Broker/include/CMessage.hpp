@@ -119,7 +119,10 @@ public:
     /// Getter for the send time
     boost::posix_time::ptime GetSendTimestamp() const;
 
-    /// Check For An Expire Time
+    /// Is an expire time set?
+    bool IsExpireTimeSet();
+
+    /// Check for an expire time that isn't never
     bool HasExpireTime();
 
     /// Setter for the expiration time
@@ -127,6 +130,9 @@ public:
 
     /// Setter b for expiration time
     void SetExpireTimeFromNow(boost::posix_time::time_duration t);
+
+    /// Sets that the message should not have an expire time
+    void SetNeverExpires(bool set=true);
 
     /// Get the expire time
     boost::posix_time::ptime GetExpireTime() const;
@@ -199,6 +205,9 @@ private:
 
     /// The protocol this message is using.
     std::string m_protocol;
+
+    /// Sets if the expiration should actually be never
+    bool m_never_expires;
 
     /// The time the message was sent
     boost::posix_time::ptime m_sendtime;

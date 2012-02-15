@@ -1,4 +1,3 @@
-
 ////////////////////////////////////////////////////////////////////
 /// @file      CConnection.cpp
 ///
@@ -191,8 +190,8 @@ void CConnection::HandleSend(CMessage msg)
     #ifdef CUSTOMNETWORK
     if((rand()%100) >= GetReliability()) 
     {
-        Logger::Info<<"Outgoing Packet Dropped ("<<GetReliability()
-                      <<") -> "<<GetUUID()<<std::endl;
+        //Logger::Info<<"Outgoing Packet Dropped ("<<GetReliability()
+        //              <<") -> "<<GetUUID()<<std::endl;
         return;
     }
     #endif
@@ -266,7 +265,6 @@ void CConnection::SendSYN()
     Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
     freedm::broker::CMessage m_;
     m_.SetStatus(freedm::broker::CMessage::Created);
-    Logger::Info<<"Sending SYN"<<std::endl;
     Send(m_);
 }
 

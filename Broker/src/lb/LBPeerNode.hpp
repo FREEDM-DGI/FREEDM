@@ -70,15 +70,16 @@ class LPeerNode : public IPeerNode {
   protected:
         //friend class lbAgent;
 	friend class find_LBpeer;
-	float		P_Load;
-	float 		P_Gen;
-	float 		B_Soc;
-	float		P_Star;
-	float 		P_Gateway; 
-	float       DemandValue;
+	float	P_Load;
+	float 	P_Gen;
+	float 	B_Soc;
+	float	P_Star;
+	float 	P_Gateway; 
+        float 	P_CalculatedGateway;
+	float   DemandValue;
 
-	LPeerNode::EStatus       l_Status;
-	LPeerNode::EStatus	 preLoad;
+	LPeerNode::EStatus   l_Status;
+	LPeerNode::EStatus   preLoad;
 
 };
 

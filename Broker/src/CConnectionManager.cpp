@@ -57,6 +57,7 @@ namespace broker {
 ///////////////////////////////////////////////////////////////////////////////
 CConnectionManager::CConnectionManager(freedm::uuid uuid, std::string hostname)
 {
+    Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
     m_uuid = CGlobalConfiguration::instance().GetUUID();
     m_hostname.hostname = CGlobalConfiguration::instance().GetHostname();
     m_hostname.port = CGlobalConfiguration::instance().GetListenPort();
@@ -283,6 +284,7 @@ ConnectionPtr CConnectionManager::GetConnectionByUUID
 ///////////////////////////////////////////////////////////////////////////////
 void CConnectionManager::LoadNetworkConfig()
 {
+    Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
     boost::property_tree::ptree pt;
     boost::property_tree::read_xml("network.xml",pt);    
     int inreliability = pt.get("network.incoming.reliability",100);

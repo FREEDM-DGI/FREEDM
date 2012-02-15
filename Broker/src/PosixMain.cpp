@@ -206,9 +206,13 @@ int main (int argc, char* argv[])
             std::cerr << visibleOpts_ << std::endl;
             return 0;
         }
-        if( uuidgenerator != "" )
+        if( uuidgenerator != "" || vm_.count("uuid"))
         {
-            u_ = uuid::from_dns(uuidgenerator);
+            if(uuidgenerator == "")
+            {
+                uuidgenerator = boost::asio::ip::host_name();
+            }
+            u_ = freedm::uuid::from_dns(uuidgenerator);
             std::cout<<u_<<std::endl;
             return 0;
         }
@@ -263,18 +267,13 @@ int main (int argc, char* argv[])
         // Create Devices
         if (vm_.count("add-device") > 0) 
         {
-
-	std::vector< std::string > device_list =
-                vm_["add-device"].as< std::vector<std::string> >();
-            foreach(std::string &devid, device_list )
-            {
-                int idx_ = devid.find(':');
-                if( idx_ == std::string::npos )
-                {                      
-		    factory.CreateDevice<broker::device::CDevice>( devid );
-                    Logger::Info << "Added device: " << devid << std::endl;
-                    continue;
-                }
+             std::vector< std::string > device_list =
+                       vm_["add-device"].as< std::vector<std::string> >();
+             foreach(std::string &devid, device_list )
+             {
+	       int idx_ = devid.find(':');
+               if( idx_ != std::string::npos )
+               {                        
                 std::string DevName_(devid.begin(), devid.begin() + idx_),
                         DevType_(devid.begin() + (idx_ + 1), devid.end());
 
@@ -302,12 +301,25 @@ int main (int argc, char* argv[])
                     factory.CreateDevice<broker::device::CDeviceSST>( DevName_ );
                     Logger::Info << "Added SST: " << DevName_ << std::endl;
                 }  
-            }                                                                                           
-        } 
+               }
+               else
+               {
+                 if( m_phyManager.DeviceExists( devid ) )
+                {
+                    Logger::Warn << "Duplicate device: " << devid << std::endl;
+                }
+                 else
+                {
+                 factory.CreateDevice<broker::device::CDeviceSST>( devid ); 
+                 Logger::Info << "Added Generic SST device: " << devid << std::endl;
+                }
+               }
+             }
+        }
 
         else 
         {
-            Logger::Info << "No physical devices specified" << std::endl;
+           Logger::Info << "No physical devices specified" << std::endl;
         }   
         
         // Instantiate Dispatcher for message delivery 
@@ -389,12 +401,12 @@ int main (int argc, char* argv[])
         // Restore previous signals.
         pthread_sigmask(SIG_SETMASK, &old_mask, 0); 
     
-        Logger::Info << "Starting thread of Modules" << std::endl;
+        Logger::Debug << "Starting thread of Modules" << std::endl;
         boost::thread thread2_( boost::bind(&GMAgent::Run, &GM_)      
                                 , boost::bind(&lbAgent::LB, &LB_)
                                 , boost::bind(&SCAgent::SC, &SC_)
                                 );
-
+        
         // Wait for signal indicating time to shut down.
         sigset_t wait_mask;
         sigemptyset(&wait_mask);

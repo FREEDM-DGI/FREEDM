@@ -155,7 +155,7 @@ void CListener::HandleRead(const boost::system::error_code& e, std::size_t bytes
             #ifdef CUSTOMNETWORK
             if((rand()%100) >= GetReliability())
             {
-                Logger::Info<<"Incoming Packet Dropped ("<<GetReliability()
+                Logger::Debug<<"Incoming Packet Dropped ("<<GetReliability()
                               <<") -> "<<uuid<<std::endl;
                 goto listen;
             }
@@ -174,7 +174,7 @@ void CListener::HandleRead(const boost::system::error_code& e, std::size_t bytes
             }
             else if(m_message.GetStatus() == freedm::broker::CMessage::Created)
             {
-                Logger::Info << "Got SYN #" << sequenceno << std::endl;
+                Logger::Debug << "Got SYN #" << sequenceno << std::endl;
                 m_insequenceno[uuid] = sequenceno;
                 SendACK(uuid,hostname,m_insequenceno[uuid]);
             }

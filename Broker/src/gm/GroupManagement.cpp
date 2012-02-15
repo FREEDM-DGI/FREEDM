@@ -380,9 +380,9 @@ void GMAgent::SystemState()
       nodestatus<<"Unknown"<<std::endl;
     }
   } 
-  nodestatus<<"Groups Elected/Formed: "<<m_groupselection<<"/"<<m_groupsformed<<std::endl;            
-  nodestatus<<"Groups Joined/Broken: "<<m_groupsjoined<<"/"<<m_groupsbroken;            
-  Logger::Warn<<nodestatus.str()<<std::endl;
+  Logger::Status<<nodestatus.str()<<std::endl;
+  Logger::Info<<"Groups Elected/Formed: "<<m_groupselection<<"/"<<m_groupsformed<<std::endl;            
+  Logger::Info<<"Groups Joined/Broken: "<<m_groupsjoined<<"/"<<m_groupsbroken;            
 }
 ///////////////////////////////////////////////////////////////////////////////
 /// PushPeerList
@@ -430,6 +430,12 @@ void GMAgent::Recovery()
   m_GrpCounter++;
   m_GroupID = m_GrpCounter;
   m_GroupLeader = GetUUID();
+  foreach( PeerNodePtr peer_, m_AllPeers | boost::adaptors::map_values)
+  {
+    if( peer_->GetUUID() == GetUUID())
+      continue;
+    peer_->GetConnection()->Stop();
+  }
   Logger::Notice << "Changed group: "<< m_GroupID<<" ("<< m_GroupLeader <<")"<<std::endl;
   // Empties the UpList
   m_UpNodes.clear();
@@ -562,6 +568,7 @@ void GMAgent::Premerge( const boost::system::error_code &err )
         list_change = true;
         EraseInPeerSet(m_UpNodes,peer_);
         Logger::Info << "No response from peer: "<<peer_->GetUUID()<<std::endl;
+        peer_->GetConnection()->Stop();
       }
     }
     if(list_change)
@@ -643,7 +650,7 @@ void GMAgent::Merge( const boost::system::error_code& err )
     // Premerge made me wait. If in the waiting period I accepted someone
     // else's invitation, I am no longer a Coordinator and don't need to worry
     // about performing this anymore.
-    Logger::Notice << "Skipping Merge(): No longer a Coordinator." << std::endl;
+    Logger::Info << "Skipping Merge(): No longer a Coordinator." << std::endl;
     return;
   }
   if( !err )

@@ -129,13 +129,13 @@ bool IPeerNode::Send(freedm::broker::CMessage msg)
         }
         else
         {
-            Logger::Info << "Couldn't Send Message To Peer (Couldn't make connection)" << std::endl;
+            Logger::Warn << "Couldn't Send Message To Peer (Couldn't make connection)" << std::endl;
             return false;
         }
     }
     catch(boost::system::system_error& e)
     {
-        Logger::Info << "Couldn't Send Message To Peer (Sending Failed)" << std::endl;
+        Logger::Warn << "Couldn't Send Message To Peer (Sending Failed)" << std::endl;
         return false;
     }
     Logger::Debug << "Sent message to peer" << std::endl;

@@ -78,7 +78,7 @@ enum
     //  GLOBAL_TIMEOUT = 5
     
     GLOBAL_TIMEOUT2 = 50,
-    TIMEOUT_TIMEOUT2 = 5
+    TIMEOUT_TIMEOUT2 = 3
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -108,6 +108,7 @@ class SCAgent : public IReadHandler, public SCPeerNode, public Templates::Single
         
         void    Initiate();
         void    TakeSnapshot();
+ 	void    SendStateBack();
         
         // Messages
         freedm::broker::CMessage m_state();
@@ -125,10 +126,15 @@ class SCAgent : public IReadHandler, public SCPeerNode, public Templates::Single
         
     protected:
     
-        //std::map< int, ptree >      collectstate;
-	std::map<StateVersion, ptree> collectstate;
-        //std::map< int, ptree >::iterator it;
-	std::map<StateVersion, ptree>::iterator it;
+        //collect states
+	std::multimap<StateVersion, ptree> collectstate;
+	std::multimap<StateVersion, ptree>::iterator it;
+
+/*--------------------------------------------------
+	//count number for each unique marker
+	std::map<StateVersion, int> recordmarker;
+	std::map<StateVersion, int>::iterator itt;
+*/
         int countstate;
 	int countmarker;
 
@@ -136,7 +142,7 @@ class SCAgent : public IReadHandler, public SCPeerNode, public Templates::Single
 
         std::string module;
         
-        StateVersion            m_curversion;
+        StateVersion        m_curversion;
         ptree               m_curstate;
         
         freedm::broker::CPhysicalDeviceManager &m_phyDevManager;

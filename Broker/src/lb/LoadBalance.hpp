@@ -48,14 +48,12 @@ using boost::property_tree::ptree;
 #include "CMessage.hpp"
 #include "Utility.hpp"
 #include "LBPeerNode.hpp"
-//#include "ExtensibleLineProtocol.hpp"
 #include "IHandler.hpp"
 #include "IAgent.hpp"
 #include "uuid.hpp"
 #include "CDispatcher.hpp"
 #include "CConnectionManager.hpp"
 #include "CConnection.hpp"
-
 #include "CPhysicalDeviceManager.hpp"
 #include "PhysicalDeviceTypes.hpp"
 
@@ -64,6 +62,9 @@ using boost::asio::ip::tcp;
 using namespace boost::asio;
 
 namespace freedm {
+
+const double NORMAL_TOLERANCE = 0.5;
+const unsigned int STATE_TIMEOUT = 20;
 
 // Global constants
 enum {
@@ -102,16 +103,21 @@ class lbAgent
 
         PeerNodePtr add_peer(std::string uuid);
         PeerNodePtr get_peer(std::string uuid);
+
         // Handlers
         void HandleRead(broker::CMessage msg);
 	void LoadManage( const boost::system::error_code& err );
-        void SendNormal(float normal);
+        void SendNormal(double normal);
+        void SendMsg(std::string msg, PeerSet peerSet_);
+        void StateNormalize( const ptree & pt );
+        void StartStateTimer( unsigned int delay );
+        void HandleStateTimer( const boost::system::error_code & error);
+        void CollectState();
 
 
 	// This is the main loop of the algorithm
-        int	LB();
-        float CNorm;
-        int step;
+        int LB();
+        double CNorm;
         std::string Leader;
  
   private: 
@@ -124,10 +130,14 @@ class lbAgent
 	// The handler for all incoming requests.
   	freedm::broker::CPhysicalDeviceManager &m_phyDevManager;
   	void InitiatePowerMigration(broker::device::SettingValue DemandValue);
-        void Basic_PStar();
+        void Step_PStar();
+        void PStar(broker::device::SettingValue DemandValue);
+        void NotifySC(double gatewayChange);
 
 	/* IO and Timers */
-	deadline_timer		m_GlobalTimer;
+	deadline_timer	   m_GlobalTimer;
+        // timer until next periodic state collection
+        deadline_timer      m_StateTimer;
 };
 }
 

@@ -108,7 +108,7 @@ class SCAgent : public IReadHandler, public SCPeerNode, public Templates::Single
         
         void    Initiate();
         void    TakeSnapshot();
- 	void    SendStateBack();
+        void    SendStateBack();
         
         // Messages
         freedm::broker::CMessage m_state();
@@ -127,19 +127,19 @@ class SCAgent : public IReadHandler, public SCPeerNode, public Templates::Single
     protected:
     
         //collect states
-	std::multimap<StateVersion, ptree> collectstate;
-	std::multimap<StateVersion, ptree>::iterator it;
-
-/*--------------------------------------------------
-	//count number for each unique marker
-	std::map<StateVersion, int> recordmarker;
-	std::map<StateVersion, int>::iterator itt;
-*/
+        std::multimap<StateVersion, ptree> collectstate;
+        std::multimap<StateVersion, ptree>::iterator it;
+        
+        /*--------------------------------------------------
+            //count number for each unique marker
+            std::map<StateVersion, int> recordmarker;
+            std::map<StateVersion, int>::iterator itt;
+        */
         int countstate;
-	int countmarker;
-
-	bool NotifyToSave;
-
+        int countmarker;
+        
+        bool NotifyToSave;
+        
         std::string module;
         
         StateVersion        m_curversion;

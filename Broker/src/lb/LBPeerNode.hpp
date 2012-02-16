@@ -49,7 +49,8 @@
 //CREATE_EXTERN_STD_LOGS();
 
 
-namespace freedm {
+namespace freedm
+{
 
 //////////////////////////////////////////////////////////
 /// class LBPeerNode
@@ -59,28 +60,29 @@ namespace freedm {
 /// @limitations None
 ///
 /////////////////////////////////////////////////////////
-class LPeerNode : public IPeerNode {
+class LPeerNode : public IPeerNode
+{
     public:
-      LPeerNode(std::string uuid, ConnManagerPtr connmgr,
-            boost::asio::io_service& ios,
-            freedm::broker::CDispatcher& dispatch) :
-                IPeerNode(uuid,connmgr,ios,dispatch) {};
-      enum EStatus{ SUPPLY, NORM, DEMAND };
-
-  protected:
+        LPeerNode(std::string uuid, ConnManagerPtr connmgr,
+                  boost::asio::io_service& ios,
+                  freedm::broker::CDispatcher& dispatch) :
+            IPeerNode(uuid,connmgr,ios,dispatch) {};
+        enum EStatus { SUPPLY, NORM, DEMAND };
+        
+    protected:
         //friend class lbAgent;
-	friend class find_LBpeer;
-	float	P_Load;
-	float 	P_Gen;
-	float 	B_Soc;
-	float	P_Star;
-	float 	P_Gateway; 
-        float 	P_CalculatedGateway;
-	float   DemandValue;
-
-	LPeerNode::EStatus   l_Status;
-	LPeerNode::EStatus   preLoad;
-
+        friend class find_LBpeer;
+        float   P_Load;
+        float   P_Gen;
+        float   B_Soc;
+        float   P_Star;
+        float   P_Gateway;
+        float   P_CalculatedGateway;
+        float   DemandValue;
+        
+        LPeerNode::EStatus   l_Status;
+        LPeerNode::EStatus   preLoad;
+        
 };
 
 

@@ -86,18 +86,19 @@ int main (int argc, char* argv[])
     Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
     // Variable Declaration
     po::options_description genOpts_("General Options"),
-       configOpts_("Configuration"),
-       hiddenOpts_("hidden"),
-       visibleOpts_,
-       cliOpts_,
-       cfgOpts_;
+    configOpts_("Configuration"),
+    hiddenOpts_("hidden"),
+    visibleOpts_,
+    cliOpts_,
+    cfgOpts_;
     po::positional_options_description posOpts_;
     po::variables_map vm_;
     std::ifstream ifs_;
     std::string cfgFile_, listenIP_, port_, uuid_, hostname_,uuidgenerator;
-    // Line Client options
+    // Line/RTDS Client options
     std::string interHost;
     std::string interPort;
+    std::string xml;
     int verbose_;
     bool cliVerbose_(false); // CLI options override verbosity
     uuid u_;
@@ -123,10 +124,12 @@ int main (int argc, char* argv[])
          default_value("1870"), "TCP port to listen on")
         ("add-device,d", po::value<std::vector<std::string> >()->
          composing(), "physical device name:type pair")
-        ("lineclient-host,l", po::value<std::string>(&interHost)->
-         default_value(""),"Hostname to use for the lineclient to connect.")
-        ("lineclient-port,q", po::value<std::string>(&interPort)->
-         default_value("4001"),"The port to use for the lineclient to connect.")
+        ("client-host,l", po::value<std::string>(&interHost)->
+         default_value(""),"Hostname to use for the lineclient/RTDSclient to connect.")
+        ("client-port,q", po::value<std::string>(&interPort)->
+         default_value("4001"),"The port to use for the lineclient/RTDSclient to connect.")
+        ("xml,x", po::value<std::string>(&xml)->default_value("FPGA.xml"),
+         "filename of FPGA message specification")
         ("verbose,v", po::value<int>(&verbose_)->
          implicit_value(5)->default_value(3),
          "enable verbose output (optionally specify level)");
@@ -149,11 +152,10 @@ int main (int argc, char* argv[])
         po::store(po::command_line_parser(argc, argv)
                   .options(cliOpts_).positional(posOpts_).run(), vm_);
         po::notify(vm_);
-        
         // XXX If submodules have added custom commandline options,
         // they should be processed here as everything has been parsed
         
-        if( vm_.count("verbose") )
+        if ( vm_.count("verbose") )
         {
             Logger::Log::setLevel( verbose_ );
             
@@ -165,21 +167,20 @@ int main (int argc, char* argv[])
         
         ifs_.open(cfgFile_.c_str());
         
-        if( !ifs_ )
+        if ( !ifs_ )
         {
-            if( !vm_["config"].defaulted() )
-            {
-                // User specified a config file, so we should let
+            if ( !vm_["config"].defaulted() )
+            { // User specified a config file, so we should let
                 // them know that we can't load it
                 Logger::Error << "Unable to load config file: "
-                              << cfgFile_ << std::endl;
+                << cfgFile_ << std::endl;
                 return -1;
             }
             else
             {
                 // File doesn't exist or couldn't open it for read.
                 Logger::Notice << "Config file doesn't exist. "
-                               << "Skipping." << std::endl;
+                << "Skipping." << std::endl;
             }
         }
         else
@@ -190,7 +191,7 @@ int main (int argc, char* argv[])
             Logger::Info << "Config file successfully loaded."<< std::endl;
         }
         
-        if( cliVerbose_ == false && vm_.count("verbose") )
+        if ( cliVerbose_ == false && vm_.count("verbose") )
         {
             // If user specified verbose level on command line, it
             // overrides cfg file option. Otherwise, check to see
@@ -210,13 +211,12 @@ int main (int argc, char* argv[])
             {
                 uuidgenerator = boost::asio::ip::host_name();
             }
-            
             u_ = freedm::uuid::from_dns(uuidgenerator);
             std::cout<<u_<<std::endl;
             return 0;
         }
         
-        if( vm_.count("version") )
+        if ( vm_.count("version") )
         {
             std::cout << basename(argv[0])
                       << " (FREEDM DGI Revision "
@@ -227,7 +227,7 @@ int main (int argc, char* argv[])
             return 0;
         }
         
-        if( vm_.count("uuid") )
+        if ( vm_.count("uuid") )
         {
             u_ = uuid(uuid_);
             Logger::Info << "Loaded UUID: " << u_ << std::endl;
@@ -258,10 +258,11 @@ int main (int argc, char* argv[])
         // create the device factory
         // interHost is the hostname of the machine that runs the simulation
         // interPort is the port number this DGI and simulation communicate in
+        // xml is the name of the configuration file supplied from FPGA
         broker::device::CDeviceFactory factory(
-            m_phyManager, m_ios, interHost, interPort );
+            m_phyManager, m_ios, interHost, interPort, xml );
             
-        // Create Devices
+         // Create Devices
         if (vm_.count("add-device") > 0)
         {
             std::vector< std::string > device_list =
@@ -352,16 +353,15 @@ int main (int argc, char* argv[])
             {
                 int idx_ = s_.find(':');
                 
-                if( idx_ == std::string::npos )
-                {
-                    // Not found!
+                if ( idx_ == std::string::npos )
+                {   // Not found!
                     std::cerr << "Uncorrectly formatted host in config file: "<<
                               s_ << std::endl;
                     continue;
                 }
                 
                 std::string host_(s_.begin(), s_.begin() + idx_),
-                    port1_(s_.begin() + (idx_ + 1), s_.end());
+                port1_(s_.begin() + (idx_ + 1), s_.end());
                 // Construct the UUID of host from its DNS
                 uuid u1_ = uuid::from_dns(host_);
                 //Load the UUID into string

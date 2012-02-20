@@ -70,16 +70,7 @@ namespace freedm
 {
 // namespace sc{
 
-// Global constants
-enum
-{
-    //  CHECK_TIMEOUT = 10,
-    //  TIMEOUT_TIMEOUT = 10,
-    //  GLOBAL_TIMEOUT = 5
-    
-    GLOBAL_TIMEOUT2 = 50,
-    TIMEOUT_TIMEOUT2 = 3
-};
+
 
 ///////////////////////////////////////////////////////////////////////////////
 /// @class          SCAgent
@@ -109,14 +100,14 @@ class SCAgent : public IReadHandler, public SCPeerNode, public Templates::Single
         void    Initiate();
         void    TakeSnapshot();
         void    SendStateBack();
-        
+	void    SendDoneBack();
+        void    StateResponse();
+               
         // Messages
         freedm::broker::CMessage m_state();
         freedm::broker::CMessage m_marker();
         
-        // Handlers
-        void StateResponse(const boost::system::error_code& err);
-        
+
         // This is the main loop of the algorithm
         int SC();
         
@@ -137,6 +128,7 @@ class SCAgent : public IReadHandler, public SCPeerNode, public Templates::Single
         */
         int countstate;
         int countmarker;
+	int countdone;
         
         bool NotifyToSave;
         
@@ -147,6 +139,7 @@ class SCAgent : public IReadHandler, public SCPeerNode, public Templates::Single
         
         freedm::broker::CPhysicalDeviceManager &m_phyDevManager;
         PeerSet m_AllPeers;
+	PeerSet copy_AllPeers;
         
         
         /* IO and Timers */

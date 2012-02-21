@@ -390,23 +390,12 @@ int main (int argc, char* argv[])
         boost::thread thread_
         (boost::bind(&broker::CBroker::Run, &broker_));
         // Restore previous signals.
-<<<<<<< HEAD
-        pthread_sigmask(SIG_SETMASK, &old_mask, 0); 
-    
-        Logger::Info << "Starting thread of Modules" << std::endl;
-        boost::thread thread2_( boost::bind(&GMAgent::Run, &GM_)      
-          //                      , boost::bind(&lbAgent::LB, &LB_)
-            //                    , boost::bind(&SCAgent::SC, &SC_)
-                                );
-
-=======
         pthread_sigmask(SIG_SETMASK, &old_mask, 0);
         Logger::Debug << "Starting thread of Modules" << std::endl;
         boost::thread thread2_( boost::bind(&GMAgent::Run, &GM_)
                                 , boost::bind(&lbAgent::LB, &LB_)
                                 , boost::bind(&SCAgent::SC, &SC_)
                               );
->>>>>>> master
         // Wait for signal indicating time to shut down.
         sigset_t wait_mask;
         sigemptyset(&wait_mask);

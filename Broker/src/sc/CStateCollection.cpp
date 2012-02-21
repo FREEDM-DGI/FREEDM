@@ -412,7 +412,7 @@ void SCAgent::HandleRead(broker::CMessage msg)
     }//end if
     
     //receive updated peerlist from groupmanager, which means group has been changed
-    if(pt.get<std::string>("any","NOEXCEPTION") == "peerList")
+    if(pt.get<std::string>("any","NOEXCEPTION") == "PeerList")
     {
         std::string peers_, token;
         peers_ = pt.get<std::string>("any.peers");
@@ -426,22 +426,21 @@ void SCAgent::HandleRead(broker::CMessage msg)
         }
         copy_AllPeers.clear();
         
-        // Tokenize the peer list string
-        while ( getline(iss, token, ',') )
+        foreach(ptree::value_type &v, pt.get_child("any.peers"))
         {
-            peer_ = GetPeer(token);
+            peer_ = GetPeer(v.second.data());
             
             if( false != peer_ )
             {
-                Logger::Info << "SC knows this peer " <<std::endl;
+                Logger::Debug << "SC knows this peer " <<std::endl;
             }
             else
             {
-                Logger::Info << "SC sees a new member "<< token
-                             << " in the group " <<std::endl;
+                Logger::Debug << "SC sees a new member "<< token
+                              << " in the group " <<std::endl;
                 AddPeer(token);
-            }//end if
-        }// end while(...)
+            }
+        }
         
         //copy_AllPeers contains all peers in m_AllPeers
         foreach(PeerNodePtr peer_, m_AllPeers | boost::adaptors::map_values)

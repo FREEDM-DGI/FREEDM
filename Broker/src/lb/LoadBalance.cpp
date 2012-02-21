@@ -235,7 +235,6 @@ void lbAgent::SendNormal(double Normal)
         std::stringstream ss_;
         ss_.clear();
         ss_ << GetUUID();
-        ss_ >> m_.m_srcUUID;
         m_.m_submessages.put("lb.source", ss_.str());
         m_.m_submessages.put("lb", "ComputedNormal");
         m_.m_submessages.put("lb.cnorm", boost::lexical_cast<std::string>(Normal));
@@ -430,7 +429,7 @@ void lbAgent::LoadTable()
         SSTValue +=(*pit)->Get("powerLevel");
     }
     
-    Logger::Status <<"\n ----------- LOAD TABLE (Power Management) ------------"
+    Logger::Status <<" ----------- LOAD TABLE (Power Management) ------------"
                    << std::endl;
     Logger::Status <<"| " << "Load Table @ " << microsec_clock::local_time()  <<std::endl;
     P_Gen = net_gen;
@@ -600,7 +599,7 @@ void lbAgent::HandleRead(broker::CMessage msg)
     // If you receive a peerList from your new leader, process it and
     // identify your new group members
     // --------------------------------------------------------------
-    if(pt.get<std::string>("any","NOEXCEPTION") == "peerList")
+    if(pt.get<std::string>("any","NOEXCEPTION") == "PeerList")
     {
         std::string peers_, token;
         peers_ = pt.get<std::string>("any.peers");
@@ -652,11 +651,9 @@ void lbAgent::HandleRead(broker::CMessage msg)
             EraseInPeerSet(m_NoNodes,p_);
         }
         // Tokenize the peer list string
-        std::istringstream iss(peers_);
-        
-        while ( getline(iss, token, ',') )
+        foreach(ptree::value_type &v, pt.get_child("any.peers"))
         {
-            peer_ = get_peer(token);
+            peer_ = get_peer(v.second.data());
             
             if( false != peer_ )
             {
@@ -668,7 +665,8 @@ void lbAgent::HandleRead(broker::CMessage msg)
                               << " in the group " <<std::endl;
                 add_peer(token);
             }
-        }//endwhile
+            
+        }
     }//end if("peerlist")
     // If there isn't an lb message, just leave.
     else if(pt.get<std::string>("lb","NOEXCEPTION") == "NOEXCEPTION")
@@ -691,7 +689,6 @@ void lbAgent::HandleRead(broker::CMessage msg)
         broker::CMessage m_;
         std::stringstream ss_;
         ss_ << GetUUID();
-        ss_ >> m_.m_srcUUID;
         m_.m_submessages.put("lb.source", ss_.str());
         
         // If you are in Demand State, accept the request with a 'yes'
@@ -774,7 +771,6 @@ void lbAgent::HandleRead(broker::CMessage msg)
             broker::CMessage m_;
             std::stringstream ss_;
             ss_ << GetUUID();
-            ss_ >> m_.m_srcUUID;
             m_.m_submessages.put("lb.source", ss_.str());
             ss_.clear();
             ss_.str("drafting");
@@ -812,7 +808,6 @@ void lbAgent::HandleRead(broker::CMessage msg)
             broker::CMessage m_;
             std::stringstream ss_;
             ss_ << GetUUID();
-            ss_ >> m_.m_srcUUID;
             m_.m_submessages.put("lb.source", ss_.str());
             ss_.clear();
             ss_.str("accept");

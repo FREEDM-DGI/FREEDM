@@ -111,9 +111,10 @@ int main (int argc, char* argv[])
         ("help,h", "print usage help (this screen)")
         ("version,V", "print version info")
         ("config,c", po::value<std::string>(&cfgFile_)->
-         default_value("freedm.cfg"),"filename of additional configuration.")
+            default_value("freedm.cfg"),"filename of additional configuration.")
         ("generateuuid,g", po::value<std::string>(&uuidgenerator)->
-         default_value(""), "Generate a uuid for the specified host, output it, and exit");
+                default_value(""), "Generate a uuid for the specified host, output it, and exit")
+        ("uuid,u","Print this node's generated uuid and exit");
         // This is for arguments in a config file or as arguments
         configOpts_.add_options()
         ("add-host", po::value<std::vector<std::string> >()->
@@ -134,8 +135,9 @@ int main (int argc, char* argv[])
          implicit_value(5)->default_value(3),
          "enable verbose output (optionally specify level)");
         hiddenOpts_.add_options()
-        ("uuid", po::value<std::string>(&uuid_),
-         "UUID for this host");
+        ("setuuid", po::value<std::string>(&uuid_),
+                    "UUID for this host");
+
         // Specify positional arguments
         posOpts_.add("address", 1).add("port", 1);
         // Visible options
@@ -204,8 +206,7 @@ int main (int argc, char* argv[])
             std::cerr << visibleOpts_ << std::endl;
             return 0;
         }
-        
-        if( uuidgenerator != "" || vm_.count("uuid"))
+        if(uuidgenerator != "" || vm_.count("uuid"))
         {
             if(uuidgenerator == "")
             {

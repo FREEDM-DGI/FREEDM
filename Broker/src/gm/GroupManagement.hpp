@@ -58,19 +58,16 @@ using boost::property_tree::ptree;
 #include "CConnection.hpp"
 #include "types/remotehost.hpp"
 
+#include "Stopwatch.hpp"
+
+#include "Stopwatch.hpp"
+
 using boost::asio::ip::tcp;
 
 using namespace boost::asio;
 
 namespace freedm {
   // namespace gm{
-
-// Global constants
-enum {
-	CHECK_TIMEOUT = 10,
-	TIMEOUT_TIMEOUT = 10,
-	GLOBAL_TIMEOUT = 5
-};
 
 ///	Declaration of Garcia-Molina Invitation Leader Election algorithm.
 class GMAgent
@@ -123,7 +120,8 @@ class GMAgent
     /// Creates Ready Message
     freedm::broker::CMessage Ready();
     /// Creates A Response message
-    freedm::broker::CMessage Response(std::string msg,std::string type);
+    freedm::broker::CMessage Response(std::string payload,std::string type,
+        const boost::posix_time::ptime& exp);
     /// Creates an Accept Message
     freedm::broker::CMessage Accept();
     /// Creates a AYT, used for Timeout
@@ -131,10 +129,6 @@ class GMAgent
     /// Generates a peer list
     freedm::broker::CMessage PeerList();
  
-    //Utility
-    /// Converts the UUID to an integer for PreMerge
-    unsigned int MurmurHash2(const void * key, int len);
-
     // This is the main loop of the algorithm
     /// Called to start the system
     int	Run();
@@ -159,7 +153,8 @@ class GMAgent
     void Reorganize( const boost::system::error_code& err );
     /// Outputs information about the current state to the logger.
     void SystemState();
-
+    /// Start the monitor after transient is over
+    void StartMonitor( const boost::system::error_code& err );
     /// Returns the coordinators uuid.
     std::string Coordinator() const { return m_GroupLeader; }
     
@@ -191,7 +186,9 @@ class GMAgent
     boost::interprocess::interprocess_mutex m_timerMutex;
     /// A timer for stepping through the election process
     deadline_timer m_timer;
-
+    /// What I like to call the TRANSIENT ELIMINATOR
+    deadline_timer m_transient;
+    
     // Testing Functionality:
     /// Counts the number of elections
     int m_groupselection;
@@ -203,6 +200,17 @@ class GMAgent
     int m_groupsbroken;
     /// The number of elections that have occured.
     int m_rounds;
+    /// The running total of group membership.
+    int m_membership;
+    /// The number of times we've checked it
+    int m_membershipchecks;
+    Stopwatch m_electiontimer;
+    Stopwatch m_ingrouptimer;
+
+    // Timeouts
+    boost::posix_time::time_duration CHECK_TIMEOUT;
+    boost::posix_time::time_duration TIMEOUT_TIMEOUT;
+    boost::posix_time::time_duration GLOBAL_TIMEOUT;
 };
 
   }

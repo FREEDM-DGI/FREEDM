@@ -35,6 +35,7 @@
 CREATE_EXTERN_STD_LOGS()
 
 #include <boost/foreach.hpp>
+#include <boost/functional/hash.hpp>
 #define foreach BOOST_FOREACH
 
 #include <boost/property_tree/ptree.hpp>
@@ -121,6 +122,203 @@ namespace status_strings {
         }
     }
 } // namespace status_strings
+
+
+/// Initialize a new CMessage with a status type.
+CMessage::CMessage( CMessage::StatusType p_stat)
+    : m_status ( p_stat ), m_never_expires(false)
+{
+    Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
+}
+
+/// Copy Constructor
+CMessage::CMessage( const CMessage &p_m ) :
+    m_srcUUID( p_m.m_srcUUID ),
+    m_status( p_m.m_status ),
+    m_submessages( p_m.m_submessages ),
+    m_remotehost( p_m.m_remotehost ),
+    m_sequenceno( p_m.m_sequenceno ),
+    m_properties( p_m.m_properties ),
+    m_protocol( p_m.m_protocol ),
+    m_sendtime( p_m.m_sendtime ),
+    m_expiretime( p_m.m_expiretime ),
+    m_never_expires( p_m.m_never_expires ) 
+{
+    Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
+};
+
+/// Cmessage Equals operator
+CMessage& CMessage::operator = ( const CMessage &p_m )
+{
+    this->m_srcUUID = p_m.m_srcUUID;
+    this->m_status = p_m.m_status;
+    this->m_submessages = p_m.m_submessages;
+    this->m_remotehost = p_m.m_remotehost;
+    this->m_sequenceno = p_m.m_sequenceno;
+    this->m_properties = p_m.m_properties;
+    this->m_protocol = p_m.m_protocol;
+    this->m_sendtime = p_m.m_sendtime;
+    this->m_expiretime = p_m.m_expiretime;
+    this->m_never_expires = p_m.m_never_expires;
+    return *this;
+}
+
+//Accessors and Junk
+
+/// Accessor for uuid
+std::string CMessage::GetSourceUUID() const
+{
+     return m_srcUUID;
+}
+
+/// Accessor for hostname
+remotehost CMessage::GetSourceHostname() const
+{
+    return m_remotehost;
+}
+
+/// Accessor for sequenceno
+unsigned int CMessage::GetSequenceNumber() const
+{
+    return m_sequenceno;
+}
+
+/// Accessor for status
+CMessage::StatusType CMessage::GetStatus() const
+{
+    return m_status;
+}
+
+/// Accessor for submessages
+ptree& CMessage::GetSubMessages()
+{
+    return m_submessages;
+}
+
+/// Setter for uuid
+void CMessage::SetSourceUUID(std::string uuid)
+{
+    m_srcUUID = uuid;
+}
+
+/// Setter for hostname
+void CMessage::SetSourceHostname(remotehost hostname)
+{
+    m_remotehost = hostname;
+}
+
+/// Setter for sequenceno
+void CMessage::SetSequenceNumber(unsigned int sequenceno)
+{
+    m_sequenceno = sequenceno;
+}
+
+/// Setter for status
+void CMessage::SetStatus(StatusType status)
+{
+    m_status = status;
+}
+
+/// Setter for the timestamp
+void CMessage::SetSendTimestampNow()
+{
+    m_sendtime = boost::posix_time::microsec_clock::universal_time();
+}
+
+/// Setter b for the timestamp
+void CMessage::SetSendTimestamp(boost::posix_time::ptime p)
+{
+    m_sendtime = p;
+}
+
+/// Getter for the send time
+boost::posix_time::ptime CMessage::GetSendTimestamp() const
+{
+    return m_sendtime;
+}
+
+/// Setter for the expiration time
+void CMessage::SetExpireTime(boost::posix_time::ptime p)
+{
+    m_expiretime = p;
+}
+
+
+/// Checks to see if an expire time is set
+bool CMessage::HasExpireTime()
+{
+    boost::posix_time::ptime p;
+    if(m_expiretime != p)
+        return true;
+    return false;
+}
+
+/// Is an expire time set?
+bool CMessage::IsExpireTimeSet()
+{
+    if(HasExpireTime() or m_never_expires == true)
+        return true;
+    return false;
+}
+
+/// Sets that the message should not have an expire time
+void CMessage::SetNeverExpires(bool set)
+{
+    m_never_expires = set;
+}
+
+/// Setter b for the expiration time
+void CMessage::SetExpireTimeFromNow(boost::posix_time::time_duration t)
+{
+    m_expiretime = boost::posix_time::microsec_clock::universal_time();
+    m_expiretime += t;
+}
+
+/// Getter for the expire time
+boost::posix_time::ptime CMessage::GetExpireTime() const
+{
+    return m_expiretime;
+}
+
+///Test to see if a message is expired.
+bool CMessage::IsExpired() const
+{
+    return (m_expiretime < boost::posix_time::microsec_clock::universal_time());
+}
+
+/// Set the protocol properties
+void CMessage::SetProtocolProperties(ptree x)
+{
+    m_properties = x;
+}
+
+/// Get the protocol properties
+ptree CMessage::GetProtocolProperties() const
+{
+    return m_properties;
+}
+
+/// Getter for the protocol
+std::string CMessage::GetProtocol() const
+{
+    return m_protocol;
+}
+
+// Protocol Setter
+void CMessage::SetProtocol(std::string protocol)
+{
+    m_protocol = protocol;
+}
+
+/// Get the message hash!
+size_t CMessage::GetHash() const
+{
+    std::stringstream ss;
+    boost::hash<std::string> string_hash;
+    write_xml(ss,m_submessages);
+    ss<<GetSendTimestamp();
+    return string_hash(ss.str());
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 /// @fn CMessage::Load
@@ -209,6 +407,10 @@ CMessage::operator ptree ()
     pt.put("message.port",m_remotehost.port );
     pt.put("message.sequenceno", m_sequenceno );
     pt.put("message.status", m_status  );
+    pt.put("message.sendtime",m_sendtime );
+    pt.put("message.expiretime",m_expiretime );
+    pt.put("message.protocol",m_protocol );    
+    pt.add_child("message.properties", m_properties );
     pt.add_child("message.submessages", m_submessages );
 
     return pt;
@@ -225,13 +427,27 @@ CMessage::CMessage( const ptree &pt )
     Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
     try
     {
+        std::string time_tmp;
         // Get the source host's ID and store it in the m_src variable.
         // An exception is thrown if "message.source" does not exist.
         m_srcUUID = pt.get< std::string >("message.source");
         m_remotehost.hostname = pt.get< std::string >("message.hostname");
         m_remotehost.port = pt.get< std::string >("message.port");
         m_sequenceno = pt.get< unsigned int >("message.sequenceno");
-
+        m_protocol = pt.get< std::string >("message.protocol");
+        m_sendtime = pt.get< boost::posix_time::ptime >("message.sendtime");
+        try
+        {
+           m_expiretime = pt.get< boost::posix_time::ptime >("message.expiretime");
+        }
+        catch( boost::property_tree::ptree_error &e )
+        {
+            m_expiretime = ptime();
+        }
+        if(HasExpireTime())
+        {
+            m_never_expires = true;
+        }
         m_status = static_cast< StatusType >
             (pt.get< unsigned int >("message.status"));
 
@@ -239,6 +455,7 @@ CMessage::CMessage( const ptree &pt )
         // in the m_modules set. These indicate sub-ptrees that algorithm
         // modules have added.
         m_submessages = pt.get_child("message.submessages");
+        m_properties = pt.get_child("message.properties");
 
     }
     catch( boost::property_tree::ptree_error &e )

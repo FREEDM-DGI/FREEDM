@@ -100,14 +100,14 @@ class SCAgent : public IReadHandler, public SCPeerNode, public Templates::Single
         void    Initiate();
         void    TakeSnapshot();
         void    SendStateBack();
-	void    SendDoneBack();
+        void    SendDoneBack();
         void    StateResponse();
-               
+        
         // Messages
         freedm::broker::CMessage m_state();
         freedm::broker::CMessage m_marker();
         
-
+        
         // This is the main loop of the algorithm
         int SC();
         
@@ -128,7 +128,7 @@ class SCAgent : public IReadHandler, public SCPeerNode, public Templates::Single
         */
         int countstate;
         int countmarker;
-	int countdone;
+        int countdone;
         
         bool NotifyToSave;
         
@@ -139,7 +139,7 @@ class SCAgent : public IReadHandler, public SCPeerNode, public Templates::Single
         
         freedm::broker::CPhysicalDeviceManager &m_phyDevManager;
         PeerSet m_AllPeers;
-	PeerSet copy_AllPeers;
+        PeerSet copy_AllPeers;
         
         
         /* IO and Timers */

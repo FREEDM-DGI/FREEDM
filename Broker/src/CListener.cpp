@@ -99,28 +99,6 @@ void CListener::Stop()
 }
  
 ///////////////////////////////////////////////////////////////////////////////
-/// @fn CListener::SendACK
-/// @description Sends an acknowledgement of message reciept back to sender.
-/// @param uuid The uuid to send the message to.
-/// @param hostname The hostname to send the message to.
-/// @param sequenceno The message number being acked.
-/// @pre Initialized connection.
-/// @post If the sender is not already in the hostname table it will be added.
-///   then a connection is established to that node and an acknowledgment sent.
-//////////////////////////////////////////////////////////////////////////////
-void CListener::SendACK(std::string uuid, remotehost hostname, unsigned int sequenceno)
-{
-    Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
-    freedm::broker::CMessage m_;
-    // Make sure the connection is registered:
-    GetConnectionManager().PutHostname(uuid,hostname);
-    m_.SetStatus(freedm::broker::CMessage::Accepted);
-    m_.SetSequenceNumber(sequenceno);
-    Logger::Debug<<"Send ACK #"<<sequenceno<<std::endl;
-    GetConnectionManager().GetConnectionByUUID(uuid, GetSocket().get_io_service(), GetDispatcher())->Send(m_,false);
-}
-
-///////////////////////////////////////////////////////////////////////////////
 /// @fn CListener::HandleRead
 /// @description The callback which accepts messages from the remote sender.
 /// @param e The errorcode if any associated.
@@ -137,73 +115,47 @@ void CListener::HandleRead(const boost::system::error_code& e, std::size_t bytes
     Logger::Debug << __PRETTY_FUNCTION__ << std::endl;       
     if (!e)
     {
-        Logger::Debug << "Handled some message." << std::endl;
         boost::tribool result_;
         boost::tie(result_, boost::tuples::ignore) = Parse(
             m_message, m_buffer.data(),
             m_buffer.data() + bytes_transferred);
         if (result_)
         {
-            // Unfortunately, this (sequencing) can't be done with the read handler
-            // So it has to be a bit messier. m_message is the incoming
-            // CMessage. We scan this for the stamp that we place on a
-            // Message before we send it with the sequence number:
-            ptree x = static_cast<ptree>(m_message); 
-            unsigned int sequenceno = m_message.GetSequenceNumber();
+            ptree x = static_cast<ptree>(m_message);
             std::string uuid = m_message.GetSourceUUID();
             remotehost hostname = m_message.GetSourceHostname();
+            ///Make sure the hostname is registered:
+            GetConnectionManager().PutHostname(uuid,hostname);                        
+            ///Get the pointer to the connection:
+            CConnection::ConnectionPtr conn;
+            conn = GetConnectionManager().GetConnectionByUUID(uuid,
+                GetSocket().get_io_service(), GetDispatcher());
             #ifdef CUSTOMNETWORK
             if((rand()%100) >= GetReliability())
             {
-                Logger::Debug<<"Incoming Packet Dropped ("<<GetReliability()
-                              <<") -> "<<uuid<<std::endl;
+                Logger::Debug<<"Dropped datagram "<<m_message.GetHash()<<":"
+                              <<m_message.GetSequenceNumber()<<std::endl;
                 goto listen;
             }
-            #ifdef DATAGRAM
-            else
-            {
-                goto accept;
-            }
-            #endif
             #endif
             if(m_message.GetStatus() == freedm::broker::CMessage::Accepted)
             {
-                Logger::Debug << "Got ACK #" << sequenceno << std::endl;
-                GetConnectionManager().PutHostname(uuid,hostname);
-                GetConnectionManager().GetConnectionByUUID(uuid, GetSocket().get_io_service(), GetDispatcher())->RecieveACK(sequenceno);
+                ptree pp = m_message.GetProtocolProperties();
+                size_t hash = pp.get<size_t>("src.hash");
+                Logger::Debug<<"Recieved ACK"<<hash<<":"
+                                <<m_message.GetSequenceNumber()<<std::endl;
+                conn->RecieveACK(m_message);
             }
-            else if(m_message.GetStatus() == freedm::broker::CMessage::Created)
+            else if(conn->Recieve(m_message))
             {
-                Logger::Debug << "Got SYN #" << sequenceno << std::endl;
-                m_insequenceno[uuid] = sequenceno;
-                SendACK(uuid,hostname,m_insequenceno[uuid]);
+                Logger::Debug<<"Accepted message "<<m_message.GetHash()<<":"
+                              <<m_message.GetSequenceNumber()<<std::endl;
+                GetDispatcher().HandleRequest(m_message);
             }
-            else if(m_insequenceno.find(uuid) != m_insequenceno.end())
+            else if(m_message.GetStatus() != freedm::broker::CMessage::Created)
             {
-                Logger::Debug << "Got Message #" << sequenceno << " expected " 
-                               << m_insequenceno[uuid]+1 % GetSequenceModulo() << std::endl;
-                if(sequenceno == (m_insequenceno[uuid]+1) % GetSequenceModulo())
-                {
-                    // The sequence number is what we expect.
-                    m_insequenceno[uuid] = (m_insequenceno[uuid]+1) % GetSequenceModulo();
-                    // Call on the connection manager to send the ACK to the sender.
-                    SendACK(uuid,hostname,m_insequenceno[uuid]);
-                    // Handle the request
-                    // XXX: Dr. McMillin and scj discussed how to make this secure,
-                    // specifically that messages from unknown sources should not
-                    // be accepted unless some trusted agent (like the group manager)
-                    // has accepted them. What I think I want to propose is that
-                    // write now, this is written to accept all messages, but
-                    // later we'll end in a "trust table" that epidemically
-                    // distributes trust in the system. Messages are rejected until
-                    // Trust is established or something. 
-                    accept:
-                    GetDispatcher().HandleRequest(m_message);
-                }
-                else
-                {
-                    SendACK(uuid,hostname,m_insequenceno[uuid]);
-                }
+                Logger::Notice<<"Rejected message "<<m_message.GetHash()<<":"
+                              <<m_message.GetSequenceNumber()<<std::endl;
             }
         }
         listen:

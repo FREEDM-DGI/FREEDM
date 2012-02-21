@@ -4,8 +4,11 @@ set(
     CBroker.cpp
     CReliableConnection.cpp
     CListener.cpp
-    CConnection.cpp
     CConnectionManager.cpp
+    IProtocol.cpp
+    CSRConnection.cpp
+    CSUConnection.cpp
+    CConnection.cpp
     CDispatcher.cpp
     CMessage.cpp
     IPeerNode.cpp
@@ -42,4 +45,5 @@ target_link_libraries(
     ${Boost_SYSTEM_LIBRARY}
     ${Boost_SERIALIZATION_LIBRARY}
     ${Boost_PROGRAM_OPTIONS_LIBRARY}
+    ${Boost_DATE_TIME_LIBRARY}
 )

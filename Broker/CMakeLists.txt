@@ -24,7 +24,7 @@ if(SHOW_MESSAGES)
 endif(SHOW_MESSAGES)
 
 # find the required boost libraries
-find_package(Boost REQUIRED COMPONENTS system thread program_options serialization)
+find_package(Boost REQUIRED COMPONENTS system thread program_options serialization date_time)
 
 if(Boost_FOUND)
     # add the boost libraries to the project
@@ -32,8 +32,8 @@ if(Boost_FOUND)
     link_directories(${Boost_LIBRARY_DIRS})
 
     # set C++ compiler flags
-    set(COMMON_FLAGS "-g")
-
+    set(COMMON_FLAGS "-g -lpthread")
+    
     set(WARNING_FLAGS "")
     if(SHOW_WARNINGS)
         set(WARNING_FLAGS "-W -Wall -pedantic")
@@ -45,7 +45,7 @@ if(Boost_FOUND)
     CONFIGURE_FILE(
         ${CMAKE_BINARY_DIR}/include/config.hpp.cmake
         ${CMAKE_BINARY_DIR}/include/config.hpp )
-
+    
     # include project source directories
     include_directories("${CMAKE_BINARY_DIR}/include")
     include_directories("${CMAKE_BINARY_DIR}/src")

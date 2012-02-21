@@ -18,18 +18,24 @@ set(
     #lb/LBPeerNode.cpp
     sc/CStateCollection.cpp
     CDeviceStructureGeneric.cpp
+    CDeviceKeyCoupled.cpp
+    CTableStructure.cpp
+    CTableRTDS.cpp
+    CLineClient.cpp
+    CClientRTDS.cpp
     CDeviceStructurePSCAD.cpp
+    CDeviceStructureRTDS.cpp
     CDeviceFactory.cpp
     CDeviceLWI.cpp
     CDevice.cpp
-    CLineClient.cpp
-    )
+   )
 
 # set BROKER_VERSION macro : cp version.h.cmake version.h
 configure_file(version.h.cmake ${CMAKE_BINARY_DIR}/src/version.h @ONLY)
 
 add_library(broker ${BROKER_FILES})
 add_executable(PosixBroker PosixMain.cpp)
+
 
 # link the executable to its dependencies
 target_link_libraries(

@@ -61,6 +61,13 @@ Component("pscad_recv")
     Len = 10
     Min = 0
     }
+   Input("delay",6,114,180,12,2)
+    {
+    Desc = "Time Delay"
+    Data = Real
+    Len = 10
+    Min = 0
+    }
    }
   }
 
@@ -75,6 +82,11 @@ Component("pscad_recv")
    {
    Type = Integer
    }
+  Input("init:ndata",-216,0)
+   {
+   Type = Real
+   Dim  = [0]
+   }
   }
 
  Graphics = 
@@ -86,17 +98,28 @@ Component("pscad_recv")
   Line(216,-72,156,-72)
   Text(228,-52,"status")
   Text(-4,-12,"pscad_recv")
+  Line(-216,0,-156,0)
+  Pen(,Solid)
+  Line(-156,0,-176,20)
+  Line(-156,0,-176,-20)
+  Text(-220,20,"initial")
   }
 
  Section(EMTDC)
   {
   Fortran = "\
       IF (TIMEZERO) THEN
+            DO 10, I = 1, $NDATA
+                  $DATA(I) = $INIT(I)
+10          CONTINUE
+      ELSE IF (NINT(TIME/DELT) == NINT($DELAY/DELT)) THEN
             CALL PSCAD_RECV_INIT($IP1,$IP2,$IP3,$IP4,$PORT,$STATUS)
-      ELSE IF (LASTSTEP) THEN
-            CALL PSCAD_RECV_CLOSE($STATUS)
-      ELSE IF (MOD(NINT(TIME/DELT),NINT($dt/DELT)) == 0) THEN
-            CALL PSCAD_RECV($IP1,$IP2,$IP3,$IP4,$PORT,$DATA,$NDATA,$STATUS)
+      ELSE IF (TIME > $DELAY) THEN
+            IF (LASTSTEP) THEN
+                  CALL PSCAD_RECV_CLOSE($STATUS)
+            ELSE IF (MOD(NINT(TIME/DELT),NINT($dt/DELT)) == 0) THEN
+                  CALL PSCAD_RECV($IP1,$IP2,$IP3,$IP4,$PORT,$DATA,$NDATA,$STATUS)
+            END IF
       END IF"
   Branch = ""
   Computations = ""

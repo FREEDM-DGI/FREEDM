@@ -48,6 +48,8 @@ CDevice::CDevice( CPhysicalDeviceManager & manager, Identifier device,
     // skip
 }
 
+
+
 ////////////////////////////////////////////////////////////////////////////////
 /// Get( const SettingKey & )
 /// @description Gets a device setting value from the internal structure

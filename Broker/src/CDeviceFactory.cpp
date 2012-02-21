@@ -27,20 +27,28 @@
 #include "CDeviceFactory.hpp"
 #include "config.hpp"
 
-namespace freedm {
-namespace broker {
-namespace device {
+namespace freedm
+{
+namespace broker
+{
+namespace device
+{
 
 /// Creates an instance of a device factory
 CDeviceFactory::CDeviceFactory( CPhysicalDeviceManager & manager,
-    boost::asio::io_service & ios, const std::string & host,
-    const std::string & port )
-    : m_manager(manager)
-    , m_client(CLineClient::Create(ios))
+                                boost::asio::io_service & ios, const std::string & host,
+                                const std::string & port, const std::string xml )
+        : m_manager(manager)
 {
 #if defined USE_DEVICE_PSCAD
-    // connect to the simulation server
-    m_client->Connect(host,port);
+    m_rtdsClient = boost::shared_ptr<CClientRTDS>();  //set pointer to clientRTDS to null
+    m_lineClient = CLineClient::Create(ios);
+    m_lineClient->Connect(host,port);
+#elif defined USE_DEVICE_RTDS
+    m_lineClient = boost::shared_ptr<CLineClient>();  //set pointer to lineClient to null
+    m_rtdsClient = CClientRTDS::Create(ios, xml);
+    m_rtdsClient->Connect(host,port);
+    m_rtdsClient->Run();
 #endif
 }
 
@@ -48,7 +56,9 @@ CDeviceFactory::CDeviceFactory( CPhysicalDeviceManager & manager,
 IDeviceStructure::DevicePtr CDeviceFactory::CreateStructure()
 {
 #if defined USE_DEVICE_PSCAD
-    return IDeviceStructure::DevicePtr( new CDeviceStructurePSCAD(m_client) );
+    return IDeviceStructure::DevicePtr( new CDeviceStructurePSCAD(m_lineClient) );
+#elif defined USE_DEVICE_RTDS
+    return IDeviceStructure::DevicePtr( new CDeviceStructureRTDS(m_rtdsClient) );
 #else
     return IDeviceStructure::DevicePtr( new CDeviceStructureGeneric() );
 #endif

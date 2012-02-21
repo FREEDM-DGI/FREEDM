@@ -1,13 +1,13 @@
 ////////////////////////////////////////////////////////////////////////////////
-/// @file           CDeviceTable.cpp
+/// @file CTableRTDS.cpp
 ///
-/// @author         Thomas Roth <tprfh7@mst.edu>
+/// @author Thomas Roth <tprfh7@mst.edu>
 ///
-/// @compiler       C++
+/// @compiler C++
 ///
-/// @project        Missouri S&T Power Research Group
+/// @project Missouri S&T Power Research Group
 ///
-/// @see            CDeviceTable.hpp
+/// @see CTableRTDS.hpp
 ///
 /// These source code files were created at the Missouri University of Science
 /// and Technology, and are intended for use in teaching or research. They may
@@ -24,70 +24,55 @@
 ///
 ////////////////////////////////////////////////////////////////////////////////
 
-#include "CDeviceTable.hpp"
+#include "CTableRTDS.hpp"
 
-namespace freedm {
-namespace simulation {
+namespace freedm
+{
+namespace broker
+{
 
-CDeviceTable::CDeviceTable( const std::string & p_xml, const std::string & p_tag )
-    : m_structure( p_xml, p_tag )
+CTableRTDS::CTableRTDS( const std::string & p_xml, const std::string & p_tag )
+        : m_structure( p_xml, p_tag )
 {
     Logger::Info << __PRETTY_FUNCTION__ << std::endl;
+    m_length = m_structure.GetSize();
+    m_data = new float[m_length];
     
-    m_length    = m_structure.GetSize();
-    m_data      = new double[m_length];
-
-    for( size_t i = 0; i < m_length; i++ )
+    //initialize table values.
+    for ( size_t i = 0; i < m_length; i++ )
     {
-        m_data[i] = 0;
+        m_data[i]= 0;
     }
 }
 
-double CDeviceTable::GetValue( const CDeviceKey & p_dkey, size_t p_index )
+double CTableRTDS::GetValue( const CDeviceKeyCoupled & p_dkey)
 {
     Logger::Info << __PRETTY_FUNCTION__ << std::endl;
     std::stringstream error;
-    
-    // check for read permission
-    if( !m_structure.HasAccess(p_dkey,p_index) )
-    {
-        error << p_index << " does not have access to " << p_dkey;
-        throw std::logic_error( error.str() );
-    }
-    
     // enter critical section of m_data as reader
     boost::shared_lock<boost::shared_mutex> lock(m_mutex);
-    Logger::Debug << "DGI-Interface " << p_index << " obtained mutex as reader" << std::endl;
-    
+    Logger::Debug << " obtained mutex as reader" << std::endl;
     // convert the key to an index and return its value
-    return m_data[m_structure.FindIndex(p_dkey)];
+    float value = m_data[m_structure.FindIndex(p_dkey)];
+    return boost::lexical_cast<double>(value);
 }
 
-void CDeviceTable::SetValue( const CDeviceKey & p_dkey, size_t p_index, double p_value )
+void CTableRTDS::SetValue( const CDeviceKeyCoupled & p_dkey, double p_value )
 {
     Logger::Info << __PRETTY_FUNCTION__ << std::endl;
     std::stringstream error;
-    
-    // check for write permission
-    if( !m_structure.HasAccess(p_dkey,p_index) )
-    {
-        error << p_index << " does not have access to " << p_dkey;
-        throw std::logic_error( error.str() );
-    }
-    
     // enter critical section of m_data as writer
     boost::unique_lock<boost::shared_mutex> lock(m_mutex);
-    Logger::Debug << "DGI-Interface " << p_index << " obtained mutex as writer" << std::endl;
-    
+    Logger::Debug << " obtained mutex as writer" << std::endl;
     // convert the key to an index and set its value
-    m_data[m_structure.FindIndex(p_dkey)] = p_value;
+    float value = boost::lexical_cast<float>(p_value);
+    m_data[m_structure.FindIndex(p_dkey)] = value;
 }
 
-CDeviceTable::~CDeviceTable()
+CTableRTDS::~CTableRTDS()
 {
     Logger::Info << __PRETTY_FUNCTION__ << std::endl;
     delete [] m_data;
 }
-
-} // namespace simulation
+}
 } // namespace freedm

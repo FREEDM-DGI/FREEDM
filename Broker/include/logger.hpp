@@ -61,9 +61,9 @@ private:
 	CREATE_LOG(7, Debug); \
 	CREATE_LOG(6, Info); \
 	CREATE_LOG(5, Notice); \
-	CREATE_LOG(4, Warn); \
-	CREATE_LOG(3, Error); \
-	CREATE_LOG(2, Critical); \
+	CREATE_LOG(4, Status); \
+	CREATE_LOG(3, Warn); \
+	CREATE_LOG(2, Error); \
 	CREATE_LOG(1, Alert); \
 	CREATE_LOG(0, Fatal); \
 	int Log::m_filter=0; \
@@ -75,9 +75,9 @@ private:
         extern CREATE_EXTERN_LOG(7, Debug); \
         extern CREATE_EXTERN_LOG(6, Info); \
         extern CREATE_EXTERN_LOG(5, Notice); \
-        extern CREATE_EXTERN_LOG(4, Warn); \
-        extern CREATE_EXTERN_LOG(3, Error); \
-        extern CREATE_EXTERN_LOG(2, Critical); \
+        extern CREATE_EXTERN_LOG(4, Status); \
+        extern CREATE_EXTERN_LOG(3, Warn); \
+        extern CREATE_EXTERN_LOG(2, Error); \
         extern CREATE_EXTERN_LOG(1, Alert); \
         extern CREATE_EXTERN_LOG(0, Fatal); \
         }

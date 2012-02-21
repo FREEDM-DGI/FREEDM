@@ -31,53 +31,57 @@
 #include <boost/asio/io_service.hpp>
 
 #include "CLineClient.hpp"
+#include "CClientRTDS.hpp"
 #include "IPhysicalDevice.hpp"
 #include "PhysicalDeviceTypes.hpp"
 #include "CPhysicalDeviceManager.hpp"
 
 #include "CDeviceStructurePSCAD.hpp"
+#include "CDeviceStructureRTDS.hpp"
 #include "CDeviceStructureGeneric.hpp"
 
-namespace freedm {
-namespace broker {
-namespace device {
+namespace freedm
+{
+namespace broker
+{
+namespace device
+{
 
+class CRTDSClient;
 /// Creates devices and their internal structures
 class CDeviceFactory
-    : private boost::noncopyable
+        : private boost::noncopyable
 {
-public:
-    /// Creates an instance of a device factory
-    CDeviceFactory( CPhysicalDeviceManager & manager,
-        boost::asio::io_service & ios, const std::string & host,
-        const std::string & port );
-    
-    /// Creates a device with the given identifier
-    template <class DeviceType>
-    void CreateDevice( const Identifier & device )
-    {
-        IDeviceStructure::DevicePtr ds;
-        CDevice::DevicePtr dev;
+    public:
+        /// Creates an instance of a device factory
+        CDeviceFactory( CPhysicalDeviceManager & manager,
+                        boost::asio::io_service & ios, const std::string & host,
+                        const std::string & port, const std::string xml );
+                        
+        /// Creates a device with the given identifier
+        template <class DeviceType>
+        void CreateDevice( const Identifier & device )
+        {
+            IDeviceStructure::DevicePtr ds;
+            CDevice::DevicePtr dev;
+            // create and register the device structure
+            ds = CreateStructure();
+            ds->Register(device);
+            // create the new device from the structure
+            dev = CDevice::DevicePtr( new DeviceType( m_manager, device, ds ) );
+            // add the device to the manager
+            m_manager.AddDevice(dev);
+        }
+    private:
+        /// Creates the internal structure of the device
+        IDeviceStructure::DevicePtr CreateStructure();
         
-        // create and register the device structure
-        ds = CreateStructure();
-        ds->Register(device);
+        /// Device manager to handle created devices
+        CPhysicalDeviceManager & m_manager;
         
-        // create the new device from the structure
-        dev = CDevice::DevicePtr( new DeviceType( m_manager, device, ds ) );
-        
-        // add the device to the manager
-        m_manager.AddDevice(dev);
-    }
-private:
-    /// Creates the internal structure of the device
-    IDeviceStructure::DevicePtr CreateStructure();
-    
-    /// Device manager to handle created devices
-    CPhysicalDeviceManager & m_manager;
-    
-    /// Client to the PSCAD simulation server
-    CLineClient::TPointer m_client;
+        /// Client to the PSCAD simulation server
+        CLineClient::TPointer m_lineClient;
+        CClientRTDS::RTDSPointer m_rtdsClient;
 };
 
 } // namespace device

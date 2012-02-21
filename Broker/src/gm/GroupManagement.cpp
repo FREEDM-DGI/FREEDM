@@ -395,6 +395,12 @@ void GMAgent::Recovery()
     m_GrpCounter++;
     m_GroupID = m_GrpCounter;
     m_GroupLeader = GetUUID();
+    foreach( PeerNodePtr peer_, m_AllPeers | boost::adaptors::map_values)
+    {
+        if( peer_->GetUUID() == GetUUID())
+            continue;
+        peer_->GetConnection()->Stop();
+    }
     Logger::Notice << "Changed group: "<< m_GroupID<<" ("<< m_GroupLeader <<")"<<std::endl;
     // Empties the UpList
     m_UpNodes.clear();
@@ -527,6 +533,7 @@ void GMAgent::Premerge( const boost::system::error_code &err )
                 list_change = true;
                 EraseInPeerSet(m_UpNodes,peer_);
                 Logger::Info << "No response from peer: "<<peer_->GetUUID()<<std::endl;
+                peer_->GetConnection()->Stop();
             }
         }
         if(m_UpNodes.size() == 0)
@@ -684,7 +691,7 @@ void GMAgent::InviteGroupNodes( const boost::system::error_code& err, PeerSet p_
     {
         /* If the timer expired, err should be false, if canceled,
          * second condition is true.    Timer should only be canceled if
-         * we are no longer waiting on more replies                                             */
+         * we are no longer waiting on more replies  */
         freedm::broker::CMessage m_ = Invitation();
         Logger::Info <<"SEND: Sending out Invites (Invite Group Nodes):"<<std::endl;
         Logger::Debug <<"Tempset is "<<p_tempSet.size()<<" Nodes (IGN)"<<std::endl;

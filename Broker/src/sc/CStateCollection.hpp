@@ -66,82 +66,89 @@ using boost::asio::ip::tcp;
 
 using namespace boost::asio;
 
-namespace freedm {
-  // namespace sc{
+namespace freedm
+{
+// namespace sc{
 
-// Global constants
-enum {
-//	CHECK_TIMEOUT = 10,
-//	TIMEOUT_TIMEOUT = 10,
-//	GLOBAL_TIMEOUT = 5
 
-	GLOBAL_TIMEOUT2 = 50,
-	TIMEOUT_TIMEOUT2 = 5
-};
 
 ///////////////////////////////////////////////////////////////////////////////
-///	@class			SCAgent
-///	@description	Declaration of Chandy-Lamport Algorithm
-///     
+/// @class          SCAgent
+/// @description    Declaration of Chandy-Lamport Algorithm
+///
 ///////////////////////////////////////////////////////////////////////////////
 
 class SCAgent : public IReadHandler, public SCPeerNode, public Templates::Singleton< SCAgent >,
     public IAgent< boost::shared_ptr<SCPeerNode> >
 {
-  friend class Templates::Singleton< SCAgent >;
-  public:
+        friend class Templates::Singleton< SCAgent >;
+    public:
     
-    typedef std::pair< std::string, int >  StateVersion;
- 
-    SCAgent(std::string uuid, boost::asio::io_service &ios, freedm::broker::CDispatcher &p_dispatch, freedm::broker::CConnectionManager &m_connManager, freedm::broker::CPhysicalDeviceManager &m_phyManager);
-    SCAgent(const SCAgent&);
-    SCAgent& operator=(const SCAgent&);
-    virtual ~SCAgent();
-
-//  void HandleRead(const ptree& pt );
-//  void HandleWrite(const ptree& pt);
-
-
-   virtual void HandleRead(broker::CMessage msg);
+        typedef std::pair< std::string, int >  StateVersion;
+        
+        SCAgent(std::string uuid, boost::asio::io_service &ios, freedm::broker::CDispatcher &p_dispatch, freedm::broker::CConnectionManager &m_connManager, freedm::broker::CPhysicalDeviceManager &m_phyManager);
+        SCAgent(const SCAgent&);
+        SCAgent& operator=(const SCAgent&);
+        virtual ~SCAgent();
+        
+        //  void HandleRead(const ptree& pt );
+        //  void HandleWrite(const ptree& pt);
+        
+        
+        virtual void HandleRead(broker::CMessage msg);
+        
+        void    Initiate();
+        void    TakeSnapshot();
+        void    SendStateBack();
+        void    SendDoneBack();
+        void    StateResponse();
+        
+        // Messages
+        freedm::broker::CMessage m_state();
+        freedm::broker::CMessage m_marker();
+        
+        
+        // This is the main loop of the algorithm
+        int SC();
+        
+        PeerNodePtr AddPeer(std::string uuid);
+        PeerNodePtr AddPeer(PeerNodePtr peer);
+        PeerNodePtr GetPeer(std::string uuid);
+        
+    protected:
     
-    void 	Initiate();
-    void	TakeSnapshot();
-
-    // Messages
-    freedm::broker::CMessage m_state();
-    freedm::broker::CMessage m_marker();
-
-    // Handlers
-    void StateResponse(const boost::system::error_code& err);
-
-    // This is the main loop of the algorithm
-    int	SC();
-
-    PeerNodePtr AddPeer(std::string uuid);
-    PeerNodePtr AddPeer(PeerNodePtr peer);
-    PeerNodePtr GetPeer(std::string uuid);
-    
-protected:
-
-    std::map< int, ptree >      collectstate;
-    std::map< int, ptree >::iterator it;
-    int countstate;
-    std::string module;
-
-    StateVersion			m_curversion;
-    ptree				m_curstate;
-
-    freedm::broker::CPhysicalDeviceManager &m_phyDevManager;
-    PeerSet	m_AllPeers;
-
-    
-    /* IO and Timers */
-//    deadline_timer		m_CheckTimer;
-    deadline_timer		m_TimeoutTimer;
-//    deadline_timer		m_GlobalTimer;
-
+        //collect states
+        std::multimap<StateVersion, ptree> collectstate;
+        std::multimap<StateVersion, ptree>::iterator it;
+        
+        /*--------------------------------------------------
+            //count number for each unique marker
+            std::map<StateVersion, int> recordmarker;
+            std::map<StateVersion, int>::iterator itt;
+        */
+        int countstate;
+        int countmarker;
+        int countdone;
+        
+        bool NotifyToSave;
+        
+        std::string module;
+        
+        StateVersion        m_curversion;
+        ptree               m_curstate;
+        
+        freedm::broker::CPhysicalDeviceManager &m_phyDevManager;
+        PeerSet m_AllPeers;
+        PeerSet copy_AllPeers;
+        
+        
+        /* IO and Timers */
+        //    deadline_timer        m_CheckTimer;
+        deadline_timer      m_TimeoutTimer;
+        //    deadline_timer        m_GlobalTimer;
+        
 };
 
-  }
+}
 
 #endif

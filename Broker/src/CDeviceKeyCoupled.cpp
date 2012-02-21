@@ -1,15 +1,14 @@
 ////////////////////////////////////////////////////////////////////////////////
-/// @file           PhysicalDeviceTypes.hpp
+/// @file CDeviceKeyCoupled.cpp
 ///
-/// @author         Thomas Roth <tprfh7@mst.edu>
+/// @author Thomas Roth <tprfh7@mst.edu>
 ///
-/// @compiler       C++
+/// @compiler C++
 ///
-/// @project        FREEDM DGI
+/// @project Missouri S&T Power Research Group
 ///
-/// @description    Common header for all physical device types
+/// @see CDeviceKeyCoupled.hpp
 ///
-/// @license
 /// These source code files were created at the Missouri University of Science
 /// and Technology, and are intended for use in teaching or research. They may
 /// be freely copied, modified and redistributed as long as modified versions
@@ -22,16 +21,30 @@
 /// Suggested modifications or questions about these files can be directed to
 /// Dr. Bruce McMillin, Department of Computer Science, Missouri University of
 /// Science and Technology, Rolla, MO 65401 <ff@mst.edu>.
+///
 ////////////////////////////////////////////////////////////////////////////////
 
-#ifndef PHYSICAL_DEVICE_TYPES
-#define PHYSICAL_DEVICE_TYPES
+#include "CDeviceKeyCoupled.hpp"
 
-#include "CDevice.hpp"
-#include "CDeviceLWI.hpp"
-#include "CDeviceDESD.hpp"
-#include "CDeviceDRER.hpp"
-#include "CDeviceLOAD.hpp"
-#include "CDeviceSST.hpp"
+namespace freedm
+{
+namespace broker
+{
+bool operator<( const CDeviceKeyCoupled & p_lhs, const CDeviceKeyCoupled & p_rhs )
+{
+    return( p_lhs.m_device < p_rhs.m_device
+            || (p_lhs.m_device == p_rhs.m_device && p_lhs.m_key < p_rhs.m_key) );
+}
 
-#endif // PHYSICAL_DEVICE_TYPES
+std::ostream & operator<<( std::ostream & p_os, const CDeviceKeyCoupled & p_dkey )
+{
+    return( p_os << p_dkey.m_device << " " << p_dkey.m_key );
+}
+
+CDeviceKeyCoupled::CDeviceKeyCoupled( const std::string & p_device, const std::string & p_key )
+        : m_device(p_device), m_key(p_key)
+{
+    // skip
+}
+}//namespace broker
+} // namespace freedm

@@ -39,10 +39,14 @@ def build():
 @parallel
 def start_sim(runtime='10m',timeout='10s'):
     with cd(SRC_DIR):
-        cmd = "timeout -k %s %s ./PosixBroker" % (timeout,runtime)
         result = run(cmd)
         if result.return_code != 0:
             print "Test failed with error code."
+
+def start_linehost(path):
+    with cd(join(path,"PSCAD-Interface/src/")):
+        cmd = "./driver"
+        run(cmd)
 
 def wait_sim(runtime='10m'):
     print "Waiting for test."
@@ -69,4 +73,3 @@ def setup_sim(expconfig):
     Doesn't work.
     """
     put(expconfig,'/home/scj7t4/FREEDM/Broker/src/network.xml')
-

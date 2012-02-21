@@ -1,0 +1,29 @@
+<SSTCount>3</SSTCount>
+<state>
+  <entry index = "1">
+    <device>SST1</device>
+    <key>powerLevel</key>
+  </entry>
+  <entry index = "2">
+    <device>SST2</device>
+    <key>powerLevel</key>
+  </entry>
+  <entry index = "3">
+    <device>SST3</device>
+    <key>powerLevel</key>
+  </entry>
+</state>
+<command>
+  <entry index = "1">
+    <device>SST1</device>
+    <key>powerLevel</key>
+  </entry>
+  <entry index = "2">
+    <device>SST2</device>
+    <key>powerLevel</key>
+  </entry>
+  <entry index = "3">
+    <device>SST3</device>
+    <key>powerLevel</key>
+  </entry>
+</command>

@@ -7,13 +7,14 @@ set(ALT_BUILD_VERSION "Unversioned")
 # configurable project options
 # TUTORIAL on how to add a new option:
 #   add the option below with a help message defaulted to OFF
-#   add the option to Broker/include/cmake.hpp.cmake as #cmakedefine OPTION
+#   add the option to Broker/include/config.hpp.cmake as #cmakedefine OPTION
 #   activate / deactivate the option as described in the message below
 option(BUILD_TESTS "Enable the building and running of unit tests." OFF)
 option(SHOW_WARNINGS "warnings displayed during project compile" OFF)
 option(CUSTOMNETWORK "for network.xml support" OFF)
 option(DATAGRAM "for UDP Datagram service w/o sequencing" OFF)
 option(USE_DEVICE_PSCAD "Enable the PSCAD simulation interface" OFF)
+option(USE_DEVICE_RTDS "Enable the RTDS simulation interface" OFF)
 option(SHOW_MESSAGES "Enable help messages during cmake execution" ON)
 
 if(SHOW_MESSAGES)
@@ -31,7 +32,8 @@ if(Boost_FOUND)
     link_directories(${Boost_LIBRARY_DIRS})
 
     # set C++ compiler flags
-    set(COMMON_FLAGS "-lpthread")
+    set(COMMON_FLAGS "-g -lpthread")
+    
     set(WARNING_FLAGS "")
     if(SHOW_WARNINGS)
         set(WARNING_FLAGS "-W -Wall -pedantic")

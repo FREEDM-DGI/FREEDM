@@ -601,10 +601,7 @@ void lbAgent::HandleRead(broker::CMessage msg)
     // --------------------------------------------------------------
     if(pt.get<std::string>("any","NOEXCEPTION") == "PeerList")
     {
-        std::string peers_, token;
-        peers_ = pt.get<std::string>("any.peers");
-        Logger::Notice << "\nPeer List < " << peers_
-                       << " > received from Group Leader: " << line_ <<std::endl;
+        Logger::Notice << "\nPeer Listreceived from Group Leader: " << line_ <<std::endl;
         Leader = line_;
         
         if(Leader == GetUUID())
@@ -661,9 +658,9 @@ void lbAgent::HandleRead(broker::CMessage msg)
             }
             else
             {
-                Logger::Debug << "LB sees a new member "<< token
+                Logger::Debug << "LB sees a new member "<< v.second.data()
                               << " in the group " <<std::endl;
-                add_peer(token);
+                add_peer(v.second.data());
             }
             
         }

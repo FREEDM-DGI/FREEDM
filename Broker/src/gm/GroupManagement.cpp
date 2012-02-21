@@ -409,6 +409,7 @@ void GMAgent::Recovery()
     // Perform work assignments, etc here.
     SetStatus(GMPeerNode::NORMAL);
     Logger::Notice << "+ State Change NORMAL : "<<__LINE__<<std::endl;
+    PushPeerList();
     // Go to work
     Logger::Info << "TIMER: Setting CheckTimer (Check): " << __LINE__ << std::endl;
     m_timerMutex.lock();

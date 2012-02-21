@@ -414,11 +414,7 @@ void SCAgent::HandleRead(broker::CMessage msg)
     //receive updated peerlist from groupmanager, which means group has been changed
     if(pt.get<std::string>("any","NOEXCEPTION") == "PeerList")
     {
-        std::string peers_, token;
-        peers_ = pt.get<std::string>("any.peers");
-        Logger::Info << "Peer List: " << peers_ <<
-                     " received from Group Leader: " << line_ <<std::endl;
-        std::istringstream iss(peers_);
+        Logger::Info << "Peer List received from Group Leader: " << line_ <<std::endl;
         foreach(PeerNodePtr peer_, m_AllPeers | boost::adaptors::map_values)
         {
             if (peer_->GetUUID() != GetUUID())
@@ -436,9 +432,9 @@ void SCAgent::HandleRead(broker::CMessage msg)
             }
             else
             {
-                Logger::Debug << "SC sees a new member "<< token
+                Logger::Debug << "SC sees a new member "<< v.second.data()
                               << " in the group " <<std::endl;
-                AddPeer(token);
+                AddPeer(v.second.data());
             }
         }
         

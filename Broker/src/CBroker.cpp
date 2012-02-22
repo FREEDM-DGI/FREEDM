@@ -76,7 +76,8 @@ CBroker::CBroker(const std::string& p_address, const std::string& p_port,
     : m_ioService(m_ios),
       m_connManager(m_conMan),
       m_dispatch(p_dispatch),
-      m_newConnection(new CListener(m_ioService, m_connManager, m_dispatch, m_conMan.GetUUID()))
+      m_newConnection(new CListener(m_ioService, m_connManager, m_dispatch, m_conMan.GetUUID())),
+      m_phasetimer(m_ios)
 {
     Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     // Open the acceptor with the option to reuse the address (i.e. SO_REUSEADDR).
@@ -153,6 +154,123 @@ void CBroker::HandleStop()
     m_connManager.StopAll();
     m_ioService.stop(); 
 }
+
+///////////////////////////////////////////////////////////////////////////////
+/// @fn CBroker::Schedule
+/// @description Given a binding to a function that should be run into the
+///   future, prepares it to be run... in the future.
+/// @pre None
+/// @post A function is scheduled to be called in the future.
+///////////////////////////////////////////////////////////////////////////////
+CBroker::TimerHandle CBroker::Schedule(CBroker::ModuleIdent module,
+    boost::posix_time::time_duration wait, CBroker::Scheduleable x)
+{
+    bool exists = false;
+    CBroker::TimerHandle myhandle;
+    boost::system::error_code err;
+    CBroker::Scheduleable s;
+    boost::asio::deadline_timer* t = new boost::asio::deadline_timer(m_ioService);
+    for(unsigned int i=0; i < m_modules.size(); i++)
+    {
+        if(m_modules[i] == module)
+        {
+            exists = true;
+            break;
+        } 
+    }
+    if(!exists)
+    {
+        m_modules.push_back(module);
+        if(m_modules.size() == 1)
+        {
+            ChangePhase(err);
+        }
+    }
+    myhandle = m_handlercounter;
+    m_handlercounter++;
+    m_timers.insert(CBroker::TimersMap::value_type(myhandle,t));
+    m_timers[myhandle]->expires_from_now(wait);
+    s = boost::bind(&CBroker::ScheduledTask,this,module,x,myhandle,boost::asio::placeholders::error);
+    //m_timers[myhandle]->async_wait(s);
+    return myhandle;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+/// @fn CBroker::ChangePhase
+/// @description This task will mark to the schedule that it is time to change
+///     phases. This will change which functions will be put into the queue
+/// @pre None
+/// @post The phase has been changed.
+///////////////////////////////////////////////////////////////////////////////
+void CBroker::ChangePhase(const boost::system::error_code &err)
+{
+    m_phase++;
+    if(m_phase >= m_modules.size())
+    {
+        m_phase = 0;
+    }
+    m_phasetimer.expires_from_now(boost::posix_time::seconds(3));
+    m_phasetimer.async_wait(boost::bind(&CBroker::ChangePhase,this,
+        boost::asio::placeholders::error));
+}
+
+///////////////////////////////////////////////////////////////////////////////
+/// @fn CBroker::ScheduledTask
+/// @description When a timer for a task expires, it enters this phase. The
+///     timer is removed from the timers list. Then Execute is called to keep
+///     the work queue going.
+/// @pre A task is scheduled for execution
+/// @post The task is entered into th ready queue. 
+///////////////////////////////////////////////////////////////////////////////
+void CBroker::ScheduledTask(CBroker::ModuleIdent module, CBroker::Scheduleable x, CBroker::TimerHandle handle, const boost::system::error_code &err)
+{
+    // First, prepare another bind, which uses the given error
+    CBroker::BoundScheduleable y=boost::bind(x,err);
+    // Put it into the ready queue
+    m_ready[module].push_back(y);
+    delete m_timers[handle];
+    m_timers.erase(handle);
+    if(!m_busy)
+    {
+        Worker();
+    }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+/// @fn CBroker::Worker
+/// @description Reads the current phase and if the phase is correct, queues
+///     all the tasks for that phase to the ioservice. If m_busy is set, the 
+///     worker is still working on clearing the queue. If it's set to false,
+///     the worker needs to be started when the scheduled task is called
+/// @pre None
+/// @post A task is scheduled to run.
+///////////////////////////////////////////////////////////////////////////////
+void CBroker::Worker()
+{
+    if(m_phase >= m_modules.size())
+    {
+        m_busy = false;
+        return;
+    }
+    std::string active = m_modules[m_phase];
+    if(m_ready[active].size() > 0)
+    {
+        // Mark that the worker has something to do
+        m_busy = true;
+        // Extract the first item from the work queue:
+        CBroker::BoundScheduleable x = m_ready[active].front();
+        m_ready[active].pop_front();
+        // Execute the task.
+        x();
+        // Schedule the worker again:
+        m_ioService.post(boost::bind(&CBroker::Worker, this));
+    }
+    else
+    {
+        m_busy = false;
+    }
+}
+
 
     } // namespace broker
 } // namespace freedm

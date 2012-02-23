@@ -14,7 +14,7 @@ set(
     IPeerNode.cpp
     CPhysicalDeviceManager.cpp
     gm/GroupManagement.cpp
-#    lb/LoadBalance.cpp
+    lb/LoadBalance.cpp
     #lb/LBPeerNode.cpp
     sc/CStateCollection.cpp
     CDeviceStructureGeneric.cpp

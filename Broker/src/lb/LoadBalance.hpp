@@ -90,9 +90,7 @@ class lbAgent
     public:
         lbAgent();
         lbAgent(std::string uuid_,
-                boost::asio::io_service &ios,
-                freedm::broker::CDispatcher &p_dispatch,
-                freedm::broker::CConnectionManager &m_conManager,
+                freedm::broker::CBroker &broker,
                 freedm::broker::CPhysicalDeviceManager &m_phyManager);
         lbAgent( const lbAgent& );
         lbAgent& operator = ( const lbAgent& );
@@ -135,11 +133,13 @@ class lbAgent
         void Step_PStar();
         void PStar(broker::device::SettingValue DemandValue);
         void NotifySC(double gatewayChange);
+
+        freedm::broker::CBroker &m_broker;
         
         /* IO and Timers */
-        deadline_timer     m_GlobalTimer;
+        freedm::broker::CBroker::TimerHandle     m_GlobalTimer;
         // timer until next periodic state collection
-        deadline_timer      m_StateTimer;
+        freedm::broker::CBroker::TimerHandle      m_StateTimer;
 };
 
 }

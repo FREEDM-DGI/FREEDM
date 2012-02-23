@@ -98,20 +98,20 @@ namespace freedm
 /// @param m_phyManager: The physical device manager to use in this class.
 ///////////////////////////////////////////////////////////////////////////////
 
-lbAgent::lbAgent(std::string uuid_, boost::asio::io_service &ios,
-                 broker::CDispatcher &p_dispatch,
-                 broker::CConnectionManager &m_conManager,
+lbAgent::lbAgent(std::string uuid_,
+                 broker::CBroker &broker,
                  broker::CPhysicalDeviceManager &m_phyManager):
-    LPeerNode(uuid_, m_conManager, ios, p_dispatch),
-    m_phyDevManager(m_phyManager),
-    m_GlobalTimer(ios),
-    m_StateTimer(ios)
+    LPeerNode(uuid_, broker.GetConnectionManager()),
+    m_broker(broker),
+    m_phyDevManager(m_phyManager)
 {
     Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
     PeerNodePtr self_(this);
     InsertInPeerSet(l_AllPeers, self_);
     Leader = GetUUID();
     CNorm = 0;
+    m_GlobalTimer = broker.AllocateTimer("lb");
+    m_StateTimer = broker.AllocateTimer("lb");
     StartStateTimer( STATE_TIMEOUT );
 }
 
@@ -151,7 +151,7 @@ lbAgent::PeerNodePtr lbAgent::add_peer(std::string uuid)
 {
     Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
     PeerNodePtr tmp_;
-    tmp_.reset(new LPeerNode(uuid,GetConnectionManager(),GetIOService(),GetDispatcher()));
+    tmp_.reset(new LPeerNode(uuid,GetConnectionManager()));
     InsertInPeerSet(l_AllPeers,tmp_);
     InsertInPeerSet(m_NoNodes,tmp_);
     return tmp_;
@@ -330,9 +330,8 @@ void lbAgent::LoadManage()
     }
     
     //Start the timer; on timeout, this function is called again
-    m_GlobalTimer.expires_from_now( boost::posix_time::seconds(LOAD_TIMEOUT) );
-    m_GlobalTimer.async_wait( boost::bind(&lbAgent::LoadManage, this,
-                                          boost::asio::placeholders::error));
+    m_broker.Schedule(m_GlobalTimer, boost::posix_time::seconds(LOAD_TIMEOUT), 
+        boost::bind(&lbAgent::LoadManage, this,boost::asio::placeholders::error));
 }//end LoadManage
 
 ////////////////////////////////////////////////////////////
@@ -1094,9 +1093,8 @@ void lbAgent::StateNormalize( const ptree & pt )
 void lbAgent::StartStateTimer( unsigned int delay )
 {
     Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
-    m_StateTimer.expires_from_now( boost::posix_time::seconds(delay) );
-    m_StateTimer.async_wait( boost::bind(&lbAgent::HandleStateTimer,
-                                         this, boost::asio::placeholders::error) );
+    m_broker.Schedule(m_StateTimer, boost::posix_time::seconds(delay),
+        boost::bind(&lbAgent::HandleStateTimer, this, boost::asio::placeholders::error));
 }
 
 ////////////////////////////////////////////////////////////

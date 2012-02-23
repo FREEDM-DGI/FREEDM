@@ -63,10 +63,8 @@ namespace freedm
 class LPeerNode : public IPeerNode
 {
     public:
-        LPeerNode(std::string uuid, ConnManagerPtr connmgr,
-                  boost::asio::io_service& ios,
-                  freedm::broker::CDispatcher& dispatch) :
-            IPeerNode(uuid,connmgr,ios,dispatch) {};
+        LPeerNode(std::string uuid, ConnManagerPtr connmgr) :
+            IPeerNode(uuid,connmgr) {};
         enum EStatus { SUPPLY, NORM, DEMAND };
         
     protected:

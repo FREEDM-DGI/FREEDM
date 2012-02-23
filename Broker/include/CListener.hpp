@@ -34,10 +34,9 @@
 #define CLISTENER_HPP
 
 #include "CMessage.hpp"
-#include "CDispatcher.hpp"
+#include "CBroker.hpp"
 #include "CReliableConnection.hpp"
 #include "types/remotehost.hpp"
-#include "CConnection.hpp"
 
 #include <boost/asio.hpp>
 #include <boost/array.hpp>
@@ -52,6 +51,7 @@ namespace freedm {
     namespace broker {
 
 class CConnectionManager;
+class CBroker;
 
 /// Represents a single CListner from a client.
 class CListener
@@ -63,7 +63,7 @@ public:
     typedef boost::shared_ptr<CListener> ConnectionPtr;
     /// Construct a CConnection with the given io_service.
     explicit CListener(boost::asio::io_service& p_ioService,
-            CConnectionManager& p_manager, CDispatcher& p_dispatch,
+            CConnectionManager& p_manager, CBroker& p_broker,
             std::string uuid);
 
     /// Start the first asynchronous operation for the CConnection.

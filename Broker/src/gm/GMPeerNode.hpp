@@ -53,10 +53,8 @@ namespace freedm {
 class GMPeerNode : public IPeerNode {
     public:
         /// Constructs a peer.
-        GMPeerNode(std::string uuid, ConnManagerPtr connmgr,
-            boost::asio::io_service& ios,
-            freedm::broker::CDispatcher& dispatch) :
-                IPeerNode(uuid,connmgr,ios,dispatch) {};
+        GMPeerNode(std::string uuid, ConnManagerPtr connmgr) :
+                IPeerNode(uuid,connmgr) {};
         /// States this peer can be in.
         enum { NORMAL,DOWN,RECOVERY,REORGANIZATION,ELECTION };
 };

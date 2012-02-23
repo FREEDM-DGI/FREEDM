@@ -86,7 +86,7 @@ class SCAgent : public IReadHandler, public SCPeerNode, public Templates::Single
     
         typedef std::pair< std::string, int >  StateVersion;
         
-        SCAgent(std::string uuid, boost::asio::io_service &ios, freedm::broker::CDispatcher &p_dispatch, freedm::broker::CConnectionManager &m_connManager, freedm::broker::CPhysicalDeviceManager &m_phyManager);
+        SCAgent(std::string uuid, freedm::broker::CBroker &broker, freedm::broker::CPhysicalDeviceManager &m_phyManager);
         SCAgent(const SCAgent&);
         SCAgent& operator=(const SCAgent&);
         virtual ~SCAgent();
@@ -144,9 +144,10 @@ class SCAgent : public IReadHandler, public SCPeerNode, public Templates::Single
         
         /* IO and Timers */
         //    deadline_timer        m_CheckTimer;
-        deadline_timer      m_TimeoutTimer;
+        freedm::broker::CBroker::TimerHandle m_TimeoutTimer;
         //    deadline_timer        m_GlobalTimer;
-        
+
+        freedm::broker::CBroker &m_broker;
 };
 
 }

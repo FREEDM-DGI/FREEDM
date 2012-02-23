@@ -218,8 +218,7 @@ remotehost CConnectionManager::GetHostnameByUUID(std::string uuid) const
 /// @return A pointer to the connection, or NULL if construction failed for
 ///         some reason.
 ///////////////////////////////////////////////////////////////////////////////
-ConnectionPtr CConnectionManager::GetConnectionByUUID
-    (std::string uuid_, boost::asio::io_service& ios,  CDispatcher &dispatch_)
+ConnectionPtr CConnectionManager::GetConnectionByUUID(std::string uuid_)
 {
     Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
 
@@ -256,11 +255,11 @@ ConnectionPtr CConnectionManager::GetConnectionByUUID
     port = mapIt_->second.port;
 
     // Create a new CConnection object for this host	
-    c_.reset(new CConnection(ios, *this, dispatch_, uuid_));  
+    c_.reset(new CConnection(m_inchannel->GetIOService(), *this, m_inchannel->GetBroker(), uuid_));  
    
     // Initiate the TCP connection
     //XXX Right now, the port is hardcoded  
-    boost::asio::ip::udp::resolver resolver(ios);
+    boost::asio::ip::udp::resolver resolver(m_inchannel->GetIOService());
     boost::asio::ip::udp::resolver::query query( s_, port);
     boost::asio::ip::udp::endpoint endpoint = *resolver.resolve( query );
     c_->GetSocket().connect( endpoint ); 

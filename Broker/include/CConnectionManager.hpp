@@ -56,11 +56,16 @@
 namespace freedm {
 namespace broker {
 
+class CConnection;
+
 /// Manages open connections so that they may be cleanly stopped
 class CConnectionManager
     : private boost::noncopyable
 {
 public:
+    /// ConnectionPtr Typedef
+    typedef boost::shared_ptr<CConnection> ConnectionPtr;
+    
     /// Typedef for the map which handles uuid to hostname
     typedef std::map<std::string, remotehost> hostnamemap;
     
@@ -86,7 +91,7 @@ public:
     void PutConnection(std::string uuid, ConnectionPtr c);
 
     /// Stop the specified connection.
-    void Stop(CConnection::ConnectionPtr c);
+    void Stop(ConnectionPtr c);
     
     /// Stop the specified connection
     void Stop(CListener::ConnectionPtr c);
@@ -104,7 +109,7 @@ public:
     remotehost GetHostnameByUUID( std::string uuid ) const; 
 
     /// Fetch a connection pointer via UUID
-    ConnectionPtr GetConnectionByUUID( std::string uuid_,  boost::asio::io_service& ios,  CDispatcher &dispatch_ );
+    ConnectionPtr GetConnectionByUUID( std::string uuid_ );
 
     /// An iterator to the beginning of the hostname map
     hostnamemap::iterator GetHostnamesBegin() { return m_hostnames.begin(); };

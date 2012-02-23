@@ -64,8 +64,8 @@ namespace freedm {
 /// @param uuid The uuid this node connects to, or what listener.
 ///////////////////////////////////////////////////////////////////////////////
 CConnection::CConnection(boost::asio::io_service& p_ioService,
-  CConnectionManager& p_manager, CDispatcher& p_dispatch, std::string uuid)
-  : CReliableConnection(p_ioService,p_manager,p_dispatch,uuid)
+  CConnectionManager& p_manager, CBroker& p_broker, std::string uuid)
+  : CReliableConnection(p_ioService,p_manager,p_broker,uuid)
 {
     Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
     m_protocols.insert(ProtocolMap::value_type(CSUConnection::Identifier(),

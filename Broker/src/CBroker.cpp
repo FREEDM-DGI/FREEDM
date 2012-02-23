@@ -76,7 +76,7 @@ CBroker::CBroker(const std::string& p_address, const std::string& p_port,
     : m_ioService(m_ios),
       m_connManager(m_conMan),
       m_dispatch(p_dispatch),
-      m_newConnection(new CListener(m_ioService, m_connManager, m_dispatch, m_conMan.GetUUID())),
+      m_newConnection(new CListener(m_ioService, m_connManager, *this, m_conMan.GetUUID())),
       m_phasetimer(m_ios)
 {
     Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
@@ -89,7 +89,18 @@ CBroker::CBroker(const std::string& p_address, const std::string& p_port,
     m_newConnection->GetSocket().open(endpoint.protocol());
     m_newConnection->GetSocket().bind(endpoint);;
     m_connManager.Start(m_newConnection);
+    m_busy = false;
 }
+
+CBroker::~CBroker()
+{
+    TimersMap::iterator it;
+    for(it=m_timers.begin(); it!=m_timers.end(); it++)
+    {
+        delete (*it).second;
+    }
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 /// @fn CBroker::Run()
 /// @description Calls the ioservice run (initializing the ioservice thread)
@@ -155,24 +166,13 @@ void CBroker::HandleStop()
     m_ioService.stop(); 
 }
 
-///////////////////////////////////////////////////////////////////////////////
-/// @fn CBroker::Schedule
-/// @description Given a binding to a function that should be run into the
-///   future, prepares it to be run... in the future.
-/// @pre None
-/// @post A function is scheduled to be called in the future.
-///////////////////////////////////////////////////////////////////////////////
-CBroker::TimerHandle CBroker::Schedule(CBroker::ModuleIdent module,
-    boost::posix_time::time_duration wait, CBroker::Scheduleable x)
+void CBroker::RegisterModule(CBroker::ModuleIdent m)
 {
-    bool exists = false;
-    CBroker::TimerHandle myhandle;
     boost::system::error_code err;
-    CBroker::Scheduleable s;
-    boost::asio::deadline_timer* t = new boost::asio::deadline_timer(m_ioService);
+    bool exists;
     for(unsigned int i=0; i < m_modules.size(); i++)
     {
-        if(m_modules[i] == module)
+        if(m_modules[i] == m)
         {
             exists = true;
             break;
@@ -180,21 +180,62 @@ CBroker::TimerHandle CBroker::Schedule(CBroker::ModuleIdent module,
     }
     if(!exists)
     {
-        m_modules.push_back(module);
+        m_modules.push_back(m);
         if(m_modules.size() == 1)
         {
             ChangePhase(err);
         }
     }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+/// @fn CBroker::AllocateTimer
+/// @description Returns a handle to a timer to use for scheduling tasks.
+///     timer recycling helps prevent forest fires (and accidental branching
+/// @pre None
+/// @post A handle to a timer is returned.
+///////////////////////////////////////////////////////////////////////////////
+CBroker::TimerHandle CBroker::AllocateTimer(CBroker::ModuleIdent module)
+{
+    CBroker::TimerHandle myhandle;
+    boost::asio::deadline_timer* t = new boost::asio::deadline_timer(m_ioService);
+    RegisterModule(module);
     myhandle = m_handlercounter;
     m_handlercounter++;
+    m_allocs.insert(CBroker::TimerAlloc::value_type(myhandle,module));
     m_timers.insert(CBroker::TimersMap::value_type(myhandle,t));
-    m_timers[myhandle]->expires_from_now(wait);
-    s = boost::bind(&CBroker::ScheduledTask,this,module,x,myhandle,boost::asio::placeholders::error);
-    //m_timers[myhandle]->async_wait(s);
     return myhandle;
 }
 
+///////////////////////////////////////////////////////////////////////////////
+/// @fn CBroker::Schedule
+/// @description Given a binding to a function that should be run into the
+///   future, prepares it to be run... in the future.
+/// @pre None
+/// @post A function is scheduled to be called in the future.
+///////////////////////////////////////////////////////////////////////////////
+void CBroker::Schedule(CBroker::TimerHandle h,
+    boost::posix_time::time_duration wait, CBroker::Scheduleable x)
+{
+    CBroker::Scheduleable s;
+    m_timers[h]->expires_from_now(wait);
+    s = boost::bind(&CBroker::ScheduledTask,this,x,h,boost::asio::placeholders::error);
+    Logger::Notice<<"Scheduled task for timer "<<h<<std::endl;
+    m_timers[h]->async_wait(s);
+}
+
+void CBroker::Schedule(ModuleIdent m, BoundScheduleable x)
+{
+    RegisterModule(m);
+    m_ready[m].push_back(x);
+    if(!m_busy)
+    {
+        Logger::Notice<<"Started Worker"<<std::endl;
+        Worker();
+    }
+    Logger::Notice<<"Module "<<m<<" now has queue size: "<<m_ready[m].size()<<std::endl;
+    Logger::Notice<<"Scheduled task (NODELAY) for "<<m<<std::endl;
+}
 ///////////////////////////////////////////////////////////////////////////////
 /// @fn CBroker::ChangePhase
 /// @description This task will mark to the schedule that it is time to change
@@ -209,6 +250,18 @@ void CBroker::ChangePhase(const boost::system::error_code &err)
     {
         m_phase = 0;
     }
+    Logger::Notice<<"Changed phase to m_modules["<<m_phase<<"]";
+    if(m_modules.size() > 0)
+    {
+        Logger::Notice<<"="<<m_modules[m_phase];
+    }
+    Logger::Notice<<std::endl;
+    //If the worker isn't going, start him again when you change phases.
+    if(!m_busy)
+    {
+        Logger::Notice<<"Started Worker"<<std::endl;
+        Worker();
+    }
     m_phasetimer.expires_from_now(boost::posix_time::seconds(3));
     m_phasetimer.async_wait(boost::bind(&CBroker::ChangePhase,this,
         boost::asio::placeholders::error));
@@ -222,16 +275,19 @@ void CBroker::ChangePhase(const boost::system::error_code &err)
 /// @pre A task is scheduled for execution
 /// @post The task is entered into th ready queue. 
 ///////////////////////////////////////////////////////////////////////////////
-void CBroker::ScheduledTask(CBroker::ModuleIdent module, CBroker::Scheduleable x, CBroker::TimerHandle handle, const boost::system::error_code &err)
+void CBroker::ScheduledTask(CBroker::Scheduleable x, CBroker::TimerHandle handle,
+    const boost::system::error_code &err)
 {
+    ModuleIdent module = m_allocs[handle];
+    Logger::Notice<<"Handle finished: "<<handle<<" For module "<<module<<std::endl;
     // First, prepare another bind, which uses the given error
-    CBroker::BoundScheduleable y=boost::bind(x,err);
+    CBroker::BoundScheduleable y = boost::bind(x,err);
     // Put it into the ready queue
     m_ready[module].push_back(y);
-    delete m_timers[handle];
-    m_timers.erase(handle);
+    Logger::Notice<<"Module "<<module<<" now has queue size: "<<m_ready[module].size()<<std::endl;
     if(!m_busy)
     {
+        Logger::Notice<<"Started Worker"<<std::endl;
         Worker();
     }
 }
@@ -255,6 +311,7 @@ void CBroker::Worker()
     std::string active = m_modules[m_phase];
     if(m_ready[active].size() > 0)
     {
+        Logger::Notice<<"Performing Job"<<std::endl;
         // Mark that the worker has something to do
         m_busy = true;
         // Extract the first item from the work queue:
@@ -268,6 +325,7 @@ void CBroker::Worker()
     else
     {
         m_busy = false;
+        Logger::Notice<<"Worker Idle"<<std::endl;
     }
 }
 

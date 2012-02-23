@@ -65,7 +65,7 @@ CDispatcher::CDispatcher()
 /// @post Message delievered to a module
 /// @param msg The message to distribute to modules
 ///////////////////////////////////////////////////////////////////////////////
-void CDispatcher::HandleRequest(CMessage msg)
+void CDispatcher::HandleRequest(CBroker &broker, CMessage msg)
 {
     Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
     ptree sub_;
@@ -116,7 +116,9 @@ void CDispatcher::HandleRequest(CMessage msg)
                 {
                     try
                     {
-                        (mapIt_->second)->HandleRead(msg);
+                        CBroker::BoundScheduleable x = boost::bind(&CDispatcher::ReadHandlerCallback,
+                            this, mapIt_->second, msg);
+                        broker.Schedule(m_handlerToModule[mapIt_->second],x);
                     }
                     catch( boost::property_tree::ptree_bad_path &e )
                     {
@@ -130,8 +132,9 @@ void CDispatcher::HandleRequest(CMessage msg)
                         mapIt_ != m_readHandlers.upper_bound(key_);
                         ++mapIt_ )
                 {
-                    // XXX Not sure if the handler needs the full message
-                    (mapIt_->second)->HandleRead(msg);
+                    CBroker::BoundScheduleable x = boost::bind(&CDispatcher::ReadHandlerCallback,
+                        this, mapIt_->second, msg);
+                    broker.Schedule(m_handlerToModule[mapIt_->second],x);
                 }
 
                 if( m_readHandlers.lower_bound( key_ ) == 
@@ -158,6 +161,11 @@ void CDispatcher::HandleRequest(CMessage msg)
             << std::endl << "\t" << e.what() << std::endl;
     }
 
+}
+
+void CDispatcher::ReadHandlerCallback(IReadHandler *h, CMessage msg)
+{
+    (h)->HandleRead(msg);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -243,8 +251,8 @@ void CDispatcher::HandleWrite( ptree &p_mesg )
 ///   would like to recieve.
 /// @param p_handler The module which will be called to recieve the message.
 ///////////////////////////////////////////////////////////////////////////////
-void CDispatcher::RegisterReadHandler( const std::string &p_type,
-        IReadHandler *p_handler )
+void CDispatcher::RegisterReadHandler(const std::string &module, const std::string &p_type,
+        IReadHandler *p_handler)
 {
     Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
 
@@ -253,8 +261,9 @@ void CDispatcher::RegisterReadHandler( const std::string &p_type,
         boost::lock_guard< boost::mutex > scopedLock_( m_rMutex );
         m_readHandlers.insert(
                 std::pair< const std::string, IReadHandler *>
-                    (p_type, p_handler)
-        );
+                    (p_type, p_handler));
+        m_handlerToModule.insert(std::pair<IReadHandler *,
+                const std::string>(p_handler,module));
     }
 }
 
@@ -269,7 +278,7 @@ void CDispatcher::RegisterReadHandler( const std::string &p_type,
 ///   should be touched.
 /// @param p_handler The module that will be invoked to perform the touch
 ///////////////////////////////////////////////////////////////////////////////
-void CDispatcher::RegisterWriteHandler( const std::string &p_type,
+void CDispatcher::RegisterWriteHandler(const std::string &module, const std::string &p_type,
         IWriteHandler *p_handler )
 {
     Logger::Debug << __PRETTY_FUNCTION__ << std::endl;

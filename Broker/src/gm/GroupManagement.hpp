@@ -80,7 +80,7 @@ class GMAgent
     /// Default constructor
     GMAgent();
     /// Constructor for using this object as a module.
-    GMAgent(std::string uuid_, boost::asio::io_service &ios, freedm::broker::CDispatcher &p_dispatch, freedm::broker::CConnectionManager &m_conManager);
+    GMAgent(std::string uuid_, freedm::broker::CBroker &broker);
     /// Copy constructor for the module
     GMAgent(const GMAgent&);
     /// Copy constructor for the module
@@ -185,9 +185,9 @@ class GMAgent
     /// A mutex to make the timers threadsafe
     boost::interprocess::interprocess_mutex m_timerMutex;
     /// A timer for stepping through the election process
-    deadline_timer m_timer;
+    freedm::broker::CBroker::TimerHandle m_timer;
     /// What I like to call the TRANSIENT ELIMINATOR
-    deadline_timer m_transient;
+    //deadline_timer m_transient;
     
     // Testing Functionality:
     /// Counts the number of elections
@@ -211,6 +211,9 @@ class GMAgent
     boost::posix_time::time_duration CHECK_TIMEOUT;
     boost::posix_time::time_duration TIMEOUT_TIMEOUT;
     boost::posix_time::time_duration GLOBAL_TIMEOUT;
+
+    //The broker!
+    freedm::broker::CBroker& m_broker;
 };
 
   }

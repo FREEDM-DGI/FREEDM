@@ -42,19 +42,20 @@
 #ifndef FREEDM_BROKER_HPP
 #define FREEDM_BROKER_HPP
 
-#include "CConnection.hpp"
 #include "CListener.hpp"
-#include "CReliableConnection.hpp"
 #include "CConnectionManager.hpp"
-#include "CDispatcher.hpp"
 
 #include <boost/asio.hpp>
 #include <boost/asio/deadline_timer.hpp>
 #include <string>
 #include <boost/noncopyable.hpp>
+#include <boost/function.hpp>
+#include <list>
 
 namespace freedm {
     namespace broker {
+
+class CDispatcher;
 
 /// Central monolith of the Broker Architecture.
 class CBroker : private boost::noncopyable
@@ -66,6 +67,7 @@ public:
     typedef std::vector<ModuleIdent> ModuleVector;
     typedef unsigned int PhaseMarker;
     typedef unsigned int TimerHandle;
+    typedef std::map<TimerHandle, ModuleIdent> TimerAlloc;
     typedef std::map<TimerHandle, boost::asio::deadline_timer* > TimersMap;
     typedef std::map<ModuleIdent, std::list< BoundScheduleable > > ReadyMap;
 
@@ -74,6 +76,9 @@ public:
     explicit CBroker(const std::string& address, const std::string& port,
                    CDispatcher& p_dispatch, boost::asio::io_service &m_ios,
                    freedm::broker::CConnectionManager &m_conMan);
+
+    /// Terminate the timers since they are pointers.
+    ~CBroker();
 
     /// Run the Server's io_service loop.
     void Run();
@@ -88,12 +93,27 @@ public:
     void HandleStop();
     
     /// Schedule a task
-    TimerHandle Schedule(std::string module, boost::posix_time::time_duration wait, Scheduleable x);
+    void Schedule(TimerHandle h, boost::posix_time::time_duration wait, Scheduleable x);
+    
+    /// Schedule a task
+    void Schedule(ModuleIdent m, BoundScheduleable x);
+
+    /// Allocate a timer
+    TimerHandle AllocateTimer(ModuleIdent module);
 
     /// Mark that you should try and cancel some timer
-    void CancelTimer(unsigned int timer_handler);
+    void CancelTimer(ModuleIdent handle);
+
+    /// Access the connection manager
+    CConnectionManager& GetConnectionManager() { return m_connManager; };
+    
+    /// Access The dispatcher
+    CDispatcher& GetDispatcher() { return m_dispatch; };
 
 private:
+    /// Registers a module for the scheduler
+    void RegisterModule(ModuleIdent m);
+
     /// Handle completion of an asynchronous accept operation.
     void HandleAccept(const boost::system::error_code& e);
 
@@ -113,7 +133,7 @@ private:
     void ChangePhase(const boost::system::error_code &err);
 
     ///Check to see if the scheduled task should actually be run.
-    void ScheduledTask(ModuleIdent module, Scheduleable x, TimerHandle handle, const boost::system::error_code &err);
+    void ScheduledTask(Scheduleable x, TimerHandle handle, const boost::system::error_code &err);
 
     ///Verify the queue is empty
     void Worker();
@@ -132,6 +152,9 @@ private:
 
     ///The current counter for the time handlers
     TimerHandle m_handlercounter;
+
+    ///How the timers are allocated.
+    TimerAlloc m_allocs;    
 
     ///A list of timers used for scheduling
     TimersMap m_timers;

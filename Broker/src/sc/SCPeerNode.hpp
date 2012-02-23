@@ -61,11 +61,8 @@ namespace freedm
 class SCPeerNode : public IPeerNode
 {
     public:
-        SCPeerNode(std::string uuid, ConnManagerPtr connmgr,
-                   boost::asio::io_service& ios,
-                   freedm::broker::CDispatcher& dispatch):
-            IPeerNode(uuid, connmgr, ios, dispatch) {};
-
+        SCPeerNode(std::string uuid, ConnManagerPtr connmgr):
+            IPeerNode(uuid, connmgr) {};
 };
 
 } // End freedm

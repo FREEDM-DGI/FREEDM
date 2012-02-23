@@ -41,7 +41,7 @@ namespace po = boost::program_options;
 #include "CDispatcher.hpp"
 #include "CBroker.hpp"
 #include "gm/GroupManagement.hpp"
-//#include "lb/LoadBalance.hpp"
+#include "lb/LoadBalance.hpp"
 #include "sc/CStateCollection.hpp"
 #include "CConnectionManager.hpp"
 #include "device/CPhysicalDeviceManager.hpp"
@@ -342,9 +342,8 @@ int main(int argc, char* argv[])
         GMAgent GM_ (uuidstr, broker_);
         dispatch_.RegisterReadHandler("gm", "gm", &GM_);
         // Instantiate and register the power management module
-        lbAgent LB_(uuidstr, broker_.GetIOService(), dispatch_, m_conManager,
-                m_phyManager);
-        dispatch_.RegisterReadHandler("lb", &LB_);
+        lbAgent LB_ (uuidstr, broker_, m_phyManager);
+        dispatch_.RegisterReadHandler("lb", "lb", &LB_);
         // Instantiate and register the state collection module
         SCAgent SC_ (uuidstr, broker_, m_phyManager);
         dispatch_.RegisterReadHandler("sc", "any", &SC_);

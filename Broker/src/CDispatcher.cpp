@@ -88,7 +88,9 @@ void CDispatcher::HandleRequest(CBroker &broker, CMessage msg)
         {
             try
             {
-                (mapIt_->second)->HandleRead( msg );
+                CBroker::BoundScheduleable x = boost::bind(&CDispatcher::ReadHandlerCallback,
+                    this, mapIt_->second, msg);
+                broker.Schedule(m_handlerToModule[mapIt_->second],x);
             }
             catch( boost::property_tree::ptree_bad_path &e )
             {

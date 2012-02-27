@@ -65,10 +65,6 @@ public:
     /// Convenience type for a shared pointer to self
     typedef boost::shared_ptr<CDevice> DevicePtr;
     
-    /// Constructor which takes a manager, identifier, and internal structure
-    CDevice( CPhysicalDeviceManager & manager, Identifier device,
-        IDeviceStructure::DevicePtr structure );
-    
     /// Virtual destructor for derived classes
     virtual ~CDevice() {}
     
@@ -96,6 +92,10 @@ public:
     /// Gets the device identifier
     const Identifier & GetID() const;
 protected:
+    /// Constructor which takes a manager, identifier, and internal structure
+    CDevice( CPhysicalDeviceManager & manager, Identifier device,
+        IDeviceStructure::DevicePtr structure );
+
     /// Device manager that handles the device
     CPhysicalDeviceManager & m_manager;
     

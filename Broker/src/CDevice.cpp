@@ -32,7 +32,7 @@ namespace device {
 
 ////////////////////////////////////////////////////////////////////////////////
 /// CDevice( CPhysicalDeviceManager &, Identifier, IDeviceStructure::DevicePtr )
-/// @description Constructors a device from the provided arguments
+/// @description Constructs a device from the provided arguments
 /// @pre none
 /// @post CDevice object created and initialized
 /// @param manager The device manager that will handle the device

@@ -7,7 +7,7 @@
 ///
 /// @project   FREEDM DGI
 ///
-/// @description Handles access and distrobution of physical devices.
+/// @description Handles access and distribution of physical devices.
 ///
 /// @license
 /// These source code files were created at as part of the

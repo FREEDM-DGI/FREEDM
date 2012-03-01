@@ -1,7 +1,7 @@
 //////////////////////////////////////////////////////////
 /// @file         GroupManagement.hpp
 ///
-/// @author       Derek Ditch <derek.ditch@mst.edu>,
+/// @author       Derek Ditch <derek.ditch@mst.edu>
 ///               Stephen Jackson <scj7t4@mst.edu>
 ///
 /// @compiler     C++
@@ -95,7 +95,7 @@ class GMAgent
     bool IsCoordinator() const { return (Coordinator() == GetUUID()); };
 
     // Handlers
-    /// Handles recieving incoming messages.
+    /// Handles receiving incoming messages.
     virtual void HandleRead(broker::CMessage msg );
     
     //Routines
@@ -154,7 +154,7 @@ class GMAgent
     /// Outputs information about the current state to the logger.
     void SystemState();
     /// Start the monitor after transient is over
-    void StartMonitor( const boost::system::error_code& err );
+    void StartMonitor(); // had parameter const boost::system::error_code& err
     /// Returns the coordinators uuid.
     std::string Coordinator() const { return m_GroupLeader; }
     
@@ -170,7 +170,7 @@ class GMAgent
     PeerSet m_AYTResponse;
     
     // Mutex for protecting the m_UpNodes above
-  	boost::mutex pList_Mutex;
+    boost::mutex pList_Mutex;
     
     /// The ID number of the current group (Never initialized for fun)
     unsigned int m_GroupID;

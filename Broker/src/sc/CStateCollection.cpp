@@ -109,11 +109,11 @@ SCAgent::SCAgent(std::string uuid, boost::asio::io_service &ios,
                  freedm::broker::CConnectionManager &m_connManager,
                  freedm::broker::CPhysicalDeviceManager &m_phyManager):
     SCPeerNode(uuid, m_connManager, ios, p_dispatch),
-    m_phyDevManager(m_phyManager),
-    m_TimeoutTimer(ios),
-    m_curversion("default", 0),
     countstate(0),
-    NotifyToSave(false)
+    NotifyToSave(false),
+    m_curversion("default", 0),
+    m_phyDevManager(m_phyManager),
+    m_TimeoutTimer(ios)
 {
     Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
     PeerNodePtr self_(this);

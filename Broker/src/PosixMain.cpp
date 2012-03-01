@@ -222,7 +222,7 @@ int main (int argc, char* argv[])
             std::cout << basename(argv[0])
                       << " (FREEDM DGI Revision "
                       << BROKER_VERSION << ")" << std::endl
-                      << "Copyright (C) 2011 Missouri S & T. "
+                      << "Copyright (C) 2012 Missouri S&T. "
                       << "All rights reserved."
                       << std::endl;
             return 0;
@@ -252,7 +252,7 @@ int main (int argc, char* argv[])
         CGlobalConfiguration::instance().SetListenPort(port_);
         CGlobalConfiguration::instance().SetListenAddress(listenIP_);
         //constructors for initial mapping
-        broker::CConnectionManager m_conManager(u_,std::string(hostname_));
+        broker::CConnectionManager m_conManager;
         broker::CPhysicalDeviceManager m_phyManager;
         broker::ConnectionPtr m_newConnection;
         boost::asio::io_service m_ios;
@@ -272,7 +272,7 @@ int main (int argc, char* argv[])
             {
                 int idx_ = devid.find(':');
                 
-                if( idx_ != std::string::npos )
+                if( idx_ != static_cast<int>(std::string::npos) )
                 {
                     std::string DevName_(devid.begin(), devid.begin() + idx_),
                         DevType_(devid.begin() + (idx_ + 1), devid.end());
@@ -354,9 +354,9 @@ int main (int argc, char* argv[])
             {
                 int idx_ = s_.find(':');
                 
-                if ( idx_ == std::string::npos )
+                if ( idx_ == static_cast<int>(std::string::npos) )
                 {   // Not found!
-                    std::cerr << "Uncorrectly formatted host in config file: "<<
+                    std::cerr << "Incorrectly formatted host in config file: "<<
                               s_ << std::endl;
                     continue;
                 }

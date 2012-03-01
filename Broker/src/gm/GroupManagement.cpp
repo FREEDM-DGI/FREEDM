@@ -91,7 +91,7 @@ namespace freedm {
 /// StartMonitor
 /// Sets all the monitor variables to a state ready for data collection
 ///////////////////////////////////////////////////////////////////////////////
-void GMAgent::StartMonitor( const boost::system::error_code& err )
+void GMAgent::StartMonitor()
 {
     m_electiontimer.Reset();
     m_ingrouptimer.Reset();
@@ -1153,7 +1153,10 @@ int GMAgent::Run()
     //m_localservice.post(boost::bind(&GMAgent::Recovery,this));
     //m_localservice.run();
     m_transient.expires_from_now( boost::posix_time::seconds(60) );
-    m_transient.async_wait( boost::bind(&GMAgent::StartMonitor, this, boost::asio::placeholders::error));
+    m_transient.async_wait( boost::bind(&GMAgent::StartMonitor, this));
+    // Replace with this call if StartMonitor ever takes an error code again:
+    //m_transient.async_wait( boost::bind(&GMAgent::StartMonitor, this, 
+    //    boost::asio::placeholders::error));
     return 0;
 }
 

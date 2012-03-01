@@ -1,5 +1,5 @@
 ////////////////////////////////////////////////////////////////////
-/// @file      CConnection.hpp
+/// @file      CConnectionManager.hpp
 ///
 /// @author    Derek Ditch <derek.ditch@mst.edu>
 ///            Stephen Jackson <scj7t4@mst.edu>
@@ -28,8 +28,8 @@
 ///
 /// Suggested modifications or questions about these codes
 /// can be directed to Dr. Bruce McMillin, Department of
-/// Computer Science, Missour University of Science and
-/// Technology, Rolla, /// MO  65409 (ff@mst.edu).
+/// Computer Science, Missouri University of Science and
+/// Technology, Rolla, MO 65409 (ff@mst.edu).
 ///
 ////////////////////////////////////////////////////////////////////
 #ifndef CONNECTIONMANAGER_HPP
@@ -67,8 +67,8 @@ public:
     /// Typedef for the map which handles uuid to connection 
     typedef boost::bimap<std::string, ConnectionPtr> connectionmap;
 
-    /// Initialize the connection manager with the node uuid.
-    CConnectionManager(freedm::uuid uuid, std::string hostname);
+    /// Initialize the connection manager with the uuid from global configuation
+    CConnectionManager();
 
     /// Connection manager teardown.
     ~CConnectionManager() {  };

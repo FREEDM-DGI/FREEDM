@@ -133,19 +133,19 @@ CMessage::CMessage( CMessage::StatusType p_stat)
 
 /// Copy Constructor
 CMessage::CMessage( const CMessage &p_m ) :
-    m_srcUUID( p_m.m_srcUUID ),
-    m_status( p_m.m_status ),
     m_submessages( p_m.m_submessages ),
     m_remotehost( p_m.m_remotehost ),
     m_sequenceno( p_m.m_sequenceno ),
+    m_srcUUID( p_m.m_srcUUID ),
+    m_status( p_m.m_status ),
     m_properties( p_m.m_properties ),
     m_protocol( p_m.m_protocol ),
+    m_never_expires( p_m.m_never_expires ),
     m_sendtime( p_m.m_sendtime ),
-    m_expiretime( p_m.m_expiretime ),
-    m_never_expires( p_m.m_never_expires ) 
+    m_expiretime( p_m.m_expiretime )
 {
     Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
-};
+}
 
 /// Cmessage Equals operator
 CMessage& CMessage::operator = ( const CMessage &p_m )

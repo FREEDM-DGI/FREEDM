@@ -127,7 +127,7 @@ void CSRConnection::Send(CMessage msg)
 ///////////////////////////////////////////////////////////////////////////////
 /// CSRConnection::CSRConnection
 /// @description Handles refiring ACKs and Sent Messages.
-/// @pre The connection has recieved or sent at least one message.
+/// @pre The connection has received or sent at least one message.
 /// @post One of the following conditions or combination of states is 
 ///       upheld:
 ///       1) An ack for a message that has not yet expired has been resent and
@@ -139,14 +139,13 @@ void CSRConnection::Send(CMessage msg)
 ///       4) A message expired and then next message will cause the sequence
 ///          numbers to wrap, (or they have wrapped since the last time a message
 ///          was successfully sent) so a sync is inserted at the front of the queue
-///          to skip that case on the reciever side. The sendkill flag is cleared
+///          to skip that case on the receiver side. The sendkill flag is cleared
 ///          and the sendkill value is cleared.
 ///       5) If there is still a message to resend, the timer is reset.
 /// @param err The timer error code. If the err is 0 then the timer expired
 ///////////////////////////////////////////////////////////////////////////////
 void CSRConnection::Resend(const boost::system::error_code& err)
 {
-    unsigned int oldfront = 0;
     Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
     if(!err)
     {
@@ -164,10 +163,6 @@ void CSRConnection::Resend(const boost::system::error_code& err)
                 m_timeout.async_wait(boost::bind(&CSRConnection::Resend,this,
                     boost::asio::placeholders::error));
             }
-        }
-        if(m_window.size() > 0)
-        {
-            oldfront = m_window.front().GetSequenceNumber();
         }
         while(m_window.size() > 0 && m_window.front().IsExpired())
         {
@@ -192,8 +187,8 @@ void CSRConnection::Resend(const boost::system::error_code& err)
             }
             if(m_sendkills)
             {
-                // kill will be set to the last message accepted by reciever
-                // (and whose ack has been recieved)
+                // kill will be set to the last message accepted by receiver
+                // (and whose ack has been received)
                 ptree x;
                 x.put("src.kill",m_sendkill);
                 m_window.front().SetProtocolProperties(x);

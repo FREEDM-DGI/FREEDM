@@ -52,20 +52,18 @@ namespace broker {
 /// @description: Initializes the connection manager object
 /// @pre None
 /// @post Connection manager is ready for use
-/// @param uuid: The uuid of this node
-/// @param hostname: the hostname of this node
 ///////////////////////////////////////////////////////////////////////////////
-CConnectionManager::CConnectionManager(freedm::uuid uuid, std::string hostname)
+CConnectionManager::CConnectionManager()
 {
     Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
     m_uuid = CGlobalConfiguration::instance().GetUUID();
     m_hostname.hostname = CGlobalConfiguration::instance().GetHostname();
     m_hostname.port = CGlobalConfiguration::instance().GetListenPort();
-};
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 /// @fn CConnectionManager::Start
-/// @description Performs intialization of a connection.
+/// @description Performs initialization of a connection.
 /// @pre The connection c has not been started.
 /// @post The connection c has been started.
 /// @param c A connection pointer that has not been started.

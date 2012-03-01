@@ -1,7 +1,8 @@
 ////////////////////////////////////////////////////////////////////
 /// @file      CSUConnection.cpp
 ///
-/// @author    Derek Ditch <derek.ditch@mst.edu>, Stephen Jackson <scj7t4@mst.edu>
+/// @author    Derek Ditch <derek.ditch@mst.edu>
+///            Stephen Jackson <scj7t4@mst.edu>
 ///
 /// @compiler  C++
 ///
@@ -68,7 +69,8 @@ void CSUConnection::Send(CMessage msg)
     m_outseq = (m_outseq+1) % SEQUENCE_MODULO;
 
     outmsg.SetSourceUUID(GetConnection()->GetConnectionManager().GetUUID());
-    outmsg.SetSourceHostname(GetConnection()->GetConnectionManager().GetHostname());
+    outmsg.SetSourceHostname(
+            GetConnection()->GetConnectionManager().GetHostname());
     outmsg.SetProtocol(GetIdentifier());
     outmsg.SetSendTimestampNow();
 
@@ -99,7 +101,7 @@ void CSUConnection::Resend(const boost::system::error_code& err)
         {
             QueueItem f = m_window.front();
             m_window.pop_front();
-            if(f.ret > 0 && writes < WINDOW_SIZE)
+            if(f.ret > 0 && writes < static_cast<int>(WINDOW_SIZE))
             {        
                 Write(f.msg);
                 writes++;

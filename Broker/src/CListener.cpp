@@ -1,6 +1,6 @@
 
 ////////////////////////////////////////////////////////////////////
-/// @file      CConnection.cpp
+/// @file      CListener.cpp
 ///
 /// @author    Derek Ditch <derek.ditch@mst.edu>
 ///            Christopher M. Kohlhoff <chris@kohlhoff.com> (Boost Example)
@@ -71,17 +71,19 @@ CListener::CListener(boost::asio::io_service& p_ioService,
 
 ///////////////////////////////////////////////////////////////////////////////
 /// @fn CListener::Start
-/// @description: Starts the recieve routine which causes this socket to behave
+/// @description: Starts the receive routine which causes this socket to behave
 ///   as a listener.
 /// @pre The object is initialized.
 /// @post The connection is asynchronously waiting for messages.
 ///////////////////////////////////////////////////////////////////////////////
+
 void CListener::Start()
 {
     Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
-    GetSocket().async_receive_from(boost::asio::buffer(m_buffer, 8192), m_endpoint,
-        boost::bind(&CListener::HandleRead, this,
-            boost::asio::placeholders::error, boost::asio::placeholders::bytes_transferred));
+    GetSocket().async_receive_from(boost::asio::buffer(m_buffer, 8192),
+            m_endpoint, boost::bind(&CListener::HandleRead, this,
+            boost::asio::placeholders::error,
+            boost::asio::placeholders::bytes_transferred));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -110,7 +112,8 @@ void CListener::Stop()
 ///   their appropriate places by the dispatcher. The incoming sequence number
 ///   for the source UUID has been incremented appropriately.
 ///////////////////////////////////////////////////////////////////////////////
-void CListener::HandleRead(const boost::system::error_code& e, std::size_t bytes_transferred)
+void CListener::HandleRead(const boost::system::error_code& e, 
+                           std::size_t bytes_transferred)
 {
     Logger::Debug << __PRETTY_FUNCTION__ << std::endl;       
     if (!e)
@@ -130,14 +133,16 @@ void CListener::HandleRead(const boost::system::error_code& e, std::size_t bytes
             CConnection::ConnectionPtr conn;
             conn = GetConnectionManager().GetConnectionByUUID(uuid,
                 GetSocket().get_io_service(), GetDispatcher());
-            #ifdef CUSTOMNETWORK
+#ifdef CUSTOMNETWORK
             if((rand()%100) >= GetReliability())
             {
                 Logger::Debug<<"Dropped datagram "<<m_message.GetHash()<<":"
                               <<m_message.GetSequenceNumber()<<std::endl;
                 goto listen;
             }
-            #endif
+#else
+#pragma GCC diagnostic ignored "-Wunused-label"
+#endif
             if(m_message.GetStatus() == freedm::broker::CMessage::Accepted)
             {
                 ptree pp = m_message.GetProtocolProperties();
@@ -158,10 +163,11 @@ void CListener::HandleRead(const boost::system::error_code& e, std::size_t bytes
                               <<m_message.GetSequenceNumber()<<std::endl;
             }
         }
-        listen:
-        GetSocket().async_receive_from(boost::asio::buffer(m_buffer, 8192), m_endpoint,
-            boost::bind(&CListener::HandleRead, this,
-                boost::asio::placeholders::error, boost::asio::placeholders::bytes_transferred)); 
+listen:
+        GetSocket().async_receive_from(boost::asio::buffer(m_buffer, 8192),
+                m_endpoint, boost::bind(&CListener::HandleRead, this,
+                boost::asio::placeholders::error,
+                boost::asio::placeholders::bytes_transferred));
     }
     else
     {

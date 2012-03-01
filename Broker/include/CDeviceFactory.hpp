@@ -63,12 +63,12 @@ class CDeviceFactory
         void CreateDevice( const Identifier & device )
         {
             IDeviceStructure::DevicePtr ds;
-            CDevice::DevicePtr dev;
+            IDevice::DevicePtr dev;
             // create and register the device structure
             ds = CreateStructure();
             ds->Register(device);
             // create the new device from the structure
-            dev = CDevice::DevicePtr( new DeviceType( m_manager, device, ds ) );
+            dev = IDevice::DevicePtr( new DeviceType( m_manager, device, ds ) );
             // add the device to the manager
             m_manager.AddDevice(dev);
         }

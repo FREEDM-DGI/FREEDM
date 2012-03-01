@@ -44,7 +44,7 @@ namespace device {
 
 /// Common implementation of LWI devices
 class CDeviceLWI
-    : public virtual CDevice
+    : public virtual IDevice
 {
 public:
     /// Convenience type for a shared pointer to self
@@ -53,7 +53,7 @@ public:
     /// Constructor which takes a manager, identifier, and internal structure
     CDeviceLWI( CPhysicalDeviceManager & manager, Identifier device,
         IDeviceStructure::DevicePtr structure )
-        : CDevice(manager,device,structure)
+        : IDevice(manager,device,structure)
         {}
     
     /// Virtual destructor for derived classes
@@ -81,7 +81,7 @@ public:
     /// Constructor which takes a manager, identifier, and internal structure
     CDeviceLWI_Battery( CPhysicalDeviceManager & manager, Identifier device,
         IDeviceStructure::DevicePtr structure )
-        : CDevice(manager,device,structure)
+        : IDevice(manager,device,structure)
         , CDeviceLWI(manager,device,structure)
         , CDeviceDESD(manager,device,structure)
         {}
@@ -102,7 +102,7 @@ public:
     /// Constructor which takes a manager, identifier, and internal structure
     CDeviceLWI_Load( CPhysicalDeviceManager & manager, Identifier device,
         IDeviceStructure::DevicePtr structure )
-        : CDevice(manager,device,structure)
+        : IDevice(manager,device,structure)
         , CDeviceLWI(manager,device,structure)
         , CDeviceLOAD(manager,device,structure)
         {}
@@ -123,7 +123,7 @@ public:
     /// Constructor which takes a manager, identifier, and internal structure
     CDeviceLWI_PV( CPhysicalDeviceManager & manager, Identifier device,
         IDeviceStructure::DevicePtr structure )
-        : CDevice(manager,device,structure)
+        : IDevice(manager,device,structure)
         , CDeviceLWI(manager,device,structure)
         , CDeviceDRER(manager,device,structure)
         {}

@@ -33,7 +33,7 @@
 #ifndef PHYSICALDEVICEMANAGER_HPP
 #define PHYSICALDEVICEMANAGER_HPP
 
-#include "CDevice.hpp"
+#include "IDevice.hpp"
 
 #include <string>
 #include <map>
@@ -51,14 +51,14 @@ class CPhysicalDeviceManager
 public:
     /// A typedef for the mapping of identifier to device ptrs
     typedef std::map<device::Identifier,
-                     device::CDevice::DevicePtr> PhysicalDeviceSet;
-    /// A typedef providing and iertaror for this object
+                     device::IDevice::DevicePtr> PhysicalDeviceSet;
+    /// A typedef providing an iteraator for this object
     typedef PhysicalDeviceSet::iterator iterator;
     /// Initialize the physical device manger
     CPhysicalDeviceManager();
 
     /// Add the specified device to the manager.
-    void AddDevice(device::CDevice::DevicePtr resource);
+    void AddDevice(device::IDevice::DevicePtr resource);
 
     /// Remove a device by its identifier 
     void RemoveDevice(device::Identifier devid);
@@ -68,7 +68,7 @@ public:
     iterator end() { return m_devices.end(); };
 
     /// Get A Device By ID
-    device::CDevice::DevicePtr GetDevice(device::Identifier devid);
+    device::IDevice::DevicePtr GetDevice(device::Identifier devid);
 
     /// Tests to see if a device exists
     bool DeviceExists(device::Identifier devid) const;

@@ -1,5 +1,5 @@
 ////////////////////////////////////////////////////////////////////////////////
-/// @file           CDevice.hpp
+/// @file           IDevice.hpp
 ///
 /// @author         Stephen Jackson <scj7t4@mst.edu>
 ///                 Thomas Roth <tprfh7@mst.edu>
@@ -8,7 +8,7 @@
 ///
 /// @project        FREEDM DGI
 ///
-/// @description    Physical device class with variable implementation
+/// @description    Physical device interface with variable implementations.
 ///
 /// @license
 /// These source code files were created at the Missouri University of Science
@@ -25,8 +25,8 @@
 /// Science and Technology, Rolla, MO 65401 <ff@mst.edu>.
 ////////////////////////////////////////////////////////////////////////////////
 
-#ifndef C_DEVICE_HPP
-#define C_DEVICE_HPP
+#ifndef I_DEVICE_HPP
+#define I_DEVICE_HPP
 
 #include <boost/noncopyable.hpp>
 #include <boost/shared_ptr.hpp>
@@ -56,17 +56,17 @@ boost::shared_ptr<TargetType> device_cast( ObjectType object )
 }
 
 /// Physical device with implementation delegated to private member
-class CDevice
+class IDevice
     : public IDeviceGet
     , public IDeviceSet
     , private boost::noncopyable
 {
 public:
     /// Convenience type for a shared pointer to self
-    typedef boost::shared_ptr<CDevice> DevicePtr;
+    typedef boost::shared_ptr<IDevice> DevicePtr;
     
     /// Virtual destructor for derived classes
-    virtual ~CDevice() {}
+    virtual ~IDevice() {}
     
     /// Gets the setting of some key from the structure
     virtual SettingValue Get( const SettingKey & key );
@@ -93,7 +93,7 @@ public:
     const Identifier & GetID() const;
 protected:
     /// Constructor which takes a manager, identifier, and internal structure
-    CDevice( CPhysicalDeviceManager & manager, Identifier device,
+    IDevice( CPhysicalDeviceManager & manager, Identifier device,
         IDeviceStructure::DevicePtr structure );
 
     /// Device manager that handles the device
@@ -113,4 +113,4 @@ protected:
 } // namespace broker
 } // namespace freedm
 
-#endif // C_DEVICE_HPP
+#endif //I_DEVICE_HPP

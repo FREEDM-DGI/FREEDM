@@ -58,7 +58,7 @@ CPhysicalDeviceManager::CPhysicalDeviceManager()
 ///       retrieve
 /// @param resource a IPhysicalDevice::DevicePtr to the device.
 ///////////////////////////////////////////////////////////////////////////////
-void CPhysicalDeviceManager::AddDevice(device::CDevice::DevicePtr resource)
+void CPhysicalDeviceManager::AddDevice(device::IDevice::DevicePtr resource)
 {
     m_devices[resource->GetID()] = resource;
 }
@@ -82,7 +82,7 @@ void CPhysicalDeviceManager::RemoveDevice(device::Identifier devid)
 /// @post No change
 /// @return A DevicePtr to the device, or NULL if the device wasn't found.
 ///////////////////////////////////////////////////////////////////////////////
-device::CDevice::DevicePtr CPhysicalDeviceManager::GetDevice(
+device::IDevice::DevicePtr CPhysicalDeviceManager::GetDevice(
     device::Identifier devid)
 {
     iterator di = m_devices.find(devid);
@@ -92,7 +92,7 @@ device::CDevice::DevicePtr CPhysicalDeviceManager::GetDevice(
     }
     else
     {
-        return device::CDevice::DevicePtr();
+        return device::IDevice::DevicePtr();
     }
 }
 

@@ -1,5 +1,5 @@
 ////////////////////////////////////////////////////////////////////////////////
-/// @file           CDeviceLoad.hpp
+/// @file           CDeviceDRER.hpp
 ///
 /// @author         Yaxi Liu <ylztf@mst.edu>
 ///                 Thomas Roth <tprfh7@mst.edu>
@@ -30,7 +30,7 @@
 
 #include <boost/shared_ptr.hpp>
 
-#include "CDevice.hpp"
+#include "IDevice.hpp"
 
 namespace freedm {
 namespace broker {
@@ -42,7 +42,7 @@ namespace device {
 
 /// Implementation of distributed renewable energy resources
 class CDeviceDRER
-    : public virtual CDevice
+    : public virtual IDevice
 {
 public:
     /// Convenience type for a shared pointer to self
@@ -51,7 +51,7 @@ public:
     /// Constructor which takes a manager, identifier, and internal structure
     CDeviceDRER( CPhysicalDeviceManager & manager, Identifier device,
         IDeviceStructure::DevicePtr structure )
-        : CDevice(manager,device,structure)
+        : IDevice(manager,device,structure)
         {}
     
     /// Virtual destructor for derived classes

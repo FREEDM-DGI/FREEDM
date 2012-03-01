@@ -27,7 +27,7 @@ set(
     CDeviceStructureRTDS.cpp
     CDeviceFactory.cpp
     CDeviceLWI.cpp
-    CDevice.cpp
+    IDevice.cpp
    )
 
 # set BROKER_VERSION macro : cp version.h.cmake version.h

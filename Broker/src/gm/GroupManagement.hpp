@@ -154,7 +154,7 @@ class GMAgent
     /// Outputs information about the current state to the logger.
     void SystemState();
     /// Start the monitor after transient is over
-    void StartMonitor(); // had parameter const boost::system::error_code& err
+    void StartMonitor(const boost::system::error_code& err);
     /// Returns the coordinators uuid.
     std::string Coordinator() const { return m_GroupLeader; }
     

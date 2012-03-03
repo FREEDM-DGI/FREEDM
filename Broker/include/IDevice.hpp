@@ -4,13 +4,10 @@
 /// @author         Stephen Jackson <scj7t4@mst.edu>
 ///                 Thomas Roth <tprfh7@mst.edu>
 ///
-/// @compiler       C++
-///
 /// @project        FREEDM DGI
 ///
 /// @description    Physical device interface with variable implementations.
 ///
-/// @license
 /// These source code files were created at the Missouri University of Science
 /// and Technology, and are intended for use in teaching or research. They may
 /// be freely copied, modified and redistributed as long as modified versions

@@ -251,7 +251,8 @@ int main(int argc, char* argv[])
         CGlobalConfiguration::instance().SetListenAddress(listenIP_);
         //constructors for initial mapping
         broker::CConnectionManager m_conManager;
-        broker::CPhysicalDeviceManager m_phyManager;
+        boost::shared_ptr<broker::CPhysicalDeviceManager> m_phyManager(
+                new broker::CPhysicalDeviceManager);
         broker::ConnectionPtr m_newConnection;
         boost::asio::io_service m_ios;
 
@@ -285,7 +286,7 @@ int main(int argc, char* argv[])
                     std::string DevName_(devid.begin(), devid.begin() + idx_),
                             DevType_(devid.begin() + (idx_ + 1), devid.end());
 
-                    if (m_phyManager.DeviceExists(DevName_))
+                    if (m_phyManager->DeviceExists(DevName_))
                     {
                         Logger::Warn << "Duplicate device: " << DevName_
                                 << std::endl;
@@ -316,7 +317,7 @@ int main(int argc, char* argv[])
                 }
                 else
                 {
-                    if (m_phyManager.DeviceExists(devid))
+                    if (m_phyManager->DeviceExists(devid))
                     {
                         Logger::Warn << "Duplicate device: " << devid 
                                 << std::endl;
@@ -351,10 +352,10 @@ int main(int argc, char* argv[])
         GMAgent GM_(uuidstr, broker_.GetIOService(), dispatch_, m_conManager);
         dispatch_.RegisterReadHandler("gm", &GM_);
         // Instantiate and register the power management module
-        lbAgent LB_(uuidstr, broker_.GetIOService(), dispatch_, m_conManager, m_phyManager);
+        lbAgent LB_(uuidstr, broker_.GetIOService(), dispatch_, m_conManager, *m_phyManager);
         dispatch_.RegisterReadHandler("lb", &LB_);
         // Instantiate and register the state collection module
-        SCAgent SC_(uuidstr, broker_.GetIOService(), dispatch_, m_conManager, m_phyManager);
+        SCAgent SC_(uuidstr, broker_.GetIOService(), dispatch_, m_conManager, *m_phyManager);
         dispatch_.RegisterReadHandler("any", &SC_);
 
         // The peerlist should be passed into constructors as references or pointers
@@ -431,7 +432,11 @@ int main(int argc, char* argv[])
     }
     catch (std::exception& e)
     {
-        Logger::Error << "Exception in main():" << e.what() << std::endl;
+        Logger::Error << "Exception in main():  " << e.what() << std::endl;
+    }
+    catch (std::string s) // Probably need to not be throwing strings...
+    {
+        Logger::Error << "String thrown in main():  " << s << std::endl;
     }
 
     return 0;

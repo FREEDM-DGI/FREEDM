@@ -108,7 +108,7 @@ public:
         return result;
     }
 private:
-    /// Mapping From Identifer To Device Set
+    /// Mapping From Identifier To Device Set
     PhysicalDeviceSet m_devices;
 };
 

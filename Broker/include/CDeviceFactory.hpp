@@ -62,7 +62,7 @@ class CDeviceFactory
 
 public:
     /// TODO sets the factory's device manager
-    static void SetDeviceManager(CPhysicalDeviceManager&);
+    static void SetDeviceManager(boost::shared_ptr<CPhysicalDeviceManager>);
 
 #if defined USE_DEVICE_PSCAD
     /// TODO Set the factory's line client
@@ -148,7 +148,7 @@ private:
     static CClientRTDS::RTDSPointer m_rtdsClient;
 #endif
     /// Device manager to handle created devices.
-    static CPhysicalDeviceManager* m_manager;
+    static boost::shared_ptr<CPhysicalDeviceManager> m_manager;
     /// Maps strings of device names to a factory function for that class
     static RegistryType m_deviceRegistry;
 };

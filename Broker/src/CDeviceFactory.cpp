@@ -32,17 +32,18 @@ namespace broker
 namespace device
 {
 
-// Allocate the static members
+// Allocate the static members, setting shared pointers to "null"
 
 #if defined USE_DEVICE_PSCAD
 CLineClient::TPointer CDeviceFactory::m_lineClient =
-            boost::shared_ptr<CLineClient>( ); // default to "null"
+        boost::shared_ptr<CLineClient>();
 #elif defined USE_DEVICE_RTDS
 CClientRTDS::RTDSPointer CDeviceFactory::m_rtdsClient =
-            boost::shared_ptr<CClientRTDS>( ); // default to "null"
+        boost::shared_ptr<CClientRTDS>();
 #endif
 
-CPhysicalDeviceManager* CDeviceFactory::m_manager = NULL;
+boost::shared_ptr<CPhysicalDeviceManager> CDeviceFactory::m_manager =
+        boost::shared_ptr<CPhysicalDeviceManager>();
 
 RegistryType CDeviceFactory::m_deviceRegistry;
 
@@ -59,9 +60,10 @@ RegistryType CDeviceFactory::m_deviceRegistry;
 ///
 /// @limitations None.
 ////////////////////////////////////////////////////////////////////////////////
-void CDeviceFactory::SetDeviceManager(CPhysicalDeviceManager& manager)
+void CDeviceFactory::SetDeviceManager(
+        boost::shared_ptr<CPhysicalDeviceManager> manager)
 {
-    *m_manager = manager;
+    m_manager = manager;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -87,7 +89,7 @@ void CDeviceFactory::SetDeviceManager(CPhysicalDeviceManager& manager)
 ///  client must also be set.
 ////////////////////////////////////////////////////////////////////////////////
 void CDeviceFactory::CreateDevice(const std::string deviceType,
-            const Identifier& deviceID)
+        const Identifier& deviceID)
 {
     // Ensure the specified device type exists
     if (m_deviceRegistry.find(deviceType) == m_deviceRegistry.end())

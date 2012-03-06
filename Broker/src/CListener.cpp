@@ -173,7 +173,7 @@ listen:
         GetConnectionManager().Stop(CListener::ConnectionPtr(this));	
     }
 }
-#pragma GCC diagnostic pop
+#pragma GCC diagnostic warning "-Wunused-label"
 
     } // namespace broker
 } // namespace freedm

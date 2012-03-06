@@ -78,7 +78,7 @@ class IProtocol
         /// Callback for when a write completes.
 #pragma GCC diagnostic ignored "-Wunused-parameter"
         virtual void WriteCallback(const boost::system::error_code& e) { }
-#pragma GCC diagnostic pop
+#pragma GCC diagnostic warning "-Wunused-parameter"
         /// Handles writing the message to the underlying connection
         virtual void Write(CMessage msg);
     private:

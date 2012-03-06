@@ -52,7 +52,7 @@ CDeviceFactory::CDeviceFactory( CPhysicalDeviceManager & manager,
     m_rtdsClient->Run();
 #endif
 }
-#pragma GCC diagnostic pop
+#pragma GCC diagnostic warning "-Wunused-parameter"
 
 /// Creates the internal structure of the device
 IDeviceStructure::DevicePtr CDeviceFactory::CreateStructure()

@@ -179,19 +179,19 @@ TAB_SIZE               = 4
 # will result in a user-defined paragraph with heading "Side Effects:".
 # You can put \n's in the value part of an alias to insert newlines.
 
-ALIASES                = "Limitations=\par Limitations:\n" \
-                         "limitations=\par Limitations:\n" \
-                         "IO=\par Device I/O:\n" \
-                         "Peers=\par Interaction Peers:\n" \
-                         "peers=\par Interaction Peers:\n" \
-                         "SharedMemory=\par Shared Memory Blocks:\n" \
-                         "Shared_Memory=\par Shared Memory Blocks:\n" \
-                         "ErrorHandling=\par Error Handling:\n" \
-                         "Error_Handling=\par Error Handling:\n" \
-                         "RealTime=\par Real-Time Bounds:\n" \
-                         "Real_Time=\par Real-Time Bounds:\n" \
-                         "Citations=\par Citations:\n" \
-                         "citations=\par citations:\n" \
+ALIASES                = "Limitations=\par Limitations:\n\t" \
+                         "limitations=\par Limitations:\n\t" \
+                         "IO=\par Device I/O:\n\t" \
+                         "Peers=\par Interaction Peers:\n\t" \
+                         "peers=\par Interaction Peers:\n\t" \
+                         "SharedMemory=\par Shared Memory Blocks:\n\t" \
+                         "Shared_Memory=\par Shared Memory Blocks:\n\t" \
+                         "ErrorHandling=\par Error Handling:\n\t" \
+                         "Error_Handling=\par Error Handling:\n\t" \
+                         "RealTime=\par Real-Time Bounds:\n\t" \
+                         "Real_Time=\par Real-Time Bounds:\n\t" \
+                         "Citations=\par Citations:\n\t" \
+                         "citations=\par citations:\n\t" \
                          "Description=" \
                          "description="
                          

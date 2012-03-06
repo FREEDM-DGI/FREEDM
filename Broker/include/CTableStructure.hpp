@@ -97,7 +97,7 @@ class CTableStructure
         /// p_tag is the XML tag of the table specification, eithre <command> or <state>.
         ///
         /// @limitations
-        /// Required XML Format:
+        /// Required XML Format:\verbatim
         /// <root>
         /// ...
         /// <p_tag>
@@ -110,7 +110,7 @@ class CTableStructure
         /// ...
         /// </entry>
         /// </p_tag>
-        /// </root>
+        /// </root>\endverbatim
         ///
         ////////////////////////////////////////////////////////////////////////////
         CTableStructure( const std::string & p_xml, const std::string & p_tag );

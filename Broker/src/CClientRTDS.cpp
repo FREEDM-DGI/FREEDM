@@ -60,7 +60,7 @@ CClientRTDS::RTDSPointer CClientRTDS::Create( boost::asio::io_service & p_servic
 }
 
 CClientRTDS::CClientRTDS( boost::asio::io_service & p_service, const std::string p_xml )
-        : m_socket(p_service), m_GlobalTimer(p_service), m_cmdTable(p_xml, "command"), m_stateTable(p_xml, "state")
+        : m_socket(p_service), m_cmdTable(p_xml, "command"), m_stateTable(p_xml, "state"), m_GlobalTimer(p_service)
 {
     rx_count = m_stateTable.m_length;
     tx_count = m_cmdTable.m_length;
@@ -180,14 +180,16 @@ CClientRTDS::~CClientRTDS()
 }
 
 void CClientRTDS::endian_swap(char *data, const int num_bytes)
-{
-    char tmp[num_bytes];
-    
+{   
+    char * tmp = new char[num_bytes];
+
     for (int i=0; i<num_bytes; ++i)
         tmp[i] = data[num_bytes - 1 - i];
         
     for (int i=0; i<num_bytes; ++i)
         data[i] = tmp[i];
+    
+    delete[] tmp;
 }
 
 }//namespace broker

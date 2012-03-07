@@ -36,7 +36,7 @@ if(Boost_FOUND)
     
     set(WARNING_FLAGS "")
     if(SHOW_WARNINGS)
-        set(WARNING_FLAGS "-W -Wall -pedantic")
+        set(WARNING_FLAGS "-Wall -Wextra -pedantic")
     endif(SHOW_WARNINGS)
 
     set(CMAKE_CXX_FLAGS "-std=c++98 ${COMMON_FLAGS} ${WARNING_FLAGS}")

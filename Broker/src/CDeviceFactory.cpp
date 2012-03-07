@@ -34,6 +34,7 @@ namespace broker
 namespace device
 {
 
+#pragma GCC diagnostic ignored "-Wunused-parameter"
 /// Creates an instance of a device factory
 CDeviceFactory::CDeviceFactory( CPhysicalDeviceManager & manager,
                                 boost::asio::io_service & ios, const std::string & host,
@@ -51,6 +52,7 @@ CDeviceFactory::CDeviceFactory( CPhysicalDeviceManager & manager,
     m_rtdsClient->Run();
 #endif
 }
+#pragma GCC diagnostic warning "-Wunused-parameter"
 
 /// Creates the internal structure of the device
 IDeviceStructure::DevicePtr CDeviceFactory::CreateStructure()

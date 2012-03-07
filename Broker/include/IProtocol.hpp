@@ -1,13 +1,14 @@
 ////////////////////////////////////////////////////////////////////
-/// @file      CConnection.hpp
+/// @file      IProtocol.hpp
 ///
-/// @author    Derek Ditch <derek.ditch@mst.edu>, Stephen Jackson <scj7t4@mst.edu>
+/// @author    Derek Ditch <derek.ditch@mst.edu>
+///            Stephen Jackson <scj7t4@mst.edu>
 ///
 /// @compiler  C++
 ///
 /// @project   FREEDM DGI
 ///
-/// @description Declare CConnection class
+/// @description Declare IProtocol class
 ///
 /// @license
 /// These source code files were created at as part of the
@@ -75,7 +76,9 @@ class IProtocol
         CConnection* GetConnection() { return m_conn; };
     protected:
         /// Callback for when a write completes.
+#pragma GCC diagnostic ignored "-Wunused-parameter"
         virtual void WriteCallback(const boost::system::error_code& e) { }
+#pragma GCC diagnostic warning "-Wunused-parameter"
         /// Handles writing the message to the underlying connection
         virtual void Write(CMessage msg);
     private:
@@ -87,4 +90,8 @@ class IProtocol
 
     }
 }
+<<<<<<< HEAD
+=======
+
+>>>>>>> master
 #endif

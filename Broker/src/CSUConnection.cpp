@@ -69,12 +69,8 @@ void CSUConnection::Send(CMessage msg)
     m_outseq = (m_outseq+1) % SEQUENCE_MODULO;
 
     outmsg.SetSourceUUID(GetConnection()->GetConnectionManager().GetUUID());
-<<<<<<< HEAD
-    outmsg.SetSourceHostname(GetConnection()->GetConnectionManager().GetHostname());
-=======
     outmsg.SetSourceHostname(
             GetConnection()->GetConnectionManager().GetHostname());
->>>>>>> master
     outmsg.SetProtocol(GetIdentifier());
     outmsg.SetSendTimestampNow();
 
@@ -105,11 +101,7 @@ void CSUConnection::Resend(const boost::system::error_code& err)
         {
             QueueItem f = m_window.front();
             m_window.pop_front();
-<<<<<<< HEAD
-            if(f.ret > 0 && writes < WINDOW_SIZE)
-=======
             if(f.ret > 0 && writes < static_cast<int>(WINDOW_SIZE))
->>>>>>> master
             {        
                 Write(f.msg);
                 writes++;

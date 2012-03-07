@@ -181,7 +181,7 @@ CClientRTDS::~CClientRTDS()
 
 void CClientRTDS::endian_swap(char *data, const int num_bytes)
 {   
-    char * tmp = (char*)malloc(num_bytes);
+    char * tmp = new char[num_bytes];
 
     for (int i=0; i<num_bytes; ++i)
         tmp[i] = data[num_bytes - 1 - i];
@@ -189,7 +189,7 @@ void CClientRTDS::endian_swap(char *data, const int num_bytes)
     for (int i=0; i<num_bytes; ++i)
         data[i] = tmp[i];
     
-    free(tmp);
+    delete[] tmp;
 }
 
 }//namespace broker

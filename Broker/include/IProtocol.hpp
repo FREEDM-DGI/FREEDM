@@ -90,8 +90,5 @@ class IProtocol
 
     }
 }
-<<<<<<< HEAD
-=======
 
->>>>>>> master
 #endif

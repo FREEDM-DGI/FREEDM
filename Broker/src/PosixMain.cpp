@@ -105,7 +105,7 @@ int main(int argc, char* argv[])
                 default_value("freedm.cfg"),
                 "filename of additional configuration." )
                 ( "generateuuid,g", po::value<std::string > ( &uuidgenerator )->
-                default_value(""), "Generate a uuid for the specified host, " +
+                default_value(""), "Generate a uuid for the specified host, "
                 " output it, and exit" )
                 ( "uuid,u", "Print this node's generated uuid and exit" );
         // This is for arguments in a config file or as arguments
@@ -119,11 +119,11 @@ int main(int argc, char* argv[])
                 ( "add-device,d", po::value<std::vector<std::string> >( )->
                 composing(), "physical device name:type pair" )
                 ( "client-host,l", po::value<std::string > ( &interHost )->
-                default_value(""), "Hostname to use for the " +
+                default_value(""), "Hostname to use for the "
                 "lineclient/RTDSclient to connect." )
                 ( "client-port,q", po::value<std::string > ( &interPort )->
                 default_value("4001"), "The port to use for the "
-                + "lineclient/RTDSclient to connect." )
+                "lineclient/RTDSclient to connect." )
                 ( "xml,x", po::value<std::string >
                 ( &xml )->default_value("FPGA.xml"),
                 "filename of FPGA message specification" )
@@ -249,30 +249,20 @@ int main(int argc, char* argv[])
         CGlobalConfiguration::instance().SetListenAddress(listenIP_);
         //constructors for initial mapping
         broker::CConnectionManager m_conManager;
-        boost::shared_ptr<broker::CPhysicalDeviceManager> m_phyManager(
-                new broker::CPhysicalDeviceManager);
+        broker::CPhysicalDeviceManager m_phyManager;
         broker::ConnectionPtr m_newConnection;
         boost::asio::io_service m_ios;
 
         // configure the device factory
-        broker::device::CDeviceFactory::SetDeviceManager(m_phyManager);
         // interHost is the hostname of the machine that runs the simulation
         // interPort is the port number this DGI and simulation communicate in
-#ifdef USE_DEVICE_PSCAD
-        CLineClient client = CLineClient::Create(m_ios);
-        client.Connect(interHost, interPort);
-        CDeviceFactory::SetLineClient(client);
-#elif USE_DEVICE_RTDS
         // xml is the name of the configuration file supplied from FPGA
-        CClientRTDS client = CClientRTDS::Create(m_ios, xml);
-        client.Connect(interHost, interPort);
-        CDeviceFactory::SetRtdsClient(client);
-#endif
+        broker::device::CDeviceFactory::instance().init(
+                m_phyManager, m_ios, interHost, interPort, xml);
 
         // Create Devices
         if (vm_.count("add-device") > 0)
         {
-            using namespace broker::device;
             std::vector< std::string > device_list =
                     vm_["add-device"].as< std::vector<std::string> >( );
             foreach(std::string &devid, device_list)
@@ -284,45 +274,50 @@ int main(int argc, char* argv[])
                     std::string DevName_(devid.begin(), devid.begin() + idx_),
                             DevType_(devid.begin() + ( idx_ + 1 ), devid.end());
 
-                    if (m_phyManager->DeviceExists(DevName_))
+                    if (m_phyManager.DeviceExists(DevName_))
                     {
                         Logger::Warn << "Duplicate device: " << DevName_
                                 << std::endl;
                     }
                     else if (DevType_ == "DRER")
                     {
-                        CDeviceFactory::CreateDevice("DRER", DevName_);
+                        broker::device::CDeviceFactory::instance().CreateDevice(
+                                "DRER", DevName_);
                         Logger::Info << "Added DRER device: " << DevName_
                                 << std::endl;
                     }
                     else if (DevType_ == "DESD")
                     {
-                        CDeviceFactory::CreateDevice("DESD", DevName_);
+                        broker::device::CDeviceFactory::instance().CreateDevice(
+                                "DESD", DevName_);
                         Logger::Info << "Added DESD device: " << DevName_
                                 << std::endl;
                     }
                     else if (DevType_ == "LOAD")
                     {
-                        CDeviceFactory::CreateDevice("LOAD", DevName_);
+                        broker::device::CDeviceFactory::instance().CreateDevice(
+                                "LOAD", DevName_);
                         Logger::Info << "Added LOAD device: " << DevName_
                                 << std::endl;
                     }
                     else if (DevType_ == "SST")
                     {
-                        CDeviceFactory::CreateDevice("SST", DevName_);
+                        broker::device::CDeviceFactory::instance().CreateDevice(
+                                "SST", DevName_);
                         Logger::Info << "Added SST: " << DevName_ << std::endl;
                     }
                 }
                 else
                 {
-                    if (m_phyManager->DeviceExists(devid))
+                    if (m_phyManager.DeviceExists(devid))
                     {
                         Logger::Warn << "Duplicate device: " << devid
                                 << std::endl;
                     }
                     else
                     {
-                        CDeviceFactory::CreateDevice("SST", devid);
+                        broker::device::CDeviceFactory::instance().CreateDevice(
+                                "SST", devid);
                         Logger::Info << "Added Generic SST device: " << devid
                                 << std::endl;
                     }
@@ -351,16 +346,16 @@ int main(int argc, char* argv[])
         dispatch_.RegisterReadHandler("gm", &GM_);
         // Instantiate and register the power management module
         lbAgent LB_(uuidstr, broker_.GetIOService(), dispatch_, m_conManager,
-                *m_phyManager);
+                m_phyManager);
         dispatch_.RegisterReadHandler("lb", &LB_);
         // Instantiate and register the state collection module
         SCAgent SC_(uuidstr, broker_.GetIOService(), dispatch_, m_conManager,
-                *m_phyManager);
+                m_phyManager);
         dispatch_.RegisterReadHandler("any", &SC_);
 
-        // The peerlist should be passed into constructors as references or 
+        // The peerlist should be passed into constructors as references or
         // pointers to each submodule to allow sharing peers. NOTE this requires
-        // thread-safe access, as well. Shouldn't be too hard since it will 
+        // thread-safe access, as well. Shouldn't be too hard since it will
         // mostly be read-only
         if (vm_.count("add-host"))
         {
@@ -433,11 +428,15 @@ int main(int argc, char* argv[])
     }
     catch (std::exception& e)
     {
-        Logger::Error << "Exception in main():  " << e.what() << std::endl;
+        Logger::Error << e.what() << std::endl;
     }
-    catch (std::string s) // Probably need to not be throwing strings...
+    catch (std::string message) // Probably need something more robust...
     {
-        Logger::Error << "String thrown in main():  " << s << std::endl;
+        Logger::Error << message << std::endl;
+    }
+    catch (char* message)
+    {
+        Logger::Error << message << std::endl;
     }
 
     return 0;

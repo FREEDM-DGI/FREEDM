@@ -48,7 +48,7 @@ namespace device
 typedef void (*FactoryFunction )(const Identifier&);
 
 /// Type of the device registry.
-typedef std::map<const std::string, FactoryFunction> RegistryType;
+typedef std::map<const std::string, FactoryFunction> DeviceRegistryType;
 
 /// Creates devices and their internal structures.
 class CDeviceFactory : private boost::noncopyable
@@ -73,23 +73,22 @@ public:
             boost::asio::io_service& ios, const std::string host,
             const std::string port, const std::string xml);
 
-    // TODO Creates all devices specified by some XML file.
-    // void ReadXML(const std::string filename);
+    /// Registers a device class with the factory.
+    void RegisterDeviceClass(const std::string key, FactoryFunction value);
 
     /// Creates a device with the given type and identifier.
-    void CreateDevice(const std::string deviceType,
-            const Identifier& deviceName);
-
-    // Registers a class of device with the factory.
-    //void RegisterDevice(std::pair<std::string, FactoryFunction>& mapping);
-
-private:
-    /// Constructs the device factory.
-    CDeviceFactory();
+    void CreateDevice(const Identifier& deviceID, const std::string deviceType);
 
     /// Creates and registers DeviceID with the given identifier.
     template <class DeviceType>
     void CreateDevice(const Identifier& deviceID);
+
+    // TODO Creates all devices specified by some XML file.
+    // void ReadXML(const std::string filename);
+
+private:
+    /// Constructs the device factory.
+    CDeviceFactory();
 
     /// Creates the internal structure of the device.
     IDeviceStructure::DevicePtr CreateStructure() const;
@@ -104,17 +103,21 @@ private:
     CPhysicalDeviceManager* m_manager;
 
     /// Maps strings of device names to a factory function for that class.
-    RegistryType m_registry;
+    DeviceRegistryType m_registry;
 
     /// Used to indicate whether or not init has been called on this factory.
     bool m_initialized;
 };
 
-////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 /// CreateDevice<DeviceType>
 ///
 /// @description Creates a DeviceType with the given identifier and
-///  registers it with the factory's device manager.
+///  registers it with the factory's device manager. It is intended that this
+///  function not be called directly, but rather registered via function pointer
+///  through CDeviceFactory::RegisterDeviceClass and called indirectly through
+///  the CreateDevice function taking the string parameters. However, this
+///  function is intentionally public and is safe to use directly.
 ///
 /// @ErrorHandling Throws a string if the factory is not properly set up.
 ///
@@ -128,7 +131,7 @@ private:
 ///
 /// @limitations CDeviceFactory::init must be called before any devices are
 ///  created.
-////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 template <class DeviceType>
 void CDeviceFactory::CreateDevice(const Identifier& deviceID)
 {

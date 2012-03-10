@@ -114,6 +114,40 @@ void CDeviceFactory::init(CPhysicalDeviceManager& manager,
 #pragma GCC diagnostic warning "-Wunused-parameter"
 
 ////////////////////////////////////////////////////////////////////////////////
+/// CDeviceFactory::RegisterDeviceClass
+///
+/// @description Registers a device creation function with the factory under the
+///  specified string key. To avoid confusion, it is VERY STRONGLY recommended
+///  that the key for the function be exactly the same as the name of the class,
+///  but without the "CDevice" prefix. The function itself should be
+///  CDeviceFactory::CreateDevice<DeviceClass>.
+///
+/// @ErrorHandling Insufficiently throws a string if a function with the same
+///  key has already been registered.
+///
+/// @pre The device class has not been previously registered.
+/// @post The device class is now registered in the factory, allowing the
+///  factory to create devices of this class with just a string representing the
+///  name of the class.
+///
+/// @param key the string for the function to be associated with.
+/// @param value the function to be associated with the string key.
+///
+/// @limitations None.
+////////////////////////////////////////////////////////////////////////////////
+void CDeviceFactory::RegisterDeviceClass(const std::string key,
+        FactoryFunction value)
+{
+    if (m_registry.count(key) != 0)
+    {
+        throw "Attempted to register device factory function for class which "
+        "has already been registered.";
+    }
+    m_registry.insert(
+            std::pair<const std::string, FactoryFunction > ( key, value ));
+}
+
+////////////////////////////////////////////////////////////////////////////////
 /// CDeviceFactory::CreateDevice
 ///
 /// @description Translates a string into a class type, then creates a new
@@ -126,32 +160,32 @@ void CDeviceFactory::init(CPhysicalDeviceManager& manager,
 /// @post Specified device is created and registered with the factory's device
 ///  manager.
 ///
-/// @param deviceString a string representing the name of the IDevice subclass
-///  be created. Should be exactly the same as the portion of the class name
-///  after "CDevice".
 /// @param deviceID the unique identifier for the device to be created.
 ///  No other device on this DGI may have this ID.
+/// @param deviceType a string representing the name of the IDevice subclass
+///  be created. Should be exactly the same as the portion of the class name
+///  after "CDevice".
 ///
 /// @limitations Device classes must properly register themselves before
-///  instances can be constructed.
+///  instances of that device class can be constructed.
 ////////////////////////////////////////////////////////////////////////////////
-void CDeviceFactory::CreateDevice(const std::string deviceString,
-        const Identifier & deviceID)
+void CDeviceFactory::CreateDevice(const Identifier& deviceID,
+        const std::string deviceType)
 {
     if (!m_initialized)
     {
         throw "CDeviceFactory::CreateDevice (public) called before init";
     }
     // Ensure the specified device type exists
-    if (m_registry.find(deviceString) == m_registry.end())
+    if (m_registry.find(deviceType) == m_registry.end())
     {
         std::stringstream ss;
         ss << "Attempted to create device of unregistered type "
-                << deviceString.c_str();
+                << deviceType.c_str();
         throw ss.str();
     }
 
-    m_registry[deviceString]( deviceID );
+    m_registry[deviceType]( deviceID );
 }
 
 ////////////////////////////////////////////////////////////////////////////////

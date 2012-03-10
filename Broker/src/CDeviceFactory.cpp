@@ -66,9 +66,8 @@ m_initialized(false) { }
 ////////////////////////////////////////////////////////////////////////////////
 CDeviceFactory & CDeviceFactory::instance()
 {
-    // Intentionally breaking the rule against static local variables. Instance
-    // will be initialized the first time the function is called. No dynamic
-    // allocation needed.
+    // Justification for breaking coding standards: instance is initialized the
+    // first time this function is called, with no need for heap allocation.
     static CDeviceFactory instance;
     return instance;
 }
@@ -86,7 +85,8 @@ CDeviceFactory & CDeviceFactory::instance()
 /// @post CDeviceFactory::instance() will retrieve the factory instance.
 ///
 /// @param manager the device manager with which this factory should register
-///  newly-created devices.
+///  newly-created devices. This manager MUST remain a valid reference, unless
+///  the factory is reinitialized.
 /// @param ios if PSCAD or RTDS is enabled, the IO service for the line client.
 /// @param host if PSCAD or RTDS is enabled, the hostname of the machine that
 ///  runs the simulation.
@@ -96,7 +96,7 @@ CDeviceFactory & CDeviceFactory::instance()
 ///
 /// @limitations Must be called before anything else is done with this factory.
 ////////////////////////////////////////////////////////////////////////////////
-void CDeviceFactory::init(CPhysicalDeviceManager & manager,
+void CDeviceFactory::init(CPhysicalDeviceManager& manager,
         boost::asio::io_service & ios, const std::string host,
         const std::string port, const std::string xml)
 {
@@ -171,7 +171,7 @@ void CDeviceFactory::CreateDevice(const std::string deviceString,
 ///
 /// @limitations only PSCAD, RTDS, and generic devices are supported.
 ////////////////////////////////////////////////////////////////////////////////
-IDeviceStructure::DevicePtr CDeviceFactory::CreateStructure()
+IDeviceStructure::DevicePtr CDeviceFactory::CreateStructure() const
 {
     if (!m_initialized)
     {

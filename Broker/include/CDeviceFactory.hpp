@@ -57,20 +57,20 @@ class CDeviceFactory : private boost::noncopyable
     /// CDeviceFactory
     ///
     /// @description Singleton factory that accepts registrations of device
-    ///  classes. Creates instances of registered classes as requested.
+    ///  classes and creates instances of registered classes as requested.
     ///  Instances are themselves registered in the factory's device manager.
     ///
-    /// @limitations The static instance must be initialized with the init
+    /// @limitations The singleton instance must be initialized through the init
     ///  function before any other functions are accessed.
     ////////////////////////////////////////////////////////////////////////////
 
 public:
     /// Retrieves the static instance of the device factory class.
-    static CDeviceFactory & instance();
+    static CDeviceFactory& instance();
 
     /// Loads the factory with device manager and networking data.
-    void init(CPhysicalDeviceManager & manager,
-            boost::asio::io_service & ios, const std::string host,
+    void init(CPhysicalDeviceManager& manager,
+            boost::asio::io_service& ios, const std::string host,
             const std::string port, const std::string xml);
 
     // TODO Creates all devices specified by some XML file.
@@ -78,11 +78,10 @@ public:
 
     /// Creates a device with the given type and identifier.
     void CreateDevice(const std::string deviceType,
-            const Identifier & deviceName);
+            const Identifier& deviceName);
 
-    // TODO register device
-    // void RegisterDevice(
-    //        std::pair<std::string, FactoryFunction> & mapping );
+    // Registers a class of device with the factory.
+    //void RegisterDevice(std::pair<std::string, FactoryFunction>& mapping);
 
 private:
     /// Constructs the device factory.
@@ -90,10 +89,10 @@ private:
 
     /// Creates and registers DeviceID with the given identifier.
     template <class DeviceType>
-    void CreateDevice(const Identifier & deviceID);
+    void CreateDevice(const Identifier& deviceID);
 
     /// Creates the internal structure of the device.
-    IDeviceStructure::DevicePtr CreateStructure();
+    IDeviceStructure::DevicePtr CreateStructure() const;
 
     /// Client to the PSCAD simulation server.
     CLineClient::TPointer m_lineClient;
@@ -116,6 +115,7 @@ private:
 ///
 /// @description Creates a DeviceType with the given identifier and
 ///  registers it with the factory's device manager.
+///
 /// @ErrorHandling Throws a string if the factory is not properly set up.
 ///
 /// @pre No other device on this DGI has the passed deviceID.
@@ -127,11 +127,10 @@ private:
 /// @return the device that has been created.
 ///
 /// @limitations CDeviceFactory::init must be called before any devices are
-///  created.  Also, if compiled in RTDS or PSCAD mode, the appropriate client
-///  must also be set.
+///  created.
 ////////////////////////////////////////////////////////////////////////////
 template <class DeviceType>
-void CDeviceFactory::CreateDevice(const Identifier & deviceID)
+void CDeviceFactory::CreateDevice(const Identifier& deviceID)
 {
     if (!m_initialized)
     {

@@ -28,7 +28,7 @@
 #define PHYSICAL_DEVICE_TYPES
 
 #include "IDevice.hpp"
-#include "CDeviceLWI.hpp"
+#include "IDeviceLWI.hpp"
 #include "CDeviceDESD.hpp"
 #include "CDeviceDRER.hpp"
 #include "CDeviceLOAD.hpp"

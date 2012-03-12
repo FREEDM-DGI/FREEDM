@@ -19,7 +19,7 @@
 ///
 /// Suggested modifications or questions about these files can be directed to
 /// Dr. Bruce McMillin, Department of Computer Science, Missouri University of
-/// Science and Technology, Rolla, MO 65401 <ff@mst.edu>.
+/// Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
 ////////////////////////////////////////////////////////////////////////////////
 
 #ifndef I_DEVICE_HPP
@@ -61,31 +61,31 @@ class IDevice
 public:
     /// Convenience type for a shared pointer to self
     typedef boost::shared_ptr<IDevice> DevicePtr;
-    
+
     /// Virtual destructor for derived classes
     virtual ~IDevice() {}
-    
+
     /// Gets the setting of some key from the structure
     virtual SettingValue Get( const SettingKey & key );
-    
+
     /// Sets the value of some key in the structure
     virtual void Set( const SettingKey & key, const SettingValue & value );
-    
+
     /// Gets the device manager for the device
     CPhysicalDeviceManager & GetManager();
-    
+
     /// Gets the device manager for the device
     const CPhysicalDeviceManager & GetManager() const;
-    
+
     /// Acquires the mutex
     void Lock();
-    
+
     /// Releases a mutex lock
     void Unlock();
-    
+
     /// Tries to acquire the mutex
     bool TryLock();
-    
+
     /// Gets the device identifier
     const Identifier & GetID() const;
 protected:
@@ -95,13 +95,13 @@ protected:
 
     /// Device manager that handles the device
     CPhysicalDeviceManager & m_manager;
-    
+
     /// Mutex to protect the device from other threads
     mutable boost::mutex m_mutex;
-    
+
     /// Unique identifier for the device
     Identifier m_device;
-    
+
     /// Structure that handles the device data
     IDeviceStructure::DevicePtr m_structure;
 };

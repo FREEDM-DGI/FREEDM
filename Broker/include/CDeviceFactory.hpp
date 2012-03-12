@@ -35,7 +35,9 @@
 #include "CLineClient.hpp"
 #include "CPhysicalDeviceManager.hpp"
 #include "IPhysicalDevice.hpp"
-#include "PhysicalDeviceTypes.hpp"
+
+#define REGISTER_DEVICE_CLASS(SUFFIX) CDeviceFactory::instance(). \
+RegisterDeviceClass(#SUFFIX, &CDeviceFactory::CreateDevice<CDevice##SUFFIX>);
 
 namespace freedm
 {
@@ -44,8 +46,10 @@ namespace broker
 namespace device
 {
 
+class CDeviceFactory;
+
 /// Type of the factory functions.
-typedef void (*FactoryFunction )(const Identifier&);
+typedef void (CDeviceFactory::*FactoryFunction )(const Identifier&);
 
 /// Type of the device registry.
 typedef std::map<const std::string, FactoryFunction> DeviceRegistryType;
@@ -60,9 +64,12 @@ class CDeviceFactory : private boost::noncopyable
     ///  classes and creates instances of registered classes as requested.
     ///  Instances are themselves registered in the factory's device manager.
     ///
-    /// @limitations The singleton instance must be initialized through the init
-    ///  function before any other functions are accessed.
+    /// @limitations The singleton instance must be configured with the init
+    ///  function before any devices are created. It is, however, safe to
+    ///  register devices before init is called.
     ////////////////////////////////////////////////////////////////////////////
+
+    friend class RegistrationDummy;
 
 public:
     /// Retrieves the static instance of the device factory class.

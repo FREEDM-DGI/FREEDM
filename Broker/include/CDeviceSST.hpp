@@ -5,15 +5,12 @@
 ///                 Thomas Roth <tprfh7@mst.edu>
 ///                 Ravi Akella <rcaq5c@mst.edu>
 ///
-/// @compiler       C++
-///
 /// @project        FREEDM DGI
 ///
 /// @description    Physical device class for SST.
-///                 It could be useful to have this definition to incorporate 
+///                 It could be useful to have this definition to incorporate
 ///	            "additional properties" an SST could have in future
 ///
-/// @license
 /// These source code files were created at the Missouri University of Science
 /// and Technology, and are intended for use in teaching or research. They may
 /// be freely copied, modified and redistributed as long as modified versions
@@ -25,7 +22,7 @@
 ///
 /// Suggested modifications or questions about these files can be directed to
 /// Dr. Bruce McMillin, Department of Computer Science, Missouri University of
-/// Science and Technology, Rolla, MO 65401 <ff@mst.edu>.
+/// Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
 ////////////////////////////////////////////////////////////////////////////////
 
 #ifndef C_DEVICE_SST_HPP
@@ -33,33 +30,43 @@
 
 #include <boost/shared_ptr.hpp>
 
+#include "CDeviceFactory.hpp"
 #include "IDevice.hpp"
 
-namespace freedm {
-namespace broker {
+namespace freedm
+{
+namespace broker
+{
 
 // forward declaration of device manager
 class CPhysicalDeviceManager;
 
-namespace device {
+namespace device
+{
 
 /// Implementation of distributed renewable energy resources
 class CDeviceSST
-    : public virtual IDevice
+: public virtual IDevice
 {
 public:
     /// Convenience type for a shared pointer to self
     typedef boost::shared_ptr<CDeviceSST> DevicePtr;
-    
+
     /// Constructor which takes a manager, identifier, and internal structure
-    CDeviceSST( CPhysicalDeviceManager & manager, Identifier device,
-        IDeviceStructure::DevicePtr structure )
-        : IDevice(manager,device,structure)
-        {}
-    
+    CDeviceSST(CPhysicalDeviceManager & manager, Identifier device,
+            IDeviceStructure::DevicePtr structure)
+    : IDevice(manager, device, structure) { }
+
     /// Virtual destructor for derived classes
-    virtual ~CDeviceSST() {}
+    virtual ~CDeviceSST() { }
+
+    static void registerSelf()
+    {
+        REGISTER_DEVICE_CLASS(SST)
+    }
 };
+
+//REGISTER_DEVICE_CLASS(SST)
 
 } // namespace device
 } // namespace broker

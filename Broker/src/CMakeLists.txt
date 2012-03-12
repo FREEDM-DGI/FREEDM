@@ -26,7 +26,7 @@ set(
     CDeviceStructurePSCAD.cpp
     CDeviceStructureRTDS.cpp
     CDeviceFactory.cpp
-    CDeviceLWI.cpp
+    IDeviceLWI.cpp
     IDevice.cpp
    )
 

@@ -1,5 +1,5 @@
 ////////////////////////////////////////////////////////////////////////////////
-/// @file           CDeviceLWI.cpp
+/// @file           IDeviceLWI.cpp
 ///
 /// @author         Yaxi Liu <ylztf@mst.edu>
 ///                 Thomas Roth <tprfh7@mst.edu>
@@ -22,10 +22,10 @@
 ///
 /// Suggested modifications or questions about these files can be directed to
 /// Dr. Bruce McMillin, Department of Computer Science, Missouri University of
-/// Science and Technology, Rolla, MO 65401 <ff@mst.edu>.
+/// Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
 ////////////////////////////////////////////////////////////////////////////////
 
-#include "CDeviceLWI.hpp"
+#include "IDeviceLWI.hpp"
 
 namespace freedm {
 namespace broker {
@@ -35,7 +35,7 @@ namespace device {
 /// turnOn()
 /// @description Turns the device on
 ////////////////////////////////////////////////////////////////////////////////
-void CDeviceLWI::turnOn()
+void IDeviceLWI::turnOn()
 {
     Set("onOffSwitch",1);
 }
@@ -44,7 +44,7 @@ void CDeviceLWI::turnOn()
 /// turnOff()
 /// @description Turns the device off
 ////////////////////////////////////////////////////////////////////////////////
-void CDeviceLWI::turnOff()
+void IDeviceLWI::turnOff()
 {
     Set("onOffSwitch",0);
 }
@@ -54,7 +54,7 @@ void CDeviceLWI::turnOff()
 /// @description Gets the power level of the device
 /// @return Current power level stored in the device structure
 ////////////////////////////////////////////////////////////////////////////////
-SettingValue CDeviceLWI::get_powerLevel()
+SettingValue IDeviceLWI::get_powerLevel()
 {
     return Get("powerLevel");
 }

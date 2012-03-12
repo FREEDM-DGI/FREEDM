@@ -48,6 +48,9 @@ namespace po = boost::program_options;
 #include "CDeviceFactory.hpp"
 #include "CGlobalConfiguration.hpp"
 
+// TODO ;;,;; shouldn't need this here
+#include "PhysicalDeviceTypes.hpp"
+
 using namespace freedm;
 
 #include "logger.hpp"
@@ -59,6 +62,8 @@ using namespace freedm;
 
 #include <pthread.h>
 #include <signal.h>
+
+//
 CREATE_STD_LOGS()
 
 /// Returns the filename without directory path.
@@ -263,6 +268,9 @@ int main(int argc, char* argv[])
         // Create Devices
         if (vm_.count("add-device") > 0)
         {
+            // TODO ;;,;; Remove this
+            broker::device::CDeviceSST::registerSelf();
+
             std::vector< std::string > device_list =
                     vm_["add-device"].as< std::vector<std::string> >( );
             foreach(std::string &devid, device_list)
@@ -282,28 +290,28 @@ int main(int argc, char* argv[])
                     else if (DevType_ == "DRER")
                     {
                         broker::device::CDeviceFactory::instance().CreateDevice(
-                                "DRER", DevName_);
+                                DevName_, "DRER");
                         Logger::Info << "Added DRER device: " << DevName_
                                 << std::endl;
                     }
                     else if (DevType_ == "DESD")
                     {
                         broker::device::CDeviceFactory::instance().CreateDevice(
-                                "DESD", DevName_);
+                                DevName_, "DESD");
                         Logger::Info << "Added DESD device: " << DevName_
                                 << std::endl;
                     }
                     else if (DevType_ == "LOAD")
                     {
                         broker::device::CDeviceFactory::instance().CreateDevice(
-                                "LOAD", DevName_);
+                                DevName_, "LOAD");
                         Logger::Info << "Added LOAD device: " << DevName_
                                 << std::endl;
                     }
                     else if (DevType_ == "SST")
                     {
                         broker::device::CDeviceFactory::instance().CreateDevice(
-                                "SST", DevName_);
+                                DevName_, "SST");
                         Logger::Info << "Added SST: " << DevName_ << std::endl;
                     }
                 }
@@ -317,7 +325,7 @@ int main(int argc, char* argv[])
                     else
                     {
                         broker::device::CDeviceFactory::instance().CreateDevice(
-                                "SST", devid);
+                                devid, "SST");
                         Logger::Info << "Added Generic SST device: " << devid
                                 << std::endl;
                     }
@@ -434,7 +442,7 @@ int main(int argc, char* argv[])
     {
         Logger::Error << message << std::endl;
     }
-    catch (char* message)
+    catch (const char* message)
     {
         Logger::Error << message << std::endl;
     }

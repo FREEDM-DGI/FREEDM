@@ -48,9 +48,6 @@ namespace po = boost::program_options;
 #include "CDeviceFactory.hpp"
 #include "CGlobalConfiguration.hpp"
 
-// TODO ;;,;; shouldn't need this here
-#include "PhysicalDeviceTypes.hpp"
-
 using namespace freedm;
 
 #include "logger.hpp"
@@ -268,9 +265,6 @@ int main(int argc, char* argv[])
         // Create Devices
         if (vm_.count("add-device") > 0)
         {
-            // TODO ;;,;; Remove this
-            broker::device::CDeviceSST::registerSelf();
-
             std::vector< std::string > device_list =
                     vm_["add-device"].as< std::vector<std::string> >( );
             foreach(std::string &devid, device_list)

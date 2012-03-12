@@ -4,13 +4,10 @@
 /// @author         Yaxi Liu <ylztf@mst.edu>
 ///                 Thomas Roth <tprfh7@mst.edu>
 ///
-/// @compiler       C++
-///
 /// @project        FREEDM DGI
 ///
 /// @description    Physical devices for the LWI project
 ///
-/// @license
 /// These source code files were created at the Missouri University of Science
 /// and Technology, and are intended for use in teaching or research. They may
 /// be freely copied, modified and redistributed as long as modified versions
@@ -30,6 +27,7 @@
 
 #include <boost/shared_ptr.hpp>
 
+#include "CDeviceFactory.hpp"
 #include "CDeviceDRER.hpp"
 #include "CDeviceDESD.hpp"
 #include "CDeviceLOAD.hpp"
@@ -132,6 +130,10 @@ public:
     /// Virtual destructor for derived classes
     virtual ~CDeviceLWI_PV() { }
 };
+
+REGISTER_DEVICE_CLASS(CDeviceLWI_Battery)
+REGISTER_DEVICE_CLASS(CDeviceLWI_Load)
+REGISTER_DEVICE_CLASS(CDeviceLWI_PV)
 
 } // namespace device
 } // namespace broker

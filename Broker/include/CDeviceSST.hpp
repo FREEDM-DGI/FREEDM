@@ -59,17 +59,12 @@ public:
 
     /// Virtual destructor for derived classes
     virtual ~CDeviceSST() { }
-
-    static void registerSelf()
-    {
-        REGISTER_DEVICE_CLASS(SST)
-    }
 };
-
-//REGISTER_DEVICE_CLASS(SST)
 
 } // namespace device
 } // namespace broker
 } // namespace freedm
+
+REGISTER_DEVICE_CLASS(SST)
 
 #endif // C_DEVICE_SST_HPP

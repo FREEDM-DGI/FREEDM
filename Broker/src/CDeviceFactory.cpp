@@ -117,16 +117,13 @@ void CDeviceFactory::init(CPhysicalDeviceManager& manager,
 /// CDeviceFactory::RegisterDeviceClass
 ///
 /// @description Registers a device creation function with the factory under the
-///  specified string key. To avoid confusion, it is easiest not to call this
-///  function directly, but use the macro REGISTER_DEVICE_CLASS. For example, to
-///  register the class of SST devices, simply call REGISTER_DEVICE_CLASS(SST)
-///  from within the class CDeviceSST rather than calling this function
-///  directly.
+///  specified string key. Directly using this function properly is complicated,
+///  so please don't try. Rather, use the macro REGISTER_DEVICE_CLASS. For
+///  example, to register the class of SST devices, simply call
+///  REGISTER_DEVICE_CLASS(SST) (no semicolon) after the class declaration of
+///  CDeviceSST.
 ///
-/// @ErrorHandling Insufficiently throws a string if a function with the same
-///  key has already been registered.
-///
-/// @pre The device class has not been previously registered.
+/// @pre None, presuming the suggested naming convention is followed.
 /// @post The device class is now registered in the factory, allowing the
 ///  factory to create devices of this class with just a string representing the
 ///  name of the class.
@@ -134,18 +131,24 @@ void CDeviceFactory::init(CPhysicalDeviceManager& manager,
 /// @param key the string for the function to be associated with.
 /// @param value the function to be associated with the string key.
 ///
+/// @return unspecified integer value intended to be ignored. This return value
+///  could change arbitrarily so do not rely on it for anything. See the
+///  REGISTER_DEVICE_CLASS macro if curious why something must be returned.
+///
 /// @limitations None. This function can, and probably must, be called before
 ///  the factory is configured with init.
 ////////////////////////////////////////////////////////////////////////////////
-void CDeviceFactory::RegisterDeviceClass(const std::string key,
+int CDeviceFactory::RegisterDeviceClass(const std::string key,
         FactoryFunction value)
 {
-    if (m_registry.count(key) != 0)
+/*    if (m_registry.count(key) != 0)
     {
         throw "Attempted to register device factory function for class which "
         "has already been registered.";
-    }
+    }*/
     m_registry.insert(std::make_pair(key, value));
+
+    return 0;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

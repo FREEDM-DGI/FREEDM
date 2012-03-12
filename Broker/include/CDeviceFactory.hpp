@@ -36,15 +36,19 @@
 #include "CPhysicalDeviceManager.hpp"
 #include "IPhysicalDevice.hpp"
 
-#define REGISTER_DEVICE_CLASS(SUFFIX) CDeviceFactory::instance(). \
-RegisterDeviceClass(#SUFFIX, &CDeviceFactory::CreateDevice<CDevice##SUFFIX>);
-
 namespace freedm
 {
 namespace broker
 {
 namespace device
 {
+
+//int regDummy;
+// Must initialize a variable to use this outside of functions.)
+#define REGISTER_DEVICE_CLASS(SUFFIX) int freedm::broker::device::regDummy = \
+freedm::broker::device::CDeviceFactory::instance().RegisterDeviceClass( \
+#SUFFIX, &freedm::broker::device::CDeviceFactory::CreateDevice< \
+freedm::broker::device::CDevice##SUFFIX>);
 
 class CDeviceFactory;
 
@@ -69,8 +73,6 @@ class CDeviceFactory : private boost::noncopyable
     ///  register devices before init is called.
     ////////////////////////////////////////////////////////////////////////////
 
-    friend class RegistrationDummy;
-
 public:
     /// Retrieves the static instance of the device factory class.
     static CDeviceFactory& instance();
@@ -81,7 +83,7 @@ public:
             const std::string port, const std::string xml);
 
     /// Registers a device class with the factory.
-    void RegisterDeviceClass(const std::string key, FactoryFunction value);
+    int RegisterDeviceClass(const std::string key, FactoryFunction value);
 
     /// Creates a device with the given type and identifier.
     void CreateDevice(const Identifier& deviceID, const std::string deviceType);

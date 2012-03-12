@@ -4,13 +4,10 @@
 /// @author         Yaxi Liu <ylztf@mst.edu>
 ///                 Thomas Roth <tprfh7@mst.edu>
 ///
-/// @compiler       C++
-///
 /// @project        FREEDM DGI
 ///
 /// @description    Physical device class for DRER
 ///
-/// @license
 /// These source code files were created at the Missouri University of Science
 /// and Technology, and are intended for use in teaching or research. They may
 /// be freely copied, modified and redistributed as long as modified versions
@@ -22,7 +19,7 @@
 ///
 /// Suggested modifications or questions about these files can be directed to
 /// Dr. Bruce McMillin, Department of Computer Science, Missouri University of
-/// Science and Technology, Rolla, MO 65401 <ff@mst.edu>.
+/// Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
 ////////////////////////////////////////////////////////////////////////////////
 
 #ifndef C_DEVICE_DRER_HPP
@@ -30,6 +27,7 @@
 
 #include <boost/shared_ptr.hpp>
 
+#include "CDeviceFactory.hpp"
 #include "IDevice.hpp"
 
 namespace freedm {
@@ -47,16 +45,18 @@ class CDeviceDRER
 public:
     /// Convenience type for a shared pointer to self
     typedef boost::shared_ptr<CDeviceDRER> DevicePtr;
-    
+
     /// Constructor which takes a manager, identifier, and internal structure
     CDeviceDRER( CPhysicalDeviceManager & manager, Identifier device,
         IDeviceStructure::DevicePtr structure )
         : IDevice(manager,device,structure)
         {}
-    
+
     /// Virtual destructor for derived classes
     virtual ~CDeviceDRER() {}
 };
+
+REGISTER_DEVICE_CLASS(DRER)
 
 } // namespace device
 } // namespace broker

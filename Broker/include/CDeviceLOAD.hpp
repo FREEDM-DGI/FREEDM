@@ -56,7 +56,7 @@ public:
     virtual ~CDeviceLOAD() {}
 };
 
-REGISTER_DEVICE_CLASS(DRER)
+REGISTER_DEVICE_CLASS(LOAD)
 
 } // namespace device
 } // namespace broker

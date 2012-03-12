@@ -43,9 +43,8 @@ namespace broker
 namespace device
 {
 
-//int regDummy;
-// Must initialize a variable to use this outside of functions.)
-#define REGISTER_DEVICE_CLASS(SUFFIX) int freedm::broker::device::regDummy = \
+// Must initialize a variable to use this outside of functions.
+#define REGISTER_DEVICE_CLASS(SUFFIX) int reg##SUFFIX =\
 freedm::broker::device::CDeviceFactory::instance().RegisterDeviceClass( \
 #SUFFIX, &freedm::broker::device::CDeviceFactory::CreateDevice< \
 freedm::broker::device::CDevice##SUFFIX>);

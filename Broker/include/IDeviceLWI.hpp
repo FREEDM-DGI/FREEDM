@@ -131,9 +131,9 @@ public:
     virtual ~CDeviceLWI_PV() { }
 };
 
-REGISTER_DEVICE_CLASS(CDeviceLWI_Battery)
-REGISTER_DEVICE_CLASS(CDeviceLWI_Load)
-REGISTER_DEVICE_CLASS(CDeviceLWI_PV)
+REGISTER_DEVICE_CLASS(LWI_Battery)
+REGISTER_DEVICE_CLASS(LWI_Load)
+REGISTER_DEVICE_CLASS(LWI_PV)
 
 } // namespace device
 } // namespace broker

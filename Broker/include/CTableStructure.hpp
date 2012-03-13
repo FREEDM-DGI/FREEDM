@@ -48,7 +48,7 @@
 #include <boost/property_tree/xml_parser.hpp>
 
 #include "logger.hpp"
-#include "CDeviceKeyCoupled.hpp"
+#include "device/CDeviceKeyCoupled.hpp"
 
 CREATE_EXTERN_STD_LOGS()
 
@@ -114,7 +114,7 @@ class CTableStructure
         ///
         ////////////////////////////////////////////////////////////////////////////
         CTableStructure( const std::string & p_xml, const std::string & p_tag );
-        
+
         ////////////////////////////////////////////////////////////////////////////
         /// GetSize() const
         ///
@@ -141,7 +141,7 @@ class CTableStructure
         ///
         ////////////////////////////////////////////////////////////////////////////
         size_t GetSize() const { return m_TableSize; }
-        
+
         ////////////////////////////////////////////////////////////////////////////
         /// FindIndex( const CDeviceKeyCoupled & ) const
         ///
@@ -171,16 +171,16 @@ class CTableStructure
         ///
         ////////////////////////////////////////////////////////////////////////////
         size_t FindIndex( const CDeviceKeyCoupled & p_dkey ) const;
-        
+
     private:
         struct SDevice {};
         struct SIndex {};
-        
+
         typedef boost::bimap< boost::bimaps::tagged<CDeviceKeyCoupled,SDevice>, boost::bimaps::tagged<size_t,SIndex> > TBimap;
-        
+
         /// number of table entries
         size_t m_TableSize;
-        
+
         /// bidirectional map from CDeviceKeyCopled object to numeric index
         TBimap m_TableHeaders;
 };

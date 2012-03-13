@@ -57,8 +57,8 @@ using boost::property_tree::ptree;
 #include "CConnectionManager.hpp"
 #include "CConnection.hpp"
 
-#include "CPhysicalDeviceManager.hpp"
-#include "PhysicalDeviceTypes.hpp"
+#include "device/CPhysicalDeviceManager.hpp"
+#include "device/PhysicalDeviceTypes.hpp"
 
 #include <map>
 
@@ -83,44 +83,44 @@ class SCAgent : public IReadHandler, public SCPeerNode, public Templates::Single
 {
         friend class Templates::Singleton< SCAgent >;
     public:
-    
+
         typedef std::pair< std::string, int >  StateVersion;
-        
-        SCAgent(std::string uuid, boost::asio::io_service &ios, freedm::broker::CDispatcher &p_dispatch, freedm::broker::CConnectionManager &m_connManager, freedm::broker::CPhysicalDeviceManager &m_phyManager);
+
+        SCAgent(std::string uuid, boost::asio::io_service &ios, freedm::broker::CDispatcher &p_dispatch, freedm::broker::CConnectionManager &m_connManager, freedm::broker::device::CPhysicalDeviceManager &m_phyManager);
         SCAgent(const SCAgent&);
         SCAgent& operator=(const SCAgent&);
         virtual ~SCAgent();
-        
+
         //  void HandleRead(const ptree& pt );
         //  void HandleWrite(const ptree& pt);
-        
-        
+
+
         virtual void HandleRead(broker::CMessage msg);
-        
+
         void    Initiate();
         void    TakeSnapshot();
         void    SendStateBack();
         void    SendDoneBack();
         void    StateResponse();
-        
+
         // Messages
         freedm::broker::CMessage m_state();
         freedm::broker::CMessage m_marker();
-        
-        
+
+
         // This is the main loop of the algorithm
         int SC();
-        
+
         PeerNodePtr AddPeer(std::string uuid);
         PeerNodePtr AddPeer(PeerNodePtr peer);
         PeerNodePtr GetPeer(std::string uuid);
-        
+
     protected:
-    
+
         //collect states
         std::multimap<StateVersion, ptree> collectstate;
         std::multimap<StateVersion, ptree>::iterator it;
-        
+
         /*--------------------------------------------------
             //count number for each unique marker
             std::map<StateVersion, int> recordmarker;
@@ -129,24 +129,24 @@ class SCAgent : public IReadHandler, public SCPeerNode, public Templates::Single
         int countstate;
         int countmarker;
         int countdone;
-        
+
         bool NotifyToSave;
-        
+
         std::string module;
-        
+
         StateVersion        m_curversion;
         ptree               m_curstate;
-        
-        freedm::broker::CPhysicalDeviceManager &m_phyDevManager;
+
+        freedm::broker::device::CPhysicalDeviceManager &m_phyDevManager;
         PeerSet m_AllPeers;
         PeerSet copy_AllPeers;
-        
-        
+
+
         /* IO and Timers */
         //    deadline_timer        m_CheckTimer;
         deadline_timer      m_TimeoutTimer;
         //    deadline_timer        m_GlobalTimer;
-        
+
 };
 
 }

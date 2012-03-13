@@ -41,7 +41,7 @@
 #include <boost/thread/shared_mutex.hpp>
 
 #include "logger.hpp"
-#include "CDeviceKeyCoupled.hpp"
+#include "device/CDeviceKeyCoupled.hpp"
 #include "CTableStructure.hpp"
 
 CREATE_EXTERN_STD_LOGS()
@@ -95,7 +95,7 @@ class CTableRTDS
         ///
         ////////////////////////////////////////////////////////////////////////////
         CTableRTDS( const std::string & p_xml, const std::string & p_tag );
-        
+
         ////////////////////////////////////////////////////////////////////////////
         /// SetValue( const CDeviceKeyCoupled &, size_t, double )
         ///
@@ -129,7 +129,7 @@ class CTableRTDS
         ///
         ////////////////////////////////////////////////////////////////////////////
         void SetValue( const CDeviceKeyCoupled & p_dkey, double p_value );
-        
+
         ////////////////////////////////////////////////////////////////////////////
         /// GetValue( const CDeviceKeyCoupled &, size_t )
         ///
@@ -164,7 +164,7 @@ class CTableRTDS
         ///
         ////////////////////////////////////////////////////////////////////////////
         double GetValue( const CDeviceKeyCoupled & p_dkey);
-        
+
         ////////////////////////////////////////////////////////////////////////////
         /// ~CTableRTDS
         ///
@@ -188,18 +188,18 @@ class CTableRTDS
         ///
         ////////////////////////////////////////////////////////////////////////////
         ~CTableRTDS();
-        
+
         friend class CClientRTDS;
     private:
         /// manages the XML specification
         CTableStructure m_structure;
-        
+
         /// read-write mutex for m_data
         boost::shared_mutex m_mutex;
-        
+
         /// actual values. Notice this is in float type
         float * m_data;
-        
+
         /// number of m_data elements
         size_t m_length;
 };

@@ -44,9 +44,9 @@ namespace po = boost::program_options;
 #include "lb/LoadBalance.hpp"
 #include "sc/CStateCollection.hpp"
 #include "CConnectionManager.hpp"
-#include "CPhysicalDeviceManager.hpp"
-#include "CDeviceFactory.hpp"
-#include "PhysicalDeviceTypes.hpp"
+#include "device/CPhysicalDeviceManager.hpp"
+#include "device/CDeviceFactory.hpp"
+#include "device/PhysicalDeviceTypes.hpp"
 #include "CGlobalConfiguration.hpp"
 
 using namespace freedm;
@@ -252,7 +252,7 @@ int main(int argc, char* argv[])
         CGlobalConfiguration::instance().SetListenAddress(listenIP_);
         //constructors for initial mapping
         broker::CConnectionManager m_conManager;
-        broker::CPhysicalDeviceManager m_phyManager;
+        broker::device::CPhysicalDeviceManager m_phyManager;
         broker::ConnectionPtr m_newConnection;
         boost::asio::io_service m_ios;
 
@@ -267,7 +267,7 @@ int main(int argc, char* argv[])
         if (vm_.count("add-device") > 0)
         {
             broker::device::RegisterPhysicalDevices();
-            
+
             std::vector< std::string > device_list =
                     vm_["add-device"].as< std::vector<std::string> >( );
             foreach(std::string &devid, device_list)

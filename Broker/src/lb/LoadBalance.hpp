@@ -54,8 +54,8 @@ using boost::property_tree::ptree;
 #include "CDispatcher.hpp"
 #include "CConnectionManager.hpp"
 #include "CConnection.hpp"
-#include "CPhysicalDeviceManager.hpp"
-#include "PhysicalDeviceTypes.hpp"
+#include "device/CPhysicalDeviceManager.hpp"
+#include "device/PhysicalDeviceTypes.hpp"
 
 using boost::asio::ip::tcp;
 
@@ -93,19 +93,19 @@ class lbAgent
                 boost::asio::io_service &ios,
                 freedm::broker::CDispatcher &p_dispatch,
                 freedm::broker::CConnectionManager &m_conManager,
-                freedm::broker::CPhysicalDeviceManager &m_phyManager);
+                freedm::broker::device::CPhysicalDeviceManager &m_phyManager);
         lbAgent( const lbAgent& );
         lbAgent& operator = ( const lbAgent& );
         virtual ~lbAgent();
-        
+
         // Internal
         void SendDraftRequest();
         void LoadTable();
         void LoadManage();
-        
+
         PeerNodePtr add_peer(std::string uuid);
         PeerNodePtr get_peer(std::string uuid);
-        
+
         // Handlers
         void HandleRead(broker::CMessage msg);
         void LoadManage( const boost::system::error_code& err );
@@ -115,27 +115,27 @@ class lbAgent
         void StartStateTimer( unsigned int delay );
         void HandleStateTimer( const boost::system::error_code & error);
         void CollectState();
-        
-        
+
+
         // This is the main loop of the algorithm
         int LB();
         double CNorm;
         std::string Leader;
-        
+
     private:
-    
+
         PeerSet     m_HiNodes;
         PeerSet     m_NoNodes;
         PeerSet     m_LoNodes;
         PeerSet     l_AllPeers;
-        
+
         // The handler for all incoming requests.
-        freedm::broker::CPhysicalDeviceManager &m_phyDevManager;
+        freedm::broker::device::CPhysicalDeviceManager &m_phyDevManager;
         void InitiatePowerMigration(broker::device::SettingValue DemandValue);
         void Step_PStar();
         void PStar(broker::device::SettingValue DemandValue);
         void NotifySC(double gatewayChange);
-        
+
         /* IO and Timers */
         deadline_timer     m_GlobalTimer;
         // timer until next periodic state collection

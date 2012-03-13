@@ -33,11 +33,10 @@
 
 namespace freedm {
 namespace broker {
+namespace device {
 
 // forward declaration of device manager
 class CPhysicalDeviceManager;
-
-namespace device {
 
 ////////////////////////////////////////////////////////////////////////////////
 /// device_cast<TargetType>( ObjectType )

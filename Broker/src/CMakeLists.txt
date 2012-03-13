@@ -12,22 +12,22 @@ set(
     CDispatcher.cpp
     CMessage.cpp
     IPeerNode.cpp
-    CPhysicalDeviceManager.cpp
     gm/GroupManagement.cpp
     lb/LoadBalance.cpp
     sc/CStateCollection.cpp
-    CDeviceStructureGeneric.cpp
-    CDeviceKeyCoupled.cpp
     CTableStructure.cpp
     CTableRTDS.cpp
     CLineClient.cpp
     CClientRTDS.cpp
-    CDeviceStructurePSCAD.cpp
-    CDeviceStructureRTDS.cpp
-    CDeviceFactory.cpp
-    IDeviceLWI.cpp
-    IDevice.cpp
-    PhysicalDeviceTypes.cpp
+    device/CDeviceStructureGeneric.cpp
+    device/CDeviceKeyCoupled.cpp
+    device/CPhysicalDeviceManager.cpp
+    device/CDeviceStructurePSCAD.cpp
+    device/CDeviceStructureRTDS.cpp
+    device/CDeviceFactory.cpp
+    device/IDeviceLWI.cpp
+    device/IDevice.cpp
+    device/PhysicalDeviceTypes.cpp
    )
 
 # set BROKER_VERSION macro : cp version.h.cmake version.h

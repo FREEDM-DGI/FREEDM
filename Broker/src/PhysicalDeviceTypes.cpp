@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////////////////////////
-/// @file           PhysicalDeviceTypes.hpp
+/// @file           PhysicalDeviceTypes.cpp
 ///
-/// @author         Thomas Roth <tprfh7@mst.edu>
+/// @author         Michael Catanzaro <michael.catanzaro@mst.edu>
 ///
 /// @project        FREEDM DGI
 ///
@@ -21,15 +21,8 @@
 /// Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
 ////////////////////////////////////////////////////////////////////////////////
 
-#ifndef PHYSICAL_DEVICE_TYPES
-#define PHYSICAL_DEVICE_TYPES
-
-#include "IDevice.hpp"
-#include "IDeviceLWI.hpp"
-#include "CDeviceDESD.hpp"
-#include "CDeviceDRER.hpp"
-#include "CDeviceLOAD.hpp"
-#include "CDeviceSST.hpp"
+#include "CDeviceFactory.hpp"
+#include "PhysicalDeviceTypes.hpp"
 
 namespace freedm
 {
@@ -38,11 +31,29 @@ namespace broker
 namespace device
 {
 
-/// Registers the physical devices known to this file with the device factory.
-void RegisterPhysicalDevices();
+////////////////////////////////////////////////////////////////////////////////
+/// RegisterPhysicalDevices
+///
+/// @description Registers the physical devices known to this file with the
+///  device factory.
+///
+/// @pre This file's device classes have not previously been registered.
+/// @post Devices of these classes can now be created with
+///  CDeviceFactory::CreateDevice(const Identifier&, const std::string)
+///
+/// @limitations None.
+////////////////////////////////////////////////////////////////////////////////
+void RegisterPhysicalDevices()
+{
+    REGISTER_DEVICE_CLASS(LWI_Battery)
+    REGISTER_DEVICE_CLASS(LWI_Load)
+    REGISTER_DEVICE_CLASS(LWI_PV)
+    REGISTER_DEVICE_CLASS(DESD)
+    REGISTER_DEVICE_CLASS(DRER)
+    REGISTER_DEVICE_CLASS(LOAD)
+    REGISTER_DEVICE_CLASS(SST)
+}
 
 }
 }
 }
-
-#endif // PHYSICAL_DEVICE_TYPES

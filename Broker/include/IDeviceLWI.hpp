@@ -27,7 +27,6 @@
 
 #include <boost/shared_ptr.hpp>
 
-#include "CDeviceFactory.hpp"
 #include "CDeviceDRER.hpp"
 #include "CDeviceDESD.hpp"
 #include "CDeviceLOAD.hpp"
@@ -130,10 +129,6 @@ public:
     /// Virtual destructor for derived classes
     virtual ~CDeviceLWI_PV() { }
 };
-
-REGISTER_DEVICE_CLASS(LWI_Battery)
-REGISTER_DEVICE_CLASS(LWI_Load)
-REGISTER_DEVICE_CLASS(LWI_PV)
 
 } // namespace device
 } // namespace broker

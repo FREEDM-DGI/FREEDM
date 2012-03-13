@@ -27,7 +27,6 @@
 
 #include <boost/shared_ptr.hpp>
 
-#include "CDeviceFactory.hpp"
 #include "IDevice.hpp"
 
 namespace freedm {
@@ -55,8 +54,6 @@ public:
     /// Virtual destructor for derived classes
     virtual ~CDeviceDESD() {}
 };
-
-REGISTER_DEVICE_CLASS(DESD)
 
 } // namespace device
 } // namespace broker

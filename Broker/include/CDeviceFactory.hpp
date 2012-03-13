@@ -43,8 +43,7 @@ namespace broker
 namespace device
 {
 
-// Must initialize a variable to use this outside of functions.
-#define REGISTER_DEVICE_CLASS(SUFFIX) int reg##SUFFIX =\
+#define REGISTER_DEVICE_CLASS(SUFFIX) \
 freedm::broker::device::CDeviceFactory::instance().RegisterDeviceClass( \
 #SUFFIX, &freedm::broker::device::CDeviceFactory::CreateDevice< \
 freedm::broker::device::CDevice##SUFFIX>);
@@ -65,11 +64,19 @@ class CDeviceFactory : private boost::noncopyable
     ///
     /// @description Singleton factory that accepts registrations of device
     ///  classes and creates instances of registered classes as requested.
-    ///  Instances are themselves registered in the factory's device manager.
+    ///  (Instances are themselves registered in the factory's device manager.)
+    ///  To register a device class, rather than mess with member function
+    ///  pointer syntax, simply call the REGISTER_DEVICE_CLASS macro with the
+    ///  name of the device class to be created, less the "CDevice" prefix. The
+    ///  macro should not be followed by a semicolon. For example, to register
+    ///  the class CDeviceSST, call REGISTER_DEVICE_CLASS(SST)
     ///
     /// @limitations The singleton instance must be configured with the init
     ///  function before any devices are created. It is, however, safe to
-    ///  register devices before init is called.
+    ///  register devices before init is called. The REGISTER_DEVICE_CLASS macro
+    ///  must be called from within a function, before any devices of the
+    ///  specified class are created and after the class has been fully
+    ///  declared.
     ////////////////////////////////////////////////////////////////////////////
 
 public:
@@ -82,7 +89,7 @@ public:
             const std::string port, const std::string xml);
 
     /// Registers a device class with the factory.
-    int RegisterDeviceClass(const std::string key, FactoryFunction value);
+    void RegisterDeviceClass(const std::string key, FactoryFunction value);
 
     /// Creates a device with the given type and identifier.
     void CreateDevice(const Identifier& deviceID, const std::string deviceType);

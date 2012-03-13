@@ -30,7 +30,6 @@
 
 #include <boost/shared_ptr.hpp>
 
-#include "CDeviceFactory.hpp"
 #include "IDevice.hpp"
 
 namespace freedm
@@ -64,7 +63,5 @@ public:
 } // namespace device
 } // namespace broker
 } // namespace freedm
-
-REGISTER_DEVICE_CLASS(SST)
 
 #endif // C_DEVICE_SST_HPP

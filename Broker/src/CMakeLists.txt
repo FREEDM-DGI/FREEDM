@@ -15,7 +15,6 @@ set(
     CPhysicalDeviceManager.cpp
     gm/GroupManagement.cpp
     lb/LoadBalance.cpp
-    #lb/LBPeerNode.cpp
     sc/CStateCollection.cpp
     CDeviceStructureGeneric.cpp
     CDeviceKeyCoupled.cpp
@@ -28,6 +27,7 @@ set(
     CDeviceFactory.cpp
     IDeviceLWI.cpp
     IDevice.cpp
+    PhysicalDeviceTypes.cpp
    )
 
 # set BROKER_VERSION macro : cp version.h.cmake version.h

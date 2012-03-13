@@ -46,6 +46,7 @@ namespace po = boost::program_options;
 #include "CConnectionManager.hpp"
 #include "CPhysicalDeviceManager.hpp"
 #include "CDeviceFactory.hpp"
+#include "PhysicalDeviceTypes.hpp"
 #include "CGlobalConfiguration.hpp"
 
 using namespace freedm;
@@ -265,6 +266,8 @@ int main(int argc, char* argv[])
         // Create Devices
         if (vm_.count("add-device") > 0)
         {
+            broker::device::RegisterPhysicalDevices();
+            
             std::vector< std::string > device_list =
                     vm_["add-device"].as< std::vector<std::string> >( );
             foreach(std::string &devid, device_list)

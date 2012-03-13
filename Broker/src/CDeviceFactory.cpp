@@ -121,6 +121,9 @@ void CDeviceFactory::init(CPhysicalDeviceManager& manager,
 ///  class, less the "CDevice" prefix. To simplify usage of this function, use
 ///  the REGISTER_DEVICE_CLASS macro as explained in the class comment block.
 ///
+/// @ErrorHandling Insufficiently throws a string if the specified key has
+///  already been registered.
+///
 /// @pre None, presuming the suggested naming convention is followed.
 /// @post The device class is now registered in the factory, allowing the
 ///  factory to create devices of this class with just a string representing the

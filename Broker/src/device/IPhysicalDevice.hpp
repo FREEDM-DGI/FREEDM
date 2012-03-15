@@ -3,13 +3,10 @@
 ///
 /// @author         Thomas Roth <tprfh7@mst.edu>
 ///
-/// @compiler       C++
-///
 /// @project        FREEDM DGI
 ///
 /// @description    Abstract base classes for physical devices.
 ///
-/// @license
 /// These source code files were created at the Missouri University of Science
 /// and Technology, and are intended for use in teaching or research. They may
 /// be freely copied, modified and redistributed as long as modified versions
@@ -21,7 +18,7 @@
 ///
 /// Suggested modifications or questions about these files can be directed to
 /// Dr. Bruce McMillin, Department of Computer Science, Missouri University of
-/// Science and Technology, Rolla, MO 65401 <ff@mst.edu>.
+/// Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
 ////////////////////////////////////////////////////////////////////////////////
 
 #ifndef I_PHYSICAL_DEVICE_HPP
@@ -49,7 +46,7 @@ class IDeviceGet
 public:
     /// Virtual destructor for derived classes
     virtual ~IDeviceGet() {}
-    
+
     /// Handle the device get value operation.
     virtual SettingValue Get( const SettingKey & key ) = 0;
 };
@@ -60,7 +57,7 @@ class IDeviceSet
 public:
     /// Virtual destructor for derived classes
     virtual ~IDeviceSet() {}
-    
+
     /// Handle the device set operation.
     virtual void Set( const SettingKey & key, const SettingValue & value ) = 0;
 };
@@ -73,13 +70,13 @@ class IDeviceStructure
 public:
     /// Convenience type for a shared pointer to self
     typedef boost::shared_ptr<IDeviceStructure> DevicePtr;
-    
+
     /// Virtual destructor for derived classes
     virtual ~IDeviceStructure() {}
-    
+
     /// Registers a device identifier with the structure
     void Register( const Identifier & devid ) { m_device = devid; }
-    
+
     /// Returns the device registered with the structure
     Identifier GetDevice() const { return m_device; }
 private:

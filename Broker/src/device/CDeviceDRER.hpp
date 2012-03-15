@@ -1,16 +1,13 @@
 ////////////////////////////////////////////////////////////////////////////////
-/// @file           CDeviceLOAD.hpp
+/// @file           CDeviceDRER.hpp
 ///
 /// @author         Yaxi Liu <ylztf@mst.edu>
 ///                 Thomas Roth <tprfh7@mst.edu>
 ///
-/// @compiler       C++
-///
 /// @project        FREEDM DGI
 ///
-/// @description    Physical device class for loads
+/// @description    Physical device class for DRER
 ///
-/// @license
 /// These source code files were created at the Missouri University of Science
 /// and Technology, and are intended for use in teaching or research. They may
 /// be freely copied, modified and redistributed as long as modified versions
@@ -22,15 +19,15 @@
 ///
 /// Suggested modifications or questions about these files can be directed to
 /// Dr. Bruce McMillin, Department of Computer Science, Missouri University of
-/// Science and Technology, Rolla, MO 65401 <ff@mst.edu>.
+/// Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
 ////////////////////////////////////////////////////////////////////////////////
 
-#ifndef C_DEVICE_LOAD_HPP
-#define C_DEVICE_LOAD_HPP
+#ifndef C_DEVICE_DRER_HPP
+#define C_DEVICE_DRER_HPP
 
 #include <boost/shared_ptr.hpp>
 
-#include "CDevice.hpp"
+#include "IDevice.hpp"
 
 namespace freedm {
 namespace broker {
@@ -40,26 +37,26 @@ class CPhysicalDeviceManager;
 
 namespace device {
 
-/// Implementation of physical loads
-class CDeviceLOAD
-    : public virtual CDevice
+/// Implementation of distributed renewable energy resources
+class CDeviceDRER
+    : public virtual IDevice
 {
 public:
     /// Convenience type for a shared pointer to self
-    typedef boost::shared_ptr<CDeviceLOAD> DevicePtr;
-    
+    typedef boost::shared_ptr<CDeviceDRER> DevicePtr;
+
     /// Constructor which takes a manager, identifier, and internal structure
-    CDeviceLOAD( CPhysicalDeviceManager & manager, Identifier device,
+    CDeviceDRER( CPhysicalDeviceManager & manager, Identifier device,
         IDeviceStructure::DevicePtr structure )
-        : CDevice(manager,device,structure)
+        : IDevice(manager,device,structure)
         {}
-    
+
     /// Virtual destructor for derived classes
-    virtual ~CDeviceLOAD() {}
+    virtual ~CDeviceDRER() {}
 };
 
 } // namespace device
 } // namespace broker
 } // namespace freedm
 
-#endif // C_DEVICE_LOAD_HPP
+#endif // C_DEVICE_DRER_HPP

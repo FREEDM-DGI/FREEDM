@@ -3,13 +3,10 @@
 ///
 /// @author         Thomas Roth <tprfh7@mst.edu>
 ///
-/// @compiler       C++
-///
 /// @project        FREEDM DGI
 ///
 /// @description    Common header for all physical device types
 ///
-/// @license
 /// These source code files were created at the Missouri University of Science
 /// and Technology, and are intended for use in teaching or research. They may
 /// be freely copied, modified and redistributed as long as modified versions
@@ -21,17 +18,31 @@
 ///
 /// Suggested modifications or questions about these files can be directed to
 /// Dr. Bruce McMillin, Department of Computer Science, Missouri University of
-/// Science and Technology, Rolla, MO 65401 <ff@mst.edu>.
+/// Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
 ////////////////////////////////////////////////////////////////////////////////
 
 #ifndef PHYSICAL_DEVICE_TYPES
 #define PHYSICAL_DEVICE_TYPES
 
-#include "CDevice.hpp"
-#include "CDeviceLWI.hpp"
+#include "IDevice.hpp"
+#include "IDeviceLWI.hpp"
 #include "CDeviceDESD.hpp"
 #include "CDeviceDRER.hpp"
 #include "CDeviceLOAD.hpp"
 #include "CDeviceSST.hpp"
+
+namespace freedm
+{
+namespace broker
+{
+namespace device
+{
+
+/// Registers the physical devices known to this file with the device factory.
+void RegisterPhysicalDevices();
+
+}
+}
+}
 
 #endif // PHYSICAL_DEVICE_TYPES

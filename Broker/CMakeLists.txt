@@ -10,7 +10,7 @@ set(ALT_BUILD_VERSION "Unversioned")
 #   add the option to Broker/include/config.hpp.cmake as #cmakedefine OPTION
 #   activate / deactivate the option as described in the message below
 option(BUILD_TESTS "Enable the building and running of unit tests." OFF)
-option(SHOW_WARNINGS "warnings displayed during project compile" OFF)
+option(SHOW_WARNINGS "warnings displayed during project compile" ON)
 option(CUSTOMNETWORK "for network.xml support" OFF)
 option(DATAGRAM "for UDP Datagram service w/o sequencing" OFF)
 option(USE_DEVICE_PSCAD "Enable the PSCAD simulation interface" OFF)
@@ -32,8 +32,7 @@ if(Boost_FOUND)
     link_directories(${Boost_LIBRARY_DIRS})
 
     # set C++ compiler flags
-    set(COMMON_FLAGS "-g -lpthread")
-    
+    set(COMMON_FLAGS "-g")
     set(WARNING_FLAGS "")
     if(SHOW_WARNINGS)
         set(WARNING_FLAGS "-Wall -Wextra -pedantic")

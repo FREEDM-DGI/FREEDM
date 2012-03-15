@@ -16,25 +16,25 @@ namespace Logger {
 class Log : public boost::iostreams::sink
 {
 public:
-    /// Constructor; prepares a log of a specifed level.
+    /// Constructor; prepares a log of a specified level.
     Log( int level_, const char * name_, std::ostream *out_= &std::clog ) :
         m_level(level_), m_name( name_ ), m_ostream( out_ )
     {
     };
 
-    /// Wrtes from a character array into the logger stream
+    /// Writes from a character array into the logger stream
     std::streamsize write( const char* s, std::streamsize n)
     {
         if( m_filter >= m_level ){
             *m_ostream << microsec_clock::local_time() << " : "
                 << m_name << "(" << m_level << "):\t";
-                       
+
             boost::iostreams::write( *m_ostream, s, n);
         }
-        
+
         return n;
     };
-    
+
     /// Sets the output level, if the logger level is less, then it won't be output
     static void setLevel( const int p_level )
     {

@@ -24,12 +24,12 @@
 #ifndef PHYSICAL_DEVICE_TYPES
 #define PHYSICAL_DEVICE_TYPES
 
-#include "IDevice.hpp"
-#include "IDeviceLWI.hpp"
-#include "CDeviceDESD.hpp"
-#include "CDeviceDRER.hpp"
-#include "CDeviceLOAD.hpp"
-#include "CDeviceSST.hpp"
+#include "types/IDevice.hpp"
+#include "types/IDeviceLWI.hpp"
+#include "types/CDeviceDESD.hpp"
+#include "types/CDeviceDRER.hpp"
+#include "types/CDeviceLOAD.hpp"
+#include "types/CDeviceSST.hpp"
 
 namespace freedm
 {

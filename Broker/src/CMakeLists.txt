@@ -25,9 +25,9 @@ set(
     device/CDeviceStructurePSCAD.cpp
     device/CDeviceStructureRTDS.cpp
     device/CDeviceFactory.cpp
-    device/IDeviceLWI.cpp
-    device/IDevice.cpp
     device/PhysicalDeviceTypes.cpp
+    device/types/IDeviceLWI.cpp
+    device/types/IDevice.cpp
    )
 
 # set BROKER_VERSION macro : cp version.h.cmake version.h

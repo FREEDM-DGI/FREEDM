@@ -29,7 +29,7 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/thread.hpp>
 
-#include "IPhysicalDevice.hpp"
+#include "../IPhysicalDevice.hpp"
 
 namespace freedm {
 namespace broker {

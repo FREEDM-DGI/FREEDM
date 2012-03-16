@@ -33,7 +33,7 @@
 #ifndef PHYSICALDEVICEMANAGER_HPP
 #define PHYSICALDEVICEMANAGER_HPP
 
-#include "IDevice.hpp"
+#include "types/IDevice.hpp"
 
 #include <string>
 #include <map>

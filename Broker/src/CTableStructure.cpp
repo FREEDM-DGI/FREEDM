@@ -80,14 +80,9 @@ CTableStructure::CTableStructure( const std::string & p_xml, const std::string &
 size_t CTableStructure::FindIndex( const CDeviceKeyCoupled & p_dkey ) const
 {
     // search by device for the requested p_dkey
-    try 
-    {
-        return( m_TableHeaders.by<SDevice>().at(p_dkey) );
-    }
-    catch (std::out_of_range & e) 
-    {
-        Logger::Warn << "This device/key pair does not exist." << std::endl;
-    }
+ 
+    return( m_TableHeaders.by<SDevice>().at(p_dkey) );
+  
 }
 }//namespace broker
 } // namespace freedm

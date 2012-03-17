@@ -53,8 +53,16 @@ double CTableRTDS::GetValue( const CDeviceKeyCoupled & p_dkey)
     boost::shared_lock<boost::shared_mutex> lock(m_mutex);
     Logger::Debug << " obtained mutex as reader" << std::endl;
     // convert the key to an index and return its value
-    float value = m_data[m_structure.FindIndex(p_dkey)];
-    return boost::lexical_cast<double>(value);
+    try { 
+        float value = m_data[m_structure.FindIndex(p_dkey)];
+        return boost::lexical_cast<double>(value);
+    }
+    catch (std::out_of_range & e  )
+    {
+        Logger::Warn << "The desired value does not exist."<<std::endl;
+        exit(1);
+    }
+   
 }
 
 void CTableRTDS::SetValue( const CDeviceKeyCoupled & p_dkey, double p_value )

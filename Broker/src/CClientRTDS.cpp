@@ -34,7 +34,8 @@
 #error "unsupported endianness or __BYTE_ORDER not defined"
 #endif
 
-#define TIMESTEP 10000  //in microseconds (so it's 10 miniseconds)
+//set pace on how frequently values will be sent and received
+#define TIMESTEP 10000  //in microseconds (so it's 10 milliseconds)
 namespace freedm
 {
 namespace broker
@@ -42,20 +43,11 @@ namespace broker
 
 CClientRTDS::RTDSPointer CClientRTDS::Create( boost::asio::io_service & p_service, const std::string p_xml )
 {
-     //float has to be 4 bytes. This check is probably not needed, as floats are always 4 bytes
-    if (sizeof(float)!=4)
-    {
-        Logger::Error<<"floating point size error. "<<"float must be 4 bytes when usig RTDS simulation:"<<std::endl;
-        exit(1);
-    }
-    
-    //command and state tables are using floats only.  So this is probably not needed.
-    if (sizeof(int)!=4)
-    {
-        Logger::Error<<"int size error."<<" int must be 4 bytes when usig RTDS simulation:"<<std::endl;
-        exit(1);
-    }
-    
+    //RTDS uses 4-byte floats and ints.  We need make sure DGI side is the same.
+    assert(sizeof(float) == 4);
+    assert(sizeof(int) == 4); 
+    assert(sizeof(char) == 1);
+
     return CClientRTDS::RTDSPointer( new CClientRTDS(p_service, p_xml) );
 }
 

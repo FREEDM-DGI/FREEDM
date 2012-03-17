@@ -298,7 +298,7 @@ class CClientRTDS : private boost::noncopyable
         ///     none
         ///
         ////////////////////////////////////////////////////////////////////////////////
-        void endian_swap(char * data, const int num_bytes);
+        static void endian_swap(char * data, const int num_bytes);
         
         /// socket to connect to FPGA server
         boost::asio::ip::tcp::socket m_socket;

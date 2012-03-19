@@ -863,12 +863,37 @@ void lbAgent::HandleRead(broker::CMessage msg)
     // --------------------------------------------------------------
     else if(pt.get<std::string>("lb") == "CollectedState")
     {
+/*
         Logger::Notice << "SC module returned gateway values: "
                        << pt.get<std::string>("CollectedState.gateway")
                        << " and intransit P* changes: "
                        << pt.get<std::string>("CollectedState.intransit") << std::endl;
         //Process this global state
         StateNormalize(pt);
+*/
+	//for SC module testing
+        int peer_count=0;
+        double agg_gateway=0;
+	Logger::Notice << "+++++++++++++++++++++++++++++++++++++++++++++++" << std::endl;
+	foreach(ptree::value_type &v, pt.get_child("CollectedState.gateway"))
+	{
+	    Logger::Notice << "SC module returned gateway values: "
+			   << v.second.data() << std::endl;
+ 	    peer_count++;
+            agg_gateway += boost::lexical_cast<double>(v.second.data());
+	}
+        if(peer_count !=0) CNorm =  agg_gateway/peer_count;
+    
+        Logger::Info << "Computed Normal: " << CNorm<<std::endl;
+        SendNormal(CNorm);
+
+	//if there will be no transit messages, warnings will show up
+	foreach(ptree::value_type &v, pt.get_child("CollectedState.intransit"))
+	{
+	    Logger::Notice << "SC module returned intransit messages: "
+			   << v.second.data() << std::endl;
+	}
+
     }//end if("gateway")
     // --------------------------------------------------------------
     // You received the new Normal value calculated and sent by your leader

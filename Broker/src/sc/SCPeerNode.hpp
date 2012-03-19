@@ -69,7 +69,7 @@ class SCPeerNode : public IPeerNode
                    boost::asio::io_service& ios,
                    freedm::broker::CDispatcher& dispatch):
             IPeerNode(uuid, connmgr, ios, dispatch) {};
-        enum EStatus {Sleeping = 0,Collecting};
+
 };
 
 } // End freedm

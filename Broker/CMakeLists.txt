@@ -13,7 +13,7 @@ option(BUILD_TESTS "Enable the building and running of unit tests." OFF)
 option(SHOW_WARNINGS "warnings displayed during project compile" ON)
 option(CUSTOMNETWORK "for network.xml support" OFF)
 option(DATAGRAM "for UDP Datagram service w/o sequencing" OFF)
-option(USE_DEVICE_PSCAD "Enable the PSCAD simulation interface" ON)
+option(USE_DEVICE_PSCAD "Enable the PSCAD simulation interface" OFF)
 option(USE_DEVICE_RTDS "Enable the RTDS simulation interface" OFF)
 option(SHOW_MESSAGES "Enable help messages during cmake execution" ON)
 
@@ -28,7 +28,7 @@ find_package(Boost REQUIRED COMPONENTS system thread program_options serializati
 
 if(Boost_FOUND)
     # add the boost libraries to the project
-    include_directories(${Boost_INCLUDE_DIRS})
+    include_directories(SYSTEM ${Boost_INCLUDE_DIRS})
     link_directories(${Boost_LIBRARY_DIRS})
 
     # set C++ compiler flags

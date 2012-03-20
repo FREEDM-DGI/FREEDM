@@ -19,20 +19,20 @@ Science and Technology, Rolla, MO  65409 (ff@mst.edu).
 Building This Project
 
 1. Begin by installing boost. You may be able to use your system's provided
-boost package, or you may need to begin by downloading boost 1.44 (which is
-known to work) from http://www.boost.org/users/history/
+boost package, or you may need to begin by downloading boost from 
+http://www.boost.org/users/history/. The only supported version is Boost 1.46.1.
 
 2. If you are using a boost package skip to 4.
+
 If you aren't using a package of boost, build it by extracting the source
-tarball you downloaded to your home directory, navigating to it and invoking
-`bjam` which, assuming you have all the right packages installed, will build
-boost.
+tarball you downloaded to your home directory, navigating to it and successivelyinvoking `bootstrap.sh` and then `bjam` which, assuming you have all the right
+packages installed, will build boost.
 
 3. Next, define the BOOST_ROOT environment variable in your `.bashrc` by setting
 it to the directory you build boost in. For example
 `export BOOST_ROOT='~/boost/'` should be added to your `.bashrc`.
 
 4. Navigate to the `Broker` directory within the source you cloned from github
-and invoke `cmake .` This will prepare all the makefiles.
+and invoke `cmake.` This will prepare all the makefiles.
 
 5. Lastly, call make and wait for the FREEDM project to build.

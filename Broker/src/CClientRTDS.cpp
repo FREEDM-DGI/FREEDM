@@ -69,9 +69,8 @@ BOOST_STATIC_ASSERT_MSG(
     "Character size error. char has to be 1 byte."
 );
 
-
-
 //set pace on how frequently values will be sent and received
+//This may change as the project proceeds
 #define TIMESTEP 10000  //in microseconds
 
 namespace freedm
@@ -86,11 +85,7 @@ namespace broker
 ///     This is the connection point with FPGA.
 ///
 /// @Shared_Memory
-///     Uses the passed io_service until destroyed.
-///     Uses the passed string for configuration file name
-///
-/// @Error_Handling
-///     assertions are used to check the memory sizes of common data types.
+///     Uses the passed io_service
 ///
 /// @pre
 ///     CDeviceFactory is created with the USE_DEVICE_RTDS option
@@ -110,7 +105,8 @@ namespace broker
 ///     none
 ///
 ////////////////////////////////////////////////////////////////////////////
-CClientRTDS::RTDSPointer CClientRTDS::Create( boost::asio::io_service & p_service, const std::string p_xml )
+CClientRTDS::RTDSPointer CClientRTDS::Create( boost::asio::io_service & p_service,
+        const std::string p_xml )
 {
     return CClientRTDS::RTDSPointer( new CClientRTDS(p_service, p_xml) );
 }
@@ -139,8 +135,10 @@ CClientRTDS::RTDSPointer CClientRTDS::Create( boost::asio::io_service & p_servic
 ///     none
 ///
 ////////////////////////////////////////////////////////////////////////////
-CClientRTDS::CClientRTDS( boost::asio::io_service & p_service, const std::string p_xml )
-        : m_socket(p_service), m_cmdTable(p_xml, "command"), m_stateTable(p_xml, "state"), m_GlobalTimer(p_service)
+CClientRTDS::CClientRTDS( boost::asio::io_service & p_service,
+                          const std::string p_xml )
+        : m_socket(p_service), m_cmdTable(p_xml, "command"),
+        m_stateTable(p_xml, "state"), m_GlobalTimer(p_service)
 {
     m_rxCount = m_stateTable.m_length;
     m_txCount = m_cmdTable.m_length;
@@ -174,8 +172,8 @@ CClientRTDS::CClientRTDS( boost::asio::io_service & p_service, const std::string
 ///     p_hostname is the hostname of the desired endpoint
 ///     p_port is the port number of the desired endpoint
 ///
-/// @return true if m_socket connected to the endpoint false
-///     otherwise
+/// @return true if m_socket connected to the endpoint
+///         false otherwise
 ///
 /// @limitations
 ///     TCP connections only
@@ -208,14 +206,15 @@ bool CClientRTDS::Connect( const std::string p_hostname, const std::string p_por
 /////////////////////////////////////////////////////////////////////////
 /// Run
 /// @description
-///     This is the main communication handler.
+///     This is the main communication engine.
 ///
 /// @I/O
 ///     At every timestep, a message is sent to FPGA via TCP socket connection,
 ///     then a message is retrieved from FPGA via the same connection.
 ///     On the FPGA side, it's the reverse order -- receive and then send.
-///     Both DGI and FPGA sides' receive function will block until a message arrives,
-///     creating a synchronous, lock-step communication between DGI and FPGA.
+///     Both DGI and FPGA sides' receive function will block until a message
+///     arrives, creating a synchronous, lock-step communication between DGI
+///     and FPGA.
 ///
 /// @Error_Handling
 ///     Throws exception if reading from or writing to socket fails
@@ -244,7 +243,7 @@ void CClientRTDS::Run()
         //read from cmdTable
         memcpy(m_txBuffer, m_cmdTable.m_data, m_txBufSize);
         Logger::Debug << "Client_RTDS - released reader mutex" << std::endl;
-    }
+    }// the scope is needed for mutex to auto release
     // FPGA will send values in big-endian byte order
     // If host machine is in little-endian byte order, convert to big-endian
 #if __BYTE_ORDER == __LITTLE_ENDIAN
@@ -259,7 +258,7 @@ void CClientRTDS::Run()
     // send to FPGA
     try
     {
-        boost::asio::write( m_socket, boost::asio::buffer(m_txBuffer, m_txBufSize) );
+        boost::asio::write(m_socket, boost::asio::buffer(m_txBuffer, m_txBufSize));
     }
     catch (std::exception & e)
     {
@@ -271,11 +270,12 @@ void CClientRTDS::Run()
     //*******************************
     try
     {
-        boost::asio::read( m_socket, boost::asio::buffer(m_rxBuffer, m_rxBufSize) );
+        boost::asio::read(m_socket, boost::asio::buffer(m_rxBuffer, m_rxBufSize));
     }
     catch (std::exception & e)
     {
-        Logger::Warn << "Receive from FPGA failed because " << e.what() << std::endl;
+        Logger::Warn << "Receive from FPGA failed because " << e.what()
+        << std::endl;
     }
     
     // FPGA will send values in big-endian byte order
@@ -291,10 +291,12 @@ void CClientRTDS::Run()
     {
         boost::unique_lock<boost::shared_mutex> lockWrite(m_stateTable.m_mutex);
         Logger::Debug << "Client_RTDS - obtained mutex as writer" << std::endl;
+        
         //write to stateTable
         memcpy(m_stateTable.m_data, m_rxBuffer, m_rxBufSize);
+        
         Logger::Debug << "Client_RTDS - released writer mutex" << std::endl;
-    }
+    } //scope is needed for mutex to auto release
     m_GlobalTimer.async_wait( boost::bind(&CClientRTDS::Run, this));
 }
 
@@ -305,10 +307,10 @@ void CClientRTDS::Run()
 ///     Search the cmdTable and then update the specified value.
 ///
 /// @Error_Handling
-///     Throws an exception if the device/key pair does not exist.
+///     Throws an exception if the device/key pair does not exist in the table.
 ///
 /// @pre
-///     The socket connection has been established
+///     none
 ///
 /// @param
 ///     p_device is the unique identifier of a physical device (such as SST or Load)
@@ -316,7 +318,7 @@ void CClientRTDS::Run()
 ///     p_key is the name of a feature of the device that can be maniputed
 ///     (such as onOffSwitch, chargeLevel, etc.)
 ///
-///     p_value is the desired setting
+///     p_value is the desired new setting
 ///
 /// @limitations
 ///     RTDS uses floats. So p_value is type-cast into float from double.
@@ -335,7 +337,8 @@ void CClientRTDS::Set( const std::string p_device, const std::string p_key,
     }
     catch (std::out_of_range & e  )
     {
-        Logger::Warn << "This device/key pair "<<p_device << "/" << p_key<<" does not exist."<<std::endl;
+        Logger::Warn << "This device/key pair "<<p_device << "/"
+        << p_key<<" does not exist."<<std::endl;
         exit(1);
     }
 }
@@ -347,16 +350,17 @@ void CClientRTDS::Set( const std::string p_device, const std::string p_key,
 ///     Search the stateTable and read from it.
 ///
 /// @Error_Handling
-///     Throws an exception if the server does not respond to the request.
+///     Throws an exception if the device/key pair does not exist in the table.
 ///
 /// @pre
-///     The socket connection has been established
+///     The socket connection has been established. Otherwise the numbers
+///     read is junk.
 ///
 /// @param
 ///     p_device is the unique identifier of a physical device (such as SST, Load)
 ///
-///     p_key is a power electronic reading related to the device (such as powerLevel,
-///     stateOfCharge, etc.)
+///     p_key is a power electronic reading related to the device (such
+///     as powerLevel, stateOfCharge, etc.)
 ///
 /// @return
 ///     value from table is retrieved
@@ -377,7 +381,8 @@ double CClientRTDS::Get( const std::string p_device, const std::string p_key )
     }
     catch (std::out_of_range & e  )
     {
-        Logger::Warn << "This device/key pair "<<p_device << "/" << p_key<<" does not exist."<<std::endl;
+        Logger::Warn << "This device/key pair "<<p_device
+        << "/" << p_key<<" does not exist."<<std::endl;
         exit(1);
     }
 }

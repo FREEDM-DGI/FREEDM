@@ -81,25 +81,34 @@ class CClientRTDS : private boost::noncopyable
     public:
         /// pointer to an CClientRTDS object
         typedef boost::shared_ptr<CClientRTDS> RTDSPointer;
-        /// create a CClientRTDS object
-        static RTDSPointer Create( boost::asio::io_service & p_service, const std::string p_xml );
+        
+        /// create a CClientRTDS object and returns a pointer to it
+        static RTDSPointer Create( boost::asio::io_service & p_service,
+                                   const std::string p_xml );
+                                   
         /// handles connection to FPGA
         bool Connect( const std::string p_hostname, const std::string p_port );
-        /// send commands to RTDS
-        void Set( const std::string p_device, const std::string p_key, const double p_value );
-        /// retrieve power electronic readings from RTDS
+        
+        /// updates command table
+        void Set( const std::string p_device, const std::string p_key,
+                  const double p_value );
+                  
+        /// retrieve retrieve data from state table
         double Get( const std::string p_device, const std::string p_key );
+        
         /// shut down communicaiton to FPGA
         void Quit();
+        
         /// destructor
         ~CClientRTDS();
         
-        //it's better to set Run() as private. Can't do it now as it's not in the same namespaces
-        // as DeviceFactory, who needs to access Run().  So this friend class declaration is not
-        // needed now, but may in the future.
-        friend class CDeviceFactory;
         /// continuous loop for sending and receiving to/from RTDS
         void Run();
+        //It's better to set Run() as private.
+        //Can't do it now as it's not in the same namespaces as DeviceFactory,
+        //who needs to access Run().  So this friend class declaration is not
+        //needed now, but may in the future.
+        friend class CDeviceFactory;
         
     private:
         /// constructor
@@ -110,7 +119,7 @@ class CClientRTDS : private boost::noncopyable
         /// socket to connect to FPGA server
         boost::asio::ip::tcp::socket m_socket;
         
-        /// store the readings from RTDS
+        /// store the power electronic readings from RTDS
         CTableRTDS m_cmdTable;
         /// store the commands to send to RTDS
         CTableRTDS m_stateTable;

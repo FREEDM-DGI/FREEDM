@@ -38,7 +38,6 @@
 /// Computer Science, Missouri University of Science and
 /// Technology, Rolla, MO 65409 (ff@mst.edu).
 /////////////////////////////////////////////////////////
-
 #ifndef C_CLIENT_RTDS_HPP
 #define C_CLIENT_RTDS_HPP
 
@@ -72,6 +71,12 @@ class CClientRTDS : private boost::noncopyable
         ///     It serves as client to FPGA's server.
         ///     It retrieves values from RTDS and transmits commands to RTDS.
         ///
+        /// @peers
+        ///     The FPGA device used by FREEDM research at Florida State 
+        ///     University directly communicates with CClientRTDS.
+        ///     For more details about the code on the FPGA, please contact
+        ///     Dr. Mischa Steurer (steurer@caps.fsu.edu)
+        ///
         /// @limitations
         ///     We assume any multiplexing/demultiplexing (if needed) of
         ///     readings from multiple microgrids simulated by the RTDS model is
@@ -93,7 +98,7 @@ class CClientRTDS : private boost::noncopyable
         void Set( const std::string p_device, const std::string p_key,
                   const double p_value );
                   
-        /// retrieve retrieve data from state table
+        /// retrieve data from state table
         double Get( const std::string p_device, const std::string p_key );
         
         /// shut down communicaiton to FPGA
@@ -104,11 +109,6 @@ class CClientRTDS : private boost::noncopyable
         
         /// continuous loop for sending and receiving to/from RTDS
         void Run();
-        //It's better to set Run() as private.
-        //Can't do it now as it's not in the same namespaces as DeviceFactory,
-        //who needs to access Run().  So this friend class declaration is not
-        //needed now, but may in the future.
-        friend class CDeviceFactory;
         
     private:
         /// constructor

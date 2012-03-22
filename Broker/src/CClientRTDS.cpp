@@ -69,10 +69,6 @@ BOOST_STATIC_ASSERT_MSG(
     "Character size error. char has to be 1 byte."
 );
 
-//set pace on how frequently values will be sent and received
-//This may change as the project proceeds
-#define TIMESTEP 10000  //in microseconds
-
 namespace freedm
 {
 namespace broker
@@ -142,12 +138,14 @@ CClientRTDS::CClientRTDS( boost::asio::io_service & p_service,
 {
     m_rxCount = m_stateTable.m_length;
     m_txCount = m_cmdTable.m_length;
+
     //each value in stateTable and cmdTable is of type float (4 bytes)
     m_rxBufSize = 4 * m_rxCount;
     m_txBufSize = 4 * m_txCount;
+
     //allocate memory for buffer for reading and writing to FPGA
-    m_rxBuffer = (char*)malloc(m_rxBufSize);
-    m_txBuffer = (char*)malloc(m_txBufSize);
+    m_rxBuffer = new char[m_rxBufSize];
+    m_txBuffer = new char[m_rxBufSize];
 }
 
 ////////////////////////////////////////////////////////////////////////////
@@ -214,7 +212,8 @@ bool CClientRTDS::Connect( const std::string p_hostname, const std::string p_por
 ///     On the FPGA side, it's the reverse order -- receive and then send.
 ///     Both DGI and FPGA sides' receive function will block until a message
 ///     arrives, creating a synchronous, lock-step communication between DGI
-///     and FPGA.
+///     and FPGA. In this sense, how frequently send and receive get executed
+///     by CClientRTDS is dependent on how fast FPGA runs.
 ///
 /// @Error_Handling
 ///     Throws exception if reading from or writing to socket fails
@@ -232,8 +231,13 @@ bool CClientRTDS::Connect( const std::string p_hostname, const std::string p_por
 //////////////////////////////////////////////////////////////////////////
 void CClientRTDS::Run()
 {
-    //Start the timer; on timeout, this function is called again
-    m_GlobalTimer.expires_from_now( boost::posix_time::microseconds(TIMESTEP) );
+    //TIMESTEP is used by deadline_timer.async_wait at the end of Run().  
+    //We keep TIMESTEP very small as we actually do not care if we wait at all.
+    //We simply need to use deadline_timer.async_wait to pass control back
+    //to io_service, so it can schedule Run() with other callback functions 
+    //under its watch.
+    const int TIMESTEP=10; //in microseconds. NEEDS MORE TESTING TO SET COORECTLY.
+
     //**********************************
     //* Always send data to FPGA first *
     //**********************************
@@ -244,6 +248,7 @@ void CClientRTDS::Run()
         memcpy(m_txBuffer, m_cmdTable.m_data, m_txBufSize);
         Logger::Debug << "Client_RTDS - released reader mutex" << std::endl;
     }// the scope is needed for mutex to auto release
+
     // FPGA will send values in big-endian byte order
     // If host machine is in little-endian byte order, convert to big-endian
 #if __BYTE_ORDER == __LITTLE_ENDIAN
@@ -297,6 +302,9 @@ void CClientRTDS::Run()
         
         Logger::Debug << "Client_RTDS - released writer mutex" << std::endl;
     } //scope is needed for mutex to auto release
+    
+    //Start the timer; on timeout, this function is called again
+    m_GlobalTimer.expires_from_now( boost::posix_time::microseconds(TIMESTEP) );
     m_GlobalTimer.async_wait( boost::bind(&CClientRTDS::Run, this));
 }
 
@@ -329,7 +337,7 @@ void CClientRTDS::Set( const std::string p_device, const std::string p_key,
                        double p_value )
 {
     //access and write to table
-    Logger::Info << __PRETTY_FUNCTION__ << std::endl;
+    Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
     
     try
     {
@@ -337,7 +345,7 @@ void CClientRTDS::Set( const std::string p_device, const std::string p_key,
     }
     catch (std::out_of_range & e  )
     {
-        Logger::Warn << "This device/key pair "<<p_device << "/"
+        Logger::Alert << "This device/key pair "<<p_device << "/"
         << p_key<<" does not exist."<<std::endl;
         exit(1);
     }
@@ -373,7 +381,7 @@ void CClientRTDS::Set( const std::string p_device, const std::string p_key,
 double CClientRTDS::Get( const std::string p_device, const std::string p_key )
 {
     //access and read from table
-    Logger::Info << __PRETTY_FUNCTION__ << std::endl;
+    Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
     
     try
     {
@@ -381,7 +389,7 @@ double CClientRTDS::Get( const std::string p_device, const std::string p_key )
     }
     catch (std::out_of_range & e  )
     {
-        Logger::Warn << "This device/key pair "<<p_device
+        Logger::Alert << "This device/key pair "<<p_device
         << "/" << p_key<<" does not exist."<<std::endl;
         exit(1);
     }
@@ -426,23 +434,33 @@ void CClientRTDS::Quit()
 ///
 ////////////////////////////////////////////////////////////////////////////
 CClientRTDS::~CClientRTDS()
-{
-    free(m_rxBuffer);
-    free(m_txBuffer);
-    
+{  
     //  perform teardown
     if ( m_socket.is_open() )
     {
         Quit();
     }
+
+    delete[] m_rxBuffer;
+    delete[] m_txBuffer;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 /// endian_swap
 ///
 /// @description
-///     a utility function for converting byte order from big endian to little
+///     A utility function for converting byte order from big endian to little
 ///     endian and vise versa.
+///  
+///     Loop Precondition:  the buffer 'data' is filled with numbers
+///     Loop Postcondition: the buffer 'data' is filled with numbers 
+///                         in the reverse sequence.
+///     Invariant: At each iteration of the loop
+///                the total count of copied number 
+///                +
+///                the total count of uncopied numbers
+///                = 
+///                num_bytes
 ///
 /// @limitations
 ///     none

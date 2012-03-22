@@ -145,8 +145,7 @@ void CListener::HandleRead(const boost::system::error_code& e,
             if(m_message.GetStatus() == freedm::broker::CMessage::Accepted)
             {
                 ptree pp = m_message.GetProtocolProperties();
-                size_t hash = pp.get<size_t>("src.hash");
-                Logger::Debug<<"Recieved ACK"<<hash<<":"
+                Logger::Debug<<"Recieved ACK"<<":"
                                 <<m_message.GetSequenceNumber()<<std::endl;
                 conn->RecieveACK(m_message);
             }

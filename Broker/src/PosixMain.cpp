@@ -337,11 +337,11 @@ int main (int argc, char* argv[])
         GMAgent GM_ (uuidstr, broker_.GetIOService(), dispatch_, m_conManager);
         dispatch_.RegisterReadHandler( "gm", &GM_);
         // Instantiate and register the power management module
-        lbAgent LB_ (uuidstr, broker_.GetIOService(), dispatch_, m_conManager, m_phyManager);
-        dispatch_.RegisterReadHandler( "lb", &LB_);
+        //lbAgent LB_ (uuidstr, broker_.GetIOService(), dispatch_, m_conManager, m_phyManager);
+        //dispatch_.RegisterReadHandler( "lb", &LB_);
         // Instantiate and register the state collection module
-        SCAgent SC_ (uuidstr, broker_.GetIOService(), dispatch_, m_conManager, m_phyManager);
-        dispatch_.RegisterReadHandler( "any", &SC_);
+        //SCAgent SC_ (uuidstr, broker_.GetIOService(), dispatch_, m_conManager, m_phyManager);
+        //dispatch_.RegisterReadHandler( "any", &SC_);
         
         // The peerlist should be passed into constructors as references or pointers
         // to each submodule to allow sharing peers. NOTE this requires thread-safe
@@ -393,8 +393,8 @@ int main (int argc, char* argv[])
         pthread_sigmask(SIG_SETMASK, &old_mask, 0);
         Logger::Debug << "Starting thread of Modules" << std::endl;
         boost::thread thread2_( boost::bind(&GMAgent::Run, &GM_)
-                                , boost::bind(&lbAgent::LB, &LB_)
-                                , boost::bind(&SCAgent::SC, &SC_)
+        //                        , boost::bind(&lbAgent::LB, &LB_)
+        //                        , boost::bind(&SCAgent::SC, &SC_)
                               );
         // Wait for signal indicating time to shut down.
         sigset_t wait_mask;

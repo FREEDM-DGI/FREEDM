@@ -69,8 +69,8 @@ if __name__ == "__main__":
     #PREPARE THE EXPERIMENT
     exp = experiment.Experiment(host2uuid,options.granularity)
     #Hack until I fix stuff
-    exp.fix_edge(options.hostnames[0],options.hostnames[2],100)
-    exp.fix_edge(options.hostnames[1],options.hostnames[3],100)
+    #exp.fix_edge(options.hostnames[0],options.hostnames[2],100)
+    #exp.fix_edge(options.hostnames[1],options.hostnames[3],100)
     f = open(options.outputfile,'w',0)
     f.write(exp.tsv_head()+"\n")
     hs = ",".join(options.hostnames)

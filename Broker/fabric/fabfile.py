@@ -37,8 +37,9 @@ def build():
         run("BOOST_ROOT='%s' make" % BOOST_ROOT)
 
 @parallel
-def start_sim(runtime='10m',timeout='10s'):
+def start_sim(runtime='10m',timeout='10s'):    
     with cd(SRC_DIR):
+        cmd = "timeout -k %s %s ./PosixBroker" % (timeout,runtime)
         result = run(cmd)
         if result.return_code != 0:
             print "Test failed with error code."

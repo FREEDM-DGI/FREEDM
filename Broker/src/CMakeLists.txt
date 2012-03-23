@@ -1,7 +1,9 @@
 # list the source files for the project
 set(
     BROKER_FILES
+    CLogger.cpp
     CBroker.cpp
+    RequestParser.cpp
     CReliableConnection.cpp
     CListener.cpp
     CConnectionManager.cpp

@@ -47,11 +47,6 @@
 #include "CConnection.hpp"
 #include "CConnectionManager.hpp"
 
-
-#include "logger.hpp"
-//CREATE_EXTERN_STD_LOGS();
-
-
 namespace freedm {
 typedef boost::shared_ptr<freedm::broker::CMessage> MessagePtr;
 typedef freedm::broker::CConnectionManager& ConnManagerPtr;

@@ -52,7 +52,6 @@
 #include <boost/thread/mutex.hpp>
 #include <boost/thread/thread.hpp>
 
-#include "logger.hpp"
 #include "CTableRTDS.hpp"
 
 namespace freedm

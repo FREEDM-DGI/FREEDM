@@ -46,9 +46,6 @@ using boost::property_tree::ptree;
 #include <string>
 #include <set>
 
-#include "logger.hpp"
-CREATE_EXTERN_STD_LOGS()
-
 namespace freedm {
 namespace broker {
 
@@ -169,16 +166,6 @@ public:
     /// Put CMessage to a stream.
     virtual void Save( std::ostream &p_os );
 
-    /// A Generic reply CMessage DEPRECIATED.
-    static CMessage StockReply( StatusType p_status )
-    {
-        Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
-        CMessage reply_;
-        reply_.m_status = p_status;
-
-        return reply_;
-    };
-    
     /// Implicit conversion operator
     virtual operator ptree ();
 

@@ -10,7 +10,7 @@ class Stopwatch
         Stopwatch()
         {
             timer_running = false;
-            elapsed = time_duration(0,0,0,0);
+            elapsed = boost::posix_time::time_duration(0,0,0,0);
         }
         void Start()
         {
@@ -33,7 +33,7 @@ class Stopwatch
         void Reset()
         {
             timer_running = false;
-            elapsed = time_duration(0,0,0,0);
+            elapsed = boost::posix_time::time_duration(0,0,0,0);
         }
         std::string TotalElapsed()
         {

@@ -52,10 +52,7 @@
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/xml_parser.hpp>
 
-#include "logger.hpp"
 #include "CDeviceKeyCoupled.hpp"
-
-CREATE_EXTERN_STD_LOGS()
 
 namespace freedm
 {

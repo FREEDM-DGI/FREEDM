@@ -79,8 +79,9 @@
 #include <boost/property_tree/ptree.hpp>
 using boost::property_tree::ptree;
 
-#include "logger.hpp"
-CREATE_EXTERN_STD_LOGS()
+#include "CLogger.hpp"
+
+static CLocalLogger Logger(__FILE__);
 
 namespace freedm
 {
@@ -107,7 +108,7 @@ lbAgent::lbAgent(std::string uuid_, boost::asio::io_service &ios,
     m_GlobalTimer(ios),
     m_StateTimer(ios)
 {
-    Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     PeerNodePtr self_(this);
     InsertInPeerSet(l_AllPeers, self_);
     Leader = GetUUID();
@@ -134,7 +135,7 @@ lbAgent::~lbAgent()
 /////////////////////////////////////////////////////////
 int lbAgent::LB()
 {
-    Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     // This initializes the algorithm
     LoadManage();
     return 0;
@@ -149,7 +150,7 @@ int lbAgent::LB()
 /////////////////////////////////////////////////////////
 lbAgent::PeerNodePtr lbAgent::add_peer(std::string uuid)
 {
-    Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     PeerNodePtr tmp_;
     tmp_.reset(new LPeerNode(uuid,GetConnectionManager(),GetIOService(),GetDispatcher()));
     InsertInPeerSet(l_AllPeers,tmp_);
@@ -187,14 +188,14 @@ lbAgent::PeerNodePtr lbAgent::get_peer(std::string uuid)
 /////////////////////////////////////////////////////////
 void lbAgent::SendMsg(std::string msg, PeerSet peerSet_)
 {
-    Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     broker::CMessage m_;
     std::stringstream ss_;
     ss_.clear();
     ss_ << GetUUID();
     m_.m_submessages.put("lb.source", ss_.str());
     m_.m_submessages.put("lb", msg);
-    Logger::Notice << "Sending '" << msg << "' from: "
+    Logger.Notice << "Sending '" << msg << "' from: "
                    << m_.m_submessages.get<std::string>("lb.source") <<std::endl;
     foreach( PeerNodePtr peer_, peerSet_ | boost::adaptors::map_values)
     {
@@ -210,7 +211,7 @@ void lbAgent::SendMsg(std::string msg, PeerSet peerSet_)
             }
             catch (boost::system::system_error& e)
             {
-                Logger::Info << "Couldn't Send Message To Peer" << std::endl;
+                Logger.Info << "Couldn't Send Message To Peer" << std::endl;
             }
         }
     }
@@ -226,11 +227,11 @@ void lbAgent::SendMsg(std::string msg, PeerSet peerSet_)
 /////////////////////////////////////////////////////////
 void lbAgent::SendNormal(double Normal)
 {
-    Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     
     if(Leader == GetUUID())
     {
-        Logger::Info <<"Sending Computed Normal to the group members" <<std::endl;
+        Logger.Info <<"Sending Computed Normal to the group members" <<std::endl;
         broker::CMessage m_;
         std::stringstream ss_;
         ss_.clear();
@@ -246,7 +247,7 @@ void lbAgent::SendNormal(double Normal)
             }
             catch (boost::system::system_error& e)
             {
-                Logger::Info << "Couldn't Send Message To Peer" << std::endl;
+                Logger.Info << "Couldn't Send Message To Peer" << std::endl;
             }
         }//end foreach
     }
@@ -262,11 +263,11 @@ void lbAgent::SendNormal(double Normal)
 /////////////////////////////////////////////////////////
 void lbAgent::NotifySC(double gatewayChange)
 {
-    Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     broker::CMessage m_sc;
     m_sc.m_submessages.put("sc", "channel");
     m_sc.m_submessages.put("sc.intransit", gatewayChange);
-    Logger::Notice <<"Notifying SC module of Set(PStar) " <<std::endl;
+    Logger.Notice <<"Notifying SC module of Set(PStar) " <<std::endl;
     get_peer(GetUUID())->Send(m_sc);
 }
 
@@ -280,13 +281,13 @@ void lbAgent::NotifySC(double gatewayChange)
 /////////////////////////////////////////////////////////
 void lbAgent::CollectState()
 {
-    Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     freedm::broker::CMessage m_cs;
     m_cs.m_submessages.put("sc", "request");
     m_cs.m_submessages.put("sc.source", GetUUID());
     m_cs.m_submessages.put("sc.module", "lb");
     get_peer(GetUUID())->Send(m_cs);
-    Logger::Status << "Load Balance: Requesting State Collection" << std::endl;
+    Logger.Status << "Load Balance: Requesting State Collection" << std::endl;
 }
 
 ////////////////////////////////////////////////////////////
@@ -302,7 +303,7 @@ void lbAgent::CollectState()
 /////////////////////////////////////////////////////////
 void lbAgent::LoadManage()
 {
-    Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     //Remember previous load before computing current load
     preLoad = l_Status;
     //Call LoadTable to update load state of the system as observed by this node
@@ -346,7 +347,7 @@ void lbAgent::LoadManage()
 /////////////////////////////////////////////////////////
 void lbAgent::LoadManage( const boost::system::error_code& err )
 {
-    Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     
     if(!err)
     {
@@ -354,13 +355,13 @@ void lbAgent::LoadManage( const boost::system::error_code& err )
     }
     else if(boost::asio::error::operation_aborted == err )
     {
-        Logger::Info << "LoadManage(operation_aborted error) " << __LINE__
+        Logger.Info << "LoadManage(operation_aborted error) " << __LINE__
                      << std::endl;
     }
     else
     {
         // An error occurred or timer was canceled
-        Logger::Error << err << std::endl;
+        Logger.Error << err << std::endl;
         throw boost::system::system_error(err);
     }
 }
@@ -378,7 +379,7 @@ void lbAgent::LoadManage( const boost::system::error_code& err )
 /////////////////////////////////////////////////////////
 void lbAgent::LoadTable()
 {
-    Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     // device typedef for convenience
     typedef broker::device::CDeviceDRER DRER;
     typedef broker::device::CDeviceDESD DESD;
@@ -429,27 +430,27 @@ void lbAgent::LoadTable()
         SSTValue +=(*pit)->Get("powerLevel");
     }
     
-    Logger::Status <<" ----------- LOAD TABLE (Power Management) ------------"
+    Logger.Status <<" ----------- LOAD TABLE (Power Management) ------------"
                    << std::endl;
-    Logger::Status <<"| " << "Load Table @ " << microsec_clock::local_time()  <<std::endl;
+    Logger.Status <<"| " << "Load Table @ " << microsec_clock::local_time()  <<std::endl;
     P_Gen = net_gen;
     B_Soc = net_storage;
     P_Load = net_load;
     P_CalculatedGateway = P_Load - P_Gen;
     P_Gateway = SSTValue;
-    Logger::Status <<"| " << "Net DRER (" << DRER_count << "): " << P_Gen
+    Logger.Status <<"| " << "Net DRER (" << DRER_count << "): " << P_Gen
                    << std::setw(14) << "Net DESD (" << DESD_count << "): "
                    << B_Soc << std::endl;
-    Logger::Status <<"| " << "Net Load (" << LOAD_count << "): "<< P_Load
+    Logger.Status <<"| " << "Net Load (" << LOAD_count << "): "<< P_Load
                    << std::setw(16) << "Calc Gateway: " << P_CalculatedGateway
                    << std::endl;
-    Logger::Status <<"| Normal = " << CNorm << std::setw(14)<<  "Net Gateway: "
+    Logger.Status <<"| Normal = " << CNorm << std::setw(14)<<  "Net Gateway: "
                    <<  P_Gateway<< std::endl;
-    Logger::Status <<"| ---------------------------------------------------- |"
+    Logger.Status <<"| ---------------------------------------------------- |"
                    << std::endl;
-    Logger::Status <<"| " << std::setw(20) << "UUID" << std::setw(27)<< "State"
+    Logger.Status <<"| " << std::setw(20) << "UUID" << std::setw(27)<< "State"
                    << std::setw(7) <<"|"<< std::endl;
-    Logger::Status <<"| "<< std::setw(20) << "----" << std::setw(27)<< "-----"
+    Logger.Status <<"| "<< std::setw(20) << "----" << std::setw(27)<< "-----"
                    << std::setw(7) <<"|"<< std::endl;
                    
     //Compute the Load state based on the current gateway value and Normal
@@ -497,26 +498,26 @@ void lbAgent::LoadTable()
         //                                   << std::setw(6) <<"|"<<std::endl;
         if (CountInPeerSet(m_HiNodes,p_) > 0 )
         {
-            Logger::Status<<"| " << p_->GetUUID() << std::setw(12)<< "Demand"
+            Logger.Status<<"| " << p_->GetUUID() << std::setw(12)<< "Demand"
                           << std::setw(6) <<"|"<<std::endl;
         }
         else if (CountInPeerSet(m_NoNodes,p_) > 0 )
         {
-            Logger::Status<<"| " << p_->GetUUID() << std::setw(12)<< "Normal"
+            Logger.Status<<"| " << p_->GetUUID() << std::setw(12)<< "Normal"
                           << std::setw(6) <<"|"<<std::endl;
         }
         else if (CountInPeerSet(m_LoNodes,p_) > 0 )
         {
-            Logger::Status<<"| " << p_->GetUUID() << std::setw(12)<< "Supply"
+            Logger.Status<<"| " << p_->GetUUID() << std::setw(12)<< "Supply"
                           << std::setw(6) <<"|"<<std::endl;
         }
         else
         {
-            Logger::Status<<"| " << p_->GetUUID() << std::setw(12)<< "------"
+            Logger.Status<<"| " << p_->GetUUID() << std::setw(12)<< "------"
                           << std::setw(6) <<"|"<<std::endl;
         }
     }
-    Logger::Status << "------------------------------------------------------" << std::endl;
+    Logger.Status << "------------------------------------------------------" << std::endl;
     return;
 }//end LoadTable
 
@@ -536,13 +537,13 @@ void lbAgent::LoadTable()
 /////////////////////////////////////////////////////////
 void lbAgent::SendDraftRequest()
 {
-    Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     
     if(LPeerNode::SUPPLY == l_Status)
     {
         if(m_HiNodes.empty())
         {
-            Logger::Notice << "No known Demand nodes at the moment" <<std::endl;
+            Logger.Notice << "No known Demand nodes at the moment" <<std::endl;
         }
         else
         {
@@ -565,7 +566,7 @@ void lbAgent::SendDraftRequest()
 /////////////////////////////////////////////////////////
 void lbAgent::HandleRead(broker::CMessage msg)
 {
-    Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     PeerSet tempSet_;
     MessagePtr m_;
     std::string line_;
@@ -573,23 +574,23 @@ void lbAgent::HandleRead(broker::CMessage msg)
     PeerNodePtr peer_;
     line_ = msg.GetSourceUUID();
     ptree pt = msg.GetSubMessages();
-    Logger::Debug << "Message '" <<pt.get<std::string>("lb","NOEXECPTION")<<"' received from "<< line_<<std::endl;
+    Logger.Debug << "Message '" <<pt.get<std::string>("lb","NOEXECPTION")<<"' received from "<< line_<<std::endl;
     
     // Evaluate the identity of the message source
     if(line_ != GetUUID())
     {
-        Logger::Debug << "Flag " <<std::endl;
+        Logger.Debug << "Flag " <<std::endl;
         // Update the peer entry, if needed
         peer_ = get_peer(line_);
         
         if( peer_ != NULL)
         {
-            Logger::Debug << "Peer already exists. Do Nothing " <<std::endl;
+            Logger.Debug << "Peer already exists. Do Nothing " <<std::endl;
         }
         else
         {
             // Add the peer, if an entry wasn`t found
-            Logger::Debug << "Peer doesn`t exist. Add it up to LBPeerSet" <<std::endl;
+            Logger.Debug << "Peer doesn`t exist. Add it up to LBPeerSet" <<std::endl;
             add_peer(line_);
             peer_ = get_peer(line_);
         }
@@ -601,7 +602,7 @@ void lbAgent::HandleRead(broker::CMessage msg)
     // --------------------------------------------------------------
     if(pt.get<std::string>("any","NOEXCEPTION") == "PeerList")
     {
-        Logger::Notice << "\nPeer Listreceived from Group Leader: " << line_ <<std::endl;
+        Logger.Notice << "\nPeer Listreceived from Group Leader: " << line_ <<std::endl;
         Leader = line_;
         
         if(Leader == GetUUID())
@@ -654,11 +655,11 @@ void lbAgent::HandleRead(broker::CMessage msg)
             
             if( false != peer_ )
             {
-                Logger::Debug << "LB knows this peer " <<std::endl;
+                Logger.Debug << "LB knows this peer " <<std::endl;
             }
             else
             {
-                Logger::Debug << "LB sees a new member "<< v.second.data()
+                Logger.Debug << "LB sees a new member "<< v.second.data()
                               << " in the group " <<std::endl;
                 add_peer(v.second.data());
             }
@@ -675,7 +676,7 @@ void lbAgent::HandleRead(broker::CMessage msg)
     // --------------------------------------------------------------
     else if(pt.get<std::string>("lb") == "request"  && peer_->GetUUID() != GetUUID())
     {
-        Logger::Notice << "Request message received from: " << peer_->GetUUID() << std::endl;
+        Logger.Notice << "Request message received from: " << peer_->GetUUID() << std::endl;
         // Just not to duplicate the peer, erase the existing entries of it
         EraseInPeerSet(m_LoNodes,peer_);
         EraseInPeerSet(m_HiNodes,peer_);
@@ -713,7 +714,7 @@ void lbAgent::HandleRead(broker::CMessage msg)
             }
             catch (boost::system::system_error& e)
             {
-                Logger::Info << "Couldn't Send Message To Peer" << std::endl;
+                Logger.Info << "Couldn't Send Message To Peer" << std::endl;
             }
         }
     }//end if("request")
@@ -722,7 +723,7 @@ void lbAgent::HandleRead(broker::CMessage msg)
     // --------------------------------------------------------------
     else if(pt.get<std::string>("lb") == "demand"  && peer_->GetUUID() != GetUUID())
     {
-        Logger::Notice << "Demand message received from: "
+        Logger.Notice << "Demand message received from: "
                        << pt.get<std::string>("lb.source") <<std::endl;
         EraseInPeerSet(m_HiNodes,peer_);
         EraseInPeerSet(m_NoNodes,peer_);
@@ -734,7 +735,7 @@ void lbAgent::HandleRead(broker::CMessage msg)
     // --------------------------------------------------------------
     else if(pt.get<std::string>("lb") == "normal"  && peer_->GetUUID() != GetUUID())
     {
-        Logger::Notice << "Normal message received from: "
+        Logger.Notice << "Normal message received from: "
                        << pt.get<std::string>("lb.source") <<std::endl;
         EraseInPeerSet(m_NoNodes,peer_);
         EraseInPeerSet(m_HiNodes,peer_);
@@ -747,7 +748,7 @@ void lbAgent::HandleRead(broker::CMessage msg)
     // --------------------------------------------------------------
     else if(pt.get<std::string>("lb") == "supply"  && peer_->GetUUID() != GetUUID())
     {
-        Logger::Notice << "Supply message received from: "
+        Logger.Notice << "Supply message received from: "
                        << pt.get<std::string>("lb.source") <<std::endl;
         EraseInPeerSet(m_LoNodes,peer_);
         EraseInPeerSet(m_HiNodes,peer_);
@@ -763,7 +764,7 @@ void lbAgent::HandleRead(broker::CMessage msg)
         // The response is a 'yes'
         if(pt.get<std::string>("lb") == "yes")
         {
-            Logger::Notice << "(Yes) from " << peer_->GetUUID() << std::endl;
+            Logger.Notice << "(Yes) from " << peer_->GetUUID() << std::endl;
             //Initiate drafting with a message accordingly
             broker::CMessage m_;
             std::stringstream ss_;
@@ -782,14 +783,14 @@ void lbAgent::HandleRead(broker::CMessage msg)
                 }
                 catch (boost::system::system_error& e)
                 {
-                    Logger::Info << "Couldn't send Message To Peer" << std::endl;
+                    Logger.Info << "Couldn't send Message To Peer" << std::endl;
                 }
             }
         }//endif
         // The response is a 'No'; do nothing
         else
         {
-            Logger::Notice << "(No) from " << peer_->GetUUID() << std::endl;
+            Logger.Notice << "(No) from " << peer_->GetUUID() << std::endl;
         }
     }//end if("yes/no from the demand node")
     // --------------------------------------------------------------
@@ -798,7 +799,7 @@ void lbAgent::HandleRead(broker::CMessage msg)
     // --------------------------------------------------------------
     else if(pt.get<std::string>("lb") == "drafting" && peer_->GetUUID() != GetUUID())
     {
-        Logger::Notice << "Drafting message received from: " << peer_->GetUUID() << std::endl;
+        Logger.Notice << "Drafting message received from: " << peer_->GetUUID() << std::endl;
         
         if(LPeerNode::DEMAND == l_Status)
         {
@@ -821,7 +822,7 @@ void lbAgent::HandleRead(broker::CMessage msg)
                 }
                 catch (boost::system::system_error& e)
                 {
-                    Logger::Info << "Couldn't Send Message To Peer" << std::endl;
+                    Logger.Info << "Couldn't Send Message To Peer" << std::endl;
                 }
                 
                 // Make necessary power setting accordingly to allow power migration
@@ -843,19 +844,19 @@ void lbAgent::HandleRead(broker::CMessage msg)
         std::stringstream ss_;
         ss_ << pt.get<std::string>("lb.value");
         ss_ >> DemValue;
-        Logger::Notice << " Draft Accept message received from: " << peer_->GetUUID()
+        Logger.Notice << " Draft Accept message received from: " << peer_->GetUUID()
                        << " with demand of "<<DemValue << std::endl;
                        
         if( LPeerNode::SUPPLY == l_Status)
         {
             // Make necessary power setting accordingly to allow power migration
-            Logger::Warn<<"Migrating power on request from: "<< peer_->GetUUID() << std::endl;
+            Logger.Warn<<"Migrating power on request from: "<< peer_->GetUUID() << std::endl;
             // !!!NOTE: You may use Step_PStar() or PStar(DemandValue) currently
             Step_PStar();
         }//end if( LPeerNode::SUPPLY == l_Status)
         else
         {
-            Logger::Warn << "Unexpected Accept message" << std::endl;
+            Logger.Warn << "Unexpected Accept message" << std::endl;
         }
     }//end if("accept")
     // --------------------------------------------------------------
@@ -864,7 +865,7 @@ void lbAgent::HandleRead(broker::CMessage msg)
     else if(pt.get<std::string>("lb") == "CollectedState")
     {
 /*
-        Logger::Notice << "SC module returned gateway values: "
+        Logger.Notice << "SC module returned gateway values: "
                        << pt.get<std::string>("CollectedState.gateway")
                        << " and intransit P* changes: "
                        << pt.get<std::string>("CollectedState.intransit") << std::endl;
@@ -874,23 +875,23 @@ void lbAgent::HandleRead(broker::CMessage msg)
 	//for SC module testing
         int peer_count=0;
         double agg_gateway=0;
-	Logger::Notice << "+++++++++++++++++++++++++++++++++++++++++++++++" << std::endl;
+	Logger.Notice << "+++++++++++++++++++++++++++++++++++++++++++++++" << std::endl;
 	foreach(ptree::value_type &v, pt.get_child("CollectedState.gateway"))
 	{
-	    Logger::Notice << "SC module returned gateway values: "
+	    Logger.Notice << "SC module returned gateway values: "
 			   << v.second.data() << std::endl;
  	    peer_count++;
             agg_gateway += boost::lexical_cast<double>(v.second.data());
 	}
         if(peer_count !=0) CNorm =  agg_gateway/peer_count;
     
-        Logger::Info << "Computed Normal: " << CNorm<<std::endl;
+        Logger.Info << "Computed Normal: " << CNorm<<std::endl;
         SendNormal(CNorm);
 
 	//if there will be no transit messages, warnings will show up
 	foreach(ptree::value_type &v, pt.get_child("CollectedState.intransit"))
 	{
-	    Logger::Notice << "SC module returned intransit messages: "
+	    Logger.Notice << "SC module returned intransit messages: "
 			   << v.second.data() << std::endl;
 	}
 
@@ -901,7 +902,7 @@ void lbAgent::HandleRead(broker::CMessage msg)
     else if(pt.get<std::string>("lb") == "ComputedNormal")
     {
         CNorm = pt.get<double>("lb.cnorm");
-        Logger::Notice << "Computed Normal " << CNorm << " received from "
+        Logger.Notice << "Computed Normal " << CNorm << " received from "
                        << pt.get<std::string>("lb.source") << std::endl;
         LoadTable();
     }
@@ -910,7 +911,7 @@ void lbAgent::HandleRead(broker::CMessage msg)
     // --------------------------------------------------------------
     else
     {
-        Logger::Warn << "Invalid Message Type" << std::endl;
+        Logger.Warn << "Invalid Message Type" << std::endl;
     }
 }//end function
 
@@ -925,7 +926,7 @@ void lbAgent::HandleRead(broker::CMessage msg)
 /////////////////////////////////////////////////////////
 void lbAgent::Step_PStar()
 {
-    Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     typedef broker::device::CDeviceSST SST;
     broker::CPhysicalDeviceManager::PhysicalDevice<SST>::Container SSTContainer;
     broker::CPhysicalDeviceManager::PhysicalDevice<SST>::iterator it, end;
@@ -937,19 +938,19 @@ void lbAgent::Step_PStar()
         {
             P_Star = (*it)->Get("powerLevel") - P_Migrate;
             (*it)->Set("powerLevel", P_Star);
-            Logger::Notice << "P_Star = " << P_Star << std::endl;
+            Logger.Notice << "P_Star = " << P_Star << std::endl;
             NotifySC(-P_Migrate);
         }
         else if(LPeerNode::SUPPLY == l_Status)
         {
             P_Star = (*it)->Get("powerLevel") + P_Migrate;
             (*it)->Set("powerLevel", P_Star);
-            Logger::Notice << "P_Star = " << P_Star << std::endl;
+            Logger.Notice << "P_Star = " << P_Star << std::endl;
             NotifySC(P_Migrate);
         }
         else
         {
-            Logger::Warn << "Power migration aborted due to state change " << std::endl;
+            Logger.Warn << "Power migration aborted due to state change " << std::endl;
         }
     }
 }
@@ -965,7 +966,7 @@ void lbAgent::Step_PStar()
 /////////////////////////////////////////////////////////
 void lbAgent::PStar(broker::device::SettingValue DemandValue)
 {
-    Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     typedef broker::device::CDeviceSST SST;
     broker::CPhysicalDeviceManager::PhysicalDevice<SST>::Container SSTContainer;
     broker::CPhysicalDeviceManager::PhysicalDevice<SST>::iterator it, end;
@@ -976,7 +977,7 @@ void lbAgent::PStar(broker::device::SettingValue DemandValue)
         if(LPeerNode::DEMAND == l_Status)
         {
             P_Star = (*it)->Get("powerLevel") - P_Migrate;
-            Logger::Notice << "P_Star = " << P_Star << std::endl;
+            Logger.Notice << "P_Star = " << P_Star << std::endl;
             (*it)->Set("powerLevel", P_Star);
             NotifySC(-P_Migrate);
         }
@@ -984,20 +985,20 @@ void lbAgent::PStar(broker::device::SettingValue DemandValue)
         {
             if( DemandValue <= P_Gateway + NORMAL_TOLERANCE - CNorm )
             {
-                Logger::Notice << "P_Star = " << P_Gateway + DemandValue << std::endl;
+                Logger.Notice << "P_Star = " << P_Gateway + DemandValue << std::endl;
                 (*it)->Set("powerLevel", P_Gateway + DemandValue);
                 NotifySC(DemandValue);
             }
             else
             {
-                Logger::Notice << "P_Star = " << CNorm << std::endl;
+                Logger.Notice << "P_Star = " << CNorm << std::endl;
                 (*it)->Set("powerLevel", CNorm);
                 NotifySC(P_Gateway-CNorm);
             }
         }
         else
         {
-            Logger::Warn << "Power migration aborted due to state change" << std::endl;
+            Logger.Warn << "Power migration aborted due to state change" << std::endl;
         }
     }
 }
@@ -1080,12 +1081,12 @@ void lbAgent::InitiatePowerMigration(broker::device::SettingValue DemandValue)
 /////////////////////////////////////////////////////////
 void lbAgent::StateNormalize( const ptree & pt )
 {
-    Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     std::string CollectedState_token, CollectedState_string;
     CollectedState_string = pt.get<std::string>("CollectedState.gateway");
     int peer_count=0;
     double agg_gateway=0;
-    Logger::Notice << "CollectedState.gateway" << pt.get<std::string>("CollectedState.gateway")<<std::endl;
+    Logger.Notice << "CollectedState.gateway" << pt.get<std::string>("CollectedState.gateway")<<std::endl;
     std::istringstream isg(CollectedState_string);
     
     while ( getline(isg, CollectedState_token, ',') )
@@ -1095,7 +1096,7 @@ void lbAgent::StateNormalize( const ptree & pt )
     }
     
     CollectedState_string = pt.get<std::string>("CollectedState.intransit");
-    Logger::Notice << "CollectedState.intransit" << pt.get<std::string>("CollectedState.intransit")<<std::endl;
+    Logger.Notice << "CollectedState.intransit" << pt.get<std::string>("CollectedState.intransit")<<std::endl;
     std::istringstream ist(CollectedState_string);
     
     while ( getline(ist, CollectedState_token, ',') )
@@ -1105,7 +1106,7 @@ void lbAgent::StateNormalize( const ptree & pt )
     
     if(peer_count !=0) CNorm =  agg_gateway/peer_count;
     
-    Logger::Info << "Computed Normal: " << CNorm<<std::endl;
+    Logger.Info << "Computed Normal: " << CNorm<<std::endl;
     SendNormal(CNorm);
 }
 
@@ -1118,7 +1119,7 @@ void lbAgent::StateNormalize( const ptree & pt )
 /////////////////////////////////////////////////////////
 void lbAgent::StartStateTimer( unsigned int delay )
 {
-    Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     m_StateTimer.expires_from_now( boost::posix_time::seconds(delay) );
     m_StateTimer.async_wait( boost::bind(&lbAgent::HandleStateTimer,
                                          this, boost::asio::placeholders::error) );
@@ -1133,7 +1134,7 @@ void lbAgent::StartStateTimer( unsigned int delay )
 /////////////////////////////////////////////////////////
 void lbAgent::HandleStateTimer( const boost::system::error_code & error )
 {
-    Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     
     if( !error && (Leader == GetUUID()) )
     {

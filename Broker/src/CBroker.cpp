@@ -41,9 +41,9 @@
 ////////////////////////////////////////////////////////////////////
 
 #include "CBroker.hpp"
-#include "logger.hpp"
-CREATE_EXTERN_STD_LOGS()
+#include "CLogger.hpp"
 
+static CLocalLogger Logger(__FILE__);
 
 #include <boost/bind.hpp>
 #include <boost/asio/io_service.hpp>
@@ -78,7 +78,7 @@ CBroker::CBroker(const std::string& p_address, const std::string& p_port,
       m_dispatch(p_dispatch),
       m_newConnection(new CListener(m_ioService, m_connManager, m_dispatch, m_conMan.GetUUID()))
 {
-    Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     // Open the acceptor with the option to reuse the address (i.e. SO_REUSEADDR).
     boost::asio::ip::udp::resolver resolver(m_ioService);
     boost::asio::ip::udp::resolver::query query( p_address, p_port);
@@ -101,7 +101,7 @@ CBroker::CBroker(const std::string& p_address, const std::string& p_port,
 ///////////////////////////////////////////////////////////////////////////////
 void CBroker::Run()
 {
-    Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     // The io_service::run() call will block until all asynchronous operations
     // have finished. While the server is running, there is always at least one
     // asynchronous operation outstanding: the asynchronous accept call waiting
@@ -116,7 +116,7 @@ void CBroker::Run()
 ///////////////////////////////////////////////////////////////////////////////
 boost::asio::io_service& CBroker::GetIOService()
 {
-    Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     return m_ioService;
 }
 
@@ -131,7 +131,7 @@ boost::asio::io_service& CBroker::GetIOService()
 ///////////////////////////////////////////////////////////////////////////////
 void CBroker::Stop()
 {
-    Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     // Post a call to the stop function so that CBroker::stop() is safe to call
     // from any thread.
     m_ioService.post(boost::bind(&CBroker::HandleStop, this));
@@ -146,7 +146,7 @@ void CBroker::Stop()
 ///////////////////////////////////////////////////////////////////////////////
 void CBroker::HandleStop()
 {
-    Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     // The server is stopped by canceling all outstanding asynchronous
     // operations. Once all operations have finished the io_service::run() call
     // will exit.

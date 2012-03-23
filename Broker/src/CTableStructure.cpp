@@ -25,6 +25,9 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 #include "CTableStructure.hpp"
+#include "CLogger.hpp"
+
+static CLocalLogger Logger(__FILE__);
 
 namespace freedm
 {

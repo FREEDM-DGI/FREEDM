@@ -31,9 +31,9 @@
 ////////////////////////////////////////////////////////////////////
 
 #include "CPhysicalDeviceManager.hpp"
+#include "CLogger.hpp"
 
-#include "logger.hpp"
-CREATE_EXTERN_STD_LOGS()
+static CLocalLogger Logger(__FILE__);
 
 #include <boost/bind.hpp>
 

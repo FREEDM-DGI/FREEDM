@@ -43,9 +43,6 @@
 #include "CConnection.hpp"
 #include "IPeerNode.hpp"
 
-#include "logger.hpp"
-//CREATE_EXTERN_STD_LOGS();
-
 
 namespace freedm {
 

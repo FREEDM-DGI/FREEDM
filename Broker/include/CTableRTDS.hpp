@@ -44,11 +44,8 @@
 
 #include <boost/thread/shared_mutex.hpp>
 
-#include "logger.hpp"
 #include "CDeviceKeyCoupled.hpp"
 #include "CTableStructure.hpp"
-
-CREATE_EXTERN_STD_LOGS()
 
 namespace freedm
 {

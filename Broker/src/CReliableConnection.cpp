@@ -38,7 +38,9 @@
 #include "CConnectionManager.hpp"
 #include "CMessage.hpp"
 #include "RequestParser.hpp"
-#include "logger.hpp"
+#include "CLogger.hpp"
+
+static CLocalLogger Logger(__FILE__);
 
 
 #include <vector>
@@ -67,7 +69,7 @@ CReliableConnection::CReliableConnection(boost::asio::io_service& p_ioService,
     m_dispatch(p_dispatch),
     m_uuid(uuid)
 {
-    Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     m_reliability = 100;
 }
 
@@ -80,7 +82,7 @@ CReliableConnection::CReliableConnection(boost::asio::io_service& p_ioService,
 ///////////////////////////////////////////////////////////////////////////////
 boost::asio::ip::udp::socket& CReliableConnection::GetSocket()
 {
-    Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
 
     return m_socket;
 }

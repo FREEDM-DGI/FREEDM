@@ -34,6 +34,9 @@
 #include "CMessage.hpp"
 #include "CConnectionManager.hpp"
 #include "IProtocol.hpp"
+#include "CLogger.hpp"
+
+static CLocalLogger Logger(__FILE__);
 
 #include <boost/asio.hpp>
 #include <boost/array.hpp>
@@ -90,7 +93,7 @@ CSRConnection::CSRConnection(CConnection *  conn)
 ///////////////////////////////////////////////////////////////////////////////
 void CSRConnection::Send(CMessage msg)
 {
-    Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     ptree x = static_cast<ptree>(msg);
     unsigned int msgseq;
 
@@ -111,7 +114,7 @@ void CSRConnection::Send(CMessage msg)
     outmsg.SetSendTimestampNow();
     if(!outmsg.HasExpireTime())
     {
-        Logger::Notice<<"Set Expire time"<<std::endl;
+        Logger.Notice<<"Set Expire time"<<std::endl;
         outmsg.SetExpireTimeFromNow(boost::posix_time::milliseconds(3000));
     }
     m_window.push_back(outmsg);
@@ -146,7 +149,7 @@ void CSRConnection::Send(CMessage msg)
 ///////////////////////////////////////////////////////////////////////////////
 void CSRConnection::Resend(const boost::system::error_code& err)
 {
-    Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     if(!err)
     {
         boost::posix_time::ptime now;
@@ -169,7 +172,7 @@ void CSRConnection::Resend(const boost::system::error_code& err)
             //First message in the window should be the only one
             //ever to have been written.
             m_sendkills = true;
-            Logger::Notice<<"Message Expired: "<<m_window.front().GetHash()
+            Logger.Notice<<"Message Expired: "<<m_window.front().GetHash()
                           <<":"<<m_window.front().GetSequenceNumber()<<std::endl;
             m_window.pop_front();
         }
@@ -217,7 +220,7 @@ void CSRConnection::Resend(const boost::system::error_code& err)
 ///////////////////////////////////////////////////////////////////////////////
 void CSRConnection::RecieveACK(const CMessage &msg)
 {
-    Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     unsigned int seq = msg.GetSequenceNumber();
     ptree pp = msg.GetProtocolProperties();
     size_t hash = pp.get<size_t>("src.hash");
@@ -279,7 +282,7 @@ void CSRConnection::RecieveACK(const CMessage &msg)
 ///////////////////////////////////////////////////////////////////////////////
 bool CSRConnection::Recieve(const CMessage &msg)
 {
-    Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     unsigned int kill = 0;
     bool usekill = false; //If true, we should accept any inseq
     if(msg.GetStatus() == freedm::broker::CMessage::BadRequest)
@@ -294,7 +297,7 @@ bool CSRConnection::Recieve(const CMessage &msg)
             }
             else
             {
-                Logger::Notice<<"Already synced for this time"<<std::endl;
+                Logger.Notice<<"Already synced for this time"<<std::endl;
             }
         }
         return false;
@@ -305,9 +308,9 @@ bool CSRConnection::Recieve(const CMessage &msg)
         if(msg.GetSendTimestamp() == m_insynctime)
         {
             return false;
-            Logger::Notice<<"Duplicate Sync"<<std::endl;
+            Logger.Notice<<"Duplicate Sync"<<std::endl;
         }
-        Logger::Notice<<"Got Sync"<<std::endl;
+        Logger.Notice<<"Got Sync"<<std::endl;
         m_inseq = (msg.GetSequenceNumber()+1)%SEQUENCE_MODULO;
         m_insynctime = msg.GetSendTimestamp();
         m_inresyncs++;
@@ -317,7 +320,7 @@ bool CSRConnection::Recieve(const CMessage &msg)
     }
     if(m_insync == false)
     {
-        Logger::Notice<<"Connection Needs Resync"<<std::endl;
+        Logger.Notice<<"Connection Needs Resync"<<std::endl;
         //If the connection hasn't been synchronized, we want to
         //tell them it is a bad request so they know they need to sync.
         freedm::broker::CMessage outmsg;
@@ -362,7 +365,7 @@ bool CSRConnection::Recieve(const CMessage &msg)
     }
     else if(usekill == true)
     {
-        Logger::Notice<<"KILL: "<<kill<<" INSEQ "<<m_inseq<<" SEQ: "
+        Logger.Notice<<"KILL: "<<kill<<" INSEQ "<<m_inseq<<" SEQ: "
                       <<msg.GetSequenceNumber()<<std::endl;
     }
     // Justin case.
@@ -381,7 +384,7 @@ bool CSRConnection::Recieve(const CMessage &msg)
 ///////////////////////////////////////////////////////////////////////////////
 void CSRConnection::SendACK(const CMessage &msg)
 {
-    Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     unsigned int seq = msg.GetSequenceNumber();
     freedm::broker::CMessage outmsg;
     ptree pp;
@@ -394,7 +397,7 @@ void CSRConnection::SendACK(const CMessage &msg)
     outmsg.SetSendTimestampNow();
     outmsg.SetProtocol(GetIdentifier());
     outmsg.SetProtocolProperties(pp);
-    Logger::Notice<<"Generating ACK. Source exp time "<<msg.GetExpireTime()<<std::endl;
+    Logger.Notice<<"Generating ACK. Source exp time "<<msg.GetExpireTime()<<std::endl;
     outmsg.SetExpireTime(msg.GetExpireTime());
     Write(outmsg);
     m_currentack = outmsg;
@@ -414,7 +417,7 @@ void CSRConnection::SendACK(const CMessage &msg)
 ///////////////////////////////////////////////////////////////////////////////
 void CSRConnection::SendSYN()
 {
-    Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     unsigned int seq = m_outseq;
     freedm::broker::CMessage outmsg;
     if(m_window.size() == 0)

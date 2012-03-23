@@ -38,8 +38,10 @@
 #include "CConnectionManager.hpp"
 #include "CMessage.hpp"
 #include "RequestParser.hpp"
-#include "logger.hpp"
 #include "config.hpp"
+#include "CLogger.hpp"
+
+static CLocalLogger Logger(__FILE__);
 
 #include <vector>
 
@@ -66,7 +68,7 @@ CListener::CListener(boost::asio::io_service& p_ioService,
   CConnectionManager& p_manager, CDispatcher& p_dispatch, std::string uuid)
   : CReliableConnection(p_ioService,p_manager,p_dispatch,uuid)
 {
-    Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -79,7 +81,7 @@ CListener::CListener(boost::asio::io_service& p_ioService,
 
 void CListener::Start()
 {
-    Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     GetSocket().async_receive_from(boost::asio::buffer(m_buffer, 8192),
             m_endpoint, boost::bind(&CListener::HandleRead, this,
             boost::asio::placeholders::error,
@@ -97,7 +99,7 @@ void CListener::Start()
 ///////////////////////////////////////////////////////////////////////////////
 void CListener::Stop()
 {
-    Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
 }
  
 ///////////////////////////////////////////////////////////////////////////////
@@ -116,7 +118,7 @@ void CListener::Stop()
 void CListener::HandleRead(const boost::system::error_code& e, 
                            std::size_t bytes_transferred)
 {
-    Logger::Debug << __PRETTY_FUNCTION__ << std::endl;       
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;       
     if (!e)
     {
         boost::tribool result_;
@@ -137,7 +139,7 @@ void CListener::HandleRead(const boost::system::error_code& e,
 #ifdef CUSTOMNETWORK
             if((rand()%100) >= GetReliability())
             {
-                Logger::Debug<<"Dropped datagram "<<m_message.GetHash()<<":"
+                Logger.Debug<<"Dropped datagram "<<m_message.GetHash()<<":"
                               <<m_message.GetSequenceNumber()<<std::endl;
                 goto listen;
             }
@@ -146,19 +148,19 @@ void CListener::HandleRead(const boost::system::error_code& e,
             {
                 ptree pp = m_message.GetProtocolProperties();
                 size_t hash = pp.get<size_t>("src.hash");
-                Logger::Debug<<"Recieved ACK"<<hash<<":"
+                Logger.Debug<<"Recieved ACK"<<hash<<":"
                                 <<m_message.GetSequenceNumber()<<std::endl;
                 conn->RecieveACK(m_message);
             }
             else if(conn->Recieve(m_message))
             {
-                Logger::Debug<<"Accepted message "<<m_message.GetHash()<<":"
+                Logger.Debug<<"Accepted message "<<m_message.GetHash()<<":"
                               <<m_message.GetSequenceNumber()<<std::endl;
                 GetDispatcher().HandleRequest(m_message);
             }
             else if(m_message.GetStatus() != freedm::broker::CMessage::Created)
             {
-                Logger::Notice<<"Rejected message "<<m_message.GetHash()<<":"
+                Logger.Notice<<"Rejected message "<<m_message.GetHash()<<":"
                               <<m_message.GetSequenceNumber()<<std::endl;
             }
         }

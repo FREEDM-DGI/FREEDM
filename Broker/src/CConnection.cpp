@@ -39,8 +39,10 @@
 #include "RequestParser.hpp"
 #include "CSRConnection.hpp"
 #include "CSUConnection.hpp"
-#include "logger.hpp"
 #include "config.hpp"
+#include "CLogger.hpp"
+
+static CLocalLogger Logger(__FILE__);
 
 #include <vector>
 
@@ -67,7 +69,7 @@ CConnection::CConnection(boost::asio::io_service& p_ioService,
   CConnectionManager& p_manager, CDispatcher& p_dispatch, std::string uuid)
   : CReliableConnection(p_ioService,p_manager,p_dispatch,uuid)
 {
-    Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     m_protocols.insert(ProtocolMap::value_type(CSUConnection::Identifier(),
         ProtocolPtr(new CSUConnection(this))));
     m_protocols.insert(ProtocolMap::value_type(CSRConnection::Identifier(),
@@ -84,7 +86,7 @@ CConnection::CConnection(boost::asio::io_service& p_ioService,
 ///////////////////////////////////////////////////////////////////////////////
 void CConnection::Start()
 {
-    Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -103,7 +105,7 @@ void CConnection::Stop()
     {
         (*sit).second->Stop();
     }   
-    Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     m_protocols.clear();
     GetSocket().close();
 }
@@ -122,7 +124,7 @@ void CConnection::Stop()
 ///////////////////////////////////////////////////////////////////////////////
 void CConnection::Send(CMessage p_mesg)
 {
-    Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
 
     ProtocolMap::iterator sit = m_protocols.find(p_mesg.GetProtocol());    
     
@@ -144,7 +146,7 @@ void CConnection::Send(CMessage p_mesg)
 ///////////////////////////////////////////////////////////////////////////////
 void CConnection::RecieveACK(const CMessage &msg)
 {
-    Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     std::string protocol = msg.GetProtocol();
     ProtocolMap::iterator sit = m_protocols.find(protocol);
     if(sit != m_protocols.end())
@@ -164,7 +166,7 @@ void CConnection::RecieveACK(const CMessage &msg)
 ///////////////////////////////////////////////////////////////////////////////
 bool CConnection::Recieve(const CMessage &msg)
 {
-    Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     ProtocolMap::iterator sit = m_protocols.find(msg.GetProtocol());
     if(sit != m_protocols.end())
     {

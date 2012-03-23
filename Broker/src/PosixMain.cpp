@@ -59,17 +59,17 @@ namespace po = boost::program_options;
 
 using namespace freedm;
 
-#include "logger.hpp"
 #include "config.hpp"
 #include "uuid.hpp"
 #include "version.h"
+#include "CLogger.hpp"
+
+static CLocalLogger Logger(__FILE__);
 
 #if !defined(_WIN32)
 
 #include <pthread.h>
 #include <signal.h>
-
-CREATE_STD_LOGS()
 
 std::string basename( const std::string &s )
 // Returns the filename without directory path
@@ -82,8 +82,9 @@ std::string basename( const std::string &s )
 
 int main (int argc, char* argv[])
 {
-    Logger::Log::setLevel( 3 );
-    Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
+    CGlobalLogger::instance().SetGlobalLevel( 3 );
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     // Variable Declaration
     po::options_description genOpts_("General Options"),
     configOpts_("Configuration"),
@@ -159,7 +160,7 @@ int main (int argc, char* argv[])
         
         if ( vm_.count("verbose") )
         {
-            Logger::Log::setLevel( verbose_ );
+            CGlobalLogger::instance().SetGlobalLevel( verbose_ );
             
             if ( !vm_["verbose"].defaulted() )
             {
@@ -174,14 +175,14 @@ int main (int argc, char* argv[])
             if ( !vm_["config"].defaulted() )
             { // User specified a config file, so we should let
                 // them know that we can't load it
-                Logger::Error << "Unable to load config file: "
+                Logger.Error << "Unable to load config file: "
                 << cfgFile_ << std::endl;
                 return -1;
             }
             else
             {
                 // File doesn't exist or couldn't open it for read.
-                Logger::Notice << "Config file doesn't exist. "
+                Logger.Notice << "Config file doesn't exist. "
                 << "Skipping." << std::endl;
             }
         }
@@ -190,7 +191,7 @@ int main (int argc, char* argv[])
             // Process the config
             po::store( parse_config_file(ifs_, cfgOpts_), vm_ );
             po::notify(vm_);
-            Logger::Info << "Config file successfully loaded."<< std::endl;
+            Logger.Info << "Config file successfully loaded."<< std::endl;
         }
         
         if ( cliVerbose_ == false && vm_.count("verbose") )
@@ -198,7 +199,7 @@ int main (int argc, char* argv[])
             // If user specified verbose level on command line, it
             // overrides cfg file option. Otherwise, check to see
             // if the user did set verbosity in cfg.
-            Logger::Log::setLevel( verbose_ );
+            CGlobalLogger::instance().SetGlobalLevel( verbose_ );
         }
         
         if (vm_.count("help") )
@@ -231,15 +232,15 @@ int main (int argc, char* argv[])
         if ( vm_.count("uuid") )
         {
             u_ = uuid(uuid_);
-            Logger::Info << "Loaded UUID: " << u_ << std::endl;
+            Logger.Info << "Loaded UUID: " << u_ << std::endl;
         }
         else
         {
             // Try to resolve the host's dns name
             hostname_ = boost::asio::ip::host_name();
-            Logger::Info << "Hostname: " << hostname_ << std::endl;
+            Logger.Info << "Hostname: " << hostname_ << std::endl;
             u_ = uuid::from_dns(hostname_);
-            Logger::Info << "Generated UUID: " << u_ << std::endl;
+            Logger.Info << "Generated UUID: " << u_ << std::endl;
         }
         
         std::stringstream ss2;
@@ -279,46 +280,46 @@ int main (int argc, char* argv[])
                         
                     if( m_phyManager.DeviceExists( DevName_ ) )
                     {
-                        Logger::Warn << "Duplicate device: " << DevName_ << std::endl;
+                        Logger.Warn << "Duplicate device: " << DevName_ << std::endl;
                     }
                     else if(DevType_ == "DRER")
                     {
                         factory.CreateDevice<broker::device::CDeviceDRER>( DevName_ );
-                        Logger::Info << "Added DRER device: " << DevName_ << std::endl;
+                        Logger.Info << "Added DRER device: " << DevName_ << std::endl;
                     }
                     else if(DevType_ == "DESD")
                     {
                         factory.CreateDevice<broker::device::CDeviceDESD>( DevName_ );
-                        Logger::Info << "Added DESD device: " << DevName_ << std::endl;
+                        Logger.Info << "Added DESD device: " << DevName_ << std::endl;
                     }
                     else if(DevType_ == "LOAD")
                     {
                         factory.CreateDevice<broker::device::CDeviceLOAD>( DevName_ );
-                        Logger::Info << "Added LOAD device: " << DevName_ << std::endl;
+                        Logger.Info << "Added LOAD device: " << DevName_ << std::endl;
                     }
                     else if(DevType_ == "SST")
                     {
                         factory.CreateDevice<broker::device::CDeviceSST>( DevName_ );
-                        Logger::Info << "Added SST: " << DevName_ << std::endl;
+                        Logger.Info << "Added SST: " << DevName_ << std::endl;
                     }
                 }
                 else
                 {
                     if( m_phyManager.DeviceExists( devid ) )
                     {
-                        Logger::Warn << "Duplicate device: " << devid << std::endl;
+                        Logger.Warn << "Duplicate device: " << devid << std::endl;
                     }
                     else
                     {
                         factory.CreateDevice<broker::device::CDeviceSST>( devid );
-                        Logger::Info << "Added Generic SST device: " << devid << std::endl;
+                        Logger.Info << "Added Generic SST device: " << devid << std::endl;
                     }
                 }
             }
         }
         else
         {
-            Logger::Info << "No physical devices specified" << std::endl;
+            Logger.Info << "No physical devices specified" << std::endl;
         }
         
         // Instantiate Dispatcher for message delivery
@@ -376,7 +377,7 @@ int main (int argc, char* argv[])
         }
         else
         {
-            Logger::Info << "Not adding any hosts on startup." << std::endl;
+            Logger.Info << "Not adding any hosts on startup." << std::endl;
         }
         
         // Add the local connection to the hostname list
@@ -386,12 +387,12 @@ int main (int argc, char* argv[])
         sigfillset(&new_mask);
         sigset_t old_mask;
         pthread_sigmask(SIG_BLOCK, &new_mask, &old_mask);
-        Logger::Info << "Starting CBroker thread" << std::endl;
+        Logger.Info << "Starting CBroker thread" << std::endl;
         boost::thread thread_
         (boost::bind(&broker::CBroker::Run, &broker_));
         // Restore previous signals.
         pthread_sigmask(SIG_SETMASK, &old_mask, 0);
-        Logger::Debug << "Starting thread of Modules" << std::endl;
+        Logger.Debug << "Starting thread of Modules" << std::endl;
         boost::thread thread2_( boost::bind(&GMAgent::Run, &GM_)
                                 , boost::bind(&lbAgent::LB, &LB_)
                                 //, boost::bind(&SCAgent::SC, &SC_)
@@ -417,7 +418,7 @@ int main (int argc, char* argv[])
     }
     catch (std::exception& e)
     {
-        Logger::Error << "Exception in main():" << e.what() << "\n";
+        Logger.Error << "Exception in main():" << e.what() << "\n";
     }
     
     return 0;

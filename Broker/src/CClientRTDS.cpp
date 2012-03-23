@@ -40,6 +40,9 @@
 /////////////////////////////////////////////////////////
 
 #include "CClientRTDS.hpp"
+#include "CLogger.hpp"
+
+static CLocalLogger Logger(__FILE__);
 
 /// check endianess at compile time.  Middle-Endian not allowed
 /// The parameters __BYTE_ORDER, __LITTLE_ENDIAN, __BIG_ENDIAN should
@@ -243,10 +246,10 @@ void CClientRTDS::Run()
     //**********************************
     {
         boost::shared_lock<boost::shared_mutex> lockRead(m_cmdTable.m_mutex);
-        Logger::Debug << "Client_RTDS - obtained mutex as reader" << std::endl;
+        Logger.Debug << "Client_RTDS - obtained mutex as reader" << std::endl;
         //read from cmdTable
         memcpy(m_txBuffer, m_cmdTable.m_data, m_txBufSize);
-        Logger::Debug << "Client_RTDS - released reader mutex" << std::endl;
+        Logger.Debug << "Client_RTDS - released reader mutex" << std::endl;
     }// the scope is needed for mutex to auto release
 
     // FPGA will send values in big-endian byte order
@@ -267,7 +270,7 @@ void CClientRTDS::Run()
     }
     catch (std::exception & e)
     {
-        Logger::Warn << "Send to FPGA failed because " << e.what() << std::endl;
+        Logger.Warn << "Send to FPGA failed because " << e.what() << std::endl;
     }
     
     //*******************************
@@ -279,7 +282,7 @@ void CClientRTDS::Run()
     }
     catch (std::exception & e)
     {
-        Logger::Warn << "Receive from FPGA failed because " << e.what()
+        Logger.Warn << "Receive from FPGA failed because " << e.what()
         << std::endl;
     }
     
@@ -295,12 +298,12 @@ void CClientRTDS::Run()
 #endif
     {
         boost::unique_lock<boost::shared_mutex> lockWrite(m_stateTable.m_mutex);
-        Logger::Debug << "Client_RTDS - obtained mutex as writer" << std::endl;
+        Logger.Debug << "Client_RTDS - obtained mutex as writer" << std::endl;
         
         //write to stateTable
         memcpy(m_stateTable.m_data, m_rxBuffer, m_rxBufSize);
         
-        Logger::Debug << "Client_RTDS - released writer mutex" << std::endl;
+        Logger.Debug << "Client_RTDS - released writer mutex" << std::endl;
     } //scope is needed for mutex to auto release
     
     //Start the timer; on timeout, this function is called again
@@ -337,7 +340,7 @@ void CClientRTDS::Set( const std::string p_device, const std::string p_key,
                        double p_value )
 {
     //access and write to table
-    Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     
     try
     {
@@ -345,7 +348,7 @@ void CClientRTDS::Set( const std::string p_device, const std::string p_key,
     }
     catch (std::out_of_range & e  )
     {
-        Logger::Alert << "This device/key pair "<<p_device << "/"
+        Logger.Alert << "This device/key pair "<<p_device << "/"
         << p_key<<" does not exist."<<std::endl;
         exit(1);
     }
@@ -381,7 +384,7 @@ void CClientRTDS::Set( const std::string p_device, const std::string p_key,
 double CClientRTDS::Get( const std::string p_device, const std::string p_key )
 {
     //access and read from table
-    Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     
     try
     {
@@ -389,7 +392,7 @@ double CClientRTDS::Get( const std::string p_device, const std::string p_key )
     }
     catch (std::out_of_range & e  )
     {
-        Logger::Alert << "This device/key pair "<<p_device
+        Logger.Alert << "This device/key pair "<<p_device
         << "/" << p_key<<" does not exist."<<std::endl;
         exit(1);
     }

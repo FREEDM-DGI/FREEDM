@@ -38,6 +38,7 @@
 #include "CReliableConnection.hpp"
 #include "types/remotehost.hpp"
 #include "CConnection.hpp"
+#include "RequestParser.hpp"
 
 #include <boost/asio.hpp>
 #include <boost/array.hpp>

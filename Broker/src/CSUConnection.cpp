@@ -35,6 +35,9 @@
 #include "CMessage.hpp"
 #include "CConnectionManager.hpp"
 #include "IProtocol.hpp"
+#include "CLogger.hpp"
+
+static CLocalLogger Logger(__FILE__);
 
 #include <boost/asio.hpp>
 #include <boost/array.hpp>
@@ -113,7 +116,7 @@ void CSUConnection::Resend(const boost::system::error_code& err)
             }
             else
             {
-                Logger::Notice<<"Gave Up Sending (No Retries) "<<f.msg.GetHash()
+                Logger.Notice<<"Gave Up Sending (No Retries) "<<f.msg.GetHash()
                               <<":"<<f.msg.GetSequenceNumber()<<std::endl;
             }
         }

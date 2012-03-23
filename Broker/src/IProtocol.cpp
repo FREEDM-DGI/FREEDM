@@ -33,13 +33,16 @@
 #include "IProtocol.hpp"
 #include "CConnection.hpp"
 #include "config.hpp"
+#include "CLogger.hpp"
+
+static CLocalLogger Logger(__FILE__);
 
 namespace freedm {
     namespace broker {
 
 void IProtocol::Write(CMessage msg)
 {
-    Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     boost::tribool result_;
     boost::array<char, 8192>::iterator it_;
 
@@ -49,7 +52,7 @@ void IProtocol::Write(CMessage msg)
     #ifdef CUSTOMNETWORK
     if((rand()%100) >= GetConnection()->GetReliability()) 
     {
-        Logger::Info<<"Outgoing Packet Dropped ("<<GetConnection()->GetReliability()
+        Logger.Info<<"Outgoing Packet Dropped ("<<GetConnection()->GetReliability()
                       <<") -> "<<GetConnection()->GetUUID()<<std::endl;
         return;
     }

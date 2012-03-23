@@ -36,8 +36,9 @@
 #include <boost/thread/locks.hpp>
 
 #include "CDispatcher.hpp"
-#include "logger.hpp"
-CREATE_EXTERN_STD_LOGS()
+#include "CLogger.hpp"
+
+static CLocalLogger Logger(__FILE__);
 
 #define UNUSED_ARGUMENT(x) (void)x
 
@@ -52,7 +53,7 @@ namespace freedm {
 ///////////////////////////////////////////////////////////////////////////////
 CDispatcher::CDispatcher()
 {
-    Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
 
 }
 
@@ -67,7 +68,7 @@ CDispatcher::CDispatcher()
 ///////////////////////////////////////////////////////////////////////////////
 void CDispatcher::HandleRequest(CMessage msg)
 {
-    Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     ptree sub_;
     ptree::const_iterator it_;
     std::map< std::string, IReadHandler *>::const_iterator mapIt_;
@@ -91,7 +92,7 @@ void CDispatcher::HandleRequest(CMessage msg)
             }
             catch( boost::property_tree::ptree_bad_path &e )
             {
-                Logger::Warn<<"Module failed to read message"<<std::endl;
+                Logger.Warn<<"Module failed to read message"<<std::endl;
             }
         }
 	        
@@ -100,7 +101,7 @@ void CDispatcher::HandleRequest(CMessage msg)
         ptree sub_ = p_mesg.get_child("message.submessages");
         for( it_ = sub_.begin(); it_ != sub_.end(); ++it_ )
         {
-            Logger::Debug << "Processing " << it_->first
+            Logger.Debug << "Processing " << it_->first
                     << std::endl;
 
             // Retrieve current key and iterate through all matching
@@ -120,7 +121,7 @@ void CDispatcher::HandleRequest(CMessage msg)
                     }
                     catch( boost::property_tree::ptree_bad_path &e )
                     {
-                        Logger::Warn<<"Module failed to read message (any field)"<<std::endl;
+                        Logger.Warn<<"Module failed to read message (any field)"<<std::endl;
                     }
                 }
             }
@@ -138,7 +139,7 @@ void CDispatcher::HandleRequest(CMessage msg)
                     m_readHandlers.upper_bound( key_)     )
                 {
                     // Just log this for now
-                    Logger::Debug << "Submessage '" << key_ << "' had no read handlers.";
+                    Logger.Debug << "Submessage '" << key_ << "' had no read handlers.";
                 }
             }
         }
@@ -147,12 +148,12 @@ void CDispatcher::HandleRequest(CMessage msg)
         if( sub_.begin() == sub_.end() )
         {
             // Just log this for now
-            Logger::Debug << "Message had no submessages.";
+            Logger.Debug << "Message had no submessages.";
         }
     }
     catch( boost::property_tree::ptree_bad_path &e )
     {
-        Logger::Error
+        Logger.Error
             << __PRETTY_FUNCTION__ << " (" << __LINE__ << "): "
             << "Malformed message. Does not contain 'submessages'."
             << std::endl << "\t" << e.what() << std::endl;
@@ -170,7 +171,7 @@ void CDispatcher::HandleRequest(CMessage msg)
 ///////////////////////////////////////////////////////////////////////////////
 void CDispatcher::HandleWrite( ptree &p_mesg )
 {
-    Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     ptree sub_;
     ptree::const_iterator it_;
     std::map< std::string, IWriteHandler *>::const_iterator mapIt_;
@@ -189,7 +190,7 @@ void CDispatcher::HandleWrite( ptree &p_mesg )
                 mapIt_ != m_writeHandlers.upper_bound( "any" );
                 ++mapIt_ )
         {
-           Logger::Debug << "Processing 'any'" << std::endl;  
+           Logger.Debug << "Processing 'any'" << std::endl;  
 	  (mapIt_->second)->HandleWrite( p_mesg );
         }
 
@@ -198,7 +199,7 @@ void CDispatcher::HandleWrite( ptree &p_mesg )
         ptree sub_ = p_mesg.get_child("message.submessages");
         for( it_ = sub_.begin(); it_ != sub_.end(); ++it_ )
         {
-            Logger::Debug << "Processing " << it_->first
+            Logger.Debug << "Processing " << it_->first
                     << std::endl;
 
             // Retrieve current key and iterate through all matching
@@ -218,7 +219,7 @@ void CDispatcher::HandleWrite( ptree &p_mesg )
                 m_writeHandlers.upper_bound( key_)     )
             {
                 // Just log this for now
-                Logger::Debug << "Submessage '" << key_ << "' had no write handlers.";
+                Logger.Debug << "Submessage '" << key_ << "' had no write handlers.";
             }
         }
 
@@ -226,7 +227,7 @@ void CDispatcher::HandleWrite( ptree &p_mesg )
     }
     catch( boost::property_tree::ptree_bad_path &e )
     {
-        Logger::Error
+        Logger.Error
             << __PRETTY_FUNCTION__ << " (" << __LINE__ << "): "
             << "Malformed message. Does not contain 'submessages'."
             << std::endl << "\t" << e.what() << std::endl;
@@ -246,7 +247,7 @@ void CDispatcher::HandleWrite( ptree &p_mesg )
 void CDispatcher::RegisterReadHandler( const std::string &p_type,
         IReadHandler *p_handler )
 {
-    Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
 
     {
         // Scoped lock, will release mutex at end of {}
@@ -272,7 +273,7 @@ void CDispatcher::RegisterReadHandler( const std::string &p_type,
 void CDispatcher::RegisterWriteHandler( const std::string &p_type,
         IWriteHandler *p_handler )
 {
-    Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
 
     {
         // Scoped lock, will release mutex at end of {}

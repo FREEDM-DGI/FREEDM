@@ -82,9 +82,7 @@ std::string basename( const std::string &s )
 
 int main (int argc, char* argv[])
 {
-    CGlobalLogger::instance().SetGlobalLevel( 3 );
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    CGlobalLogger::instance().SetGlobalLevel( 7 );
     // Variable Declaration
     po::options_description genOpts_("General Options"),
     configOpts_("Configuration"),
@@ -133,7 +131,7 @@ int main (int argc, char* argv[])
         ("xml,x", po::value<std::string>(&xml)->default_value("FPGA.xml"),
          "filename of FPGA message specification")
         ("verbose,v", po::value<int>(&verbose_)->
-         implicit_value(5)->default_value(3),
+         implicit_value(5)->default_value(7),
          "enable verbose output (optionally specify level)");
         hiddenOpts_.add_options()
         ("setuuid", po::value<std::string>(&uuid_),
@@ -182,7 +180,7 @@ int main (int argc, char* argv[])
             else
             {
                 // File doesn't exist or couldn't open it for read.
-                Logger.Notice << "Config file doesn't exist. "
+                Logger.Error << "Config file doesn't exist. "
                 << "Skipping." << std::endl;
             }
         }
@@ -418,7 +416,7 @@ int main (int argc, char* argv[])
     }
     catch (std::exception& e)
     {
-        Logger.Error << "Exception in main():" << e.what() << "\n";
+        Logger.Error << "Exception in main():" << e.what() << std::endl;
     }
     
     return 0;

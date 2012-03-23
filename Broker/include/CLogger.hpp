@@ -107,6 +107,8 @@ class CLocalLogger : private boost::noncopyable
         int GetOutputLevel();
         /// Sets the output level for this set of loggers. 
         void SetOutputLevel(int level);
+        /// Load the logger settings
+        
     private:
         /// The name of this logger
         std::string m_name;

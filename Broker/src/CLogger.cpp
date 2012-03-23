@@ -1,12 +1,12 @@
 #include "CLogger.hpp"
 
+
 CLog::CLog(CLoggerPointer p, int level_, const char * name_, std::ostream *out_) :
         m_parent(p), m_level(level_), m_name( name_ ), m_ostream( out_ )
 {
     //pass
 }
 
-    /// Wrtes from a character array into the logger stream
 std::streamsize CLog::write( const char* s, std::streamsize n)
 {
     if( GetOutputLevel() >= m_level ){

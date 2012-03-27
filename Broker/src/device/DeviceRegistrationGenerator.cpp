@@ -40,9 +40,13 @@
 ///
 /// @description Entry point and sole function of the DeviceTypesGenerator
 ///  program. Searches the device types folder for all instantiable device
-///  classes, then erases and recreates PhysicalDeviceTypes.cpp accordingly. In
-///  particular, generates the RegisterPhysicalDevices function to register all
-///  device classes found in the types folder with CDeviceFactory.
+///  classes, then erases and recreates PhysicalDeviceTypes.hpp and
+///  PhysicalDeviceTypes.cpp accordingly. In particular, includes all detected
+///  device type headers in PhysicalDeviceTypes.hpp and generates the
+///  RegisterPhysicalDevices function in PhysicalDeviceTypes.cpp to register all
+///  detected device types with CDeviceFactory. Types are detected if they are
+///  stored in files in src/device/types and have filenames beginning with
+///  "CDevice".
 ///
 /// @ErrorHandling In the event of an I/O error, simply gives up. Prints a
 ///  warning to stderr, but this might be suppressed by CMake.
@@ -52,8 +56,7 @@
 ///  where Type can be any string. Any equivalent implementation file must be
 ///  named "CDeviceType.cpp", since if an implementation file exists in addition
 ///  to the header, either could be used to register the class.
-/// @post Generates PhysicalDeviceTypes.cpp so that the RegisterPhysicalDevices
-///  function registers the appropriate devices when invoked.
+/// @post Generates PhysicalDeviceTypes.hpp and PhysicalDeviceTypes.cpp.
 ///
 /// @return 0 if successful, or 1 otherwise.
 ///

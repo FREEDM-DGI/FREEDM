@@ -12,10 +12,10 @@ namespace device {
 // Registers the physical devices known to this file with the device factory
 void RegisterPhysicalDevices()
 {
+    REGISTER_DEVICE_CLASS(DESD)
     REGISTER_DEVICE_CLASS(SST)
     REGISTER_DEVICE_CLASS(DRER)
     REGISTER_DEVICE_CLASS(LOAD)
-    REGISTER_DEVICE_CLASS(DESD)
 }
 
 }

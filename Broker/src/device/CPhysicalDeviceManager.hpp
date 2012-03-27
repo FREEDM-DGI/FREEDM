@@ -33,7 +33,7 @@
 #ifndef PHYSICALDEVICEMANAGER_HPP
 #define PHYSICALDEVICEMANAGER_HPP
 
-#include "CDevice.hpp"
+#include "types/IDevice.hpp"
 
 #include <string>
 #include <map>
@@ -44,6 +44,7 @@
 
 namespace freedm {
 namespace broker {
+namespace device {
 
 /// Provides a container that manages physical device instances
 class CPhysicalDeviceManager
@@ -51,42 +52,42 @@ class CPhysicalDeviceManager
 public:
     /// A typedef for the mapping of identifier to device ptrs
     typedef std::map<device::Identifier,
-                     device::CDevice::DevicePtr> PhysicalDeviceSet;
-    /// A typedef providing and iertaror for this object
+                     device::IDevice::DevicePtr> PhysicalDeviceSet;
+    /// A typedef providing an iteraator for this object
     typedef PhysicalDeviceSet::iterator iterator;
     /// Initialize the physical device manger
     CPhysicalDeviceManager();
 
     /// Add the specified device to the manager.
-    void AddDevice(device::CDevice::DevicePtr resource);
+    void AddDevice(device::IDevice::DevicePtr resource);
 
-    /// Remove a device by its identifier 
+    /// Remove a device by its identifier
     void RemoveDevice(device::Identifier devid);
-    
+
     /// Devices iterator
     iterator begin() { return m_devices.begin(); };
     iterator end() { return m_devices.end(); };
 
     /// Get A Device By ID
-    device::CDevice::DevicePtr GetDevice(device::Identifier devid);
+    device::IDevice::DevicePtr GetDevice(device::Identifier devid);
 
     /// Tests to see if a device exists
     bool DeviceExists(device::Identifier devid) const;
-    
+
     /// Gives a count of connected devices
     size_t DeviceCount() const;
-    
+
     /// Structure of typedefs for GetDevicesOfType
     template <class DeviceType>
     struct PhysicalDevice
     {
         /// Container type returned by the GetDevicesOfType function
         typedef std::list<typename DeviceType::DevicePtr> Container;
-        
+
         /// Iterator to the container type
         typedef typename Container::iterator iterator;
     };
-    
+
     /// Selects all the devices of a given type
     template <class DeviceType>
     typename PhysicalDevice<DeviceType>::Container GetDevicesOfType()
@@ -95,7 +96,7 @@ public:
         typename DeviceType::DevicePtr next_device;
         iterator it = m_devices.begin();
         iterator end = m_devices.end();
-        
+
         for( ; it != end; it++ )
         {
             // attempt to convert each managed device to DeviceType
@@ -108,11 +109,12 @@ public:
         return result;
     }
 private:
-    /// Mapping From Identifer To Device Set
+    /// Mapping From Identifier To Device Set
     PhysicalDeviceSet m_devices;
 };
 
-    } // namespace broker
+} // namespace device
+} // namespace broker
 } // namespace freedm
 
 #endif // CONNECTIONMANAGER_HPP

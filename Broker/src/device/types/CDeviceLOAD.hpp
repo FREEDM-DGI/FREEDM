@@ -1,16 +1,13 @@
 ////////////////////////////////////////////////////////////////////////////////
-/// @file           CDeviceLWI.cpp
+/// @file           CDeviceLOAD.hpp
 ///
 /// @author         Yaxi Liu <ylztf@mst.edu>
 ///                 Thomas Roth <tprfh7@mst.edu>
 ///
-/// @compiler       C++
-///
 /// @project        FREEDM DGI
 ///
-/// @description    Physical devices for the LWI project
+/// @description    Physical device class for loads
 ///
-/// @license
 /// These source code files were created at the Missouri University of Science
 /// and Technology, and are intended for use in teaching or research. They may
 /// be freely copied, modified and redistributed as long as modified versions
@@ -22,43 +19,44 @@
 ///
 /// Suggested modifications or questions about these files can be directed to
 /// Dr. Bruce McMillin, Department of Computer Science, Missouri University of
-/// Science and Technology, Rolla, MO 65401 <ff@mst.edu>.
+/// Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
 ////////////////////////////////////////////////////////////////////////////////
 
-#include "CDeviceLWI.hpp"
+#ifndef C_DEVICE_LOAD_HPP
+#define C_DEVICE_LOAD_HPP
+
+#include <boost/shared_ptr.hpp>
+
+#include "IDevice.hpp"
 
 namespace freedm {
 namespace broker {
+
+// forward declaration of device manager
+class CPhysicalDeviceManager;
+
 namespace device {
 
-////////////////////////////////////////////////////////////////////////////////
-/// turnOn()
-/// @description Turns the device on
-////////////////////////////////////////////////////////////////////////////////
-void CDeviceLWI::turnOn()
+/// Implementation of physical loads
+class CDeviceLOAD
+    : public virtual IDevice
 {
-    Set("onOffSwitch",1);
-}
+public:
+    /// Convenience type for a shared pointer to self
+    typedef boost::shared_ptr<CDeviceLOAD> DevicePtr;
 
-////////////////////////////////////////////////////////////////////////////////
-/// turnOff()
-/// @description Turns the device off
-////////////////////////////////////////////////////////////////////////////////
-void CDeviceLWI::turnOff()
-{
-    Set("onOffSwitch",0);
-}
+    /// Constructor which takes a manager, identifier, and internal structure
+    CDeviceLOAD( CPhysicalDeviceManager & manager, Identifier device,
+        IDeviceStructure::DevicePtr structure )
+        : IDevice(manager,device,structure)
+        {}
 
-////////////////////////////////////////////////////////////////////////////////
-/// get_powerLevel()
-/// @description Gets the power level of the device
-/// @return Current power level stored in the device structure
-////////////////////////////////////////////////////////////////////////////////
-SettingValue CDeviceLWI::get_powerLevel()
-{
-    return Get("powerLevel");
-}
+    /// Virtual destructor for derived classes
+    virtual ~CDeviceLOAD() {}
+};
 
 } // namespace device
 } // namespace broker
 } // namespace freedm
+
+#endif // C_DEVICE_LOAD_HPP

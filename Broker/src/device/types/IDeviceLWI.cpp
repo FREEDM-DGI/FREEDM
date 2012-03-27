@@ -1,5 +1,5 @@
 ////////////////////////////////////////////////////////////////////////////////
-/// @file           CDeviceDESD.hpp
+/// @file           IDeviceLWI.cpp
 ///
 /// @author         Yaxi Liu <ylztf@mst.edu>
 ///                 Thomas Roth <tprfh7@mst.edu>
@@ -8,7 +8,7 @@
 ///
 /// @project        FREEDM DGI
 ///
-/// @description    Physical device class for DESD
+/// @description    Physical devices for the LWI project
 ///
 /// @license
 /// These source code files were created at the Missouri University of Science
@@ -22,44 +22,43 @@
 ///
 /// Suggested modifications or questions about these files can be directed to
 /// Dr. Bruce McMillin, Department of Computer Science, Missouri University of
-/// Science and Technology, Rolla, MO 65401 <ff@mst.edu>.
+/// Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
 ////////////////////////////////////////////////////////////////////////////////
 
-#ifndef C_DEVICE_DESD_HPP
-#define C_DEVICE_DESD_HPP
-
-#include <boost/shared_ptr.hpp>
-
-#include "CDevice.hpp"
+#include "IDeviceLWI.hpp"
 
 namespace freedm {
 namespace broker {
-
-// forward declaration of device manager
-class CPhysicalDeviceManager;
-
 namespace device {
 
-/// Implementation of distributed energy storage devices
-class CDeviceDESD
-    : public virtual CDevice
+////////////////////////////////////////////////////////////////////////////////
+/// turnOn()
+/// @description Turns the device on
+////////////////////////////////////////////////////////////////////////////////
+void IDeviceLWI::turnOn()
 {
-public:
-    /// Convenience type for a shared pointer to self
-    typedef boost::shared_ptr<CDeviceDESD> DevicePtr;
-    
-    /// Constructor which takes a manager, identifier, and internal structure
-    CDeviceDESD( CPhysicalDeviceManager & manager, Identifier device,
-        IDeviceStructure::DevicePtr structure )
-        : CDevice(manager,device,structure)
-        {}
-    
-    /// Virtual destructor for derived classes
-    virtual ~CDeviceDESD() {}
-};
+    Set("onOffSwitch",1);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/// turnOff()
+/// @description Turns the device off
+////////////////////////////////////////////////////////////////////////////////
+void IDeviceLWI::turnOff()
+{
+    Set("onOffSwitch",0);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/// get_powerLevel()
+/// @description Gets the power level of the device
+/// @return Current power level stored in the device structure
+////////////////////////////////////////////////////////////////////////////////
+SettingValue IDeviceLWI::get_powerLevel()
+{
+    return Get("powerLevel");
+}
 
 } // namespace device
 } // namespace broker
 } // namespace freedm
-
-#endif // C_DEVICE_DESD_HPP

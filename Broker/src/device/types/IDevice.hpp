@@ -1,16 +1,13 @@
 ////////////////////////////////////////////////////////////////////////////////
-/// @file           CDevice.hpp
+/// @file           IDevice.hpp
 ///
 /// @author         Stephen Jackson <scj7t4@mst.edu>
 ///                 Thomas Roth <tprfh7@mst.edu>
 ///
-/// @compiler       C++
-///
 /// @project        FREEDM DGI
 ///
-/// @description    Physical device class with variable implementation
+/// @description    Physical device interface with variable implementations.
 ///
-/// @license
 /// These source code files were created at the Missouri University of Science
 /// and Technology, and are intended for use in teaching or research. They may
 /// be freely copied, modified and redistributed as long as modified versions
@@ -22,25 +19,24 @@
 ///
 /// Suggested modifications or questions about these files can be directed to
 /// Dr. Bruce McMillin, Department of Computer Science, Missouri University of
-/// Science and Technology, Rolla, MO 65401 <ff@mst.edu>.
+/// Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
 ////////////////////////////////////////////////////////////////////////////////
 
-#ifndef C_DEVICE_HPP
-#define C_DEVICE_HPP
+#ifndef I_DEVICE_HPP
+#define I_DEVICE_HPP
 
 #include <boost/noncopyable.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/thread.hpp>
 
-#include "IPhysicalDevice.hpp"
+#include "../IPhysicalDevice.hpp"
 
 namespace freedm {
 namespace broker {
+namespace device {
 
 // forward declaration of device manager
 class CPhysicalDeviceManager;
-
-namespace device {
 
 ////////////////////////////////////////////////////////////////////////////////
 /// device_cast<TargetType>( ObjectType )
@@ -56,55 +52,55 @@ boost::shared_ptr<TargetType> device_cast( ObjectType object )
 }
 
 /// Physical device with implementation delegated to private member
-class CDevice
+class IDevice
     : public IDeviceGet
     , public IDeviceSet
     , private boost::noncopyable
 {
 public:
     /// Convenience type for a shared pointer to self
-    typedef boost::shared_ptr<CDevice> DevicePtr;
-    
-    /// Constructor which takes a manager, identifier, and internal structure
-    CDevice( CPhysicalDeviceManager & manager, Identifier device,
-        IDeviceStructure::DevicePtr structure );
-    
+    typedef boost::shared_ptr<IDevice> DevicePtr;
+
     /// Virtual destructor for derived classes
-    virtual ~CDevice() {}
-    
+    virtual ~IDevice() {}
+
     /// Gets the setting of some key from the structure
     virtual SettingValue Get( const SettingKey & key );
-    
+
     /// Sets the value of some key in the structure
     virtual void Set( const SettingKey & key, const SettingValue & value );
-    
+
     /// Gets the device manager for the device
     CPhysicalDeviceManager & GetManager();
-    
+
     /// Gets the device manager for the device
     const CPhysicalDeviceManager & GetManager() const;
-    
+
     /// Acquires the mutex
     void Lock();
-    
+
     /// Releases a mutex lock
     void Unlock();
-    
+
     /// Tries to acquire the mutex
     bool TryLock();
-    
+
     /// Gets the device identifier
     const Identifier & GetID() const;
 protected:
+    /// Constructor which takes a manager, identifier, and internal structure
+    IDevice( CPhysicalDeviceManager & manager, Identifier device,
+        IDeviceStructure::DevicePtr structure );
+
     /// Device manager that handles the device
     CPhysicalDeviceManager & m_manager;
-    
+
     /// Mutex to protect the device from other threads
     mutable boost::mutex m_mutex;
-    
+
     /// Unique identifier for the device
     Identifier m_device;
-    
+
     /// Structure that handles the device data
     IDeviceStructure::DevicePtr m_structure;
 };
@@ -113,4 +109,4 @@ protected:
 } // namespace broker
 } // namespace freedm
 
-#endif // C_DEVICE_HPP
+#endif //I_DEVICE_HPP

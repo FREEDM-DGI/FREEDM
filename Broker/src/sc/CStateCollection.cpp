@@ -125,7 +125,7 @@ namespace freedm
 SCAgent::SCAgent(std::string uuid, boost::asio::io_service &ios,
                  freedm::broker::CDispatcher &p_dispatch,
                  freedm::broker::CConnectionManager &m_connManager,
-                 freedm::broker::CPhysicalDeviceManager &m_phyManager):
+                 freedm::broker::device::CPhysicalDeviceManager &m_phyManager):
     SCPeerNode(uuid, m_connManager, ios, p_dispatch),
     m_countstate(0),
     m_NotifyToSave(false),
@@ -228,7 +228,7 @@ void SCAgent::Initiate()
     {
         m_NotifyToSave = true;
     }
-    
+
     //prepare marker tagged with UUID + Int
     Logger.Info << "Marker is ready from " << GetUUID() << std::endl;
     freedm::broker::CMessage m_ = marker();
@@ -259,7 +259,7 @@ void SCAgent::StateResponse()
     Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     //Initiator extracts information from multimap "collectstate" and send back to request module
     freedm::broker::CMessage m_;
-    if (m_countmarker == int(m_AllPeers.size()) && m_NotifyToSave == false)
+    if (m_countmarker == m_AllPeers.size() && m_NotifyToSave == false)
     {
         //send collect states to the requested module
         Logger.Info << "Sending requested state back to " << m_module << " module" << std::endl;
@@ -345,7 +345,7 @@ void SCAgent::StateResponse()
         {
             Logger.Notice << m_countmarker << " + " << "FALSE" << std::endl;
         }
-        
+
         collectstate.clear();
     }
 }
@@ -366,16 +366,16 @@ void SCAgent::TakeSnapshot()
     // broker::CPhysicalDeviceManager::PhysicalDevice<SST>::iterator it, end;
     // broker::device::SettingValue PowerValue = 0;
     typedef broker::device::CDeviceSST SST;
-    broker::CPhysicalDeviceManager::PhysicalDevice<SST>::Container SSTContainer;
-    broker::CPhysicalDeviceManager::PhysicalDevice<SST>::iterator it, end;
+    broker::device::CPhysicalDeviceManager::PhysicalDevice<SST>::Container SSTContainer;
+    broker::device::CPhysicalDeviceManager::PhysicalDevice<SST>::iterator it, end;
     SSTContainer = m_phyDevManager.GetDevicesOfType<SST>();
     broker::device::SettingValue PowerValue = 0;
-    
+
     for( it = SSTContainer.begin(), end = SSTContainer.end(); it != end; it++ )
     {
         PowerValue +=(*it)->Get("powerLevel");
     }
-    
+
     //list = m_phyDevManager.GetDevicesOfType<SST>();
     //for(it = list.begin(), end = list.end();it != end; it++)
     //{
@@ -429,7 +429,7 @@ void SCAgent::SendStateBack()
             }
         }
     }//end for
-    
+
     //send state done to initiator
     m_done.m_submessages.put("sc", "state");
     m_done.m_submessages.put("sc.type", "done");
@@ -463,11 +463,11 @@ void SCAgent::HandleRead(broker::CMessage msg)
     StateVersion incomingVer_;
     //check the coming peer node
     line_ = msg.GetSourceUUID();
-    
+
     if(line_ != GetUUID())
     {
         peer_ = GetPeer(line_);
-        
+
         if(peer_ != NULL)
         {
             Logger.Debug << "Peer already exists. Do Nothing " <<std::endl;
@@ -479,7 +479,7 @@ void SCAgent::HandleRead(broker::CMessage msg)
             peer_ = GetPeer(line_);
         }//end if
     }//end if
-    
+
     //receive updated peerlist from groupmanager, which means group has been changed
     if(pt.get<std::string>("any","NOEXCEPTION") == "PeerList")
     {
@@ -489,11 +489,11 @@ void SCAgent::HandleRead(broker::CMessage msg)
             if (peer_->GetUUID() != GetUUID())
                 EraseInPeerSet(m_AllPeers,peer_);
         }
-        
+
         foreach(ptree::value_type &v, pt.get_child("any.peers"))
         {
             peer_ = GetPeer(v.second.data());
-            
+
             if( false != peer_ )
             {
                 Logger.Debug << "SC knows this peer " <<std::endl;
@@ -542,7 +542,7 @@ void SCAgent::HandleRead(broker::CMessage msg)
             m_curversion.second = 0;
         }
     }//if peerList
-    
+
     // If there isn't an sc message, save channel message if flag == true.
     else if(pt.get<std::string>("sc","NOEXCEPTION") == "NOEXCEPTION")
     {
@@ -569,8 +569,8 @@ void SCAgent::HandleRead(broker::CMessage msg)
                 m_countstate++;
             }
         }
-        //return;
     }
+
     //receive state request for gateway
     else if (pt.get<std::string>("sc") == "request")
     {
@@ -589,7 +589,7 @@ void SCAgent::HandleRead(broker::CMessage msg)
         // read the incoming version from marker
         incomingVer_.first = pt.get<std::string>("sc.source");
         incomingVer_.second = pt.get<unsigned int>("sc.id");
-        
+
         if (m_curversion.first == "default")
             //peer receives first marker
         {
@@ -644,7 +644,7 @@ void SCAgent::HandleRead(broker::CMessage msg)
             //number of marker is increased by 1
             m_countmarker++;
             
-            if (m_countmarker == int(m_AllPeers.size()))
+            if (m_countmarker == m_AllPeers.size())
                 //Initiator done! set flag to false not record channel message
             {
                 m_NotifyToSave=false;
@@ -656,7 +656,7 @@ void SCAgent::HandleRead(broker::CMessage msg)
             //number of marker is increased by 1
             m_countmarker++;
             
-            if (m_countmarker == int(m_AllPeers.size())-1)
+            if (m_countmarker == m_AllPeers.size()-1)
             {
                 //peer done! set flag to false not record channel message
                 m_NotifyToSave=false;
@@ -678,7 +678,7 @@ void SCAgent::HandleRead(broker::CMessage msg)
     else if (pt.get<std::string>("sc") == "state")
     {
         //save states
-        
+
         //parsing the states
         if (pt.get<std::string>("sc.type") == "Message")
         {
@@ -714,7 +714,7 @@ void SCAgent::HandleRead(broker::CMessage msg)
         Logger.Debug << "done :-------------" << m_countdone << std::endl;
         
         //if "done" is received from all peers
-        if (m_countdone == int(m_AllPeers.size())-1)
+        if (m_countdone == m_AllPeers.size()-1)
         {
             StateResponse();
             m_countdone = 0;
@@ -767,7 +767,7 @@ SCAgent::PeerNodePtr SCAgent::AddPeer(PeerNodePtr peer)
 SCAgent::PeerNodePtr SCAgent::GetPeer(std::string uuid)
 {
     PeerSet::iterator it = m_AllPeers.find(uuid);
-    
+
     if(it != m_AllPeers.end())
     {
         return it->second;

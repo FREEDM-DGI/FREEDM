@@ -52,7 +52,7 @@
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/xml_parser.hpp>
 
-#include "CDeviceKeyCoupled.hpp"
+#include "device/CDeviceKeyCoupled.hpp"
 
 namespace freedm
 {
@@ -83,7 +83,7 @@ class CTableStructure
         
         /// find entry index based on the deviceID/key pair
         size_t FindIndex( const CDeviceKeyCoupled & p_dkey ) const;
-        
+
     private:
         struct SDevice {};
         struct SIndex {};
@@ -93,7 +93,7 @@ class CTableStructure
         
         /// number of table entries
         size_t m_TableSize;
-        
+
         /// bidirectional map from CDeviceKeyCopled object to numeric index
         TBimap m_TableHeaders;
 };

@@ -1,19 +1,13 @@
 ////////////////////////////////////////////////////////////////////////////////
-/// @file           CDeviceSST.hpp
+/// @file           CDeviceDESD.hpp
 ///
 /// @author         Yaxi Liu <ylztf@mst.edu>
 ///                 Thomas Roth <tprfh7@mst.edu>
-///                 Ravi Akella <rcaq5c@mst.edu>
-///
-/// @compiler       C++
 ///
 /// @project        FREEDM DGI
 ///
-/// @description    Physical device class for SST.
-///                 It could be useful to have this definition to incorporate 
-///	            "additional properties" an SST could have in future
+/// @description    Physical device class for DESD
 ///
-/// @license
 /// These source code files were created at the Missouri University of Science
 /// and Technology, and are intended for use in teaching or research. They may
 /// be freely copied, modified and redistributed as long as modified versions
@@ -25,15 +19,15 @@
 ///
 /// Suggested modifications or questions about these files can be directed to
 /// Dr. Bruce McMillin, Department of Computer Science, Missouri University of
-/// Science and Technology, Rolla, MO 65401 <ff@mst.edu>.
+/// Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
 ////////////////////////////////////////////////////////////////////////////////
 
-#ifndef C_DEVICE_SST_HPP
-#define C_DEVICE_SST_HPP
+#ifndef C_DEVICE_DESD_HPP
+#define C_DEVICE_DESD_HPP
 
 #include <boost/shared_ptr.hpp>
 
-#include "CDevice.hpp"
+#include "IDevice.hpp"
 
 namespace freedm {
 namespace broker {
@@ -43,26 +37,26 @@ class CPhysicalDeviceManager;
 
 namespace device {
 
-/// Implementation of distributed renewable energy resources
-class CDeviceSST
-    : public virtual CDevice
+/// Implementation of distributed energy storage devices
+class CDeviceDESD
+    : public virtual IDevice
 {
 public:
     /// Convenience type for a shared pointer to self
-    typedef boost::shared_ptr<CDeviceSST> DevicePtr;
-    
+    typedef boost::shared_ptr<CDeviceDESD> DevicePtr;
+
     /// Constructor which takes a manager, identifier, and internal structure
-    CDeviceSST( CPhysicalDeviceManager & manager, Identifier device,
+    CDeviceDESD( CPhysicalDeviceManager & manager, Identifier device,
         IDeviceStructure::DevicePtr structure )
-        : CDevice(manager,device,structure)
+        : IDevice(manager,device,structure)
         {}
-    
+
     /// Virtual destructor for derived classes
-    virtual ~CDeviceSST() {}
+    virtual ~CDeviceDESD() {}
 };
 
 } // namespace device
 } // namespace broker
 } // namespace freedm
 
-#endif // C_DEVICE_SST_HPP
+#endif // C_DEVICE_DESD_HPP

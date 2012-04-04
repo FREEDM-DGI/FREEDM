@@ -1,3 +1,5 @@
 *.swp
 *.pyc
 /Broker/nbproject/private/
+/Broker/src/device/PhysicalDeviceTypes.hpp
+/Broker/src/device/PhysicalDeviceTypes.cpp

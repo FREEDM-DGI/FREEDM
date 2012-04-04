@@ -239,7 +239,7 @@ void CClientRTDS::Run()
     //We simply need to use deadline_timer.async_wait to pass control back
     //to io_service, so it can schedule Run() with other callback functions 
     //under its watch.
-    const int TIMESTEP=10000; //in microseconds. NEEDS MORE TESTING TO SET COORECTLY.
+    const int TIMESTEP=2000000; //in microseconds. NEEDS MORE TESTING TO SET COORECTLY.
 
     //**********************************
     //* Always send data to FPGA first *

@@ -156,7 +156,7 @@ class SCAgent : public IReadHandler, public SCPeerNode, public Templates::Single
 
     //IO and Timers
     deadline_timer      m_TimeoutTimer;
-
+        
 };
 
 }

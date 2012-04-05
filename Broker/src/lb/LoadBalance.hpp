@@ -7,16 +7,32 @@
 ///
 /// @project      FREEDM DGI
 ///
-/// @description  Header for program LoadBalance.cpp
+/// @description  DGI Load Balancing Module
 ///
-/// @functions List of functions and external entry points
+/// @functions  
+///     lbAgent
+///     LB
+///     add_peer
+///     get_peer
+///     SendMsg
+///     SendNormal
+///     CollectState
+///     LoadManage
+///     LoadTable
+///     SendDraftRequest
+///     HandleRead
+///     Step_PStar
+///     PStar
+///     InitiatePowerMigration
+///     StartStateTimer
+///     HandleStateTimer
 ///
 /// These source code files were created at as part of the
-/// FREEDM DGI Subthrust, and are
-/// intended for use in teaching or research.  They may be
-/// freely copied, modified and redistributed as long
-/// as modified versions are clearly marked as such and
-/// this notice is not removed.
+/// FREEDM DGI Subthrust, and are intended for use in 
+/// teaching or research. They may be freely copied, 
+/// modified and redistributed as long as modified 
+/// versions are clearly marked as such and this notice 
+/// is not removed.
 
 /// Neither the authors nor the FREEDM Project nor the
 /// National Science Foundation
@@ -30,8 +46,8 @@
 /// Computer Science, Missouri University of Science and
 /// Technology, Rolla,
 /// MO  65409 (ff@mst.edu).
-///
 /////////////////////////////////////////////////////////
+
 #ifndef LOADBALANCE_HPP_
 #define LOADBALANCE_HPP_
 
@@ -43,17 +59,13 @@ using boost::property_tree::ptree;
 #include <set>
 #include <vector>
 #include <boost/shared_ptr.hpp>
-#include <boost/progress.hpp>
 
 #include "CMessage.hpp"
-#include "Utility.hpp"
 #include "LBPeerNode.hpp"
-#include "IHandler.hpp"
 #include "IAgent.hpp"
 #include "uuid.hpp"
 #include "CDispatcher.hpp"
 #include "CConnectionManager.hpp"
-#include "CConnection.hpp"
 #include "device/CPhysicalDeviceManager.hpp"
 #include "device/PhysicalDeviceTypes.hpp"
 
@@ -66,79 +78,126 @@ namespace freedm
 
 const double NORMAL_TOLERANCE = 0.5;
 const unsigned int STATE_TIMEOUT = 20;
-
 // Global constants
 enum
 {
-    LOAD_TIMEOUT = 15,
-    FAULT_TIMEOUT = 10
+    LOAD_TIMEOUT = 15
 };
 
 
 //////////////////////////////////////////////////////////
 /// class lbAgent
-/// @description Declaration of lbAgent class for load balancing algorithm
-/// @limitations None
+///
+/// @description 
+/// Declaration of lbAgent class for load balancing algorithm
 /////////////////////////////////////////////////////////
 class lbAgent
     : public IReadHandler,
-  public LPeerNode,
-  public Templates::Singleton< lbAgent >,
-  public IAgent< boost::shared_ptr<LPeerNode> >
+      public LPeerNode,
+      public IAgent< boost::shared_ptr<LPeerNode> >
 {
-        friend class Templates::Singleton< lbAgent >;
     public:
+        /// Default constructor
         lbAgent();
+        /// Constructor for using this object as a module
         lbAgent(std::string uuid_,
                 boost::asio::io_service &ios,
                 freedm::broker::CDispatcher &p_dispatch,
                 freedm::broker::CConnectionManager &m_conManager,
                 freedm::broker::device::CPhysicalDeviceManager &m_phyManager);
+        /// Destructor for the module  
+        ~lbAgent();
+
+        /// Main loop of the algorithm called from PosixBroker
+        int LB();
+
+    private: 
+        /// Copy constructor for the module
         lbAgent( const lbAgent& );
+        /// Copy constructor for the module
         lbAgent& operator = ( const lbAgent& );
-        virtual ~lbAgent();
 
-        // Internal
+
+        // Routines
+        /// Advertises a draft request to demand nodes on Supply 
         void SendDraftRequest();
+        /// Maintains the load table  
         void LoadTable();
-        void LoadManage();
-
-        PeerNodePtr add_peer(std::string uuid);
-        PeerNodePtr get_peer(std::string uuid);
+        /// Monitors the demand changes and trigers the algorithm accordingly
+        void LoadManage();        
+        /// Triggers the LoadManage routine on timeout
+        void LoadManage( const boost::system::error_code& err );
+        /// Starts the state timer and restarts on timeout
+        void StartStateTimer( unsigned int delay );
+        /// Sends request to SC module to initiate state collection on timeout
+        void HandleStateTimer( const boost::system::error_code & error);
+        
+        // Messages
+        /// Sends a message 'msg' to the peers in 'peerSet_'
+        void SendMsg(std::string msg, PeerSet peerSet_);
+        /// Prepares and sends a state collection request to SC
+        void CollectState();
+        /// Sends the computed Normal to group members
+        void SendNormal(double normal);
 
         // Handlers
-        void HandleRead(broker::CMessage msg);
-        void LoadManage( const boost::system::error_code& err );
-        void SendNormal(double normal);
-        void SendMsg(std::string msg, PeerSet peerSet_);
-        void StateNormalize( const ptree & pt );
-        void StartStateTimer( unsigned int delay );
-        void HandleStateTimer( const boost::system::error_code & error);
-        void CollectState();
+        /// Handles the incoming messages according to the message label
+        virtual void HandleRead(broker::CMessage msg);
+        /// Adds a new node to the list of known peers using its UUID
+        PeerNodePtr add_peer(std::string uuid);
+        /// Returns a pointer to the peer based on its UUID
+        PeerNodePtr get_peer(std::string uuid);
 
-
-        // This is the main loop of the algorithm
-        int LB();
-        double CNorm;
-        std::string Leader;
-
-    private:
-
+        // Variables
+        /// Calculated Normal
+        double m_Normal;
+        /// Leader of this group
+        std::string m_Leader;
+        /// Aggregate Load
+        float   m_Load;
+        /// Aggregate Generation
+        float   m_Gen;
+        /// Aggregate Storage
+        float   m_Storage;
+        /// Target value of gateway
+        float   m_PStar;
+        /// Current gateway
+        float   m_Gateway;
+        /// Calculated gateway
+        float   m_CalcGateway;
+        /// Demand cost of this node in Demand
+        float   m_DemandVal;
+        /// Current Demand state of this node  
+        LPeerNode::EStatus   m_Status;
+        /// Previous demand state of this node before state change
+        LPeerNode::EStatus   m_prevStatus;  
+   
+        // Peer lists
+        /// Set of known peers in Demand State
         PeerSet     m_HiNodes;
+        /// Set of known peers in Normal State
         PeerSet     m_NoNodes;
+        /// Set of known peers in Supply State
         PeerSet     m_LoNodes;
-        PeerSet     l_AllPeers;
+        /// Set of all the known peers 
+        PeerSet     m_AllPeers;
 
-        // The handler for all incoming requests.
+        // Instance of physical device manager
         freedm::broker::device::CPhysicalDeviceManager &m_phyDevManager;
-        void InitiatePowerMigration(broker::device::SettingValue DemandValue);
-        void Step_PStar();
-        void PStar(broker::device::SettingValue DemandValue);
-        void NotifySC(double gatewayChange);
 
-        /* IO and Timers */
+        // Power migration functions 
+        /// 'Power migration' through controlling devices
+        void InitiatePowerMigration(broker::device::SettingValue DemandValue);
+        /// 'Power migration' by stepping up/down P* by a constant value
+        void Step_PStar();
+        /// 'Power migration' by stepping up/down P* basing on the demand cost
+        void PStar(broker::device::SettingValue DemandValue);
+
+
+        // IO and Timers 
+        /// Timer until check of demand state change
         deadline_timer     m_GlobalTimer;
-        // timer until next periodic state collection
+        /// Timer until next periodic state collection
         deadline_timer      m_StateTimer;
 };
 

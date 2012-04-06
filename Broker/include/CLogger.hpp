@@ -27,7 +27,7 @@ class CGlobalLogger : public Templates::Singleton<CGlobalLogger>
     /// @limitations: Singleton. Should not be copied.
     ///////////////////////////////////////////////////////////////////////////
     public:
-        /// Intialize the global loggers table.
+        /// Initialize the global logger's table.
         CGlobalLogger();
         /// Sets the logging level of all loggers.
         void SetGlobalLevel(int level);

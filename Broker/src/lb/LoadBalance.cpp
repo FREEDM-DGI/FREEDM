@@ -265,9 +265,10 @@ void lbAgent::SendNormal(double Normal)
 /// @post: SC module receives the request and initiates state collection
 /// @peer  This node (SC module)
 /// @error If the message cannot be sent, an exception is thrown and the 
-///	   process continues/// @error If the message cannot be sent, an exception is thrown and the 
 ///	   process continues
 /// @limitations
+/// TODO: Have a generic request message with exact entity to be included in 
+///       state collection; eg., LB requests gateways only.
 /////////////////////////////////////////////////////////
 void lbAgent::CollectState()
 {
@@ -279,7 +280,7 @@ void lbAgent::CollectState()
     try
     {
        get_peer(GetUUID())->Send(m_cs);
-       Logger.Status << "Load Balance: Requesting State Collection" << std::endl;
+       Logger.Status << "LB module requested State Collection" << std::endl;
     }
     catch (boost::system::system_error& e)
     {
@@ -329,7 +330,7 @@ void lbAgent::LoadManage()
     }
 
     //Start the timer; on timeout, this function is called again
-    //TODO: Changes in Real time version
+    //TODO: Change in Real time version
     m_GlobalTimer.expires_from_now( boost::posix_time::seconds(LOAD_TIMEOUT) );
     m_GlobalTimer.async_wait( boost::bind(&lbAgent::LoadManage, this,
                                           boost::asio::placeholders::error));
@@ -398,10 +399,7 @@ void lbAgent::LoadTable()
     DESDContainer = m_phyDevManager.GetDevicesOfType<DESD>();
     LOADContainer = m_phyDevManager.GetDevicesOfType<LOAD>();
     SSTContainer = m_phyDevManager.GetDevicesOfType<SST>();
-    //# devices of each type attached and alive
-    int DRER_count = DRERContainer.size();
-    int DESD_count = DESDContainer.size();
-    int LOAD_count = LOADContainer.size();
+
     //temp variables
     broker::device::SettingValue net_gen = 0;
     broker::device::SettingValue net_storage = 0;
@@ -437,20 +435,20 @@ void lbAgent::LoadTable()
     m_Load = net_load;
     m_CalcGateway = m_Load - m_Gen;
     m_Gateway = SSTValue;
-    Logger.Status <<"| " << "Net DRER (" << DRER_count << "): " << m_Gen
-                   << std::setw(14) << "Net DESD (" << DESD_count << "): "
-                   << m_Storage << std::endl;
-    Logger.Status <<"| " << "Net Load (" << LOAD_count << "): "<< m_Load
-                   << std::setw(16) << "Calc Gateway: " << m_CalcGateway
-                   << std::endl;
-    Logger.Status <<"| Normal = " << m_Normal << std::setw(14)<<  "Net Gateway: "
-                   <<  m_Gateway<< std::endl;
+    Logger.Status <<"| " << "Net DRER (" << DRERContainer.size() << "): " << m_Gen
+                  << std::setw(14) << "Net DESD (" << DESDContainer.size() << "): "
+                  << m_Storage << std::endl;
+    Logger.Status <<"| " << "Net Load (" << LOADContainer.size() << "): "<< m_Load
+                  << std::setw(16) << "Net Gateway (" << SSTContainer.size() 
+                  << "): " << m_Gateway << std::endl;
+    Logger.Status <<"| Normal = " << m_Normal << std::setw(16) 
+		  << "Calc Gateway: " << m_CalcGateway << std::endl; 
     Logger.Status <<"| ---------------------------------------------------- |"
-                   << std::endl;
+                  << std::endl;
     Logger.Status <<"| " << std::setw(20) << "UUID" << std::setw(27)<< "State"
-                   << std::setw(7) <<"|"<< std::endl;
+                  << std::setw(7) <<"|"<< std::endl;
     Logger.Status <<"| "<< std::setw(20) << "----" << std::setw(27)<< "-----"
-                   << std::setw(7) <<"|"<< std::endl;
+                  << std::setw(7) <<"|"<< std::endl;
 
     //Compute the Load state based on the current gateway value and Normal
     //TODO: API for future-could be the cost consesus algorithm from NCSU
@@ -609,10 +607,20 @@ void lbAgent::HandleRead(broker::CMessage msg)
         }
 
         //Update the PeerNode lists accordingly
-        m_AllPeers.clear(); 
-        m_LoNodes.clear();
-        m_HiNodes.clear();
-        m_NoNodes.clear();
+        //TODO:Not sure if similar loop is needed to erase each peerset 
+        //individually. peerset.clear() doesn`t work for obvious reasons
+        foreach( PeerNodePtr p_, m_AllPeers | boost::adaptors::map_values)
+        {
+            if( p_->GetUUID() == GetUUID())
+            {
+                continue;
+            }          
+            EraseInPeerSet(m_AllPeers,p_);
+            //Assuming that any node in m_AllPeers exists in one of the following
+            EraseInPeerSet(m_HiNodes,p_);
+            EraseInPeerSet(m_LoNodes,p_);
+            EraseInPeerSet(m_NoNodes,p_);
+        }
 
         // Tokenize the peer list string
         foreach(ptree::value_type &v, pt.get_child("any.peers"))
@@ -631,6 +639,7 @@ void lbAgent::HandleRead(broker::CMessage msg)
             }
 
         }
+
     }//end if("peerlist")
 
     // If there isn't an lb message, just leave.
@@ -842,35 +851,29 @@ void lbAgent::HandleRead(broker::CMessage msg)
     {
         int peer_count=0;
         double agg_gateway=0;
-	Logger.Notice << "+++++++++++++++++++++++++++++++++++++++++++++++" << std::endl;
 	foreach(ptree::value_type &v, pt.get_child("CollectedState.gateway"))
 	{
 	    Logger.Notice << "SC module returned gateway values: "
-			   << v.second.data() << std::endl;
+			  << v.second.data() << std::endl;
  	    peer_count++;
             agg_gateway += boost::lexical_cast<double>(v.second.data());
 	}
 
 	//Consider any intransit "accept" messages in agg_gateway calculation
-        try
+        if(pt.get_child_optional("CollectedState.intransit"))
         {
-           foreach(ptree::value_type &v, pt.get_child("CollectedState.intransit"))
-	   {
-	      Logger.Notice << "SC module returned intransit messages: "
-	                    << v.second.data() << std::endl;
-              if(v.second.data() == "accept")
+          foreach(ptree::value_type &v, pt.get_child("CollectedState.intransit"))
+          {
+	     Logger.Status << "SC module returned intransit messages: "
+	                   << v.second.data() << std::endl;
+             if(v.second.data() == "accept")
               	 agg_gateway += P_Migrate;
-	   }
-           if(peer_count !=0) m_Normal =  agg_gateway/peer_count;
-           Logger.Info << "Computed Normal: " << m_Normal<<std::endl;
-           SendNormal(m_Normal);
+	  }
         }
-        catch (boost::system::system_error& e)
-        {
-           Logger.Info << " No intransit messages" << std::endl;
-        }
-
-    }//end if("gateway")
+        if(peer_count != 0) m_Normal =  agg_gateway/peer_count;
+        Logger.Info << "Computed Normal: " << m_Normal << std::endl;
+        SendNormal(m_Normal);
+    }//end if("CollectedState")
 
     // --------------------------------------------------------------
     // You received the new Normal value calculated and sent by your leader

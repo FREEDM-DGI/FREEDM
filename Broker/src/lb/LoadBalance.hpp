@@ -112,13 +112,7 @@ class lbAgent
         int LB();
 
     private: 
-        /// Copy constructor for the module
-        lbAgent( const lbAgent& );
-        /// Copy constructor for the module
-        lbAgent& operator = ( const lbAgent& );
-
-
-        // Routines
+         // Routines
         /// Advertises a draft request to demand nodes on Supply 
         void SendDraftRequest();
         /// Maintains the load table  

@@ -76,7 +76,7 @@ std::string basename( const std::string &s )
 /// Broker entry point
 int main(int argc, char* argv[])
 {
-    CGlobalLogger::instance().SetGlobalLevel( 7 );
+    CGlobalLogger::instance().ReadLoggerLevels();
     // Variable Declaration
     po::options_description genOpts_("General Options"),
             configOpts_("Configuration"),

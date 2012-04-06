@@ -103,3 +103,9 @@ int CGlobalLogger::GetOutputLevel(std::string logger)
     }
     return m_loggers[logger];
 }
+
+void CGlobalLogger::ReadLoggerLevels()
+{
+    SetGlobalLevel(5);
+    // TODO
+}

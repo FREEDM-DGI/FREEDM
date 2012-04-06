@@ -56,6 +56,8 @@ class CGlobalLogger : public Templates::Singleton<CGlobalLogger>
         void SetOutputLevel(std::string logger,int level);
         /// Fetch the logging level of a specific logger.
         int GetOutputLevel(std::string logger);
+        /// Reads the logging levels of all loggers from the config file.
+        void ReadLoggerLevels();
     private:
         /// What the output level is if not set specifically.
         int m_default;

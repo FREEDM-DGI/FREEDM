@@ -1,3 +1,26 @@
+////////////////////////////////////////////////////////////////////////////////
+/// @file           CLogger.hpp
+///
+/// @author         Stephen Jackson <scj7t4@mst.edu>
+///
+/// @project        FREEDM DGI
+///
+/// @description    A logger to be included by Broker files.
+///
+/// These source code files were created at the Missouri University of Science
+/// and Technology, and are intended for use in teaching or research. They may
+/// be freely copied, modified and redistributed as long as modified versions
+/// are clearly marked as such and this notice is not removed.
+///
+/// Neither the authors nor Missouri S&T make any warranty, express or implied,
+/// nor assume any legal responsibility for the accuracy, completeness or
+/// usefulness of these files or any information distributed with these files.
+///
+/// Suggested modifications or questions about these files can be directed to
+/// Dr. Bruce McMillin, Department of Computer Science, Missouri University of
+/// Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
+////////////////////////////////////////////////////////////////////////////////
+
 #ifndef CLOGGER_HPP
 #define CLOGGER_HPP
 
@@ -27,8 +50,6 @@ class CGlobalLogger : public Templates::Singleton<CGlobalLogger>
     /// @limitations: Singleton. Should not be copied.
     ///////////////////////////////////////////////////////////////////////////
     public:
-        /// Intialize the global loggers table.
-        CGlobalLogger();
         /// Sets the logging level of all loggers.
         void SetGlobalLevel(int level);
         /// Sets the logging level of a specific logger.
@@ -38,7 +59,7 @@ class CGlobalLogger : public Templates::Singleton<CGlobalLogger>
     private:
         /// What the output level is if not set specifically.
         int m_default;
-        /// Type of containter for the output levels.
+        /// Type of container for the output levels.
         typedef std::map< std::string, int > OutputMap;
         /// The map of loggers to logger levels.
         OutputMap m_loggers;
@@ -53,10 +74,10 @@ class CLog : public boost::iostreams::sink
     ///     output level
     ///////////////////////////////////////////////////////////////////////////
     public:
-        /// Constructor; prepares a log of a specifed level.
+        /// Constructor; prepares a log of a specified level.
         CLog(CLoggerPointer p, int level_, const char * name_,
             std::ostream *out_= &std::clog );
-        /// Wrtes from a character array into the logger stream
+        /// Writes from a character array into the logger stream
         std::streamsize write( const char* s, std::streamsize n);
         /// Determine the level of this logger
         int GetOutputLevel();
@@ -83,7 +104,7 @@ class CLocalLogger : private boost::noncopyable
     ///     one name since they are declared statically.
     ///////////////////////////////////////////////////////////////////////////
     public:
-        ///Intializes the local statics
+        ///Initializes the local statics
         CLocalLogger(std::string loggername);
         ///Logger
 	    boost::iostreams::stream<CLog> Debug;

@@ -1,12 +1,13 @@
 ////////////////////////////////////////////////////////////////////////////////
-/// @file           IDeviceLWI.hpp
+/// @file           CDeviceLWI_Battery.hpp
 ///
 /// @author         Yaxi Liu <ylztf@mst.edu>
 ///                 Thomas Roth <tprfh7@mst.edu>
+///                 Michael Catanzaro <michael.catanzaro@mst.edu>
 ///
 /// @project        FREEDM DGI
 ///
-/// @description    Physical devices for the LWI project
+/// @description    Battery for the LWI project
 ///
 /// These source code files were created at the Missouri University of Science
 /// and Technology, and are intended for use in teaching or research. They may
@@ -22,56 +23,37 @@
 /// Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
 ////////////////////////////////////////////////////////////////////////////////
 
-#ifndef C_DEVICE_LWI_HPP
-#define C_DEVICE_LWI_HPP
+#ifndef CDEVICELWI_BATTERY_HPP
+#define	CDEVICELWI_BATTERY_HPP
 
-#include <boost/shared_ptr.hpp>
+#include "IDeviceLWI.hpp"
 
-#include "CDeviceDRER.hpp"
-#include "CDeviceDESD.hpp"
-#include "CDeviceLOAD.hpp"
+namespace freedm {
+namespace broker {
+namespace device {
 
-namespace freedm
-{
-namespace broker
-{
-
-// forward declaration of device manager
-class CPhysicalDeviceManager;
-
-namespace device
-{
-
-/// Common implementation of LWI devices
-class IDeviceLWI
-: public virtual IDevice
+/// Physical batteries for the LWI project
+class CDeviceLWI_Battery
+: public IDeviceLWI
+, public CDeviceDESD
 {
 public:
     /// Convenience type for a shared pointer to self
-    typedef boost::shared_ptr<IDeviceLWI> DevicePtr;
+    typedef boost::shared_ptr<CDeviceLWI_Battery> DevicePtr;
 
-    /// Activate the device
-    void turnOn();
-
-    /// Deactivate the device
-    void turnOff();
-
-    /// Get the device power (positive indicates discharge)
-    SettingValue get_powerLevel();
-
-protected:
     /// Constructor which takes a manager, identifier, and internal structure
-    IDeviceLWI(CPhysicalDeviceManager & manager, Identifier device,
+    CDeviceLWI_Battery(CPhysicalDeviceManager & manager, Identifier device,
             IDeviceStructure::DevicePtr structure)
-    : IDevice(manager, device, structure) { }
+    : IDevice(manager, device, structure)
+    , IDeviceLWI(manager, device, structure)
+    , CDeviceDESD(manager, device, structure) { }
 
     /// Virtual destructor for derived classes
-    virtual ~IDeviceLWI() { }
-
+    virtual ~CDeviceLWI_Battery() { }
 };
 
-} // namespace device
-} // namespace broker
 } // namespace freedm
+} // namespace broker
+} // namespace device
 
-#endif // C_DEVICE_LWI_HPP
+#endif

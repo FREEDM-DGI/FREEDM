@@ -108,6 +108,27 @@ public:
 
         return result;
     }
+    
+    /// Returns the sum of a key's values for all devices of a type.
+    template <class DeviceType>
+    SettingValue GetNetValue(std::string key)
+    {
+        int result = 0;
+        typename DeviceType::DevicePtr next_device;
+        iterator it = m_devices.begin();
+        iterator end = m_devices.end();
+
+        for( ; it != end; it++ )
+        {
+            // attempt to convert each managed device to DeviceType
+            if( next_device = device::device_cast<DeviceType>(it->second) )
+            {
+                result += next_device->Get(key);
+            }
+        }
+
+        return result;
+    }
 private:
     /// Mapping From Identifier To Device Set
     PhysicalDeviceSet m_devices;

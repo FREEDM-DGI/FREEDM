@@ -379,6 +379,8 @@ void lbAgent::LoadManage( const boost::system::error_code& err )
 /////////////////////////////////////////////////////////
 void lbAgent::LoadTable()
 {
+    using broker::device::CPhysicalDeviceManager;
+    using broker::device::SettingValue;    
     Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     // device typedef for convenience
     typedef broker::device::CDeviceDRER DRER;
@@ -386,55 +388,29 @@ void lbAgent::LoadTable()
     typedef broker::device::CDeviceLOAD LOAD;
     typedef broker::device::CDeviceSST SST;
     // Container and iterators for the result of GetDevicesOfType
-    broker::device::CPhysicalDeviceManager::PhysicalDevice<DRER>::Container DRERContainer;
-    broker::device::CPhysicalDeviceManager::PhysicalDevice<DESD>::Container DESDContainer;
-    broker::device::CPhysicalDeviceManager::PhysicalDevice<LOAD>::Container LOADContainer;
-    broker::device::CPhysicalDeviceManager::PhysicalDevice<SST>::Container SSTContainer;
-    broker::device::CPhysicalDeviceManager::PhysicalDevice<DRER>::iterator rit, rend;
-    broker::device::CPhysicalDeviceManager::PhysicalDevice<DESD>::iterator sit, send;
-    broker::device::CPhysicalDeviceManager::PhysicalDevice<LOAD>::iterator lit, lend;
-    broker::device::CPhysicalDeviceManager::PhysicalDevice<SST>::iterator pit, pend;
+    CPhysicalDeviceManager::PhysicalDevice<DRER>::Container DRERContainer;
+    CPhysicalDeviceManager::PhysicalDevice<DESD>::Container DESDContainer;
+    CPhysicalDeviceManager::PhysicalDevice<LOAD>::Container LOADContainer;
+    CPhysicalDeviceManager::PhysicalDevice<SST>::Container SSTContainer;
+    CPhysicalDeviceManager::PhysicalDevice<DRER>::iterator rit, rend;
+    CPhysicalDeviceManager::PhysicalDevice<DESD>::iterator sit, send;
+    CPhysicalDeviceManager::PhysicalDevice<LOAD>::iterator lit, lend;
+    CPhysicalDeviceManager::PhysicalDevice<SST>::iterator pit, pend;
     // populate the device containers
     DRERContainer = m_phyDevManager.GetDevicesOfType<DRER>();
     DESDContainer = m_phyDevManager.GetDevicesOfType<DESD>();
     LOADContainer = m_phyDevManager.GetDevicesOfType<LOAD>();
     SSTContainer = m_phyDevManager.GetDevicesOfType<SST>();
 
-    //temp variables
-    broker::device::SettingValue net_gen = 0;
-    broker::device::SettingValue net_storage = 0;
-    broker::device::SettingValue net_load = 0;
-    broker::device::SettingValue SSTValue = 0;
-
-    // calculate the net generation for each family of devices
-    for( rit = DRERContainer.begin(), rend = DRERContainer.end(); rit != rend; rit++ )
-    {
-        net_gen += (*rit)->Get("powerLevel");
-    }
-
-    for( sit = DESDContainer.begin(), send = DESDContainer.end(); sit != send; sit++ )
-    {
-        net_storage += (*sit)->Get("powerLevel");
-    }
-
-    for( lit = LOADContainer.begin(), lend = LOADContainer.end(); lit != lend; lit++ )
-    {
-        net_load += (*lit)->Get("powerLevel");
-    }
-
-    for( pit = SSTContainer.begin(), pend = SSTContainer.end(); pit != pend; pit++ )
-    {
-        SSTValue +=(*pit)->Get("powerLevel");
-    }
+    m_Gen = m_phyDevManager.GetNetValue<DRER>("powerLevel");
+    m_Storage = m_phyDevManager.GetNetValue<DESD>("powerLevel");
+    m_Load = m_phyDevManager.GetNetValue<LOAD>("powerLevel");
+    m_CalcGateway = m_Load - m_Gen;
+    m_Gateway = m_phyDevManager.GetNetValue<SST>("powerLevel");
     
     Logger.Status <<" ----------- LOAD TABLE (Power Management) ------------"
                    << std::endl;
     Logger.Status <<"| " << "Load Table @ " << microsec_clock::local_time()  <<std::endl;
-    m_Gen = net_gen;
-    m_Storage = net_storage;
-    m_Load = net_load;
-    m_CalcGateway = m_Load - m_Gen;
-    m_Gateway = SSTValue;
     Logger.Status <<"| " << "Net DRER (" << DRERContainer.size() << "): " << m_Gen
                   << std::setw(14) << "Net DESD (" << DESDContainer.size() << "): "
                   << m_Storage << std::endl;

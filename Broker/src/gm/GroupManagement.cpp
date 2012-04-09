@@ -135,10 +135,10 @@ GMAgent::GMAgent(std::string p_uuid, freedm::broker::CBroker &broker)
     : GMPeerNode(p_uuid,broker.GetConnectionManager()),
     m_electiontimer(),
     m_ingrouptimer(),
-    m_broker(broker),
     CHECK_TIMEOUT(boost::posix_time::seconds(10)),
     TIMEOUT_TIMEOUT(boost::posix_time::seconds(10)),
-    GLOBAL_TIMEOUT(boost::posix_time::seconds(5))
+    GLOBAL_TIMEOUT(boost::posix_time::seconds(5)),
+    m_broker(broker)
 {
     Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     AddPeer(GetUUID());

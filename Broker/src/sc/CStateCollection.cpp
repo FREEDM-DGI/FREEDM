@@ -123,15 +123,13 @@ namespace freedm
 ///////////////////////////////////////////////////////////////////////////////
 
 SCAgent::SCAgent(std::string uuid, freedm::broker::CBroker &broker,
-                 freedm::broker::CPhysicalDeviceManager &m_phyManager):
+                 freedm::broker::device::CPhysicalDeviceManager &m_phyManager):
     SCPeerNode(uuid, broker.GetConnectionManager()),
-    m_phyDevManager(m_phyManager),
-    m_broker(broker),
     m_countstate(0),
     m_NotifyToSave(false),
     m_curversion("default", 0),
     m_phyDevManager(m_phyManager),
-    m_TimeoutTimer(ios)
+    m_broker(broker)
 {
     Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     PeerNodePtr self_(this);

@@ -399,7 +399,6 @@ int main(int argc, char* argv[])
         Logger.Debug << "Starting thread of Modules" << std::endl;
         boost::thread thread2_( boost::bind(&GMAgent::Run, &GM_)
                                 , boost::bind(&lbAgent::LB, &LB_)
-                                , boost::bind(&SCAgent::SC, &SC_)
                               );
         // Wait for signal indicating time to shut down.
         sigset_t wait_mask;

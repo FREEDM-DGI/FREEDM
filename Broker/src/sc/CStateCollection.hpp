@@ -89,7 +89,7 @@ class SCAgent : public IReadHandler, public SCPeerNode, public Templates::Single
   friend class Templates::Singleton< SCAgent >;
   public:
     ///Constructor        
-    SCAgent(std::string uuid, freedm::broker::CBroker &broker, freedm::broker::CPhysicalDeviceManager &m_phyManager);
+    SCAgent(std::string uuid, freedm::broker::CBroker &broker, freedm::broker::device::CPhysicalDeviceManager &m_phyManager);
     ///Destructor
     ~SCAgent();
     //Handler

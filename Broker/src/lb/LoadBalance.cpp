@@ -101,10 +101,10 @@ namespace freedm
 ///////////////////////////////////////////////////////////////////////////////
 lbAgent::lbAgent(std::string uuid_,
                  broker::CBroker &broker,
-                 broker::CPhysicalDeviceManager &m_phyManager):
+                 broker::device::CPhysicalDeviceManager &m_phyManager):
     LPeerNode(uuid_, broker.GetConnectionManager()),
-    m_broker(broker),
-    m_phyDevManager(m_phyManager)
+    m_phyDevManager(m_phyManager),
+    m_broker(broker)
 {
     Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     PeerNodePtr self_(this);

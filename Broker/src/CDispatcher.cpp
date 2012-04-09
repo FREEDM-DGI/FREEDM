@@ -281,11 +281,11 @@ void CDispatcher::RegisterReadHandler(const std::string &module, const std::stri
 ///   should be touched.
 /// @param p_handler The module that will be invoked to perform the touch
 ///////////////////////////////////////////////////////////////////////////////
+#pragma GCC diagnostic ignored "-Wunused-parameter"
 void CDispatcher::RegisterWriteHandler(const std::string &module, const std::string &p_type,
         IWriteHandler *p_handler )
 {
     Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
-
     {
         // Scoped lock, will release mutex at end of {}
         boost::lock_guard< boost::mutex > scopedLock_( m_wMutex );

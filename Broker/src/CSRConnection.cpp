@@ -310,7 +310,7 @@ bool CSRConnection::Recieve(const CMessage &msg)
             return false;
             Logger.Notice<<"Duplicate Sync"<<std::endl;
         }
-        Logger.Debuge<<"Got Sync"<<std::endl;
+        Logger.Debug<<"Got Sync"<<std::endl;
         m_inseq = (msg.GetSequenceNumber()+1)%SEQUENCE_MODULO;
         m_insynctime = msg.GetSendTimestamp();
         m_inresyncs++;

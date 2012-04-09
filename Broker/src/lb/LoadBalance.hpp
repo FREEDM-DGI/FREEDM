@@ -102,7 +102,7 @@ class lbAgent
         /// Constructor for using this object as a module
         lbAgent(std::string uuid_,
                 freedm::broker::CBroker &broker,
-                freedm::broker::CPhysicalDeviceManager &m_phyManager);
+                freedm::broker::device::CPhysicalDeviceManager &m_phyManager);
         /// Destructor for the module  
         ~lbAgent();
 

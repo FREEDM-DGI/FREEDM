@@ -192,7 +192,6 @@ class lbAgent
         freedm::broker::CBroker::TimerHandle      m_StateTimer;
         
         freedm::broker::CBroker &m_broker;
-        
 };
 
 }

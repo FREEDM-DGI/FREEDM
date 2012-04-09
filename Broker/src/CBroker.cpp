@@ -230,11 +230,11 @@ void CBroker::Schedule(ModuleIdent m, BoundScheduleable x)
     m_ready[m].push_back(x);
     if(!m_busy)
     {
-        Logger.Notice<<"Started Worker"<<std::endl;
+        Logger.Debug<<"Started Worker"<<std::endl;
         Worker();
     }
-    Logger.Notice<<"Module "<<m<<" now has queue size: "<<m_ready[m].size()<<std::endl;
-    Logger.Notice<<"Scheduled task (NODELAY) for "<<m<<std::endl;
+    Logger.Debug<<"Module "<<m<<" now has queue size: "<<m_ready[m].size()<<std::endl;
+    Logger.Debug<<"Scheduled task (NODELAY) for "<<m<<std::endl;
 }
 ///////////////////////////////////////////////////////////////////////////////
 /// @fn CBroker::ChangePhase
@@ -279,15 +279,15 @@ void CBroker::ScheduledTask(CBroker::Scheduleable x, CBroker::TimerHandle handle
     const boost::system::error_code &err)
 {
     ModuleIdent module = m_allocs[handle];
-    Logger.Notice<<"Handle finished: "<<handle<<" For module "<<module<<std::endl;
+    Logger.Info<<"Handle finished: "<<handle<<" For module "<<module<<std::endl;
     // First, prepare another bind, which uses the given error
     CBroker::BoundScheduleable y = boost::bind(x,err);
     // Put it into the ready queue
     m_ready[module].push_back(y);
-    Logger.Notice<<"Module "<<module<<" now has queue size: "<<m_ready[module].size()<<std::endl;
+    Logger.Info<<"Module "<<module<<" now has queue size: "<<m_ready[module].size()<<std::endl;
     if(!m_busy)
     {
-        Logger.Notice<<"Started Worker"<<std::endl;
+        Logger.Info<<"Started Worker"<<std::endl;
         Worker();
     }
 }
@@ -311,7 +311,7 @@ void CBroker::Worker()
     std::string active = m_modules[m_phase];
     if(m_ready[active].size() > 0)
     {
-        Logger.Notice<<"Performing Job"<<std::endl;
+        Logger.Debug<<"Performing Job"<<std::endl;
         // Mark that the worker has something to do
         m_busy = true;
         // Extract the first item from the work queue:
@@ -325,7 +325,7 @@ void CBroker::Worker()
     else
     {
         m_busy = false;
-        Logger.Notice<<"Worker Idle"<<std::endl;
+        Logger.Debug<<"Worker Idle"<<std::endl;
     }
 }
 

@@ -122,16 +122,14 @@ namespace freedm
 /// @limitations: None
 ///////////////////////////////////////////////////////////////////////////////
 
-SCAgent::SCAgent(std::string uuid, boost::asio::io_service &ios,
-                 freedm::broker::CDispatcher &p_dispatch,
-                 freedm::broker::CConnectionManager &m_connManager,
+SCAgent::SCAgent(std::string uuid, freedm::broker::CBroker &broker,
                  freedm::broker::device::CPhysicalDeviceManager &m_phyManager):
-    SCPeerNode(uuid, m_connManager, ios, p_dispatch),
+    SCPeerNode(uuid, broker.GetConnectionManager()),
     m_countstate(0),
     m_NotifyToSave(false),
     m_curversion("default", 0),
     m_phyDevManager(m_phyManager),
-    m_TimeoutTimer(ios)
+    m_broker(broker)
 {
     Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     PeerNodePtr self_(this);
@@ -750,7 +748,7 @@ SCAgent::PeerNodePtr SCAgent::AddPeer(std::string uuid)
 {
     Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     PeerNodePtr tmp_;
-    tmp_.reset(new SCPeerNode(uuid,GetConnectionManager(),GetIOService(),GetDispatcher()));
+    tmp_.reset(new SCPeerNode(uuid,GetConnectionManager()));
     InsertInPeerSet(m_AllPeers,tmp_);
     return tmp_;
 }

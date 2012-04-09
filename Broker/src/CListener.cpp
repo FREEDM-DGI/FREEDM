@@ -65,8 +65,8 @@ namespace freedm {
 /// @param uuid: The uuid this node connects to, or what listener.
 ///////////////////////////////////////////////////////////////////////////////
 CListener::CListener(boost::asio::io_service& p_ioService,
-  CConnectionManager& p_manager, CDispatcher& p_dispatch, std::string uuid)
-  : CReliableConnection(p_ioService,p_manager,p_dispatch,uuid)
+  CConnectionManager& p_manager, CBroker& p_broker, std::string uuid)
+  : CReliableConnection(p_ioService,p_manager,p_broker,uuid)
 {
     Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
 }
@@ -134,8 +134,7 @@ void CListener::HandleRead(const boost::system::error_code& e,
             GetConnectionManager().PutHostname(uuid,hostname);                        
             ///Get the pointer to the connection:
             CConnection::ConnectionPtr conn;
-            conn = GetConnectionManager().GetConnectionByUUID(uuid,
-                GetSocket().get_io_service(), GetDispatcher());
+            conn = GetConnectionManager().GetConnectionByUUID(uuid);
 #ifdef CUSTOMNETWORK
             if((rand()%100) >= GetReliability())
             {
@@ -156,11 +155,11 @@ void CListener::HandleRead(const boost::system::error_code& e,
             {
                 Logger.Debug<<"Accepted message "<<m_message.GetHash()<<":"
                               <<m_message.GetSequenceNumber()<<std::endl;
-                GetDispatcher().HandleRequest(m_message);
+                GetDispatcher().HandleRequest(GetBroker(),m_message);
             }
             else if(m_message.GetStatus() != freedm::broker::CMessage::Created)
             {
-                Logger.Notice<<"Rejected message "<<m_message.GetHash()<<":"
+                Logger.Debug<<"Rejected message "<<m_message.GetHash()<<":"
                               <<m_message.GetSequenceNumber()<<std::endl;
             }
         }

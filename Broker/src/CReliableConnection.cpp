@@ -63,10 +63,10 @@ namespace freedm {
 /// @param uuid: The uuid this node connects to, or what listener.
 ///////////////////////////////////////////////////////////////////////////////
 CReliableConnection::CReliableConnection(boost::asio::io_service& p_ioService,
-  CConnectionManager& p_manager, CDispatcher& p_dispatch, std::string uuid)
+  CConnectionManager& p_manager, CBroker& p_broker, std::string uuid)
   : m_socket(p_ioService),
     m_connManager(p_manager),
-    m_dispatch(p_dispatch),
+    m_broker(p_broker),
     m_uuid(uuid)
 {
     Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
@@ -86,5 +86,47 @@ boost::asio::ip::udp::socket& CReliableConnection::GetSocket()
 
     return m_socket;
 }
+
+
+/// Get associated UUID
+std::string CReliableConnection::GetUUID()
+{
+    return m_uuid;
+}
+
+/// Get Connection Manager
+CConnectionManager& CReliableConnection::GetConnectionManager() {
+    return m_connManager;
+}
+
+/// Get the broker
+CBroker& CReliableConnection::GetBroker() {
+    return m_broker;
+}
+
+/// Get the dispatcher
+CDispatcher& CReliableConnection::GetDispatcher() {
+    return m_broker.GetDispatcher();
+}
+
+/// Get the ioservice
+boost::asio::io_service& CReliableConnection::GetIOService()
+{
+    return m_socket.get_io_service();
+}
+
+/// Set the connection reliability for DCUSTOMNETWORK
+void CReliableConnection::SetReliability(int r)
+{
+    m_reliability = r;
+}
+
+/// Get the connection reliability for DCUSTOMNETWORK
+int CReliableConnection::GetReliability()
+{
+    return m_reliability;
+}
+
+
     } // namespace broker
 } // namespace freedm

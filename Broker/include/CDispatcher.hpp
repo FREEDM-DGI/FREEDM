@@ -46,6 +46,7 @@
 #define CDISPATCHER_HPP
 
 #include "IHandler.hpp"
+#include "CBroker.hpp"
 
 #include <map>
 #include <string>
@@ -69,25 +70,31 @@ public:
     CDispatcher();
 
     /// Called upon incoming message
-    void HandleRequest( CMessage msg );
+    void HandleRequest(CBroker &broker, CMessage msg );
 
     /// Called prior to sending a message
     void HandleWrite( ptree &p_mesg );
 
     /// Registers a handler that will be called with HandleRequest
-    void RegisterReadHandler( const std::string &p_type,
+    void RegisterReadHandler( const std::string &module, const std::string &p_type,
             IReadHandler *p_handler );
 
     /// Registers a handler that will be called with HandleWrite
-    void RegisterWriteHandler( const std::string &p_type,
+    void RegisterWriteHandler( const std::string &module, const std::string &p_type,
             IWriteHandler *p_handler );
+
 private:
+    /// Making the handler calls bindable
+    void ReadHandlerCallback(IReadHandler *h, CMessage msg);
+    
     /// All the registered read handlers.
     std::map< const std::string, IReadHandler *> m_readHandlers;
 
     /// All the registered write handlers.
     std::map< const std::string, IWriteHandler *> m_writeHandlers;
  
+    /// Reverse map to get the calling module from the handler pointer.
+    std::map< IReadHandler *, const std::string > m_handlerToModule;
 
     /// Mutexes for protecting the handler maps above
     boost::mutex m_rMutex,

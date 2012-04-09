@@ -33,7 +33,6 @@ if(Boost_FOUND)
 
     # set C++ compiler flags
     set(COMMON_FLAGS "-g -lpthread")
-    
     set(WARNING_FLAGS "")
     if(SHOW_WARNINGS)
         set(WARNING_FLAGS "-Wall -Wextra -pedantic")

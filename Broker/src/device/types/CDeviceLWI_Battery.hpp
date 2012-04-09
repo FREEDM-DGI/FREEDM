@@ -1,19 +1,14 @@
 ////////////////////////////////////////////////////////////////////////////////
-/// @file           CDeviceSST.hpp
+/// @file           CDeviceLWI_Battery.hpp
 ///
 /// @author         Yaxi Liu <ylztf@mst.edu>
 ///                 Thomas Roth <tprfh7@mst.edu>
-///                 Ravi Akella <rcaq5c@mst.edu>
-///
-/// @compiler       C++
+///                 Michael Catanzaro <michael.catanzaro@mst.edu>
 ///
 /// @project        FREEDM DGI
 ///
-/// @description    Physical device class for SST.
-///                 It could be useful to have this definition to incorporate 
-///	            "additional properties" an SST could have in future
+/// @description    Battery for the LWI project
 ///
-/// @license
 /// These source code files were created at the Missouri University of Science
 /// and Technology, and are intended for use in teaching or research. They may
 /// be freely copied, modified and redistributed as long as modified versions
@@ -25,44 +20,40 @@
 ///
 /// Suggested modifications or questions about these files can be directed to
 /// Dr. Bruce McMillin, Department of Computer Science, Missouri University of
-/// Science and Technology, Rolla, MO 65401 <ff@mst.edu>.
+/// Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
 ////////////////////////////////////////////////////////////////////////////////
 
-#ifndef C_DEVICE_SST_HPP
-#define C_DEVICE_SST_HPP
+#ifndef CDEVICELWI_BATTERY_HPP
+#define	CDEVICELWI_BATTERY_HPP
 
-#include <boost/shared_ptr.hpp>
-
-#include "CDevice.hpp"
+#include "IDeviceLWI.hpp"
 
 namespace freedm {
 namespace broker {
-
-// forward declaration of device manager
-class CPhysicalDeviceManager;
-
 namespace device {
 
-/// Implementation of distributed renewable energy resources
-class CDeviceSST
-    : public virtual CDevice
+/// Physical batteries for the LWI project
+class CDeviceLWI_Battery
+: public IDeviceLWI
+, public CDeviceDESD
 {
 public:
     /// Convenience type for a shared pointer to self
-    typedef boost::shared_ptr<CDeviceSST> DevicePtr;
-    
+    typedef boost::shared_ptr<CDeviceLWI_Battery> DevicePtr;
+
     /// Constructor which takes a manager, identifier, and internal structure
-    CDeviceSST( CPhysicalDeviceManager & manager, Identifier device,
-        IDeviceStructure::DevicePtr structure )
-        : CDevice(manager,device,structure)
-        {}
-    
+    CDeviceLWI_Battery(CPhysicalDeviceManager & manager, Identifier device,
+            IDeviceStructure::DevicePtr structure)
+    : IDevice(manager, device, structure)
+    , IDeviceLWI(manager, device, structure)
+    , CDeviceDESD(manager, device, structure) { }
+
     /// Virtual destructor for derived classes
-    virtual ~CDeviceSST() {}
+    virtual ~CDeviceLWI_Battery() { }
 };
 
-} // namespace device
-} // namespace broker
 } // namespace freedm
+} // namespace broker
+} // namespace device
 
-#endif // C_DEVICE_SST_HPP
+#endif

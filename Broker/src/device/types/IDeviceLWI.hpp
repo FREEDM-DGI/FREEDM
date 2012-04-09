@@ -1,16 +1,13 @@
 ////////////////////////////////////////////////////////////////////////////////
-/// @file           CDeviceLOAD.hpp
+/// @file           IDeviceLWI.hpp
 ///
 /// @author         Yaxi Liu <ylztf@mst.edu>
 ///                 Thomas Roth <tprfh7@mst.edu>
 ///
-/// @compiler       C++
-///
 /// @project        FREEDM DGI
 ///
-/// @description    Physical device class for loads
+/// @description    Physical devices for the LWI project
 ///
-/// @license
 /// These source code files were created at the Missouri University of Science
 /// and Technology, and are intended for use in teaching or research. They may
 /// be freely copied, modified and redistributed as long as modified versions
@@ -22,44 +19,59 @@
 ///
 /// Suggested modifications or questions about these files can be directed to
 /// Dr. Bruce McMillin, Department of Computer Science, Missouri University of
-/// Science and Technology, Rolla, MO 65401 <ff@mst.edu>.
+/// Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
 ////////////////////////////////////////////////////////////////////////////////
 
-#ifndef C_DEVICE_LOAD_HPP
-#define C_DEVICE_LOAD_HPP
+#ifndef C_DEVICE_LWI_HPP
+#define C_DEVICE_LWI_HPP
 
 #include <boost/shared_ptr.hpp>
 
-#include "CDevice.hpp"
+#include "CDeviceDRER.hpp"
+#include "CDeviceDESD.hpp"
+#include "CDeviceLOAD.hpp"
 
-namespace freedm {
-namespace broker {
+namespace freedm
+{
+namespace broker
+{
 
 // forward declaration of device manager
 class CPhysicalDeviceManager;
 
-namespace device {
+namespace device
+{
 
-/// Implementation of physical loads
-class CDeviceLOAD
-    : public virtual CDevice
+/// Common implementation of LWI devices
+class IDeviceLWI
+: public virtual IDevice
 {
 public:
     /// Convenience type for a shared pointer to self
-    typedef boost::shared_ptr<CDeviceLOAD> DevicePtr;
-    
+    typedef boost::shared_ptr<IDeviceLWI> DevicePtr;
+
+    /// Activate the device
+    void turnOn();
+
+    /// Deactivate the device
+    void turnOff();
+
+    /// Get the device power (positive indicates discharge)
+    SettingValue get_powerLevel();
+
+protected:
     /// Constructor which takes a manager, identifier, and internal structure
-    CDeviceLOAD( CPhysicalDeviceManager & manager, Identifier device,
-        IDeviceStructure::DevicePtr structure )
-        : CDevice(manager,device,structure)
-        {}
-    
+    IDeviceLWI(CPhysicalDeviceManager & manager, Identifier device,
+            IDeviceStructure::DevicePtr structure)
+    : IDevice(manager, device, structure) { }
+
     /// Virtual destructor for derived classes
-    virtual ~CDeviceLOAD() {}
+    virtual ~IDeviceLWI() { }
+
 };
 
 } // namespace device
 } // namespace broker
 } // namespace freedm
 
-#endif // C_DEVICE_LOAD_HPP
+#endif // C_DEVICE_LWI_HPP

@@ -58,8 +58,8 @@ using boost::property_tree::ptree;
 #include "CConnectionManager.hpp"
 #include "CConnection.hpp"
 
-#include "CPhysicalDeviceManager.hpp"
-#include "PhysicalDeviceTypes.hpp"
+#include "device/CPhysicalDeviceManager.hpp"
+#include "device/PhysicalDeviceTypes.hpp"
 
 #include <map>
 
@@ -89,7 +89,7 @@ class SCAgent : public IReadHandler, public SCPeerNode, public Templates::Single
   friend class Templates::Singleton< SCAgent >;
   public:
     ///Constructor        
-    SCAgent(std::string uuid, boost::asio::io_service &ios, freedm::broker::CDispatcher &p_dispatch, freedm::broker::CConnectionManager &m_connManager, freedm::broker::CPhysicalDeviceManager &m_phyManager);
+    SCAgent(std::string uuid, boost::asio::io_service &ios, freedm::broker::CDispatcher &p_dispatch, freedm::broker::CConnectionManager &m_connManager, freedm::broker::device::CPhysicalDeviceManager &m_phyManager);
     ///Copy constructor for the module
     SCAgent(const SCAgent&);
     SCAgent& operator=(const SCAgent&);
@@ -150,7 +150,7 @@ class SCAgent : public IReadHandler, public SCPeerNode, public Templates::Single
     ptree               m_curstate;
         
     ///physical device manager
-    freedm::broker::CPhysicalDeviceManager &m_phyDevManager;
+    freedm::broker::device::CPhysicalDeviceManager &m_phyDevManager;
     ///all known peers
     PeerSet m_AllPeers;
 

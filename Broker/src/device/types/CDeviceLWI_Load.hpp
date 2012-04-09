@@ -1,16 +1,14 @@
 ////////////////////////////////////////////////////////////////////////////////
-/// @file           CDeviceLoad.hpp
+/// @file           CDeviceLWI_Load.hpp
 ///
 /// @author         Yaxi Liu <ylztf@mst.edu>
 ///                 Thomas Roth <tprfh7@mst.edu>
-///
-/// @compiler       C++
+///                 Michael Catanzaro <michael.catanzaro@mst.edu>
 ///
 /// @project        FREEDM DGI
 ///
-/// @description    Physical device class for DRER
+/// @description    Battery for the LWI project
 ///
-/// @license
 /// These source code files were created at the Missouri University of Science
 /// and Technology, and are intended for use in teaching or research. They may
 /// be freely copied, modified and redistributed as long as modified versions
@@ -22,44 +20,40 @@
 ///
 /// Suggested modifications or questions about these files can be directed to
 /// Dr. Bruce McMillin, Department of Computer Science, Missouri University of
-/// Science and Technology, Rolla, MO 65401 <ff@mst.edu>.
+/// Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
 ////////////////////////////////////////////////////////////////////////////////
+#ifndef CDEVICELWI_LOAD_HPP
+#define	CDEVICELWI_LOAD_HPP
 
-#ifndef C_DEVICE_DRER_HPP
-#define C_DEVICE_DRER_HPP
-
-#include <boost/shared_ptr.hpp>
-
-#include "CDevice.hpp"
+#include "IDeviceLWI.hpp"
 
 namespace freedm {
 namespace broker {
-
-// forward declaration of device manager
-class CPhysicalDeviceManager;
-
 namespace device {
 
-/// Implementation of distributed renewable energy resources
-class CDeviceDRER
-    : public virtual CDevice
+/// Physical loads for the LWI project
+class CDeviceLWI_Load
+: public IDeviceLWI
+, public CDeviceLOAD
 {
 public:
     /// Convenience type for a shared pointer to self
-    typedef boost::shared_ptr<CDeviceDRER> DevicePtr;
-    
+    typedef boost::shared_ptr<CDeviceLWI_Load> DevicePtr;
+
     /// Constructor which takes a manager, identifier, and internal structure
-    CDeviceDRER( CPhysicalDeviceManager & manager, Identifier device,
-        IDeviceStructure::DevicePtr structure )
-        : CDevice(manager,device,structure)
-        {}
-    
+    CDeviceLWI_Load(CPhysicalDeviceManager & manager, Identifier device,
+            IDeviceStructure::DevicePtr structure)
+    : IDevice(manager, device, structure)
+    , IDeviceLWI(manager, device, structure)
+    , CDeviceLOAD(manager, device, structure) { }
+
     /// Virtual destructor for derived classes
-    virtual ~CDeviceDRER() {}
+    virtual ~CDeviceLWI_Load() { }
 };
 
-} // namespace device
-} // namespace broker
 } // namespace freedm
+} // namespace broker
+} // namespace device
 
-#endif // C_DEVICE_DRER_HPP
+#endif	/* CDEVICELWI_LOAD_HPP */
+

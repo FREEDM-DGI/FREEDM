@@ -7,7 +7,7 @@
 ///
 /// @project      FREEDM DGI
 ///
-/// @description  Header file for LBPeernode.cpp
+/// @description  Peer node description for LB module
 ///
 /// @license
 /// These source code files were created at as part of the
@@ -27,7 +27,6 @@
 /// can be directed to Dr. Bruce McMillin, Department of
 /// Computer Science, Missouri University of Science and
 /// Technology, Rolla, MO  65409, (ff@mst.edu).
-///
 /////////////////////////////////////////////////////////
 
 #ifndef LBPEERNODE_HPP_
@@ -38,7 +37,6 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/thread/mutex.hpp>
 
-//#include "CUUIDHandler.hpp"
 #include "uuid.hpp"
 #include "CBroker.hpp"
 #include "CConnection.hpp"
@@ -49,7 +47,7 @@ namespace freedm
 {
 
 //////////////////////////////////////////////////////////
-/// class LBPeerNode
+/// class LPeerNode
 ///
 /// @description Declaration of peernode structure for LB module
 ///
@@ -63,25 +61,10 @@ class LPeerNode : public IPeerNode
                   boost::asio::io_service& ios,
                   freedm::broker::CDispatcher& dispatch) :
             IPeerNode(uuid,connmgr,ios,dispatch) {};
-        enum EStatus { SUPPLY, NORM, DEMAND };
-        
-    protected:
-        //friend class lbAgent;
-        friend class find_LBpeer;
-        float   P_Load;
-        float   P_Gen;
-        float   B_Soc;
-        float   P_Star;
-        float   P_Gateway;
-        float   P_CalculatedGateway;
-        float   DemandValue;
-        
-        LPeerNode::EStatus   l_Status;
-        LPeerNode::EStatus   preLoad;
-        
+    
+    enum EStatus { SUPPLY, NORM, DEMAND };
+      
 };
-
-
 }
 
 #endif

@@ -1,16 +1,14 @@
 ////////////////////////////////////////////////////////////////////////////////
-/// @file           CDeviceDESD.hpp
+/// @file           CDeviceLWI_PV.hpp
 ///
 /// @author         Yaxi Liu <ylztf@mst.edu>
 ///                 Thomas Roth <tprfh7@mst.edu>
-///
-/// @compiler       C++
+///                 Michael Catanzaro <michael.catanzaro@mst.edu>
 ///
 /// @project        FREEDM DGI
 ///
-/// @description    Physical device class for DESD
+/// @description    Photovoltaic cell for the LWI project
 ///
-/// @license
 /// These source code files were created at the Missouri University of Science
 /// and Technology, and are intended for use in teaching or research. They may
 /// be freely copied, modified and redistributed as long as modified versions
@@ -22,44 +20,41 @@
 ///
 /// Suggested modifications or questions about these files can be directed to
 /// Dr. Bruce McMillin, Department of Computer Science, Missouri University of
-/// Science and Technology, Rolla, MO 65401 <ff@mst.edu>.
+/// Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
 ////////////////////////////////////////////////////////////////////////////////
 
-#ifndef C_DEVICE_DESD_HPP
-#define C_DEVICE_DESD_HPP
+#ifndef CDEVICELWI_PV_HPP
+#define	CDEVICELWI_PV_HPP
 
-#include <boost/shared_ptr.hpp>
-
-#include "CDevice.hpp"
+#include "IDeviceLWI.hpp"
 
 namespace freedm {
 namespace broker {
-
-// forward declaration of device manager
-class CPhysicalDeviceManager;
-
 namespace device {
 
-/// Implementation of distributed energy storage devices
-class CDeviceDESD
-    : public virtual CDevice
+/// Solar panels for the LWI project
+class CDeviceLWI_PV
+: public IDeviceLWI
+, public CDeviceDRER
 {
 public:
     /// Convenience type for a shared pointer to self
-    typedef boost::shared_ptr<CDeviceDESD> DevicePtr;
-    
+    typedef boost::shared_ptr<CDeviceLWI_PV> DevicePtr;
+
     /// Constructor which takes a manager, identifier, and internal structure
-    CDeviceDESD( CPhysicalDeviceManager & manager, Identifier device,
-        IDeviceStructure::DevicePtr structure )
-        : CDevice(manager,device,structure)
-        {}
-    
+    CDeviceLWI_PV(CPhysicalDeviceManager & manager, Identifier device,
+            IDeviceStructure::DevicePtr structure)
+    : IDevice(manager, device, structure)
+    , IDeviceLWI(manager, device, structure)
+    , CDeviceDRER(manager, device, structure) { }
+
     /// Virtual destructor for derived classes
-    virtual ~CDeviceDESD() {}
+    virtual ~CDeviceLWI_PV() { }
 };
 
-} // namespace device
-} // namespace broker
 } // namespace freedm
+} // namespace broker
+} // namespace device
 
-#endif // C_DEVICE_DESD_HPP
+#endif	/* CDEVICELWI_PV_HPP */
+

@@ -1,5 +1,5 @@
 ////////////////////////////////////////////////////////////////////////////////
-/// @file           CDevice.cpp
+/// @file           IDevice.cpp
 ///
 /// @author         Thomas Roth <tprfh7@mst.edu>
 ///
@@ -7,7 +7,7 @@
 ///
 /// @project        FREEDM DGI
 ///
-/// @description    Physical device class with variable implementation
+/// @description    Physical device interface with variable implementations.
 ///
 /// @license
 /// These source code files were created at the Missouri University of Science
@@ -24,31 +24,32 @@
 /// Science and Technology, Rolla, MO 65401 <ff@mst.edu>.
 ////////////////////////////////////////////////////////////////////////////////
 
-#include "CDevice.hpp"
+#include "IDevice.hpp"
 
-namespace freedm {
-namespace broker {
-namespace device {
+namespace freedm
+{
+namespace broker
+{
+namespace device
+{
 
 ////////////////////////////////////////////////////////////////////////////////
-/// CDevice( CPhysicalDeviceManager &, Identifier, IDeviceStructure::DevicePtr )
-/// @description Constructors a device from the provided arguments
+/// IDevice( CPhysicalDeviceManager &, Identifier, IDeviceStructure::DevicePtr )
+/// @description Called by subclass constructors to initialize the device
 /// @pre none
-/// @post CDevice object created and initialized
+/// @post Base of the device created and initialized
 /// @param manager The device manager that will handle the device
 /// @param device The unique device identifier for the device
 /// @param structure The implementation scheme of the device
 ////////////////////////////////////////////////////////////////////////////////
-CDevice::CDevice( CPhysicalDeviceManager & manager, Identifier device,
-    IDeviceStructure::DevicePtr structure )
+IDevice::IDevice( CPhysicalDeviceManager & manager, Identifier device,
+                  IDeviceStructure::DevicePtr structure )
     : m_manager(manager)
     , m_device(device)
     , m_structure(structure)
 {
     // skip
 }
-
-
 
 ////////////////////////////////////////////////////////////////////////////////
 /// Get( const SettingKey & )
@@ -58,7 +59,7 @@ CDevice::CDevice( CPhysicalDeviceManager & manager, Identifier device,
 /// @param key The key of the device setting to retrieve
 /// @return SettingValue associated with the passed key
 ////////////////////////////////////////////////////////////////////////////////
-SettingValue CDevice::Get( const SettingKey & key )
+SettingValue IDevice::Get( const SettingKey & key )
 {
     return m_structure->Get(key);
 }
@@ -71,11 +72,11 @@ SettingValue CDevice::Get( const SettingKey & key )
 /// @param key The key of the device setting to update
 /// @param value The value to set for the setting key
 ////////////////////////////////////////////////////////////////////////////////
-void CDevice::Set( const SettingKey & key, const SettingValue & value )
+void IDevice::Set( const SettingKey & key, const SettingValue & value )
 {
     m_structure->Set(key,value);
 }
-    
+
 ////////////////////////////////////////////////////////////////////////////////
 /// GetManager()
 /// @description Accessor for m_manager
@@ -83,7 +84,7 @@ void CDevice::Set( const SettingKey & key, const SettingValue & value )
 /// @post returns a reference to the device manager
 /// @return reference to m_manager
 ////////////////////////////////////////////////////////////////////////////////
-CPhysicalDeviceManager & CDevice::GetManager()
+CPhysicalDeviceManager & IDevice::GetManager()
 {
     return m_manager;
 }
@@ -95,7 +96,7 @@ CPhysicalDeviceManager & CDevice::GetManager()
 /// @post returns a const reference to the device manager
 /// @return const reference to m_manager
 ////////////////////////////////////////////////////////////////////////////////
-const CPhysicalDeviceManager & CDevice::GetManager() const
+const CPhysicalDeviceManager & IDevice::GetManager() const
 {
     return m_manager;
 }
@@ -106,7 +107,7 @@ const CPhysicalDeviceManager & CDevice::GetManager() const
 /// @pre none
 /// @post blocks until m_mutex is locked by the calling thread
 ////////////////////////////////////////////////////////////////////////////////
-void CDevice::Lock()
+void IDevice::Lock()
 {
     m_mutex.lock();
 }
@@ -117,7 +118,7 @@ void CDevice::Lock()
 /// @pre calling thread must have the mutex locked
 /// @post releases the lock on m_mutex
 ////////////////////////////////////////////////////////////////////////////////
-void CDevice::Unlock()
+void IDevice::Unlock()
 {
     m_mutex.unlock();
 }
@@ -129,7 +130,7 @@ void CDevice::Unlock()
 /// @post locks m_mutex if the function returns true
 /// @return true if m_mutex lock acquired, false otherwise
 ////////////////////////////////////////////////////////////////////////////////
-bool CDevice::TryLock()
+bool IDevice::TryLock()
 {
     return m_mutex.try_lock();
 }
@@ -141,7 +142,7 @@ bool CDevice::TryLock()
 /// @post Returns const reference to m_device
 /// @return const reference to m_device
 ////////////////////////////////////////////////////////////////////////////////
-const Identifier & CDevice::GetID() const
+const Identifier & IDevice::GetID() const
 {
     return m_device;
 }

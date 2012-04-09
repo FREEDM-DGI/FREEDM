@@ -379,43 +379,34 @@ void lbAgent::LoadManage( const boost::system::error_code& err )
 /////////////////////////////////////////////////////////
 void lbAgent::LoadTable()
 {
-    using broker::device::CPhysicalDeviceManager;
-    using broker::device::SettingValue;    
     Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    
     // device typedef for convenience
     typedef broker::device::CDeviceDRER DRER;
     typedef broker::device::CDeviceDESD DESD;
     typedef broker::device::CDeviceLOAD LOAD;
     typedef broker::device::CDeviceSST SST;
-    // Container and iterators for the result of GetDevicesOfType
-    CPhysicalDeviceManager::PhysicalDevice<DRER>::Container DRERContainer;
-    CPhysicalDeviceManager::PhysicalDevice<DESD>::Container DESDContainer;
-    CPhysicalDeviceManager::PhysicalDevice<LOAD>::Container LOADContainer;
-    CPhysicalDeviceManager::PhysicalDevice<SST>::Container SSTContainer;
-    CPhysicalDeviceManager::PhysicalDevice<DRER>::iterator rit, rend;
-    CPhysicalDeviceManager::PhysicalDevice<DESD>::iterator sit, send;
-    CPhysicalDeviceManager::PhysicalDevice<LOAD>::iterator lit, lend;
-    CPhysicalDeviceManager::PhysicalDevice<SST>::iterator pit, pend;
-    // populate the device containers
-    DRERContainer = m_phyDevManager.GetDevicesOfType<DRER>();
-    DESDContainer = m_phyDevManager.GetDevicesOfType<DESD>();
-    LOADContainer = m_phyDevManager.GetDevicesOfType<LOAD>();
-    SSTContainer = m_phyDevManager.GetDevicesOfType<SST>();
+
+    int numDRERs = m_phyDevManager.GetDevicesOfType<DRER>().size();
+    int numDESDs = m_phyDevManager.GetDevicesOfType<DESD>().size();
+    int numLOADs = m_phyDevManager.GetDevicesOfType<LOAD>().size();
+    int numSSTs = m_phyDevManager.GetDevicesOfType<SST>().size();
 
     m_Gen = m_phyDevManager.GetNetValue<DRER>("powerLevel");
     m_Storage = m_phyDevManager.GetNetValue<DESD>("powerLevel");
     m_Load = m_phyDevManager.GetNetValue<LOAD>("powerLevel");
-    m_CalcGateway = m_Load - m_Gen;
     m_Gateway = m_phyDevManager.GetNetValue<SST>("powerLevel");
+    m_CalcGateway = m_Load - m_Gen;
     
     Logger.Status <<" ----------- LOAD TABLE (Power Management) ------------"
                    << std::endl;
-    Logger.Status <<"| " << "Load Table @ " << microsec_clock::local_time()  <<std::endl;
-    Logger.Status <<"| " << "Net DRER (" << DRERContainer.size() << "): " << m_Gen
-                  << std::setw(14) << "Net DESD (" << DESDContainer.size() << "): "
+    Logger.Status <<"| " << "Load Table @ " << microsec_clock::local_time() 
+                  << std::endl;
+    Logger.Status <<"| " << "Net DRER (" << numDRERs << "): " << m_Gen
+                  << std::setw(14) << "Net DESD (" << numDESDs << "): "
                   << m_Storage << std::endl;
-    Logger.Status <<"| " << "Net Load (" << LOADContainer.size() << "): "<< m_Load
-                  << std::setw(16) << "Net Gateway (" << SSTContainer.size() 
+    Logger.Status <<"| " << "Net Load (" << numLOADs << "): "<< m_Load
+                  << std::setw(16) << "Net Gateway (" << numSSTs 
                   << "): " << m_Gateway << std::endl;
     Logger.Status <<"| Normal = " << m_Normal << std::setw(16) 
 		  << "Calc Gateway: " << m_CalcGateway << std::endl; 
@@ -427,7 +418,7 @@ void lbAgent::LoadTable()
                   << std::setw(7) <<"|"<< std::endl;
 
     //Compute the Load state based on the current gateway value and Normal
-    //TODO: API for future-could be the cost consesus algorithm from NCSU
+    //TODO: API for future-could be the cost consensus algorithm from NCSU
     if(m_Gateway < m_Normal - NORMAL_TOLERANCE)
     {
         m_Status = LPeerNode::SUPPLY;
@@ -491,7 +482,8 @@ void lbAgent::LoadTable()
                           << std::setw(6) <<"|"<<std::endl;
         }
     }
-    Logger.Status << "------------------------------------------------------" << std::endl;
+    Logger.Status << "------------------------------------------------------" 
+            << std::endl;
     return;
 }//end LoadTable
 

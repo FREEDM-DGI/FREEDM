@@ -178,7 +178,15 @@ void SCAgent::SendDoneBack()
 {
     freedm::broker::CMessage m_;
     m_.m_submessages.put("sc", "done");
-    GetPeer(m_curversion.first)->AsyncSend(m_);
+    try
+    {
+        GetPeer(m_curversion.first)->AsyncSend(m_);
+    }
+    catch (boost::system::system_error& e)
+    {
+        Logger.Info << "Couldn't Send Message To Peer" << std::endl;
+    }
+    //GetPeer(m_curversion.first)->AsyncSend(m_);
 }
 
 
@@ -276,8 +284,15 @@ void SCAgent::StateResponse()
                 }
             }
         }//end for
-
-        GetPeer(GetUUID())->AsyncSend(m_);
+    	try
+    	{
+            GetPeer(GetUUID())->AsyncSend(m_);
+    	}
+    	catch (boost::system::system_error& e)
+    	{
+            Logger.Info << "Couldn't Send Message To Peer" << std::endl;
+    	}
+        //GetPeer(GetUUID())->AsyncSend(m_);
         //clear collectstate
         collectstate.clear();
         m_countmarker = 0;
@@ -365,7 +380,15 @@ void SCAgent::SendStateBack()
                 m_.m_submessages.put("sc.type", (*it).second.get<std::string>("sc.type"));
                 m_.m_submessages.put("sc.gateway", (*it).second.get<std::string>("sc.gateway"));
                 m_.m_submessages.put("sc.source", (*it).second.get<std::string>("sc.source"));
-                GetPeer(m_curversion.first)->AsyncSend(m_);
+	    	try
+	    	{
+		    GetPeer(m_curversion.first)->AsyncSend(m_);
+	    	}
+	    	catch (boost::system::system_error& e)
+	    	{
+		    Logger.Info << "Couldn't Send Message To Peer" << std::endl;
+	    	}
+                //GetPeer(m_curversion.first)->AsyncSend(m_);
                 //Logger.Notice << "SendStateBack(): gateway "<< (*it).second.get<std::string>("sc.gateway") << std::endl;
                 //Logger.Notice << "Sending state back to initiator: " << m_curversion.first << std::endl;
             }
@@ -376,7 +399,15 @@ void SCAgent::SendStateBack()
                 m_.m_submessages.put("sc.transit.value", (*it).second.get<std::string>("sc.transit.value"));
                 //m_.m_submessages.put("sc.transit.source", (*it).second.get<std::string>("sc.transit.source"));
                 //m_.m_submessages.put("sc.transit.destin", (*it).second.get<std::string>("sc.transit.destin"));
-                GetPeer(m_curversion.first)->AsyncSend(m_);
+		try
+		{
+		    GetPeer(m_curversion.first)->AsyncSend(m_);
+		}
+		catch (boost::system::system_error& e)
+		{
+		    Logger.Info << "Couldn't Send Message To Peer" << std::endl;
+		}
+                //GetPeer(m_curversion.first)->AsyncSend(m_);
             }
         }
     }//end for
@@ -385,7 +416,15 @@ void SCAgent::SendStateBack()
     m_done.m_submessages.put("sc", "state");
     m_done.m_submessages.put("sc.type", "done");
     m_done.m_submessages.put("sc.source", GetUUID());
-    GetPeer(m_curversion.first)->AsyncSend(m_done);
+    try
+    {
+        GetPeer(m_curversion.first)->AsyncSend(m_done);
+    }
+    catch (boost::system::system_error& e)
+    {
+        Logger.Info << "Couldn't Send Message To Peer" << std::endl;
+    }
+    //GetPeer(m_curversion.first)->AsyncSend(m_done);
 }
 
 
@@ -584,14 +623,29 @@ void SCAgent::HandleRead(broker::CMessage msg)
             if (m_AllPeers.size()==2)
                 //only two nodes, peer finish collecting states: send marker then state back
             {
-                //send marker back to initiator
-                GetPeer(m_curversion.first)->AsyncSend(msg);
-                //send collected states to initiator
-                SendStateBack();
-                m_curversion.first = "default";
-                m_curversion.second = 0;
-                m_countmarker = 0;
-                collectstate.clear();
+		if(GetPeer(m_curversion.first) != NULL)
+    		{
+		    try
+		    {
+			GetPeer(m_curversion.first)->AsyncSend(msg);
+		    }
+		    catch (boost::system::system_error& e)
+		    {
+			Logger.Info << "Couldn't Send Message To Peer" << std::endl;
+		    }	            
+	            //send marker back to initiator
+		    //GetPeer(m_curversion.first)->AsyncSend(msg);
+		    //send collected states to initiator
+		    SendStateBack();
+		    m_curversion.first = "default";
+		    m_curversion.second = 0;
+		    m_countmarker = 0;
+		    collectstate.clear();
+		}
+		else
+		{
+		    Logger.Info << "Peer doesn't exist" << std::endl;
+		}
             }
             else
                 //more than two nodes
@@ -660,14 +714,29 @@ void SCAgent::HandleRead(broker::CMessage msg)
             if (m_AllPeers.size()==2)
                 //only two nodes, peer finish collecting states: send marker then state back
             {
-                //send marker back to initiator
-                GetPeer(m_curversion.first)->AsyncSend(msg);
-                //send collected states to initiator
-                SendStateBack();
-                m_curversion.first = "default";
-                m_curversion.second = 0;
-                m_countmarker = 0;
-                collectstate.clear();
+		if(GetPeer(m_curversion.first) != NULL)
+		{
+		    try
+		    {
+			GetPeer(m_curversion.first)->AsyncSend(msg);
+		    }
+		    catch (boost::system::system_error& e)
+		    {
+			Logger.Info << "Couldn't Send Message To Peer" << std::endl;
+		    }	            
+	            //send marker back to initiator
+		    //GetPeer(m_curversion.first)->AsyncSend(msg);
+		    //send collected states to initiator
+		    SendStateBack();
+		    m_curversion.first = "default";
+		    m_curversion.second = 0;
+		    m_countmarker = 0;
+		    collectstate.clear();
+		}
+		else
+		{
+		    Logger.Info << "Peer doesn't exist" << std::endl;
+		}
             }
             else
                 //more than two nodes
@@ -793,6 +862,7 @@ SCAgent::PeerNodePtr SCAgent::GetPeer(std::string uuid)
 
 //namespace
 }
+
 
 
 

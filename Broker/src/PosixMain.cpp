@@ -78,141 +78,168 @@ int main(int argc, char* argv[])
 {
     CGlobalLogger::instance().ReadLoggerLevels();
     // Variable Declaration
-    po::options_description genOpts_("General Options"),
-            configOpts_("Configuration"),
-            hiddenOpts_("hidden"),
-            visibleOpts_,
-            cliOpts_,
-            cfgOpts_;
-    po::positional_options_description posOpts_;
-    po::variables_map vm_;
-    std::ifstream ifs_;
-    std::string cfgFile_, listenIP_, port_, uuid_, hostname_, uuidgenerator;
+    po::options_description genOpts("General Options"),
+            configOpts("Configuration"),
+            hiddenOpts("hidden"),
+            visibleOpts,
+            cliOpts,
+            cfgOpts;
+    // TODO add a separate category for logger options
+    po::positional_options_description posOpts;
+    po::variables_map vm;
+    std::ifstream ifs;
+    std::string cfgFile, loggerCfgFile, fpgaCfgFile;
+    std::string listenIP, port, uuid, hostname, uuidgenerator;
     // Line/RTDS Client options
     std::string interHost;
     std::string interPort;
-    std::string xml;
-    int verbose_;
-    bool cliVerbose_(false); // CLI options override verbosity
-    uuid u_;
+    int globalVerbosity;
+    uuid u;
 
     // Load Config Files
     try
     {
         // Check command line arguments.
-        genOpts_.add_options()
-                ( "help,h", "print usage help (this screen)" )
-                ( "version,V", "print version info" )
-                ( "config,c", po::value<std::string > ( &cfgFile_ )->
-                default_value("freedm.cfg"),
+        genOpts.add_options()
+        ( "help,h", "print usage help (this screen)" )
+        ( "version,V", "print version info" )
+        ( "config,c",
+                po::value<std::string>(&cfgFile)->default_value("freedm.cfg"),
                 "filename of additional configuration." )
-                ( "generateuuid,g", po::value<std::string > ( &uuidgenerator )->
-                default_value(""), "Generate a uuid for the specified host, "
-                " output it, and exit" )
-                ( "uuid,u", "Print this node's generated uuid and exit" );
+        ( "generateuuid,g", 
+                po::value<std::string >(&uuidgenerator)->default_value(""),
+                "Generate a uuid for the specified host, output it, and exit" )
+        ( "uuid,u", "Print this node's generated uuid and exit" );
+        
         // This is for arguments in a config file or as arguments
-        configOpts_.add_options()
-        ("add-host", po::value<std::vector<std::string> >()->
-         composing(), "peer hostname:port pair")
-        ("address", po::value<std::string>(&listenIP_)->
-         default_value("0.0.0.0"), "IP interface to listen on")
-        ("port,p", po::value<std::string>(&port_)->
-         default_value("1870"), "TCP port to listen on")
-        ("add-device,d", po::value<std::vector<std::string> >()->
-         composing(), "physical device name:type pair")
-        ("client-host,l", po::value<std::string>(&interHost)->
-         default_value(""),"Hostname to use for the lineclient/RTDSclient to connect.")
-        ("client-port,q", po::value<std::string>(&interPort)->
-         default_value("4001"),"The port to use for the lineclient/RTDSclient to connect.")
-        ("xml,x", po::value<std::string>(&xml)->default_value("FPGA.xml"),
-         "filename of FPGA message specification")
-        ("verbose,v", po::value<int>(&verbose_)->
-         implicit_value(5)->default_value(7),
-         "enable verbose output (optionally specify level)");
-        hiddenOpts_.add_options()
-                ( "setuuid", po::value<std::string > ( &uuid_ ),
+        configOpts.add_options()
+        ("add-host", 
+                po::value<std::vector<std::string> >()->composing(),
+                "peer hostname:port pair")
+        ("address", 
+                po::value<std::string>(&listenIP)->default_value("0.0.0.0"),
+                "IP interface to listen on")
+        ("port,p", 
+                po::value<std::string>(&port)->default_value("1870"),
+                "TCP port to listen on")
+        ("add-device,d", 
+                po::value<std::vector<std::string> >()->composing(),
+                "physical device name:type pair")
+        ("client-host,l", 
+                po::value<std::string>(&interHost)->default_value(""), 
+                "Hostname to use for the lineclient/RTDSclient to connect.")
+        ("client-port,q", 
+                po::value<std::string>(&interPort)->default_value("4001"),
+                "The port to use for the lineclient/RTDSclient to connect.")
+        ("fpga-message", 
+                po::value<std::string>(&fpgaCfgFile)->default_value("FPGA.xml"),
+                "filename of the FPGA message specification")
+        ("logger-config", 
+                po::value<std::string>(&loggerCfgFile)->
+        default_value("logger.cfg"),
+                "name of the logger verbosity configuration file")
+        ("verbose,v", 
+                po::value<int>(&globalVerbosity)->
+        implicit_value(5)->default_value(7),
+                "The default global verbosity level");
+        hiddenOpts.add_options()
+                ( "setuuid", po::value<std::string> ( &uuid ),
                 "UUID for this host" );
 
         // Specify positional arguments
-        posOpts_.add("address", 1).add("port", 1);
+        posOpts.add("address", 1).add("port", 1);
         // Visible options
-        visibleOpts_.add(genOpts_).add(configOpts_);
+        visibleOpts.add(genOpts).add(configOpts);
         // Options allowed on command line
-        cliOpts_.add(visibleOpts_).add(hiddenOpts_);
+        cliOpts.add(visibleOpts).add(hiddenOpts);
         // Options allowed in config file
-        cfgOpts_.add(configOpts_).add(hiddenOpts_);
+        cfgOpts.add(configOpts).add(hiddenOpts);
         // XXX If submodules need custom commandline options
         // there should be a 'registration' of those options here.
         // Other modules should use options of the form: 'modulename.option'
         // This prevents namespace conflicts
         // Add them all to the mapping component
         po::store(po::command_line_parser(argc, argv)
-                .options(cliOpts_).positional(posOpts_).run(), vm_);
-        po::notify(vm_);
-        // XXX If submodules have added custom commandline options,
+                .options(cliOpts).positional(posOpts).run(), vm);
+        po::notify(vm);
+        // If submodules have added custom commandline options,
         // they should be processed here as everything has been parsed
 
-        if (vm_.count("verbose"))
+        // Read options from the main config file.
+        ifs.open(cfgFile.c_str());
+        if (!ifs)
         {
-            CGlobalLogger::instance().SetGlobalLevel( verbose_ );
-            
-            if ( !vm_["verbose"].defaulted() )
-            {
-                cliVerbose_ = true;
-            }
-        }
-
-        ifs_.open(cfgFile_.c_str());
-
-        if (!ifs_)
-        {
-            if (!vm_["config"].defaulted())
-            { // User specified a config file, so we should let
+            if (!vm["config"].defaulted())
+            {   // User specified a config file, so we should let
                 // them know that we can't load it
                 Logger.Error << "Unable to load config file: "
-                << cfgFile_ << std::endl;
+                        << cfgFile << std::endl;
                 return -1;
             }
             else
             {
                 // File doesn't exist or couldn't open it for read.
-                Logger.Error << "Config file doesn't exist. "
-                << "Skipping." << std::endl;
+                Logger.Error << "Config file " << cfgFile << " doesn't exist. "
+                        "Skipping." << std::endl;
             }
         }
         else
         {
             // Process the config
-            po::store(parse_config_file(ifs_, cfgOpts_), vm_);
-            po::notify(vm_);
-            Logger.Info << "Config file successfully loaded."<< std::endl;
+            po::store(parse_config_file(ifs, cfgOpts), vm);
+            po::notify(vm);
+            Logger.Info << "Config file " << cfgFile << " successfully loaded."
+                    << std::endl;
         }
-
-        if (cliVerbose_ == false && vm_.count("verbose"))
+        ifs.close();
+        
+        // Separate config file for logger verbosity settings.
+        ifs.open(loggerCfgFile.c_str());
+        if (!ifs)
         {
-            // If user specified verbose level on command line, it
-            // overrides cfg file option. Otherwise, check to see
-            // if the user did set verbosity in cfg.
-            CGlobalLogger::instance().SetGlobalLevel( verbose_ );
+            if (!vm["logger-config"].defaulted())
+            {   // User specified a config file, so we should let
+                // them know that we can't load it
+                Logger.Error << "Unable to load logger config file: "
+                        << loggerCfgFile << std::endl;
+                return -1;
+            }
+            else
+            {
+                // File doesn't exist or couldn't open it for read.
+                Logger.Error << "Logger config file " << loggerCfgFile << 
+                        " doesn't exist. Skipping." << std::endl;
+            }
         }
-
-        if (vm_.count("help"))
+        else
         {
-            std::cerr << visibleOpts_ << std::endl;
+            // Process the config
+            po::store(parse_config_file(ifs, cfgOpts), vm);
+            po::notify(vm);
+            Logger.Info << "Logger config file " << loggerCfgFile << 
+                    " successfully loaded." << std::endl;
+        }
+        ifs.close();
+        
+        CGlobalLogger::instance().SetGlobalLevel( globalVerbosity );
+
+        if (vm.count("help"))
+        {
+            std::cerr << visibleOpts << std::endl;
             return 0;
         }
-        if (uuidgenerator != "" || vm_.count("uuid"))
+        if (uuidgenerator != "" || vm.count("uuid"))
         {
             if (uuidgenerator == "")
             {
                 uuidgenerator = boost::asio::ip::host_name();
             }
-            u_ = freedm::uuid::from_dns(uuidgenerator);
-            std::cout << u_ << std::endl;
+            u = freedm::uuid::from_dns(uuidgenerator);
+            std::cout << u << std::endl;
             return 0;
         }
 
-        if (vm_.count("version"))
+        if (vm.count("version"))
         {
             std::cout << basename(argv[0])
                     << " (FREEDM DGI Revision "
@@ -223,29 +250,29 @@ int main(int argc, char* argv[])
             return 0;
         }
 
-        if (vm_.count("uuid"))
+        if (vm.count("uuid"))
         {
-            u_ = uuid(uuid_);
-            Logger.Info << "Loaded UUID: " << u_ << std::endl;
+            u = uuid(uuid);
+            Logger.Info << "Loaded UUID: " << u << std::endl;
         }
         else
         {
             // Try to resolve the host's dns name
-            hostname_ = boost::asio::ip::host_name();
-            Logger.Info << "Hostname: " << hostname_ << std::endl;
-            u_ = uuid::from_dns(hostname_);
-            Logger.Info << "Generated UUID: " << u_ << std::endl;
+            hostname = boost::asio::ip::host_name();
+            Logger.Info << "Hostname: " << hostname << std::endl;
+            u = uuid::from_dns(hostname);
+            Logger.Info << "Generated UUID: " << u << std::endl;
         }
 
         std::stringstream ss2;
         std::string uuidstr2;
-        ss2 << u_;
+        ss2 << u;
         ss2 >> uuidstr2;
         /// Prepare the global Configuration
-        CGlobalConfiguration::instance().SetHostname(hostname_);
+        CGlobalConfiguration::instance().SetHostname(hostname);
         CGlobalConfiguration::instance().SetUUID(uuidstr2);
-        CGlobalConfiguration::instance().SetListenPort(port_);
-        CGlobalConfiguration::instance().SetListenAddress(listenIP_);
+        CGlobalConfiguration::instance().SetListenPort(port);
+        CGlobalConfiguration::instance().SetListenAddress(listenIP);
         //constructors for initial mapping
         broker::CConnectionManager m_conManager;
         broker::device::CPhysicalDeviceManager m_phyManager;
@@ -255,19 +282,18 @@ int main(int argc, char* argv[])
         // configure the device factory
         // interHost is the hostname of the machine that runs the simulation
         // interPort is the port number this DGI and simulation communicate in
-        // xml is the name of the configuration file supplied from FPGA
         broker::device::CDeviceFactory::instance().init(
-                m_phyManager, m_ios, interHost, interPort, xml);
+                m_phyManager, m_ios, interHost, interPort, fpgaCfgFile);
 
         // Create Devices
-        if (vm_.count("add-device") > 0)
+        if (vm.count("add-device") > 0)
         {
             broker::device::RegisterPhysicalDevices();
             broker::device::CDeviceFactory& factory =
                     broker::device::CDeviceFactory::instance();
 
             std::vector< std::string > device_list =
-                    vm_["add-device"].as< std::vector<std::string> >( );
+                    vm["add-device"].as< std::vector<std::string> >( );
             foreach(std::string &devid, device_list)
             {
                 int idx_ = devid.find(':');
@@ -310,7 +336,8 @@ int main(int argc, char* argv[])
                 {
                     if (m_phyManager.DeviceExists(devid))
                     {
-                        Logger.Warn << "Duplicate device: " << devid << std::endl;
+                        Logger.Warn << "Duplicate device: " << devid << 
+                                std::endl;
                     }
                     else
                     {
@@ -332,11 +359,11 @@ int main(int argc, char* argv[])
         //dispatch_.RegisterWriteHandler( "any", &uuidHandler_ );
         // Run server in background thread
         broker::CBroker broker_
-                (listenIP_, port_, dispatch_, m_ios, m_conManager);
+                (listenIP, port, dispatch_, m_ios, m_conManager);
         // Load the UUID into string
         std::stringstream ss;
         std::string uuidstr;
-        ss << u_;
+        ss << u;
         ss >> uuidstr;
         // Instantiate and register the group management module
         GMAgent GM_(uuidstr, broker_.GetIOService(), dispatch_, m_conManager);
@@ -354,10 +381,10 @@ int main(int argc, char* argv[])
         // pointers to each submodule to allow sharing peers. NOTE this requires
         // thread-safe access, as well. Shouldn't be too hard since it will
         // mostly be read-only
-        if (vm_.count("add-host"))
+        if (vm.count("add-host"))
         {
             std::vector< std::string > arglist_ =
-                    vm_["add-host"].as< std::vector<std::string> >( );
+                    vm["add-host"].as< std::vector<std::string> >( );
             foreach(std::string &s_, arglist_)
             {
                 int idx_ = s_.find(':');
@@ -388,7 +415,7 @@ int main(int argc, char* argv[])
         }
 
         // Add the local connection to the hostname list
-        m_conManager.PutHostname(uuidstr, "localhost", port_);
+        m_conManager.PutHostname(uuidstr, "localhost", port);
         // Block all signals for background thread.
         sigset_t new_mask;
         sigfillset(&new_mask);

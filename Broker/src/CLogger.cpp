@@ -106,6 +106,6 @@ int CGlobalLogger::GetOutputLevel(std::string logger)
 
 void CGlobalLogger::ReadLoggerLevels()
 {
-    SetGlobalLevel(5);
-    // TODO
+    //SetGlobalLevel(5); done in main
+    // TODO ReadLoggerLevels.  Maybe delete me?
 }

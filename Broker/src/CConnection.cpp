@@ -130,7 +130,7 @@ void CConnection::Send(CMessage p_mesg)
     // object) is the same as the this node's uuid (As stored by the
     // Connection manager) place the message directly into the recieved
     // Queue.
-    if(GetUUID() == GetConnectionManager().GetUUID)
+    if(GetUUID() == GetConnectionManager().GetUUID())
     {
         GetDispatcher().HandleRequest(GetBroker(),p_mesg);
         return;

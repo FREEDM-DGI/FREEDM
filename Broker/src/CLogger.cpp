@@ -25,6 +25,7 @@
 
 #include "CLogger.hpp"
 
+static CLocalLogger Logger(__FILE__);
 
 CLog::CLog(CLoggerPointer p, int level_, const char * name_, std::ostream *out_) :
         m_parent(p), m_level(level_), m_name( name_ ), m_ostream( out_ )
@@ -110,41 +111,35 @@ void CGlobalLogger::SetInitialLoggerLevels(const std::string loggerCfgFile,
         const unsigned int globalVerbosity)
 {
     SetGlobalLevel(globalVerbosity);
- //       po::options_description loggerOpts("Logger Verbosity Settings");
-    
-/*        // Separate config file for logger verbosity settings.
-        ifs.open(loggerCfgFile.c_str());
-        if (!ifs)
-        {
-            if (!vm["logger-config"].defaulted())
-            {   // User specified a config file, so we should let
-                // them know that we can't load it
-                Logger.Error << "Unable to load logger config file: "
-                        << loggerCfgFile << std::endl;
-                return -1;
-            }
-            else
-            {
-                // File doesn't exist or couldn't open it for read.
-                Logger.Error << "Logger config file " << loggerCfgFile << 
-                        " doesn't exist. Skipping." << std::endl;
-            }
-        }
-        else
-        {
-            // Process the config
-            po::store(parse_config_file(ifs, logOpts), vm);
-            po::notify(vm);
-            Logger.Info << "Logger config file " << loggerCfgFile << 
-                    " successfully loaded." << std::endl;
-        }
-        ifs.close();
-        
-        CGlobalLogger::instance().SetGlobalLevel( globalVerbosity );
-    
-        ("verbose,v", 
-                po::value<int>(&globalVerbosity)->
-        implicit_value(6)->default_value(4),
-                "The default global verbosity level");
+ 
+    po::options_description loggerOpts("Logger Verbosity Settings");
+    po::variables_map vm;
+
+/*    loggerOpts.add_options()
+        ( "verbose,v",
+            po::value<int>( &globalVerbosity )->
+            implicit_value(6)->default_value(4),
+            "The default global verbosity level" );
  */
+    
+    std::ifstream ifs;
+    ifs.open(loggerCfgFile.c_str());
+    if (!ifs)
+    {
+        Logger.Error << "Unable to load logger config file: "
+                << loggerCfgFile << std::endl;
+        std::exit(-1);
+    }
+    else
+    {
+        // Process the config
+        po::store(parse_config_file(ifs, loggerOpts), vm);
+        po::notify(vm);
+        Logger.Info << "Logger config file " << loggerCfgFile <<
+                " successfully loaded." << std::endl;
+    }
+    ifs.close();
+    
+    // todo remove
+    Logger.Info << "Exiting SetInitialLoggerLevels (TESTING)" << std::endl;
 }

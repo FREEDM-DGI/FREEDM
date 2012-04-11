@@ -160,24 +160,13 @@ int main(int argc, char* argv[])
                 .options(cliOpts).positional(posOpts).run(), vm);
         po::notify(vm);
         
-        std::cerr << "Reading freedm.cfg" << std::endl;
         // Read options from the main config file.
         ifs.open(cfgFile.c_str());
         if (!ifs)
         {
-            if (!vm["config"].defaulted())
-            {   // User specified a config file, so we should let
-                // them know that we can't load it
-                Logger.Error << "Unable to load config file: "
-                        << cfgFile << std::endl;
-                return -1;
-            }
-            else
-            {
-                // File doesn't exist or couldn't open it for read.
-                Logger.Error << "Config file " << cfgFile << " doesn't exist. "
-                        "Skipping." << std::endl;
-            }
+            Logger.Error << "Unable to load config file: "
+                    << cfgFile << std::endl;
+            return -1;
         }
         else
         {
@@ -191,8 +180,7 @@ int main(int argc, char* argv[])
                         " successfully loaded." << std::endl;
             }
         }
-        ifs.close();    
-        std::cerr << "closed freedm.cfg" << std::endl;
+        ifs.close();
 
         if (vm.count("help"))
         {
@@ -235,7 +223,6 @@ int main(int argc, char* argv[])
             Logger.Info << "Generated UUID: " << uuid << std::endl;
         }
         
-        std::cerr << "About to call setinitialloggerlevels" << std::endl;
         CGlobalLogger::instance().SetInitialLoggerLevels(
                 loggerCfgFile, globalVerbosity);
 

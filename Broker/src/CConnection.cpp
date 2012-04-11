@@ -132,6 +132,9 @@ void CConnection::Send(CMessage p_mesg)
     // Queue.
     if(GetUUID() == GetConnectionManager().GetUUID())
     {
+        p_mesg.SetSourceUUID(GetConnection()->GetConnectionManager().GetUUID());
+        p_mesg.SetSourceHostname(GetConnection()->GetConnectionManager().GetHostname());
+        p_mesg.SetSendTimestampNow();
         GetDispatcher().HandleRequest(GetBroker(),p_mesg);
         return;
     }

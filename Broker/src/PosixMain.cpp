@@ -248,16 +248,16 @@ int main(int argc, char* argv[])
         CGlobalConfiguration::instance().SetListenPort(port);
         CGlobalConfiguration::instance().SetListenAddress(listenIP);
         //constructors for initial mapping
-        broker::CConnectionManager m_conManager;
-        broker::device::CPhysicalDeviceManager m_phyManager;
-        broker::ConnectionPtr m_newConnection;
-        boost::asio::io_service m_ios;
+        broker::CConnectionManager conManager;
+        broker::device::CPhysicalDeviceManager phyManager;
+        broker::ConnectionPtr newConnection;
+        boost::asio::io_service ios;
 
         // configure the device factory
         // interHost is the hostname of the machine that runs the simulation
         // interPort is the port number this DGI and simulation communicate in
         broker::device::CDeviceFactory::instance().init(
-                m_phyManager, m_ios, interHost, interPort, fpgaCfgFile);
+                phyManager, ios, interHost, interPort, fpgaCfgFile);
 
         // Create Devices
         if (vm.count("add-device") > 0)
@@ -270,14 +270,14 @@ int main(int argc, char* argv[])
                     vm["add-device"].as< std::vector<std::string> >( );
             foreach(std::string &devid, device_list)
             {
-                int idx_ = devid.find(':');
+                int idx = devid.find(':');
 
-                if (idx_ != static_cast<int> ( std::string::npos ))
+                if (idx != static_cast<int> ( std::string::npos ))
                 {
-                    std::string DevName_(devid.begin(), devid.begin() + idx_),
-                            DevType_(devid.begin() + ( idx_ + 1 ), devid.end());
+                    std::string DevName_(devid.begin(), devid.begin() + idx),
+                            DevType_(devid.begin() + ( idx + 1 ), devid.end());
 
-                    if (m_phyManager.DeviceExists(DevName_))
+                    if (phyManager.DeviceExists(DevName_))
                     {
                         Logger.Warn << "Duplicate device: " << DevName_
                                 << std::endl;
@@ -308,7 +308,7 @@ int main(int argc, char* argv[])
                 }
                 else
                 {
-                    if (m_phyManager.DeviceExists(devid))
+                    if (phyManager.DeviceExists(devid))
                     {
                         Logger.Warn << "Duplicate device: " << devid << 
                                 std::endl;
@@ -328,28 +328,27 @@ int main(int argc, char* argv[])
         }
 
         // Instantiate Dispatcher for message delivery
-        broker::CDispatcher dispatch_;
+        broker::CDispatcher dispatch;
         // Register UUID handler
         //dispatch_.RegisterWriteHandler( "any", &uuidHandler_ );
         // Run server in background thread
-        broker::CBroker broker_
-                (listenIP, port, dispatch_, m_ios, m_conManager);
+        broker::CBroker broker(listenIP, port, dispatch, ios, conManager);
         // Load the UUID into string
         std::stringstream ss;
         std::string uuidstr;
         ss << u;
         ss >> uuidstr;
         // Instantiate and register the group management module
-        GMAgent GM_(uuidstr, broker_.GetIOService(), dispatch_, m_conManager);
-        dispatch_.RegisterReadHandler("gm", &GM_);
+        GMAgent GM(uuidstr, broker.GetIOService(), dispatch, conManager);
+        dispatch.RegisterReadHandler("gm", &GM);
         // Instantiate and register the power management module
-        lbAgent LB_(uuidstr, broker_.GetIOService(), dispatch_, m_conManager,
-                m_phyManager);
-        dispatch_.RegisterReadHandler("lb", &LB_);
+        lbAgent LB(uuidstr, broker.GetIOService(), dispatch, conManager,
+                phyManager);
+        dispatch.RegisterReadHandler("lb", &LB);
         // Instantiate and register the state collection module
-        SCAgent SC_(uuidstr, broker_.GetIOService(), dispatch_, m_conManager,
-                m_phyManager);
-        dispatch_.RegisterReadHandler("any", &SC_);
+        SCAgent SC(uuidstr, broker.GetIOService(), dispatch, conManager,
+                phyManager);
+        dispatch.RegisterReadHandler("any", &SC);
 
         // The peerlist should be passed into constructors as references or
         // pointers to each submodule to allow sharing peers. NOTE this requires
@@ -359,28 +358,28 @@ int main(int argc, char* argv[])
         {
             std::vector< std::string > arglist_ =
                     vm["add-host"].as< std::vector<std::string> >( );
-            foreach(std::string &s_, arglist_)
+            foreach(std::string& s, arglist_)
             {
-                int idx_ = s_.find(':');
+                int idx = s.find(':');
 
-                if (idx_ == static_cast<int> ( std::string::npos ))
+                if (idx == static_cast<int> ( std::string::npos ))
                 { // Not found!
                     std::cerr << "Incorrectly formatted host in config file: "
-                            << s_ << std::endl;
+                            << s << std::endl;
                     continue;
                 }
 
-                std::string host_(s_.begin(), s_.begin() + idx_),
-                        port1_(s_.begin() + ( idx_ + 1 ), s_.end());
+                std::string host(s.begin(), s.begin() + idx),
+                        port1(s.begin() + ( idx + 1 ), s.end());
                 // Construct the UUID of host from its DNS
-                uuid u1_ = uuid::from_dns(host_);
+                uuid u1 = uuid::from_dns(host);
                 //Load the UUID into string
-                std::stringstream uu_;
-                uu_ << u1_;
+                std::stringstream uu;
+                uu << u1;
                 // Add the UUID to the list of known hosts
                 //XXX This mechanism should change to allow dynamically arriving
                 //nodes with UUIDS not constructed using their DNS names
-                m_conManager.PutHostname(uu_.str(), host_, port1_);
+                conManager.PutHostname(uu.str(), host, port1);
             }
         }
         else
@@ -389,7 +388,7 @@ int main(int argc, char* argv[])
         }
 
         // Add the local connection to the hostname list
-        m_conManager.PutHostname(uuidstr, "localhost", port);
+        conManager.PutHostname(uuidstr, "localhost", port);
         // Block all signals for background thread.
         sigset_t new_mask;
         sigfillset(&new_mask);
@@ -397,12 +396,12 @@ int main(int argc, char* argv[])
         pthread_sigmask(SIG_BLOCK, &new_mask, &old_mask);
         Logger.Info << "Starting CBroker thread" << std::endl;
         boost::thread thread_
-                (boost::bind(&broker::CBroker::Run, &broker_));
+                (boost::bind(&broker::CBroker::Run, &broker));
         // Restore previous signals.
         pthread_sigmask(SIG_SETMASK, &old_mask, 0);
         Logger.Debug << "Starting thread of Modules" << std::endl;
-        boost::thread thread2_( boost::bind(&GMAgent::Run, &GM_)
-                                , boost::bind(&lbAgent::LB, &LB_)
+        boost::thread thread2_( boost::bind(&GMAgent::Run, &GM)
+                                , boost::bind(&lbAgent::LB, &LB)
                                 //, boost::bind(&SCAgent::SC, &SC_)
                               );
         // Wait for signal indicating time to shut down.
@@ -416,9 +415,9 @@ int main(int argc, char* argv[])
         sigwait(&wait_mask, &sig);
         std::cout << "Shutting down cleanly." << std::endl;
         // Stop the modules
-        GM_.Stop();
+        GM.Stop();
         // Stop the server.
-        broker_.Stop();
+        broker.Stop();
         // Bring in threads.
         thread_.join();
         thread2_.join();

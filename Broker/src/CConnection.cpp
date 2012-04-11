@@ -126,6 +126,16 @@ void CConnection::Send(CMessage p_mesg)
 {
     Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
 
+    // If the UUID of the reciepient (The value stored by GetUUID of this
+    // object) is the same as the this node's uuid (As stored by the
+    // Connection manager) place the message directly into the recieved
+    // Queue.
+    if(GetUUID() == GetConnectionManager().GetUUID)
+    {
+        GetDispatcher().HandleRequest(GetBroker(),p_mesg);
+        return;
+    }
+
     ProtocolMap::iterator sit = m_protocols.find(p_mesg.GetProtocol());    
     
     if(sit == m_protocols.end())

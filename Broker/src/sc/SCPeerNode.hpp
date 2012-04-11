@@ -40,7 +40,7 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/thread/mutex.hpp>
 
-#include "uuid.hpp"
+#include "CUuid.hpp"
 #include "CBroker.hpp"
 #include "CConnection.hpp"
 #include "IPeerNode.hpp"

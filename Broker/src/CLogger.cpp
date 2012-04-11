@@ -106,10 +106,13 @@ int CGlobalLogger::GetOutputLevel(std::string logger)
     return m_loggers[logger];
 }
 
-void CGlobalLogger::SetInitialLoggerLevels(std::string loggerCfgFile,
-        bool verboseMode)
+void CGlobalLogger::SetInitialLoggerLevels(const std::string loggerCfgFile,
+        const unsigned int globalVerbosity)
 {
-/*            // Separate config file for logger verbosity settings.
+    SetGlobalLevel(globalVerbosity);
+ //       po::options_description loggerOpts("Logger Verbosity Settings");
+    
+/*        // Separate config file for logger verbosity settings.
         ifs.open(loggerCfgFile.c_str());
         if (!ifs)
         {
@@ -142,5 +145,6 @@ void CGlobalLogger::SetInitialLoggerLevels(std::string loggerCfgFile,
         ("verbose,v", 
                 po::value<int>(&globalVerbosity)->
         implicit_value(6)->default_value(4),
-                "The default global verbosity level");*/
+                "The default global verbosity level");
+ */
 }

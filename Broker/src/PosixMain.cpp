@@ -22,46 +22,47 @@
 /// Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
 ////////////////////////////////////////////////////////////////////////////////
 
+#if !defined(_WIN32)
+
 #include <iostream>
+#include <set>
 #include <string>
 #include <sstream>
-#include <boost/asio.hpp>
-#include <boost/foreach.hpp>
-#define foreach         BOOST_FOREACH
-#include <boost/assign/list_of.hpp>
-
-#include <boost/asio/ip/host_name.hpp> //for ip::host_name()
-#include <boost/thread.hpp>
-#include <boost/bind.hpp>
-#include <set>
-#include <boost/program_options.hpp>
 #include <vector>
-namespace po = boost::program_options;
-
-#include "CDispatcher.hpp"
-#include "CBroker.hpp"
-#include "gm/GroupManagement.hpp"
-#include "lb/LoadBalance.hpp"
-#include "sc/CStateCollection.hpp"
-#include "CConnectionManager.hpp"
-#include "device/CPhysicalDeviceManager.hpp"
-#include "device/CDeviceFactory.hpp"
-#include "device/PhysicalDeviceTypes.hpp"
-#include "CGlobalConfiguration.hpp"
-
-using namespace freedm;
-
-#include "config.hpp"
-#include "uuid.hpp"
-#include "version.h"
-#include "CLogger.hpp"
-
-static CLocalLogger Logger(__FILE__);
-
-#if !defined(_WIN32)
 
 #include <pthread.h>
 #include <signal.h>
+
+#include <boost/asio.hpp>
+#include <boost/asio/ip/host_name.hpp> //for ip::host_name()
+#include <boost/assign/list_of.hpp>
+#include <boost/bind.hpp>
+#include <boost/foreach.hpp>
+#include <boost/thread.hpp>
+#include <boost/program_options.hpp>
+
+#define foreach BOOST_FOREACH
+
+namespace po = boost::program_options;
+
+#include "CBroker.hpp"
+#include "CConnectionManager.hpp"
+#include "CDispatcher.hpp"
+#include "CGlobalConfiguration.hpp"
+#include "CLogger.hpp"
+#include "CUuid.hpp"
+#include "config.hpp"
+#include "device/CPhysicalDeviceManager.hpp"
+#include "device/CDeviceFactory.hpp"
+#include "device/PhysicalDeviceTypes.hpp"
+#include "gm/GroupManagement.hpp"
+#include "lb/LoadBalance.hpp"
+#include "sc/CStateCollection.hpp"
+#include "version.h"
+
+using namespace freedm;
+
+static CLocalLogger Logger(__FILE__);
 
 std::string basename( const std::string &s )
 // Returns the filename without directory path
@@ -76,25 +77,21 @@ std::string basename( const std::string &s )
 /// Broker entry point
 int main(int argc, char* argv[])
 {
+    CGlobalLogger::instance().SetGlobalLevel(7); // TODO temp?
     // Variable Declaration
     po::options_description genOpts("General Options"),
-            configOpts("Configuration"),
-            loggerOpts("Logger Verbosity Settings"),
-            hiddenOpts("hidden"),
-            visibleOpts,
-            cliOpts,
-            cfgOpts,
-            logOpts;
+            configOpts("Configuration"), hiddenOpts("hidden");
+    po::options_description visibleOpts, cliOpts, cfgOpts;
     po::positional_options_description posOpts;
     po::variables_map vm;
     std::ifstream ifs;
     std::string cfgFile, loggerCfgFile, fpgaCfgFile;
-    std::string listenIP, port, uuid, hostname, uuidgenerator;
+    std::string listenIP, port, uuidString, hostname, uuidgenerator;
     // Line/RTDS Client options
     std::string interHost;
     std::string interPort;
-    int globalVerbosity;
-    uuid u;
+    unsigned int globalVerbosity;
+    CUuid uuid;
 
     // Load Config Files
     try
@@ -109,8 +106,7 @@ int main(int argc, char* argv[])
         ("generateuuid,g", 
                 po::value<std::string >(&uuidgenerator)->default_value(""),
                 "Generate a uuid for the specified host, output it, and exit")
-        ("uuid,u", "Print this node's generated uuid and exit")
-        ("verbose,v", "Print everything except debugging info by default");
+        ("uuid,u", "Print this node's generated uuid and exit");
         
         // This is for arguments in a config file or as arguments
         configOpts.add_options()
@@ -139,8 +135,12 @@ int main(int argc, char* argv[])
                 po::value<std::string>(&loggerCfgFile)->
         default_value("logger.cfg"),
                 "name of the logger verbosity configuration file")
+        ("verbose,v", 
+                po::value<unsigned int>(&globalVerbosity)->
+        implicit_value(5)->default_value(5),
+                "enable verbose output (optionally specify level)");
         hiddenOpts.add_options()
-                ( "setuuid", po::value<std::string> ( &uuid ),
+                ( "setuuid", po::value<std::string> ( &uuidString ),
                 "UUID for this host" );
 
         // Specify positional arguments
@@ -151,8 +151,6 @@ int main(int argc, char* argv[])
         cliOpts.add(visibleOpts).add(hiddenOpts);
         // Options allowed in config file
         cfgOpts.add(configOpts).add(hiddenOpts);
-        // Options allowed in logger config file
-        logOpts.add(loggerOpts);
         // If submodules need custom commandline options
         // there should be a 'registration' of those options here.
         // Other modules should use options of the form: 'modulename.option'
@@ -162,6 +160,7 @@ int main(int argc, char* argv[])
                 .options(cliOpts).positional(posOpts).run(), vm);
         po::notify(vm);
         
+        std::cerr << "Reading freedm.cfg" << std::endl;
         // Read options from the main config file.
         ifs.open(cfgFile.c_str());
         if (!ifs)
@@ -186,13 +185,14 @@ int main(int argc, char* argv[])
             po::store(parse_config_file(ifs, cfgOpts), vm);
             po::notify(vm);
 
-            if (!vm.count(help))
+            if (!vm.count("help"))
             {
                 Logger.Info << "Config file " << cfgFile <<
                         " successfully loaded." << std::endl;
             }
         }
         ifs.close();    
+        std::cerr << "closed freedm.cfg" << std::endl;
 
         if (vm.count("help"))
         {
@@ -205,8 +205,8 @@ int main(int argc, char* argv[])
             {
                 uuidgenerator = boost::asio::ip::host_name();
             }
-            u = freedm::uuid::from_dns(uuidgenerator);
-            std::cout << u << std::endl;
+            uuid = freedm::CUuid::from_dns(uuidgenerator);
+            std::cout << uuid << std::endl;
             return 0;
         }
 
@@ -223,24 +223,25 @@ int main(int argc, char* argv[])
 
         if (vm.count("uuid"))
         {
-            u = uuid(uuid);
-            Logger.Info << "Loaded UUID: " << u << std::endl;
+            uuid = static_cast<CUuid>(uuidString);
+            Logger.Info << "Loaded UUID: " << uuid << std::endl;
         }
         else
         {
             // Try to resolve the host's dns name
             hostname = boost::asio::ip::host_name();
             Logger.Info << "Hostname: " << hostname << std::endl;
-            u = uuid::from_dns(hostname);
-            Logger.Info << "Generated UUID: " << u << std::endl;
+            uuid = CUuid::from_dns(hostname);
+            Logger.Info << "Generated UUID: " << uuid << std::endl;
         }
         
-        CGlobalLogger::instance()::SetInitialLoggerLevels(loggerCfgFile,
-                vm.count("verbose"));
+        std::cerr << "About to call setinitialloggerlevels" << std::endl;
+        CGlobalLogger::instance().SetInitialLoggerLevels(
+                loggerCfgFile, globalVerbosity);
 
         std::stringstream ss2;
         std::string uuidstr2;
-        ss2 << u;
+        ss2 << uuid;
         ss2 >> uuidstr2;
         /// Prepare the global Configuration
         CGlobalConfiguration::instance().SetHostname(hostname);
@@ -336,7 +337,7 @@ int main(int argc, char* argv[])
         // Load the UUID into string
         std::stringstream ss;
         std::string uuidstr;
-        ss << u;
+        ss << uuid;
         ss >> uuidstr;
         // Instantiate and register the group management module
         GMAgent GM(uuidstr, broker.GetIOService(), dispatch, conManager);
@@ -372,7 +373,7 @@ int main(int argc, char* argv[])
                 std::string host(s.begin(), s.begin() + idx),
                         port1(s.begin() + ( idx + 1 ), s.end());
                 // Construct the UUID of host from its DNS
-                uuid u1 = uuid::from_dns(host);
+                CUuid u1 = CUuid::from_dns(host);
                 //Load the UUID into string
                 std::stringstream uu;
                 uu << u1;

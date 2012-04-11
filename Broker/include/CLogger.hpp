@@ -50,16 +50,16 @@ class CGlobalLogger : public Templates::Singleton<CGlobalLogger>
     /// @limitations: Singleton. Should not be copied.
     ///////////////////////////////////////////////////////////////////////////
     public:
-        /// Reads the logging levels of all loggers from the config file.
-        void SetInitialLoggerLevels(std::string loggerCfgFile, 
-                bool verboseMode);
         /// Sets the logging level of a specific logger.
         void SetOutputLevel(std::string logger, int level);
         /// Fetch the logging level of a specific logger.
         int GetOutputLevel(std::string logger);
-    private:
         /// Sets the logging level of all loggers.
         void SetGlobalLevel(int level);
+        /// Reads the logging levels of all loggers from the config file.
+        void SetInitialLoggerLevels(const std::string loggerCfgFile, 
+                const unsigned int globalVerbosity);
+    private:
         /// What the output level is if not set specifically.
         int m_default;
         /// Type of container for the output levels.

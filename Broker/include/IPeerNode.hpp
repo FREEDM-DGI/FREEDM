@@ -42,7 +42,7 @@
 #include <boost/bind.hpp>
 #include <boost/thread/mutex.hpp>
 
-#include "uuid.hpp"
+#include "CUuid.hpp"
 #include "CBroker.hpp"
 #include "CConnection.hpp"
 #include "CConnectionManager.hpp"

@@ -76,15 +76,15 @@ std::string basename( const std::string &s )
 /// Broker entry point
 int main(int argc, char* argv[])
 {
-    CGlobalLogger::instance().ReadLoggerLevels();
     // Variable Declaration
     po::options_description genOpts("General Options"),
             configOpts("Configuration"),
+            loggerOpts("Logger Verbosity Settings"),
             hiddenOpts("hidden"),
             visibleOpts,
             cliOpts,
-            cfgOpts;
-    // TODO add a separate category for logger options
+            cfgOpts,
+            logOpts;
     po::positional_options_description posOpts;
     po::variables_map vm;
     std::ifstream ifs;
@@ -101,15 +101,16 @@ int main(int argc, char* argv[])
     {
         // Check command line arguments.
         genOpts.add_options()
-        ( "help,h", "print usage help (this screen)" )
-        ( "version,V", "print version info" )
-        ( "config,c",
+        ("help,h", "print usage help (this screen)")
+        ("version,V", "print version info")
+        ("config,c",
                 po::value<std::string>(&cfgFile)->default_value("freedm.cfg"),
-                "filename of additional configuration." )
-        ( "generateuuid,g", 
+                "filename of additional configuration.")
+        ("generateuuid,g", 
                 po::value<std::string >(&uuidgenerator)->default_value(""),
-                "Generate a uuid for the specified host, output it, and exit" )
-        ( "uuid,u", "Print this node's generated uuid and exit" );
+                "Generate a uuid for the specified host, output it, and exit")
+        ("uuid,u", "Print this node's generated uuid and exit")
+        ("verbose,v", "Print everything except debugging info by default");
         
         // This is for arguments in a config file or as arguments
         configOpts.add_options()
@@ -138,10 +139,6 @@ int main(int argc, char* argv[])
                 po::value<std::string>(&loggerCfgFile)->
         default_value("logger.cfg"),
                 "name of the logger verbosity configuration file")
-        ("verbose,v", 
-                po::value<int>(&globalVerbosity)->
-        implicit_value(5)->default_value(7),
-                "The default global verbosity level");
         hiddenOpts.add_options()
                 ( "setuuid", po::value<std::string> ( &uuid ),
                 "UUID for this host" );
@@ -154,7 +151,9 @@ int main(int argc, char* argv[])
         cliOpts.add(visibleOpts).add(hiddenOpts);
         // Options allowed in config file
         cfgOpts.add(configOpts).add(hiddenOpts);
-        // XXX If submodules need custom commandline options
+        // Options allowed in logger config file
+        logOpts.add(loggerOpts);
+        // If submodules need custom commandline options
         // there should be a 'registration' of those options here.
         // Other modules should use options of the form: 'modulename.option'
         // This prevents namespace conflicts
@@ -162,9 +161,7 @@ int main(int argc, char* argv[])
         po::store(po::command_line_parser(argc, argv)
                 .options(cliOpts).positional(posOpts).run(), vm);
         po::notify(vm);
-        // If submodules have added custom commandline options,
-        // they should be processed here as everything has been parsed
-
+        
         // Read options from the main config file.
         ifs.open(cfgFile.c_str());
         if (!ifs)
@@ -188,40 +185,14 @@ int main(int argc, char* argv[])
             // Process the config
             po::store(parse_config_file(ifs, cfgOpts), vm);
             po::notify(vm);
-            Logger.Info << "Config file " << cfgFile << " successfully loaded."
-                    << std::endl;
-        }
-        ifs.close();
-        
-        // Separate config file for logger verbosity settings.
-        ifs.open(loggerCfgFile.c_str());
-        if (!ifs)
-        {
-            if (!vm["logger-config"].defaulted())
-            {   // User specified a config file, so we should let
-                // them know that we can't load it
-                Logger.Error << "Unable to load logger config file: "
-                        << loggerCfgFile << std::endl;
-                return -1;
-            }
-            else
+
+            if (!vm.count(help))
             {
-                // File doesn't exist or couldn't open it for read.
-                Logger.Error << "Logger config file " << loggerCfgFile << 
-                        " doesn't exist. Skipping." << std::endl;
+                Logger.Info << "Config file " << cfgFile <<
+                        " successfully loaded." << std::endl;
             }
         }
-        else
-        {
-            // Process the config
-            po::store(parse_config_file(ifs, cfgOpts), vm);
-            po::notify(vm);
-            Logger.Info << "Logger config file " << loggerCfgFile << 
-                    " successfully loaded." << std::endl;
-        }
-        ifs.close();
-        
-        CGlobalLogger::instance().SetGlobalLevel( globalVerbosity );
+        ifs.close();    
 
         if (vm.count("help"))
         {
@@ -263,6 +234,9 @@ int main(int argc, char* argv[])
             u = uuid::from_dns(hostname);
             Logger.Info << "Generated UUID: " << u << std::endl;
         }
+        
+        CGlobalLogger::instance()::SetInitialLoggerLevels(loggerCfgFile,
+                vm.count("verbose"));
 
         std::stringstream ss2;
         std::string uuidstr2;
@@ -404,7 +378,7 @@ int main(int argc, char* argv[])
                 std::stringstream uu_;
                 uu_ << u1_;
                 // Add the UUID to the list of known hosts
-                //XXX This mechanism sould change to allow dynamically arriving
+                //XXX This mechanism should change to allow dynamically arriving
                 //nodes with UUIDS not constructed using their DNS names
                 m_conManager.PutHostname(uu_.str(), host_, port1_);
             }

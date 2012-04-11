@@ -50,15 +50,16 @@ class CGlobalLogger : public Templates::Singleton<CGlobalLogger>
     /// @limitations: Singleton. Should not be copied.
     ///////////////////////////////////////////////////////////////////////////
     public:
-        /// Sets the logging level of all loggers.
-        void SetGlobalLevel(int level);
+        /// Reads the logging levels of all loggers from the config file.
+        void SetInitialLoggerLevels(std::string loggerCfgFile, 
+                bool verboseMode);
         /// Sets the logging level of a specific logger.
-        void SetOutputLevel(std::string logger,int level);
+        void SetOutputLevel(std::string logger, int level);
         /// Fetch the logging level of a specific logger.
         int GetOutputLevel(std::string logger);
-        /// Reads the logging levels of all loggers from the config file.
-        void ReadLoggerLevels();
     private:
+        /// Sets the logging level of all loggers.
+        void SetGlobalLevel(int level);
         /// What the output level is if not set specifically.
         int m_default;
         /// Type of container for the output levels.
@@ -109,7 +110,7 @@ class CLocalLogger : private boost::noncopyable
         ///Initializes the local statics
         CLocalLogger(std::string loggername);
         ///Logger
-	    boost::iostreams::stream<CLog> Debug;
+	boost::iostreams::stream<CLog> Debug;
         ///Logger
         boost::iostreams::stream<CLog> Info;
         ///Logger

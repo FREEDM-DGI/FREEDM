@@ -21,6 +21,8 @@
 /// Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
 ////////////////////////////////////////////////////////////////////////////////
 
+#include <boost/program_options/options_description.hpp>
+
 #include "CLogger.hpp"
 
 
@@ -87,12 +89,12 @@ void CGlobalLogger::SetGlobalLevel(int level)
     }
     m_default = level;
 }
+
 void CGlobalLogger::SetOutputLevel(std::string logger,int level)
 {
     //Fetch the specified logger and set its level to the one specified
     m_loggers[logger] = level;
 }
-
 
 int CGlobalLogger::GetOutputLevel(std::string logger)
 {
@@ -104,8 +106,41 @@ int CGlobalLogger::GetOutputLevel(std::string logger)
     return m_loggers[logger];
 }
 
-void CGlobalLogger::ReadLoggerLevels()
+void CGlobalLogger::SetInitialLoggerLevels(std::string loggerCfgFile,
+        bool verboseMode)
 {
-    //SetGlobalLevel(5); done in main
-    // TODO ReadLoggerLevels.  Maybe delete me?
+/*            // Separate config file for logger verbosity settings.
+        ifs.open(loggerCfgFile.c_str());
+        if (!ifs)
+        {
+            if (!vm["logger-config"].defaulted())
+            {   // User specified a config file, so we should let
+                // them know that we can't load it
+                Logger.Error << "Unable to load logger config file: "
+                        << loggerCfgFile << std::endl;
+                return -1;
+            }
+            else
+            {
+                // File doesn't exist or couldn't open it for read.
+                Logger.Error << "Logger config file " << loggerCfgFile << 
+                        " doesn't exist. Skipping." << std::endl;
+            }
+        }
+        else
+        {
+            // Process the config
+            po::store(parse_config_file(ifs, logOpts), vm);
+            po::notify(vm);
+            Logger.Info << "Logger config file " << loggerCfgFile << 
+                    " successfully loaded." << std::endl;
+        }
+        ifs.close();
+        
+        CGlobalLogger::instance().SetGlobalLevel( globalVerbosity );
+    
+        ("verbose,v", 
+                po::value<int>(&globalVerbosity)->
+        implicit_value(6)->default_value(4),
+                "The default global verbosity level");*/
 }

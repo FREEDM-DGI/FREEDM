@@ -178,15 +178,22 @@ void SCAgent::SendDoneBack()
 {
     freedm::broker::CMessage m_;
     m_.m_submessages.put("sc", "done");
-    try
+    if (GetPeer(m_curversion.first) != NULL)
     {
-        GetPeer(m_curversion.first)->AsyncSend(m_);
+        try
+    	{
+            GetPeer(m_curversion.first)->AsyncSend(m_);
+    	}
+    	catch (boost::system::system_error& e)
+    	{
+            Logger.Info << "Couldn't Send Message To Peer" << std::endl;
+    	}
+    	//GetPeer(m_curversion.first)->AsyncSend(m_);
     }
-    catch (boost::system::system_error& e)
+    else
     {
-        Logger.Info << "Couldn't Send Message To Peer" << std::endl;
+	Logger.Info << "Peer doesn't exist" << std::endl;
     }
-    //GetPeer(m_curversion.first)->AsyncSend(m_);
 }
 
 
@@ -267,7 +274,7 @@ void SCAgent::StateResponse()
     freedm::broker::CMessage m_;
     if (m_countmarker == m_AllPeers.size() && m_NotifyToSave == false)
     {
-        //send collect states to the requested module
+        //prepare collect states 
         Logger.Info << "Sending requested state back to " << m_module << " module" << std::endl;
         m_.m_submessages.put(m_module, "CollectedState");
         for (it = collectstate.begin(); it != collectstate.end(); it++)
@@ -284,6 +291,7 @@ void SCAgent::StateResponse()
                 }
             }
         }//end for
+	//send collected states to the request module
     	try
     	{
             GetPeer(GetUUID())->AsyncSend(m_);
@@ -380,14 +388,21 @@ void SCAgent::SendStateBack()
                 m_.m_submessages.put("sc.type", (*it).second.get<std::string>("sc.type"));
                 m_.m_submessages.put("sc.gateway", (*it).second.get<std::string>("sc.gateway"));
                 m_.m_submessages.put("sc.source", (*it).second.get<std::string>("sc.source"));
-	    	try
-	    	{
-		    GetPeer(m_curversion.first)->AsyncSend(m_);
-	    	}
-	    	catch (boost::system::system_error& e)
-	    	{
-		    Logger.Info << "Couldn't Send Message To Peer" << std::endl;
-	    	}
+		if (GetPeer(m_curversion.first) != NULL)
+		{
+	    	    try
+	    	    {
+		        GetPeer(m_curversion.first)->AsyncSend(m_);
+	    	    }
+	    	    catch (boost::system::system_error& e)
+	    	    {
+		        Logger.Info << "Couldn't Send Message To Peer" << std::endl;
+	    	    }
+		}
+		else
+     		{
+		    Logger.Info << "Peer doesn't exist" << std::endl;
+    		}
                 //GetPeer(m_curversion.first)->AsyncSend(m_);
                 //Logger.Notice << "SendStateBack(): gateway "<< (*it).second.get<std::string>("sc.gateway") << std::endl;
                 //Logger.Notice << "Sending state back to initiator: " << m_curversion.first << std::endl;
@@ -399,14 +414,21 @@ void SCAgent::SendStateBack()
                 m_.m_submessages.put("sc.transit.value", (*it).second.get<std::string>("sc.transit.value"));
                 //m_.m_submessages.put("sc.transit.source", (*it).second.get<std::string>("sc.transit.source"));
                 //m_.m_submessages.put("sc.transit.destin", (*it).second.get<std::string>("sc.transit.destin"));
-		try
+		if (GetPeer(m_curversion.first) != NULL)
 		{
-		    GetPeer(m_curversion.first)->AsyncSend(m_);
+	    	    try
+	    	    {
+		        GetPeer(m_curversion.first)->AsyncSend(m_);
+	    	    }
+	    	    catch (boost::system::system_error& e)
+	    	    {
+		        Logger.Info << "Couldn't Send Message To Peer" << std::endl;
+	    	    }
 		}
-		catch (boost::system::system_error& e)
-		{
-		    Logger.Info << "Couldn't Send Message To Peer" << std::endl;
-		}
+		else
+     		{
+		    Logger.Info << "Peer doesn't exist" << std::endl;
+    		}
                 //GetPeer(m_curversion.first)->AsyncSend(m_);
             }
         }
@@ -416,13 +438,20 @@ void SCAgent::SendStateBack()
     m_done.m_submessages.put("sc", "state");
     m_done.m_submessages.put("sc.type", "done");
     m_done.m_submessages.put("sc.source", GetUUID());
-    try
+    if(GetPeer(m_curversion.first) != NULL )
     {
-        GetPeer(m_curversion.first)->AsyncSend(m_done);
+	try
+        {
+	    GetPeer(m_curversion.first)->AsyncSend(m_done);
+	}
+	catch (boost::system::system_error& e)
+	{
+	    Logger.Info << "Couldn't Send Message To Peer" << std::endl;
+	}
     }
-    catch (boost::system::system_error& e)
+    else
     {
-        Logger.Info << "Couldn't Send Message To Peer" << std::endl;
+	Logger.Info << "Peer doesn't exist" << std::endl;
     }
     //GetPeer(m_curversion.first)->AsyncSend(m_done);
 }

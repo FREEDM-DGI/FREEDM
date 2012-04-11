@@ -114,13 +114,15 @@ void CGlobalLogger::SetInitialLoggerLevels(const std::string loggerCfgFile,
  
     po::options_description loggerOpts("Logger Verbosity Settings");
     po::variables_map vm;
+    int one;
 
-/*    loggerOpts.add_options()
-        ( "verbose,v",
-            po::value<int>( &globalVerbosity )->
-            implicit_value(6)->default_value(4),
-            "The default global verbosity level" );
- */
+    for (unsigned int i = 0; i < 2; i++)
+    {
+        loggerOpts.add_options()
+                ( "one",
+                po::value<int>( &one )->default_value(globalVerbosity),
+                "The verbosity level for " );
+    }
     
     std::ifstream ifs;
     ifs.open(loggerCfgFile.c_str());

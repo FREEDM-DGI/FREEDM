@@ -111,18 +111,6 @@ void CGlobalLogger::SetOutputLevel(const std::string logger,
     m_loggers[logger] = level;
 }
 
-// TODO remove
-void CGlobalLogger::printmap()
-{
-typedef std::pair<const std::string, unsigned int> VerbosityPair;
-
-Logger.Fatal << "All registered loggers (testing):" << std::endl;
-foreach (VerbosityPair pair, m_loggers)
-{
-    std::cerr << pair.first << " " << pair.second << std::endl;
-}
-}
-
 unsigned int CGlobalLogger::GetOutputLevel(const std::string logger) const
 {
     OutputMap::const_iterator it = m_loggers.find(logger);

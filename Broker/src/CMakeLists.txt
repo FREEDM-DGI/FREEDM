@@ -21,9 +21,9 @@ set(
     device/CDeviceStructurePSCAD.cpp
     device/CDeviceStructureRTDS.cpp
     device/CPhysicalDeviceManager.cpp
+    device/PhysicalDeviceTypes.cpp
     device/types/IDevice.cpp
     device/types/IDeviceLWI.cpp
-    device/PhysicalDeviceTypes.cpp
     IPeerNode.cpp
     IProtocol.cpp
     gm/GroupManagement.cpp

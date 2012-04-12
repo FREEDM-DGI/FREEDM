@@ -69,7 +69,6 @@ static CLocalLogger Logger(__FILE__);
 int main(int argc, char* argv[])
 {
     CGlobalLogger::instance().SetGlobalLevel(7);
-CGlobalLogger::instance().printmap();
     // Variable Declaration
     po::options_description genOpts("General Options"),
             configOpts("Configuration"), hiddenOpts("hidden");
@@ -219,7 +218,6 @@ CGlobalLogger::instance().printmap();
         // Refine the logger verbosity settings.
         CGlobalLogger::instance().SetGlobalLevel(globalVerbosity);
         CGlobalLogger::instance().SetInitialLoggerLevels(loggerCfgFile);
-CGlobalLogger::instance().printmap();
 
         std::stringstream ss2;
         std::string uuidstr2;

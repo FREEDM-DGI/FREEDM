@@ -236,6 +236,8 @@ void CBroker::Schedule(ModuleIdent m, BoundScheduleable x)
     Logger.Debug<<"Module "<<m<<" now has queue size: "<<m_ready[m].size()<<std::endl;
     Logger.Debug<<"Scheduled task (NODELAY) for "<<m<<std::endl;
 }
+
+#pragma GCC diagnostic ignored "-Wunused-parameter"
 ///////////////////////////////////////////////////////////////////////////////
 /// @fn CBroker::ChangePhase
 /// @description This task will mark to the schedule that it is time to change
@@ -266,6 +268,7 @@ void CBroker::ChangePhase(const boost::system::error_code &err)
     m_phasetimer.async_wait(boost::bind(&CBroker::ChangePhase,this,
         boost::asio::placeholders::error));
 }
+#pragma GCC diagnostic warning "-Wunused-parameter"
 
 ///////////////////////////////////////////////////////////////////////////////
 /// @fn CBroker::ScheduledTask

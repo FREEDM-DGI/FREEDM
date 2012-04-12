@@ -52,7 +52,7 @@ using boost::property_tree::ptree;
 #include "GMPeerNode.hpp"
 #include "IAgent.hpp"
 #include "IHandler.hpp"
-#include "uuid.hpp"
+#include "CUuid.hpp"
 #include "CDispatcher.hpp"
 #include "CConnectionManager.hpp"
 #include "CConnection.hpp"

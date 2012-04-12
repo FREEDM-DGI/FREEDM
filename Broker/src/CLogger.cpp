@@ -1,7 +1,8 @@
 ////////////////////////////////////////////////////////////////////////////////
 /// @file           CLogger.cpp
 ///
-/// @author         Stephen Jackson <scj7t4@mst.edu>
+/// @author         Stephen Jackson   <scj7t4@mst.edu>
+///                 Michael Catanzaro <michael.catanzaro@mst.edu>
 ///
 /// @project        FREEDM DGI
 ///
@@ -27,7 +28,8 @@
 
 static CLocalLogger Logger(__FILE__);
 
-CLog::CLog(CLoggerPointer p, int level_, const char * name_, std::ostream *out_) :
+CLog::CLog(const CLoggerPointer p, const unsigned int level_, 
+        const char * name_, std::ostream *out_) :
         m_parent(p), m_level(level_), m_name( name_ ), m_ostream( out_ )
 {
     //pass
@@ -44,12 +46,12 @@ std::streamsize CLog::write( const char* s, std::streamsize n)
     return n;
 }
 
-int CLog::GetOutputLevel()
+unsigned int CLog::GetOutputLevel() const
 {
     return m_parent->GetOutputLevel();
 }
 
-CLocalLogger::CLocalLogger(std::string loggername)
+CLocalLogger::CLocalLogger(const std::string loggername)
     : Debug(this, 7,"Debug"),
       Info(this, 6,"Info"),
       Notice(this,5,"Notice"),
@@ -63,26 +65,27 @@ CLocalLogger::CLocalLogger(std::string loggername)
     // Pass
 }
 
-std::string CLocalLogger::GetName()
+std::string CLocalLogger::GetName() const
 {
     return m_name;
 }
 
-int CLocalLogger::GetOutputLevel()
+unsigned int CLocalLogger::GetOutputLevel() const
 {
     return CGlobalLogger::instance().GetOutputLevel(m_name);
 }
 
-void CLocalLogger::SetOutputLevel(int level)
+void CLocalLogger::SetOutputLevel(const unsigned int level)
 {
     CGlobalLogger::instance().SetOutputLevel(m_name,level);
 }
 
 
 
-void CGlobalLogger::SetGlobalLevel(int level)
+void CGlobalLogger::SetGlobalLevel(const unsigned int level)
 {
-    //Iterate over the registered loggers and set the filter levels of each logger
+    // Iterate over the registered loggers and 
+    // set the filter levels of each logger
     OutputMap::iterator it;
     for(it = m_loggers.begin(); it != m_loggers.end(); it++)
     {
@@ -91,40 +94,41 @@ void CGlobalLogger::SetGlobalLevel(int level)
     m_default = level;
 }
 
-void CGlobalLogger::SetOutputLevel(std::string logger,int level)
+void CGlobalLogger::SetOutputLevel(const std::string logger, 
+        const unsigned int level)
 {
     //Fetch the specified logger and set its level to the one specified
     m_loggers[logger] = level;
 }
 
-int CGlobalLogger::GetOutputLevel(std::string logger)
+unsigned int CGlobalLogger::GetOutputLevel(const std::string logger) const
 {
-    OutputMap::iterator it = m_loggers.find(logger);
+    OutputMap::const_iterator it = m_loggers.find(logger);
     if(it == m_loggers.end())
     {
-        m_loggers[logger] = m_default;
+        throw std::string(
+                "Requested output level of unregistered logger " + logger);
     }
-    return m_loggers[logger];
+    return m_loggers.find(logger)->second;
 }
 
-void CGlobalLogger::SetInitialLoggerLevels(const std::string loggerCfgFile,
-        const unsigned int globalVerbosity)
+void CGlobalLogger::SetInitialLoggerLevels(const std::string loggerCfgFile)
 {
-    SetGlobalLevel(globalVerbosity);
+    std::ifstream ifs;
  
     po::options_description loggerOpts("Logger Verbosity Settings");
     po::variables_map vm;
-    int one;
 
-    for (unsigned int i = 0; i < 2; i++)
+    OutputMap::iterator it;
+    for (it = m_loggers.begin(); it != m_loggers.end(); it++)
     {
+        std::string desc = "The verbosity level for " + it->first;
         loggerOpts.add_options()
-                ( "one",
-                po::value<int>( &one )->default_value(globalVerbosity),
-                "The verbosity level for " );
+                ( it->first.c_str(),
+                po::value<unsigned int>( )->default_value(m_default),
+                desc.c_str() );
     }
     
-    std::ifstream ifs;
     ifs.open(loggerCfgFile.c_str());
     if (!ifs)
     {
@@ -142,6 +146,14 @@ void CGlobalLogger::SetInitialLoggerLevels(const std::string loggerCfgFile,
     }
     ifs.close();
     
-    // todo remove
-    Logger.Info << "Exiting SetInitialLoggerLevels (TESTING)" << std::endl;
+    // Can't use a type with a comma in BOOST_FOREACH since it's a macro
+    typedef std::pair<std::string, po::variable_value> VerbosityPair;
+    
+    foreach (VerbosityPair pair, vm)
+    {
+        if (!vm[pair.first].defaulted())
+        {
+            m_loggers[pair.first] = pair.second.as<unsigned int>();
+        }
+    }   
 }

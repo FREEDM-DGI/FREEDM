@@ -38,7 +38,6 @@
 #include "CReliableConnection.hpp"
 
 #include "types/remotehost.hpp"
-#include "SlidingWindow.hpp"
 
 #include <boost/asio.hpp>
 #include <boost/array.hpp>

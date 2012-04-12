@@ -292,15 +292,22 @@ void SCAgent::StateResponse()
             }
         }//end for
 	//send collected states to the request module
-    	try
-    	{
-            GetPeer(GetUUID())->AsyncSend(m_);
-    	}
-    	catch (boost::system::system_error& e)
-    	{
-            Logger.Info << "Couldn't Send Message To Peer" << std::endl;
-    	}
+	if (GetPeer(GetUUID()) != NULL)
+	{
+    	    try
+    	    {
+            	GetPeer(GetUUID())->AsyncSend(m_);
+    	    }
+    	    catch (boost::system::system_error& e)
+    	    {
+            	Logger.Info << "Couldn't Send Message To Peer" << std::endl;
+    	    }
+	}
         //GetPeer(GetUUID())->AsyncSend(m_);
+    	else
+    	{
+	    Logger.Info << "Peer doesn't exist" << std::endl;
+    	}
         //clear collectstate
         collectstate.clear();
         m_countmarker = 0;
@@ -558,31 +565,6 @@ void SCAgent::HandleRead(broker::CMessage msg)
 	    m_countmarker = 0;
 	}
 
-/*
-        else if (line_ == m_curversion.first && m_curversion.first != GetUUID())
-            //group leader doesn't changed and peer receive
-        {
-            m_curversion.first = "default";
-            m_curversion.second = 0;
-            collectstate.clear();
-        }
-        else if(line_ != m_curversion.first && m_curversion.first == GetUUID())
-            //group leader change (initiator)
-        {
-            Logger.Notice << "Group leader has changed. New state collection will be started." << std::endl;
-            m_curversion.first = "default";
-            m_curversion.second = 0;
-            collectstate.clear();
-        }
-        else if (line_ != GetUUID() && line_ != m_curversion.first && m_curversion.first != GetUUID())
-            //group leader change (peer)
-        {
-            Logger.Notice << "Group leader has changed. New state collection will be started." << std::endl;
-            collectstate.clear();
-            m_curversion.first = "default";
-            m_curversion.second = 0;
-        }
-*/
     }//if peerList
     //if flag=true save lb's transit message in m_curstate
     else if (pt.get<std::string>("lb","NOEXCEPTION") != "NOEXCEPTION")

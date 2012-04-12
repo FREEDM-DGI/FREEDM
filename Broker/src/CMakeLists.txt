@@ -1,34 +1,35 @@
 # list the source files for the project
 set(
     BROKER_FILES
-    CLogger.cpp
     CBroker.cpp
-    CReliableConnection.cpp
-    CListener.cpp
+    CClientRTDS.cpp
+    CConnection.cpp
     CConnectionManager.cpp
-    IProtocol.cpp
+    CDispatcher.cpp
+    CLineClient.cpp
+    CListener.cpp
+    CLogger.cpp
+    CMessage.cpp
+    CReliableConnection.cpp
     CSRConnection.cpp
     CSUConnection.cpp
-    CConnection.cpp
-    CDispatcher.cpp
-    CMessage.cpp
+    CTableRTDS.cpp
+    CTableStructure.cpp
+    device/CDeviceFactory.cpp
+    device/CDeviceKeyCoupled.cpp
+    device/CDeviceStructureGeneric.cpp
+    device/CDeviceStructurePSCAD.cpp
+    device/CDeviceStructureRTDS.cpp
+    device/CPhysicalDeviceManager.cpp
+    device/PhysicalDeviceTypes.cpp
+    device/types/IDevice.cpp
+    device/types/IDeviceLWI.cpp
     IPeerNode.cpp
+    IProtocol.cpp
     gm/GroupManagement.cpp
     lb/LoadBalance.cpp
     sc/CStateCollection.cpp
-    CTableStructure.cpp
-    CTableRTDS.cpp
-    CLineClient.cpp
-    CClientRTDS.cpp
-    device/CDeviceStructureGeneric.cpp
-    device/CDeviceKeyCoupled.cpp
-    device/CPhysicalDeviceManager.cpp
-    device/CDeviceStructurePSCAD.cpp
-    device/CDeviceStructureRTDS.cpp
-    device/CDeviceFactory.cpp
-    device/PhysicalDeviceTypes.cpp
-    device/types/IDeviceLWI.cpp
-    device/types/IDevice.cpp
+    Utility.cpp
    )
 
 # Generate PhysicalDeviceTypes files based on contents of device/types directory
@@ -42,15 +43,4 @@ add_custom_command(
 configure_file(version.h.cmake ${CMAKE_BINARY_DIR}/src/version.h @ONLY)
 
 add_library(broker ${BROKER_FILES})
-add_executable(PosixBroker PosixMain.cpp)
 
-# link the executable to its dependencies
-target_link_libraries(
-    PosixBroker
-    broker
-    ${Boost_THREAD_LIBRARY}
-    ${Boost_SYSTEM_LIBRARY}
-    ${Boost_SERIALIZATION_LIBRARY}
-    ${Boost_PROGRAM_OPTIONS_LIBRARY}
-    ${Boost_DATE_TIME_LIBRARY}
-)

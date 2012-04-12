@@ -76,6 +76,8 @@ void IProtocol::Write(CMessage msg)
     it = m_buffer.begin();
     /// Use std::copy to copy the string into the buffer starting at it.
     it = std::copy(raw.begin(),raw.end(),it);
+    
+    Logger.Debug<<"Writing "<<raw.length()<<" bytes to channel"<<std::endl;
 
     #ifdef CUSTOMNETWORK
     if((rand()%100) >= GetConnection()->GetReliability()) 

@@ -68,7 +68,7 @@ static CLocalLogger Logger(__FILE__);
 /// Broker entry point
 int main(int argc, char* argv[])
 {
-    CGlobalLogger::instance().SetGlobalLevel(7);
+    CGlobalLogger::instance().SetGlobalLevel(3);
     // Variable Declaration
     po::options_description genOpts("General Options"),
             configOpts("Configuration"), hiddenOpts("hidden");

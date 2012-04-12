@@ -49,7 +49,7 @@ class CLocalLogger;
 typedef CLocalLogger* CLoggerPointer;
 
 /// Tracks the global logging configuration
-class CGlobalLogger : public Templates::Singleton<CGlobalLogger>
+class CGlobalLogger : public boost::noncopyable
 {
     ///////////////////////////////////////////////////////////////////////////
     /// @description The GlobalLogger is responsible for tracking a table which
@@ -58,6 +58,10 @@ class CGlobalLogger : public Templates::Singleton<CGlobalLogger>
     /// @limitations: Singleton. Should not be copied.
     ///////////////////////////////////////////////////////////////////////////
     public:
+        /// Retrieves the singleton instance of the global logger.
+        static CGlobalLogger& instance();
+        /// Register a local logger with the global logger.
+        void RegisterLocalLogger(const std::string logger);
         /// Sets the logging level of a specific logger.
         void SetOutputLevel(const std::string logger, const unsigned int level);
         /// Fetch the logging level of a specific logger.
@@ -66,11 +70,12 @@ class CGlobalLogger : public Templates::Singleton<CGlobalLogger>
         void SetGlobalLevel(const unsigned int level);
         /// Reads the logging levels of all loggers from the config file.
         void SetInitialLoggerLevels(const std::string loggerCfgFile);
+void printmap();
     private:
         /// What the output level is if not set specifically.
         unsigned int m_default;
         /// Type of container for the output levels.
-        typedef std::map< std::string, unsigned int > OutputMap;
+        typedef std::map< const std::string, unsigned int > OutputMap;
         /// The map of loggers to logger levels.
         OutputMap m_loggers;
 };
@@ -93,7 +98,7 @@ class CLog : public boost::iostreams::sink
         unsigned int GetOutputLevel() const;
     private:
         /// The local logger managing this logger
-        CLoggerPointer m_parent;
+        const CLoggerPointer m_parent;
         /// The level of this logger
         unsigned int m_level;
         /// String name of this logger
@@ -138,11 +143,10 @@ class CLocalLogger : private boost::noncopyable
         unsigned int GetOutputLevel() const;
         /// Sets the output level for this set of loggers. 
         void SetOutputLevel(const unsigned int level);
-        /// Load the logger settings
         
     private:
         /// The name of this logger
-        std::string m_name;
+        const std::string m_name;
 };
 
 #endif

@@ -78,6 +78,7 @@ std::string basename( const std::string &s )
 int main(int argc, char* argv[])
 {
     CGlobalLogger::instance().SetGlobalLevel(7);
+CGlobalLogger::instance().printmap();
     // Variable Declaration
     po::options_description genOpts("General Options"),
             configOpts("Configuration"), hiddenOpts("hidden");
@@ -102,7 +103,7 @@ int main(int argc, char* argv[])
         ("version,V", "print version info")
         ("config,c",
                 po::value<std::string>(&cfgFile)->
-        default_value("config/freedm.cfg"),
+        default_value("./config/freedm.cfg"),
                 "filename of additional configuration.")
         ("generateuuid,g", 
                 po::value<std::string >(&uuidgenerator)->default_value(""),
@@ -131,11 +132,11 @@ int main(int argc, char* argv[])
                 "The port to use for the lineclient/RTDSclient to connect.")
         ("fpga-message", 
                 po::value<std::string>(&fpgaCfgFile)->
-        default_value("config/FPGA.xml"),
+        default_value("./config/FPGA.xml"),
                 "filename of the FPGA message specification")
         ("logger-config", 
                 po::value<std::string>(&loggerCfgFile)->
-        default_value("config/logger.cfg"),
+        default_value("./config/logger.cfg"),
                 "name of the logger verbosity configuration file")
         ("verbose,v", 
                 po::value<unsigned int>(&globalVerbosity)->
@@ -224,10 +225,10 @@ int main(int argc, char* argv[])
             uuid = CUuid::from_dns(hostname);
             Logger.Info << "Generated UUID: " << uuid << std::endl;
         }
-        
         // Refine the logger verbosity settings.
         CGlobalLogger::instance().SetGlobalLevel(globalVerbosity);
         CGlobalLogger::instance().SetInitialLoggerLevels(loggerCfgFile);
+CGlobalLogger::instance().printmap();
 
         std::stringstream ss2;
         std::string uuidstr2;

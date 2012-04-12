@@ -62,7 +62,7 @@ CLocalLogger::CLocalLogger(const std::string loggername)
       Fatal(this,0,"Fatal"),
       m_name(loggername)
 {
-    // Pass
+    CGlobalLogger::instance().RegisterLocalLogger(loggername);
 }
 
 std::string CLocalLogger::GetName() const
@@ -80,7 +80,16 @@ void CLocalLogger::SetOutputLevel(const unsigned int level)
     CGlobalLogger::instance().SetOutputLevel(m_name,level);
 }
 
+CGlobalLogger& CGlobalLogger::instance()
+{
+    static CGlobalLogger singleton;
+    return singleton;
+}
 
+void CGlobalLogger::RegisterLocalLogger(const std::string logger)
+{
+    m_loggers.insert(std::make_pair(logger, m_default));
+}
 
 void CGlobalLogger::SetGlobalLevel(const unsigned int level)
 {
@@ -101,10 +110,22 @@ void CGlobalLogger::SetOutputLevel(const std::string logger,
     m_loggers[logger] = level;
 }
 
+// TODO remove
+void CGlobalLogger::printmap()
+{
+typedef std::pair<const std::string, unsigned int> VerbosityPair;
+
+Logger.Fatal << "All registered loggers (testing):" << std::endl;
+foreach (VerbosityPair pair, m_loggers)
+{
+    std::cerr << m_loggers[pair.first] << " " << pair.second << std::endl;
+}
+}
+
 unsigned int CGlobalLogger::GetOutputLevel(const std::string logger) const
 {
     OutputMap::const_iterator it = m_loggers.find(logger);
-    if(it == m_loggers.end())
+    if (it == m_loggers.end())
     {
         throw std::string(
                 "Requested output level of unregistered logger " + logger);
@@ -155,5 +176,5 @@ void CGlobalLogger::SetInitialLoggerLevels(const std::string loggerCfgFile)
         {
             m_loggers[pair.first] = pair.second.as<unsigned int>();
         }
-    }   
+    }
 }

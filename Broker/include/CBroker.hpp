@@ -56,6 +56,7 @@ namespace freedm {
     namespace broker {
 
 class CDispatcher;
+const unsigned int PHASE_DURATION = 50;
 
 /// Central monolith of the Broker Architecture.
 class CBroker : private boost::noncopyable

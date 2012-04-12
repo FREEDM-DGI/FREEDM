@@ -264,7 +264,7 @@ void CBroker::ChangePhase(const boost::system::error_code &err)
         Logger.Notice<<"Started Worker"<<std::endl;
         Worker();
     }
-    m_phasetimer.expires_from_now(boost::posix_time::milliseconds(50));
+    m_phasetimer.expires_from_now(boost::posix_time::milliseconds(PHASE_DURATION));
     m_phasetimer.async_wait(boost::bind(&CBroker::ChangePhase,this,
         boost::asio::placeholders::error));
 }

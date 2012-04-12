@@ -36,6 +36,8 @@
 #include "CReliableConnection.hpp"
 #include "config.hpp"
 
+#include <exception>
+
 static CLocalLogger Logger(__FILE__);
 
 namespace freedm {
@@ -44,11 +46,36 @@ namespace freedm {
 void IProtocol::Write(CMessage msg)
 {
     Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
-    boost::tribool result_;
-    boost::array<char, CReliableConnection::MAX_PACKET_SIZE>::iterator it_;
+    boost::array<char, CReliableConnection::MAX_PACKET_SIZE>::iterator it;
 
-    it_ = m_buffer.begin();
-    boost::tie(result_, it_)=Synthesize(msg, it_, m_buffer.end() - it_ );
+    /// Previously, we would call Synthesize here. Unfortunately, that was an
+    /// Appalling heap of junk that didn't even work the way you expected it
+    /// to. So, we're going to do something different.
+
+    std::stringstream oss;
+    std::string raw;
+    /// Record the out message to the stream
+    try
+    {
+        msg.Save(oss);
+    }
+    catch( std::exception &e )
+    {
+        Logger.Error<<"Couldn't write message to string stream."<<std::endl;
+        throw e;
+    }
+    raw = oss.str();
+    /// Check to make sure it isn't goint to overfill our message packet:
+    if(raw.length() > CReliableConnection::MAX_PACKET_SIZE)
+    {
+        Logger.Info << "Message too long for buffer" << std::endl;
+        Logger.Info << raw << std::endl;
+        throw std::logic_error("Outgoing message is to long for buffer"); 
+    }
+    /// If that looks good, lets write it into our buffer.    
+    it = m_buffer.begin();
+    /// Use std::copy to copy the string into the buffer starting at it.
+    it = std::copy(raw.begin(),raw.end(),it);
 
     #ifdef CUSTOMNETWORK
     if((rand()%100) >= GetConnection()->GetReliability()) 
@@ -58,9 +85,9 @@ void IProtocol::Write(CMessage msg)
         return;
     }
     #endif
-
-    GetConnection()->GetSocket().async_send(boost::asio::buffer(m_buffer,
-            (it_ - m_buffer.begin()) * sizeof(char) ), 
+    // The length of the contents placed in the buffer should be the same length as
+    // The string that was written into it.
+    GetConnection()->GetSocket().async_send(boost::asio::buffer(m_buffer,raw.length()), 
             boost::bind(&IProtocol::WriteCallback, this,
             boost::asio::placeholders::error));
 }

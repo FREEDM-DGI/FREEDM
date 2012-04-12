@@ -37,7 +37,6 @@
 #include "CListener.hpp"
 #include "CConnectionManager.hpp"
 #include "CMessage.hpp"
-#include "RequestParser.hpp"
 #include "config.hpp"
 #include "CLogger.hpp"
 
@@ -121,47 +120,60 @@ void CListener::HandleRead(const boost::system::error_code& e,
     Logger.Debug << __PRETTY_FUNCTION__ << std::endl;       
     if (!e)
     {
-        boost::tribool result_;
-        boost::tie(result_, boost::tuples::ignore) = Parse(
-            m_message, m_buffer.data(),
-            m_buffer.data() + bytes_transferred);
-        if (result_)
+        /// I'm removing request parser because it is an appalling heap of junk
+        std::stringstream iss;
+        std::ostreambuf_iterator<char> iss_it(iss);
+        std::copy(m_buffer.begin(), m_buffer.begin()+bytes_transferred, iss_it);
+        
+        try
         {
-            ptree x = static_cast<ptree>(m_message);
-            std::string uuid = m_message.GetSourceUUID();
-            remotehost hostname = m_message.GetSourceHostname();
-            ///Make sure the hostname is registered:
-            GetConnectionManager().PutHostname(uuid,hostname);                        
-            ///Get the pointer to the connection:
-            CConnection::ConnectionPtr conn;
-            conn = GetConnectionManager().GetConnectionByUUID(uuid);
+            Logger.Debug<<"Loading xml:"<<std::endl;
+            m_message.Load(iss);
+        }
+        catch(std::exception &e)
+        {
+            Logger.Error<<"Couldn't parse message XML: "<<e.what()<<std::endl;
+            GetSocket().async_receive_from(boost::asio::buffer(m_buffer, CReliableConnection::MAX_PACKET_SIZE),
+                m_endpoint, boost::bind(&CListener::HandleRead, this,
+                boost::asio::placeholders::error,
+                boost::asio::placeholders::bytes_transferred));
+            return;
+        }
+
+        ptree x = static_cast<ptree>(m_message);
+        std::string uuid = m_message.GetSourceUUID();
+        remotehost hostname = m_message.GetSourceHostname();
+        ///Make sure the hostname is registered:
+        GetConnectionManager().PutHostname(uuid,hostname);                        
+        ///Get the pointer to the connection:
+        CConnection::ConnectionPtr conn;
+        conn = GetConnectionManager().GetConnectionByUUID(uuid);
 #ifdef CUSTOMNETWORK
-            if((rand()%100) >= GetReliability())
-            {
-                Logger.Debug<<"Dropped datagram "<<m_message.GetHash()<<":"
-                              <<m_message.GetSequenceNumber()<<std::endl;
-                goto listen;
-            }
+        if((rand()%100) >= GetReliability())
+        {
+            Logger.Debug<<"Dropped datagram "<<m_message.GetHash()<<":"
+                          <<m_message.GetSequenceNumber()<<std::endl;
+            goto listen;
+        }
 #endif
-            if(m_message.GetStatus() == freedm::broker::CMessage::Accepted)
-            {
-                ptree pp = m_message.GetProtocolProperties();
-                size_t hash = pp.get<size_t>("src.hash");
-                Logger.Debug<<"Recieved ACK"<<hash<<":"
-                                <<m_message.GetSequenceNumber()<<std::endl;
-                conn->RecieveACK(m_message);
-            }
-            else if(conn->Recieve(m_message))
-            {
-                Logger.Debug<<"Accepted message "<<m_message.GetHash()<<":"
-                              <<m_message.GetSequenceNumber()<<std::endl;
-                GetDispatcher().HandleRequest(GetBroker(),m_message);
-            }
-            else if(m_message.GetStatus() != freedm::broker::CMessage::Created)
-            {
-                Logger.Debug<<"Rejected message "<<m_message.GetHash()<<":"
-                              <<m_message.GetSequenceNumber()<<std::endl;
-            }
+        if(m_message.GetStatus() == freedm::broker::CMessage::Accepted)
+        {
+            ptree pp = m_message.GetProtocolProperties();
+            size_t hash = pp.get<size_t>("src.hash");
+            Logger.Debug<<"Recieved ACK"<<hash<<":"
+                            <<m_message.GetSequenceNumber()<<std::endl;
+            conn->RecieveACK(m_message);
+        }
+        else if(conn->Recieve(m_message))
+        {
+            Logger.Debug<<"Accepted message "<<m_message.GetHash()<<":"
+                          <<m_message.GetSequenceNumber()<<std::endl;
+            GetDispatcher().HandleRequest(GetBroker(),m_message);
+        }
+        else if(m_message.GetStatus() != freedm::broker::CMessage::Created)
+        {
+            Logger.Debug<<"Rejected message "<<m_message.GetHash()<<":"
+                          <<m_message.GetSequenceNumber()<<std::endl;
         }
 listen:
         GetSocket().async_receive_from(boost::asio::buffer(m_buffer, CReliableConnection::MAX_PACKET_SIZE),

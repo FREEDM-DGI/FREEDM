@@ -36,8 +36,6 @@
 #include <fstream>
 #include <string>
 
-#include "Utility.hpp"
-
 #define foreach BOOST_FOREACH
 
 namespace po = boost::program_options;

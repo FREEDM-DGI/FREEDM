@@ -25,6 +25,7 @@
 #include <boost/program_options/options_description.hpp>
 
 #include "CLogger.hpp"
+#include "Utility.hpp"
 
 static CLocalLogger Logger(__FILE__);
 
@@ -60,9 +61,9 @@ CLocalLogger::CLocalLogger(const std::string loggername)
       Error(this,2,"Error"),
       Alert(this,1,"Alert"),
       Fatal(this,0,"Fatal"),
-      m_name(loggername)
+      m_name(basename(loggername))
 {
-    CGlobalLogger::instance().RegisterLocalLogger(loggername);
+    CGlobalLogger::instance().RegisterLocalLogger(m_name);
 }
 
 std::string CLocalLogger::GetName() const
@@ -118,7 +119,7 @@ typedef std::pair<const std::string, unsigned int> VerbosityPair;
 Logger.Fatal << "All registered loggers (testing):" << std::endl;
 foreach (VerbosityPair pair, m_loggers)
 {
-    std::cerr << m_loggers[pair.first] << " " << pair.second << std::endl;
+    std::cerr << pair.first << " " << pair.second << std::endl;
 }
 }
 

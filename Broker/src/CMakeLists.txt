@@ -1,34 +1,35 @@
 # list the source files for the project
 set(
     BROKER_FILES
-    CLogger.cpp
     CBroker.cpp
-    CReliableConnection.cpp
-    CListener.cpp
+    CClientRTDS.cpp
+    CConnection.cpp
     CConnectionManager.cpp
-    IProtocol.cpp
+    CDispatcher.cpp
+    CLineClient.cpp
+    CListener.cpp
+    CLogger.cpp
+    CMessage.cpp
+    CReliableConnection.cpp
     CSRConnection.cpp
     CSUConnection.cpp
-    CConnection.cpp
-    CDispatcher.cpp
-    CMessage.cpp
+    CTableRTDS.cpp
+    CTableStructure.cpp
+    device/CDeviceFactory.cpp
+    device/CDeviceKeyCoupled.cpp
+    device/CDeviceStructureGeneric.cpp
+    device/CDeviceStructurePSCAD.cpp
+    device/CDeviceStructureRTDS.cpp
+    device/CPhysicalDeviceManager.cpp
+    device/types/IDevice.cpp
+    device/types/IDeviceLWI.cpp
+    device/PhysicalDeviceTypes.cpp
     IPeerNode.cpp
+    IProtocol.cpp
     gm/GroupManagement.cpp
     lb/LoadBalance.cpp
     sc/CStateCollection.cpp
-    CTableStructure.cpp
-    CTableRTDS.cpp
-    CLineClient.cpp
-    CClientRTDS.cpp
-    device/CDeviceStructureGeneric.cpp
-    device/CDeviceKeyCoupled.cpp
-    device/CPhysicalDeviceManager.cpp
-    device/CDeviceStructurePSCAD.cpp
-    device/CDeviceStructureRTDS.cpp
-    device/CDeviceFactory.cpp
-    device/PhysicalDeviceTypes.cpp
-    device/types/IDeviceLWI.cpp
-    device/types/IDevice.cpp
+    Utility.cpp
    )
 
 # Generate PhysicalDeviceTypes files based on contents of device/types directory

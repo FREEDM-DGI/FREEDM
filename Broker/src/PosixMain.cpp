@@ -58,21 +58,12 @@ namespace po = boost::program_options;
 #include "gm/GroupManagement.hpp"
 #include "lb/LoadBalance.hpp"
 #include "sc/CStateCollection.hpp"
+#include "Utility.hpp"
 #include "version.h"
 
 using namespace freedm;
 
 static CLocalLogger Logger(__FILE__);
-
-std::string basename( const std::string &s )
-// Returns the filename without directory path
-// This works for both Windows and UNIX-style paths
-{
-    // This works for both Windows and UNIX-style paths
-    size_t idx;
-    idx = s.find_last_of("/\\");
-    return s.substr(idx + 1);
-}
 
 /// Broker entry point
 int main(int argc, char* argv[])

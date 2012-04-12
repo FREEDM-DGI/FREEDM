@@ -78,7 +78,7 @@ void CDispatcher::HandleRequest(CBroker &broker, CMessage msg)
     try
     {
         // Scoped lock, will release mutex at end of try {}
-        boost::lock_guard< boost::mutex > scopedLock_( m_rMutex );
+        //boost::lock_guard< boost::mutex > scopedLock_( m_rMutex );
 
         // This allows for a handler to process all messages using
         // the special keyword "any"

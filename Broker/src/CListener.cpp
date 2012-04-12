@@ -82,7 +82,7 @@ CListener::CListener(boost::asio::io_service& p_ioService,
 void CListener::Start()
 {
     Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
-    GetSocket().async_receive_from(boost::asio::buffer(m_buffer, 8192),
+    GetSocket().async_receive_from(boost::asio::buffer(m_buffer, CReliableConnection::MAX_PACKET_SIZE),
             m_endpoint, boost::bind(&CListener::HandleRead, this,
             boost::asio::placeholders::error,
             boost::asio::placeholders::bytes_transferred));
@@ -164,7 +164,7 @@ void CListener::HandleRead(const boost::system::error_code& e,
             }
         }
 listen:
-        GetSocket().async_receive_from(boost::asio::buffer(m_buffer, 8192),
+        GetSocket().async_receive_from(boost::asio::buffer(m_buffer, CReliableConnection::MAX_PACKET_SIZE),
                 m_endpoint, boost::bind(&CListener::HandleRead, this,
                 boost::asio::placeholders::error,
                 boost::asio::placeholders::bytes_transferred));

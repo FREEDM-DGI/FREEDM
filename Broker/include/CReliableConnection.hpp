@@ -95,6 +95,8 @@ public:
     /// Get the connection reliability for DCUSTOMNETWORK
     int GetReliability();
 
+    /// The maximum packet size in bytes
+    static const unsigned int MAX_PACKET_SIZE = 60000;
 private:
     /// Socket for the CConnection.
     boost::asio::ip::udp::socket m_socket;

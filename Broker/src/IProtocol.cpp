@@ -32,8 +32,9 @@
 
 #include "IProtocol.hpp"
 #include "CConnection.hpp"
-#include "config.hpp"
 #include "CLogger.hpp"
+#include "CReliableConnection.hpp"
+#include "config.hpp"
 
 static CLocalLogger Logger(__FILE__);
 
@@ -44,7 +45,7 @@ void IProtocol::Write(CMessage msg)
 {
     Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     boost::tribool result_;
-    boost::array<char, 8192>::iterator it_;
+    boost::array<char, CReliableConnection::MAX_PACKET_SIZE>::iterator it_;
 
     it_ = m_buffer.begin();
     boost::tie(result_, it_)=Synthesize(msg, it_, m_buffer.end() - it_ );

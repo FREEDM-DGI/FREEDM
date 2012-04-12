@@ -82,6 +82,7 @@ public:
 
     /// Handler that calls the correct protocol for accept logic
     bool Recieve(const CMessage &msg);
+
 private:
     typedef boost::shared_ptr<IProtocol> ProtocolPtr;
     typedef std::map<std::string,ProtocolPtr> ProtocolMap;

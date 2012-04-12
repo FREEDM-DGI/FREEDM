@@ -42,15 +42,4 @@ add_custom_command(
 configure_file(version.h.cmake ${CMAKE_BINARY_DIR}/src/version.h @ONLY)
 
 add_library(broker ${BROKER_FILES})
-add_executable(../PosixBroker PosixMain.cpp)
 
-# link the executable to its dependencies
-target_link_libraries(
-    ../PosixBroker
-    broker
-    ${Boost_THREAD_LIBRARY}
-    ${Boost_SYSTEM_LIBRARY}
-    ${Boost_SERIALIZATION_LIBRARY}
-    ${Boost_PROGRAM_OPTIONS_LIBRARY}
-    ${Boost_DATE_TIME_LIBRARY}
-)

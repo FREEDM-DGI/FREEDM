@@ -77,8 +77,7 @@ std::string basename( const std::string &s )
 /// Broker entry point
 int main(int argc, char* argv[])
 {
-    std::cerr << "GOT HERE" << std::endl;
-    //CGlobalLogger::instance().SetGlobalLevel(7); // TODO temp?
+    CGlobalLogger::instance().SetGlobalLevel(7);
     // Variable Declaration
     po::options_description genOpts("General Options"),
             configOpts("Configuration"), hiddenOpts("hidden");

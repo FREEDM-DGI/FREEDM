@@ -52,6 +52,19 @@ if(Boost_FOUND)
     # goto src/CMakeLists.txt
     add_subdirectory( src )
 
+    add_executable(PosixBroker src/PosixMain.cpp)
+
+    # link the executable to its dependencies
+    target_link_libraries(
+        PosixBroker
+        broker
+        ${Boost_THREAD_LIBRARY}
+        ${Boost_SYSTEM_LIBRARY}
+        ${Boost_SERIALIZATION_LIBRARY}
+        ${Boost_PROGRAM_OPTIONS_LIBRARY}
+        ${Boost_DATE_TIME_LIBRARY}
+    )
+
     if(BUILD_TESTS)
         enable_testing()
 

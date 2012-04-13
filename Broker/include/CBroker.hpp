@@ -47,6 +47,7 @@
 
 #include <boost/asio.hpp>
 #include <boost/asio/deadline_timer.hpp>
+#include <boost/thread/mutex.hpp>
 #include <string>
 #include <boost/noncopyable.hpp>
 #include <boost/function.hpp>
@@ -162,6 +163,9 @@ private:
 
     ///A map of jobs that are ready to run as soon as their phase comes up
     ReadyMap m_ready;
+
+    ///Lock for the scheduler.
+    boost::mutex m_schmutex;
 };
 
     } // namespace broker

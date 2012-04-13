@@ -168,6 +168,7 @@ void CBroker::HandleStop()
 
 void CBroker::RegisterModule(CBroker::ModuleIdent m)
 {
+    boost::mutex::scoped_lock schlock(m_schmutex);
     boost::system::error_code err;
     bool exists;
     for(unsigned int i=0; i < m_modules.size(); i++)
@@ -197,6 +198,7 @@ void CBroker::RegisterModule(CBroker::ModuleIdent m)
 ///////////////////////////////////////////////////////////////////////////////
 CBroker::TimerHandle CBroker::AllocateTimer(CBroker::ModuleIdent module)
 {
+    boost::mutex::scoped_lock schlock(m_schmutex);
     CBroker::TimerHandle myhandle;
     boost::asio::deadline_timer* t = new boost::asio::deadline_timer(m_ioService);
     RegisterModule(module);
@@ -217,6 +219,7 @@ CBroker::TimerHandle CBroker::AllocateTimer(CBroker::ModuleIdent module)
 void CBroker::Schedule(CBroker::TimerHandle h,
     boost::posix_time::time_duration wait, CBroker::Scheduleable x)
 {
+    boost::mutex::scoped_lock schlock(m_schmutex);
     CBroker::Scheduleable s;
     m_timers[h]->expires_from_now(wait);
     s = boost::bind(&CBroker::ScheduledTask,this,x,h,boost::asio::placeholders::error);
@@ -226,15 +229,19 @@ void CBroker::Schedule(CBroker::TimerHandle h,
 
 void CBroker::Schedule(ModuleIdent m, BoundScheduleable x)
 {
+    m_schmutex.lock();
     RegisterModule(m);
     m_ready[m].push_back(x);
     if(!m_busy)
     {
         Logger.Debug<<"Started Worker"<<std::endl;
+        m_schmutex.unlock();
         Worker();
+        m_schmutex.lock();
     }
     Logger.Debug<<"Module "<<m<<" now has queue size: "<<m_ready[m].size()<<std::endl;
     Logger.Debug<<"Scheduled task (NODELAY) for "<<m<<std::endl;
+    m_schmutex.unlock();
 }
 
 #pragma GCC diagnostic ignored "-Wunused-parameter"
@@ -247,6 +254,7 @@ void CBroker::Schedule(ModuleIdent m, BoundScheduleable x)
 ///////////////////////////////////////////////////////////////////////////////
 void CBroker::ChangePhase(const boost::system::error_code &err)
 {
+    m_schmutex.lock();
     m_phase++;
     if(m_phase >= m_modules.size())
     {
@@ -262,11 +270,14 @@ void CBroker::ChangePhase(const boost::system::error_code &err)
     if(!m_busy)
     {
         Logger.Notice<<"Started Worker"<<std::endl;
+        m_schmutex.unlock();
         Worker();
+        m_schmutex.lock();
     }
     m_phasetimer.expires_from_now(boost::posix_time::milliseconds(PHASE_DURATION));
     m_phasetimer.async_wait(boost::bind(&CBroker::ChangePhase,this,
         boost::asio::placeholders::error));
+    m_schmutex.unlock();
 }
 #pragma GCC diagnostic warning "-Wunused-parameter"
 
@@ -281,6 +292,7 @@ void CBroker::ChangePhase(const boost::system::error_code &err)
 void CBroker::ScheduledTask(CBroker::Scheduleable x, CBroker::TimerHandle handle,
     const boost::system::error_code &err)
 {
+    m_schmutex.lock();
     ModuleIdent module = m_allocs[handle];
     Logger.Info<<"Handle finished: "<<handle<<" For module "<<module<<std::endl;
     // First, prepare another bind, which uses the given error
@@ -291,7 +303,12 @@ void CBroker::ScheduledTask(CBroker::Scheduleable x, CBroker::TimerHandle handle
     if(!m_busy)
     {
         Logger.Info<<"Started Worker"<<std::endl;
+        m_schmutex.unlock();
         Worker();
+    }
+    else
+    {
+        m_schmutex.unlock();
     }
 }
 
@@ -306,9 +323,11 @@ void CBroker::ScheduledTask(CBroker::Scheduleable x, CBroker::TimerHandle handle
 ///////////////////////////////////////////////////////////////////////////////
 void CBroker::Worker()
 {
+    m_schmutex.lock();
     if(m_phase >= m_modules.size())
     {
         m_busy = false;
+        m_schmutex.unlock();
         return;
     }
     std::string active = m_modules[m_phase];
@@ -321,7 +340,9 @@ void CBroker::Worker()
         CBroker::BoundScheduleable x = m_ready[active].front();
         m_ready[active].pop_front();
         // Execute the task.
+        m_schmutex.unlock();
         x();
+        m_schmutex.lock();
         // Schedule the worker again:
         m_ioService.post(boost::bind(&CBroker::Worker, this));
     }
@@ -330,6 +351,7 @@ void CBroker::Worker()
         m_busy = false;
         Logger.Debug<<"Worker Idle"<<std::endl;
     }
+    m_schmutex.unlock();
 }
 
 

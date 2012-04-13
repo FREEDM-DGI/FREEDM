@@ -379,9 +379,8 @@ int main(int argc, char* argv[])
         // Restore previous signals.
         pthread_sigmask(SIG_SETMASK, &old_mask, 0);
         Logger.Debug << "Starting thread of Modules" << std::endl;
-        boost::thread thread2( boost::bind(&GMAgent::Run, &GM)
-                                , boost::bind(&lbAgent::LB, &LB)
-                              );
+        broker.Schedule("gm",boost::bind(&GMAgent::Run, &GM));
+        broker.Schedule("lb",boost::bind(&lbAgent::LB, &LB));
         // Wait for signal indicating time to shut down.
         sigset_t wait_mask;
         sigemptyset(&wait_mask);
@@ -398,7 +397,6 @@ int main(int argc, char* argv[])
         broker.Stop();
         // Bring in threads.
         thread_.join();
-        thread2.join();
         std::cout << "Goodbye..." << std::endl;
     }
     catch (std::exception& e)

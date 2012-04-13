@@ -152,6 +152,7 @@ void CSRConnection::Resend(const boost::system::error_code& err)
     Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     if(!err)
     {
+        Logger.Debug<<__PRETTY_FUNCTION__<<" Checking ACK"<<std::endl;
         // Check if the front of the queue is an ACK
         if(m_currentack.GetStatus() == freedm::broker::CMessage::Accepted)
         {
@@ -205,6 +206,7 @@ void CSRConnection::Resend(const boost::system::error_code& err)
                 boost::asio::placeholders::error));
         }
     }
+    Logger.Debug<<__PRETTY_FUNCTION__<<" Resend Finished"<<std::endl;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

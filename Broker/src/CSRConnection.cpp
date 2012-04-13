@@ -154,6 +154,7 @@ void CSRConnection::Resend(const boost::system::error_code& err)
     {
         Logger.Debug<<__PRETTY_FUNCTION__<<" Checking ACK"<<std::endl;
         // Check if the front of the queue is an ACK
+        /*
         m_ackmutex.lock();
         if(m_currentack.GetStatus() == freedm::broker::CMessage::Accepted)
         {
@@ -167,6 +168,7 @@ void CSRConnection::Resend(const boost::system::error_code& err)
             }
         }
         m_ackmutex.unlock();
+        */
         Logger.Debug<<__PRETTY_FUNCTION__<<" Sent ACK"<<std::endl;
         while(m_window.size() > 0 && m_window.front().IsExpired())
         {

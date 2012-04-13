@@ -154,6 +154,7 @@ void CSRConnection::Resend(const boost::system::error_code& err)
     {
         Logger.Debug<<__PRETTY_FUNCTION__<<" Checking ACK"<<std::endl;
         // Check if the front of the queue is an ACK
+        m_ackmutex.lock();
         if(m_currentack.GetStatus() == freedm::broker::CMessage::Accepted)
         {
             if(!m_currentack.IsExpired())
@@ -165,6 +166,7 @@ void CSRConnection::Resend(const boost::system::error_code& err)
                     boost::asio::placeholders::error));
             }
         }
+        m_ackmutex.unlock();
         Logger.Debug<<__PRETTY_FUNCTION__<<" Sent ACK"<<std::endl;
         while(m_window.size() > 0 && m_window.front().IsExpired())
         {
@@ -403,7 +405,9 @@ void CSRConnection::SendACK(const CMessage &msg)
     Logger.Debug<<"Generating ACK. Source exp time "<<msg.GetExpireTime()<<std::endl;
     outmsg.SetExpireTime(msg.GetExpireTime());
     Write(outmsg);
+    m_ackmutex.lock();
     m_currentack = outmsg;
+    m_ackmutex.unlock();
     /// Hook into resend until the message expires.
     m_timeout.cancel();
     m_timeout.expires_from_now(boost::posix_time::milliseconds(REFIRE_TIME));

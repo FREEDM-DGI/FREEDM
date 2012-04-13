@@ -105,6 +105,8 @@ class CSRConnection : public IProtocol
         static const unsigned int SEQUENCE_MODULO = 1024;
         /// Refire time in MS
         static const unsigned int REFIRE_TIME = 25;
+        /// Mutex for the current ack
+        boost::mutex m_ackmutex;
 };
 
     }

@@ -53,7 +53,7 @@ namespace freedm {
 
 /// A connection protocol
 class IProtocol
-    : private boost::noncopyable
+    : public boost::noncopyable
 {
     public:
         /// Initializes the protocol with the underlying connection

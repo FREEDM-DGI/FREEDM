@@ -228,12 +228,13 @@ void CBroker::Schedule(CBroker::TimerHandle h,
     boost::posix_time::time_duration wait, CBroker::Scheduleable x)
 {
     Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
-    boost::mutex::scoped_lock schlock(m_schmutex);
+    m_schmutex.lock();
     CBroker::Scheduleable s;
     m_timers[h]->expires_from_now(wait);
     s = boost::bind(&CBroker::ScheduledTask,this,x,h,boost::asio::placeholders::error);
     Logger.Notice<<"Scheduled task for timer "<<h<<std::endl;
     m_timers[h]->async_wait(s);
+    m_schmutex.unlock();
 }
 
 void CBroker::Schedule(ModuleIdent m, BoundScheduleable x, bool start_worker)

@@ -54,7 +54,7 @@ class CBroker;
 /// Represents a single connection to from a client.
 class CReliableConnection
     : public boost::enable_shared_from_this<CReliableConnection>,
-      private boost::noncopyable
+      public boost::noncopyable
 {
 public:
     /// Typedef for the connection pointer

@@ -47,7 +47,7 @@
 
 #include <boost/asio.hpp>
 #include <boost/asio/deadline_timer.hpp>
-#include <boost/thread/mutex.hpp>
+#include <boost/thread/shared_mutex.hpp>
 #include <string>
 #include <boost/noncopyable.hpp>
 #include <boost/function.hpp>
@@ -165,7 +165,7 @@ private:
     ReadyMap m_ready;
 
     ///Lock for the scheduler.
-    boost::mutex m_schmutex;
+    boost::shared_mutex m_schmutex;
 };
 
     } // namespace broker

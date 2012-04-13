@@ -68,6 +68,15 @@ static CLocalLogger Logger(__FILE__);
 /// Broker entry point
 int main(int argc, char* argv[])
 {
+    #ifdef USE_DEVICE_PSCAD
+    #ifdef USE_DEVICE_RTDS
+    std::cerr<<"Looks like you have both PSCAD and RTDS device drivers turned on.";
+    std::cerr<<" This is probably not what you want. Please run cmake . -DSETTING=Off";
+    std::cerr<<" where SETTING is either USE_DEVICE_PSCAD or USE_DEVICE_RTDS to turn one off."<<std::endl;
+    return 1;
+    #endif
+    #endif
+
     CGlobalLogger::instance().SetGlobalLevel(3);
     // Variable Declaration
     po::options_description genOpts("General Options"),

@@ -98,7 +98,7 @@ public:
     void Schedule(TimerHandle h, boost::posix_time::time_duration wait, Scheduleable x);
     
     /// Schedule a task
-    void Schedule(ModuleIdent m, BoundScheduleable x);
+    void Schedule(ModuleIdent m, BoundScheduleable x, bool start_worker=true);
 
     /// Allocate a timer
     TimerHandle AllocateTimer(ModuleIdent module);

@@ -236,13 +236,13 @@ void CBroker::Schedule(CBroker::TimerHandle h,
     m_timers[h]->async_wait(s);
 }
 
-void CBroker::Schedule(ModuleIdent m, BoundScheduleable x)
+void CBroker::Schedule(ModuleIdent m, BoundScheduleable x, bool start_worker)
 {
     Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     RegisterModule(m);
     m_schmutex.lock();
     m_ready[m].push_back(x);
-    if(!m_busy)
+    if(!m_busy && start_worker)
     {
         Logger.Debug<<"Started Worker"<<std::endl;
         m_schmutex.unlock();

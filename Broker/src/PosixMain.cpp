@@ -375,19 +375,23 @@ int main(int argc, char* argv[])
         // Add the local connection to the hostname list
         conManager.PutHostname(uuidstr, "localhost", port);
         // Block all signals for background thread.
+        /*
         sigset_t new_mask;
         sigfillset(&new_mask);
         sigset_t old_mask;
         pthread_sigmask(SIG_BLOCK, &new_mask, &old_mask);
-        Logger.Info << "Starting CBroker thread" << std::endl;
-        boost::thread thread_
-                (boost::bind(&broker::CBroker::Run, &broker));
+        */
+        //Logger.Info << "Starting CBroker thread" << std::endl;
+        //boost::thread thread_
+        //        (boost::bind(&broker::CBroker::Run, &broker));
         // Restore previous signals.
-        pthread_sigmask(SIG_SETMASK, &old_mask, 0);
+        //pthread_sigmask(SIG_SETMASK, &old_mask, 0);
         Logger.Debug << "Starting thread of Modules" << std::endl;
         broker.Schedule("gm",boost::bind(&GMAgent::Run, &GM),false);
         broker.Schedule("lb",boost::bind(&lbAgent::LB, &LB),false);
+        broker.Run();
         // Wait for signal indicating time to shut down.
+        /*
         sigset_t wait_mask;
         sigemptyset(&wait_mask);
         sigaddset(&wait_mask, SIGINT);
@@ -404,6 +408,7 @@ int main(int argc, char* argv[])
         // Bring in threads.
         thread_.join();
         std::cout << "Goodbye..." << std::endl;
+        */
     }
     catch (std::exception& e)
     {

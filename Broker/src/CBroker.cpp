@@ -200,14 +200,17 @@ void CBroker::RegisterModule(CBroker::ModuleIdent m)
 CBroker::TimerHandle CBroker::AllocateTimer(CBroker::ModuleIdent module)
 {
     Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
-    boost::mutex::scoped_lock schlock(m_schmutex);
+    m_schmutex.lock();
     CBroker::TimerHandle myhandle;
     boost::asio::deadline_timer* t = new boost::asio::deadline_timer(m_ioService);
+    m_schmutex.unlock();
     RegisterModule(module);
+    m_schmutex.lock();
     myhandle = m_handlercounter;
     m_handlercounter++;
     m_allocs.insert(CBroker::TimerAlloc::value_type(myhandle,module));
     m_timers.insert(CBroker::TimersMap::value_type(myhandle,t));
+    m_schmutex.unlock();
     return myhandle;
 }
 

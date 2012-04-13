@@ -239,8 +239,8 @@ void CBroker::Schedule(CBroker::TimerHandle h,
 void CBroker::Schedule(ModuleIdent m, BoundScheduleable x)
 {
     Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
-    m_schmutex.lock();
     RegisterModule(m);
+    m_schmutex.lock();
     m_ready[m].push_back(x);
     if(!m_busy)
     {

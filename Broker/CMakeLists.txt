@@ -17,9 +17,37 @@ option(BUILD_TESTS "Enable the building and running of unit tests." OFF)
 option(SHOW_WARNINGS "warnings displayed during project compile" ON)
 option(CUSTOMNETWORK "for network.xml support" OFF)
 option(DATAGRAM "for UDP Datagram service w/o sequencing" OFF)
-option(USE_DEVICE_PSCAD "Enable the PSCAD simulation interface" OFF)
+option(USE_DEVICE_PSCAD "Enable the PSCAD simulation interface" ON)
 option(USE_DEVICE_RTDS "Enable the RTDS simulation interface" OFF)
 option(SHOW_MESSAGES "Enable help messages during cmake execution" ON)
+
+# find the perl executable
+message(STATUS "Checking for perl installation")
+find_program(PERL_EXEC perl)
+
+if(PERL_EXEC)
+    set(SCRIPT "${CMAKE_BINARY_DIR}/configure.pl")
+    set(INFILE "${CMAKE_BINARY_DIR}/hostname.cfg")
+    
+    # check for required input file
+    if(NOT EXISTS ${INFILE})
+        message(FATAL_ERROR "Missing required file ${INFILE}")
+    endif()
+    
+    # execute the perl configure script
+    message(STATUS "Running configure.pl to generate config/freedm.cfg")
+    execute_process(
+        COMMAND ${PERL_EXEC} ${SCRIPT} ${INFILE}
+        RESULT_VARIABLE CONFIGURE_RESULT
+    )
+    
+    # check the script result
+    if(${CONFIGURE_RESULT} MATCHES "1")
+        message(FATAL_ERROR "Failed to generate freedm.cfg")
+    endif()
+else(PERL_EXEC)
+    message(FATAL_ERROR "Failed to find perl installation")
+endif(PERL_EXEC)
 
 if(SHOW_MESSAGES)
     message("This project uses custom CMake settings:"

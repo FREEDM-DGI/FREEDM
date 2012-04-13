@@ -168,6 +168,7 @@ void CBroker::HandleStop()
 
 void CBroker::RegisterModule(CBroker::ModuleIdent m)
 {
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     boost::mutex::scoped_lock schlock(m_schmutex);
     boost::system::error_code err;
     bool exists;
@@ -198,6 +199,7 @@ void CBroker::RegisterModule(CBroker::ModuleIdent m)
 ///////////////////////////////////////////////////////////////////////////////
 CBroker::TimerHandle CBroker::AllocateTimer(CBroker::ModuleIdent module)
 {
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     boost::mutex::scoped_lock schlock(m_schmutex);
     CBroker::TimerHandle myhandle;
     boost::asio::deadline_timer* t = new boost::asio::deadline_timer(m_ioService);
@@ -219,6 +221,7 @@ CBroker::TimerHandle CBroker::AllocateTimer(CBroker::ModuleIdent module)
 void CBroker::Schedule(CBroker::TimerHandle h,
     boost::posix_time::time_duration wait, CBroker::Scheduleable x)
 {
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     boost::mutex::scoped_lock schlock(m_schmutex);
     CBroker::Scheduleable s;
     m_timers[h]->expires_from_now(wait);
@@ -229,6 +232,7 @@ void CBroker::Schedule(CBroker::TimerHandle h,
 
 void CBroker::Schedule(ModuleIdent m, BoundScheduleable x)
 {
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     m_schmutex.lock();
     RegisterModule(m);
     m_ready[m].push_back(x);
@@ -254,6 +258,7 @@ void CBroker::Schedule(ModuleIdent m, BoundScheduleable x)
 ///////////////////////////////////////////////////////////////////////////////
 void CBroker::ChangePhase(const boost::system::error_code &err)
 {
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     m_schmutex.lock();
     m_phase++;
     if(m_phase >= m_modules.size())
@@ -292,6 +297,7 @@ void CBroker::ChangePhase(const boost::system::error_code &err)
 void CBroker::ScheduledTask(CBroker::Scheduleable x, CBroker::TimerHandle handle,
     const boost::system::error_code &err)
 {
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     m_schmutex.lock();
     ModuleIdent module = m_allocs[handle];
     Logger.Info<<"Handle finished: "<<handle<<" For module "<<module<<std::endl;
@@ -323,6 +329,7 @@ void CBroker::ScheduledTask(CBroker::Scheduleable x, CBroker::TimerHandle handle
 ///////////////////////////////////////////////////////////////////////////////
 void CBroker::Worker()
 {
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     m_schmutex.lock();
     if(m_phase >= m_modules.size())
     {

@@ -36,7 +36,7 @@ if(Boost_FOUND)
     link_directories(${Boost_LIBRARY_DIRS})
 
     # set C++ compiler flags
-    set(COMMON_FLAGS "-g")
+    set(COMMON_FLAGS "-g -lpthread")
     set(WARNING_FLAGS "")
     if(SHOW_WARNINGS)
         set(WARNING_FLAGS "-Wall -Wextra -pedantic")

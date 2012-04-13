@@ -128,6 +128,7 @@ int main(int argc, char* argv[])
                 po::value<std::string>(&loggerCfgFile)->
         default_value("./config/logger.cfg"),
                 "name of the logger verbosity configuration file")
+        ("list-loggers","Print all the available loggers and exit")
         ("verbose,v", 
                 po::value<unsigned int>(&globalVerbosity)->
         implicit_value(5)->default_value(5),
@@ -218,6 +219,11 @@ int main(int argc, char* argv[])
         // Refine the logger verbosity settings.
         CGlobalLogger::instance().SetGlobalLevel(globalVerbosity);
         CGlobalLogger::instance().SetInitialLoggerLevels(loggerCfgFile);
+        if (vm.count("list-loggers"))
+        {
+            CGlobalLogger::instance().ListLoggers();
+            return 0; 
+        }
 
         std::stringstream ss2;
         std::string uuidstr2;

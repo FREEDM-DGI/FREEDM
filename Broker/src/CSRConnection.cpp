@@ -152,9 +152,6 @@ void CSRConnection::Resend(const boost::system::error_code& err)
     Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     if(!err)
     {
-        boost::posix_time::ptime now;
-        now = boost::posix_time::microsec_clock::universal_time();
-        CMessage ack;
         // Check if the front of the queue is an ACK
         if(m_currentack.GetStatus() == freedm::broker::CMessage::Accepted)
         {
@@ -167,6 +164,7 @@ void CSRConnection::Resend(const boost::system::error_code& err)
                     boost::asio::placeholders::error));
             }
         }
+        Logger.Debug<<__PRETTY_FUNCTION__<<" Sent ACK"<<std::endl;
         while(m_window.size() > 0 && m_window.front().IsExpired())
         {
             //First message in the window should be the only one
@@ -176,6 +174,7 @@ void CSRConnection::Resend(const boost::system::error_code& err)
                           <<":"<<m_window.front().GetSequenceNumber()<<std::endl;
             m_window.pop_front();
         }
+        Logger.Debug<<__PRETTY_FUNCTION__<<" Flushed Expired"<<std::endl;
         if(m_window.size() > 0)
         {
             if(m_sendkills &&  m_sendkill > m_window.front().GetSequenceNumber())
@@ -192,10 +191,12 @@ void CSRConnection::Resend(const boost::system::error_code& err)
             {
                 // kill will be set to the last message accepted by receiver
                 // (and whose ack has been received)
+                Logger.Debug<<__PRETTY_FUNCTION__<<" Adding Properties"<<std::endl;
                 ptree x;
                 x.put("src.kill",m_sendkill);
                 m_window.front().SetProtocolProperties(x);
             }
+            Logger.Debug<<__PRETTY_FUNCTION__<<" Writing"<<std::endl;
             Write(m_window.front());
             // Head of window can be killed.
             m_timeout.cancel();

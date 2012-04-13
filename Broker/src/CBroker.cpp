@@ -169,7 +169,7 @@ void CBroker::HandleStop()
 void CBroker::RegisterModule(CBroker::ModuleIdent m)
 {
     Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
-    boost::mutex::scoped_lock schlock(m_schmutex);
+    m_schmutex.lock();
     boost::system::error_code err;
     bool exists;
     for(unsigned int i=0; i < m_modules.size(); i++)
@@ -185,9 +185,12 @@ void CBroker::RegisterModule(CBroker::ModuleIdent m)
         m_modules.push_back(m);
         if(m_modules.size() == 1)
         {
+            m_schmutex.unlock();
             ChangePhase(err);
+            m_schmutex.lock();
         }
     }
+    m_schmutex.unlock();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

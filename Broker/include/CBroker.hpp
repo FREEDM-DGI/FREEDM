@@ -47,6 +47,7 @@
 
 #include <boost/asio.hpp>
 #include <boost/asio/deadline_timer.hpp>
+#include <boost/thread/shared_mutex.hpp>
 #include <string>
 #include <boost/noncopyable.hpp>
 #include <boost/function.hpp>
@@ -97,7 +98,7 @@ public:
     void Schedule(TimerHandle h, boost::posix_time::time_duration wait, Scheduleable x);
     
     /// Schedule a task
-    void Schedule(ModuleIdent m, BoundScheduleable x);
+    void Schedule(ModuleIdent m, BoundScheduleable x, bool start_worker=true);
 
     /// Allocate a timer
     TimerHandle AllocateTimer(ModuleIdent module);
@@ -162,6 +163,9 @@ private:
 
     ///A map of jobs that are ready to run as soon as their phase comes up
     ReadyMap m_ready;
+
+    ///Lock for the scheduler.
+    boost::shared_mutex m_schmutex;
 };
 
     } // namespace broker

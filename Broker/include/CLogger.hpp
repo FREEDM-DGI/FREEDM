@@ -68,6 +68,8 @@ class CGlobalLogger : public boost::noncopyable
         void SetGlobalLevel(const unsigned int level);
         /// Reads the logging levels of all loggers from the config file.
         void SetInitialLoggerLevels(const std::string loggerCfgFile);
+        /// Lists all the avaible loggers and their current levels
+        void ListLoggers();
     private:
         /// What the output level is if not set specifically.
         unsigned int m_default;

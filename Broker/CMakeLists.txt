@@ -14,7 +14,7 @@ get_git_head_revision(GIT_REFSPEC GIT_SHA1)
 #   add the option to Broker/include/config.hpp.cmake as #cmakedefine OPTION
 #   activate / deactivate the option as described in the message below
 option(BUILD_TESTS "Enable the building and running of unit tests." OFF)
-option(SHOW_WARNINGS "warnings displayed during project compile" ON)
+option(SHOW_WARNINGS "warnings displayed during project compile" OFF)
 option(CUSTOMNETWORK "for network.xml support" OFF)
 option(DATAGRAM "for UDP Datagram service w/o sequencing" OFF)
 option(USE_DEVICE_PSCAD "Enable the PSCAD simulation interface" OFF)

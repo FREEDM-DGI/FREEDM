@@ -167,3 +167,12 @@ void CGlobalLogger::SetInitialLoggerLevels(const std::string loggerCfgFile)
         }
     }
 }
+
+void CGlobalLogger::ListLoggers()
+{
+    OutputMap::iterator it;
+    for (it = m_loggers.begin(); it != m_loggers.end(); it++)
+    {
+        std::cout<<(*it).first<<"="<<(*it).second<<std::endl;
+    }
+}

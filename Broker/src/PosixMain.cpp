@@ -68,6 +68,15 @@ static CLocalLogger Logger(__FILE__);
 /// Broker entry point
 int main(int argc, char* argv[])
 {
+    #ifdef USE_DEVICE_PSCAD
+    #ifdef USE_DEVICE_RTDS
+    std::cerr<<"Looks like you have both PSCAD and RTDS device drivers turned on.";
+    std::cerr<<" This is probably not what you want. Please run cmake . -DSETTING=Off";
+    std::cerr<<" where SETTING is either USE_DEVICE_PSCAD or USE_DEVICE_RTDS to turn one off."<<std::endl;
+    return 1;
+    #endif
+    #endif
+
     CGlobalLogger::instance().SetGlobalLevel(3);
     // Variable Declaration
     po::options_description genOpts("General Options"),
@@ -128,6 +137,7 @@ int main(int argc, char* argv[])
                 po::value<std::string>(&loggerCfgFile)->
         default_value("./config/logger.cfg"),
                 "name of the logger verbosity configuration file")
+        ("list-loggers","Print all the available loggers and exit")
         ("verbose,v", 
                 po::value<unsigned int>(&globalVerbosity)->
         implicit_value(5)->default_value(5),
@@ -218,6 +228,11 @@ int main(int argc, char* argv[])
         // Refine the logger verbosity settings.
         CGlobalLogger::instance().SetGlobalLevel(globalVerbosity);
         CGlobalLogger::instance().SetInitialLoggerLevels(loggerCfgFile);
+        if (vm.count("list-loggers"))
+        {
+            CGlobalLogger::instance().ListLoggers();
+            return 0; 
+        }
 
         std::stringstream ss2;
         std::string uuidstr2;
@@ -369,20 +384,23 @@ int main(int argc, char* argv[])
         // Add the local connection to the hostname list
         conManager.PutHostname(uuidstr, "localhost", port);
         // Block all signals for background thread.
+        /*
         sigset_t new_mask;
         sigfillset(&new_mask);
         sigset_t old_mask;
         pthread_sigmask(SIG_BLOCK, &new_mask, &old_mask);
-        Logger.Info << "Starting CBroker thread" << std::endl;
-        boost::thread thread_
-                (boost::bind(&broker::CBroker::Run, &broker));
+        */
+        //Logger.Info << "Starting CBroker thread" << std::endl;
+        //boost::thread thread_
+        //        (boost::bind(&broker::CBroker::Run, &broker));
         // Restore previous signals.
-        pthread_sigmask(SIG_SETMASK, &old_mask, 0);
+        //pthread_sigmask(SIG_SETMASK, &old_mask, 0);
         Logger.Debug << "Starting thread of Modules" << std::endl;
-        boost::thread thread2( boost::bind(&GMAgent::Run, &GM)
-                                , boost::bind(&lbAgent::LB, &LB)
-                              );
+        broker.Schedule("gm",boost::bind(&GMAgent::Run, &GM),false);
+        broker.Schedule("lb",boost::bind(&lbAgent::LB, &LB),false);
+        broker.Run();
         // Wait for signal indicating time to shut down.
+        /*
         sigset_t wait_mask;
         sigemptyset(&wait_mask);
         sigaddset(&wait_mask, SIGINT);
@@ -398,8 +416,8 @@ int main(int argc, char* argv[])
         broker.Stop();
         // Bring in threads.
         thread_.join();
-        thread2.join();
         std::cout << "Goodbye..." << std::endl;
+        */
     }
     catch (std::exception& e)
     {

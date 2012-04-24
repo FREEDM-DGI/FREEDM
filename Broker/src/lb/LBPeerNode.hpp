@@ -37,7 +37,7 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/thread/mutex.hpp>
 
-#include "uuid.hpp"
+#include "CUuid.hpp"
 #include "CBroker.hpp"
 #include "CConnection.hpp"
 #include "IPeerNode.hpp"
@@ -57,13 +57,9 @@ namespace freedm
 class LPeerNode : public IPeerNode
 {
     public:
-        LPeerNode(std::string uuid, ConnManagerPtr connmgr,
-                  boost::asio::io_service& ios,
-                  freedm::broker::CDispatcher& dispatch) :
-            IPeerNode(uuid,connmgr,ios,dispatch) {};
-    
-    enum EStatus { SUPPLY, NORM, DEMAND };
-      
+        LPeerNode(std::string uuid, ConnManagerPtr connmgr) :
+            IPeerNode(uuid,connmgr) {};
+        enum EStatus { SUPPLY, NORM, DEMAND };
 };
 }
 

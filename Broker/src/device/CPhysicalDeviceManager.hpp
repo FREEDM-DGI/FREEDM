@@ -113,7 +113,7 @@ public:
     template <class DeviceType>
     SettingValue GetNetValue(std::string key)
     {
-        int result = 0;
+        SettingValue result = 0;
         typename DeviceType::DevicePtr next_device;
         iterator it = m_devices.begin();
         iterator end = m_devices.end();
@@ -129,6 +129,7 @@ public:
 
         return result;
     }
+    
 private:
     /// Mapping From Identifier To Device Set
     PhysicalDeviceSet m_devices;

@@ -34,7 +34,7 @@
 #define CRELIABLECONNECTION_HPP
 
 #include "CMessage.hpp"
-#include "CDispatcher.hpp"
+#include "CBroker.hpp"
 
 #include <boost/asio.hpp>
 #include <boost/array.hpp>
@@ -48,11 +48,13 @@ namespace freedm {
     namespace broker {
 
 class CConnectionManager;
+class CDispatcher;
+class CBroker;
 
 /// Represents a single connection to from a client.
 class CReliableConnection
     : public boost::enable_shared_from_this<CReliableConnection>,
-      private boost::noncopyable
+      public boost::noncopyable
 {
 public:
     /// Typedef for the connection pointer
@@ -60,7 +62,7 @@ public:
 
     /// Construct a CConnection with the given io_service.
     explicit CReliableConnection(boost::asio::io_service& p_ioService,
-            CConnectionManager& p_manager, CDispatcher& p_dispatch,
+            CConnectionManager& p_manager, CBroker& p_broker,
             std::string uuid);
 
     /// Get the socket associated with the CConnection.
@@ -73,20 +75,28 @@ public:
     virtual void Stop() = 0;
 
     /// Get associated UUID
-    std::string GetUUID() { return m_uuid; };
+    std::string GetUUID();
 
     /// Get Connection Manager
-    CConnectionManager& GetConnectionManager() { return m_connManager; };
+    CConnectionManager& GetConnectionManager();
+
+    /// Get the broker
+    CBroker& GetBroker();
 
     /// Get the dispatcher
-    CDispatcher& GetDispatcher() { return m_dispatch; };
+    CDispatcher& GetDispatcher();
+    
+    /// Get the ioservice
+    boost::asio::io_service& GetIOService();
     
     /// Set the connection reliability for DCUSTOMNETWORK
-    void SetReliability(int r) { m_reliability = r; };
+    void SetReliability(int r);
     
     /// Get the connection reliability for DCUSTOMNETWORK
-    int GetReliability() { return m_reliability; };
+    int GetReliability();
 
+    /// The maximum packet size in bytes
+    static const unsigned int MAX_PACKET_SIZE = 60000;
 private:
     /// Socket for the CConnection.
     boost::asio::ip::udp::socket m_socket;
@@ -95,7 +105,7 @@ private:
     CConnectionManager& m_connManager;
 
     /// The dispatcher used to process the incoming request.
-    CDispatcher& m_dispatch;
+    CBroker& m_broker;
  
     /// The UUID of the remote endpoint for the connection
     std::string m_uuid;

@@ -99,20 +99,20 @@ namespace freedm
 /// @param m_phyManager: The physical device manager used in this class
 /// @limitations: None
 ///////////////////////////////////////////////////////////////////////////////
-lbAgent::lbAgent(std::string uuid_, boost::asio::io_service &ios,
-                 broker::CDispatcher &p_dispatch,
-                 broker::CConnectionManager &m_conManager,
+lbAgent::lbAgent(std::string uuid_,
+                 broker::CBroker &broker,
                  broker::device::CPhysicalDeviceManager &m_phyManager):
-    LPeerNode(uuid_, m_conManager, ios, p_dispatch),
+    LPeerNode(uuid_, broker.GetConnectionManager()),
     m_phyDevManager(m_phyManager),
-    m_GlobalTimer(ios),
-    m_StateTimer(ios)
+    m_broker(broker)
 {
     Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     PeerNodePtr self_(this);
     InsertInPeerSet(m_AllPeers, self_);
     m_Leader = GetUUID();
     m_Normal = 0;
+    m_GlobalTimer = broker.AllocateTimer("lb");
+    m_StateTimer = broker.AllocateTimer("lb");
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -152,7 +152,7 @@ lbAgent::PeerNodePtr lbAgent::add_peer(std::string uuid)
 {
     Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     PeerNodePtr tmp_;
-    tmp_.reset(new LPeerNode(uuid,GetConnectionManager(),GetIOService(),GetDispatcher()));
+    tmp_.reset(new LPeerNode(uuid,GetConnectionManager()));
     InsertInPeerSet(m_AllPeers,tmp_);
     InsertInPeerSet(m_NoNodes,tmp_);
     return tmp_;
@@ -330,10 +330,8 @@ void lbAgent::LoadManage()
     }
 
     //Start the timer; on timeout, this function is called again
-    //TODO: Change in Real time version
-    m_GlobalTimer.expires_from_now( boost::posix_time::seconds(LOAD_TIMEOUT) );
-    m_GlobalTimer.async_wait( boost::bind(&lbAgent::LoadManage, this,
-                                          boost::asio::placeholders::error));
+    m_broker.Schedule(m_GlobalTimer, boost::posix_time::seconds(LOAD_TIMEOUT), 
+        boost::bind(&lbAgent::LoadManage, this,boost::asio::placeholders::error));
 }//end LoadManage
 
 ////////////////////////////////////////////////////////////
@@ -379,43 +377,34 @@ void lbAgent::LoadManage( const boost::system::error_code& err )
 /////////////////////////////////////////////////////////
 void lbAgent::LoadTable()
 {
-    using broker::device::CPhysicalDeviceManager;
-    using broker::device::SettingValue;    
     Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    
     // device typedef for convenience
     typedef broker::device::CDeviceDRER DRER;
     typedef broker::device::CDeviceDESD DESD;
     typedef broker::device::CDeviceLOAD LOAD;
     typedef broker::device::CDeviceSST SST;
-    // Container and iterators for the result of GetDevicesOfType
-    CPhysicalDeviceManager::PhysicalDevice<DRER>::Container DRERContainer;
-    CPhysicalDeviceManager::PhysicalDevice<DESD>::Container DESDContainer;
-    CPhysicalDeviceManager::PhysicalDevice<LOAD>::Container LOADContainer;
-    CPhysicalDeviceManager::PhysicalDevice<SST>::Container SSTContainer;
-    CPhysicalDeviceManager::PhysicalDevice<DRER>::iterator rit, rend;
-    CPhysicalDeviceManager::PhysicalDevice<DESD>::iterator sit, send;
-    CPhysicalDeviceManager::PhysicalDevice<LOAD>::iterator lit, lend;
-    CPhysicalDeviceManager::PhysicalDevice<SST>::iterator pit, pend;
-    // populate the device containers
-    DRERContainer = m_phyDevManager.GetDevicesOfType<DRER>();
-    DESDContainer = m_phyDevManager.GetDevicesOfType<DESD>();
-    LOADContainer = m_phyDevManager.GetDevicesOfType<LOAD>();
-    SSTContainer = m_phyDevManager.GetDevicesOfType<SST>();
+
+    int numDRERs = m_phyDevManager.GetDevicesOfType<DRER>().size();
+    int numDESDs = m_phyDevManager.GetDevicesOfType<DESD>().size();
+    int numLOADs = m_phyDevManager.GetDevicesOfType<LOAD>().size();
+    int numSSTs = m_phyDevManager.GetDevicesOfType<SST>().size();
 
     m_Gen = m_phyDevManager.GetNetValue<DRER>("powerLevel");
     m_Storage = m_phyDevManager.GetNetValue<DESD>("powerLevel");
     m_Load = m_phyDevManager.GetNetValue<LOAD>("powerLevel");
-    m_CalcGateway = m_Load - m_Gen;
     m_Gateway = m_phyDevManager.GetNetValue<SST>("powerLevel");
+    m_CalcGateway = m_Load - m_Gen;
     
     Logger.Status <<" ----------- LOAD TABLE (Power Management) ------------"
                    << std::endl;
-    Logger.Status <<"| " << "Load Table @ " << microsec_clock::local_time()  <<std::endl;
-    Logger.Status <<"| " << "Net DRER (" << DRERContainer.size() << "): " << m_Gen
-                  << std::setw(14) << "Net DESD (" << DESDContainer.size() << "): "
+    Logger.Status <<"| " << "Load Table @ " << microsec_clock::local_time() 
+                  << std::endl;
+    Logger.Status <<"| " << "Net DRER (" << numDRERs << "): " << m_Gen
+                  << std::setw(14) << "Net DESD (" << numDESDs << "): "
                   << m_Storage << std::endl;
-    Logger.Status <<"| " << "Net Load (" << LOADContainer.size() << "): "<< m_Load
-                  << std::setw(16) << "Net Gateway (" << SSTContainer.size() 
+    Logger.Status <<"| " << "Net Load (" << numLOADs << "): "<< m_Load
+                  << std::setw(16) << "Net Gateway (" << numSSTs 
                   << "): " << m_Gateway << std::endl;
     Logger.Status <<"| Normal = " << m_Normal << std::setw(16) 
 		  << "Calc Gateway: " << m_CalcGateway << std::endl; 
@@ -427,7 +416,7 @@ void lbAgent::LoadTable()
                   << std::setw(7) <<"|"<< std::endl;
 
     //Compute the Load state based on the current gateway value and Normal
-    //TODO: API for future-could be the cost consesus algorithm from NCSU
+    //TODO: API for future-could be the cost consensus algorithm from NCSU
     if(m_Gateway < m_Normal - NORMAL_TOLERANCE)
     {
         m_Status = LPeerNode::SUPPLY;
@@ -491,7 +480,8 @@ void lbAgent::LoadTable()
                           << std::setw(6) <<"|"<<std::endl;
         }
     }
-    Logger.Status << "------------------------------------------------------" << std::endl;
+    Logger.Status << "------------------------------------------------------" 
+            << std::endl;
     return;
 }//end LoadTable
 
@@ -1037,9 +1027,8 @@ void lbAgent::PStar(broker::device::SettingValue DemandValue)
 void lbAgent::StartStateTimer( unsigned int delay )
 {
     Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
-    m_StateTimer.expires_from_now( boost::posix_time::seconds(delay) );
-    m_StateTimer.async_wait( boost::bind(&lbAgent::HandleStateTimer,
-                                         this, boost::asio::placeholders::error) );
+    m_broker.Schedule(m_StateTimer, boost::posix_time::seconds(delay),
+        boost::bind(&lbAgent::HandleStateTimer, this, boost::asio::placeholders::error));
 }
 
 ////////////////////////////////////////////////////////////

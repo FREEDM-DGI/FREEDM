@@ -63,7 +63,7 @@ using boost::property_tree::ptree;
 #include "CMessage.hpp"
 #include "LBPeerNode.hpp"
 #include "IAgent.hpp"
-#include "uuid.hpp"
+#include "CUuid.hpp"
 #include "CDispatcher.hpp"
 #include "CConnectionManager.hpp"
 #include "device/CPhysicalDeviceManager.hpp"
@@ -77,11 +77,11 @@ namespace freedm
 {
 
 const double NORMAL_TOLERANCE = 0.5;
-const unsigned int STATE_TIMEOUT = 20;
+const unsigned int STATE_TIMEOUT = 15;
 // Global constants
 enum
 {
-    LOAD_TIMEOUT = 15
+    LOAD_TIMEOUT = 5
 };
 
 
@@ -101,9 +101,7 @@ class lbAgent
         lbAgent();
         /// Constructor for using this object as a module
         lbAgent(std::string uuid_,
-                boost::asio::io_service &ios,
-                freedm::broker::CDispatcher &p_dispatch,
-                freedm::broker::CConnectionManager &m_conManager,
+                freedm::broker::CBroker &broker,
                 freedm::broker::device::CPhysicalDeviceManager &m_phyManager);
         /// Destructor for the module  
         ~lbAgent();
@@ -186,13 +184,14 @@ class lbAgent
         void Step_PStar();
         /// 'Power migration' by stepping up/down P* basing on the demand cost
         void PStar(broker::device::SettingValue DemandValue);
-
-
+        
         // IO and Timers 
         /// Timer until check of demand state change
-        deadline_timer     m_GlobalTimer;
+        freedm::broker::CBroker::TimerHandle     m_GlobalTimer;
         /// Timer until next periodic state collection
-        deadline_timer      m_StateTimer;
+        freedm::broker::CBroker::TimerHandle      m_StateTimer;
+        
+        freedm::broker::CBroker &m_broker;
 };
 
 }

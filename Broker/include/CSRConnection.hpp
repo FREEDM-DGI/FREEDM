@@ -42,6 +42,7 @@
 #include <boost/noncopyable.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/enable_shared_from_this.hpp>
+#include <boost/thread/shared_mutex.hpp>
 
 #include <iomanip>
 #include <deque>
@@ -105,6 +106,8 @@ class CSRConnection : public IProtocol
         static const unsigned int SEQUENCE_MODULO = 1024;
         /// Refire time in MS
         static const unsigned int REFIRE_TIME = 25;
+        /// Mutex for the current ack
+        boost::shared_mutex m_ackmutex;
 };
 
     }

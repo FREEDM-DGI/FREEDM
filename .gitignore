@@ -3,6 +3,7 @@
 /Broker/nbproject/
 /Broker/src/device/PhysicalDeviceTypes.hpp
 /Broker/src/device/PhysicalDeviceTypes.cpp
-/Broker/src/FPGA.xml
-/Broker/src/freedm.cfg
-/Broker/src/network.xml
+/Broker/config/FPGA.xml
+/Broker/config/freedm.cfg
+/Broker/config/logger.cfg
+/Broker/config/network.xml

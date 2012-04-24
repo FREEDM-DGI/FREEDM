@@ -66,8 +66,8 @@ namespace freedm {
 /// @param uuid The uuid this node connects to, or what listener.
 ///////////////////////////////////////////////////////////////////////////////
 CConnection::CConnection(boost::asio::io_service& p_ioService,
-  CConnectionManager& p_manager, CDispatcher& p_dispatch, std::string uuid)
-  : CReliableConnection(p_ioService,p_manager,p_dispatch,uuid)
+  CConnectionManager& p_manager, CBroker& p_broker, std::string uuid)
+  : CReliableConnection(p_ioService,p_manager,p_broker,uuid)
 {
     Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     m_protocols.insert(ProtocolMap::value_type(CSUConnection::Identifier(),
@@ -125,6 +125,19 @@ void CConnection::Stop()
 void CConnection::Send(CMessage p_mesg)
 {
     Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+
+    // If the UUID of the reciepient (The value stored by GetUUID of this
+    // object) is the same as the this node's uuid (As stored by the
+    // Connection manager) place the message directly into the recieved
+    // Queue.
+    if(GetUUID() == GetConnectionManager().GetUUID())
+    {
+        p_mesg.SetSourceUUID(GetConnectionManager().GetUUID());
+        p_mesg.SetSourceHostname(GetConnectionManager().GetHostname());
+        p_mesg.SetSendTimestampNow();
+        GetDispatcher().HandleRequest(GetBroker(),p_mesg);
+        return;
+    }
 
     ProtocolMap::iterator sit = m_protocols.find(p_mesg.GetProtocol());    
     

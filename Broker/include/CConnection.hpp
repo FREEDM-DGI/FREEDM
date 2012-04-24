@@ -38,7 +38,6 @@
 #include "CReliableConnection.hpp"
 
 #include "types/remotehost.hpp"
-#include "SlidingWindow.hpp"
 
 #include <boost/asio.hpp>
 #include <boost/array.hpp>
@@ -66,7 +65,7 @@ public:
 
     /// Construct a CConnection with the given io_service.
     explicit CConnection(boost::asio::io_service& p_ioService,
-            CConnectionManager& p_manager, CDispatcher& p_dispatch,
+            CConnectionManager& p_manager, CBroker& p_broker,
             std::string uuid);
 
     /// Start the first asynchronous operation for the CConnection.
@@ -83,6 +82,7 @@ public:
 
     /// Handler that calls the correct protocol for accept logic
     bool Recieve(const CMessage &msg);
+
 private:
     typedef boost::shared_ptr<IProtocol> ProtocolPtr;
     typedef std::map<std::string,ProtocolPtr> ProtocolMap;

@@ -131,17 +131,14 @@ void GMAgent::StartMonitor( const boost::system::error_code& err )
 /// @param p_dispatch: The dispatcher used by this module
 /// @param p_conManager: The connection manager to use in this class.
 ///////////////////////////////////////////////////////////////////////////////
-GMAgent::GMAgent(std::string p_uuid, boost::asio::io_service &p_ios,
-    freedm::broker::CDispatcher &p_dispatch,
-    freedm::broker::CConnectionManager &p_conManager)
-    : GMPeerNode(p_uuid,p_conManager,p_ios,p_dispatch),
-    m_timer(p_ios),
-    m_transient(p_ios),
+GMAgent::GMAgent(std::string p_uuid, freedm::broker::CBroker &broker)
+    : GMPeerNode(p_uuid,broker.GetConnectionManager()),
     m_electiontimer(),
     m_ingrouptimer(),
     CHECK_TIMEOUT(boost::posix_time::seconds(10)),
     TIMEOUT_TIMEOUT(boost::posix_time::seconds(10)),
-    GLOBAL_TIMEOUT(boost::posix_time::seconds(5))
+    GLOBAL_TIMEOUT(boost::posix_time::seconds(5)),
+    m_broker(broker)
 {
     Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     AddPeer(GetUUID());
@@ -151,6 +148,7 @@ GMAgent::GMAgent(std::string p_uuid, boost::asio::io_service &p_ios,
     m_groupsjoined = 0;
     m_membership = 0;
     m_membershipchecks = 0;
+    m_timer = broker.AllocateTimer("gm");
     #ifdef RANDOM_PREMERGE
         srand(time(0)); 
     #endif
@@ -416,8 +414,8 @@ void GMAgent::Recovery()
     // Go to work
     Logger.Info << "TIMER: Setting CheckTimer (Check): " << __LINE__ << std::endl;
     m_timerMutex.lock();
-    m_timer.expires_from_now( CHECK_TIMEOUT );
-    m_timer.async_wait( boost::bind(&GMAgent::Check, this, boost::asio::placeholders::error));
+    m_broker.Schedule(m_timer, CHECK_TIMEOUT, 
+        boost::bind(&GMAgent::Check, this, boost::asio::placeholders::error));
     m_timerMutex.unlock();
 }
 
@@ -447,8 +445,8 @@ void GMAgent::Recovery( const boost::system::error_code& err )
             Logger.Info << "TIMER: Setting TimeoutTimer (Timeout):" << __LINE__ << std::endl;
             // We are not the Coordinator, we must run Timeout()
             m_timerMutex.lock();
-            m_timer.expires_from_now( TIMEOUT_TIMEOUT );
-            m_timer.async_wait(boost::bind(&GMAgent::Timeout, this, boost::asio::placeholders::error));
+            m_broker.Schedule(m_timer, TIMEOUT_TIMEOUT,
+                boost::bind(&GMAgent::Timeout, this, boost::asio::placeholders::error));
             m_timerMutex.unlock();
         }
     }
@@ -493,9 +491,8 @@ void GMAgent::Check( const boost::system::error_code& err )
             // Wait for responses
             Logger.Info << "TIMER: Setting GlobalTimer (Premerge): " << __LINE__ << std::endl;
             m_timerMutex.lock();
-            m_timer.expires_from_now( GLOBAL_TIMEOUT );
-            m_timer.async_wait(boost::bind(&GMAgent::Premerge, this,
-                boost::asio::placeholders::error));
+            m_broker.Schedule(m_timer, GLOBAL_TIMEOUT,
+                boost::bind(&GMAgent::Premerge, this, boost::asio::placeholders::error));
             m_timerMutex.unlock();
         } // End if
     }
@@ -584,16 +581,16 @@ void GMAgent::Premerge( const boost::system::error_code &err )
             /* Set deadline timer to call Merge() */
             Logger.Notice << "TIMER: Waiting for Merge(): " << wait_val_ << " seconds." << std::endl;
             m_timerMutex.lock();
-            m_timer.expires_from_now( proportional_Timeout );
-            m_timer.async_wait( boost::bind(&GMAgent::Merge, this, boost::asio::placeholders::error ));
+            m_broker.Schedule(m_timer, proportional_Timeout,
+                boost::bind(&GMAgent::Merge, this, boost::asio::placeholders::error));
             m_timerMutex.unlock();
         }
         else
         {    // We didn't find any other Coordinators, go back to work
             Logger.Info << "TIMER: Setting CheckTimer (Check): " << __LINE__ << std::endl;
             m_timerMutex.lock();
-            m_timer.expires_from_now( CHECK_TIMEOUT );
-            m_timer.async_wait( boost::bind(&GMAgent::Check, this, boost::asio::placeholders::error));
+            m_broker.Schedule(m_timer, CHECK_TIMEOUT,
+                boost::bind(&GMAgent::Check, this, boost::asio::placeholders::error));
             m_timerMutex.unlock();
         }
     }
@@ -709,9 +706,8 @@ void GMAgent::InviteGroupNodes( const boost::system::error_code& err, PeerSet p_
         {     // We only call Reorganize if we are the new leader
             Logger.Info << "TIMER: Setting GlobalTimer (Reorganize) : " << __LINE__ << std::endl;
             m_timerMutex.lock();
-            m_timer.expires_from_now( GLOBAL_TIMEOUT );
-            m_timer.async_wait(boost::bind(&GMAgent::Reorganize, this, 
-                boost::asio::placeholders::error));
+            m_broker.Schedule(m_timer, GLOBAL_TIMEOUT,
+                boost::bind(&GMAgent::Reorganize, this, boost::asio::placeholders::error));
             m_timerMutex.unlock();
         }
     }
@@ -764,8 +760,8 @@ void GMAgent::Reorganize( const boost::system::error_code& err )
         // Back to work
         Logger.Info << "TIMER: Setting CheckTimer (Check): " << __LINE__ << std::endl;
         m_timerMutex.lock();
-        m_timer.expires_from_now( CHECK_TIMEOUT );
-        m_timer.async_wait( boost::bind(&GMAgent::Check, this, boost::asio::placeholders::error));
+        m_broker.Schedule(m_timer, CHECK_TIMEOUT,
+            boost::bind(&GMAgent::Check, this, boost::asio::placeholders::error));
         m_timerMutex.unlock();
     }
     else
@@ -814,9 +810,8 @@ void GMAgent::Timeout( const boost::system::error_code& err )
             }
             Logger.Info << "TIMER: Setting TimeoutTimer (Recovery):" << __LINE__ << std::endl;
             m_timerMutex.lock();
-            m_timer.expires_from_now( TIMEOUT_TIMEOUT );
-            m_timer.async_wait(boost::bind(&GMAgent::Recovery, this,
-                boost::asio::placeholders::error));
+            m_broker.Schedule(m_timer, TIMEOUT_TIMEOUT,
+                boost::bind(&GMAgent::Recovery, this, boost::asio::placeholders::error));
             m_timerMutex.unlock();
         }
     }
@@ -879,9 +874,8 @@ void GMAgent::HandleRead(broker::CMessage msg)
                 m_timerMutex.lock();
                 // We used to set a timeout timer here but cancelling the
                 // timer should accomplish the same thing.
-                m_timer.expires_from_now( TIMEOUT_TIMEOUT );
-                m_timer.async_wait(boost::bind(&GMAgent::Timeout, this,
-                    boost::asio::placeholders::error));
+                m_broker.Schedule(m_timer, TIMEOUT_TIMEOUT,
+                    boost::bind(&GMAgent::Timeout, this, boost::asio::placeholders::error));
                 m_timerMutex.unlock();
             }
             m_UpNodes.clear();
@@ -1009,9 +1003,8 @@ void GMAgent::HandleRead(broker::CMessage msg)
             Logger.Notice << "+ State Change REORGANIZATION : "<<__LINE__<<std::endl;
             Logger.Info << "TIMER: Setting TimeoutTimer (Recovery) : " << __LINE__ << std::endl;
             m_timerMutex.lock();
-            m_timer.expires_from_now( TIMEOUT_TIMEOUT );
-            m_timer.async_wait(boost::bind(&GMAgent::Recovery, 
-                this, boost::asio::placeholders::error));        
+            m_broker.Schedule(m_timer, TIMEOUT_TIMEOUT,
+                boost::bind(&GMAgent::Recovery, this, boost::asio::placeholders::error));
             m_timerMutex.unlock();
         }
         else
@@ -1041,9 +1034,8 @@ void GMAgent::HandleRead(broker::CMessage msg)
                     Logger.Info << "TIMER: Canceling GlobalTimer : " << __LINE__ << std::endl;
                     m_timerMutex.lock();
                     //Before, we just cleared this timer. Now I'm going to set it to start another check cycle
-                    m_timer.expires_from_now( TIMEOUT_TIMEOUT );
-                    m_timer.async_wait(boost::bind(&GMAgent::Check, this,
-                                                                        boost::asio::placeholders::error));
+                    m_broker.Schedule(m_timer, TIMEOUT_TIMEOUT,
+                        boost::bind(&GMAgent::Check, this, boost::asio::placeholders::error));
                     m_timerMutex.unlock();
                 }
             }
@@ -1066,9 +1058,8 @@ void GMAgent::HandleRead(broker::CMessage msg)
             {
                 m_timerMutex.lock();
                 Logger.Info << "TIMER: Setting TimeoutTimer (Timeout): " << __LINE__ << std::endl;
-                m_timer.expires_from_now( TIMEOUT_TIMEOUT );
-                m_timer.async_wait(boost::bind(&GMAgent::Timeout, this,
-                                                                        boost::asio::placeholders::error));
+                m_broker.Schedule(m_timer, TIMEOUT_TIMEOUT,
+                    boost::bind(&GMAgent::Timeout, this, boost::asio::placeholders::error));
                 m_timerMutex.unlock();
             }
             else if(pt.get<std::string>("gm.payload") == "no")
@@ -1097,7 +1088,7 @@ GMAgent::PeerNodePtr GMAgent::AddPeer(std::string uuid)
 {
     Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     PeerNodePtr tmp_;
-    tmp_.reset(new GMPeerNode(uuid,GetConnectionManager(),GetIOService(),GetDispatcher()));
+    tmp_.reset(new GMPeerNode(uuid,GetConnectionManager()));
     InsertInPeerSet(m_AllPeers,tmp_);
     return tmp_;
 }
@@ -1155,8 +1146,8 @@ int GMAgent::Run()
     Recovery();
     //m_localservice.post(boost::bind(&GMAgent::Recovery,this));
     //m_localservice.run();
-    m_transient.expires_from_now( boost::posix_time::seconds(60) );
-    m_transient.async_wait( boost::bind(&GMAgent::StartMonitor, this, boost::asio::placeholders::error));
+    //m_transient.expires_from_now( boost::posix_time::seconds(60) );
+    //m_transient.async_wait( boost::bind(&GMAgent::StartMonitor, this, boost::asio::placeholders::error));
     return 0;
 }
 

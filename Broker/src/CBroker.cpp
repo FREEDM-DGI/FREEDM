@@ -76,7 +76,8 @@ CBroker::CBroker(const std::string& p_address, const std::string& p_port,
     : m_ioService(m_ios),
       m_connManager(m_conMan),
       m_dispatch(p_dispatch),
-      m_newConnection(new CListener(m_ioService, m_connManager, m_dispatch, m_conMan.GetUUID()))
+      m_newConnection(new CListener(m_ioService, m_connManager, *this, m_conMan.GetUUID())),
+      m_phasetimer(m_ios)
 {
     Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     // Open the acceptor with the option to reuse the address (i.e. SO_REUSEADDR).
@@ -88,7 +89,18 @@ CBroker::CBroker(const std::string& p_address, const std::string& p_port,
     m_newConnection->GetSocket().open(endpoint.protocol());
     m_newConnection->GetSocket().bind(endpoint);;
     m_connManager.Start(m_newConnection);
+    m_busy = false;
 }
+
+CBroker::~CBroker()
+{
+    TimersMap::iterator it;
+    for(it=m_timers.begin(); it!=m_timers.end(); it++)
+    {
+        delete (*it).second;
+    }
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 /// @fn CBroker::Run()
 /// @description Calls the ioservice run (initializing the ioservice thread)
@@ -153,6 +165,205 @@ void CBroker::HandleStop()
     m_connManager.StopAll();
     m_ioService.stop(); 
 }
+
+void CBroker::RegisterModule(CBroker::ModuleIdent m)
+{
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    m_schmutex.lock();
+    boost::system::error_code err;
+    bool exists;
+    for(unsigned int i=0; i < m_modules.size(); i++)
+    {
+        if(m_modules[i] == m)
+        {
+            exists = true;
+            break;
+        } 
+    }
+    if(!exists)
+    {
+        m_modules.push_back(m);
+        if(m_modules.size() == 1)
+        {
+            m_schmutex.unlock();
+            ChangePhase(err);
+            m_schmutex.lock();
+        }
+    }
+    m_schmutex.unlock();
+}
+
+///////////////////////////////////////////////////////////////////////////////
+/// @fn CBroker::AllocateTimer
+/// @description Returns a handle to a timer to use for scheduling tasks.
+///     timer recycling helps prevent forest fires (and accidental branching
+/// @pre None
+/// @post A handle to a timer is returned.
+///////////////////////////////////////////////////////////////////////////////
+CBroker::TimerHandle CBroker::AllocateTimer(CBroker::ModuleIdent module)
+{
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    m_schmutex.lock();
+    CBroker::TimerHandle myhandle;
+    boost::asio::deadline_timer* t = new boost::asio::deadline_timer(m_ioService);
+    m_schmutex.unlock();
+    RegisterModule(module);
+    m_schmutex.lock();
+    myhandle = m_handlercounter;
+    m_handlercounter++;
+    m_allocs.insert(CBroker::TimerAlloc::value_type(myhandle,module));
+    m_timers.insert(CBroker::TimersMap::value_type(myhandle,t));
+    m_schmutex.unlock();
+    return myhandle;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+/// @fn CBroker::Schedule
+/// @description Given a binding to a function that should be run into the
+///   future, prepares it to be run... in the future.
+/// @pre None
+/// @post A function is scheduled to be called in the future.
+///////////////////////////////////////////////////////////////////////////////
+void CBroker::Schedule(CBroker::TimerHandle h,
+    boost::posix_time::time_duration wait, CBroker::Scheduleable x)
+{
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    m_schmutex.lock();
+    CBroker::Scheduleable s;
+    m_timers[h]->expires_from_now(wait);
+    s = boost::bind(&CBroker::ScheduledTask,this,x,h,boost::asio::placeholders::error);
+    Logger.Debug<<"Scheduled task for timer "<<h<<std::endl;
+    m_timers[h]->async_wait(s);
+    m_schmutex.unlock();
+}
+
+void CBroker::Schedule(ModuleIdent m, BoundScheduleable x, bool start_worker)
+{
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    RegisterModule(m);
+    m_schmutex.lock();
+    m_ready[m].push_back(x);
+    if(!m_busy && start_worker)
+    {
+        m_schmutex.unlock();
+        Worker();
+        m_schmutex.lock();
+    }
+    Logger.Debug<<"Module "<<m<<" now has queue size: "<<m_ready[m].size()<<std::endl;
+    Logger.Debug<<"Scheduled task (NODELAY) for "<<m<<std::endl;
+    m_schmutex.unlock();
+}
+
+#pragma GCC diagnostic ignored "-Wunused-parameter"
+///////////////////////////////////////////////////////////////////////////////
+/// @fn CBroker::ChangePhase
+/// @description This task will mark to the schedule that it is time to change
+///     phases. This will change which functions will be put into the queue
+/// @pre None
+/// @post The phase has been changed.
+///////////////////////////////////////////////////////////////////////////////
+void CBroker::ChangePhase(const boost::system::error_code &err)
+{
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    m_schmutex.lock();
+    m_phase++;
+    if(m_phase >= m_modules.size())
+    {
+        m_phase = 0;
+    }
+    if(m_modules.size() > 0)
+    {
+        Logger.Notice<<"="<<m_modules[m_phase];
+    }
+    Logger.Notice<<std::endl;
+    //If the worker isn't going, start him again when you change phases.
+    if(!m_busy)
+    {
+        m_schmutex.unlock();
+        Worker();
+        m_schmutex.lock();
+    }
+    m_phasetimer.expires_from_now(boost::posix_time::milliseconds(PHASE_DURATION));
+    m_phasetimer.async_wait(boost::bind(&CBroker::ChangePhase,this,
+        boost::asio::placeholders::error));
+    m_schmutex.unlock();
+}
+#pragma GCC diagnostic warning "-Wunused-parameter"
+
+///////////////////////////////////////////////////////////////////////////////
+/// @fn CBroker::ScheduledTask
+/// @description When a timer for a task expires, it enters this phase. The
+///     timer is removed from the timers list. Then Execute is called to keep
+///     the work queue going.
+/// @pre A task is scheduled for execution
+/// @post The task is entered into th ready queue. 
+///////////////////////////////////////////////////////////////////////////////
+void CBroker::ScheduledTask(CBroker::Scheduleable x, CBroker::TimerHandle handle,
+    const boost::system::error_code &err)
+{
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    m_schmutex.lock();
+    ModuleIdent module = m_allocs[handle];
+    Logger.Debug<<"Handle finished: "<<handle<<" For module "<<module<<std::endl;
+    // First, prepare another bind, which uses the given error
+    CBroker::BoundScheduleable y = boost::bind(x,err);
+    // Put it into the ready queue
+    m_ready[module].push_back(y);
+    Logger.Debug<<"Module "<<module<<" now has queue size: "<<m_ready[module].size()<<std::endl;
+    if(!m_busy)
+    {
+        m_schmutex.unlock();
+        Worker();
+    }
+    else
+    {
+        m_schmutex.unlock();
+    }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+/// @fn CBroker::Worker
+/// @description Reads the current phase and if the phase is correct, queues
+///     all the tasks for that phase to the ioservice. If m_busy is set, the 
+///     worker is still working on clearing the queue. If it's set to false,
+///     the worker needs to be started when the scheduled task is called
+/// @pre None
+/// @post A task is scheduled to run.
+///////////////////////////////////////////////////////////////////////////////
+void CBroker::Worker()
+{
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    m_schmutex.lock();
+    if(m_phase >= m_modules.size())
+    {
+        m_busy = false;
+        m_schmutex.unlock();
+        return;
+    }
+    std::string active = m_modules[m_phase];
+    if(m_ready[active].size() > 0)
+    {
+        Logger.Debug<<"Performing Job"<<std::endl;
+        // Mark that the worker has something to do
+        m_busy = true;
+        // Extract the first item from the work queue:
+        CBroker::BoundScheduleable x = m_ready[active].front();
+        m_ready[active].pop_front();
+        // Execute the task.
+        m_schmutex.unlock();
+        x();
+        m_schmutex.lock();
+        // Schedule the worker again:
+        m_ioService.post(boost::bind(&CBroker::Worker, this));
+    }
+    else
+    {
+        m_busy = false;
+        Logger.Debug<<"Worker Idle"<<std::endl;
+    }
+    m_schmutex.unlock();
+}
+
 
     } // namespace broker
 } // namespace freedm

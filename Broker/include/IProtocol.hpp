@@ -35,8 +35,8 @@
 #define IPROTOCOL_HPP
 
 #include "CMessage.hpp"
-#include "RequestParser.hpp"
 #include "CConnection.hpp"
+#include "CReliableConnection.hpp"
 
 #include <boost/asio.hpp>
 #include <boost/array.hpp>
@@ -53,7 +53,7 @@ namespace freedm {
 
 /// A connection protocol
 class IProtocol
-    : private boost::noncopyable
+    : public boost::noncopyable
 {
     public:
         /// Initializes the protocol with the underlying connection
@@ -83,7 +83,7 @@ class IProtocol
         virtual void Write(CMessage msg);
     private:
         /// Write buffer
-        boost::array<char, 8192> m_buffer;
+        boost::array<char, CReliableConnection::MAX_PACKET_SIZE> m_buffer;
         /// The underlying and related connection object.
         CConnection * m_conn;
 };

@@ -3,6 +3,10 @@ cmake_minimum_required(VERSION 2.6)
 project(Broker)
 
 set(ALT_BUILD_VERSION "Unversioned")
+# Build Versioning
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/")
+include(GetGitRevisionDescription)
+get_git_head_revision(GIT_REFSPEC GIT_SHA1)
 
 # configurable project options
 # TUTORIAL on how to add a new option:
@@ -51,6 +55,19 @@ if(Boost_FOUND)
 
     # goto src/CMakeLists.txt
     add_subdirectory( src )
+
+    add_executable(PosixBroker src/PosixMain.cpp)
+
+    # link the executable to its dependencies
+    target_link_libraries(
+        PosixBroker
+        broker
+        ${Boost_THREAD_LIBRARY}
+        ${Boost_SYSTEM_LIBRARY}
+        ${Boost_SERIALIZATION_LIBRARY}
+        ${Boost_PROGRAM_OPTIONS_LIBRARY}
+        ${Boost_DATE_TIME_LIBRARY}
+    )
 
     if(BUILD_TESTS)
         enable_testing()

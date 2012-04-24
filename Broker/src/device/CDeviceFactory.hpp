@@ -36,8 +36,11 @@
 #include "CDeviceStructurePSCAD.hpp"
 #include "CDeviceStructureRTDS.hpp"
 #include "CLineClient.hpp"
+#include "CLogger.hpp"
 #include "CPhysicalDeviceManager.hpp"
 #include "IPhysicalDevice.hpp"
+
+static CLocalLogger CDeviceFactoryHPPLogger(__FILE__);
 
 namespace freedm {
 namespace broker {
@@ -105,7 +108,7 @@ private:
 
     /// Creates the internal structure of the device.
     IDeviceStructure::DevicePtr CreateStructure() const;
-    
+
     /// Client to the PSCAD simulation server.
     CLineClient::TPointer m_lineClient;
 
@@ -150,6 +153,7 @@ private:
 template <class DeviceType>
 void CDeviceFactory::CreateDevice(const Identifier& deviceID)
 {
+    CDeviceFactoryHPPLogger.Debug << __PRETTY_FUNCTION__ << std::endl;
     if (!m_initialized)
     {
         std::stringstream ss;

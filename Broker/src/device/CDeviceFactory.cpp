@@ -23,7 +23,6 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 #include "CDeviceFactory.hpp"
-#include "CLogger.hpp"
 #include "config.hpp"
 
 static CLocalLogger Logger(__FILE__);
@@ -47,6 +46,7 @@ namespace device {
 ////////////////////////////////////////////////////////////////////////////////
 CDeviceFactory& CDeviceFactory::instance()
 {
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     static CDeviceFactory instance;
     return instance;
 }
@@ -79,6 +79,8 @@ void CDeviceFactory::init(CPhysicalDeviceManager& manager,
         boost::asio::io_service & ios, const std::string host,
         const std::string port, const std::string xml)
 {
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Info << "Initialized the device factory" << std::endl;
     m_manager = &manager;
 #if defined USE_DEVICE_PSCAD
     m_lineClient = CLineClient::Create(ios);
@@ -116,6 +118,7 @@ void CDeviceFactory::init(CPhysicalDeviceManager& manager,
 void CDeviceFactory::RegisterDeviceClass(const std::string key,
         FactoryFunction value)
 {
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     if (m_registry.count(key) != 0)
     {
         std::stringstream ss;
@@ -124,6 +127,7 @@ void CDeviceFactory::RegisterDeviceClass(const std::string key,
         throw std::runtime_error(ss.str());
     }
     m_registry.insert(std::make_pair(key, value));
+    Logger.Info << "Registered device class " << key << std::endl;
 }
 
 
@@ -152,6 +156,7 @@ void CDeviceFactory::RegisterDeviceClass(const std::string key,
 void CDeviceFactory::CreateDevice(const Identifier& deviceID,
         const std::string deviceType)
 {
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     if (!m_initialized)
     {
         std::stringstream ss;
@@ -193,13 +198,14 @@ void CDeviceFactory::CreateDevice(const Identifier& deviceID,
 ////////////////////////////////////////////////////////////////////////////////
 void CDeviceFactory::CreateDevices(const std::vector<std::string>& deviceList)
 {
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     if (!m_initialized)
     {
         std::stringstream ss;
         ss << __PRETTY_FUNCTION__ << " called before factory init" << std::endl;
         throw std::runtime_error(ss.str());
     }
-    foreach (std::string device, deviceList)
+    foreach(std::string device, deviceList)
     {
         size_t colon = device.find(':');
 
@@ -250,7 +256,10 @@ void CDeviceFactory::CreateDevices(const std::vector<std::string>& deviceList)
 CDeviceFactory::CDeviceFactory()
 : m_lineClient(CLineClient::TPointer()),
 m_rtdsClient(CClientRTDS::RTDSPointer()), m_manager(0), m_registry(),
-m_initialized(false) { }
+m_initialized(false)
+{
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 /// @function CDeviceFactory::CreateStructure
@@ -270,6 +279,7 @@ m_initialized(false) { }
 ////////////////////////////////////////////////////////////////////////////////
 IDeviceStructure::DevicePtr CDeviceFactory::CreateStructure() const
 {
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     if (!m_initialized)
     {
         std::stringstream ss;
@@ -277,12 +287,15 @@ IDeviceStructure::DevicePtr CDeviceFactory::CreateStructure() const
         throw std::runtime_error(ss.str());
     }
 #if defined USE_DEVICE_PSCAD
+    Logger.Debug << "Creating a PSCAD device structure" << std::endl;
     return IDeviceStructure::DevicePtr(
             new CDeviceStructurePSCAD(m_lineClient));
 #elif defined USE_DEVICE_RTDS
+    Logger.Debug << "Creating an RTDS device structure" << std::endl;
     return IDeviceStructure::DevicePtr(
             new CDeviceStructureRTDS(m_rtdsClient));
 #else
+    Logger.Debug << "Creating a generic device structure" << std::endl;
     return IDeviceStructure::DevicePtr(new CDeviceStructureGeneric());
 #endif
 }

@@ -22,7 +22,7 @@
 /// Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
 ////////////////////////////////////////////////////////////////////////////////
 
-#if !defined(_WIN32)
+#ifndef _WIN32
 
 #include <iostream>
 #include <set>
@@ -60,6 +60,10 @@ namespace po = boost::program_options;
 #include "sc/CStateCollection.hpp"
 #include "Utility.hpp"
 #include "version.h"
+
+#ifndef __GNUG__
+#define __PRETTY_FUNCTION__ __FILE__ ":" __LINE__
+#endif
 
 using namespace freedm;
 
@@ -436,4 +440,4 @@ int main(int argc, char* argv[])
     return 0;
 }
 
-#endif // !defined(_WIN32)
+#endif // !(_WIN32)

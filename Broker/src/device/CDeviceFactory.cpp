@@ -302,6 +302,49 @@ IDeviceStructure::DevicePtr CDeviceFactory::CreateStructure() const
 #endif
 }
 
+#ifdef USE_DEVICE_RTDS
+
+///
+/// Temporary hack to get FIDs working.
+///
+template <>
+void CDeviceFactory::CreateDevice<CDeviceFID>(const Identifier& deviceID )
+{
+    if (!m_initialized)
+    {
+        throw "CDeviceFactory::CreateDevice (private) called before init";
+    }
+    IDeviceStructure::DevicePtr ds;
+    IDevice::DevicePtr dev;
+
+    // create and register the device structure
+    using boost::property_tree::ptree;
+    ptree xmlTree;
+    std::string host, port;
+    read_xml(m_xml, xmlTree);
+    m_fidClients.push(CClientRTDS::Create(*m_ios, m_xml, deviceID));
+    try
+    {
+        host = xmlTree.get<std::string > ( deviceID + ".host" );
+        port = xmlTree.get<std::string > ( deviceID + ".port" );
+    } catch (...)
+    {
+        throw std::runtime_error("Couldn't read hostname or port for FID "
+                + deviceID);
+    }
+    m_fidClients.top()->Connect(host, port);
+    m_fidClients.top()->Run();
+    ds = IDeviceStructure::DevicePtr(
+            new CDeviceStructureRTDS(m_fidClients.top()));
+    ds->Register(deviceID);
+    // create the new device from the structure
+    dev = IDevice::DevicePtr(new CDeviceFID(*m_manager, deviceID, ds));
+
+    // add the device to the manager
+    m_manager->AddDevice(dev);
+}
+#endif
+
 } // namespace device
 } // namespace freedm
 } // namespace broker

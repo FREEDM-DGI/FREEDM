@@ -76,7 +76,7 @@ int main()
         while (( entry = readdir(dir) ) != 0)
         {
             // Only take instantiable devices, which start with "CDevice"
-            if (strncmp(entry->d_name, "CDevice", 7) == 0)
+            if (std::strncmp(entry->d_name, "CDevice", 7) == 0)
             {
                 std::string type(entry->d_name);
                 // Only push a type once, in case there's both a .hpp and a .cpp

@@ -25,34 +25,12 @@
 #include "CDeviceFactory.hpp"
 #include "config.hpp"
 
-namespace freedm
-{
-namespace broker
-{
-namespace device
-{
+namespace freedm {
+namespace broker {
+namespace device {
 
 ////////////////////////////////////////////////////////////////////////////////
-/// CDeviceFactory::CDeviceFactory
-///
-/// @description Constructs the factory. Should only ever be called from
-///  CDeviceFactory::instance.
-///
-/// @pre None.
-/// @post Nothing happens. This function only provides access to the factory.
-///
-/// @return the factory instance.
-///
-/// @limitations Be sure CDeviceFactory::init has been called on the factory
-///  before doing anything with it.
-////////////////////////////////////////////////////////////////////////////////
-CDeviceFactory::CDeviceFactory()
-: m_lineClient(CLineClient::TPointer()),
-m_rtdsClient(CClientRTDS::RTDSPointer()), m_manager(0), m_registry(),
-m_initialized(false) { }
-
-////////////////////////////////////////////////////////////////////////////////
-/// CDeviceFactory::instance
+/// @function CDeviceFactory::instance
 ///
 /// @description Retrieves the singleton factory instance.
 ///
@@ -66,15 +44,13 @@ m_initialized(false) { }
 ////////////////////////////////////////////////////////////////////////////////
 CDeviceFactory& CDeviceFactory::instance()
 {
-    // Justification for breaking coding standards: instance is initialized the
-    // first time this function is called, with no need for heap allocation.
     static CDeviceFactory instance;
     return instance;
 }
 
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 ////////////////////////////////////////////////////////////////////////////////
-/// CDeviceFactory::init
+/// @function CDeviceFactory::init
 ///
 /// @description Initializes the device factory with a device manager and
 ///  networking information. This function should be called once, before the
@@ -114,15 +90,14 @@ void CDeviceFactory::init(CPhysicalDeviceManager& manager,
 #pragma GCC diagnostic warning "-Wunused-parameter"
 
 ////////////////////////////////////////////////////////////////////////////////
-/// CDeviceFactory::RegisterDeviceClass
+/// @function CDeviceFactory::RegisterDeviceClass
 ///
 /// @description Registers a device creation function with the factory under the
 ///  specified string key. The key for the function should be the name of the
 ///  class, less the "CDevice" prefix. To simplify usage of this function, use
 ///  the REGISTER_DEVICE_CLASS macro as explained in the class comment block.
 ///
-/// @ErrorHandling Insufficiently throws a string if the specified key has
-///  already been registered.
+/// @ErrorHandling Throws an exception if the key has already been registered.
 ///
 /// @pre None, presuming the suggested naming convention is followed.
 /// @post The device class is now registered in the factory, allowing the
@@ -140,20 +115,23 @@ void CDeviceFactory::RegisterDeviceClass(const std::string key,
 {
     if (m_registry.count(key) != 0)
     {
-        throw "Attempted to register device factory function for class which "
-        "has already been registered.";
+        std::stringstream ss;
+        ss << "Attempted to register device factory function for class "
+                << key << ", which has already been registered.";
+        throw std::runtime_error(ss.str());
     }
     m_registry.insert(std::make_pair(key, value));
 }
 
+
 ////////////////////////////////////////////////////////////////////////////////
-/// CDeviceFactory::CreateDevice
+/// @function CDeviceFactory::CreateDevice
 ///
 /// @description Translates a string into a class type, then creates a new
 ///  device of this type with the specified identifier.
 ///
-/// @ErrorHandling Insufficiently throws a string if the device type is not
-///  registered with the factory, or if the factory is uninitialized.
+/// @ErrorHandling Throws an exception if the device type is not registered
+///  with the factory, or if the factory is uninitialized.
 ///
 /// @pre The factory has been configured with CDeviceFactory::init.
 /// @post Specified device is created and registered with the factory's device
@@ -173,7 +151,9 @@ void CDeviceFactory::CreateDevice(const Identifier& deviceID,
 {
     if (!m_initialized)
     {
-        throw "CDeviceFactory::CreateDevice (public) called before init";
+        std::stringstream ss;
+        ss << __PRETTY_FUNCTION__ << " called before factory init" << std::endl;
+        throw std::runtime_error(ss.str());
     }
     // Ensure the specified device type exists
     if (m_registry.find(deviceType) == m_registry.end())
@@ -181,21 +161,39 @@ void CDeviceFactory::CreateDevice(const Identifier& deviceID,
         std::stringstream ss;
         ss << "Attempted to create device of unregistered type "
                 << deviceType.c_str();
-        throw ss.str();
+        throw std::runtime_error(ss.str());
     }
 
     ( this->*m_registry[deviceType] )( deviceID );
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-/// CDeviceFactory::CreateStructure
+/// @function CDeviceFactory::CDeviceFactory
+///
+/// @description Constructs the factory. Should only ever be called from
+///  CDeviceFactory::instance.
+///
+/// @pre None.
+/// @post Nothing happens. This function only provides access to the factory.
+///
+/// @return the factory instance.
+///
+/// @limitations Be sure CDeviceFactory::init has been called on the factory
+///  before doing anything with it.
+////////////////////////////////////////////////////////////////////////////////
+CDeviceFactory::CDeviceFactory()
+: m_lineClient(CLineClient::TPointer()),
+m_rtdsClient(CClientRTDS::RTDSPointer()), m_manager(0), m_registry(),
+m_initialized(false) { }
+
+////////////////////////////////////////////////////////////////////////////////
+/// @function CDeviceFactory::CreateStructure
 ///
 /// @description Creates the internal structure of a device.  Intended to be
 ///  immediately passed to a device constructor when the device is created by
 ///  CreateDevice.
 ///
-/// @ErrorHanding Insufficiently throws a string if the factory has not been
-///  configured by CDeviceFactory::init.
+/// @ErrorHanding Throws an exception if the factory is not initialized.
 ///
 /// @pre factory must be configured by CDeviceFactory::init.
 /// @post desired device structure is created and returned.
@@ -208,7 +206,9 @@ IDeviceStructure::DevicePtr CDeviceFactory::CreateStructure() const
 {
     if (!m_initialized)
     {
-        throw "CDeviceFactory::CreateStructure called before init";
+        std::stringstream ss;
+        ss << __PRETTY_FUNCTION__ << " called before factory init" << std::endl;
+        throw std::runtime_error(ss.str());
     }
 #if defined USE_DEVICE_PSCAD
     return IDeviceStructure::DevicePtr(

@@ -427,14 +427,6 @@ int main(int argc, char* argv[])
     {
         Logger.Error << e.what() << std::endl;
     }
-    catch (std::string message) // Probably need something more robust...
-    {
-        Logger.Error << message << std::endl;
-    }
-    catch (const char* message)
-    {
-        Logger.Error << message << std::endl;
-    }
 
     return 0;
 }

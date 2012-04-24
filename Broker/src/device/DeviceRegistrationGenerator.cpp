@@ -131,7 +131,7 @@ int main()
     {
         type.erase(0, 7); // Trim off the "CDevice" part of the name.
         type.erase(type.length() - 4, type.length());
-        fout << "    REGISTER_DEVICE_CLASS(" << type << ")\n";
+        fout << "    REGISTER_DEVICE_CLASS(" << type << ");\n";
     }
     fout << "}\n\n}\n}\n}";
     fout.close();

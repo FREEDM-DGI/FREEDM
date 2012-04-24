@@ -36,17 +36,12 @@
 #include "CPhysicalDeviceManager.hpp"
 #include "IPhysicalDevice.hpp"
 
-namespace freedm
-{
-namespace broker
-{
-namespace device
-{
+namespace freedm {
+namespace broker {
+namespace device {
 
-#define REGISTER_DEVICE_CLASS(SUFFIX) \
-freedm::broker::device::CDeviceFactory::instance().RegisterDeviceClass( \
-#SUFFIX, &freedm::broker::device::CDeviceFactory::CreateDevice< \
-freedm::broker::device::CDevice##SUFFIX>);
+#define REGISTER_DEVICE_CLASS(SUFFIX) CDeviceFactory::instance().\
+RegisterDeviceClass(#SUFFIX, &CDeviceFactory::CreateDevice<CDevice##SUFFIX>)
 
 class CDeviceFactory;
 
@@ -91,15 +86,15 @@ public:
     /// Registers a device class with the factory.
     void RegisterDeviceClass(const std::string key, FactoryFunction value);
 
-    /// Creates a device with the given type and identifier.
+    /// Creates a device and registers it with the factory's device manager.
     void CreateDevice(const Identifier& deviceID, const std::string deviceType);
 
-    /// Creates and registers DeviceID with the given identifier.
+    /// Creates a device and registers it with the factory's device manager.
     template <class DeviceType>
     void CreateDevice(const Identifier& deviceID);
 
-    // TODO Creates all devices specified by some XML file.
-    // void ReadXML(const std::string filename);
+    /// Creates all devices specified by a vector.
+    //void CreateDevices(const std::vector<std::string>& devices);
 
 private:
     /// Constructs the device factory.
@@ -107,7 +102,7 @@ private:
 
     /// Creates the internal structure of the device.
     IDeviceStructure::DevicePtr CreateStructure() const;
-
+    
     /// Client to the PSCAD simulation server.
     CLineClient::TPointer m_lineClient;
 
@@ -125,16 +120,18 @@ private:
 };
 
 ////////////////////////////////////////////////////////////////////////////////
-/// CreateDevice<DeviceType>
+/// @function CreateDevice<DeviceType>
 ///
 /// @description Creates a DeviceType with the given identifier and
 ///  registers it with the factory's device manager. It is intended that this
 ///  function not be called directly, but rather registered via function pointer
 ///  through CDeviceFactory::RegisterDeviceClass and called indirectly through
 ///  the CreateDevice function taking the string parameters. However, this
-///  function is intentionally public and is safe to use directly.
+///  function is intentionally public (otherwise, it would be impossible to
+///  utilize the REGISTER_DEVICE_CLASS macro outside of the factory) and is safe
+/// to use directly.
 ///
-/// @ErrorHandling Throws a string if the factory is not properly set up.
+/// @ErrorHandling Throws an exception if the factory is not initialized.
 ///
 /// @pre No other device on this DGI has the passed deviceID.
 /// @post Specified device is created and registered with the factory's
@@ -152,7 +149,9 @@ void CDeviceFactory::CreateDevice(const Identifier& deviceID)
 {
     if (!m_initialized)
     {
-        throw "CDeviceFactory::CreateDevice (private) called before init";
+        std::stringstream ss;
+        ss << __PRETTY_FUNCTION__ << " called before factory init" << std::endl;
+        throw std::runtime_error(ss.str());
     }
     IDeviceStructure::DevicePtr ds;
     IDevice::DevicePtr dev;

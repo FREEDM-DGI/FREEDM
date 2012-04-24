@@ -232,7 +232,7 @@ void CBroker::Schedule(CBroker::TimerHandle h,
     CBroker::Scheduleable s;
     m_timers[h]->expires_from_now(wait);
     s = boost::bind(&CBroker::ScheduledTask,this,x,h,boost::asio::placeholders::error);
-    Logger.Notice<<"Scheduled task for timer "<<h<<std::endl;
+    Logger.Debug<<"Scheduled task for timer "<<h<<std::endl;
     m_timers[h]->async_wait(s);
     m_schmutex.unlock();
 }
@@ -245,7 +245,6 @@ void CBroker::Schedule(ModuleIdent m, BoundScheduleable x, bool start_worker)
     m_ready[m].push_back(x);
     if(!m_busy && start_worker)
     {
-        Logger.Debug<<"Started Worker"<<std::endl;
         m_schmutex.unlock();
         Worker();
         m_schmutex.lock();
@@ -272,7 +271,6 @@ void CBroker::ChangePhase(const boost::system::error_code &err)
     {
         m_phase = 0;
     }
-    Logger.Notice<<"Changed phase to m_modules["<<m_phase<<"]";
     if(m_modules.size() > 0)
     {
         Logger.Notice<<"="<<m_modules[m_phase];
@@ -281,7 +279,6 @@ void CBroker::ChangePhase(const boost::system::error_code &err)
     //If the worker isn't going, start him again when you change phases.
     if(!m_busy)
     {
-        Logger.Notice<<"Started Worker"<<std::endl;
         m_schmutex.unlock();
         Worker();
         m_schmutex.lock();
@@ -307,15 +304,14 @@ void CBroker::ScheduledTask(CBroker::Scheduleable x, CBroker::TimerHandle handle
     Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     m_schmutex.lock();
     ModuleIdent module = m_allocs[handle];
-    Logger.Info<<"Handle finished: "<<handle<<" For module "<<module<<std::endl;
+    Logger.Debug<<"Handle finished: "<<handle<<" For module "<<module<<std::endl;
     // First, prepare another bind, which uses the given error
     CBroker::BoundScheduleable y = boost::bind(x,err);
     // Put it into the ready queue
     m_ready[module].push_back(y);
-    Logger.Info<<"Module "<<module<<" now has queue size: "<<m_ready[module].size()<<std::endl;
+    Logger.Debug<<"Module "<<module<<" now has queue size: "<<m_ready[module].size()<<std::endl;
     if(!m_busy)
     {
-        Logger.Info<<"Started Worker"<<std::endl;
         m_schmutex.unlock();
         Worker();
     }

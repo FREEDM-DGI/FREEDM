@@ -61,10 +61,6 @@ namespace po = boost::program_options;
 #include "Utility.hpp"
 #include "version.h"
 
-#ifndef __GNUG__
-#define __PRETTY_FUNCTION__ __FILE__ ":" __LINE__
-#endif
-
 using namespace freedm;
 
 static CLocalLogger Logger(__FILE__);
@@ -103,52 +99,52 @@ int main(int argc, char* argv[])
     {
         // Check command line arguments.
         genOpts.add_options()
-        ("help,h", "print usage help (this screen)")
-        ("version,V", "print version info")
-        ("config,c",
-                po::value<std::string>(&cfgFile)->
-        default_value("./config/freedm.cfg"),
-                "filename of additional configuration.")
-        ("generateuuid,g", 
-                po::value<std::string >(&uuidgenerator)->default_value(""),
-                "Generate a uuid for the specified host, output it, and exit")
-        ("uuid,u", "Print this node's generated uuid and exit");
-        
+                ( "help,h", "print usage help (this screen)" )
+                ( "version,V", "print version info" )
+                ( "config,c",
+                po::value<std::string > ( &cfgFile )->
+                default_value("./config/freedm.cfg"),
+                "filename of additional configuration." )
+                ( "generateuuid,g",
+                po::value<std::string > ( &uuidgenerator )->default_value(""),
+                "Generate a uuid for the specified host, output it, and exit" )
+                ( "uuid,u", "Print this node's generated uuid and exit" );
+
         // This is for arguments in a config file or as arguments
         configOpts.add_options()
-        ("add-host", 
-                po::value<std::vector<std::string> >()->composing(),
-                "peer hostname:port pair")
-        ("address", 
-                po::value<std::string>(&listenIP)->default_value("0.0.0.0"),
-                "IP interface to listen on")
-        ("port,p", 
-                po::value<std::string>(&port)->default_value("1870"),
-                "TCP port to listen on")
-        ("add-device,d", 
-                po::value<std::vector<std::string> >()->composing(),
-                "physical device name:type pair")
-        ("client-host,l", 
-                po::value<std::string>(&interHost)->default_value(""), 
-                "Hostname to use for the lineclient/RTDSclient to connect.")
-        ("client-port,q", 
-                po::value<std::string>(&interPort)->default_value("4001"),
-                "The port to use for the lineclient/RTDSclient to connect.")
-        ("fpga-message", 
-                po::value<std::string>(&fpgaCfgFile)->
-        default_value("./config/FPGA.xml"),
-                "filename of the FPGA message specification")
-        ("logger-config", 
-                po::value<std::string>(&loggerCfgFile)->
-        default_value("./config/logger.cfg"),
-                "name of the logger verbosity configuration file")
-        ("list-loggers","Print all the available loggers and exit")
-        ("verbose,v", 
-                po::value<unsigned int>(&globalVerbosity)->
-        implicit_value(5)->default_value(5),
-                "enable verbose output (optionally specify level)");
+                ( "add-host",
+                po::value<std::vector<std::string> >( )->composing(),
+                "peer hostname:port pair" )
+                ( "address",
+                po::value<std::string > ( &listenIP )->default_value("0.0.0.0"),
+                "IP interface to listen on" )
+                ( "port,p",
+                po::value<std::string > ( &port )->default_value("1870"),
+                "TCP port to listen on" )
+                ( "add-device,d",
+                po::value<std::vector<std::string> >( )->composing(),
+                "physical device name:type pair" )
+                ( "client-host,l",
+                po::value<std::string > ( &interHost )->default_value(""),
+                "Hostname to use for the lineclient/RTDSclient to connect." )
+                ( "client-port,q",
+                po::value<std::string > ( &interPort )->default_value("4001"),
+                "The port to use for the lineclient/RTDSclient to connect." )
+                ( "fpga-message",
+                po::value<std::string > ( &fpgaCfgFile )->
+                default_value("./config/FPGA.xml"),
+                "filename of the FPGA message specification" )
+                ( "list-loggers", "Print all the available loggers and exit" )
+                ( "logger-config",
+                po::value<std::string > ( &loggerCfgFile )->
+                default_value("./config/logger.cfg"),
+                "name of the logger verbosity configuration file" )
+                ( "verbose,v",
+                po::value<unsigned int>( &globalVerbosity )->
+                implicit_value(5)->default_value(5),
+                "enable verbose output (optionally specify level)" );
         hiddenOpts.add_options()
-                ( "setuuid", po::value<std::string> ( &uuidString ),
+                ( "setuuid", po::value<std::string > ( &uuidString ),
                 "UUID for this host" );
 
         // Specify positional arguments
@@ -167,7 +163,7 @@ int main(int argc, char* argv[])
         po::store(po::command_line_parser(argc, argv)
                 .options(cliOpts).positional(posOpts).run(), vm);
         po::notify(vm);
-        
+
         // Read options from the main config file.
         ifs.open(cfgFile.c_str());
         if (!ifs)
@@ -219,7 +215,7 @@ int main(int argc, char* argv[])
 
         if (vm.count("uuid"))
         {
-            uuid = static_cast<CUuid>(uuidString);
+            uuid = static_cast<CUuid> ( uuidString );
             Logger.Info << "Loaded UUID: " << uuid << std::endl;
         }
         else
@@ -236,7 +232,7 @@ int main(int argc, char* argv[])
         if (vm.count("list-loggers"))
         {
             CGlobalLogger::instance().ListLoggers();
-            return 0; 
+            return 0;
         }
 
         std::stringstream ss2;
@@ -264,68 +260,12 @@ int main(int argc, char* argv[])
         if (vm.count("add-device") > 0)
         {
             broker::device::RegisterPhysicalDevices();
-            broker::device::CDeviceFactory& factory =
-                    broker::device::CDeviceFactory::instance();
-
-            std::vector< std::string > device_list =
-                    vm["add-device"].as< std::vector<std::string> >( );
-            foreach(std::string &devid, device_list)
-            {
-                int idx = devid.find(':');
-
-                if (idx != static_cast<int> ( std::string::npos ))
-                {
-                    std::string DevName_(devid.begin(), devid.begin() + idx),
-                            DevType_(devid.begin() + ( idx + 1 ), devid.end());
-
-                    if (phyManager.DeviceExists(DevName_))
-                    {
-                        Logger.Warn << "Duplicate device: " << DevName_
-                                << std::endl;
-                    }
-                    else if (DevType_ == "DRER")
-                    {
-                        factory.CreateDevice(DevName_, "DRER");
-                        Logger.Info << "Added DRER device: " << DevName_ 
-                                << std::endl;
-                    }
-                    else if (DevType_ == "DESD")
-                    {
-                        factory.CreateDevice(DevName_, "DESD");
-                        Logger.Info << "Added DESD device: " << DevName_
-                                << std::endl;
-                    }
-                    else if (DevType_ == "LOAD")
-                    {
-                        factory.CreateDevice(DevName_, "LOAD");
-                        Logger.Info << "Added LOAD device: " << DevName_
-                                << std::endl;
-                    }
-                    else if (DevType_ == "SST")
-                    {
-                        factory.CreateDevice(DevName_, "SST");
-                        Logger.Info << "Added SST: " << DevName_ << std::endl;
-                    }
-                }
-                else
-                {
-                    if (phyManager.DeviceExists(devid))
-                    {
-                        Logger.Warn << "Duplicate device: " << devid << 
-                                std::endl;
-                    }
-                    else
-                    {
-                        factory.CreateDevice(devid, "SST");
-                        Logger.Info << "Added Generic SST device: " << devid
-                                << std::endl;
-                    }
-                }
-            }
+            broker::device::CDeviceFactory::instance().CreateDevices(
+                    vm["add-device"].as< std::vector<std::string> >( ));
         }
         else
         {
-            Logger.Info << "No physical devices specified" << std::endl;
+            Logger.Notice << "No physical devices specified." << std::endl;
         }
 
         // Instantiate Dispatcher for message delivery
@@ -348,7 +288,7 @@ int main(int argc, char* argv[])
         // Instantiate and register the state collection module
         SCAgent SC(uuidstr, broker, phyManager);
         dispatch.RegisterReadHandler("sc", "any", &SC);
-        
+
         // The peerlist should be passed into constructors as references or
         // pointers to each submodule to allow sharing peers. NOTE this requires
         // thread-safe access, as well. Shouldn't be too hard since it will
@@ -394,15 +334,15 @@ int main(int argc, char* argv[])
         sigfillset(&new_mask);
         sigset_t old_mask;
         pthread_sigmask(SIG_BLOCK, &new_mask, &old_mask);
-        */
+         */
         //Logger.Info << "Starting CBroker thread" << std::endl;
         //boost::thread thread_
         //        (boost::bind(&broker::CBroker::Run, &broker));
         // Restore previous signals.
         //pthread_sigmask(SIG_SETMASK, &old_mask, 0);
         Logger.Debug << "Starting thread of Modules" << std::endl;
-        broker.Schedule("gm",boost::bind(&GMAgent::Run, &GM),false);
-        broker.Schedule("lb",boost::bind(&lbAgent::LB, &LB),false);
+        broker.Schedule("gm", boost::bind(&GMAgent::Run, &GM), false);
+        broker.Schedule("lb", boost::bind(&lbAgent::LB, &LB), false);
         broker.Run();
         // Wait for signal indicating time to shut down.
         /*
@@ -422,9 +362,8 @@ int main(int argc, char* argv[])
         // Bring in threads.
         thread_.join();
         std::cout << "Goodbye..." << std::endl;
-        */
-    }
-    catch (std::exception& e)
+         */
+    } catch (std::exception& e)
     {
         Logger.Error << e.what() << std::endl;
     }

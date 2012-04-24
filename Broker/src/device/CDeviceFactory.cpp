@@ -23,7 +23,10 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 #include "CDeviceFactory.hpp"
+#include "CLogger.hpp"
 #include "config.hpp"
+
+static CLocalLogger Logger(__FILE__);
 
 namespace freedm {
 namespace broker {
@@ -165,6 +168,69 @@ void CDeviceFactory::CreateDevice(const Identifier& deviceID,
     }
 
     ( this->*m_registry[deviceType] )( deviceID );
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/// @function CDeviceFactory::CreateDevices
+///
+/// @description Creates all devices specified by the passed vector. The vector
+///  is intended to be generated in main by a configuration file (e.g.
+///  freedm.cfg). Devices should be of the format name:type (e.g. sst1:SST) and
+///  the type is no longer optional.
+///
+/// @ErrorHandling Exceptions are thrown if one of the strings does not follow
+///  the correct format, if two devices are created with the same name, if
+///  a device does not have a type specified, if a requested device type has not
+///  been registered with the factory, or if the factory is uninitialized.
+///
+/// @pre The factory has been configured with CDeviceFactory::init.
+/// @post Specified devices are created and registered with the factory's device
+///  manager.
+///
+/// @param deviceList a list of device specifications in the above format.
+///
+/// @limitations main must call RegisterPhysicalDevices before this function.
+////////////////////////////////////////////////////////////////////////////////
+void CDeviceFactory::CreateDevices(const std::vector<std::string>& deviceList)
+{
+    if (!m_initialized)
+    {
+        std::stringstream ss;
+        ss << __PRETTY_FUNCTION__ << " called before factory init" << std::endl;
+        throw std::runtime_error(ss.str());
+    }
+    foreach (std::string device, deviceList)
+    {
+        size_t colon = device.find(':');
+
+        if (colon == std::string::npos)
+        {
+            std::stringstream ss;
+            ss << "Incorrect device specification: " << device;
+            throw std::runtime_error(ss.str());
+        }
+
+        std::string name(device.begin(), device.begin() + colon);
+        std::string type(device.begin() + colon + 1, device.end());
+
+        if (m_manager->DeviceExists(name))
+        {
+            std::stringstream ss;
+            ss << "Specified duplicate device " << device;
+            throw std::runtime_error(ss.str());
+        }
+        else if (type.empty())
+        {
+            std::stringstream ss;
+            ss << "No type specified for device " << device;
+            throw std::runtime_error(ss.str());
+        }
+        else
+        {
+            CreateDevice(name, type);
+            Logger.Info << "Added " << type << ": " << name << std::endl;
+        }
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////

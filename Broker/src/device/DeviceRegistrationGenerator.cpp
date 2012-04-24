@@ -36,7 +36,7 @@
 #define foreach BOOST_FOREACH
 
 ////////////////////////////////////////////////////////////////////////////////
-/// main
+/// @function main
 ///
 /// @description Entry point and sole function of the DeviceTypesGenerator
 ///  program. Searches the device types folder for all instantiable device
@@ -76,7 +76,7 @@ int main()
         while (( entry = readdir(dir) ) != 0)
         {
             // Only take instantiable devices, which start with "CDevice"
-            if (std::strncmp(entry->d_name, "CDevice", 7) == 0)
+            if (strncmp(entry->d_name, "CDevice", 7) == 0)
             {
                 std::string type(entry->d_name);
                 // Only push a type once, in case there's both a .hpp and a .cpp

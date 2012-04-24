@@ -26,7 +26,10 @@
 #define C_DEVICE_FACTORY_HPP
 
 #include <boost/asio/io_service.hpp>
+#include <boost/foreach.hpp>
 #include <boost/noncopyable.hpp>
+
+#define foreach BOOST_FOREACH
 
 #include "CClientRTDS.hpp"
 #include "CDeviceStructureGeneric.hpp"
@@ -94,7 +97,7 @@ public:
     void CreateDevice(const Identifier& deviceID);
 
     /// Creates all devices specified by a vector.
-    //void CreateDevices(const std::vector<std::string>& devices);
+    void CreateDevices(const std::vector<std::string>& deviceList);
 
 private:
     /// Constructs the device factory.

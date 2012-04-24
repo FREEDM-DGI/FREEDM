@@ -195,7 +195,9 @@ ALIASES                = "Limitations=\par Limitations:\n" \
                          "Description=" \
                          "description=" \
                          "Project=" \
-                         "project="
+                         "project=" \
+                         "Function=@fn" \
+                         "function=@fn"
 
 # Set the OPTIMIZE_OUTPUT_FOR_C tag to YES if your project consists of C
 # sources only. Doxygen will then generate output that is more tailored for C.

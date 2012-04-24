@@ -344,7 +344,7 @@ void GMAgent::SystemState()
     } 
     nodestatus<<"Groups Elected/Formed: "<<m_groupselection<<"/"<<m_groupsformed<<std::endl;                        
     nodestatus<<"Groups Joined/Broken: "<<m_groupsjoined<<"/"<<m_groupsbroken;                        
-    Logger.Warn<<nodestatus.str()<<std::endl;
+    Logger.Status<<nodestatus.str()<<std::endl;
 }
 ///////////////////////////////////////////////////////////////////////////////
 /// PushPeerList

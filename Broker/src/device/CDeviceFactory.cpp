@@ -81,12 +81,14 @@ void CDeviceFactory::init(CPhysicalDeviceManager& manager,
 {
     Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     Logger.Info << "Initialized the device factory" << std::endl;
+    m_ios = &ios;
+    m_xml = xml;
     m_manager = &manager;
 #if defined USE_DEVICE_PSCAD
     m_lineClient = CLineClient::Create(ios);
     m_lineClient->Connect(host, port);
 #elif defined USE_DEVICE_RTDS
-    m_rtdsClient = CClientRTDS::Create(ios, xml);
+    m_rtdsClient = CClientRTDS::Create(ios, xml, "rtds");
     m_rtdsClient->Connect(host, port);
     m_rtdsClient->Run();
 #endif

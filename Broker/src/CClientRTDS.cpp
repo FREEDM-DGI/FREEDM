@@ -104,11 +104,11 @@ namespace broker
 ///     none
 ///
 ////////////////////////////////////////////////////////////////////////////
-CClientRTDS::RTDSPointer CClientRTDS::Create(
-        boost::asio::io_service & p_service, const std::string p_xml)
-{
+CClientRTDS::RTDSPointer CClientRTDS::Create( boost::asio::io_service & p_service,
+        const std::string p_xml, const std::string p_tag )
+{   
     Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
-    return CClientRTDS::RTDSPointer(new CClientRTDS(p_service, p_xml));
+    return CClientRTDS::RTDSPointer( new CClientRTDS(p_service, p_xml, p_tag) );
 }
 
 ////////////////////////////////////////////////////////////////////////////
@@ -136,9 +136,9 @@ CClientRTDS::RTDSPointer CClientRTDS::Create(
 ///
 ////////////////////////////////////////////////////////////////////////////
 CClientRTDS::CClientRTDS( boost::asio::io_service & p_service,
-                          const std::string p_xml )
-        : m_socket(p_service), m_cmdTable(p_xml, "command"),
-        m_stateTable(p_xml, "state"), m_GlobalTimer(p_service)
+                          const std::string p_xml, const std::string p_tag )
+        : m_socket(p_service), m_cmdTable(p_xml, p_tag+".command"),
+        m_stateTable(p_xml, p_tag+".state"), m_GlobalTimer(p_service)
 {
     Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     m_rxCount = m_stateTable.m_length;

@@ -25,12 +25,17 @@
 #ifndef C_DEVICE_FACTORY_HPP
 #define C_DEVICE_FACTORY_HPP
 
+#include <stack>
+
 #include <boost/asio/io_service.hpp>
 #include <boost/foreach.hpp>
 #include <boost/noncopyable.hpp>
+#include <boost/property_tree/ptree.hpp>
+#include <boost/property_tree/xml_parser.hpp>
 
 #define foreach BOOST_FOREACH
 
+#include "config.hpp"
 #include "CClientRTDS.hpp"
 #include "CDeviceStructureGeneric.hpp"
 #include "CDeviceStructurePSCAD.hpp"
@@ -39,6 +44,7 @@
 #include "CLogger.hpp"
 #include "CPhysicalDeviceManager.hpp"
 #include "IPhysicalDevice.hpp"
+#include "types/CDeviceFID.hpp"
 
 static CLocalLogger CDeviceFactoryHPPLogger(__FILE__);
 
@@ -103,6 +109,12 @@ public:
     void CreateDevices(const std::vector<std::string>& deviceList);
 
 private:
+    /// The io service
+    boost::asio::io_service *m_ios;
+    
+    /// The xml file
+    std::string m_xml;
+
     /// Constructs the device factory.
     CDeviceFactory();
 
@@ -114,6 +126,9 @@ private:
 
     /// Client for the RTDS.
     CClientRTDS::RTDSPointer m_rtdsClient;
+    
+    /// The clients for the FPGA
+    std::stack<CClientRTDS::RTDSPointer> m_fidClients;
 
     /// Device manager to handle created devices.
     CPhysicalDeviceManager* m_manager;
@@ -150,8 +165,9 @@ private:
 /// @limitations CDeviceFactory::init must be called before any devices are
 ///  created.
 ////////////////////////////////////////////////////////////////////////////////
-template <class DeviceType>
-void CDeviceFactory::CreateDevice(const Identifier& deviceID)
+/*
+template <>
+void CDeviceFactory::CreateDevice<CDeviceFID>(const Identifier& deviceID)
 {
     CDeviceFactoryHPPLogger.Debug << __PRETTY_FUNCTION__ << std::endl;
     if (!m_initialized)
@@ -160,16 +176,80 @@ void CDeviceFactory::CreateDevice(const Identifier& deviceID)
         ss << __PRETTY_FUNCTION__ << " called before factory init" << std::endl;
         throw std::runtime_error(ss.str());
     }
+    using boost::property_tree::ptree;
+    ptree xmlTree;
     IDeviceStructure::DevicePtr ds;
     IDevice::DevicePtr dev;
+    std::string host,port;
+    read_xml( m_xml, xmlTree ); 
     // create and register the device structure
-    ds = CreateStructure();
+    m_fidClients.push(CClientRTDS::Create(*m_ios, m_xml, deviceID));
+    try
+    {
+        host = xmlTree.get<std::string>(deviceID+".host");
+        port = xmlTree.get<std::string>(deviceID+".port");
+    }
+    catch(...)
+    {
+        throw std::runtime_error("Couldn't read hostname or port for FID "+deviceID);
+    }
+    m_fidClients.top()->Connect(host,port);
+    m_fidClients.top()->Run();
+    ds = IDeviceStructure::DevicePtr(new CDeviceStructureRTDS(m_fidClients.top()));
     ds->Register(deviceID);
     // create the new device from the structure
-    dev = IDevice::DevicePtr(new DeviceType(*m_manager, deviceID, ds));
+    dev = IDevice::DevicePtr(new CDeviceFID(*m_manager, deviceID, ds));
     // add the device to the manager
     m_manager->AddDevice(dev);
 }
+*/
+template <class DeviceType>
+void CDeviceFactory::CreateDevice(const Identifier& deviceID)
+{
+    if (!m_initialized)
+    {
+        throw "CDeviceFactory::CreateDevice (private) called before init";
+    }
+    IDeviceStructure::DevicePtr ds;
+    IDevice::DevicePtr dev;
+#ifdef USE_DEVICE_RTDS
+    typename DeviceType::DevicePtr test(new DeviceType(*m_manager, deviceID, IDeviceStructure::DevicePtr(new CDeviceStructureGeneric())));
+    // create and register the device structure
+    if(device_cast<CDeviceFID>(test) != NULL)
+    {
+        using boost::property_tree::ptree;
+        ptree xmlTree;
+        std::string host,port;
+        read_xml( m_xml, xmlTree ); 
+        m_fidClients.push(CClientRTDS::Create(*m_ios, m_xml, deviceID));
+        try
+        {
+            host = xmlTree.get<std::string>(deviceID+".host");
+            port = xmlTree.get<std::string>(deviceID+".port");
+        }
+        catch(...)
+        {
+            throw std::runtime_error("Couldn't read hostname or port for FID "+deviceID);
+        }
+        m_fidClients.top()->Connect(host,port);
+        m_fidClients.top()->Run();
+        ds = IDeviceStructure::DevicePtr(new CDeviceStructureRTDS(m_fidClients.top()));
+        ds->Register(deviceID);
+        // create the new device from the structure
+        dev = IDevice::DevicePtr(new CDeviceFID(*m_manager, deviceID, ds));
+    }
+    else
+#endif
+    {
+        ds = CreateStructure();
+        ds->Register(deviceID);
+        // create the new device from the structure
+        dev = IDevice::DevicePtr(new DeviceType(*m_manager, deviceID, ds));
+    }
+    // add the device to the manager
+    m_manager->AddDevice(dev);
+}
+
 
 } // namespace device
 } // namespace freedm

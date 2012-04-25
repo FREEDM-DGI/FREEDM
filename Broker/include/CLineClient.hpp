@@ -87,15 +87,11 @@ public:
     ///     p_hostname is the hostname of the desired endpoint
     ///     p_port is the port number of the desired endpoint
     ///
-    /// @return
-    ///     true if m_socket connected to the endpoint
-    ///     false otherwise
-    ///
     /// @limitations
     ///     none
     ///
     ////////////////////////////////////////////////////////////////////////////
-    bool Connect( const std::string p_hostname, const std::string p_port );
+    void Connect( const std::string p_hostname, const std::string p_port );
     
     ////////////////////////////////////////////////////////////////////////////
     /// Set( const string &, const string &, const string & )

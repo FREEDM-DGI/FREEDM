@@ -107,7 +107,7 @@ namespace broker
 CClientRTDS::RTDSPointer CClientRTDS::Create( boost::asio::io_service & p_service,
         const std::string p_xml )
 {   
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Debug << __func__ << std::endl;
     return CClientRTDS::RTDSPointer( new CClientRTDS(p_service, p_xml) );
 }
 
@@ -140,7 +140,7 @@ CClientRTDS::CClientRTDS( boost::asio::io_service & p_service,
         : m_socket(p_service), m_cmdTable(p_xml, "command"),
         m_stateTable(p_xml, "state"), m_GlobalTimer(p_service)
 {
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Debug << __func__ << std::endl;
     m_rxCount = m_stateTable.m_length;
     m_txCount = m_cmdTable.m_length;
 
@@ -184,7 +184,7 @@ CClientRTDS::CClientRTDS( boost::asio::io_service & p_service,
 ////////////////////////////////////////////////////////////////////////////
 bool CClientRTDS::Connect( const std::string p_hostname, const std::string p_port )
 {
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Debug << __func__ << std::endl;
     boost::asio::ip::tcp::resolver resolver( m_socket.get_io_service() );
     boost::asio::ip::tcp::resolver::query query( p_hostname, p_port );
     boost::asio::ip::tcp::resolver::iterator it = resolver.resolve(query);
@@ -237,7 +237,7 @@ bool CClientRTDS::Connect( const std::string p_hostname, const std::string p_por
 //////////////////////////////////////////////////////////////////////////
 void CClientRTDS::Run()
 {
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Debug << __func__ << std::endl;
     //TIMESTEP is used by deadline_timer.async_wait at the end of Run().  
     //We keep TIMESTEP very small as we actually do not care if we wait at all.
     //We simply need to use deadline_timer.async_wait to pass control back
@@ -344,7 +344,7 @@ void CClientRTDS::Set( const std::string p_device, const std::string p_key,
                        double p_value )
 {
     //access and write to table
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Debug << __func__ << std::endl;
    
     
     try
@@ -390,7 +390,7 @@ double CClientRTDS::Get( const std::string p_device, const std::string p_key )
 {
    
     //access and read from table
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Debug << __func__ << std::endl;
      
     try
     {
@@ -423,7 +423,7 @@ double CClientRTDS::Get( const std::string p_device, const std::string p_key )
 ////////////////////////////////////////////////////////////////////////////
 void CClientRTDS::Quit()
 {
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Debug << __func__ << std::endl;
     // close connection
     m_socket.close();
 }
@@ -446,7 +446,7 @@ void CClientRTDS::Quit()
 ////////////////////////////////////////////////////////////////////////////
 CClientRTDS::~CClientRTDS()
 {  
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Debug << __func__ << std::endl;
     //  perform teardown
     if ( m_socket.is_open() )
     {
@@ -480,7 +480,7 @@ CClientRTDS::~CClientRTDS()
 ////////////////////////////////////////////////////////////////////////////////
 void CClientRTDS::endian_swap(char *data, const int num_bytes)
 {
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Debug << __func__ << std::endl;
     char * tmp = new char[num_bytes];
     
     for (int i=0; i<num_bytes; ++i)

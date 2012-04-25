@@ -36,15 +36,15 @@ template <typename InputIterator>
 boost::tuple<boost::tribool, InputIterator> Parse(CMessage &req,
         InputIterator begin, InputIterator end)
 {
-    static CLocalLogger RPLogger(__PRETTY_FUNCTION__);
-    RPLogger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    static CLocalLogger RPLogger(__func__);
+    RPLogger.Debug << __func__ << std::endl;
 
     std::stringstream ss_;
     std::ostreambuf_iterator<char> ss_buf( ss_ );
     std::copy( begin, end, ss_buf );
     boost::tribool result = boost::tribool::indeterminate_value;
 
-    try 
+    try
     {
         RPLogger.Debug << "Loading xml: " << std::endl
                 << ss_.str() << std::endl;
@@ -63,8 +63,8 @@ template <typename OutputIterator>
 boost::tuple< boost::tribool, OutputIterator> Synthesize( CMessage &msg,
     OutputIterator begin, size_t p_outMaxLength )
 {
-    static CLocalLogger RPLogger(__PRETTY_FUNCTION__);
-    RPLogger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    static CLocalLogger RPLogger(__func__);
+    RPLogger.Debug << __func__ << std::endl;
     std::stringstream ss_;
     std::string str_;
     boost::tribool result = boost::indeterminate;

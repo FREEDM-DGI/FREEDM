@@ -140,7 +140,7 @@ GMAgent::GMAgent(std::string p_uuid, freedm::broker::CBroker &broker)
     GLOBAL_TIMEOUT(boost::posix_time::seconds(5)),
     m_broker(broker)
 {
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Debug << __func__ << std::endl;
     AddPeer(GetUUID());
     m_groupsformed = 0;
     m_groupsbroken = 0;
@@ -162,7 +162,7 @@ GMAgent::GMAgent(std::string p_uuid, freedm::broker::CBroker &broker)
 ///////////////////////////////////////////////////////////////////////////////
 GMAgent::~GMAgent()
 {
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Debug << __func__ << std::endl;
     m_UpNodes.clear();
     m_Coordinators.clear();
     m_AllPeers.clear();
@@ -362,7 +362,7 @@ void GMAgent::SystemState()
 ///////////////////////////////////////////////////////////////////////////////
 void GMAgent::PushPeerList()
 {
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Debug << __func__ << std::endl;
     freedm::broker::CMessage m_ = PeerList();
     foreach( PeerNodePtr peer_, m_UpNodes | boost::adaptors::map_values)
     {
@@ -371,7 +371,7 @@ void GMAgent::PushPeerList()
         peer_->AsyncSend(m_);                
     }
     GetPeer(GetUUID())->AsyncSend(m_);
-    Logger.Debug << __PRETTY_FUNCTION__ << "FINISH" <<    std::endl;
+    Logger.Debug << __func__ << "FINISH" <<    std::endl;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -385,7 +385,7 @@ void GMAgent::PushPeerList()
 ///////////////////////////////////////////////////////////////////////////////
 void GMAgent::Recovery()
 {
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Debug << __func__ << std::endl;
     std::stringstream ss_;
     Logger.Notice << "Stopping in group timer "<<__LINE__<<std::endl;
     m_ingrouptimer.Stop();
@@ -430,7 +430,7 @@ void GMAgent::Recovery()
 ///////////////////////////////////////////////////////////////////////////////
 void GMAgent::Recovery( const boost::system::error_code& err )
 {
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Debug << __func__ << std::endl;
     Logger.Info << "RECOVERY CALL" << std::endl;
     if(!err)
     {
@@ -469,7 +469,7 @@ void GMAgent::Recovery( const boost::system::error_code& err )
 ///////////////////////////////////////////////////////////////////////////////
 void GMAgent::Check( const boost::system::error_code& err )
 {
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Debug << __func__ << std::endl;
     if( !err )
     {
         SystemState();
@@ -519,7 +519,7 @@ void GMAgent::Check( const boost::system::error_code& err )
 ///////////////////////////////////////////////////////////////////////////////
 void GMAgent::Premerge( const boost::system::error_code &err )
 {
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Debug << __func__ << std::endl;
     if( !err || (boost::asio::error::operation_aborted == err ))
     { 
         // Timer expired
@@ -618,7 +618,7 @@ void GMAgent::Premerge( const boost::system::error_code &err )
 ///////////////////////////////////////////////////////////////////////////////
 void GMAgent::Merge( const boost::system::error_code& err )
 {
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Debug << __func__ << std::endl;
     if(!IsCoordinator())
     {
         // Premerge made me wait. If in the waiting period I accepted someone
@@ -687,7 +687,7 @@ void GMAgent::Merge( const boost::system::error_code& err )
 ///////////////////////////////////////////////////////////////////////////////
 void GMAgent::InviteGroupNodes( const boost::system::error_code& err, PeerSet p_tempSet )
 {
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Debug << __func__ << std::endl;
     if( !err || err == boost::asio::error::operation_aborted )
     {
         /* If the timer expired, err should be false, if canceled,
@@ -730,7 +730,7 @@ void GMAgent::InviteGroupNodes( const boost::system::error_code& err, PeerSet p_
 /////////////////////////////////////////////////////////////////////////////// 
 void GMAgent::Reorganize( const boost::system::error_code& err )
 {
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Debug << __func__ << std::endl;
     if( !err || err == boost::asio::error::operation_aborted )
     {
         SetStatus(GMPeerNode::REORGANIZATION);
@@ -781,7 +781,7 @@ void GMAgent::Reorganize( const boost::system::error_code& err )
 ///////////////////////////////////////////////////////////////////////////////
 void GMAgent::Timeout( const boost::system::error_code& err )
 {
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Debug << __func__ << std::endl;
     PeerNodePtr peer_;
     if( !err )
     {
@@ -829,7 +829,7 @@ void GMAgent::Timeout( const boost::system::error_code& err )
  
 void GMAgent::HandleRead(broker::CMessage msg)
 {
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Debug << __func__ << std::endl;
 
     PeerSet tempSet_;
     std::string coord_;
@@ -1086,7 +1086,7 @@ void GMAgent::HandleRead(broker::CMessage msg)
 
 GMAgent::PeerNodePtr GMAgent::AddPeer(std::string uuid)
 {
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Debug << __func__ << std::endl;
     PeerNodePtr tmp_;
     tmp_.reset(new GMPeerNode(uuid,GetConnectionManager()));
     InsertInPeerSet(m_AllPeers,tmp_);
@@ -1128,7 +1128,7 @@ GMAgent::PeerNodePtr GMAgent::GetPeer(std::string uuid)
 /////////////////////////////////////////////////////////
 int GMAgent::Run()
 {
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Debug << __func__ << std::endl;
 
     std::map<std::string, broker::remotehost>::iterator mapIt_;
 

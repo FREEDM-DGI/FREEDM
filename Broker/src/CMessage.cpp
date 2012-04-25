@@ -129,7 +129,7 @@ namespace status_strings {
 CMessage::CMessage( CMessage::StatusType p_stat)
     : m_status ( p_stat ), m_never_expires(false)
 {
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Debug << __func__ << std::endl;
 }
 
 /// Copy Constructor
@@ -145,7 +145,7 @@ CMessage::CMessage( const CMessage &p_m ) :
     m_sendtime( p_m.m_sendtime ),
     m_expiretime( p_m.m_expiretime )
 {
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Debug << __func__ << std::endl;
 }
 
 /// Cmessage Equals operator
@@ -332,7 +332,7 @@ size_t CMessage::GetHash() const
 bool CMessage::Load( std::istream &p_is )
     throw ( boost::property_tree::file_parser_error )
 {
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Debug << __func__ << std::endl;
     using boost::property_tree::ptree;
     ptree pt;
     bool result;
@@ -379,7 +379,7 @@ bool CMessage::Load( std::istream &p_is )
 ///////////////////////////////////////////////////////////////////////////////
 void CMessage::Save( std::ostream &p_os )
 {
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Debug << __func__ << std::endl;
     using boost::property_tree::ptree;
     ptree pt;
 
@@ -397,7 +397,7 @@ void CMessage::Save( std::ostream &p_os )
 ///////////////////////////////////////////////////////////////////////////////
 CMessage::operator ptree ()
 {
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Debug << __func__ << std::endl;
     // This is basically the same as Save() except it doesn't
     // perform the XML conversion
     using boost::property_tree::ptree;
@@ -425,7 +425,7 @@ CMessage::operator ptree ()
 ///////////////////////////////////////////////////////////////////////////////
 CMessage::CMessage( const ptree &pt )
 {
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Debug << __func__ << std::endl;
     try
     {
         std::string time_tmp;

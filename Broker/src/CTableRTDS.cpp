@@ -69,7 +69,7 @@ namespace broker
 CTableRTDS::CTableRTDS( const std::string & p_xml, const std::string & p_tag )
         : m_structure( p_xml, p_tag )
 {
-    Logger.Info << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Info << __func__ << std::endl;
     m_length = m_structure.GetSize();
     m_data = new float[m_length];
     
@@ -115,7 +115,7 @@ CTableRTDS::CTableRTDS( const std::string & p_xml, const std::string & p_tag )
 ////////////////////////////////////////////////////////////////////////////
 double CTableRTDS::GetValue( const CDeviceKeyCoupled & p_dkey)
 {
-    Logger.Info << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Info << __func__ << std::endl;
     std::stringstream error;
     // enter critical section of m_data as reader
     boost::shared_lock<boost::shared_mutex> lock(m_mutex);
@@ -159,7 +159,7 @@ double CTableRTDS::GetValue( const CDeviceKeyCoupled & p_dkey)
 ////////////////////////////////////////////////////////////////////////////
 void CTableRTDS::SetValue( const CDeviceKeyCoupled & p_dkey, double p_value )
 {
-    Logger.Info << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Info << __func__ << std::endl;
     std::stringstream error;
     // enter critical section of m_data as writer
     boost::unique_lock<boost::shared_mutex> lock(m_mutex);
@@ -193,7 +193,7 @@ void CTableRTDS::SetValue( const CDeviceKeyCoupled & p_dkey, double p_value )
 ////////////////////////////////////////////////////////////////////////////
 CTableRTDS::~CTableRTDS()
 {
-    Logger.Info << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Info << __func__ << std::endl;
     delete [] m_data;
 }
 }

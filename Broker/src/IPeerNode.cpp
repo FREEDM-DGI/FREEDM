@@ -66,7 +66,7 @@ IPeerNode::IPeerNode(std::string uuid, ConnManagerPtr connmgr)
     : m_uuid(uuid),
       m_connmgr(connmgr)
 {
-    Logger.Debug << __func__ << std::endl;
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
 }
 
 
@@ -81,7 +81,7 @@ IPeerNode::IPeerNode(std::string uuid, ConnManagerPtr connmgr)
 ////////////////////////////////////////////////////////////
 void IPeerNode::SetStatus(int status)
 {
-    Logger.Debug << __func__ << std::endl;
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     m_status = status;
 }
 

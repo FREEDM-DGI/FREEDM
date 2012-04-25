@@ -67,7 +67,7 @@ CListener::CListener(boost::asio::io_service& p_ioService,
   CConnectionManager& p_manager, CBroker& p_broker, std::string uuid)
   : CReliableConnection(p_ioService,p_manager,p_broker,uuid)
 {
-    Logger.Debug << __func__ << std::endl;
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -80,7 +80,7 @@ CListener::CListener(boost::asio::io_service& p_ioService,
 
 void CListener::Start()
 {
-    Logger.Debug << __func__ << std::endl;
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     GetSocket().async_receive_from(boost::asio::buffer(m_buffer, CReliableConnection::MAX_PACKET_SIZE),
             m_endpoint, boost::bind(&CListener::HandleRead, this,
             boost::asio::placeholders::error,
@@ -98,7 +98,7 @@ void CListener::Start()
 ///////////////////////////////////////////////////////////////////////////////
 void CListener::Stop()
 {
-    Logger.Debug << __func__ << std::endl;
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
 }
  
 ///////////////////////////////////////////////////////////////////////////////
@@ -117,7 +117,7 @@ void CListener::Stop()
 void CListener::HandleRead(const boost::system::error_code& e, 
                            std::size_t bytes_transferred)
 {
-    Logger.Debug << __func__ << std::endl;       
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;       
     if (!e)
     {
         /// I'm removing request parser because it is an appalling heap of junk

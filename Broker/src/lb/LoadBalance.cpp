@@ -106,7 +106,7 @@ lbAgent::lbAgent(std::string uuid_,
     m_phyDevManager(m_phyManager),
     m_broker(broker)
 {
-    Logger.Debug << __func__ << std::endl;
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     PeerNodePtr self_(this);
     InsertInPeerSet(m_AllPeers, self_);
     m_Leader = GetUUID();
@@ -134,7 +134,7 @@ lbAgent::~lbAgent()
 /////////////////////////////////////////////////////////
 int lbAgent::LB()
 {
-    Logger.Debug << __func__ << std::endl;
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     // This initializes the algorithm
     LoadManage();
     StartStateTimer( STATE_TIMEOUT );
@@ -150,7 +150,7 @@ int lbAgent::LB()
 /////////////////////////////////////////////////////////
 lbAgent::PeerNodePtr lbAgent::add_peer(std::string uuid)
 {
-    Logger.Debug << __func__ << std::endl;
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     PeerNodePtr tmp_;
     tmp_.reset(new LPeerNode(uuid,GetConnectionManager()));
     InsertInPeerSet(m_AllPeers,tmp_);
@@ -193,7 +193,7 @@ lbAgent::PeerNodePtr lbAgent::get_peer(std::string uuid)
 /////////////////////////////////////////////////////////
 void lbAgent::SendMsg(std::string msg, PeerSet peerSet_)
 {
-    Logger.Debug << __func__ << std::endl;
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     broker::CMessage m_;
     m_.m_submessages.put("lb.source", GetUUID());
     m_.m_submessages.put("lb", msg);
@@ -234,7 +234,7 @@ void lbAgent::SendMsg(std::string msg, PeerSet peerSet_)
 /////////////////////////////////////////////////////////
 void lbAgent::SendNormal(double Normal)
 {
-    Logger.Debug << __func__ << std::endl;
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
 
     if(m_Leader == GetUUID())
     {
@@ -272,7 +272,7 @@ void lbAgent::SendNormal(double Normal)
 /////////////////////////////////////////////////////////
 void lbAgent::CollectState()
 {
-    Logger.Debug << __func__ << std::endl;
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     freedm::broker::CMessage m_cs;
     m_cs.m_submessages.put("sc", "request");
     m_cs.m_submessages.put("sc.source", GetUUID());
@@ -302,7 +302,7 @@ void lbAgent::CollectState()
 /////////////////////////////////////////////////////////
 void lbAgent::LoadManage()
 {
-    Logger.Debug << __func__ << std::endl;
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     //Remember previous load before computing current load
     m_prevStatus = m_Status;
     //Call LoadTable to update load state of the system as observed by this node
@@ -343,7 +343,7 @@ void lbAgent::LoadManage()
 /////////////////////////////////////////////////////////
 void lbAgent::LoadManage( const boost::system::error_code& err )
 {
-    Logger.Debug << __func__ << std::endl;
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     
     if(!err)
     {
@@ -377,7 +377,7 @@ void lbAgent::LoadManage( const boost::system::error_code& err )
 /////////////////////////////////////////////////////////
 void lbAgent::LoadTable()
 {
-    Logger.Debug << __func__ << std::endl;
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     
     // device typedef for convenience
     typedef broker::device::CDeviceDRER DRER;
@@ -496,7 +496,7 @@ void lbAgent::LoadTable()
 /////////////////////////////////////////////////////////
 void lbAgent::SendDraftRequest()
 {
-    Logger.Debug << __func__ << std::endl;
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     
     if(LPeerNode::SUPPLY == m_Status)
     {
@@ -527,7 +527,7 @@ void lbAgent::SendDraftRequest()
 /////////////////////////////////////////////////////////
 void lbAgent::HandleRead(broker::CMessage msg)
 {
-    Logger.Debug << __func__ << std::endl;
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     PeerSet tempSet_;
     MessagePtr m_;
     std::string line_;
@@ -872,7 +872,7 @@ void lbAgent::HandleRead(broker::CMessage msg)
 /////////////////////////////////////////////////////////
 void lbAgent::Step_PStar()
 {
-    Logger.Debug << __func__ << std::endl;
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     typedef broker::device::CDeviceSST SST;
     broker::device::CPhysicalDeviceManager::PhysicalDevice<SST>::Container SSTContainer;
     broker::device::CPhysicalDeviceManager::PhysicalDevice<SST>::iterator it, end;
@@ -913,7 +913,7 @@ void lbAgent::Step_PStar()
 /////////////////////////////////////////////////////////
 void lbAgent::PStar(broker::device::SettingValue DemandValue)
 {
-    Logger.Debug << __func__ << std::endl;
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     typedef broker::device::CDeviceSST SST;
     broker::device::CPhysicalDeviceManager::PhysicalDevice<SST>::Container SSTContainer;
     broker::device::CPhysicalDeviceManager::PhysicalDevice<SST>::iterator it, end;
@@ -1026,7 +1026,7 @@ void lbAgent::PStar(broker::device::SettingValue DemandValue)
 /////////////////////////////////////////////////////////
 void lbAgent::StartStateTimer( unsigned int delay )
 {
-    Logger.Debug << __func__ << std::endl;
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     m_broker.Schedule(m_StateTimer, boost::posix_time::seconds(delay),
         boost::bind(&lbAgent::HandleStateTimer, this, boost::asio::placeholders::error));
 }
@@ -1040,7 +1040,7 @@ void lbAgent::StartStateTimer( unsigned int delay )
 /////////////////////////////////////////////////////////
 void lbAgent::HandleStateTimer( const boost::system::error_code & error )
 {
-    Logger.Debug << __func__ << std::endl;
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     
     if( !error && (m_Leader == GetUUID()) )
     {

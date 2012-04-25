@@ -131,7 +131,7 @@ SCAgent::SCAgent(std::string uuid, freedm::broker::CBroker &broker,
     m_phyDevManager(m_phyManager),
     m_broker(broker)
 {
-    Logger.Debug << __func__ << std::endl;
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     PeerNodePtr self_(this);
     AddPeer( self_ );
 }
@@ -210,7 +210,7 @@ void SCAgent::SendDoneBack()
 //////////////////////////////////////////////////////////////////
 void SCAgent::Initiate()
 {
-    Logger.Debug << __func__ << std::endl;
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     //clear map of the collected states previously
     collectstate.clear();
     //count the number of states recorded
@@ -269,7 +269,7 @@ void SCAgent::Initiate()
 
 void SCAgent::StateResponse()
 {
-    Logger.Debug << __func__ << std::endl;
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     //Initiator extracts information from multimap "collectstate" and send back to request module
     freedm::broker::CMessage m_;
     if (m_countmarker == m_AllPeers.size() && m_NotifyToSave == false)
@@ -480,7 +480,7 @@ void SCAgent::SendStateBack()
 
 void SCAgent::HandleRead(broker::CMessage msg)
 {
-    Logger.Debug << __func__ << std::endl;
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     std::string line_;
     std::stringstream ss_;
     PeerNodePtr peer_;
@@ -826,7 +826,7 @@ void SCAgent::HandleRead(broker::CMessage msg)
 /////////////////////////////////////////////////////////
 SCAgent::PeerNodePtr SCAgent::AddPeer(std::string uuid)
 {
-    Logger.Debug << __func__ << std::endl;
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     PeerNodePtr tmp_;
     tmp_.reset(new SCPeerNode(uuid,GetConnectionManager()));
     InsertInPeerSet(m_AllPeers,tmp_);

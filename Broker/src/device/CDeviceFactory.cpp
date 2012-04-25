@@ -46,7 +46,7 @@ namespace device {
 ////////////////////////////////////////////////////////////////////////////////
 CDeviceFactory& CDeviceFactory::instance()
 {
-    Logger.Debug << __func__ << std::endl;
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     static CDeviceFactory instance;
     return instance;
 }
@@ -79,7 +79,7 @@ void CDeviceFactory::init(CPhysicalDeviceManager& manager,
         boost::asio::io_service & ios, const std::string host,
         const std::string port, const std::string xml)
 {
-    Logger.Debug << __func__ << std::endl;
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     Logger.Info << "Initialized the device factory" << std::endl;
     m_manager = &manager;
 #if defined USE_DEVICE_PSCAD
@@ -118,7 +118,7 @@ void CDeviceFactory::init(CPhysicalDeviceManager& manager,
 void CDeviceFactory::RegisterDeviceClass(const std::string key,
         FactoryFunction value)
 {
-    Logger.Debug << __func__ << std::endl;
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     if (m_registry.count(key) != 0)
     {
         std::stringstream ss;
@@ -156,11 +156,11 @@ void CDeviceFactory::RegisterDeviceClass(const std::string key,
 void CDeviceFactory::CreateDevice(const Identifier& deviceID,
         const std::string deviceType)
 {
-    Logger.Debug << __func__ << std::endl;
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     if (!m_initialized)
     {
         std::stringstream ss;
-        ss << __func__ << " called before factory init" << std::endl;
+        ss << __PRETTY_FUNCTION__ << " called before factory init" << std::endl;
         throw std::runtime_error(ss.str());
     }
     // Ensure the specified device type exists
@@ -198,11 +198,11 @@ void CDeviceFactory::CreateDevice(const Identifier& deviceID,
 ////////////////////////////////////////////////////////////////////////////////
 void CDeviceFactory::CreateDevices(const std::vector<std::string>& deviceList)
 {
-    Logger.Debug << __func__ << std::endl;
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     if (!m_initialized)
     {
         std::stringstream ss;
-        ss << __func__ << " called before factory init" << std::endl;
+        ss << __PRETTY_FUNCTION__ << " called before factory init" << std::endl;
         throw std::runtime_error(ss.str());
     }
     foreach(std::string device, deviceList)
@@ -258,7 +258,7 @@ CDeviceFactory::CDeviceFactory()
 m_rtdsClient(CClientRTDS::RTDSPointer()), m_manager(0), m_registry(),
 m_initialized(false)
 {
-    Logger.Debug << __func__ << std::endl;
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -279,11 +279,11 @@ m_initialized(false)
 ////////////////////////////////////////////////////////////////////////////////
 IDeviceStructure::DevicePtr CDeviceFactory::CreateStructure() const
 {
-    Logger.Debug << __func__ << std::endl;
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     if (!m_initialized)
     {
         std::stringstream ss;
-        ss << __func__ << " called before factory init" << std::endl;
+        ss << __PRETTY_FUNCTION__ << " called before factory init" << std::endl;
         throw std::runtime_error(ss.str());
     }
 #if defined USE_DEVICE_PSCAD

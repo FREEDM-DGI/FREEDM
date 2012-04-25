@@ -1,8 +1,7 @@
 ////////////////////////////////////////////////////////////////////
 /// @file      IProtocol.cpp
 ///
-/// @author    Derek Ditch <derek.ditch@mst.edu>
-///            Stephen Jackson <scj7t4@mst.edu>
+/// @author    Derek Ditch <derek.ditch@mst.edu>, Stephen Jackson <scj7t4@mst.edu>
 ///
 /// @compiler  C++
 ///
@@ -46,7 +45,7 @@ namespace freedm {
 
 void IProtocol::Write(CMessage msg)
 {
-    Logger.Debug << __func__ << std::endl;
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     boost::array<char, CReliableConnection::MAX_PACKET_SIZE>::iterator it;
 
     /// Previously, we would call Synthesize here. Unfortunately, that was an

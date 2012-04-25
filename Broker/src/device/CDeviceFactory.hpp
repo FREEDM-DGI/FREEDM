@@ -153,11 +153,11 @@ private:
 template <class DeviceType>
 void CDeviceFactory::CreateDevice(const Identifier& deviceID)
 {
-    CDeviceFactoryHPPLogger.Debug << __func__ << std::endl;
+    CDeviceFactoryHPPLogger.Debug << __PRETTY_FUNCTION__ << std::endl;
     if (!m_initialized)
     {
         std::stringstream ss;
-        ss << __func__ << " called before factory init" << std::endl;
+        ss << __PRETTY_FUNCTION__ << " called before factory init" << std::endl;
         throw std::runtime_error(ss.str());
     }
     IDeviceStructure::DevicePtr ds;

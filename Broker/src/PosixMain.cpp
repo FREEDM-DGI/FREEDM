@@ -299,9 +299,9 @@ int main(int argc, char* argv[])
                     vm["add-host"].as< std::vector<std::string> >( );
             foreach(std::string& s, arglist_)
             {
-                int idx = s.find(':');
+                size_t idx = s.find(':');
 
-                if (idx == static_cast<int> ( std::string::npos ))
+                if (idx == std::string::npos)
                 { // Not found!
                     std::cerr << "Incorrectly formatted host in config file: "
                             << s << std::endl;

@@ -25,22 +25,31 @@
 #ifndef CLOGGER_HPP
 #define CLOGGER_HPP
 
+#include <cstdlib>
+#include <fstream>
+#include <string>
+
+#include "Utility.hpp"
+
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/foreach.hpp>
 #include <boost/iostreams/concepts.hpp>
 #include <boost/iostreams/stream.hpp>
+#include <boost/lexical_cast.hpp>
 #include <boost/program_options.hpp>
 #include <boost/shared_ptr.hpp>
-
-#include <cstdlib>
-#include <fstream>
-#include <string>
 
 #define foreach BOOST_FOREACH
 
 namespace po = boost::program_options;
 
 using namespace boost::posix_time;
+
+// Pretty function is nonstandard. Fallback to standards if not using GNU C++.
+#ifndef __GNUG__
+#define __PRETTY_FUNCTION__ ( std::string("At ") + basename(__FILE__) + \
+std::string(" line ") + boost::lexical_cast<std::string>(__LINE__) ).c_str()
+#endif
 
 class CLocalLogger;
 

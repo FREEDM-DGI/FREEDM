@@ -65,8 +65,6 @@ void CLineClient::Connect( const std::string p_hostname,
                 << "reason: " << boost::system::system_error(error).what();
         throw std::runtime_error(ss.str());
     }
-    
-    return( it != end );
 }
 
 void CLineClient::Set( const std::string p_device, const std::string p_key,

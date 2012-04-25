@@ -65,6 +65,9 @@ using namespace freedm;
 
 static CLocalLogger Logger(__FILE__);
 
+/// The copyright year for this DGI release.
+const unsigned int COPYRIGHT_YEAR = 2012;
+
 /// Broker entry point
 int main(int argc, char* argv[])
 {
@@ -204,12 +207,10 @@ int main(int argc, char* argv[])
 
         if (vm.count("version"))
         {
-            std::cout << basename(argv[0])
-                    << " (FREEDM DGI Revision "
-                    << BROKER_VERSION << ")" << std::endl
-                    << "Copyright (C) 2012 Missouri S&T. "
-                    << "All rights reserved."
-                    << std::endl;
+            std::cout << basename(argv[0]) << " (FREEDM DGI Revision "
+                    << BROKER_VERSION << ")" << std::endl;
+            std::cout << "Copyright (C) " << COPYRIGHT_YEAR << " Missouri S&T. "
+                    << "All rights reserved." << std::endl;
             return 0;
         }
 

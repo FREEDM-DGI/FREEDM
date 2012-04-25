@@ -62,7 +62,8 @@ class CGlobalLogger : public boost::noncopyable
     /// @description The GlobalLogger is responsible for tracking a table which
     ///     lists the names of the different loggers and their current output
     ///     levels.
-    /// @limitations: Singleton. Should not be copied.
+    ///
+    /// @limitations Singleton. Cannot be copied.
     ///////////////////////////////////////////////////////////////////////////
     public:
         /// Retrieves the singleton instance of the global logger.
@@ -92,8 +93,9 @@ class CGlobalLogger : public boost::noncopyable
 class CLog : public boost::iostreams::sink
 {
     ///////////////////////////////////////////////////////////////////////////
-    /// @description: A specific logging stream interface.
-    /// @limitations: Relies on having a parent LocalLogger to ask for its
+    /// @description A specific logging stream interface.
+    ///
+    /// @limitations Relies on having a parent LocalLogger to ask for its
     ///     output level
     ///////////////////////////////////////////////////////////////////////////
     public:
@@ -118,11 +120,11 @@ class CLog : public boost::iostreams::sink
 class CLocalLogger : private boost::noncopyable
 {
     ///////////////////////////////////////////////////////////////////////////
-    /// @description: Tracks the loggers available to the namespace the logger
+    /// @description Tracks the loggers available to the namespace the logger
     ///     is instantiated in. Loggers can share names. Loggers are typically
-    ///     declared as static members of the files that the log and are named
-    ///     after those files.
-    /// @limitations: Logging in header files is kind of hacky: the logger
+    ///     declared as static members of the files that the logger is used in.
+    ///
+    /// @limitations Logging in header files is kind of hacky: the logger
     ///     must have a globally unique name, where the those in cpps can share
     ///     one name since they are declared statically.
     ///////////////////////////////////////////////////////////////////////////

@@ -363,7 +363,8 @@ int main(int argc, char* argv[])
         thread_.join();
         std::cout << "Goodbye..." << std::endl;
          */
-    } catch (std::exception& e)
+    }
+    catch (std::exception& e)
     {
         Logger.Error << e.what() << std::endl;
     }

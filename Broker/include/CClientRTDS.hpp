@@ -91,7 +91,7 @@ class CClientRTDS : private boost::noncopyable
                                    const std::string p_xml );
                                    
         /// handles connection to FPGA
-        bool Connect( const std::string p_hostname, const std::string p_port );
+        void Connect( const std::string p_hostname, const std::string p_port );
         
         /// updates command table
         void Set( const std::string p_device, const std::string p_key,
@@ -111,7 +111,8 @@ class CClientRTDS : private boost::noncopyable
         
     private:
         /// constructor
-        CClientRTDS( boost::asio::io_service & p_service, const std::string p_xml );
+        CClientRTDS( boost::asio::io_service & p_service, 
+                const std::string p_xml );
         /// do byte order conversion if DGI and FPGA have opposite endianess
         static void endian_swap(char * data, const int num_bytes);
         

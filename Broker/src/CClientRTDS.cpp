@@ -104,11 +104,11 @@ namespace broker
 ///     none
 ///
 ////////////////////////////////////////////////////////////////////////////
-CClientRTDS::RTDSPointer CClientRTDS::Create( boost::asio::io_service & p_service,
-        const std::string p_xml )
-{   
+CClientRTDS::RTDSPointer CClientRTDS::Create(
+        boost::asio::io_service & p_service, const std::string p_xml)
+{
     Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
-    return CClientRTDS::RTDSPointer( new CClientRTDS(p_service, p_xml) );
+    return CClientRTDS::RTDSPointer(new CClientRTDS(p_service, p_xml));
 }
 
 ////////////////////////////////////////////////////////////////////////////
@@ -174,15 +174,12 @@ CClientRTDS::CClientRTDS( boost::asio::io_service & p_service,
 /// @param
 ///     p_hostname is the hostname of the desired endpoint
 ///     p_port is the port number of the desired endpoint
-///
-/// @return true if m_socket connected to the endpoint
-///         false otherwise
-///
 /// @limitations
 ///     TCP connections only
 ///
 ////////////////////////////////////////////////////////////////////////////
-bool CClientRTDS::Connect( const std::string p_hostname, const std::string p_port )
+void CClientRTDS::Connect( const std::string p_hostname, 
+        const std::string p_port )
 {
     Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     boost::asio::ip::tcp::resolver resolver( m_socket.get_io_service() );
@@ -201,10 +198,12 @@ bool CClientRTDS::Connect( const std::string p_hostname, const std::string p_por
     
     if ( error )
     {
-        throw boost::system::system_error(error);
+        std::stringstream ss;
+        ss << "CClientRTDS attempted to connect to " << p_hostname << " on port"
+                << " " << p_port << ", but connection failed for the following "
+                << "reason: " << boost::system::system_error(error).what();
+        throw std::runtime_error(ss.str());
     }
-    
-    return ( it != end);
 }
 
 /////////////////////////////////////////////////////////////////////////
@@ -222,7 +221,7 @@ bool CClientRTDS::Connect( const std::string p_hostname, const std::string p_por
 ///     by CClientRTDS is dependent on how fast FPGA runs.
 ///
 /// @Error_Handling
-///     Throws exception if reading from or writing to socket fails
+///     Throws an exception if reading from or writing to the socket fails
 ///
 /// @pre
 ///     Connection with FPGA is established.
@@ -243,7 +242,7 @@ void CClientRTDS::Run()
     //We simply need to use deadline_timer.async_wait to pass control back
     //to io_service, so it can schedule Run() with other callback functions 
     //under its watch.
-    const int TIMESTEP=1; //in microseconds. NEEDS MORE TESTING TO SET COORECTLY.
+    const int TIMESTEP=1; //in microseconds. NEEDS MORE TESTING TO SET CORRECTLY
 
     //**********************************
     //* Always send data to FPGA first *
@@ -262,7 +261,8 @@ void CClientRTDS::Run()
     
     for (int i=0; i<m_txCount; i++)
     {
-        endian_swap((char *)&m_txBuffer[4*i], sizeof(float)); //should be 4 bytes in float.
+        //should be 4 bytes in float.
+        endian_swap((char *)&m_txBuffer[4*i], sizeof(float));
     }
     
 #endif
@@ -270,11 +270,14 @@ void CClientRTDS::Run()
     // send to FPGA
     try
     {
-        boost::asio::write(m_socket, boost::asio::buffer(m_txBuffer, m_txBufSize));
+        boost::asio::write(m_socket, 
+                boost::asio::buffer(m_txBuffer, m_txBufSize));
     }
     catch (std::exception & e)
     {
-        Logger.Warn << "Send to FPGA failed because " << e.what() << std::endl;
+        std::stringstream ss;
+        ss << "Send to FPGA failed for the following reason: " << e.what();
+        throw std::runtime_error(ss.str());
     }
     
     //*******************************
@@ -282,12 +285,14 @@ void CClientRTDS::Run()
     //*******************************
     try
     {
-        boost::asio::read(m_socket, boost::asio::buffer(m_rxBuffer, m_rxBufSize));
+        boost::asio::read(m_socket, 
+                boost::asio::buffer(m_rxBuffer, m_rxBufSize));
     }
     catch (std::exception & e)
     {
-        Logger.Warn << "Receive from FPGA failed because " << e.what()
-        << std::endl;
+        std::stringstream ss;
+        ss << "Receive from FPGA failed for the following reason" << e.what();
+        throw std::runtime_error(ss.str());
     }
     
     // FPGA will send values in big-endian byte order
@@ -328,7 +333,8 @@ void CClientRTDS::Run()
 ///     none
 ///
 /// @param
-///     p_device is the unique identifier of a physical device (such as SST or Load)
+///     p_device is the unique identifier of a physical device (such as SST or 
+///     Load)
 ///
 ///     p_key is the name of a feature of the device that can be maniputed
 ///     (such as onOffSwitch, chargeLevel, etc.)
@@ -343,19 +349,18 @@ void CClientRTDS::Run()
 void CClientRTDS::Set( const std::string p_device, const std::string p_key,
                        double p_value )
 {
-    //access and write to table
     Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
-   
     
     try
     {
         m_cmdTable.SetValue( CDeviceKeyCoupled(p_device,p_key), p_value );
     }
-    catch (std::out_of_range & e  )
+    catch (std::out_of_range & e)
     {
-        Logger.Alert << "This device/key pair "<<p_device << "/"
-        << p_key<<" does not exist."<<std::endl;
-        exit(1);
+        std::stringstream ss;
+        ss << "RTDS attempted to set device/key pair " << p_device << "/"
+                << p_key << ", but this pair does not exist.";
+        throw std::runtime_error(ss.str());
     }
 }
 
@@ -373,7 +378,8 @@ void CClientRTDS::Set( const std::string p_device, const std::string p_key,
 ///     read is junk.
 ///
 /// @param
-///     p_device is the unique identifier of a physical device (such as SST, Load)
+///     p_device is the unique identifier of a physical device (such as SST, 
+///     Load)
 ///
 ///     p_key is a power electronic reading related to the device (such
 ///     as powerLevel, stateOfCharge, etc.)
@@ -382,26 +388,24 @@ void CClientRTDS::Set( const std::string p_device, const std::string p_key,
 ///     value from table is retrieved
 ///
 /// @limitations
-///     RTDS uses floats.  So the return value is type-cast into double from floats.
-///     The accuracy is not as high as a real doubles.
+///     RTDS uses floats.  So the return value is type-cast into double from 
+///     floats. The accuracy is not as high as a real doubles.
 ///
 ////////////////////////////////////////////////////////////////////////////
 double CClientRTDS::Get( const std::string p_device, const std::string p_key )
 {
-   
-    //access and read from table
     Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
      
     try
     {
-    
         return m_stateTable.GetValue( CDeviceKeyCoupled(p_device, p_key) );
     }
     catch (std::out_of_range & e  )
     {
-        Logger.Alert << "This device/key pair "<<p_device
-        << "/" << p_key<<" does not exist."<<std::endl;
-        exit(1);
+        std::stringstream ss;
+        ss << "RTDS attempted to get device/key pair " << p_device << "/"
+                << p_key << ", but this pair does not exist.";
+        throw std::runtime_error(ss.str());
     }
 }
 

@@ -69,7 +69,7 @@ namespace broker
 CTableRTDS::CTableRTDS( const std::string & p_xml, const std::string & p_tag )
         : m_structure( p_xml, p_tag )
 {
-    Logger.Info << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     m_length = m_structure.GetSize();
     m_data = new float[m_length];
     

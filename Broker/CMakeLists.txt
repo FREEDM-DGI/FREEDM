@@ -14,16 +14,19 @@ get_git_head_revision(GIT_REFSPEC GIT_SHA1)
 #   add the option to Broker/include/config.hpp.cmake as #cmakedefine OPTION
 #   activate / deactivate the option as described in the message below
 option(BUILD_TESTS "Enable the building and running of unit tests." OFF)
-option(SHOW_WARNINGS "warnings displayed during project compile" ON)
 option(CUSTOMNETWORK "for network.xml support" OFF)
 option(DATAGRAM "for UDP Datagram service w/o sequencing" OFF)
+option(SHOW_MESSAGES "Enable help messages during cmake execution" ON)
+option(SHOW_WARNINGS "warnings displayed during project compile" ON)
+option(USE_CLANG "Build FREEDM using Clang instead of GCC" OFF)
 option(USE_DEVICE_PSCAD "Enable the PSCAD simulation interface" OFF)
 option(USE_DEVICE_RTDS "Enable the RTDS simulation interface" OFF)
-option(USE_CLANG "Build FREEDM using Clang instead of GCC" OFF)
 
-message("This project uses custom CMake settings:"
-    "\n\tView the available settings with cmake -LH"
-    "\n\tChange a setting with -DSETTING=ON/OFF")
+if(SHOW_MESSAGES)
+    message("This project uses custom CMake settings:"
+        "\n\tView the available settings with cmake -LH"
+        "\n\tChange a setting with -DSETTING=ON/OFF")
+endif(SHOW_MESSAGES)
 
 # find the required boost libraries
 find_package(Boost REQUIRED COMPONENTS system thread program_options serialization date_time)

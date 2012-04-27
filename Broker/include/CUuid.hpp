@@ -36,16 +36,6 @@ public:
     		);
     	return CUuid(boost::uuids::name_generator(dns_namespace)(s));
 	}
-
-    /// Casts this to the boost uuid type
-    operator boost::uuids::uuid() {
-        return static_cast<boost::uuids::uuid&>(*this);
-    }
-
-    /// Casts this to the boost uuid type
-    operator boost::uuids::uuid() const {
-        return static_cast<boost::uuids::uuid const&>(*this);
-    }
 };
 
 }

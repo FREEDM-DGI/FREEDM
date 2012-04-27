@@ -5,7 +5,7 @@
 ///
 /// @project        FREEDM DGI
 ///
-/// @description    Called at compile time to generate PhysicalDeviceTypes.cpp
+/// @description    Called at compile time to generate device registration code.
 ///
 /// @functions      main
 ///
@@ -110,7 +110,7 @@ int main()
     fout << "/// Registers the physical devices known to this file" <<
             " with the device factory\n";
     fout << "void RegisterPhysicalDevices();\n";
-    fout << "\n}\n}\n}";
+    fout << "\n}\n}\n}\n";
     fout.close();
 
     // Generate PhysicalDeviceTypes.cpp
@@ -133,7 +133,7 @@ int main()
         type.erase(type.length() - 4, type.length());
         fout << "    REGISTER_DEVICE_CLASS(" << type << ");\n";
     }
-    fout << "}\n\n}\n}\n}";
+    fout << "}\n\n}\n}\n}\n";
     fout.close();
 
     return 0;

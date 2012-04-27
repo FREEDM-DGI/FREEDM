@@ -19,13 +19,11 @@ option(CUSTOMNETWORK "for network.xml support" OFF)
 option(DATAGRAM "for UDP Datagram service w/o sequencing" OFF)
 option(USE_DEVICE_PSCAD "Enable the PSCAD simulation interface" OFF)
 option(USE_DEVICE_RTDS "Enable the RTDS simulation interface" OFF)
-option(SHOW_MESSAGES "Enable help messages during cmake execution" ON)
+option(USE_CLANG "Build FREEDM using Clang instead of GCC" OFF)
 
-if(SHOW_MESSAGES)
-    message("This project uses custom CMake settings:"
-        "\n\tView the available settings with cmake -LH"
-        "\n\tChange a setting with -DSETTING=ON/OFF")
-endif(SHOW_MESSAGES)
+message("This project uses custom CMake settings:"
+    "\n\tView the available settings with cmake -LH"
+    "\n\tChange a setting with -DSETTING=ON/OFF")
 
 # find the required boost libraries
 find_package(Boost REQUIRED COMPONENTS system thread program_options serialization date_time)
@@ -35,14 +33,20 @@ if(Boost_FOUND)
     include_directories(SYSTEM ${Boost_INCLUDE_DIRS})
     link_directories(${Boost_LIBRARY_DIRS})
 
+
     # set C++ compiler flags
-    set(COMMON_FLAGS "-g -lpthread")
-    set(WARNING_FLAGS "")
     if(SHOW_WARNINGS)
         set(WARNING_FLAGS "-Wall -Wextra -pedantic")
     endif(SHOW_WARNINGS)
 
-    set(CMAKE_CXX_FLAGS "-std=c++98 ${COMMON_FLAGS} ${WARNING_FLAGS}")
+    set(CMAKE_CXX_FLAGS "-std=c++98 -g ${WARNING_FLAGS}")
+
+    if(USE_CLANG)
+        set(CMAKE_CXX_COMPILER "/usr/bin/clang++")
+        set(CMAKE_CXX_FLAGS "-g ${WARNING_FLAGS}")
+    endif(USE_CLANG)
+
+    set(CMAKE_EXE_LINKER_FLAGS "-lpthread")
 
     # generate the configuration file
     CONFIGURE_FILE(

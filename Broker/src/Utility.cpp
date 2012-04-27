@@ -30,3 +30,4 @@ std::string basename( const std::string s )
     idx = s.find_last_of("/\\");
     return s.substr(idx + 1);
 }
+

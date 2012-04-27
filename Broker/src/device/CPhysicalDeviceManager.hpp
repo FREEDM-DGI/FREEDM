@@ -100,7 +100,7 @@ public:
         for( ; it != end; it++ )
         {
             // attempt to convert each managed device to DeviceType
-            if( next_device = device::device_cast<DeviceType>(it->second) )
+            if( (next_device = device::device_cast<DeviceType>(it->second)) )
             {
                 result.push_back(next_device);
             }
@@ -121,7 +121,7 @@ public:
         for( ; it != end; it++ )
         {
             // attempt to convert each managed device to DeviceType
-            if( next_device = device::device_cast<DeviceType>(it->second) )
+            if( (next_device = device::device_cast<DeviceType>(it->second)) )
             {
                 result += next_device->Get(key);
             }

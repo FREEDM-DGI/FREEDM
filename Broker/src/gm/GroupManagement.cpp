@@ -118,7 +118,7 @@ void GMAgent::StartMonitor( const boost::system::error_code& err )
     m_membership = m_UpNodes.size()+1;
     m_membershipchecks = 1;
 }
-#pragma GCC diagnostic pop
+#pragma GCC diagnostic warning "-Wunused-parameter"
 
 ///////////////////////////////////////////////////////////////////////////////
 /// GMAgent

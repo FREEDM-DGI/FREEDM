@@ -1,10 +1,10 @@
 from fabric.api import *
 
-#env.key_filename = ["/home/scj7t4/.ssh/id_supercluster"]
+env.key_filename = ["/home/scj7t4/.ssh/id_supercluster"]
 env.warn_only = False
 env.hosts = ['r-facts3.device.mst.edu','r-facts4.device.mst.edu',
              'r-facts5.device.mst.edu','r-facts6.device.mst.edu']
-env.user = 'freedm-dev'
+#env.user = 'root'
 
 def host_type():
     run('uname -s')

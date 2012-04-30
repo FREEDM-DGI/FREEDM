@@ -36,8 +36,9 @@
 #include <boost/thread/locks.hpp>
 
 #include "CDispatcher.hpp"
-#include "logger.hpp"
-CREATE_EXTERN_STD_LOGS()
+#include "CLogger.hpp"
+
+static CLocalLogger Logger(__FILE__);
 
 #define UNUSED_ARGUMENT(x) (void)x
 
@@ -52,7 +53,7 @@ namespace freedm {
 ///////////////////////////////////////////////////////////////////////////////
 CDispatcher::CDispatcher()
 {
-    Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
 
 }
 
@@ -65,9 +66,9 @@ CDispatcher::CDispatcher()
 /// @post Message delievered to a module
 /// @param msg The message to distribute to modules
 ///////////////////////////////////////////////////////////////////////////////
-void CDispatcher::HandleRequest(CMessage msg)
+void CDispatcher::HandleRequest(CBroker &broker, CMessage msg)
 {
-    Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     ptree sub_;
     ptree::const_iterator it_;
     std::map< std::string, IReadHandler *>::const_iterator mapIt_;
@@ -77,7 +78,7 @@ void CDispatcher::HandleRequest(CMessage msg)
     try
     {
         // Scoped lock, will release mutex at end of try {}
-        boost::lock_guard< boost::mutex > scopedLock_( m_rMutex );
+        //boost::lock_guard< boost::mutex > scopedLock_( m_rMutex );
 
         // This allows for a handler to process all messages using
         // the special keyword "any"
@@ -87,11 +88,13 @@ void CDispatcher::HandleRequest(CMessage msg)
         {
             try
             {
-                (mapIt_->second)->HandleRead( msg );
+                CBroker::BoundScheduleable x = boost::bind(&CDispatcher::ReadHandlerCallback,
+                    this, mapIt_->second, msg);
+                broker.Schedule(m_handlerToModule[mapIt_->second],x);
             }
             catch( boost::property_tree::ptree_bad_path &e )
             {
-                Logger::Warn<<"Module failed to read message"<<std::endl;
+                Logger.Warn<<"Module failed to read message"<<std::endl;
             }
         }
 	        
@@ -100,7 +103,7 @@ void CDispatcher::HandleRequest(CMessage msg)
         ptree sub_ = p_mesg.get_child("message.submessages");
         for( it_ = sub_.begin(); it_ != sub_.end(); ++it_ )
         {
-            Logger::Debug << "Processing " << it_->first
+            Logger.Debug << "Processing " << it_->first
                     << std::endl;
 
             // Retrieve current key and iterate through all matching
@@ -116,11 +119,13 @@ void CDispatcher::HandleRequest(CMessage msg)
                 {
                     try
                     {
-                        (mapIt_->second)->HandleRead(msg);
+                        CBroker::BoundScheduleable x = boost::bind(&CDispatcher::ReadHandlerCallback,
+                            this, mapIt_->second, msg);
+                        broker.Schedule(m_handlerToModule[mapIt_->second],x);
                     }
                     catch( boost::property_tree::ptree_bad_path &e )
                     {
-                        Logger::Warn<<"Module failed to read message (any field)"<<std::endl;
+                        Logger.Warn<<"Module failed to read message (any field)"<<std::endl;
                     }
                 }
             }
@@ -130,15 +135,16 @@ void CDispatcher::HandleRequest(CMessage msg)
                         mapIt_ != m_readHandlers.upper_bound(key_);
                         ++mapIt_ )
                 {
-                    // XXX Not sure if the handler needs the full message
-                    (mapIt_->second)->HandleRead(msg);
+                    CBroker::BoundScheduleable x = boost::bind(&CDispatcher::ReadHandlerCallback,
+                        this, mapIt_->second, msg);
+                    broker.Schedule(m_handlerToModule[mapIt_->second],x);
                 }
 
                 if( m_readHandlers.lower_bound( key_ ) == 
                     m_readHandlers.upper_bound( key_)     )
                 {
                     // Just log this for now
-                    Logger::Debug << "Submessage '" << key_ << "' had no read handlers.";
+                    Logger.Debug << "Submessage '" << key_ << "' had no read handlers.";
                 }
             }
         }
@@ -147,17 +153,22 @@ void CDispatcher::HandleRequest(CMessage msg)
         if( sub_.begin() == sub_.end() )
         {
             // Just log this for now
-            Logger::Debug << "Message had no submessages.";
+            Logger.Debug << "Message had no submessages.";
         }
     }
     catch( boost::property_tree::ptree_bad_path &e )
     {
-        Logger::Error
+        Logger.Error
             << __PRETTY_FUNCTION__ << " (" << __LINE__ << "): "
             << "Malformed message. Does not contain 'submessages'."
             << std::endl << "\t" << e.what() << std::endl;
     }
 
+}
+
+void CDispatcher::ReadHandlerCallback(IReadHandler *h, CMessage msg)
+{
+    (h)->HandleRead(msg);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -170,7 +181,7 @@ void CDispatcher::HandleRequest(CMessage msg)
 ///////////////////////////////////////////////////////////////////////////////
 void CDispatcher::HandleWrite( ptree &p_mesg )
 {
-    Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     ptree sub_;
     ptree::const_iterator it_;
     std::map< std::string, IWriteHandler *>::const_iterator mapIt_;
@@ -189,7 +200,7 @@ void CDispatcher::HandleWrite( ptree &p_mesg )
                 mapIt_ != m_writeHandlers.upper_bound( "any" );
                 ++mapIt_ )
         {
-           Logger::Debug << "Processing 'any'" << std::endl;  
+           Logger.Debug << "Processing 'any'" << std::endl;  
 	  (mapIt_->second)->HandleWrite( p_mesg );
         }
 
@@ -198,7 +209,7 @@ void CDispatcher::HandleWrite( ptree &p_mesg )
         ptree sub_ = p_mesg.get_child("message.submessages");
         for( it_ = sub_.begin(); it_ != sub_.end(); ++it_ )
         {
-            Logger::Debug << "Processing " << it_->first
+            Logger.Debug << "Processing " << it_->first
                     << std::endl;
 
             // Retrieve current key and iterate through all matching
@@ -218,7 +229,7 @@ void CDispatcher::HandleWrite( ptree &p_mesg )
                 m_writeHandlers.upper_bound( key_)     )
             {
                 // Just log this for now
-                Logger::Debug << "Submessage '" << key_ << "' had no write handlers.";
+                Logger.Debug << "Submessage '" << key_ << "' had no write handlers.";
             }
         }
 
@@ -226,7 +237,7 @@ void CDispatcher::HandleWrite( ptree &p_mesg )
     }
     catch( boost::property_tree::ptree_bad_path &e )
     {
-        Logger::Error
+        Logger.Error
             << __PRETTY_FUNCTION__ << " (" << __LINE__ << "): "
             << "Malformed message. Does not contain 'submessages'."
             << std::endl << "\t" << e.what() << std::endl;
@@ -243,18 +254,19 @@ void CDispatcher::HandleWrite( ptree &p_mesg )
 ///   would like to recieve.
 /// @param p_handler The module which will be called to recieve the message.
 ///////////////////////////////////////////////////////////////////////////////
-void CDispatcher::RegisterReadHandler( const std::string &p_type,
-        IReadHandler *p_handler )
+void CDispatcher::RegisterReadHandler(const std::string &module, const std::string &p_type,
+        IReadHandler *p_handler)
 {
-    Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
 
     {
         // Scoped lock, will release mutex at end of {}
         boost::lock_guard< boost::mutex > scopedLock_( m_rMutex );
         m_readHandlers.insert(
                 std::pair< const std::string, IReadHandler *>
-                    (p_type, p_handler)
-        );
+                    (p_type, p_handler));
+        m_handlerToModule.insert(std::pair<IReadHandler *,
+                const std::string>(p_handler,module));
     }
 }
 
@@ -269,11 +281,11 @@ void CDispatcher::RegisterReadHandler( const std::string &p_type,
 ///   should be touched.
 /// @param p_handler The module that will be invoked to perform the touch
 ///////////////////////////////////////////////////////////////////////////////
-void CDispatcher::RegisterWriteHandler( const std::string &p_type,
+#pragma GCC diagnostic ignored "-Wunused-parameter"
+void CDispatcher::RegisterWriteHandler(const std::string &module, const std::string &p_type,
         IWriteHandler *p_handler )
 {
-    Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
-
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     {
         // Scoped lock, will release mutex at end of {}
         boost::lock_guard< boost::mutex > scopedLock_( m_wMutex );

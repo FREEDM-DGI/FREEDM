@@ -2,38 +2,45 @@
 set(
     BROKER_FILES
     CBroker.cpp
-    CReliableConnection.cpp
-    CListener.cpp
+    CClientRTDS.cpp
     CConnection.cpp
     CConnectionManager.cpp
     CDispatcher.cpp
+    CLineClient.cpp
+    CListener.cpp
+    CLogger.cpp
     CMessage.cpp
+    CReliableConnection.cpp
+    CSRConnection.cpp
+    CSUConnection.cpp
+    CTableRTDS.cpp
+    CTableStructure.cpp
+    device/CDeviceFactory.cpp
+    device/CDeviceKeyCoupled.cpp
+    device/CDeviceStructureGeneric.cpp
+    device/CDeviceStructurePSCAD.cpp
+    device/CDeviceStructureRTDS.cpp
+    device/CPhysicalDeviceManager.cpp
+    device/PhysicalDeviceTypes.cpp
+    device/types/IDevice.cpp
+    device/types/IDeviceLWI.cpp
     IPeerNode.cpp
-    CPhysicalDeviceManager.cpp
+    IProtocol.cpp
     gm/GroupManagement.cpp
     lb/LoadBalance.cpp
-    #lb/LBPeerNode.cpp
     sc/CStateCollection.cpp
-    CDeviceStructureGeneric.cpp
-    CDeviceStructurePSCAD.cpp
-    CDeviceFactory.cpp
-    CDeviceLWI.cpp
-    CDevice.cpp
-    CLineClient.cpp
-    )
+    Utility.cpp
+   )
+
+# Generate PhysicalDeviceTypes files based on contents of device/types directory
+add_executable(device/DeviceRegistrationGenerator ${CMAKE_CURRENT_BINARY_DIR}/device/DeviceRegistrationGenerator.cpp)
+add_custom_command(
+    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/device/PhysicalDeviceTypes.hpp ${CMAKE_CURRENT_BINARY_DIR}/device/PhysicalDeviceTypes.cpp
+    COMMAND device/DeviceRegistrationGenerator
+    DEPENDS device/DeviceRegistrationGenerator )
 
 # set BROKER_VERSION macro : cp version.h.cmake version.h
 configure_file(version.h.cmake ${CMAKE_BINARY_DIR}/src/version.h @ONLY)
 
 add_library(broker ${BROKER_FILES})
-add_executable(PosixBroker PosixMain.cpp)
 
-# link the executable to its dependencies
-target_link_libraries(
-    PosixBroker
-    broker
-    ${Boost_THREAD_LIBRARY}
-    ${Boost_SYSTEM_LIBRARY}
-    ${Boost_SERIALIZATION_LIBRARY}
-    ${Boost_PROGRAM_OPTIONS_LIBRARY}
-)

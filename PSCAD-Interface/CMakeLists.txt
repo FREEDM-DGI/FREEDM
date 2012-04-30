@@ -2,6 +2,10 @@
 cmake_minimum_required (VERSION 2.6)
 project (PSCAD_INTERFACE)
 
+# find the perl executable
+message(STATUS "Checking for perl installation")
+find_program(PERL_EXEC perl)
+
 # find the boost libraries required for this project
 find_package (Boost REQUIRED COMPONENTS system thread program_options)
 

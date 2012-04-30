@@ -42,15 +42,10 @@
 #include <boost/bind.hpp>
 #include <boost/thread/mutex.hpp>
 
-#include "uuid.hpp"
+#include "CUuid.hpp"
 #include "CBroker.hpp"
 #include "CConnection.hpp"
 #include "CConnectionManager.hpp"
-
-
-#include "logger.hpp"
-//CREATE_EXTERN_STD_LOGS();
-
 
 namespace freedm {
 typedef boost::shared_ptr<freedm::broker::CMessage> MessagePtr;
@@ -72,8 +67,7 @@ class IPeerNode
         ///
         /////////////////////////////////////////////////////////
     public:
-        IPeerNode(std::string uuid, ConnManagerPtr connmgr,
-            boost::asio::io_service& ios, freedm::broker::CDispatcher& dispatch);
+        IPeerNode(std::string uuid, ConnManagerPtr connmgr);
         /////////////////////////////////////////////////////////////
         /// @fn IPeerNode::GetStatus
         /// @description returns the status stored in the node as an
@@ -104,18 +98,6 @@ class IPeerNode
         ///              this object was constructed with.
         /////////////////////////////////////////////////////////////
         ConnManagerPtr GetConnectionManager() { return m_connmgr; };
-        /////////////////////////////////////////////////////////////
-        /// @fn IPeerNode::GetIOService
-        /// @description Returns a reference to the IO_Service this
-        ///   peer node was constructed with.
-        /////////////////////////////////////////////////////////////
-        boost::asio::io_service& GetIOService() { return m_ios; };
-        /////////////////////////////////////////////////////////////
-        /// @fn IPeerNode::GetDispatcher
-        /// @description Returns a reference to the dispatcher this
-        ///   peer node was constructed with.
-        /////////////////////////////////////////////////////////////
-        freedm::broker::CDispatcher& GetDispatcher() { return m_dispatch; };
         ///Sends a message to peer
         bool Send(freedm::broker::CMessage msg);
         ///Depreciated.
@@ -125,8 +107,6 @@ class IPeerNode
     private:
         std::string m_uuid; /// This node's uuid.
         ConnManagerPtr m_connmgr; /// The connection manager to use
-        boost::asio::io_service& m_ios; /// io_service to connect with
-        freedm::broker::CDispatcher& m_dispatch; /// Message handling dispatcher.
         int m_status;
 };
 

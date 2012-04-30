@@ -38,13 +38,10 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/thread/mutex.hpp>
 
-#include "uuid.hpp"
+#include "CUuid.hpp"
 #include "CBroker.hpp"
 #include "CConnection.hpp"
 #include "IPeerNode.hpp"
-
-#include "logger.hpp"
-//CREATE_EXTERN_STD_LOGS();
 
 
 namespace freedm {
@@ -53,10 +50,8 @@ namespace freedm {
 class GMPeerNode : public IPeerNode {
     public:
         /// Constructs a peer.
-        GMPeerNode(std::string uuid, ConnManagerPtr connmgr,
-            boost::asio::io_service& ios,
-            freedm::broker::CDispatcher& dispatch) :
-                IPeerNode(uuid,connmgr,ios,dispatch) {};
+        GMPeerNode(std::string uuid, ConnManagerPtr connmgr) :
+                IPeerNode(uuid,connmgr) {};
         /// States this peer can be in.
         enum { NORMAL,DOWN,RECOVERY,REORGANIZATION,ELECTION };
 };

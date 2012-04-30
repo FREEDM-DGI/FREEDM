@@ -27,14 +27,17 @@
 /// Suggested modifications or questions about these codes
 /// can be directed to Dr. Bruce McMillin, Department of
 /// Computer Science, Missour University of Science and
-/// Technology, Rolla, /// MO  65409 (ff@mst.edu).
+/// Technology, Rolla, MO  65409 (ff@mst.edu).
 ///////////////////////////////////////////////////////////////////////////////
+
 #ifndef CMESSAGE_HPP
 #define CMESSAGE_HPP
 
 #include <boost/asio.hpp>
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/xml_parser.hpp>
+#include <boost/date_time/posix_time/posix_time.hpp>
+#include <boost/date_time/gregorian/gregorian.hpp>
 
 #include "types/remotehost.hpp"
 
@@ -42,9 +45,6 @@ using boost::property_tree::ptree;
 
 #include <string>
 #include <set>
-
-#include "logger.hpp"
-CREATE_EXTERN_STD_LOGS()
 
 namespace freedm {
 namespace broker {
@@ -76,72 +76,88 @@ public:
     };
 
     /// Accessor for uuid
-    std::string GetSourceUUID() { return m_srcUUID; };
-    
+    std::string GetSourceUUID() const;
+
     /// Accessor for hostname
-    remotehost GetSourceHostname() { return m_remotehost; };
+    remotehost GetSourceHostname() const;
     
     /// Accessor for sequenceno
-    unsigned int GetSequenceNumber() { return m_sequenceno; };
+    unsigned int GetSequenceNumber() const;
 
     /// Accessor for status
-    StatusType GetStatus() { return m_status; };
+    StatusType GetStatus() const;
     
     /// Accessor for submessages
-    ptree& GetSubMessages() { return m_submessages; };
+    ptree& GetSubMessages();
 
     /// Setter for uuid
-    void SetSourceUUID(std::string uuid) { m_srcUUID = uuid; };
+    void SetSourceUUID(std::string uuid);
     
     /// Setter for hostname
-    void SetSourceHostname(remotehost hostname) { m_remotehost = hostname; };
+    void SetSourceHostname(remotehost hostname);
 
     /// Setter for sequenceno
-    void SetSequenceNumber(unsigned int sequenceno) { m_sequenceno = sequenceno; };
+    void SetSequenceNumber(unsigned int sequenceno);
 
     /// Setter for status
-    void SetStatus(StatusType status) { m_status = status; };
+    void SetStatus(StatusType status);
 
-    /// Contains the source node's information
-    std::string m_srcUUID;
+    /// Setter for the protocol
+    void SetProtocol(std::string protocol);
 
-    /// Status of the message
-    StatusType  m_status;
+    /// Getter for the protocol
+    std::string GetProtocol() const;
 
-    /// Contains all the submessages as handled by client algorithms
-    ptree       m_submessages;
+    /// Setter for the timestamp
+    void SetSendTimestampNow();
+    
+    /// Setter b for the timestamp
+    void SetSendTimestamp(boost::posix_time::ptime p);
+
+    /// Getter for the send time
+    boost::posix_time::ptime GetSendTimestamp() const;
+
+    /// Is an expire time set?
+    bool IsExpireTimeSet();
+
+    /// Check for an expire time that isn't never
+    bool HasExpireTime();
+
+    /// Setter for the expiration time
+    void SetExpireTime(boost::posix_time::ptime p);
+
+    /// Setter b for expiration time
+    void SetExpireTimeFromNow(boost::posix_time::time_duration t);
+
+    /// Sets that the message should not have an expire time
+    void SetNeverExpires(bool set=true);
+
+    /// Get the expire time
+    boost::posix_time::ptime GetExpireTime() const;
+
+    /// Set the protocol properties
+    void SetProtocolProperties(ptree x);
+
+    /// Get the protocol properties
+    ptree GetProtocolProperties() const;
+
+    /// Test to see if the message is expired
+    bool IsExpired() const;
+
+    /// Get hash of the message contents salted with send time?
+    size_t GetHash() const;
 
     /// Deconstruct the CMessage
     virtual ~CMessage() { };
 
     /// Initialize a new CMessage with a status type.
-    CMessage( CMessage::StatusType p_stat = CMessage::OK ) :
-        m_status ( p_stat )
-    {
-        Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
-    };
+    CMessage( CMessage::StatusType p_stat = CMessage::OK );
 
     /// Copy Constructor
-    CMessage( const CMessage &p_m ) :
-        m_srcUUID( p_m.m_srcUUID ),
-        m_status( p_m.m_status ),
-        m_submessages( p_m.m_submessages ),
-        m_remotehost( p_m.m_remotehost ),
-        m_sequenceno( p_m.m_sequenceno )
-    {
-        Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
-    };
+    CMessage( const CMessage &p_m );
 
     /// Cmessage Equals operator
-    CMessage& operator = ( const CMessage &p_m )
-    {
-        this->m_srcUUID = p_m.m_srcUUID;
-        this->m_status = p_m.m_status;
-        this->m_submessages = p_m.m_submessages;
-        this->m_remotehost = p_m.m_remotehost;
-        this->m_sequenceno = p_m.m_sequenceno;
-        return *this;
-    }
+    CMessage& operator = ( const CMessage &p_m );
     
     /// Parse CMessage from string.
     virtual bool Load( std::istream &p_is )
@@ -150,21 +166,14 @@ public:
     /// Put CMessage to a stream.
     virtual void Save( std::ostream &p_os );
 
-    /// A Generic reply CMessage
-    static CMessage StockReply( StatusType p_status )
-    {
-        Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
-        CMessage reply_;
-        reply_.m_status = p_status;
-
-        return reply_;
-    }
-
     /// Implicit conversion operator
     virtual operator ptree ();
 
     /// A way to load a CMessage from a property tree.
     explicit CMessage( const ptree &pt );
+
+    /// Contains all the submessages as handled by client algorithms
+    ptree       m_submessages;
    
 private: 
     /// Contains the source node's hostname
@@ -173,6 +182,26 @@ private:
     /// Contains the sequence number for the sending node
     unsigned int m_sequenceno;
 
+    /// Contains the source node's information
+    std::string m_srcUUID;
+
+    /// Status of the message
+    StatusType  m_status;
+
+    /// Container for all the protocol properties
+    ptree       m_properties;
+
+    /// The protocol this message is using.
+    std::string m_protocol;
+
+    /// Sets if the expiration should actually be never
+    bool m_never_expires;
+
+    /// The time the message was sent
+    boost::posix_time::ptime m_sendtime;
+    
+    /// The time the message will expire
+    boost::posix_time::ptime m_expiretime;
 };
 
 } // namespace broker

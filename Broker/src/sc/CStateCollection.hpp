@@ -2,12 +2,13 @@
 /// @file         CStateCollection.hpp
 ///
 /// @author       Li Feng <lfqt5@mail.mst.edu>
+///		  Derek Ditch <derek.ditch@mst.edu>
 ///
 /// @compiler     C++
 ///
 /// @project      FREEDM DGI
 ///
-/// @description  Header for for program loadbal.cpp
+/// @description  state collection module
 ///
 /// @functions List of functions and external entry points
 ///
@@ -52,13 +53,13 @@ using boost::property_tree::ptree;
 //#include "ExtensibleLineProtocol.hpp"
 #include "IAgent.hpp"
 #include "IHandler.hpp"
-#include "uuid.hpp"
+#include "CUuid.hpp"
 #include "CDispatcher.hpp"
 #include "CConnectionManager.hpp"
 #include "CConnection.hpp"
 
-#include "CPhysicalDeviceManager.hpp"
-#include "PhysicalDeviceTypes.hpp"
+#include "device/CPhysicalDeviceManager.hpp"
+#include "device/PhysicalDeviceTypes.hpp"
 
 #include <map>
 
@@ -75,80 +76,89 @@ namespace freedm
 ///////////////////////////////////////////////////////////////////////////////
 /// @class          SCAgent
 /// @description    Declaration of Chandy-Lamport Algorithm
-///
+///                 Each node that wants to initiate the state collection records its
+///                 local state and sends a marker message to all other peer nodes.
+///       	    Upon receiving a marker for the first time, peer nodes record their local states
+///                 and start recording any message from incoming channel until receive marker from
+///                 other nodes (these messages belong to the channel between the nodes).
 ///////////////////////////////////////////////////////////////////////////////
 
 class SCAgent : public IReadHandler, public SCPeerNode, public Templates::Singleton< SCAgent >,
     public IAgent< boost::shared_ptr<SCPeerNode> >
 {
-        friend class Templates::Singleton< SCAgent >;
-    public:
-    
-        typedef std::pair< std::string, int >  StateVersion;
-        
-        SCAgent(std::string uuid, boost::asio::io_service &ios, freedm::broker::CDispatcher &p_dispatch, freedm::broker::CConnectionManager &m_connManager, freedm::broker::CPhysicalDeviceManager &m_phyManager);
-        SCAgent(const SCAgent&);
-        SCAgent& operator=(const SCAgent&);
-        virtual ~SCAgent();
-        
-        //  void HandleRead(const ptree& pt );
-        //  void HandleWrite(const ptree& pt);
-        
-        
-        virtual void HandleRead(broker::CMessage msg);
-        
-        void    Initiate();
-        void    TakeSnapshot();
-        void    SendStateBack();
-	void    SendDoneBack();
-        void    StateResponse();
-               
-        // Messages
-        freedm::broker::CMessage m_state();
-        freedm::broker::CMessage m_marker();
-        
+  friend class Templates::Singleton< SCAgent >;
+  public:
+    ///Constructor        
+    SCAgent(std::string uuid, freedm::broker::CBroker &broker, freedm::broker::device::CPhysicalDeviceManager &m_phyManager);
+    ///Destructor
+    ~SCAgent();
+    //Handler
+    ///Handle receiving messages      
+    virtual void HandleRead(broker::CMessage msg);
 
-        // This is the main loop of the algorithm
-        int SC();
+  private:
+    //Marker structure
+    typedef std::pair< std::string, int >  StateVersion;
         
-        PeerNodePtr AddPeer(std::string uuid);
-        PeerNodePtr AddPeer(PeerNodePtr peer);
-        PeerNodePtr GetPeer(std::string uuid);
+    //Internal
+    ///Initiator starts state collection
+    void    Initiate();
+    ///Save local state
+    void    TakeSnapshot();
+    ///Peer sends collected states back to the initiator
+    void    SendStateBack();
+    ///Peer sends "Done" message to the initiator to indicate finishing sending states back
+    void    SendDoneBack();
+    ///Initiator sends collected states back to the request module
+    void    StateResponse();
         
-    protected:
+    // Messages
+    ///Create a marker message
+    freedm::broker::CMessage marker();          
+        
+    //Peer set operations
+    ///Add a peer to peer set from UUID
+    PeerNodePtr AddPeer(std::string uuid);
+    ///Add a peer to peer set from a pointer to a peer node object
+    PeerNodePtr AddPeer(PeerNodePtr peer);
+    ///Get a pointer to a peer from UUID
+    PeerNodePtr GetPeer(std::string uuid);
+
+    ///collect states container and its iterator
+    std::multimap<StateVersion, ptree> collectstate;
+    std::multimap<StateVersion, ptree>::iterator it;
     
-        //collect states
-        std::multimap<StateVersion, ptree> collectstate;
-        std::multimap<StateVersion, ptree>::iterator it;
+    ///count number of states    
+    unsigned int m_countstate;
+    ///count number of marker
+    unsigned int m_countmarker;
+    ///count number of "Done" messages
+    unsigned int m_countdone;
         
-        /*--------------------------------------------------
-            //count number for each unique marker
-            std::map<StateVersion, int> recordmarker;
-            std::map<StateVersion, int>::iterator itt;
-        */
-        int countstate;
-        int countmarker;
-	int countdone;
+    ///flag to indicate save channel message
+    bool m_NotifyToSave;
         
-        bool NotifyToSave;
+    ///module that request state collection
+    std::string m_module;
         
-        std::string module;
-        
-        StateVersion        m_curversion;
-        ptree               m_curstate;
-        
-        freedm::broker::CPhysicalDeviceManager &m_phyDevManager;
-        PeerSet m_AllPeers;
-	PeerSet copy_AllPeers;
-        
-        
-        /* IO and Timers */
-        //    deadline_timer        m_CheckTimer;
-        deadline_timer      m_TimeoutTimer;
-        //    deadline_timer        m_GlobalTimer;
-        
+    ///current version of marker
+    StateVersion        m_curversion;
+    ///current state
+    ptree               m_curstate;
+    
+    ///physical device manager
+    freedm::broker::device::CPhysicalDeviceManager &m_phyDevManager;
+    ///all known peers
+    PeerSet m_AllPeers;
+
+    ///Timeout Timer
+    freedm::broker::CBroker::TimerHandle m_TimeoutTimer;
+    
+    /// The broker    
+    freedm::broker::CBroker &m_broker;
 };
 
 }
 
 #endif
+

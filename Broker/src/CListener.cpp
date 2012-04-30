@@ -1,6 +1,6 @@
 
 ////////////////////////////////////////////////////////////////////
-/// @file      CConnection.cpp
+/// @file      CListener.cpp
 ///
 /// @author    Derek Ditch <derek.ditch@mst.edu>
 ///            Christopher M. Kohlhoff <chris@kohlhoff.com> (Boost Example)
@@ -37,9 +37,10 @@
 #include "CListener.hpp"
 #include "CConnectionManager.hpp"
 #include "CMessage.hpp"
-#include "RequestParser.hpp"
-#include "logger.hpp"
 #include "config.hpp"
+#include "CLogger.hpp"
+
+static CLocalLogger Logger(__FILE__);
 
 #include <vector>
 
@@ -63,25 +64,27 @@ namespace freedm {
 /// @param uuid: The uuid this node connects to, or what listener.
 ///////////////////////////////////////////////////////////////////////////////
 CListener::CListener(boost::asio::io_service& p_ioService,
-  CConnectionManager& p_manager, CDispatcher& p_dispatch, std::string uuid)
-  : CReliableConnection(p_ioService,p_manager,p_dispatch,uuid)
+  CConnectionManager& p_manager, CBroker& p_broker, std::string uuid)
+  : CReliableConnection(p_ioService,p_manager,p_broker,uuid)
 {
-    Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 /// @fn CListener::Start
-/// @description: Starts the recieve routine which causes this socket to behave
+/// @description: Starts the receive routine which causes this socket to behave
 ///   as a listener.
 /// @pre The object is initialized.
 /// @post The connection is asynchronously waiting for messages.
 ///////////////////////////////////////////////////////////////////////////////
+
 void CListener::Start()
 {
-    Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
-    GetSocket().async_receive_from(boost::asio::buffer(m_buffer, 8192), m_endpoint,
-        boost::bind(&CListener::HandleRead, this,
-            boost::asio::placeholders::error, boost::asio::placeholders::bytes_transferred));
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    GetSocket().async_receive_from(boost::asio::buffer(m_buffer, CReliableConnection::MAX_PACKET_SIZE),
+            m_endpoint, boost::bind(&CListener::HandleRead, this,
+            boost::asio::placeholders::error,
+            boost::asio::placeholders::bytes_transferred));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -95,31 +98,9 @@ void CListener::Start()
 ///////////////////////////////////////////////////////////////////////////////
 void CListener::Stop()
 {
-    Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
 }
  
-///////////////////////////////////////////////////////////////////////////////
-/// @fn CListener::SendACK
-/// @description Sends an acknowledgement of message reciept back to sender.
-/// @param uuid The uuid to send the message to.
-/// @param hostname The hostname to send the message to.
-/// @param sequenceno The message number being acked.
-/// @pre Initialized connection.
-/// @post If the sender is not already in the hostname table it will be added.
-///   then a connection is established to that node and an acknowledgment sent.
-//////////////////////////////////////////////////////////////////////////////
-void CListener::SendACK(std::string uuid, remotehost hostname, unsigned int sequenceno)
-{
-    Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
-    freedm::broker::CMessage m_;
-    // Make sure the connection is registered:
-    GetConnectionManager().PutHostname(uuid,hostname);
-    m_.SetStatus(freedm::broker::CMessage::Accepted);
-    m_.SetSequenceNumber(sequenceno);
-    Logger::Debug<<"Send ACK #"<<sequenceno<<std::endl;
-    GetConnectionManager().GetConnectionByUUID(uuid, GetSocket().get_io_service(), GetDispatcher())->Send(m_,false);
-}
-
 ///////////////////////////////////////////////////////////////////////////////
 /// @fn CListener::HandleRead
 /// @description The callback which accepts messages from the remote sender.
@@ -132,90 +113,80 @@ void CListener::SendACK(std::string uuid, remotehost hostname, unsigned int sequ
 ///   their appropriate places by the dispatcher. The incoming sequence number
 ///   for the source UUID has been incremented appropriately.
 ///////////////////////////////////////////////////////////////////////////////
-void CListener::HandleRead(const boost::system::error_code& e, std::size_t bytes_transferred)
+#pragma GCC diagnostic ignored "-Wunused-label"
+void CListener::HandleRead(const boost::system::error_code& e, 
+                           std::size_t bytes_transferred)
 {
-    Logger::Debug << __PRETTY_FUNCTION__ << std::endl;       
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;       
     if (!e)
     {
-        Logger::Debug << "Handled some message." << std::endl;
-        boost::tribool result_;
-        boost::tie(result_, boost::tuples::ignore) = Parse(
-            m_message, m_buffer.data(),
-            m_buffer.data() + bytes_transferred);
-        if (result_)
+        /// I'm removing request parser because it is an appalling heap of junk
+        std::stringstream iss;
+        std::ostreambuf_iterator<char> iss_it(iss);
+        std::copy(m_buffer.begin(), m_buffer.begin()+bytes_transferred, iss_it);
+        
+        try
         {
-            // Unfortunately, this (sequencing) can't be done with the read handler
-            // So it has to be a bit messier. m_message is the incoming
-            // CMessage. We scan this for the stamp that we place on a
-            // Message before we send it with the sequence number:
-            ptree x = static_cast<ptree>(m_message); 
-            unsigned int sequenceno = m_message.GetSequenceNumber();
-            std::string uuid = m_message.GetSourceUUID();
-            remotehost hostname = m_message.GetSourceHostname();
-            #ifdef CUSTOMNETWORK
-            if((rand()%100) >= GetReliability())
-            {
-                Logger::Debug<<"Incoming Packet Dropped ("<<GetReliability()
-                              <<") -> "<<uuid<<std::endl;
-                goto listen;
-            }
-            #ifdef DATAGRAM
-            else
-            {
-                goto accept;
-            }
-            #endif
-            #endif
-            if(m_message.GetStatus() == freedm::broker::CMessage::Accepted)
-            {
-                Logger::Debug << "Got ACK #" << sequenceno << std::endl;
-                GetConnectionManager().PutHostname(uuid,hostname);
-                GetConnectionManager().GetConnectionByUUID(uuid, GetSocket().get_io_service(), GetDispatcher())->RecieveACK(sequenceno);
-            }
-            else if(m_message.GetStatus() == freedm::broker::CMessage::Created)
-            {
-                Logger::Debug << "Got SYN #" << sequenceno << std::endl;
-                m_insequenceno[uuid] = sequenceno;
-                SendACK(uuid,hostname,m_insequenceno[uuid]);
-            }
-            else if(m_insequenceno.find(uuid) != m_insequenceno.end())
-            {
-                Logger::Debug << "Got Message #" << sequenceno << " expected " 
-                               << m_insequenceno[uuid]+1 % GetSequenceModulo() << std::endl;
-                if(sequenceno == (m_insequenceno[uuid]+1) % GetSequenceModulo())
-                {
-                    // The sequence number is what we expect.
-                    m_insequenceno[uuid] = (m_insequenceno[uuid]+1) % GetSequenceModulo();
-                    // Call on the connection manager to send the ACK to the sender.
-                    SendACK(uuid,hostname,m_insequenceno[uuid]);
-                    // Handle the request
-                    // XXX: Dr. McMillin and scj discussed how to make this secure,
-                    // specifically that messages from unknown sources should not
-                    // be accepted unless some trusted agent (like the group manager)
-                    // has accepted them. What I think I want to propose is that
-                    // write now, this is written to accept all messages, but
-                    // later we'll end in a "trust table" that epidemically
-                    // distributes trust in the system. Messages are rejected until
-                    // Trust is established or something. 
-                    accept:
-                    GetDispatcher().HandleRequest(m_message);
-                }
-                else
-                {
-                    SendACK(uuid,hostname,m_insequenceno[uuid]);
-                }
-            }
+            Logger.Debug<<"Loading xml:"<<std::endl;
+            m_message.Load(iss);
         }
-        listen:
-        GetSocket().async_receive_from(boost::asio::buffer(m_buffer, 8192), m_endpoint,
-            boost::bind(&CListener::HandleRead, this,
-                boost::asio::placeholders::error, boost::asio::placeholders::bytes_transferred)); 
+        catch(std::exception &e)
+        {
+            Logger.Error<<"Couldn't parse message XML: "<<e.what()<<std::endl;
+            GetSocket().async_receive_from(boost::asio::buffer(m_buffer, CReliableConnection::MAX_PACKET_SIZE),
+                m_endpoint, boost::bind(&CListener::HandleRead, this,
+                boost::asio::placeholders::error,
+                boost::asio::placeholders::bytes_transferred));
+            return;
+        }
+
+        ptree x = static_cast<ptree>(m_message);
+        std::string uuid = m_message.GetSourceUUID();
+        remotehost hostname = m_message.GetSourceHostname();
+        ///Make sure the hostname is registered:
+        GetConnectionManager().PutHostname(uuid,hostname);                        
+        ///Get the pointer to the connection:
+        CConnection::ConnectionPtr conn;
+        conn = GetConnectionManager().GetConnectionByUUID(uuid);
+#ifdef CUSTOMNETWORK
+        if((rand()%100) >= GetReliability())
+        {
+            Logger.Debug<<"Dropped datagram "<<m_message.GetHash()<<":"
+                          <<m_message.GetSequenceNumber()<<std::endl;
+            goto listen;
+        }
+#endif
+        if(m_message.GetStatus() == freedm::broker::CMessage::Accepted)
+        {
+            ptree pp = m_message.GetProtocolProperties();
+            size_t hash = pp.get<size_t>("src.hash");
+            Logger.Debug<<"Recieved ACK"<<hash<<":"
+                            <<m_message.GetSequenceNumber()<<std::endl;
+            conn->RecieveACK(m_message);
+        }
+        else if(conn->Recieve(m_message))
+        {
+            Logger.Debug<<"Accepted message "<<m_message.GetHash()<<":"
+                          <<m_message.GetSequenceNumber()<<std::endl;
+            GetDispatcher().HandleRequest(GetBroker(),m_message);
+        }
+        else if(m_message.GetStatus() != freedm::broker::CMessage::Created)
+        {
+            Logger.Debug<<"Rejected message "<<m_message.GetHash()<<":"
+                          <<m_message.GetSequenceNumber()<<std::endl;
+        }
+listen:
+        GetSocket().async_receive_from(boost::asio::buffer(m_buffer, CReliableConnection::MAX_PACKET_SIZE),
+                m_endpoint, boost::bind(&CListener::HandleRead, this,
+                boost::asio::placeholders::error,
+                boost::asio::placeholders::bytes_transferred));
     }
     else
     {
         GetConnectionManager().Stop(CListener::ConnectionPtr(this));	
     }
 }
+#pragma GCC diagnostic warning "-Wunused-label"
 
     } // namespace broker
 } // namespace freedm

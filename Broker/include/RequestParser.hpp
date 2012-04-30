@@ -12,9 +12,6 @@
 #define HTTP_CRequestParser_HPP
 
 #include "CMessage.hpp"
-#include "logger.hpp"
-CREATE_EXTERN_STD_LOGS()
-
 
 #include <algorithm>
 #include <stdexcept>
@@ -24,9 +21,12 @@ CREATE_EXTERN_STD_LOGS()
 
 #include <boost/logic/tribool.hpp>
 #include <boost/tuple/tuple.hpp>
+#include "CLogger.hpp"
+
 
 namespace freedm {
 namespace broker {
+
 
 /// Parse some data. The tribool return value is true when a complete request
 /// has been parsed, false if the data is invalid, indeterminate when more
@@ -36,7 +36,8 @@ template <typename InputIterator>
 boost::tuple<boost::tribool, InputIterator> Parse(CMessage &req,
         InputIterator begin, InputIterator end)
 {
-    Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
+    static CLocalLogger RPLogger(__PRETTY_FUNCTION__);
+    RPLogger.Debug << __PRETTY_FUNCTION__ << std::endl;
 
     std::stringstream ss_;
     std::ostreambuf_iterator<char> ss_buf( ss_ );
@@ -45,14 +46,14 @@ boost::tuple<boost::tribool, InputIterator> Parse(CMessage &req,
 
     try 
     {
-        Logger::Debug << "Loading xml: " << std::endl
+        RPLogger.Debug << "Loading xml: " << std::endl
                 << ss_.str() << std::endl;
         result = req.Load( ss_ );
     }
     catch ( std::exception &e )
     {
         // Perhaps incomplete message.
-        Logger::Error << "Exception: " << e.what() << std::endl;
+        RPLogger.Error << "Exception: " << e.what() << std::endl;
     }
 
     return boost::make_tuple(result, begin);
@@ -62,7 +63,8 @@ template <typename OutputIterator>
 boost::tuple< boost::tribool, OutputIterator> Synthesize( CMessage &msg,
     OutputIterator begin, size_t p_outMaxLength )
 {
-    Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
+    static CLocalLogger RPLogger(__PRETTY_FUNCTION__);
+    RPLogger.Debug << __PRETTY_FUNCTION__ << std::endl;
     std::stringstream ss_;
     std::string str_;
     boost::tribool result = boost::indeterminate;
@@ -71,13 +73,13 @@ boost::tuple< boost::tribool, OutputIterator> Synthesize( CMessage &msg,
     try
     {
         msg.Save( ss_ );
-        Logger::Debug << "Saved xml: " << std::endl
+        RPLogger.Debug << "Saved xml: " << std::endl
                 << ss_.str() << std::endl;
         result = true;
     }
     catch( std::exception &e )
     {
-        Logger::Error
+        RPLogger.Error
             << "Exception: " << e.what() << std::endl;
     }
 

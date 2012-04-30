@@ -1,0 +1,36 @@
+<state>
+  <entry index = "1">
+    <device>sst</device>
+    <key>powerLevel</key>
+  </entry>
+  <entry index = "2">
+    <device>gendev0</device>
+    <key>powerLevel</key>
+  </entry>
+  <entry index = "3">
+    <device>stodev0</device>
+    <key>powerLevel</key>
+  </entry>
+  <entry index = "4">
+    <device>loaddev0</device>
+    <key>powerLevel</key>
+  </entry>
+</state>
+<command>
+  <entry index = "1">
+    <device>sst</device>
+    <key>powerLevel</key>
+  </entry>
+  <entry index = "2">
+    <device>gendev0</device>
+    <key>powerLevel</key>
+  </entry>
+  <entry index = "3">
+    <device>stodev0</device>
+    <key>powerLevel</key>
+  </entry>
+  <entry index = "4">
+    <device>loaddev0</device>
+    <key>powerLevel</key>
+  </entry>  
+</command>

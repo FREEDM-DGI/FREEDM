@@ -32,6 +32,7 @@
 #cmakedefine DATAGRAM
 #cmakedefine CUSTOMNETWORK
 #cmakedefine USE_DEVICE_PSCAD
+#cmakedefine USE_DEVICE_RTDS
 
 #endif // CONFIG_HPP
 

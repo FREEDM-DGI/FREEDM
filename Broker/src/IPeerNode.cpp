@@ -38,9 +38,6 @@
 #include <boost/thread/locks.hpp>
 #include <map>
 
-// Logging facility
-#include "logger.hpp"
-
 // Serialization and smart ptrs
 #include <boost/bind.hpp>
 #include <boost/shared_ptr.hpp>
@@ -48,8 +45,9 @@
 
 #include "CConnection.hpp"
 #include "IPeerNode.hpp"
+#include "CLogger.hpp"
 
-CREATE_EXTERN_STD_LOGS()
+static CLocalLogger Logger(__FILE__);
 
 namespace freedm {
 
@@ -64,14 +62,11 @@ namespace freedm {
 /// @param ios The related ioservice used for scheduling
 /// @param dispatch The dispatcher used to deliver messages
 /////////////////////////////////////////////////////////////
-IPeerNode::IPeerNode(std::string uuid, ConnManagerPtr connmgr,
-    boost::asio::io_service& ios, freedm::broker::CDispatcher& dispatch)
+IPeerNode::IPeerNode(std::string uuid, ConnManagerPtr connmgr)
     : m_uuid(uuid),
-      m_connmgr(connmgr),
-      m_ios(ios),
-      m_dispatch(dispatch)
+      m_connmgr(connmgr)
 {
-    Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
 }
 
 
@@ -86,7 +81,7 @@ IPeerNode::IPeerNode(std::string uuid, ConnManagerPtr connmgr,
 ////////////////////////////////////////////////////////////
 void IPeerNode::SetStatus(int status)
 {
-    Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     m_status = status;
 }
 
@@ -101,7 +96,7 @@ void IPeerNode::SetStatus(int status)
 /////////////////////////////////////////////////////////////
 broker::ConnectionPtr IPeerNode::GetConnection()
 {
-    return m_connmgr.GetConnectionByUUID(m_uuid,m_ios,m_dispatch);
+    return m_connmgr.GetConnectionByUUID(m_uuid);
 }
 
 /////////////////////////////////////////////////////////////
@@ -129,16 +124,16 @@ bool IPeerNode::Send(freedm::broker::CMessage msg)
         }
         else
         {
-            Logger::Warn << "Couldn't Send Message To Peer (Couldn't make connection)" << std::endl;
+            Logger.Warn << "Couldn't Send Message To Peer (Couldn't make connection)" << std::endl;
             return false;
         }
     }
     catch(boost::system::system_error& e)
     {
-        Logger::Warn << "Couldn't Send Message To Peer (Sending Failed)" << std::endl;
+        Logger.Warn << "Couldn't Send Message To Peer (Sending Failed)" << std::endl;
         return false;
     }
-    Logger::Debug << "Sent message to peer" << std::endl;
+    Logger.Debug << "Sent message to peer" << std::endl;
     return true;
 }
 

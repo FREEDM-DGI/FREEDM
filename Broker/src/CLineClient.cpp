@@ -26,8 +26,9 @@
 
 #include "CLineClient.hpp"
 
-namespace freedm{
-  namespace broker{
+namespace freedm {
+
+namespace broker {
 
 CLineClient::TPointer CLineClient::Create( boost::asio::io_service & p_service )
 {
@@ -40,7 +41,8 @@ CLineClient::CLineClient( boost::asio::io_service & p_service )
     // skip
 }
 
-bool CLineClient::Connect( const std::string p_hostname, const std::string p_port )
+void CLineClient::Connect( const std::string p_hostname, 
+        const std::string p_port )
 {
     boost::asio::ip::tcp::resolver resolver( m_socket.get_io_service() );
     boost::asio::ip::tcp::resolver::query query( p_hostname, p_port );
@@ -57,10 +59,12 @@ bool CLineClient::Connect( const std::string p_hostname, const std::string p_por
     }
     if( error )
     {
-        throw boost::system::system_error(error);
+        std::stringstream ss;
+        ss << "CLineClient attempted to connect to " << p_hostname << " on port"
+                << " " << p_port << ", but connection failed for the following "
+                << "reason: " << boost::system::system_error(error).what();
+        throw std::runtime_error(ss.str());
     }
-    
-    return( it != end );
 }
 
 void CLineClient::Set( const std::string p_device, const std::string p_key,
@@ -74,7 +78,8 @@ void CLineClient::Set( const std::string p_device, const std::string p_key,
     std::string response_code, response_message;
     
     // format and send the request stream
-    request_stream << "SET " << p_device << ' ' << p_key << ' ' << p_value << "\r\n";
+    request_stream << "SET " << p_device << ' ' << p_key << ' ' << p_value 
+            << "\r\n";
     boost::asio::write( m_socket, request );
     
     // receive and split the response stream
@@ -84,11 +89,16 @@ void CLineClient::Set( const std::string p_device, const std::string p_key,
     // handle bad responses
     if( response_code != "200" )
     {
-        throw std::runtime_error(response_message);
+        std::stringstream ss;
+        ss << "CLineClient attempted to set " << p_key << " to " << p_value
+                << " on device " << p_device << ", but received a PSCAD error: "
+                << response_message;
+        throw std::runtime_error(ss.str());
     }
 }
 
-std::string CLineClient::Get( const std::string p_device, const std::string p_key )
+std::string CLineClient::Get( const std::string p_device, 
+        const std::string p_key )
 {
     boost::asio::streambuf request;
     std::ostream request_stream( &request );
@@ -108,7 +118,11 @@ std::string CLineClient::Get( const std::string p_device, const std::string p_ke
     // handle bad responses
     if( response_code != "200" )
     {
-        throw std::runtime_error(response_message);
+        std::stringstream ss;
+        ss << "CLineClient attempted to get " << p_key << " on device " 
+                << p_device << ", but received a PSCAD error: "
+                << response_message;
+        throw std::runtime_error(ss.str());
     }
     
     return value;
@@ -134,7 +148,10 @@ void CLineClient::Quit()
     // handle bad responses
     if( response_code != "200" )
     {
-        throw std::runtime_error(response_message);
+        std::stringstream ss;
+        ss << "CLineClient attempted quit, but received a PSCAD error: "
+                << response_message;
+        throw std::runtime_error(ss.str());
     }
     
     // close connection

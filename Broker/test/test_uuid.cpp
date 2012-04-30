@@ -31,7 +31,7 @@
 ///
 ///////////////////////////////////////////////////////////////////////////////
 
-#include "uuid.hpp"
+#include "CUuid.hpp"
 #include "unit_test.hpp"
 
 #include <string>
@@ -42,7 +42,7 @@
 
 void test_random_uuid()
 {
-    freedm::uuid u1, u2;
+    freedm::CUuid u1, u2;
 
     BOOST_CHECK( u1 != u2 );
 }

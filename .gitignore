@@ -1,2 +1,9 @@
 *.swp
 *.pyc
+/Broker/nbproject/
+/Broker/src/device/PhysicalDeviceTypes.hpp
+/Broker/src/device/PhysicalDeviceTypes.cpp
+/Broker/config/FPGA.xml
+/Broker/config/freedm.cfg
+/Broker/config/logger.cfg
+/Broker/config/network.xml

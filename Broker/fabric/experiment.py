@@ -42,6 +42,33 @@ class Experiment(object):
         self.host2uuid = host2uuid
         self.granularity = granularity
         self.fixed = dict()
+        self.bussed = []
+
+    def bus_edges(self,hostpairs):
+        #Translate host pairs into indicies:
+        tmp = []
+        for x in hostpairs:
+            tmp.append(self.get_index(x[0],x[1]))
+        #For simplicity, let us sort tmp
+        tmp.sort()
+        self.bussed += [tmp]
+
+    def get_index(self,host1,host2):
+        index = 0
+        seen = []
+        tuuidx = self.host2uuid[host1]
+        tuuidy = self.host2uuid[host2]
+        for (hostx,uuidx) in self.host2uuid.iteritems():
+            for (hostx,uuidy) in self.host2uuid.iteritems():
+                if uuidx == uuidy:
+                    continue
+                if uuidy in seen:
+                    continue
+                if (tuuidx == uuidx and tuuidy == uuidy) or (tuuidx == uuidy and tuuidy == uuidx):
+                    return index
+                index += 1
+                seen.append(uuidx)
+        return None
 
     def fix_edge(self,host1,host2,value):
         """
@@ -57,22 +84,12 @@ class Experiment(object):
         @param host2 The second host to use a destination vertex.
         @param value The reliability value to set the channel to. (0-100)
         """
-        index = 0
+        index = self.get_index(host1,host2)
         seen = []
         tuuidx = self.host2uuid[host1]
         tuuidy = self.host2uuid[host2]
-        for (hostx,uuidx) in self.host2uuid.iteritems():
-            for (hostx,uuidy) in self.host2uuid.iteritems():
-                if uuidx == uuidy:
-                    continue
-                if uuidy in seen:
-                    continue
-                if (tuuidx == uuidx and tuuidy == uuidy) or (tuuidx == uuidy and tuuidy == uuidx):
-                    self.fixed[(tuuidx,tuuidy)] = (index,value)
-                    self.expcounter[index] = value
-                    return
-                index += 1
-                seen.append(uuidx)
+        self.fixed[(tuuidx,tuuidy)] = (index,value)
+        self.expcounter[index] = value
 
     def maptonetwork(self):
         """
@@ -114,6 +131,7 @@ class Experiment(object):
         """
         index = 0
         max_v = [100]*(len(self.expcounter))
+        bus_onto = []
         for (key,(indexa,value)) in self.fixed.iteritems():
             max_v[indexa] = value
         if self.expcounter == max_v:
@@ -123,13 +141,29 @@ class Experiment(object):
                 #Don't change values we've fixed.
                 index += 1
                 continue
+            #If this edge is in a bussed set and is the first item, iterate it and
+            #update all the other bussed pairs, otherwise, continue
+            in_bus = False
+            for bus in self.bussed:
+                if len(bus) > 0 and bus[0] != index and index in bus:
+                    in_bus = True
+                    break
+                for x in bus[1:]:
+                    bus_onto.append(x)
+            if in_bus:
+                index += 1
+                continue
             if self.expcounter[index] == 100:
                 self.expcounter[index] = 0
+                for x in bus_onto:
+                    self.expcounter[x] = 0
                 index += 1
             elif self.expcounter[index] < 100:
                 self.expcounter[index] += self.granularity
                 if self.expcounter[index] > 100:
                     self.expcounter[index] = 100
+                for x in bus_onto:
+                    self.expcounter[x] = self.expcounter[index]
                 break
         for x in self.expcounter:
             assert x <= 100, "Experiment has overrun"
@@ -195,10 +229,15 @@ if __name__ == "__main__":
     dictthing = {'google.com':'goog','amazon.com':'amaz','movingpictures.com':'mvpc','rush.com':'rush'}
     x = Experiment(dictthing,20)
     i = 0
-    x.fix_edge('goog','amaz',50)
-    x.fix_edge('mvpc','rush',100)
-    x.fix_edge('goog','rush',0)
-    x.fix_edge('amaz','mvpc',0)
+    
+    x.fix_edge('google.com','amazon.com',27)
+    x.fix_edge('movingpictures.com','rush.com',73)
+
+    x.fix_edge('google.com','movingpictures.com',0)
+    x.fix_edge('amazon.com','rush.com',0)
+        
+    x.bus_edges([('google.com','rush.com'),('amazon.com','movingpictures.com')])    
+
     if 1:
         while x.next() != None:
             print x
@@ -206,6 +245,13 @@ if __name__ == "__main__":
         print i
         raw_input("Press Enter to continue...")
         x = Experiment(dictthing,7)
+        x.fix_edge('google.com','amazon.com',27)
+        x.fix_edge('movingpictures.com','rush.com',73)
+
+        x.fix_edge('google.com','movingpictures.com',0)
+        x.fix_edge('amazon.com','rush.com',0)
+            
+        x.bus_edges([('google.com','rush.com'),('amazon.com','movingpictures.com')])    
         i = 0
         while x.next() != None:
             print x
@@ -214,6 +260,13 @@ if __name__ == "__main__":
         raw_input("Press Enter to continue...")
     while 1:
         x = Experiment(dictthing,20)
+        x.fix_edge('google.com','amazon.com',27)
+        x.fix_edge('movingpictures.com','rush.com',73)
+
+        x.fix_edge('google.com','movingpictures.com',0)
+        x.fix_edge('amazon.com','rush.com',0)
+            
+        x.bus_edges([('google.com','rush.com'),('amazon.com','movingpictures.com')])    
         for i in xrange(random.randint(1,40000)):
             x.next()
         print x.generate_files()

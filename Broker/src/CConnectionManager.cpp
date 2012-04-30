@@ -37,9 +37,10 @@
 #include "CBroker.hpp"
 #include <boost/thread/locks.hpp>
 
-#include "logger.hpp"
 #include "config.hpp"
-CREATE_EXTERN_STD_LOGS()
+#include "CLogger.hpp"
+
+static CLocalLogger Logger(__FILE__);
 
 #include <algorithm>
 #include <boost/bind.hpp>
@@ -52,27 +53,25 @@ namespace broker {
 /// @description: Initializes the connection manager object
 /// @pre None
 /// @post Connection manager is ready for use
-/// @param uuid: The uuid of this node
-/// @param hostname: the hostname of this node
 ///////////////////////////////////////////////////////////////////////////////
-CConnectionManager::CConnectionManager(freedm::uuid uuid, std::string hostname)
+CConnectionManager::CConnectionManager()
 {
-    Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     m_uuid = CGlobalConfiguration::instance().GetUUID();
     m_hostname.hostname = CGlobalConfiguration::instance().GetHostname();
     m_hostname.port = CGlobalConfiguration::instance().GetListenPort();
-};
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 /// @fn CConnectionManager::Start
-/// @description Performs intialization of a connection.
+/// @description Performs initialization of a connection.
 /// @pre The connection c has not been started.
 /// @post The connection c has been started.
 /// @param c A connection pointer that has not been started.
 ///////////////////////////////////////////////////////////////////////////////
 void CConnectionManager::Start (CListener::ConnectionPtr c)
 {
-    Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     c->Start();
     m_inchannel = c; 
 }
@@ -87,7 +86,7 @@ void CConnectionManager::Start (CListener::ConnectionPtr c)
 ///////////////////////////////////////////////////////////////////////////////
 void CConnectionManager::PutConnection(std::string uuid, ConnectionPtr c)
 {
-    Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     {  
         boost::lock_guard< boost::mutex > scopedLock_( m_Mutex );
         m_connections.insert(connectionmap::value_type(uuid,c));
@@ -104,7 +103,7 @@ void CConnectionManager::PutConnection(std::string uuid, ConnectionPtr c)
 ///////////////////////////////////////////////////////////////////////////////
 void CConnectionManager::PutHostname(std::string u_, std::string host_, std::string port)
 {
-    Logger::Debug << __PRETTY_FUNCTION__ << std::endl;  
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;  
     {
         boost::lock_guard< boost::mutex > scopedLock_( m_Mutex );
         remotehost x;
@@ -125,7 +124,7 @@ void CConnectionManager::PutHostname(std::string u_, std::string host_, std::str
 ///////////////////////////////////////////////////////////////////////////////
 void CConnectionManager::PutHostname(std::string u_, remotehost host_)
 {
-    Logger::Debug << __PRETTY_FUNCTION__ << std::endl;  
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;  
     {
         boost::lock_guard< boost::mutex > scopedLock_( m_Mutex );
         m_hostnames.insert(std::pair<std::string, remotehost>(u_, host_));  
@@ -140,7 +139,7 @@ void CConnectionManager::PutHostname(std::string u_, remotehost host_)
 ///////////////////////////////////////////////////////////////////////////////
 void CConnectionManager::Stop (CConnection::ConnectionPtr c)
 {
-    Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     if(m_connections.right.count(c))
     {
         m_connections.right.erase(c);
@@ -157,7 +156,7 @@ void CConnectionManager::Stop (CConnection::ConnectionPtr c)
 ///////////////////////////////////////////////////////////////////////////////
 void CConnectionManager::Stop (CListener::ConnectionPtr c)
 {
-    Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     c->Stop();
     //TODO: Make the whole thing terminate if the listner says stop.
 }
@@ -172,14 +171,14 @@ void CConnectionManager::Stop (CListener::ConnectionPtr c)
 ///////////////////////////////////////////////////////////////////////////////
 void CConnectionManager::StopAll ()
 {
-    Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     while(m_connections.size() > 0)
     {
       Stop((*m_connections.left.begin()).second); //Side effect of stop should make this map smaller
     }
     m_connections.clear();
     Stop(m_inchannel);
-    Logger::Debug << "All Connections Closed" << std::endl;
+    Logger.Debug << "All Connections Closed" << std::endl;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -218,10 +217,9 @@ remotehost CConnectionManager::GetHostnameByUUID(std::string uuid) const
 /// @return A pointer to the connection, or NULL if construction failed for
 ///         some reason.
 ///////////////////////////////////////////////////////////////////////////////
-ConnectionPtr CConnectionManager::GetConnectionByUUID
-    (std::string uuid_, boost::asio::io_service& ios,  CDispatcher &dispatch_)
+ConnectionPtr CConnectionManager::GetConnectionByUUID(std::string uuid_)
 {
-    Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
 
     ConnectionPtr c_;  
     std::string s_,port;
@@ -231,7 +229,6 @@ ConnectionPtr CConnectionManager::GetConnectionByUUID
     {
         if(m_connections.left.at(uuid_)->GetSocket().is_open())
         {
-            Logger::Debug << "Recycling connection to " << uuid_ << std::endl;
             #ifdef CUSTOMNETWORK
             LoadNetworkConfig();
             #endif
@@ -239,14 +236,14 @@ ConnectionPtr CConnectionManager::GetConnectionByUUID
         }
         else
         {
-            Logger::Warn <<" Connection to " << uuid_ << " has gone stale " << std::endl;
+            Logger.Warn <<" Connection to " << uuid_ << " has gone stale " << std::endl;
             //The socket is not marked as open anymore, we
             //should stop it.
             Stop(m_connections.left.at(uuid_));
         }
     }  
 
-    Logger::Info << "Making Fresh Connection to " << uuid_ << std::endl;
+    Logger.Info << "Making Fresh Connection to " << uuid_ << std::endl;
 
     // Find the requested host from the list of known hosts
     std::map<std::string, remotehost>::iterator mapIt_;
@@ -257,11 +254,11 @@ ConnectionPtr CConnectionManager::GetConnectionByUUID
     port = mapIt_->second.port;
 
     // Create a new CConnection object for this host	
-    c_.reset(new CConnection(ios, *this, dispatch_, uuid_));  
+    c_.reset(new CConnection(m_inchannel->GetIOService(), *this, m_inchannel->GetBroker(), uuid_));  
    
     // Initiate the TCP connection
     //XXX Right now, the port is hardcoded  
-    boost::asio::ip::udp::resolver resolver(ios);
+    boost::asio::ip::udp::resolver resolver(m_inchannel->GetIOService());
     boost::asio::ip::udp::resolver::query query( s_, port);
     boost::asio::ip::udp::endpoint endpoint = *resolver.resolve( query );
     c_->GetSocket().connect( endpoint ); 
@@ -284,7 +281,7 @@ ConnectionPtr CConnectionManager::GetConnectionByUUID
 ///////////////////////////////////////////////////////////////////////////////
 void CConnectionManager::LoadNetworkConfig()
 {
-    Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     boost::property_tree::ptree pt;
     boost::property_tree::read_xml("network.xml",pt);    
     int inreliability = pt.get("network.incoming.reliability",100);

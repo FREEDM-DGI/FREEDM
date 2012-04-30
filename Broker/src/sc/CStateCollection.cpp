@@ -126,6 +126,7 @@ SCAgent::SCAgent(std::string uuid, freedm::broker::CBroker &broker,
                  freedm::broker::device::CPhysicalDeviceManager &m_phyManager):
     SCPeerNode(uuid, broker.GetConnectionManager()),
     m_countstate(0),
+    m_SCrunning(false),
     m_NotifyToSave(false),
     m_curversion("default", 0),
     m_phyDevManager(m_phyManager),
@@ -516,8 +517,6 @@ void SCAgent::HandleRead(broker::CMessage msg)
             if (peer_->GetUUID() != GetUUID())
                 EraseInPeerSet(m_AllPeers,peer_);
         }
-
-	copy_AllPeers.clear();
         
         foreach(ptree::value_type &v, pt.get_child("any.peers"))
         {
@@ -602,7 +601,11 @@ void SCAgent::HandleRead(broker::CMessage msg)
         //call initiate to start state collection
         Logger.Notice << "Receiving state collect request from " << m_module << " ( " << pt.get<std::string>("sc.source")
                        << " ) " << std::endl;
-        Initiate();
+        if(m_SCrunning == false)
+	{
+	    Initiate();
+	    m_SCrunning = true;
+	}
     }
     //check if this is a marker message
     else if (pt.get<std::string>("sc") == "marker")
@@ -813,6 +816,7 @@ void SCAgent::HandleRead(broker::CMessage msg)
         {
             StateResponse();
             m_countdone = 0;
+	    m_SCrunning = false;
         }
     }
 }

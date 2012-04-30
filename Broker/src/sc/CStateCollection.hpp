@@ -134,7 +134,10 @@ class SCAgent : public IReadHandler, public SCPeerNode, public Templates::Single
     unsigned int m_countmarker;
     ///count number of "Done" messages
     unsigned int m_countdone;
-        
+     
+    ///flag to indicate if there is State collection is running
+    bool m_SCrunning;
+   
     ///flag to indicate save channel message
     bool m_NotifyToSave;
         

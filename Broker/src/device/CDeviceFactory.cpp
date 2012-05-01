@@ -23,8 +23,10 @@
 ///     University of Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
 ////////////////////////////////////////////////////////////////////////////////
 
-#include "device/CDeviceFactory.hpp"
+#include <boost/foreach.hpp>
+
 #include "config.hpp"
+#include "device/CDeviceFactory.hpp"
 
 /// This file's logger.
 static CLocalLogger Logger(__FILE__);
@@ -212,7 +214,7 @@ void CDeviceFactory::CreateDevices(const std::vector<std::string>& deviceList)
         ss << __PRETTY_FUNCTION__ << " called before factory init" << std::endl;
         throw std::runtime_error(ss.str());
     }
-    foreach(std::string device, deviceList)
+    BOOST_FOREACH (std::string device, deviceList)
     {
         size_t colon = device.find(':');
 

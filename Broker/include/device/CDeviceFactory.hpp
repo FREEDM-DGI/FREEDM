@@ -27,18 +27,15 @@
 #define C_DEVICE_FACTORY_HPP
 
 #include <boost/asio/io_service.hpp>
-#include <boost/foreach.hpp>
 #include <boost/noncopyable.hpp>
 
-#define foreach BOOST_FOREACH
-
-#include "CRtdsAdapter.hpp"
 #include "CDeviceStructureGeneric.hpp"
 #include "CDeviceStructurePSCAD.hpp"
 #include "CDeviceStructureRTDS.hpp"
-#include "CPscadAdapter.hpp"
 #include "CLogger.hpp"
 #include "CPhysicalDeviceManager.hpp"
+#include "CPscadAdapter.hpp"
+#include "CRtdsAdapter.hpp"
 #include "IPhysicalDevice.hpp"
 
 /// This file's logger.
@@ -47,7 +44,7 @@ static CLocalLogger CDeviceFactoryHPPLogger(__FILE__);
 namespace freedm {
 namespace broker {
 namespace device {
-
+    
 #define REGISTER_DEVICE_CLASS(SUFFIX) CDeviceFactory::instance().\
 RegisterDeviceClass(#SUFFIX, &CDeviceFactory::CreateDevice<CDevice##SUFFIX>)
 

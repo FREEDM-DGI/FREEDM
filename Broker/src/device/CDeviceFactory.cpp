@@ -1,30 +1,32 @@
 ////////////////////////////////////////////////////////////////////////////////
 /// @file           CDeviceFactory.cpp
 ///
-/// @author         Thomas Roth <tprfh7@mst.edu>
+/// @author         Thomas Roth <tprfh7@mst.edu>,
 ///                 Michael Catanzaro <michael.catanzaro@mst.edu>
 ///
 /// @project        FREEDM DGI
 ///
 /// @description    Handles the creation of devices and their structures.
 ///
-/// These source code files were created at the Missouri University of Science
-/// and Technology, and are intended for use in teaching or research. They may
-/// be freely copied, modified and redistributed as long as modified versions
-/// are clearly marked as such and this notice is not removed.
-///
-/// Neither the authors nor Missouri S&T make any warranty, express or implied,
-/// nor assume any legal responsibility for the accuracy, completeness or
-/// usefulness of these files or any information distributed with these files.
-///
-/// Suggested modifications or questions about these files can be directed to
-/// Dr. Bruce McMillin, Department of Computer Science, Missouri University of
-/// Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
+/// @copyright
+///     These source code files were created at Missouri University of Science
+///     and Technology, and are intended for use in teaching or research. They
+///     may be freely copied, modified, and redistributed as long as modified
+///     versions are clearly marked as such and this notice is not removed.
+///     Neither the authors nor Missouri S&T make any warranty, express or
+///     implied, nor assume any legal responsibility for the accuracy,
+///     completeness, or usefulness of these files or any information
+///     distributed with these files. 
+///     
+///     Suggested modifications or questions about these files can be directed
+///     to Dr. Bruce McMillin, Department of Computer Science, Missouri
+///     University of Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
 ////////////////////////////////////////////////////////////////////////////////
 
 #include "CDeviceFactory.hpp"
 #include "config.hpp"
 
+/// This file's logger.
 static CLocalLogger Logger(__FILE__);
 
 namespace freedm {
@@ -32,7 +34,7 @@ namespace broker {
 namespace device {
 
 ////////////////////////////////////////////////////////////////////////////////
-/// @function CDeviceFactory::instance
+/// @function CDeviceFactory::instance()
 ///
 /// @description Retrieves the singleton factory instance.
 ///
@@ -53,7 +55,9 @@ CDeviceFactory& CDeviceFactory::instance()
 
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 ////////////////////////////////////////////////////////////////////////////////
-/// @function CDeviceFactory::init
+/// @function CDeviceFactory::init(CPhysicalDeviceManager& manager,
+///     boost::asio::io_service& ios, const std::string host,
+///     const std::string port, const std::string xml)
 ///
 /// @description Initializes the device factory with a device manager and
 ///  networking information. This function should be called once, before the
@@ -76,17 +80,17 @@ CDeviceFactory& CDeviceFactory::instance()
 /// @limitations Must be called before anything else is done with this factory.
 ////////////////////////////////////////////////////////////////////////////////
 void CDeviceFactory::init(CPhysicalDeviceManager& manager,
-        boost::asio::io_service & ios, const std::string host,
+        boost::asio::io_service& ios, const std::string host,
         const std::string port, const std::string xml)
 {
     Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     Logger.Info << "Initialized the device factory" << std::endl;
     m_manager = &manager;
 #if defined USE_DEVICE_PSCAD
-    m_lineClient = CLineClient::Create(ios);
+    m_lineClient = CPscadAdapter::Create(ios);
     m_lineClient->Connect(host, port);
 #elif defined USE_DEVICE_RTDS
-    m_rtdsClient = CClientRTDS::Create(ios, xml);
+    m_rtdsClient = CRtdsAdapter::Create(ios, xml);
     m_rtdsClient->Connect(host, port);
     m_rtdsClient->Run();
 #endif
@@ -95,7 +99,8 @@ void CDeviceFactory::init(CPhysicalDeviceManager& manager,
 #pragma GCC diagnostic warning "-Wunused-parameter"
 
 ////////////////////////////////////////////////////////////////////////////////
-/// @function CDeviceFactory::RegisterDeviceClass
+/// @function CDeviceFactory::RegisterDeviceClass(const std::string key,
+///     FactoryFunction value)
 ///
 /// @description Registers a device creation function with the factory under the
 ///  specified string key. The key for the function should be the name of the
@@ -132,7 +137,8 @@ void CDeviceFactory::RegisterDeviceClass(const std::string key,
 
 
 ////////////////////////////////////////////////////////////////////////////////
-/// @function CDeviceFactory::CreateDevice
+/// @function CDeviceFactory::CreateDevice(const Identifier deviceID,
+///        const std::string deviceType)
 ///
 /// @description Translates a string into a class type, then creates a new
 ///  device of this type with the specified identifier.
@@ -153,7 +159,7 @@ void CDeviceFactory::RegisterDeviceClass(const std::string key,
 /// @limitations Device classes must properly register themselves before
 ///  instances of that device class can be constructed.
 ////////////////////////////////////////////////////////////////////////////////
-void CDeviceFactory::CreateDevice(const Identifier& deviceID,
+void CDeviceFactory::CreateDevice(const Identifier deviceID,
         const std::string deviceType)
 {
     Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
@@ -176,7 +182,8 @@ void CDeviceFactory::CreateDevice(const Identifier& deviceID,
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-/// @function CDeviceFactory::CreateDevices
+/// @function CDeviceFactory::CreateDevices(
+///    const std::vector<std::string>& deviceList)
 ///
 /// @description Creates all devices specified by the passed vector. The vector
 ///  is intended to be generated in main by a configuration file (e.g.
@@ -240,7 +247,7 @@ void CDeviceFactory::CreateDevices(const std::vector<std::string>& deviceList)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-/// @function CDeviceFactory::CDeviceFactory
+/// @function CDeviceFactory::CDeviceFactory()
 ///
 /// @description Constructs the factory. Should only ever be called from
 ///  CDeviceFactory::instance.
@@ -254,21 +261,21 @@ void CDeviceFactory::CreateDevices(const std::vector<std::string>& deviceList)
 ///  before doing anything with it.
 ////////////////////////////////////////////////////////////////////////////////
 CDeviceFactory::CDeviceFactory()
-: m_lineClient(CLineClient::TPointer()),
-m_rtdsClient(CClientRTDS::RTDSPointer()), m_manager(0), m_registry(),
+: m_lineClient(CPscadAdapter::TPointer()),
+m_rtdsClient(CRtdsAdapter::RTDSPointer()), m_manager(0), m_registry(),
 m_initialized(false)
 {
     Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-/// @function CDeviceFactory::CreateStructure
+/// @function CDeviceFactory::CreateStructure()
 ///
 /// @description Creates the internal structure of a device.  Intended to be
 ///  immediately passed to a device constructor when the device is created by
 ///  CreateDevice.
 ///
-/// @ErrorHanding Throws an exception if the factory is not initialized.
+/// @ErrorHandling Throws an exception if the factory is not initialized.
 ///
 /// @pre factory must be configured by CDeviceFactory::init.
 /// @post desired device structure is created and returned.
@@ -276,6 +283,8 @@ m_initialized(false)
 /// @return an internal device structure for PSCAD, RTDS, or generic devices.
 ///
 /// @limitations only PSCAD, RTDS, and generic devices are supported.
+///
+/// @todo remove this function. Adapters should be connected directly.
 ////////////////////////////////////////////////////////////////////////////////
 IDeviceStructure::DevicePtr CDeviceFactory::CreateStructure() const
 {

@@ -27,6 +27,8 @@
 
 #include "CDeviceStructurePSCAD.hpp"
 
+#ifdef USE_DEVICE_PSCAD
+
 namespace freedm {
 namespace broker {
 namespace device {
@@ -69,3 +71,5 @@ void CDeviceStructurePSCAD::Set( const SettingKey & key, const SettingValue & va
 } // namespace device
 } // namespace broker
 } // namespace freedm
+
+#endif // USE_DEVICE_PSCAD

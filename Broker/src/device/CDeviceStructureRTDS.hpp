@@ -31,7 +31,7 @@
 #include <boost/lexical_cast.hpp>
 
 #include "IPhysicalDevice.hpp"
-#include "CClientRTDS.hpp"
+#include "CRtdsAdapter.hpp"
 
 namespace freedm
 {
@@ -47,7 +47,7 @@ class CDeviceStructureRTDS
 {
     public:
         /// constructor which takes a RTDS client
-        CDeviceStructureRTDS( CClientRTDS::RTDSPointer client );
+        CDeviceStructureRTDS( CRtdsAdapter::RTDSPointer client );
         
         /// Gets the setting of some key from state table
         virtual SettingValue Get( const SettingKey & key );
@@ -58,7 +58,7 @@ class CDeviceStructureRTDS
         //
     private:
         /// Simulation RTDS client
-        CClientRTDS::RTDSPointer m_client;
+        CRtdsAdapter::RTDSPointer m_client;
 };
 
 } // namespace device

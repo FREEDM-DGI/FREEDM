@@ -39,7 +39,7 @@ namespace device
 /// @brief constructor
 /// @param client The client that connects to FPGA interface
 ///////////////////////////////////////////////////////////////////////////////
-CDeviceStructureRTDS::CDeviceStructureRTDS( CClientRTDS::RTDSPointer client )
+CDeviceStructureRTDS::CDeviceStructureRTDS( CRtdsAdapter::RTDSPointer client )
         : m_client(client)
 {
     // skip

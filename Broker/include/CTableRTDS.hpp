@@ -52,7 +52,7 @@ namespace freedm
 namespace broker
 {
 
-class CClientRTDS;
+class CRtdsAdapter;
 
 /// Provides storage for data obtained from RTDS or commands to send to RTDS
 class CTableRTDS
@@ -79,7 +79,7 @@ class CTableRTDS
         
         ~CTableRTDS();
 
-        friend class CClientRTDS;
+        friend class CRtdsAdapter;
     private:
         /// manages the XML specification
         CTableStructure m_structure;

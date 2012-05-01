@@ -2,15 +2,15 @@
 set(
     BROKER_FILES
     CBroker.cpp
-    CClientRTDS.cpp
     CConnection.cpp
     CConnectionManager.cpp
     CDispatcher.cpp
-    CLineClient.cpp
     CListener.cpp
     CLogger.cpp
     CMessage.cpp
+    CPscadAdapter.cpp
     CReliableConnection.cpp
+    CRtdsAdapter.cpp
     CSRConnection.cpp
     CSUConnection.cpp
     CTableRTDS.cpp

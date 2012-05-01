@@ -28,6 +28,8 @@
 #ifndef C_DEVICE_STRUCTURE_PSCAD_HPP
 #define C_DEVICE_STRUCTURE_PSCAD_HPP
 
+#ifdef USE_DEVICE_PSCAD
+
 #include <boost/lexical_cast.hpp>
 
 #include "IPhysicalDevice.hpp"
@@ -59,5 +61,7 @@ private:
 } // namespace device
 } // namespace broker
 } // namespace freedm
+
+#endif // USE_DEVICE_PSCAD
 
 #endif // C_DEVICE_STRUCTURE_PSCAD_HPP

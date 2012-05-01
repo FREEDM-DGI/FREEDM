@@ -1,16 +1,14 @@
 ////////////////////////////////////////////////////////////////////////////////
-/// @file           CClientRTDS.hpp
+/// @file           CRtdsAdapter.hpp
 ///
-/// @author         Yaxi Liu <ylztf@mst.edu>
-///                 Thomas Roth <tprfh7@mst.edu>
+/// @author         Yaxi Liu <ylztf@mst.edu>,
+///                 Thomas Roth <tprfh7@mst.edu>,
 ///                 Mark Stanovich <stanovic@cs.fsu.edu>
-///
-/// @compiler       C++
 ///
 /// @project        FREEDM DGI
 ///
 /// @description
-///     DGI side implementation of the communicaiton protocol to RTDS simulation
+///     DGI side implementation of the communication protocol to RTDS simulation
 ///
 /// @functions
 ///     CClientRTDS::Create( io_service &, const string &)
@@ -20,26 +18,21 @@
 ///     CClientRTDS::Run()
 ///     CClientRTDS::Quit()
 ///
-/// These source code files were created at as part of the
-/// FREEDM DGI Subthrust, and are intended for use in teaching or
-/// research. They may be freely copied, modified and redistributed
-/// as long as modified versions are clearly marked as such and
-/// this notice is not removed.
-
-/// Neither the authors nor the FREEDM Project nor the
-/// National Science Foundation
-/// make any warranty, express or implied, nor assumes
-/// any legal responsibility for the accuracy,
-/// completeness or usefulness of these codes or any
-/// information distributed with these codes.
-
-/// Suggested modifications or questions about these codes
-/// can be directed to Dr. Bruce McMillin, Department of
-/// Computer Science, Missouri University of Science and
-/// Technology, Rolla, MO 65409 (ff@mst.edu).
-/////////////////////////////////////////////////////////
-#ifndef C_CLIENT_RTDS_HPP
-#define C_CLIENT_RTDS_HPP
+/// These source code files were created at the Missouri University of Science
+/// and Technology, and are intended for use in teaching or research. They may
+/// be freely copied, modified and redistributed as long as modified versions
+/// are clearly marked as such and this notice is not removed.
+///
+/// Neither the authors nor Missouri S&T make any warranty, express or implied,
+/// nor assume any legal responsibility for the accuracy, completeness or
+/// usefulness of these files or any information distributed with these files.
+///
+/// Suggested modifications or questions about these files can be directed to
+/// Dr. Bruce McMillin, Department of Computer Science, Missouri University of
+/// Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
+////////////////////////////////////////////////////////////////////////////////
+#ifndef CRTDSADAPTER_HPP
+#define CRTDSADAPTER_HPP
 
 #include <string>
 #include <iostream>
@@ -60,7 +53,7 @@ namespace broker
 {
 
 /// Provides an interface for communicating with a RTDS simulation model
-class CClientRTDS : private boost::noncopyable
+class CRtdsAdapter : private boost::noncopyable
 {
         ////////////////////////////////////////////////////////
         ///
@@ -84,7 +77,7 @@ class CClientRTDS : private boost::noncopyable
         ////////////////////////////////////////////////////////
     public:
         /// pointer to an CClientRTDS object
-        typedef boost::shared_ptr<CClientRTDS> RTDSPointer;
+        typedef boost::shared_ptr<CRtdsAdapter> RTDSPointer;
         
         /// create a CClientRTDS object and returns a pointer to it
         static RTDSPointer Create( boost::asio::io_service & p_service,
@@ -104,14 +97,14 @@ class CClientRTDS : private boost::noncopyable
         void Quit();
         
         /// destructor
-        ~CClientRTDS();
+        ~CRtdsAdapter();
         
         /// continuous loop for sending and receiving to/from RTDS
         void Run();
         
     private:
         /// constructor
-        CClientRTDS( boost::asio::io_service & p_service, 
+        CRtdsAdapter( boost::asio::io_service & p_service, 
                 const std::string p_xml );
         /// do byte order conversion if DGI and FPGA have opposite endianess
         static void endian_swap(char * data, const int num_bytes);
@@ -145,4 +138,4 @@ class CClientRTDS : private boost::noncopyable
 }//namespace broker
 }//namespace freedm
 
-#endif // C_CLIENT_RTDS_HPP
+#endif // CRDTSADAPTER_HPP

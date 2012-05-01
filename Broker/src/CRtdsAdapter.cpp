@@ -1,11 +1,9 @@
 ////////////////////////////////////////////////////////////////////////////////
-/// @file           CClientRTDS.cpp
+/// @file           CRtdsAdapter.cpp
 ///
-/// @author         Yaxi Liu <ylztf@mst.edu>
-///                 Thomas Roth <tprfh7@mst.edu>
+/// @author         Yaxi Liu <ylztf@mst.edu>,
+///                 Thomas Roth <tprfh7@mst.edu>,
 ///                 Mark Stanovich <stanovic@cs.fsu.edu>
-///
-/// @compiler       C++
 ///
 /// @project        FREEDM DGI
 ///
@@ -20,26 +18,21 @@
 ///     CClientRTDS::Run()
 ///     CClientRTDS::Quit()
 ///
-/// These source code files were created at as part of the
-/// FREEDM DGI Subthrust, and are intended for use in teaching or
-/// research. They may be freely copied, modified and redistributed
-/// as long as modified versions are clearly marked as such and
-/// this notice is not removed.
+/// These source code files were created at the Missouri University of Science
+/// and Technology, and are intended for use in teaching or research. They may
+/// be freely copied, modified and redistributed as long as modified versions
+/// are clearly marked as such and this notice is not removed.
+///
+/// Neither the authors nor Missouri S&T make any warranty, express or implied,
+/// nor assume any legal responsibility for the accuracy, completeness or
+/// usefulness of these files or any information distributed with these files.
+///
+/// Suggested modifications or questions about these files can be directed to
+/// Dr. Bruce McMillin, Department of Computer Science, Missouri University of
+/// Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
+////////////////////////////////////////////////////////////////////////////////
 
-/// Neither the authors nor the FREEDM Project nor the
-/// National Science Foundation
-/// make any warranty, express or implied, nor assumes
-/// any legal responsibility for the accuracy,
-/// completeness or usefulness of these codes or any
-/// information distributed with these codes.
-
-/// Suggested modifications or questions about these codes
-/// can be directed to Dr. Bruce McMillin, Department of
-/// Computer Science, Missouri University of Science and
-/// Technology, Rolla, MO 65409 (ff@mst.edu).
-/////////////////////////////////////////////////////////
-
-#include "CClientRTDS.hpp"
+#include "CRtdsAdapter.hpp"
 #include "CLogger.hpp"
 
 static CLocalLogger Logger(__FILE__);
@@ -104,11 +97,11 @@ namespace broker
 ///     none
 ///
 ////////////////////////////////////////////////////////////////////////////
-CClientRTDS::RTDSPointer CClientRTDS::Create(
+CRtdsAdapter::RTDSPointer CRtdsAdapter::Create(
         boost::asio::io_service & p_service, const std::string p_xml)
 {
     Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
-    return CClientRTDS::RTDSPointer(new CClientRTDS(p_service, p_xml));
+    return CRtdsAdapter::RTDSPointer(new CRtdsAdapter(p_service, p_xml));
 }
 
 ////////////////////////////////////////////////////////////////////////////
@@ -135,7 +128,7 @@ CClientRTDS::RTDSPointer CClientRTDS::Create(
 ///     none
 ///
 ////////////////////////////////////////////////////////////////////////////
-CClientRTDS::CClientRTDS( boost::asio::io_service & p_service,
+CRtdsAdapter::CRtdsAdapter( boost::asio::io_service & p_service,
                           const std::string p_xml )
         : m_socket(p_service), m_cmdTable(p_xml, "command"),
         m_stateTable(p_xml, "state"), m_GlobalTimer(p_service)
@@ -178,7 +171,7 @@ CClientRTDS::CClientRTDS( boost::asio::io_service & p_service,
 ///     TCP connections only
 ///
 ////////////////////////////////////////////////////////////////////////////
-void CClientRTDS::Connect( const std::string p_hostname, 
+void CRtdsAdapter::Connect( const std::string p_hostname, 
         const std::string p_port )
 {
     Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
@@ -234,7 +227,7 @@ void CClientRTDS::Connect( const std::string p_hostname,
 /// @limitations
 ///     Synchronous commnunication
 //////////////////////////////////////////////////////////////////////////
-void CClientRTDS::Run()
+void CRtdsAdapter::Run()
 {
     Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     //TIMESTEP is used by deadline_timer.async_wait at the end of Run().  
@@ -317,7 +310,7 @@ void CClientRTDS::Run()
     
     //Start the timer; on timeout, this function is called again
     m_GlobalTimer.expires_from_now( boost::posix_time::microseconds(TIMESTEP) );
-    m_GlobalTimer.async_wait( boost::bind(&CClientRTDS::Run, this));
+    m_GlobalTimer.async_wait( boost::bind(&CRtdsAdapter::Run, this));
 }
 
 ////////////////////////////////////////////////////////////////////////////
@@ -346,7 +339,7 @@ void CClientRTDS::Run()
 ///     There could be minor loss of accuracy.
 ///
 ////////////////////////////////////////////////////////////////////////////
-void CClientRTDS::Set( const std::string p_device, const std::string p_key,
+void CRtdsAdapter::Set( const std::string p_device, const std::string p_key,
                        double p_value )
 {
     Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
@@ -392,7 +385,7 @@ void CClientRTDS::Set( const std::string p_device, const std::string p_key,
 ///     floats. The accuracy is not as high as a real doubles.
 ///
 ////////////////////////////////////////////////////////////////////////////
-double CClientRTDS::Get( const std::string p_device, const std::string p_key )
+double CRtdsAdapter::Get( const std::string p_device, const std::string p_key )
 {
     Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
      
@@ -425,7 +418,7 @@ double CClientRTDS::Get( const std::string p_device, const std::string p_key )
 ///     None
 ///
 ////////////////////////////////////////////////////////////////////////////
-void CClientRTDS::Quit()
+void CRtdsAdapter::Quit()
 {
     Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     // close connection
@@ -448,7 +441,7 @@ void CClientRTDS::Quit()
 ///     none
 ///
 ////////////////////////////////////////////////////////////////////////////
-CClientRTDS::~CClientRTDS()
+CRtdsAdapter::~CRtdsAdapter()
 {  
     Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     //  perform teardown
@@ -482,7 +475,7 @@ CClientRTDS::~CClientRTDS()
 ///     none
 ///
 ////////////////////////////////////////////////////////////////////////////////
-void CClientRTDS::endian_swap(char *data, const int num_bytes)
+void CRtdsAdapter::endian_swap(char *data, const int num_bytes)
 {
     Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     char * tmp = new char[num_bytes];

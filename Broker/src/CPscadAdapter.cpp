@@ -1,13 +1,12 @@
 ////////////////////////////////////////////////////////////////////////////////
-/// @file           CLineClient.cpp
+/// @file           CPscadAdapter.cpp
 ///
 /// @author         Thomas Roth <tprfh7@mst.edu>
 ///
-/// @compiler       C++
+/// @project        FREEDM DGI
 ///
-/// @project        Missouri S&T Power Research Group
-///
-/// @see            CLineClient.hpp
+/// @description
+///     Client side implementation of the simulation line protocol.
 ///
 /// These source code files were created at the Missouri University of Science
 /// and Technology, and are intended for use in teaching or research. They may
@@ -20,28 +19,27 @@
 ///
 /// Suggested modifications or questions about these files can be directed to
 /// Dr. Bruce McMillin, Department of Computer Science, Missouri University of
-/// Science and Technology, Rolla, MO 65401 <ff@mst.edu>.
-///
+/// Science and Technology, Rolla, MO 654091 <ff@mst.edu>.
 ////////////////////////////////////////////////////////////////////////////////
 
-#include "CLineClient.hpp"
+#include "CPscadAdapter.hpp"
 
 namespace freedm {
 
 namespace broker {
 
-CLineClient::TPointer CLineClient::Create( boost::asio::io_service & p_service )
+CPscadAdapter::TPointer CPscadAdapter::Create( boost::asio::io_service & p_service )
 {
-  return CLineClient::TPointer( new CLineClient(p_service) );
+  return CPscadAdapter::TPointer( new CPscadAdapter(p_service) );
 }
 
-CLineClient::CLineClient( boost::asio::io_service & p_service )
+CPscadAdapter::CPscadAdapter( boost::asio::io_service & p_service )
     : m_socket(p_service)
 {
     // skip
 }
 
-void CLineClient::Connect( const std::string p_hostname, 
+void CPscadAdapter::Connect( const std::string p_hostname, 
         const std::string p_port )
 {
     boost::asio::ip::tcp::resolver resolver( m_socket.get_io_service() );
@@ -67,7 +65,7 @@ void CLineClient::Connect( const std::string p_hostname,
     }
 }
 
-void CLineClient::Set( const std::string p_device, const std::string p_key,
+void CPscadAdapter::Set( const std::string p_device, const std::string p_key,
     const std::string p_value )
 {
     boost::asio::streambuf request;
@@ -97,7 +95,7 @@ void CLineClient::Set( const std::string p_device, const std::string p_key,
     }
 }
 
-std::string CLineClient::Get( const std::string p_device, 
+std::string CPscadAdapter::Get( const std::string p_device, 
         const std::string p_key )
 {
     boost::asio::streambuf request;
@@ -128,7 +126,7 @@ std::string CLineClient::Get( const std::string p_device,
     return value;
 }
 
-void CLineClient::Quit()
+void CPscadAdapter::Quit()
 {
     boost::asio::streambuf request;
     std::ostream request_stream( &request );
@@ -158,7 +156,7 @@ void CLineClient::Quit()
     m_socket.close();
 }
 
-CLineClient::~CLineClient()
+CPscadAdapter::~CPscadAdapter()
 {
     //  perform teardown
     if( m_socket.is_open() )

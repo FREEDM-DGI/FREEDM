@@ -1,11 +1,9 @@
 ////////////////////////////////////////////////////////////////////////////////
-/// @file           CLineClient.hpp
+/// @file           CPscadAdapter.hpp
 ///
 /// @author         Thomas Roth <tprfh7@mst.edu>
 ///
-/// @compiler       C++
-///
-/// @project        Missouri S&T Power Research Group
+/// @project        FREEDM DGI
 ///
 /// @description
 ///     Client side implementation of the simulation line protocol.
@@ -28,12 +26,11 @@
 ///
 /// Suggested modifications or questions about these files can be directed to
 /// Dr. Bruce McMillin, Department of Computer Science, Missouri University of
-/// Science and Technology, Rolla, MO 65401 <ff@mst.edu>.
-///
+/// Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
 ////////////////////////////////////////////////////////////////////////////////
 
-#ifndef C_LINE_CLIENT
-#define C_LINE_CLIENT
+#ifndef CPSCADADAPTER_HPP
+#define CPSCADADAPTER_HPP
 
 #include <string>
 #include <iostream>
@@ -46,7 +43,7 @@
 namespace freedm{
   namespace broker{
 /// Provides an interface for communicating commands to a PSCAD model
-class CLineClient : private boost::noncopyable
+class CPscadAdapter : private boost::noncopyable
 {
     ////////////////////////////////////////////////////////////////////////////////
     /// CLineClient
@@ -62,7 +59,7 @@ class CLineClient : private boost::noncopyable
     ///
     ////////////////////////////////////////////////////////////////////////////////
 public:
-    typedef boost::shared_ptr<CLineClient> TPointer;
+    typedef boost::shared_ptr<CPscadAdapter> TPointer;
     static TPointer Create( boost::asio::io_service & p_service );
     
     ////////////////////////////////////////////////////////////////////////////
@@ -203,7 +200,7 @@ public:
     ///     none
     ///
     ////////////////////////////////////////////////////////////////////////////    
-    ~CLineClient();
+    ~CPscadAdapter();
 private:
     ////////////////////////////////////////////////////////////////////////////
     /// CLineClient( io_service & )
@@ -230,7 +227,7 @@ private:
     ///     none
     ///
     ////////////////////////////////////////////////////////////////////////////
-    CLineClient( boost::asio::io_service & p_service );
+    CPscadAdapter( boost::asio::io_service & p_service );
     
     /// socket to line protocol server
     boost::asio::ip::tcp::socket m_socket;
@@ -239,4 +236,4 @@ private:
   }//namespace broker
 }//namespace freedm
 
-#endif // C_LINE_CLIENT
+#endif // CPSCADADAPTER_HPP

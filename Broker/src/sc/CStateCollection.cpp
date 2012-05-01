@@ -126,7 +126,6 @@ SCAgent::SCAgent(std::string uuid, freedm::broker::CBroker &broker,
                  freedm::broker::device::CPhysicalDeviceManager &m_phyManager):
     SCPeerNode(uuid, broker.GetConnectionManager()),
     m_countstate(0),
-    m_SCrunning(false),
     m_NotifyToSave(false),
     m_curversion("default", 0),
     m_phyDevManager(m_phyManager),
@@ -511,6 +510,7 @@ void SCAgent::HandleRead(broker::CMessage msg)
     //receive updated peerlist from groupmanager, which means group has been changed
     if(pt.get<std::string>("any","NOEXCEPTION") == "PeerList")
     {
+	m_scleader = line_;
         Logger.Info << "Peer List received from Group Leader: " << line_ <<std::endl;
         foreach(PeerNodePtr peer_, m_AllPeers | boost::adaptors::map_values)
         {
@@ -601,11 +601,7 @@ void SCAgent::HandleRead(broker::CMessage msg)
         //call initiate to start state collection
         Logger.Notice << "Receiving state collect request from " << m_module << " ( " << pt.get<std::string>("sc.source")
                        << " ) " << std::endl;
-        if(m_SCrunning == false)
-	{
-	    Initiate();
-	    m_SCrunning = true;
-	}
+	Initiate();
     }
     //check if this is a marker message
     else if (pt.get<std::string>("sc") == "marker")
@@ -717,59 +713,116 @@ void SCAgent::HandleRead(broker::CMessage msg)
 	    Logger.Info << "Current version is " << m_curversion.first << " + " << m_curversion.second << std::endl;
 	    Logger.Info << "Incoming version is " << incomingVer_.first << " + " << incomingVer_.second << std::endl;
 
-            //assign incoming version to current version
-            m_curversion = incomingVer_;
-	    //count marker
-            m_countmarker = 1;
-            //collect local state
-            TakeSnapshot();
-            //save state into the multimap "collectstate"
-            collectstate.insert(std::pair<StateVersion, ptree>(m_curversion, m_curstate));
-            m_countstate++;
+            //assign incoming version to current version if the incoming is newer
+	    if (m_curversion.first == incomingVer_.first && incomingVer_.second > m_curversion.second)
+	    {
+                m_curversion = incomingVer_;
+	        //count marker
+                m_countmarker = 1;
+                //collect local state
+                TakeSnapshot();
+                //save state into the multimap "collectstate"
+                collectstate.insert(std::pair<StateVersion, ptree>(m_curversion, m_curstate));
+                m_countstate++;
             
-            if (m_AllPeers.size()==2)
+                if (m_AllPeers.size()==2)
                 //only two nodes, peer finish collecting states: send marker then state back
-            {
-		if(GetPeer(m_curversion.first) != NULL)
-		{
-		    try
-		    {
-			GetPeer(m_curversion.first)->AsyncSend(msg);
-		    }
-		    catch (boost::system::system_error& e)
-		    {
-			Logger.Info << "Couldn't Send Message To Peer" << std::endl;
-		    }	            
-	            //send marker back to initiator
-		    //GetPeer(m_curversion.first)->AsyncSend(msg);
-		    //send collected states to initiator
-		    SendStateBack();
-		    m_curversion.first = "default";
-		    m_curversion.second = 0;
-		    m_countmarker = 0;
-		    collectstate.clear();
-		}
-		else
-		{
-		    Logger.Info << "Peer doesn't exist" << std::endl;
-		}
-            }
-            else
-                //more than two nodes
-            {
-                //broadcast marker to all other peers
-                foreach(PeerNodePtr peer_, m_AllPeers | boost::adaptors::map_values)
                 {
-                    if (peer_->GetUUID()!= GetUUID())
+		    if(GetPeer(m_curversion.first) != NULL)
+		    {
+		        try
+		        {
+			    GetPeer(m_curversion.first)->AsyncSend(msg);
+		        }
+		        catch (boost::system::system_error& e)
+		        {
+			    Logger.Info << "Couldn't Send Message To Peer" << std::endl;
+		        }	            
+	                //send marker back to initiator
+		        //GetPeer(m_curversion.first)->AsyncSend(msg);
+		        //send collected states to initiator
+		        SendStateBack();
+		        m_curversion.first = "default";
+		        m_curversion.second = 0;
+		        m_countmarker = 0;
+		        collectstate.clear();
+		    }
+		    else
+		    {
+		        Logger.Info << "Peer doesn't exist" << std::endl;
+		    }
+                }
+                else
+                //more than two nodes
+                {
+                    //broadcast marker to all other peers
+                    foreach(PeerNodePtr peer_, m_AllPeers | boost::adaptors::map_values)
                     {
-                        Logger.Info << "Forward marker to " << peer_->GetUUID() << std::endl;
-                        peer_->AsyncSend(msg);
-                    }
-                }//end foreach
-                //set flag to start to record messages in channel
-                m_NotifyToSave = true;
-            }
-
+                        if (peer_->GetUUID()!= GetUUID())
+                        {
+                            Logger.Info << "Forward marker to " << peer_->GetUUID() << std::endl;
+                            peer_->AsyncSend(msg);
+                        }
+                    }//end foreach
+                    //set flag to start to record messages in channel
+                    m_NotifyToSave = true;
+                }
+	    }
+            //assign incoming version to current version if the incoming is from leader
+	    else if (m_curversion.first != incomingVer_.first && incomingVer_.first == m_scleader)
+	    {
+                m_curversion = incomingVer_;
+	        //count marker
+                m_countmarker = 1;
+                //collect local state
+                TakeSnapshot();
+                //save state into the multimap "collectstate"
+                collectstate.insert(std::pair<StateVersion, ptree>(m_curversion, m_curstate));
+                m_countstate++;
+            
+                if (m_AllPeers.size()==2)
+                //only two nodes, peer finish collecting states: send marker then state back
+                {
+		    if(GetPeer(m_curversion.first) != NULL)
+		    {
+		        try
+		        {
+			    GetPeer(m_curversion.first)->AsyncSend(msg);
+		        }
+		        catch (boost::system::system_error& e)
+		        {
+			    Logger.Info << "Couldn't Send Message To Peer" << std::endl;
+		        }	            
+	                //send marker back to initiator
+		        //GetPeer(m_curversion.first)->AsyncSend(msg);
+		        //send collected states to initiator
+		        SendStateBack();
+		        m_curversion.first = "default";
+		        m_curversion.second = 0;
+		        m_countmarker = 0;
+		        collectstate.clear();
+		    }
+		    else
+		    {
+		        Logger.Info << "Peer doesn't exist" << std::endl;
+		    }
+                }
+                else
+                //more than two nodes
+                {
+                    //broadcast marker to all other peers
+                    foreach(PeerNodePtr peer_, m_AllPeers | boost::adaptors::map_values)
+                    {
+                        if (peer_->GetUUID()!= GetUUID())
+                        {
+                            Logger.Info << "Forward marker to " << peer_->GetUUID() << std::endl;
+                            peer_->AsyncSend(msg);
+                        }
+                    }//end foreach
+                    //set flag to start to record messages in channel
+                    m_NotifyToSave = true;
+                }
+	    }
         }
     }
     //check if this is a response state
@@ -816,7 +869,6 @@ void SCAgent::HandleRead(broker::CMessage msg)
         {
             StateResponse();
             m_countdone = 0;
-            m_SCrunning = false;
         }
     }
 }

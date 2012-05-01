@@ -25,9 +25,7 @@
 /// Science and Technology, Rolla, MO 65401 <ff@mst.edu>.
 ////////////////////////////////////////////////////////////////////////////////
 
-#include "CDeviceStructurePSCAD.hpp"
-
-#ifdef USE_DEVICE_PSCAD
+#include "device/CDeviceStructurePSCAD.hpp"
 
 namespace freedm {
 namespace broker {
@@ -38,7 +36,7 @@ namespace device {
 /// @brief constructor
 /// @param client The line client that connects to PSCAD interface
 ///////////////////////////////////////////////////////////////////////////////
-CDeviceStructurePSCAD::CDeviceStructurePSCAD( CLineClient::TPointer client )
+CDeviceStructurePSCAD::CDeviceStructurePSCAD( CPscadAdapter::TPointer client )
     : m_client(client)
 {
     // skip
@@ -72,4 +70,3 @@ void CDeviceStructurePSCAD::Set( const SettingKey & key, const SettingValue & va
 } // namespace broker
 } // namespace freedm
 
-#endif // USE_DEVICE_PSCAD

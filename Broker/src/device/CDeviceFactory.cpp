@@ -23,7 +23,7 @@
 ///     University of Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
 ////////////////////////////////////////////////////////////////////////////////
 
-#include "CDeviceFactory.hpp"
+#include "device/CDeviceFactory.hpp"
 #include "config.hpp"
 
 /// This file's logger.

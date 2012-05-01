@@ -24,7 +24,7 @@
 /// Science and Technology, Rolla, MO 65401 <ff@mst.edu>.
 ////////////////////////////////////////////////////////////////////////////////
 
-#include "IDevice.hpp"
+#include "device/types/IDevice.hpp"
 
 namespace freedm
 {

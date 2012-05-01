@@ -25,7 +25,7 @@
 ///
 ////////////////////////////////////////////////////////////////////////////////
 
-#include "CDeviceKeyCoupled.hpp"
+#include "device/CDeviceKeyCoupled.hpp"
 
 namespace freedm
 {

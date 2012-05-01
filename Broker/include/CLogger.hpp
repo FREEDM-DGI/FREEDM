@@ -43,8 +43,6 @@
 
 namespace po = boost::program_options;
 
-using namespace boost::posix_time;
-
 // Pretty function is nonstandard. Fallback to standards if not using GNU C++.
 #ifndef __GNUG__
 #define __PRETTY_FUNCTION__ ( std::string("At ") + basename(__FILE__) + \

@@ -25,7 +25,7 @@
 /// Science and Technology, Rolla, MO 65401 <ff@mst.edu>.
 ////////////////////////////////////////////////////////////////////////////////
 
-#include "CDeviceStructureGeneric.hpp"
+#include "device/CDeviceStructureGeneric.hpp"
 
 namespace freedm {
 namespace broker {

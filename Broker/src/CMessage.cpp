@@ -443,7 +443,7 @@ CMessage::CMessage( const ptree &pt )
         }
         catch( boost::property_tree::ptree_error &e )
         {
-            m_expiretime = ptime();
+            m_expiretime = boost::posix_time::ptime();
         }
         if(HasExpireTime())
         {

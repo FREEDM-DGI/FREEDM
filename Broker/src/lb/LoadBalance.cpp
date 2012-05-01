@@ -398,8 +398,9 @@ void lbAgent::LoadTable()
     
     Logger.Status <<" ----------- LOAD TABLE (Power Management) ------------"
                    << std::endl;
-    Logger.Status <<"| " << "Load Table @ " << microsec_clock::local_time() 
-                  << std::endl;
+    Logger.Status <<"| " << "Load Table @ " 
+	    	  << boost::posix_time::microsec_clock::local_time() 
+		  << std::endl;
     Logger.Status <<"| " << "Net DRER (" << numDRERs << "): " << m_Gen
                   << std::setw(14) << "Net DESD (" << numDESDs << "): "
                   << m_Storage << std::endl;

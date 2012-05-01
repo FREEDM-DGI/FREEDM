@@ -14,14 +14,37 @@ get_git_head_revision(GIT_REFSPEC GIT_SHA1)
 #   add the option to Broker/include/config.hpp.cmake as #cmakedefine OPTION
 #   activate / deactivate the option as described in the message below
 option(BUILD_TESTS "Enable the building and running of unit tests." OFF)
+option(CLANG_FLAGS "Build FREEDM using selected Clang compiler flags" OFF)
 option(CUSTOMNETWORK "for network.xml support" OFF)
 option(DATAGRAM "for UDP Datagram service w/o sequencing" OFF)
+option(GCC_FLAGS "Build FREEDM using selected GCC compiler flags" ON)
 option(SHOW_MESSAGES "Enable help messages during cmake execution" ON)
 option(SHOW_WARNINGS "warnings displayed during project compile" ON)
-option(USE_CLANG "Build FREEDM using Clang instead of GCC" OFF)
 option(USE_DEVICE_PSCAD "Enable the PSCAD simulation interface" OFF)
 option(USE_DEVICE_RTDS "Enable the RTDS simulation interface" OFF)
 
+# Check for a variety of conditions that should generate an error.
+if(!LINUX)
+    message(FATAL_ERROR "Broker must be compiled on GNU/Linux.")
+endif(!LINUX)
+
+if(!Boost_FOUND)
+    message(FATAL_ERROR "Boost was not found on your system.")
+endif(!Boost_FOUND)
+
+if(USE_DEVICE_PSCAD)
+    if(USE_DEVICE_RTDS)
+        message(FATAL_ERROR "Cannot compile with both PSCAD and RTDS enabled.")
+    endif(USE_DEVICE_RTDS)
+endif(USE_DEVICE_PSCAD)
+
+if(GCC_FLAGS)
+    if(CLANG_FLAGS)
+        message(FATAL_ERROR "Cannot compile with both GCC and Clang flags.")
+    endif(CLANG_FLAGS)
+endif(GCC_FLAGS)
+
+# Everything checks out, let's start.
 if(SHOW_MESSAGES)
     message("This project uses custom CMake settings:"
         "\n\tView the available settings with cmake -LH"
@@ -29,57 +52,58 @@ if(SHOW_MESSAGES)
 endif(SHOW_MESSAGES)
 
 # find the required boost libraries
-find_package(Boost REQUIRED COMPONENTS system thread program_options serialization date_time)
+find_package(Boost REQUIRED COMPONENTS system thread program_options 
+             serialization date_time)
 
-if(Boost_FOUND)
-    # add the boost libraries to the project
-    include_directories(SYSTEM ${Boost_INCLUDE_DIRS})
-    link_directories(${Boost_LIBRARY_DIRS})
+# add the boost libraries to the project
+include_directories(SYSTEM ${Boost_INCLUDE_DIRS})
+link_directories(${Boost_LIBRARY_DIRS})
 
-
-    # set C++ compiler flags
+# set C++ compiler flags
+if(GCC_FLAGS)
     if(SHOW_WARNINGS)
-        set(WARNING_FLAGS "-Wall -Wextra -pedantic")
+            set(WARNING_FLAGS "-Wall -Wextra")
     endif(SHOW_WARNINGS)
-
-    set(CMAKE_CXX_FLAGS "-std=c++98 -g ${WARNING_FLAGS}")
-
-    if(USE_CLANG)
-        set(CMAKE_CXX_COMPILER "/usr/bin/clang++")
-        set(CMAKE_CXX_FLAGS "-g ${WARNING_FLAGS}")
-    endif(USE_CLANG)
-
+    set(CMAKE_CXX_FLAGS "-pedantic -std=c++98 -g ${WARNING_FLAGS}")
     set(CMAKE_EXE_LINKER_FLAGS "-lpthread")
+endif(GCC_FLAGS)
 
-    # generate the configuration file
-    CONFIGURE_FILE(
-        ${CMAKE_BINARY_DIR}/include/config.hpp.cmake
-        ${CMAKE_BINARY_DIR}/include/config.hpp )
-    
-    # include project source directories
-    include_directories("${CMAKE_BINARY_DIR}/include")
-    include_directories("${CMAKE_BINARY_DIR}/src")
+if(CLANG_FLAGS)
+    if(SHOW_WARNINGS)
+        set(WARNING_FLAGS "-Wall -Wextra")
+    endif(SHOW_WARNINGS)
+    set(CMAKE_CXX_FLAGS "-pedantic -g ${WARNING_FLAGS}")
+    set(CMAKE_EXE_LINKER_FLAGS "-lpthread")
+endif(CLANG_FLAGS)
 
-    # goto src/CMakeLists.txt
-    add_subdirectory( src )
+# generate the configuration file
+CONFIGURE_FILE(
+    ${CMAKE_BINARY_DIR}/include/config.hpp.cmake
+    ${CMAKE_BINARY_DIR}/include/config.hpp )
 
-    add_executable(PosixBroker src/PosixMain.cpp)
+# include project source directories
+include_directories("${CMAKE_BINARY_DIR}/include")
+include_directories("${CMAKE_BINARY_DIR}/src")
 
-    # link the executable to its dependencies
-    target_link_libraries(
-        PosixBroker
-        broker
-        ${Boost_THREAD_LIBRARY}
-        ${Boost_SYSTEM_LIBRARY}
-        ${Boost_SERIALIZATION_LIBRARY}
-        ${Boost_PROGRAM_OPTIONS_LIBRARY}
-        ${Boost_DATE_TIME_LIBRARY}
-    )
+# goto src/CMakeLists.txt
+add_subdirectory( src )
 
-    if(BUILD_TESTS)
-        enable_testing()
+add_executable(PosixBroker src/PosixMain.cpp)
 
-        # goto test/CMakeLists.txt
-        add_subdirectory(test)
-    endif(BUILD_TESTS)
-endif(Boost_FOUND)
+# link the executable to its dependencies
+target_link_libraries(
+    PosixBroker
+    broker
+    ${Boost_THREAD_LIBRARY}
+    ${Boost_SYSTEM_LIBRARY}
+    ${Boost_SERIALIZATION_LIBRARY}
+    ${Boost_PROGRAM_OPTIONS_LIBRARY}
+    ${Boost_DATE_TIME_LIBRARY}
+)
+
+if(BUILD_TESTS)
+    enable_testing()
+
+    # goto test/CMakeLists.txt
+    add_subdirectory(test)
+endif(BUILD_TESTS)

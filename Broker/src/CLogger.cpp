@@ -27,6 +27,8 @@
 #include "CLogger.hpp"
 #include "Utility.hpp"
 
+using namespace boost::posix_time;
+
 static CLocalLogger Logger(__FILE__);
 
 CLog::CLog(const CLoggerPointer p, const unsigned int level_, 

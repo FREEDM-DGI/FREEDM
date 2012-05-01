@@ -30,7 +30,7 @@
 /// Technology, Rolla, MO  65409 (ff@mst.edu).
 ////////////////////////////////////////////////////////////////////
 
-#include "CPhysicalDeviceManager.hpp"
+#include "device/CPhysicalDeviceManager.hpp"
 #include "CLogger.hpp"
 
 static CLocalLogger Logger(__FILE__);

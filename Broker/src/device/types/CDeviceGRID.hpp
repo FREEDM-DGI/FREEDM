@@ -1,13 +1,15 @@
 ////////////////////////////////////////////////////////////////////////////////
-/// @file           CDeviceLWI_Load.hpp
+/// @file           CDeviceGRID.hpp
 ///
 /// @author         Yaxi Liu <ylztf@mst.edu>
 ///                 Thomas Roth <tprfh7@mst.edu>
-///                 Michael Catanzaro <michael.catanzaro@mst.edu>
+///                 Ravi Akella <rcaq5c@mst.edu>
 ///
 /// @project        FREEDM DGI
 ///
-/// @description    Battery for the LWI project
+/// @description    Physical device class for GRID.
+///                 It could be useful to have this definition to incorporate
+///	            "additional properties" a GRID could have in future
 ///
 /// These source code files were created at the Missouri University of Science
 /// and Technology, and are intended for use in teaching or research. They may
@@ -22,38 +24,44 @@
 /// Dr. Bruce McMillin, Department of Computer Science, Missouri University of
 /// Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
 ////////////////////////////////////////////////////////////////////////////////
-#ifndef CDEVICELWI_LOAD_HPP
-#define	CDEVICELWI_LOAD_HPP
 
-#include "IDeviceLWI.hpp"
+#ifndef C_DEVICE_GRID_HPP
+#define C_DEVICE_GRID_HPP
 
-namespace freedm {
-namespace broker {
-namespace device {
+#include <boost/shared_ptr.hpp>
 
-/// Physical loads for the LWI project
-class CDeviceLWI_Load
-: public IDeviceLWI
-, public CDeviceLOAD
+#include "IDevice.hpp"
+
+namespace freedm
+{
+namespace broker
+{
+
+// forward declaration of device manager
+class CPhysicalDeviceManager;
+
+namespace device
+{
+
+/// Implementation of distributed renewable energy resources
+class CDeviceGRID
+: public virtual IDevice
 {
 public:
     /// Convenience type for a shared pointer to self
-    typedef boost::shared_ptr<CDeviceLWI_Load> DevicePtr;
+    typedef boost::shared_ptr<CDeviceGRID> DevicePtr;
 
     /// Constructor which takes a manager, identifier, and internal structure
-    CDeviceLWI_Load(CPhysicalDeviceManager & manager, Identifier device,
+    CDeviceGRID(CPhysicalDeviceManager & manager, Identifier device,
             IDeviceStructure::DevicePtr structure)
-    : IDevice(manager, device, structure)
-    , IDeviceLWI(manager, device, structure)
-    , CDeviceLOAD(manager, device, structure) { }
+    : IDevice(manager, device, structure) { }
 
     /// Virtual destructor for derived classes
-    virtual ~CDeviceLWI_Load() { }
+    virtual ~CDeviceGRID() { }
 };
 
-} // namespace freedm
-} // namespace broker
 } // namespace device
+} // namespace broker
+} // namespace freedm
 
-#endif	/* CDEVICELWI_LOAD_HPP */
-
+#endif // C_DEVICE_GRID_HPP

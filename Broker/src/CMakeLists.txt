@@ -23,7 +23,6 @@ set(
     device/CPhysicalDeviceManager.cpp
     device/PhysicalDeviceTypes.cpp
     device/types/IDevice.cpp
-    device/types/IDeviceLWI.cpp
     IPeerNode.cpp
     IProtocol.cpp
     gm/GroupManagement.cpp

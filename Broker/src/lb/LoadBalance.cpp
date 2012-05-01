@@ -110,7 +110,6 @@ lbAgent::lbAgent(std::string uuid_,
     PeerNodePtr self_(this);
     InsertInPeerSet(m_AllPeers, self_);
     m_Leader = GetUUID();
-    m_Normal = 0;
     m_GlobalTimer = broker.AllocateTimer("lb");
     m_StateTimer = broker.AllocateTimer("lb");
 }
@@ -220,45 +219,6 @@ void lbAgent::SendMsg(std::string msg, PeerSet peerSet_)
 }
 
 ////////////////////////////////////////////////////////////
-/// SendNormal
-/// @description  Compute Normal if you are the Leader and push
-///               it to the group members
-/// @pre: You should be the leader and you should have called StateNormalize() 
-///	  prior to this
-/// @post: The group members are sent the computed normal
-/// @param Normal: The value of normal to be sent to the group memebers
-/// @peer Each peer that exists in the peer set, m_AllPeers
-/// @error If the message cannot be sent, an exception is thrown and the 
-///	   process continues 
-/// @limitations None
-/////////////////////////////////////////////////////////
-void lbAgent::SendNormal(double Normal)
-{
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
-
-    if(m_Leader == GetUUID())
-    {
-        Logger.Info <<"Sending Computed Normal to the group members" <<std::endl;
-        broker::CMessage m_;
-        m_.m_submessages.put("lb.source", GetUUID());
-        m_.m_submessages.put("lb", "ComputedNormal");
-        m_.m_submessages.put("lb.cnorm", boost::lexical_cast<std::string>(Normal));
-        foreach( PeerNodePtr peer_, m_AllPeers | boost::adaptors::map_values)
-        {
-            try
-            {
-                peer_->Send(m_);
-            }
-            catch (boost::system::system_error& e)
-            {
-                Logger.Info << "Couldn't Send Message To Peer" << std::endl;
-            }
-        }//end foreach
-    }
-}
-
-
-////////////////////////////////////////////////////////////
 /// CollectState
 /// @description Prepares and sends a state collection request to SC
 /// @pre: Called only on state timeout or when you are the new leader
@@ -293,6 +253,11 @@ void lbAgent::CollectState()
 /// @description: Manages the execution of the load balancing algorithm by
 ///               broadcasting load changes computed by LoadTable() and
 ///               initiating SendDraftRequest() if in Supply
+///
+/// @special note:  To work with current PSCAD model, this DGI has the power
+///                 to set syncher(like a SST) to a certain level.  The other 
+///                 DGI in the grid passively accommondates.
+/// 
 /// @pre: Node is not in Fail state
 /// @post: Load state change is monitored, specific load changes are
 ///        advertised to peers and restarts on timeout
@@ -383,18 +348,28 @@ void lbAgent::LoadTable()
     typedef broker::device::CDeviceDRER DRER;
     typedef broker::device::CDeviceDESD DESD;
     typedef broker::device::CDeviceLOAD LOAD;
-    typedef broker::device::CDeviceSST SST;
+    typedef broker::device::CDeviceGRID GRID;
 
     int numDRERs = m_phyDevManager.GetDevicesOfType<DRER>().size();
     int numDESDs = m_phyDevManager.GetDevicesOfType<DESD>().size();
     int numLOADs = m_phyDevManager.GetDevicesOfType<LOAD>().size();
-    int numSSTs = m_phyDevManager.GetDevicesOfType<SST>().size();
+    int numGRIDs = m_phyDevManager.GetDevicesOfType<GRID>().size();
 
+    // obtain sum of readings from devices of a certain type
+    // we should only have one GRID device, but the function works.
+    // m_Gen can be 0 and positive values only
     m_Gen = m_phyDevManager.GetNetValue<DRER>("powerLevel");
-    m_Storage = m_phyDevManager.GetNetValue<DESD>("powerLevel");
+    // for m_Storage, 
+    //       positive value  -- discharging
+    //       negative value  -- charging
+    //m_Storage = m_phyDevManager.GetNetValue<DESD>("powerLevel");
+    m_soc = m_phyDevManager.GetNetValue<DESD>("stateOfCharge");
+    // m_Load can be 0 and positive values only
     m_Load = m_phyDevManager.GetNetValue<LOAD>("powerLevel");
-    m_Gateway = m_phyDevManager.GetNetValue<SST>("powerLevel");
-    m_CalcGateway = m_Load - m_Gen;
+    // for m_Grid, 
+    //       positive value -- power is flowing out to grid.  So power doner
+    //       negative value -- power is flowing in from grid. So power receiver 
+    m_Grid = m_phyDevManager.GetNetValue<GRID>("powerLevel");
     
     Logger.Status <<" ----------- LOAD TABLE (Power Management) ------------"
                    << std::endl;
@@ -404,10 +379,8 @@ void lbAgent::LoadTable()
                   << std::setw(14) << "Net DESD (" << numDESDs << "): "
                   << m_Storage << std::endl;
     Logger.Status <<"| " << "Net Load (" << numLOADs << "): "<< m_Load
-                  << std::setw(16) << "Net Gateway (" << numSSTs 
-                  << "): " << m_Gateway << std::endl;
-    Logger.Status <<"| Normal = " << m_Normal << std::setw(16) 
-		  << "Calc Gateway: " << m_CalcGateway << std::endl; 
+                  << std::setw(16) << "Net Grid (" << numGRIDs 
+                  << "): " << m_Grid << std::endl;
     Logger.Status <<"| ---------------------------------------------------- |"
                   << std::endl;
     Logger.Status <<"| " << std::setw(20) << "UUID" << std::setw(27)<< "State"
@@ -415,16 +388,16 @@ void lbAgent::LoadTable()
     Logger.Status <<"| "<< std::setw(20) << "----" << std::setw(27)<< "-----"
                   << std::setw(7) <<"|"<< std::endl;
 
-    //Compute the Load state based on the current gateway value and Normal
-    //TODO: API for future-could be the cost consensus algorithm from NCSU
-    if(m_Gateway < m_Normal - NORMAL_TOLERANCE)
+    //Compute the Load state based on the current power generation vs.
+    //power consumption, as well as extra power received or donated to grid
+    if(m_Load < m_Gen - m_Grid - NORMAL_TOLERANCE)
     {
         m_Status = LPeerNode::SUPPLY;
     }
-    else if(m_Gateway > m_Normal + NORMAL_TOLERANCE)
+    else if(m_Load > m_Gen - m_Grid + NORMAL_TOLERANCE)
     {
         m_Status = LPeerNode::DEMAND;
-        m_DemandVal = m_Gateway-m_Normal;
+        m_DemandVal = m_Load-m_Gen;
     }
     else
     {
@@ -535,7 +508,8 @@ void lbAgent::HandleRead(broker::CMessage msg)
     PeerNodePtr peer_;
     line_ = msg.GetSourceUUID();
     ptree pt = msg.GetSubMessages();
-    Logger.Debug << "Message '" <<pt.get<std::string>("lb","NOEXECPTION")<<"' received from "<< line_<<std::endl;
+    Logger.Debug << "Message '" <<pt.get<std::string>("lb","NOEXECPTION")
+		 <<"' received from "<< line_<<std::endl;
     
     // Evaluate the identity of the message source
     if(line_ != GetUUID())
@@ -655,7 +629,7 @@ void lbAgent::HandleRead(broker::CMessage msg)
     }//end if("supply")
 
     // --------------------------------------------------------------
-    // You received a draft request
+    // You received a draft request from a peer advertising excess power
     // --------------------------------------------------------------
     else if(pt.get<std::string>("lb") == "request"  && peer_->GetUUID() != GetUUID())
     {
@@ -679,7 +653,6 @@ void lbAgent::HandleRead(broker::CMessage msg)
             m_.m_submessages.put("lb", ss_.str());
         }
         // Otherwise, inform the source that you are not interested
-        // NOTE: This may change in future when we incorporate advanced economics
         else
         {
             ss_.clear();
@@ -712,7 +685,7 @@ void lbAgent::HandleRead(broker::CMessage msg)
         {
             Logger.Notice << "(Yes) from " << peer_->GetUUID() << std::endl;
             //Initiate drafting with a message accordingly
-            //TODO: Selection of node that you are drafting with needs to be performed
+            //TODO: Selection of node that you are drafting with 
             //      Currently, whoever responds to draft request gets the slice
             broker::CMessage m_;
             m_.m_submessages.put("lb.source", GetUUID());
@@ -758,8 +731,6 @@ void lbAgent::HandleRead(broker::CMessage msg)
             ss_.str("accept");
             m_.m_submessages.put("lb", ss_.str());
             ss_.clear();
-            //TODO: Demand cost should be sent with draft response (yes/no) so
-            //      that the supply node can select
             ss_ << m_DemandVal;
             m_.m_submessages.put("lb.value", ss_.str());
 
@@ -775,7 +746,25 @@ void lbAgent::HandleRead(broker::CMessage msg)
                 }
 
                 // Make necessary power setting accordingly to allow power migration
-                // !!!NOTE: You may use Step_PStar() or PStar(m_DemandVal) currently
+                // We probably should wait until receiving msg from doner saying
+                // power donating already started before we do this
+
+		// Turn on grid.  It may already be on, we don't care
+		typedef broker::device::CDeviceDESD DESD;
+		typedef broker::device::CDeviceGRID GRID;
+		broker::device::CPhysicalDeviceManager::PhysicalDevice<GRID>::Container GRIDContainer;
+		broker::device::CPhysicalDeviceManager::PhysicalDevice<DESD>::Container DESDContainer;
+		GRIDContainer = m_phyDevManager.GetDevicesOfType<GRID>();       
+		GRIDContainer.front()->turnOn();
+		Logger.Notice << "Grid turned on " << std::endl;
+            
+		//Make sure your battery is off when receiving power. Need more thinking
+		/*	if( (GRIDContainer.front()->get("powerLevel") < 0) || 
+		    (GRIDContainer.front()->get("powerLevel") == 0) ) {
+		  DESDContainer = m_phyDevManager.GetDevicesOfType<DESD>();       
+		  DESDContainer.front()->turnOff();
+		  Logger.Notice << "Battery turned off " << std::endl;
+		  }*/
                 Step_PStar();
             }
             else
@@ -801,8 +790,17 @@ void lbAgent::HandleRead(broker::CMessage msg)
         {
             // Make necessary power setting accordingly to allow power migration
             Logger.Warn<<"Migrating power on request from: "<< peer_->GetUUID() << std::endl;
-            // !!!NOTE: You may use Step_PStar() or PStar(DemandValue) currently
+	   
+	    // Turn on grid.  It may already be on, we don't care
+	    typedef broker::device::CDeviceGRID GRID;
+	    broker::device::CPhysicalDeviceManager::PhysicalDevice<GRID>::Container GRIDContainer;
+	    GRIDContainer = m_phyDevManager.GetDevicesOfType<GRID>();       
+	    GRIDContainer.front()->turnOn();
+	    Logger.Notice << "Grid turned on " << std::endl;
+            
             Step_PStar();
+	    // should probably send msg saying power is migrated
+	    
         }//end if( LPeerNode::SUPPLY == m_Status)
         else
         {
@@ -836,21 +834,7 @@ void lbAgent::HandleRead(broker::CMessage msg)
               	 agg_gateway += P_Migrate;
 	  }
         }
-        if(peer_count != 0) m_Normal =  agg_gateway/peer_count;
-        Logger.Info << "Computed Normal: " << m_Normal << std::endl;
-        SendNormal(m_Normal);
     }//end if("CollectedState")
-
-    // --------------------------------------------------------------
-    // You received the new Normal value calculated and sent by your leader
-    // --------------------------------------------------------------
-    else if(pt.get<std::string>("lb") == "ComputedNormal")
-    {
-        m_Normal = pt.get<double>("lb.cnorm");
-        Logger.Notice << "Computed Normal " << m_Normal << " received from "
-                       << pt.get<std::string>("lb.source") << std::endl;
-        LoadTable();
-    }
 
     // --------------------------------------------------------------
     // Other message type is invalid within lb module
@@ -864,158 +848,50 @@ void lbAgent::HandleRead(broker::CMessage msg)
 
 ////////////////////////////////////////////////////////////
 /// Step_PStar
-/// @description Initiates 'power migration' by stepping up/down P* by value,
-///              P_Migrate. Set on SST is done according to demand state
+/// @description Initiates 'power migration' by stepping up/down 
+//               syncher (called SST here) by value,P_Migrate. 
+///              Set on syncher is done according to demand state
 /// @pre: Current load state of this node is 'Supply' or 'Demand'
-/// @post: Set command(s) to SST
-/// @limitations Use the P_Migrate directive in this file to change step size
+/// @post: Set command(s) to Syncher (SST)
+/// @limitations Although there are a few different types of storage
+///              in the LWI project.  Only battery can respond to
+///              charge/discharge commands in a timely manner
+///              So we decide to only manipulate the battery
+///              Unless we know the battery's deviceID (which will
+///              lead to hard code DGI), it is hard to just set battery
+///              and not, say vrb, as they are all type DESD.
+///              For simplicity at this stage, we will turn other
+///              storage devices off in PSCAD model and leave only battery
+///              on.
 /////////////////////////////////////////////////////////
 void lbAgent::Step_PStar()
 {
     Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     typedef broker::device::CDeviceSST SST;
     broker::device::CPhysicalDeviceManager::PhysicalDevice<SST>::Container SSTContainer;
-    broker::device::CPhysicalDeviceManager::PhysicalDevice<SST>::iterator it, end;
     SSTContainer = m_phyDevManager.GetDevicesOfType<SST>();
 
-    for( it = SSTContainer.begin(), end = SSTContainer.end(); it != end; it++ )
-    {
-        if(LPeerNode::DEMAND == m_Status)
-        {
-            m_PStar = (*it)->Get("powerLevel") - P_Migrate;
-            (*it)->Set("powerLevel", m_PStar);
-            Logger.Notice << "P* = " << m_PStar << std::endl;
+    if(LPeerNode::DEMAND == m_Status)
+      {
+	m_PStar = m_PStar - P_Migrate;
+	SSTContainer.front()->Set("level", m_PStar);
+	Logger.Notice << "Syncher level set to " << m_PStar << std::endl;
             
         }
         else if(LPeerNode::SUPPLY == m_Status)
         {
-            m_PStar = (*it)->Get("powerLevel") + P_Migrate;
-            (*it)->Set("powerLevel", m_PStar);
-            Logger.Notice << "P* = " << m_PStar << std::endl;
-            
+	  m_PStar = m_PStar + P_Migrate;
+	  SSTContainer.front()->Set("level", m_PStar);
+	  Logger.Notice << "Syncher level set to " << m_PStar << std::endl;
+    
         }
         else
         {
             Logger.Warn << "Power migration aborted due to state change " << std::endl;
         }
-    }
+    
 }
 
-////////////////////////////////////////////////////////////
-/// PStar
-/// @description Initiates 'power migration' as follows: Set Demand node by an
-///              offset of P_Migrate and Supply Node by excess 'power' relative
-///              to m_Normal
-/// @pre: Current load state of this node is 'Supply' or 'Demand'
-/// @post: Set command(s) to set SST
-/// @limitations It could be revised based on requirements. Might not be 
-///		 necessary after adding the code to handle intransit messages
-/////////////////////////////////////////////////////////
-void lbAgent::PStar(broker::device::SettingValue DemandValue)
-{
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
-    typedef broker::device::CDeviceSST SST;
-    broker::device::CPhysicalDeviceManager::PhysicalDevice<SST>::Container SSTContainer;
-    broker::device::CPhysicalDeviceManager::PhysicalDevice<SST>::iterator it, end;
-    SSTContainer = m_phyDevManager.GetDevicesOfType<SST>();
-
-    for( it = SSTContainer.begin(), end = SSTContainer.end(); it != end; it++ )
-    {
-        if(LPeerNode::DEMAND == m_Status)
-        {
-            m_PStar = (*it)->Get("powerLevel") - P_Migrate;
-            Logger.Notice << "P* = " << m_PStar << std::endl;
-            (*it)->Set("powerLevel", m_PStar);
-            
-        }
-        else if(LPeerNode::SUPPLY == m_Status)
-        {
-            if( DemandValue <= m_Gateway + NORMAL_TOLERANCE - m_Normal )
-            {
-                Logger.Notice << "P* = " << m_Gateway + DemandValue << std::endl;
-                (*it)->Set("powerLevel", m_Gateway + DemandValue);
-                
-            }
-            else
-            {
-                Logger.Notice << "P* = " << m_Normal << std::endl;
-                (*it)->Set("powerLevel", m_Normal);
-                
-            }
-        }
-        else
-        {
-            Logger.Warn << "Power migration aborted due to state change" << std::endl;
-        }
-    }
-}
-
-////////////////////////////////////////////////////////////
-/// InitiatePowerMigration
-/// @description Initiates 'power migration' on Draft Accept
-///              message from a demand node
-/// @pre: Current load state of this node is 'Supply'
-/// @post: Set command(s) to reduce DESD charge
-/// @limitations Changes significantly depending on SST's control capability;
-///      for now, the supply node reduces the amount of power currently
-///      in use to charge DESDs
-///TODO: This function may be used in future; obsolete for now
-/////////////////////////////////////////////////////////
-//void lbAgent::InitiatePowerMigration(broker::device::SettingValue DemandValue)
-//{
-//  typedef std::map<broker::device::SettingValue,broker::device::Identifier> DeviceMap;
-//  typedef broker::device::CDeviceDESD DESD;
-
-//  // Container and iterators for the result of GetDevicesOfType
-//  broker::CPhysicalDeviceManager::PhysicalDevice<DESD>::Container DESDContainer;
-//  broker::CPhysicalDeviceManager::PhysicalDevice<DESD>::iterator it, end;
-
-//  // Make a map of DESDs
-//  DeviceMap DESDMap;
-
-//  // Temp variables to hold "vin" and "vout"
-//  broker::device::SettingValue V_in, V_out;
-
-//  //Sort the DESDs by decreasing order of their "vin"s; achieved by inserting into map
-//  DESDContainer = m_phyDevManager.GetDevicesOfType<DESD>();
-//  for( it = DESDContainer.begin(), end = DESDContainer.end(); it != end; it++ )
-//  {
-//    DESDMap.insert( DeviceMap::value_type((*it)->Get("powerLevel"), (*it)->GetID()) );
-//  }
-
-//  //Use a reverse iterator on map to retrieve elements in reverse sorted order
-//  DeviceMap::reverse_iterator mapIt_;
-//  // temp variable to hold the P_migrate set by Demanding node
-//  broker::device::SettingValue temp_ = m_DemandVal;
-
-//  for( mapIt_ = DESDMap.rbegin(); mapIt_ != DESDMap.rend(); ++mapIt_ )
-//  {
-//    V_in = mapIt_->first; //load "vin" from the DESDmap
-
-//    // Using the below if-else structure, what we are doing is as follows:
-//    // Use the DESD that has highest input from DRERs and reduce this input;
-//    // The key assumption here is that the SST (PSCAD Model) will figure out
-//    // the way to route this surplus on to the grid
-//    // Next use the DESD with next highest input and so on till net demand
-//    // (P_migrate) is satisfied
-//    if(temp_ <= V_in)
-//    {
-//      V_in = V_in - temp_;
-//      //Then set the V_in accordingly on that particular device
-//      //m_phyDevManager.GetDevice(mapIt_->second)->Set("vin", V_in);
-//    }
-//    else
-//    {
-//      temp_ = temp_ - V_in;
-//      V_in = 0;
-//      //Then set the vin and vout accordingly on that particular device
-//      //m_phyDevManager.GetDevice(mapIt_->second)->Set("vin", V_in);
-//    }
-//  }//end for
-
-//  // Clear the DRER map
-//  DESDMap.clear();
-//}
 
 ////////////////////////////////////////////////////////////
 /// StartStateTimer

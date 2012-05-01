@@ -1,13 +1,12 @@
 ////////////////////////////////////////////////////////////////////////////////
-/// @file           CDeviceLWI_Battery.hpp
+/// @file           CDeviceDG.hpp
 ///
 /// @author         Yaxi Liu <ylztf@mst.edu>
 ///                 Thomas Roth <tprfh7@mst.edu>
-///                 Michael Catanzaro <michael.catanzaro@mst.edu>
 ///
 /// @project        FREEDM DGI
 ///
-/// @description    Battery for the LWI project
+/// @description    Physical device class for DG
 ///
 /// These source code files were created at the Missouri University of Science
 /// and Technology, and are intended for use in teaching or research. They may
@@ -23,37 +22,41 @@
 /// Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
 ////////////////////////////////////////////////////////////////////////////////
 
-#ifndef CDEVICELWI_BATTERY_HPP
-#define	CDEVICELWI_BATTERY_HPP
+#ifndef C_DEVICE_DG_HPP
+#define C_DEVICE_DG_HPP
 
-#include "IDeviceLWI.hpp"
+#include <boost/shared_ptr.hpp>
+
+#include "IDevice.hpp"
 
 namespace freedm {
 namespace broker {
+
+// forward declaration of device manager
+class CPhysicalDeviceManager;
+
 namespace device {
 
-/// Physical batteries for the LWI project
-class CDeviceLWI_Battery
-: public IDeviceLWI
-, public CDeviceDESD
+/// Implementation of distributed energy storage devices
+class CDeviceDG
+    : public virtual IDevice
 {
 public:
     /// Convenience type for a shared pointer to self
-    typedef boost::shared_ptr<CDeviceLWI_Battery> DevicePtr;
+    typedef boost::shared_ptr<CDeviceDG> DevicePtr;
 
     /// Constructor which takes a manager, identifier, and internal structure
-    CDeviceLWI_Battery(CPhysicalDeviceManager & manager, Identifier device,
-            IDeviceStructure::DevicePtr structure)
-    : IDevice(manager, device, structure)
-    , IDeviceLWI(manager, device, structure)
-    , CDeviceDESD(manager, device, structure) { }
+    CDeviceDG( CPhysicalDeviceManager & manager, Identifier device,
+        IDeviceStructure::DevicePtr structure )
+        : IDevice(manager,device,structure)
+        {}
 
     /// Virtual destructor for derived classes
-    virtual ~CDeviceLWI_Battery() { }
+    virtual ~CDeviceDG() {}
 };
 
-} // namespace freedm
-} // namespace broker
 } // namespace device
+} // namespace broker
+} // namespace freedm
 
-#endif
+#endif // C_DEVICE_DG_HPP

@@ -70,6 +70,12 @@ public:
     /// Sets the value of some key in the structure
     virtual void Set( const SettingKey & key, const SettingValue & value );
 
+    /// Activate the device
+    void turnOn();
+
+    /// Deactivate the device
+    void turnOff();
+
     /// Gets the device manager for the device
     CPhysicalDeviceManager & GetManager();
 

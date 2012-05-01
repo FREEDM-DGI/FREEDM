@@ -141,8 +141,6 @@ class lbAgent
         PeerNodePtr get_peer(std::string uuid);
 
         // Variables
-        /// Calculated Normal
-        double m_Normal;
         /// Leader of this group
         std::string m_Leader;
         /// Aggregate Load
@@ -151,12 +149,15 @@ class lbAgent
         float   m_Gen;
         /// Aggregate Storage
         float   m_Storage;
-        /// Target value of gateway
+        /// state of charge.  Value reflect a percentage.
+        float   m_soc;
+        /// Target value of grid
         float   m_PStar;
-        /// Current gateway
-        float   m_Gateway;
+        /// Current power level on grid
+        //this is the equivalent of the gateway in FREEDM
+        float   m_Grid;
         /// Calculated gateway
-        float   m_CalcGateway;
+        //float   m_CalcGateway;
         /// Demand cost of this node in Demand
         float   m_DemandVal;
         /// Current Demand state of this node  

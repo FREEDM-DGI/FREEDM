@@ -38,7 +38,7 @@ typedef std::string Identifier;
 typedef std::string SettingKey;
 
 /// Type of the value for device settings
-typedef double SettingValue;
+typedef float SettingValue;
 
 /// Defines the interface of the device get value function
 class IDeviceGet

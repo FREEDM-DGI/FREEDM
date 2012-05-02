@@ -14,10 +14,8 @@ get_git_head_revision(GIT_REFSPEC GIT_SHA1)
 #   add the option to Broker/include/config.hpp.cmake as #cmakedefine OPTION
 #   activate / deactivate the option as described in the message below
 option(BUILD_TESTS "Enable the building and running of unit tests." OFF)
-option(CLANG_FLAGS "Build FREEDM using selected Clang compiler flags" OFF)
 option(CUSTOMNETWORK "for network.xml support" OFF)
 option(DATAGRAM "for UDP Datagram service w/o sequencing" OFF)
-option(GCC_FLAGS "Build FREEDM using selected GCC compiler flags" ON)
 option(SHOW_MESSAGES "Enable help messages during cmake execution" ON)
 option(SHOW_WARNINGS "warnings displayed during project compile" ON)
 option(USE_DEVICE_PSCAD "Enable the PSCAD simulation interface" OFF)
@@ -38,12 +36,6 @@ if(USE_DEVICE_PSCAD)
     endif(USE_DEVICE_RTDS)
 endif(USE_DEVICE_PSCAD)
 
-if(GCC_FLAGS)
-    if(CLANG_FLAGS)
-        message(FATAL_ERROR "Cannot compile with both GCC and Clang flags.")
-    endif(CLANG_FLAGS)
-endif(GCC_FLAGS)
-
 # Everything checks out, let's start.
 if(SHOW_MESSAGES)
     message("This project uses custom CMake settings:"
@@ -60,21 +52,12 @@ include_directories(SYSTEM ${Boost_INCLUDE_DIRS})
 link_directories(${Boost_LIBRARY_DIRS})
 
 # set C++ compiler flags
-if(GCC_FLAGS)
-    if(SHOW_WARNINGS)
-            set(WARNING_FLAGS "-Wall -Wextra")
-    endif(SHOW_WARNINGS)
-    set(CMAKE_CXX_FLAGS "-pedantic -std=c++98 -g ${WARNING_FLAGS}")
-    set(CMAKE_EXE_LINKER_FLAGS "-lpthread")
-endif(GCC_FLAGS)
+if(SHOW_WARNINGS)
+    set(WARNING_FLAGS "-Wall -Wextra")
+endif(SHOW_WARNINGS)
 
-if(CLANG_FLAGS)
-    if(SHOW_WARNINGS)
-        set(WARNING_FLAGS "-Wall -Wextra")
-    endif(SHOW_WARNINGS)
-    set(CMAKE_CXX_FLAGS "-pedantic -g ${WARNING_FLAGS}")
-    set(CMAKE_EXE_LINKER_FLAGS "-lpthread")
-endif(CLANG_FLAGS)
+set(CMAKE_CXX_FLAGS "-pedantic -std=c++98 -g ${WARNING_FLAGS}")
+set(CMAKE_EXE_LINKER_FLAGS "-lpthread")
 
 # generate the configuration file
 CONFIGURE_FILE(

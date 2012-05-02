@@ -39,7 +39,7 @@
 #include <boost/thread/thread.hpp>
 
 #include "CTableRTDS.hpp"
-#include "IPhysicalAdapter.hpp"
+#include "INetworkAdapter.hpp"
 
 namespace freedm
 {
@@ -47,7 +47,7 @@ namespace broker
 {
 
 /// Provides an interface for communicating with a RTDS simulation model
-class CRtdsAdapter : public IPhysicalAdapter
+class CRtdsAdapter : public INetworkAdapter
 {
         ////////////////////////////////////////////////////////
         ///
@@ -74,18 +74,15 @@ class CRtdsAdapter : public IPhysicalAdapter
         typedef boost::shared_ptr<CRtdsAdapter> RTDSPointer;
         
         /// create a CClientRTDS object and returns a pointer to it
-        static RTDSPointer Create( boost::asio::io_service & p_service,
-                                   const std::string p_xml );
-                                   
-        /// handles connection to FPGA
-        void Connect( const std::string p_hostname, const std::string p_port );
+        static RTDSPointer Create( boost::asio::io_service & service,
+                                   const std::string xml );
         
         /// updates command table
-        void Set( const std::string p_device, const std::string p_key,
-                  const double p_value );
+        void Set( const std::string device, const std::string key,
+                  const double value );
                   
         /// retrieve data from state table
-        double Get( const std::string p_device, const std::string p_key );
+        double Get( const std::string device, const std::string key );
         
         /// shut down communicaiton to FPGA
         void Quit();
@@ -98,13 +95,10 @@ class CRtdsAdapter : public IPhysicalAdapter
         
     private:
         /// constructor
-        CRtdsAdapter( boost::asio::io_service & p_service, 
-                const std::string p_xml );
+        CRtdsAdapter( boost::asio::io_service & service, 
+                const std::string xml );
         /// do byte order conversion if DGI and FPGA have opposite endianess
         static void endian_swap(char * data, const int num_bytes);
-        
-        /// socket to connect to FPGA server
-        boost::asio::ip::tcp::socket m_socket;
         
         /// store the power electronic readings from RTDS
         CTableRTDS m_cmdTable;

@@ -34,12 +34,12 @@
 #include <boost/utility.hpp>
 #include <boost/shared_ptr.hpp>
 
-#include "IPhysicalAdapter.hpp"
+#include "INetworkAdapter.hpp"
 
 namespace freedm{
   namespace broker{
 /// Provides an interface for communicating commands to a PSCAD model
-class CPscadAdapter : public IPhysicalAdapter
+class CPscadAdapter : public INetworkAdapter
 {
     ////////////////////////////////////////////////////////////////////////////////
     /// CLineClient
@@ -56,35 +56,7 @@ class CPscadAdapter : public IPhysicalAdapter
     ////////////////////////////////////////////////////////////////////////////////
 public:
     typedef boost::shared_ptr<CPscadAdapter> TPointer;
-    static TPointer Create( boost::asio::io_service & p_service );
-    
-    ////////////////////////////////////////////////////////////////////////////
-    /// Connect( const string &, const string & )
-    ///
-    /// @description
-    ///     Creates a socket connection to the given hostname and service.
-    ///
-    /// @Shared_Memory
-    ///     none
-    ///
-    /// @Error_Handling
-    ///     Throws an exception for unexpected connection errors.
-    ///
-    /// @pre
-    ///     p_hostname and p_service specify a valid endpoint
-    ///
-    /// @post
-    ///     m_socket attempts to connect to the passed service
-    ///
-    /// @param
-    ///     p_hostname is the hostname of the desired endpoint
-    ///     p_port is the port number of the desired endpoint
-    ///
-    /// @limitations
-    ///     none
-    ///
-    ////////////////////////////////////////////////////////////////////////////
-    void Connect( const std::string p_hostname, const std::string p_port );
+    static TPointer Create( boost::asio::io_service & service );
     
     ////////////////////////////////////////////////////////////////////////////
     /// Set( const string &, const string &, const string & )
@@ -106,15 +78,15 @@ public:
     ///     Reads an acknowledgement from m_socket
     ///
     /// @param
-    ///     p_device is the unique identifier of the target device
-    ///     p_key is the variable of the target device to modify
-    ///     p_value is the value to set for p_device's p_key
+    ///     device is the unique identifier of the target device
+    ///     key is the variable of the target device to modify
+    ///     value is the value to set for device's key
     ///
     /// @limitations
     ///     The precondition is not enforced.
     ///
     ////////////////////////////////////////////////////////////////////////////
-    void Set( const std::string p_device, const std::string p_key, const std::string p_value );
+    void Set( const std::string device, const std::string key, const std::string value );
     
     ////////////////////////////////////////////////////////////////////////////
     /// Get( const string &, const string & )
@@ -136,17 +108,17 @@ public:
     ///     Reads a response from m_socket
     ///
     /// @param
-    ///     p_device is the unique identifier of the target device
-    ///     p_key is the variable of the target device to access
+    ///     device is the unique identifier of the target device
+    ///     key is the variable of the target device to access
     ///
     /// @return
-    ///     p_device's p_key as determined by the line server response
+    ///     device's key as determined by the line server response
     ///
     /// @limitations
     ///     The precondition is not enforced.
     ///
     ////////////////////////////////////////////////////////////////////////////
-    std::string Get( const std::string p_device, const std::string p_key );
+    std::string Get( const std::string device, const std::string key );
     
     ////////////////////////////////////////////////////////////////////////////
     /// Quit
@@ -217,16 +189,13 @@ private:
     ///     io_service is shared with m_socket
     ///
     /// @param
-    ///     p_service is the io_service the socket runs on
+    ///     service is the io_service the socket runs on
     ///
     /// @limitations
     ///     none
     ///
     ////////////////////////////////////////////////////////////////////////////
-    CPscadAdapter( boost::asio::io_service & p_service );
-    
-    /// socket to line protocol server
-    boost::asio::ip::tcp::socket m_socket;
+    CPscadAdapter( boost::asio::io_service & service );
 };
 
   }//namespace broker

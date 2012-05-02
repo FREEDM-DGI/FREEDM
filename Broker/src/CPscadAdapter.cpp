@@ -29,45 +29,19 @@ namespace freedm {
 
 namespace broker {
 
-CPscadAdapter::TPointer CPscadAdapter::Create( boost::asio::io_service & p_service )
+CPscadAdapter::TPointer CPscadAdapter::Create( boost::asio::io_service & service )
 {
-  return CPscadAdapter::TPointer( new CPscadAdapter(p_service) );
+  return CPscadAdapter::TPointer( new CPscadAdapter(service) );
 }
 
-CPscadAdapter::CPscadAdapter( boost::asio::io_service & p_service )
-    : m_socket(p_service)
+CPscadAdapter::CPscadAdapter( boost::asio::io_service & service )
+    : INetworkAdapter(service)
 {
     // skip
 }
 
-void CPscadAdapter::Connect( const std::string p_hostname, 
-        const std::string p_port )
-{
-    boost::asio::ip::tcp::resolver resolver( m_socket.get_io_service() );
-    boost::asio::ip::tcp::resolver::query query( p_hostname, p_port );
-    boost::asio::ip::tcp::resolver::iterator it = resolver.resolve(query);
-    boost::asio::ip::tcp::resolver::iterator end;
-    
-    // attempt to connect to one of the resolved endpoints
-    boost::system::error_code error = boost::asio::error::host_not_found;
-    while( error && it != end )
-    {
-        m_socket.close();
-        m_socket.connect( *it, error );
-        ++it;
-    }
-    if( error )
-    {
-        std::stringstream ss;
-        ss << "CLineClient attempted to connect to " << p_hostname << " on port"
-                << " " << p_port << ", but connection failed for the following "
-                << "reason: " << boost::system::system_error(error).what();
-        throw std::runtime_error(ss.str());
-    }
-}
-
-void CPscadAdapter::Set( const std::string p_device, const std::string p_key,
-    const std::string p_value )
+void CPscadAdapter::Set( const std::string device, const std::string key,
+    const std::string value )
 {
     boost::asio::streambuf request;
     std::ostream request_stream( &request );
@@ -77,7 +51,7 @@ void CPscadAdapter::Set( const std::string p_device, const std::string p_key,
     std::string response_code, response_message;
     
     // format and send the request stream
-    request_stream << "SET " << p_device << ' ' << p_key << ' ' << p_value 
+    request_stream << "SET " << device << ' ' << key << ' ' << value 
             << "\r\n";
     boost::asio::write( m_socket, request );
     
@@ -89,15 +63,15 @@ void CPscadAdapter::Set( const std::string p_device, const std::string p_key,
     if( response_code != "200" )
     {
         std::stringstream ss;
-        ss << "CLineClient attempted to set " << p_key << " to " << p_value
-                << " on device " << p_device << ", but received a PSCAD error: "
+        ss << "CLineClient attempted to set " << key << " to " << value
+                << " on device " << device << ", but received a PSCAD error: "
                 << response_message;
         throw std::runtime_error(ss.str());
     }
 }
 
-std::string CPscadAdapter::Get( const std::string p_device, 
-        const std::string p_key )
+std::string CPscadAdapter::Get( const std::string device, 
+        const std::string key )
 {
     boost::asio::streambuf request;
     std::ostream request_stream( &request );
@@ -107,7 +81,7 @@ std::string CPscadAdapter::Get( const std::string p_device,
     std::string response_code, response_message, value;
     
     // format and send the request stream
-    request_stream << "GET " << p_device << ' ' << p_key << "\r\n";
+    request_stream << "GET " << device << ' ' << key << "\r\n";
     boost::asio::write( m_socket, request );
     
     // receive and split the response stream
@@ -118,8 +92,8 @@ std::string CPscadAdapter::Get( const std::string p_device,
     if( response_code != "200" )
     {
         std::stringstream ss;
-        ss << "CLineClient attempted to get " << p_key << " on device " 
-                << p_device << ", but received a PSCAD error: "
+        ss << "CLineClient attempted to get " << key << " on device " 
+                << device << ", but received a PSCAD error: "
                 << response_message;
         throw std::runtime_error(ss.str());
     }

@@ -81,9 +81,9 @@ static CLocalLogger Logger(__FILE__);
 ///     CClientRTDS object is created and a pointer to it is returned
 ///
 /// @param
-///     p_service is the io_service the socket runs on
+///     service is the io_service the socket runs on
 ///
-///     p_xml is the name of the configuration file defining the devices, keys
+///     xml is the name of the configuration file defining the devices, keys
 ///     and indexes that will be used to structure the data stream between DGI
 ///     and FPGA, as well as m_cmdTable and m_stateTable
 ///
@@ -92,10 +92,10 @@ static CLocalLogger Logger(__FILE__);
 ///
 ////////////////////////////////////////////////////////////////////////////
 CRtdsAdapter::RTDSPointer CRtdsAdapter::Create(
-        boost::asio::io_service & p_service, const std::string p_xml)
+        boost::asio::io_service & service, const std::string xml)
 {
     Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
-    return CRtdsAdapter::RTDSPointer(new CRtdsAdapter(p_service, p_xml));
+    return CRtdsAdapter::RTDSPointer(new CRtdsAdapter(service, xml));
 }
 
 ////////////////////////////////////////////////////////////////////////////
@@ -112,9 +112,9 @@ CRtdsAdapter::RTDSPointer CRtdsAdapter::Create(
 ///     object initialized and ready to call the Connect function.
 ///
 /// @param
-///     p_service is the io_service the socket runs on
+///     service is the io_service the socket runs on
 ///
-///     p_xml is the name of the configuration file defining the devices, keys
+///     xml is the name of the configuration file defining the devices, keys
 ///     and indexes that will be used to structure the data stream between DGI
 ///     and FPGA, as well as m_cmdTable and m_stateTable
 ///
@@ -122,10 +122,10 @@ CRtdsAdapter::RTDSPointer CRtdsAdapter::Create(
 ///     none
 ///
 ////////////////////////////////////////////////////////////////////////////
-CRtdsAdapter::CRtdsAdapter( boost::asio::io_service & p_service,
-                          const std::string p_xml )
-        : m_socket(p_service), m_cmdTable(p_xml, "command"),
-        m_stateTable(p_xml, "state"), m_GlobalTimer(p_service)
+CRtdsAdapter::CRtdsAdapter( boost::asio::io_service & service,
+                          const std::string xml )
+        : INetworkAdapter(service), m_cmdTable(xml, "command"),
+        m_stateTable(xml, "state"), m_GlobalTimer(service)
 {
     Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     m_rxCount = m_stateTable.m_length;
@@ -138,59 +138,6 @@ CRtdsAdapter::CRtdsAdapter( boost::asio::io_service & p_service,
     //allocate memory for buffer for reading and writing to FPGA
     m_rxBuffer = new char[m_rxBufSize];
     m_txBuffer = new char[m_rxBufSize];
-}
-
-////////////////////////////////////////////////////////////////////////////
-/// Connect
-///
-/// @description
-///     Creates a socket connection to the given hostname and service.
-///
-/// @Shared_Memory
-///     FPGA's hostname and port number resolved and passed in by PosixMain
-///
-/// @Error_Handling
-///     Throws an exception for unexpected connection errors.
-///
-/// @pre
-///     p_hostname and p_service specify a valid endpoint
-///
-/// @post
-///     m_socket connected to the passed service
-///
-/// @param
-///     p_hostname is the hostname of the desired endpoint
-///     p_port is the port number of the desired endpoint
-/// @limitations
-///     TCP connections only
-///
-////////////////////////////////////////////////////////////////////////////
-void CRtdsAdapter::Connect( const std::string p_hostname, 
-        const std::string p_port )
-{
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
-    boost::asio::ip::tcp::resolver resolver( m_socket.get_io_service() );
-    boost::asio::ip::tcp::resolver::query query( p_hostname, p_port );
-    boost::asio::ip::tcp::resolver::iterator it = resolver.resolve(query);
-    boost::asio::ip::tcp::resolver::iterator end;
-    // attempt to connect to one of the resolved endpoints
-    boost::system::error_code error = boost::asio::error::host_not_found;
-    
-    while ( error && it != end )
-    {
-        m_socket.close();
-        m_socket.connect( *it, error );
-        ++it;
-    }
-    
-    if ( error )
-    {
-        std::stringstream ss;
-        ss << "CClientRTDS attempted to connect to " << p_hostname << " on port"
-                << " " << p_port << ", but connection failed for the following "
-                << "reason: " << boost::system::system_error(error).what();
-        throw std::runtime_error(ss.str());
-    }
 }
 
 /////////////////////////////////////////////////////////////////////////
@@ -320,33 +267,33 @@ void CRtdsAdapter::Run()
 ///     none
 ///
 /// @param
-///     p_device is the unique identifier of a physical device (such as SST or 
+///     device is the unique identifier of a physical device (such as SST or 
 ///     Load)
 ///
-///     p_key is the name of a feature of the device that can be maniputed
+///     key is the name of a feature of the device that can be maniputed
 ///     (such as onOffSwitch, chargeLevel, etc.)
 ///
-///     p_value is the desired new setting
+///     value is the desired new setting
 ///
 /// @limitations
-///     RTDS uses floats. So p_value is type-cast into float from double.
+///     RTDS uses floats. So value is type-cast into float from double.
 ///     There could be minor loss of accuracy.
 ///
 ////////////////////////////////////////////////////////////////////////////
-void CRtdsAdapter::Set( const std::string p_device, const std::string p_key,
-                       double p_value )
+void CRtdsAdapter::Set( const std::string device, const std::string key,
+                       double value )
 {
     Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     
     try
     {
-        m_cmdTable.SetValue( CDeviceKeyCoupled(p_device,p_key), p_value );
+        m_cmdTable.SetValue( CDeviceKeyCoupled(device,key), value );
     }
     catch (std::out_of_range & e)
     {
         std::stringstream ss;
-        ss << "RTDS attempted to set device/key pair " << p_device << "/"
-                << p_key << ", but this pair does not exist.";
+        ss << "RTDS attempted to set device/key pair " << device << "/"
+                << key << ", but this pair does not exist.";
         throw std::runtime_error(ss.str());
     }
 }
@@ -365,10 +312,10 @@ void CRtdsAdapter::Set( const std::string p_device, const std::string p_key,
 ///     read is junk.
 ///
 /// @param
-///     p_device is the unique identifier of a physical device (such as SST, 
+///     device is the unique identifier of a physical device (such as SST, 
 ///     Load)
 ///
-///     p_key is a power electronic reading related to the device (such
+///     key is a power electronic reading related to the device (such
 ///     as powerLevel, stateOfCharge, etc.)
 ///
 /// @return
@@ -379,19 +326,19 @@ void CRtdsAdapter::Set( const std::string p_device, const std::string p_key,
 ///     floats. The accuracy is not as high as a real doubles.
 ///
 ////////////////////////////////////////////////////////////////////////////
-double CRtdsAdapter::Get( const std::string p_device, const std::string p_key )
+double CRtdsAdapter::Get( const std::string device, const std::string key )
 {
     Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
      
     try
     {
-        return m_stateTable.GetValue( CDeviceKeyCoupled(p_device, p_key) );
+        return m_stateTable.GetValue( CDeviceKeyCoupled(device, key) );
     }
     catch (std::out_of_range & e  )
     {
         std::stringstream ss;
-        ss << "RTDS attempted to get device/key pair " << p_device << "/"
-                << p_key << ", but this pair does not exist.";
+        ss << "RTDS attempted to get device/key pair " << device << "/"
+                << key << ", but this pair does not exist.";
         throw std::runtime_error(ss.str());
     }
 }

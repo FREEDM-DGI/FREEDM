@@ -53,7 +53,6 @@
 /////////////////////////////////////////////////////////
 
 #include "LoadBalance.hpp"
-#include "Utility.hpp"
 #include "CMessage.hpp"
 #include <algorithm>
 #include <cassert>
@@ -82,10 +81,10 @@ using boost::property_tree::ptree;
 
 #include "CLogger.hpp"
 
-static CLocalLogger Logger(__FILE__);
-
 namespace freedm
 {
+    
+static CLocalLogger Logger(__FILE__);
 
 ///////////////////////////////////////////////////////////////////////////////
 /// lbAgent

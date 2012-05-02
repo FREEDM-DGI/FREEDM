@@ -29,8 +29,6 @@
 #include <fstream>
 #include <string>
 
-#include "Utility.hpp"
-
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/foreach.hpp>
 #include <boost/iostreams/concepts.hpp>
@@ -39,8 +37,6 @@
 #include <boost/program_options.hpp>
 #include <boost/shared_ptr.hpp>
 
-#define foreach BOOST_FOREACH
-
 namespace po = boost::program_options;
 
 // Pretty function is nonstandard. Fallback to standards if not using GNU C++.
@@ -48,6 +44,11 @@ namespace po = boost::program_options;
 #define __PRETTY_FUNCTION__ ( std::string("At ") + basename(__FILE__) + \
 std::string(" line ") + boost::lexical_cast<std::string>(__LINE__) ).c_str()
 #endif
+
+namespace freedm {
+
+/// Turns a qualified path into just a filename.
+std::string basename( const std::string s );
 
 class CLocalLogger;
 
@@ -156,5 +157,7 @@ class CLocalLogger : private boost::noncopyable
         /// The name of this logger
         const std::string m_name;
 };
+
+}
 
 #endif

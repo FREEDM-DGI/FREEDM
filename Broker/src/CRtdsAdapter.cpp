@@ -28,8 +28,6 @@
 #include "CRtdsAdapter.hpp"
 #include "CLogger.hpp"
 
-static CLocalLogger Logger(__FILE__);
-
 /// check endianess at compile time.  Middle-Endian not allowed
 /// The parameters __BYTE_ORDER, __LITTLE_ENDIAN, __BIG_ENDIAN should
 /// automatically be defined and determined in sys/param.h, which exists
@@ -62,6 +60,9 @@ namespace freedm
 {
 namespace broker
 {
+    
+static CLocalLogger Logger(__FILE__);
+    
 ////////////////////////////////////////////////////////////////////////////
 /// Create
 ///

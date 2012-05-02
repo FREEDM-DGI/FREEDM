@@ -33,8 +33,6 @@
 #include "CMessage.hpp"
 #include "CLogger.hpp"
 
-static CLocalLogger Logger(__FILE__);
-
 #include <boost/foreach.hpp>
 #include <boost/functional/hash.hpp>
 #define foreach BOOST_FOREACH
@@ -46,6 +44,8 @@ using boost::property_tree::ptree;
 
 namespace freedm {
 namespace broker {
+    
+static CLocalLogger Logger(__FILE__);
 
 namespace status_strings {
     // These are HTTP RFC status codes. Only a subset is currently used.

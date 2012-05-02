@@ -28,13 +28,12 @@ set(
     gm/GroupManagement.cpp
     lb/LoadBalance.cpp
     sc/CStateCollection.cpp
-    Utility.cpp
    )
 
 # Generate PhysicalDeviceTypes files based on contents of device/types directory
 add_executable(device/DeviceRegistrationGenerator ${CMAKE_CURRENT_BINARY_DIR}/device/DeviceRegistrationGenerator.cpp)
 add_custom_command(
-    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/device/PhysicalDeviceTypes.hpp ${CMAKE_CURRENT_BINARY_DIR}/device/PhysicalDeviceTypes.cpp
+    OUTPUT ${CMAKE_BINARY_DIR}/include/device/PhysicalDeviceTypes.hpp ${CMAKE_CURRENT_BINARY_DIR}/device/PhysicalDeviceTypes.cpp
     COMMAND device/DeviceRegistrationGenerator
     DEPENDS device/DeviceRegistrationGenerator )
 

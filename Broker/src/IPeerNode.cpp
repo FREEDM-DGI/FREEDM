@@ -47,10 +47,9 @@
 #include "IPeerNode.hpp"
 #include "CLogger.hpp"
 
-static CLocalLogger Logger(__FILE__);
-
 namespace freedm {
-
+        
+static CLocalLogger Logger(__FILE__);
 
 /////////////////////////////////////////////////////////////
 /// @fn IPeerNode::IPeerNode

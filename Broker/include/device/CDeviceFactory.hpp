@@ -38,12 +38,12 @@
 #include "CRtdsAdapter.hpp"
 #include "IPhysicalDevice.hpp"
 
-/// This file's logger.
-static CLocalLogger CDeviceFactoryHPPLogger(__FILE__);
-
 namespace freedm {
 namespace broker {
 namespace device {
+
+/// This file's logger.
+static CLocalLogger CDeviceFactoryHPPLogger(__FILE__);
     
 #define REGISTER_DEVICE_CLASS(SUFFIX) CDeviceFactory::instance().\
 RegisterDeviceClass(#SUFFIX, &CDeviceFactory::CreateDevice<CDevice##SUFFIX>)

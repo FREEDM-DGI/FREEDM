@@ -37,8 +37,6 @@
 #include "IProtocol.hpp"
 #include "CLogger.hpp"
 
-static CLocalLogger Logger(__FILE__);
-
 #include <boost/asio.hpp>
 #include <boost/array.hpp>
 #include <boost/noncopyable.hpp>
@@ -50,6 +48,8 @@ static CLocalLogger Logger(__FILE__);
 
 namespace freedm {
     namespace broker {
+        
+static CLocalLogger Logger(__FILE__);
 
 CSUConnection::CSUConnection(CConnection *  conn)
     : IProtocol(conn),

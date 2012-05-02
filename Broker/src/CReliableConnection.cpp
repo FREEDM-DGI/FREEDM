@@ -40,9 +40,6 @@
 #include "RequestParser.hpp"
 #include "CLogger.hpp"
 
-static CLocalLogger Logger(__FILE__);
-
-
 #include <vector>
 
 #include <boost/bind.hpp>
@@ -51,6 +48,9 @@ using boost::property_tree::ptree;
 
 namespace freedm {
     namespace broker {
+
+static CLocalLogger Logger(__FILE__);
+        
 ///////////////////////////////////////////////////////////////////////////////
 /// @fn CReliableConnection::CReliableConnection
 /// @description: Constructor for the CGenericConnection object.

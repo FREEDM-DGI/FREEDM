@@ -40,13 +40,13 @@
 #include "config.hpp"
 #include "CLogger.hpp"
 
-static CLocalLogger Logger(__FILE__);
-
 #include <algorithm>
 #include <boost/bind.hpp>
 
 namespace freedm {
 namespace broker {
+    
+static CLocalLogger Logger(__FILE__);
 
 ///////////////////////////////////////////////////////////////////////////////
 /// @fn CConnectionManager::CConnectionManager

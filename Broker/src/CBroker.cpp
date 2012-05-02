@@ -43,8 +43,6 @@
 #include "CBroker.hpp"
 #include "CLogger.hpp"
 
-static CLocalLogger Logger(__FILE__);
-
 #include <boost/bind.hpp>
 #include <boost/asio/io_service.hpp>
 
@@ -53,6 +51,8 @@ namespace freedm {
     /// Broker Architecture Namespace
     namespace broker {
 
+static CLocalLogger Logger(__FILE__);
+        
 ///////////////////////////////////////////////////////////////////////////////
 /// @fn CBroker::CBroker
 /// @description The constructor for the broker, providing the initial acceptor

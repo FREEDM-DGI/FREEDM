@@ -27,12 +27,13 @@
 #include "CTableStructure.hpp"
 #include "CLogger.hpp"
 
-static CLocalLogger Logger(__FILE__);
-
 namespace freedm
 {
 namespace broker
 {
+
+static CLocalLogger Logger(__FILE__);    
+    
 ////////////////////////////////////////////////////////////////////////////
 /// CTableStructure( const string &, const string & )
 ///

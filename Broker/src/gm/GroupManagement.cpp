@@ -40,7 +40,6 @@
 #include "GroupManagement.hpp"
 #include "GMPeerNode.hpp"
 
-#include "Utility.hpp"
 #include "CMessage.hpp"
 #include "types/remotehost.hpp"
 
@@ -82,11 +81,10 @@ using boost::property_tree::ptree;
 
 #include "CLogger.hpp"
 
-static CLocalLogger Logger(__FILE__);
-
 namespace freedm {
     //    namespace gm{
 
+    static CLocalLogger Logger(__FILE__);
 
 ///////////////////////////////////////////////////////////////////////////////
 /// StartMonitor

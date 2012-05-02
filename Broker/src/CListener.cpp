@@ -40,8 +40,6 @@
 #include "config.hpp"
 #include "CLogger.hpp"
 
-static CLocalLogger Logger(__FILE__);
-
 #include <vector>
 
 #include <boost/bind.hpp>
@@ -50,6 +48,9 @@ using boost::property_tree::ptree;
 
 namespace freedm {
     namespace broker {
+        
+static CLocalLogger Logger(__FILE__);
+        
 ///////////////////////////////////////////////////////////////////////////////
 /// @fn CListener::CListener
 /// @description Constructor for the CConnection object. Since the change to

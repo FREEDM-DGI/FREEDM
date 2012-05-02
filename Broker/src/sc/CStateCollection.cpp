@@ -46,7 +46,6 @@
 #include "CStateCollection.hpp"
 #include "SCPeerNode.hpp"
 
-#include "Utility.hpp"
 #include "CMessage.hpp"
 
 #include <algorithm>
@@ -90,8 +89,6 @@ using boost::property_tree::ptree;
 
 #include "CLogger.hpp"
 
-static CLocalLogger Logger(__FILE__);
-
 #include <map>
 
 ///////////////////////////////////////////////////////////////////////////////////
@@ -108,6 +105,8 @@ static CLocalLogger Logger(__FILE__);
 namespace freedm
 {
 //  namespace sc{
+    
+    static CLocalLogger Logger(__FILE__);
 
 ///////////////////////////////////////////////////////////////////////////////
 /// SCAgent

@@ -32,12 +32,13 @@
 #include "CTableRTDS.hpp"
 #include "CLogger.hpp"
 
-static CLocalLogger Logger(__FILE__);
-
 namespace freedm
 {
 namespace broker
 {
+    
+static CLocalLogger Logger(__FILE__);
+    
 ////////////////////////////////////////////////////////////////////////////
 /// CTableRTDS( const string &, const string & )
 ///

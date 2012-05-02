@@ -33,13 +33,13 @@
 #include "device/CPhysicalDeviceManager.hpp"
 #include "CLogger.hpp"
 
-static CLocalLogger Logger(__FILE__);
-
 #include <boost/bind.hpp>
 
 namespace freedm {
 namespace broker {
 namespace device {
+    
+static CLocalLogger Logger(__FILE__);
 
 ///////////////////////////////////////////////////////////////////////////////
 /// @fn CPhysicalDeviceManager

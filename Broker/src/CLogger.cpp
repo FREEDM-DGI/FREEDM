@@ -25,11 +25,22 @@
 #include <boost/program_options/options_description.hpp>
 
 #include "CLogger.hpp"
-#include "Utility.hpp"
+
+#define foreach BOOST_FOREACH
 
 using namespace boost::posix_time;
 
+namespace freedm {
+
 static CLocalLogger Logger(__FILE__);
+
+std::string basename( const std::string s )
+{
+    // This works for both Windows and UNIX-style paths
+    size_t idx;
+    idx = s.find_last_of("/\\");
+    return s.substr(idx + 1);
+}
 
 CLog::CLog(const CLoggerPointer p, const unsigned int level_, 
         const char * name_, std::ostream *out_) :
@@ -177,4 +188,6 @@ void CGlobalLogger::ListLoggers()
     {
         std::cout<<(*it).first<<"="<<(*it).second<<std::endl;
     }
+}
+
 }

@@ -28,12 +28,12 @@
 #include "config.hpp"
 #include "device/CDeviceFactory.hpp"
 
-/// This file's logger.
-static CLocalLogger Logger(__FILE__);
-
 namespace freedm {
 namespace broker {
 namespace device {
+    
+/// This file's logger.
+static CLocalLogger Logger(__FILE__);
 
 ////////////////////////////////////////////////////////////////////////////////
 /// @function CDeviceFactory::instance()

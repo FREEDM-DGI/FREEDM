@@ -48,7 +48,6 @@ using boost::property_tree::ptree;
 #include <boost/progress.hpp>
 
 #include "CMessage.hpp"
-#include "Utility.hpp"
 #include "SCPeerNode.hpp"
 //#include "ExtensibleLineProtocol.hpp"
 #include "IAgent.hpp"
@@ -83,10 +82,9 @@ namespace freedm
 ///                 other nodes (these messages belong to the channel between the nodes).
 ///////////////////////////////////////////////////////////////////////////////
 
-class SCAgent : public IReadHandler, public SCPeerNode, public Templates::Singleton< SCAgent >,
+class SCAgent : public IReadHandler, public SCPeerNode,
     public IAgent< boost::shared_ptr<SCPeerNode> >
 {
-  friend class Templates::Singleton< SCAgent >;
   public:
     ///Constructor        
     SCAgent(std::string uuid, freedm::broker::CBroker &broker, freedm::broker::device::CPhysicalDeviceManager &m_phyManager);

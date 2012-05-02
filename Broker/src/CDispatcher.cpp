@@ -38,12 +38,12 @@
 #include "CDispatcher.hpp"
 #include "CLogger.hpp"
 
-static CLocalLogger Logger(__FILE__);
-
 #define UNUSED_ARGUMENT(x) (void)x
 
 namespace freedm {
     namespace broker {
+        
+static CLocalLogger Logger(__FILE__);
 
 ///////////////////////////////////////////////////////////////////////////////
 /// @fn CDispatcher::CDispatcher

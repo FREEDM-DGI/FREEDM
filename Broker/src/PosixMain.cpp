@@ -58,7 +58,6 @@ namespace po = boost::program_options;
 #include "gm/GroupManagement.hpp"
 #include "lb/LoadBalance.hpp"
 #include "sc/CStateCollection.hpp"
-#include "Utility.hpp"
 #include "version.h"
 
 using namespace freedm;
@@ -200,7 +199,7 @@ int main(int argc, char* argv[])
             {
                 uuidgenerator = boost::asio::ip::host_name();
             }
-            uuid = freedm::CUuid::from_dns(uuidgenerator);
+            uuid = CUuid::from_dns(uuidgenerator);
             std::cout << uuid << std::endl;
             return 0;
         }

@@ -38,10 +38,10 @@
 
 #include <exception>
 
-static CLocalLogger Logger(__FILE__);
-
 namespace freedm {
     namespace broker {
+        
+static CLocalLogger Logger(__FILE__);
 
 void IProtocol::Write(CMessage msg)
 {

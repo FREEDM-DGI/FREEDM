@@ -48,7 +48,6 @@ using boost::property_tree::ptree;
 #include <boost/interprocess/sync/interprocess_mutex.hpp>
 
 #include "CMessage.hpp"
-#include "Utility.hpp"
 #include "GMPeerNode.hpp"
 #include "IAgent.hpp"
 #include "IHandler.hpp"
@@ -72,10 +71,8 @@ namespace freedm {
 ///	Declaration of Garcia-Molina Invitation Leader Election algorithm.
 class GMAgent
   : public IReadHandler, public GMPeerNode,
-    public Templates::Singleton< GMAgent >, 
     public IAgent< boost::shared_ptr<GMPeerNode> >
 {
-  friend class Templates::Singleton< GMAgent >;
   public:
     /// Default constructor
     GMAgent();

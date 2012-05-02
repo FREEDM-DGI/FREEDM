@@ -44,16 +44,18 @@
 
 #include <string>
 
-#include "Utility.hpp"
-
 namespace freedm {
 
 /// A singleton class which tracks commonly used configuration options.
-class CGlobalConfiguration : public Templates::Singleton<CGlobalConfiguration>
+class CGlobalConfiguration : public boost::noncopyable
 {
     public:
-        /// Initialize the global configuration
-        CGlobalConfiguration() { };
+        /// Returns the singleton instance of the global configuration.
+        static CGlobalConfiguration& instance()
+        {
+            static CGlobalConfiguration instance;
+            return instance;
+        }
         /// Set the hostname
         void SetHostname(std::string h) { m_hostname = h; };
         /// Set the port

@@ -8,24 +8,23 @@ set(
     CListener.cpp
     CLogger.cpp
     CMessage.cpp
-    CPscadAdapter.cpp
     CReliableConnection.cpp
-    CRtdsAdapter.cpp
     CSRConnection.cpp
     CSUConnection.cpp
-    CTableRTDS.cpp
-    CTableStructure.cpp
     device/CDeviceFactory.cpp
     device/CDeviceKeyCoupled.cpp
     device/CDeviceStructureGeneric.cpp
     device/CDeviceStructurePSCAD.cpp
     device/CDeviceStructureRTDS.cpp
     device/CPhysicalDeviceManager.cpp
+    device/CPscadAdapter.cpp
+    device/CRtdsAdapter.cpp
+    device/CTableRTDS.cpp
+    device/CTableStructure.cpp
+    device/INetworkAdapter.cpp
     device/PhysicalDeviceTypes.cpp
     device/types/IDevice.cpp
-    INetworkAdapter.cpp
     IPeerNode.cpp
-    IPhysicalAdapter.cpp
     IProtocol.cpp
     gm/GroupManagement.cpp
     lb/LoadBalance.cpp

@@ -34,10 +34,12 @@
 #include <boost/utility.hpp>
 #include <boost/shared_ptr.hpp>
 
+#include "IPhysicalAdapter.hpp"
+
 namespace freedm{
   namespace broker{
 /// Provides an interface for communicating commands to a PSCAD model
-class CPscadAdapter : private boost::noncopyable
+class CPscadAdapter : public IPhysicalAdapter
 {
     ////////////////////////////////////////////////////////////////////////////////
     /// CLineClient

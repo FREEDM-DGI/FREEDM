@@ -39,6 +39,7 @@
 #include <boost/thread/thread.hpp>
 
 #include "CTableRTDS.hpp"
+#include "IPhysicalAdapter.hpp"
 
 namespace freedm
 {
@@ -46,7 +47,7 @@ namespace broker
 {
 
 /// Provides an interface for communicating with a RTDS simulation model
-class CRtdsAdapter : private boost::noncopyable
+class CRtdsAdapter : public IPhysicalAdapter
 {
         ////////////////////////////////////////////////////////
         ///

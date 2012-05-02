@@ -32,6 +32,22 @@
 #ifndef IPHYSICALADAPTER_HPP
 #define	IPHYSICALADAPTER_HPP
 
+class IPhysicalAdapter : private boost::noncopyable {
+    /// pointer to an adapter
+    typedef boost::shared_ptr<CRtdsAdapter> RTDSPointer;
 
+    /// handles connection to FPGA
+    virtual void Connect(const std::string p_hostname, const std::string p_port);
+
+    /// updates command table
+    virtual void Set(const std::string p_device, const std::string p_key,
+            const double p_value);
+
+    /// retrieve data from state table
+    virtual double Get(const std::string p_device, const std::string p_key);
+
+    /// shut down communicaiton to FPGA
+    virtual void Quit();
+};
 
 #endif	// IPHYSICALADAPTER_HPP

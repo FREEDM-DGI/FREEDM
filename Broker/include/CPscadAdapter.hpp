@@ -1,7 +1,8 @@
 ////////////////////////////////////////////////////////////////////////////////
 /// @file           CPscadAdapter.hpp
 ///
-/// @author         Thomas Roth <tprfh7@mst.edu>
+/// @author         Thomas Roth <tprfh7@mst.edu>,
+///                 Michael Catanzaro <michael.catanzaro@mst.edu>
 ///
 /// @project        FREEDM DGI
 ///
@@ -36,8 +37,8 @@
 
 #include "INetworkAdapter.hpp"
 
-namespace freedm{
-  namespace broker{
+namespace freedm {
+namespace broker {
 /// Provides an interface for communicating commands to a PSCAD model
 class CPscadAdapter : public INetworkAdapter
 {
@@ -56,8 +57,8 @@ class CPscadAdapter : public INetworkAdapter
     ////////////////////////////////////////////////////////////////////////////////
 public:
     typedef boost::shared_ptr<CPscadAdapter> TPointer;
-    static TPointer Create( boost::asio::io_service & service );
-    
+    static TPointer Create(boost::asio::io_service & service);
+
     ////////////////////////////////////////////////////////////////////////////
     /// Set( const string &, const string &, const string & )
     ///
@@ -86,8 +87,8 @@ public:
     ///     The precondition is not enforced.
     ///
     ////////////////////////////////////////////////////////////////////////////
-    void Set( const std::string device, const std::string key, const std::string value );
-    
+    void Set(const std::string device, const std::string key, const std::string value);
+
     ////////////////////////////////////////////////////////////////////////////
     /// Get( const string &, const string & )
     ///
@@ -118,8 +119,8 @@ public:
     ///     The precondition is not enforced.
     ///
     ////////////////////////////////////////////////////////////////////////////
-    std::string Get( const std::string device, const std::string key );
-    
+    std::string Get(const std::string device, const std::string key);
+
     ////////////////////////////////////////////////////////////////////////////
     /// Quit
     ///
@@ -145,7 +146,7 @@ public:
     ///
     ////////////////////////////////////////////////////////////////////////////
     void Quit();
-    
+
     ////////////////////////////////////////////////////////////////////////////
     /// ~CLineClient
     ///
@@ -195,10 +196,10 @@ private:
     ///     none
     ///
     ////////////////////////////////////////////////////////////////////////////
-    CPscadAdapter( boost::asio::io_service & service );
+    CPscadAdapter(boost::asio::io_service & service);
 };
 
-  }//namespace broker
+}//namespace broker
 }//namespace freedm
 
 #endif // CPSCADADAPTER_HPP

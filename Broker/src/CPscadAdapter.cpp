@@ -1,7 +1,8 @@
 ////////////////////////////////////////////////////////////////////////////////
 /// @file           CPscadAdapter.cpp
 ///
-/// @author         Thomas Roth <tprfh7@mst.edu>
+/// @author         Thomas Roth <tprfh7@mst.edu>,
+///                 Michael Catanzaro <michael.catanzaro@mst.edu>
 ///
 /// @project        FREEDM DGI
 ///
@@ -28,39 +29,35 @@
 namespace freedm {
 
 namespace broker {
-
-CPscadAdapter::TPointer CPscadAdapter::Create( boost::asio::io_service & service )
+CPscadAdapter::TPointer CPscadAdapter::Create(boost::asio::io_service & service)
 {
-  return CPscadAdapter::TPointer( new CPscadAdapter(service) );
+    return CPscadAdapter::TPointer(new CPscadAdapter(service));
 }
-
-CPscadAdapter::CPscadAdapter( boost::asio::io_service & service )
-    : INetworkAdapter(service)
-{
+CPscadAdapter::CPscadAdapter(boost::asio::io_service & service)
+: INetworkAdapter(service) {
     // skip
 }
-
-void CPscadAdapter::Set( const std::string device, const std::string key,
-    const std::string value )
+void CPscadAdapter::Set(const std::string device, const std::string key,
+        const std::string value)
 {
     boost::asio::streambuf request;
-    std::ostream request_stream( &request );
-    
+    std::ostream request_stream(&request);
+
     boost::asio::streambuf response;
-    std::istream response_stream( &response );
+    std::istream response_stream(&response);
     std::string response_code, response_message;
-    
+
     // format and send the request stream
-    request_stream << "SET " << device << ' ' << key << ' ' << value 
+    request_stream << "SET " << device << ' ' << key << ' ' << value
             << "\r\n";
-    boost::asio::write( m_socket, request );
-    
+    boost::asio::write(m_socket, request);
+
     // receive and split the response stream
-    boost::asio::read_until( m_socket, response, "\r\n" );
+    boost::asio::read_until(m_socket, response, "\r\n");
     response_stream >> response_code >> response_message;
-    
+
     // handle bad responses
-    if( response_code != "200" )
+    if (response_code != "200")
     {
         std::stringstream ss;
         ss << "CLineClient attempted to set " << key << " to " << value
@@ -69,76 +66,73 @@ void CPscadAdapter::Set( const std::string device, const std::string key,
         throw std::runtime_error(ss.str());
     }
 }
-
-std::string CPscadAdapter::Get( const std::string device, 
-        const std::string key )
+std::string CPscadAdapter::Get(const std::string device,
+        const std::string key)
 {
     boost::asio::streambuf request;
-    std::ostream request_stream( &request );
-    
+    std::ostream request_stream(&request);
+
     boost::asio::streambuf response;
-    std::istream response_stream( &response );
+    std::istream response_stream(&response);
     std::string response_code, response_message, value;
-    
+
     // format and send the request stream
     request_stream << "GET " << device << ' ' << key << "\r\n";
-    boost::asio::write( m_socket, request );
-    
+    boost::asio::write(m_socket, request);
+
     // receive and split the response stream
-    boost::asio::read_until( m_socket, response, "\r\n" );
+    boost::asio::read_until(m_socket, response, "\r\n");
     response_stream >> response_code >> response_message >> value;
-    
+
     // handle bad responses
-    if( response_code != "200" )
+    if (response_code != "200")
     {
         std::stringstream ss;
-        ss << "CLineClient attempted to get " << key << " on device " 
+        ss << "CLineClient attempted to get " << key << " on device "
                 << device << ", but received a PSCAD error: "
                 << response_message;
         throw std::runtime_error(ss.str());
     }
-    
+
     return value;
 }
-
 void CPscadAdapter::Quit()
 {
     boost::asio::streambuf request;
-    std::ostream request_stream( &request );
-    
+    std::ostream request_stream(&request);
+
     boost::asio::streambuf response;
-    std::istream response_stream( &response );
+    std::istream response_stream(&response);
     std::string response_code, response_message;
-    
+
     // format and send the request stream
     request_stream << "QUIT\r\n";
-    boost::asio::write( m_socket, request );
-    
+    boost::asio::write(m_socket, request);
+
     // receive and split the response stream
-    boost::asio::read_until( m_socket, response, "\r\n" );
+    boost::asio::read_until(m_socket, response, "\r\n");
     response_stream >> response_code >> response_message;
-    
+
     // handle bad responses
-    if( response_code != "200" )
+    if (response_code != "200")
     {
         std::stringstream ss;
         ss << "CLineClient attempted quit, but received a PSCAD error: "
                 << response_message;
         throw std::runtime_error(ss.str());
     }
-    
+
     // close connection
     m_socket.close();
 }
-
 CPscadAdapter::~CPscadAdapter()
 {
     //  perform teardown
-    if( m_socket.is_open() )
+    if (m_socket.is_open())
     {
         Quit();
     }
 }
 
-  }//namespace broker
+}//namespace broker
 }//namespace freedm

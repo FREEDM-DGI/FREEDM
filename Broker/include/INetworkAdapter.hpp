@@ -2,7 +2,6 @@
 /// @file           INetworkAdapter.hpp
 ///
 /// @author         Thomas Roth <tprfh7@mst.edu>,
-///                 Yaxi Liu <ylztf@mst.edu>,
 ///                 Michael Catanzaro <michael.catanzaro@mst.edu>
 ///
 /// @project        FREEDM DGI
@@ -25,12 +24,17 @@
 ///     University of Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
 ////////////////////////////////////////////////////////////////////////////////
 
-#ifndef IPHYSICALADAPTER_HPP
-#define	IPHYSICALADAPTER_HPP
+#ifndef INETWORKADAPTER_HPP
+#define	INETWORKADAPTER_HPP
 
 #include <boost/asio.hpp>
 
 #include <string>
+
+#include "IPhysicalAdapter.hpp"
+
+namespace freedm {
+namespace broker {
 
 ////////////////////////////////////////////////////////////////////////////////
 /// @brief  Physical adapter device interface.
@@ -46,7 +50,7 @@
 /// @limitations    
 ///     None.
 ////////////////////////////////////////////////////////////////////////////////
-class INetworkAdapter //: public IPhysicalAdapter
+class INetworkAdapter : public IPhysicalAdapter
 {
 public:
     /// Creates a socket connection to the given hostname and service.
@@ -58,9 +62,12 @@ public:
 protected:
     /// Constructor to initialize the socket.
     INetworkAdapter(boost::asio::io_service& service);
-    
+
     /// Socket to use for the connection.
     boost::asio::ip::tcp::socket m_socket;
 };
 
-#endif	// IPHYSICALADAPTER_HPP
+}
+}
+
+#endif	// INETWORKADAPTER_HPP

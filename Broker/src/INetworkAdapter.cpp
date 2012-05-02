@@ -2,7 +2,6 @@
 /// @file           INetworkAdapter.hpp
 ///
 /// @author         Thomas Roth <tprfh7@mst.edu>,
-///                 Yaxi Liu <ylztf@mst.edu>,
 ///                 Michael Catanzaro <michael.catanzaro@mst.edu>
 ///
 /// @project        FREEDM DGI
@@ -26,6 +25,8 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 #include "CLogger.hpp"
+
+#include "INetworkAdapter.hpp"
 
 namespace freedm {
 namespace broker {

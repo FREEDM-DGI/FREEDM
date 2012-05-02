@@ -23,7 +23,9 @@ set(
     device/CPhysicalDeviceManager.cpp
     device/PhysicalDeviceTypes.cpp
     device/types/IDevice.cpp
+    INetworkAdapter.cpp
     IPeerNode.cpp
+    IPhysicalAdapter.cpp
     IProtocol.cpp
     gm/GroupManagement.cpp
     lb/LoadBalance.cpp

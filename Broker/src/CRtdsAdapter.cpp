@@ -3,7 +3,8 @@
 ///
 /// @author         Yaxi Liu <ylztf@mst.edu>,
 ///                 Thomas Roth <tprfh7@mst.edu>,
-///                 Mark Stanovich <stanovic@cs.fsu.edu>
+///                 Mark Stanovich <stanovic@cs.fsu.edu>,
+///                 Michael Catanzaro <michael.catanzaro@mst.edu>
 ///
 /// @project        FREEDM DGI
 ///
@@ -41,28 +42,26 @@
 // RTDS uses 4-byte floats and ints
 // The C++ standard does not guarantee a float or an int is 4 bytes
 BOOST_STATIC_ASSERT_MSG(
-    sizeof(float) == 4,
-    "Floating point size error. RTDS uses 4-byte floats."
-);
+        sizeof (float) == 4,
+        "Floating point size error. RTDS uses 4-byte floats."
+        );
 
 BOOST_STATIC_ASSERT_MSG(
-    sizeof(int) == 4,
-    "Integer size error. RTDS uses 4-byte ints."
-);
+        sizeof (int) == 4,
+        "Integer size error. RTDS uses 4-byte ints."
+        );
 
 //this check is here just to be on the safe side
 BOOST_STATIC_ASSERT_MSG(
-    sizeof(char) == 1,
-    "Character size error. char has to be 1 byte."
-);
+        sizeof (char) == 1,
+        "Character size error. char has to be 1 byte."
+        );
 
-namespace freedm
-{
-namespace broker
-{
-    
+namespace freedm {
+namespace broker {
+
 static CLocalLogger Logger(__FILE__);
-    
+
 ////////////////////////////////////////////////////////////////////////////
 /// Create
 ///
@@ -122,10 +121,10 @@ CRtdsAdapter::RTDSPointer CRtdsAdapter::Create(
 ///     none
 ///
 ////////////////////////////////////////////////////////////////////////////
-CRtdsAdapter::CRtdsAdapter( boost::asio::io_service & service,
-                          const std::string xml )
-        : INetworkAdapter(service), m_cmdTable(xml, "command"),
-        m_stateTable(xml, "state"), m_GlobalTimer(service)
+CRtdsAdapter::CRtdsAdapter(boost::asio::io_service & service,
+        const std::string xml)
+: INetworkAdapter(service), m_cmdTable(xml, "command"),
+m_stateTable(xml, "state"), m_GlobalTimer(service)
 {
     Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     m_rxCount = m_stateTable.m_length;
@@ -176,7 +175,7 @@ void CRtdsAdapter::Run()
     //We simply need to use deadline_timer.async_wait to pass control back
     //to io_service, so it can schedule Run() with other callback functions 
     //under its watch.
-    const int TIMESTEP=1; //in microseconds. NEEDS MORE TESTING TO SET CORRECTLY
+    const int TIMESTEP = 1; //in microseconds. NEEDS MORE TESTING TO SET CORRECTLY
 
     //**********************************
     //* Always send data to FPGA first *
@@ -192,19 +191,19 @@ void CRtdsAdapter::Run()
     // FPGA will send values in big-endian byte order
     // If host machine is in little-endian byte order, convert to big-endian
 #if __BYTE_ORDER == __LITTLE_ENDIAN
-    
-    for (int i=0; i<m_txCount; i++)
+
+    for (int i = 0; i < m_txCount; i++)
     {
         //should be 4 bytes in float.
-        endian_swap((char *)&m_txBuffer[4*i], sizeof(float));
+        endian_swap((char *) &m_txBuffer[4 * i], sizeof (float));
     }
-    
+
 #endif
-    
+
     // send to FPGA
     try
     {
-        boost::asio::write(m_socket, 
+        boost::asio::write(m_socket,
                 boost::asio::buffer(m_txBuffer, m_txBufSize));
     }
     catch (std::exception & e)
@@ -213,13 +212,13 @@ void CRtdsAdapter::Run()
         ss << "Send to FPGA failed for the following reason: " << e.what();
         throw std::runtime_error(ss.str());
     }
-    
+
     //*******************************
     //* Receive data from FPGA next *
     //*******************************
     try
     {
-        boost::asio::read(m_socket, 
+        boost::asio::read(m_socket,
                 boost::asio::buffer(m_rxBuffer, m_rxBufSize));
     }
     catch (std::exception & e)
@@ -228,30 +227,30 @@ void CRtdsAdapter::Run()
         ss << "Receive from FPGA failed for the following reason" << e.what();
         throw std::runtime_error(ss.str());
     }
-    
+
     // FPGA will send values in big-endian byte order
     // If host machine is in little-endian byte order, convert to little-endian
 #if __BYTE_ORDER == __LITTLE_ENDIAN
-    
-    for (int j=0; j<m_rxCount; j++)
+
+    for (int j = 0; j < m_rxCount; j++)
     {
-        endian_swap((char *)&m_rxBuffer[4*j], sizeof(float));
+        endian_swap((char *) &m_rxBuffer[4 * j], sizeof (float));
     }
-    
+
 #endif
     {
         boost::unique_lock<boost::shared_mutex> lockWrite(m_stateTable.m_mutex);
         Logger.Debug << "Client_RTDS - obtained mutex as writer" << std::endl;
-        
+
         //write to stateTable
         memcpy(m_stateTable.m_data, m_rxBuffer, m_rxBufSize);
-        
+
         Logger.Debug << "Client_RTDS - released writer mutex" << std::endl;
     } //scope is needed for mutex to auto release
-    
+
     //Start the timer; on timeout, this function is called again
-    m_GlobalTimer.expires_from_now( boost::posix_time::microseconds(TIMESTEP) );
-    m_GlobalTimer.async_wait( boost::bind(&CRtdsAdapter::Run, this));
+    m_GlobalTimer.expires_from_now(boost::posix_time::microseconds(TIMESTEP));
+    m_GlobalTimer.async_wait(boost::bind(&CRtdsAdapter::Run, this));
 }
 
 ////////////////////////////////////////////////////////////////////////////
@@ -280,14 +279,14 @@ void CRtdsAdapter::Run()
 ///     There could be minor loss of accuracy.
 ///
 ////////////////////////////////////////////////////////////////////////////
-void CRtdsAdapter::Set( const std::string device, const std::string key,
-                       double value )
+void CRtdsAdapter::Set(const std::string device, const std::string key,
+        double value)
 {
     Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
-    
+
     try
     {
-        m_cmdTable.SetValue( CDeviceKeyCoupled(device,key), value );
+        m_cmdTable.SetValue(CDeviceKeyCoupled(device, key), value);
     }
     catch (std::out_of_range & e)
     {
@@ -326,15 +325,15 @@ void CRtdsAdapter::Set( const std::string device, const std::string key,
 ///     floats. The accuracy is not as high as a real doubles.
 ///
 ////////////////////////////////////////////////////////////////////////////
-double CRtdsAdapter::Get( const std::string device, const std::string key )
+double CRtdsAdapter::Get(const std::string device, const std::string key)
 {
     Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
-     
+
     try
     {
-        return m_stateTable.GetValue( CDeviceKeyCoupled(device, key) );
+        return m_stateTable.GetValue(CDeviceKeyCoupled(device, key));
     }
-    catch (std::out_of_range & e  )
+    catch (std::out_of_range & e)
     {
         std::stringstream ss;
         ss << "RTDS attempted to get device/key pair " << device << "/"
@@ -383,10 +382,10 @@ void CRtdsAdapter::Quit()
 ///
 ////////////////////////////////////////////////////////////////////////////
 CRtdsAdapter::~CRtdsAdapter()
-{  
+{
     Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     //  perform teardown
-    if ( m_socket.is_open() )
+    if (m_socket.is_open())
     {
         Quit();
     }
@@ -420,13 +419,13 @@ void CRtdsAdapter::endian_swap(char *data, const int num_bytes)
 {
     Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     char * tmp = new char[num_bytes];
-    
-    for (int i=0; i<num_bytes; ++i)
+
+    for (int i = 0; i < num_bytes; ++i)
         tmp[i] = data[num_bytes - 1 - i];
-        
-    for (int i=0; i<num_bytes; ++i)
+
+    for (int i = 0; i < num_bytes; ++i)
         data[i] = tmp[i];
-        
+
     delete[] tmp;
 }
 

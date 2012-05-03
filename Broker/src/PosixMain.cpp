@@ -286,6 +286,7 @@ int main(int argc, char* argv[])
         lbAgent LB(uuidstr, broker, phyManager);
         dispatch.RegisterReadHandler("lb", "lb", &LB);
         // Instantiate and register the state collection module
+
         SCAgent SC(uuidstr, broker, phyManager);
         dispatch.RegisterReadHandler("sc", "any", &SC);
 
@@ -294,6 +295,7 @@ int main(int argc, char* argv[])
         // thread-safe access, as well. Shouldn't be too hard since it will
         // mostly be read-only
         if (vm.count("add-host"))
+
         {
             std::vector< std::string > arglist_ =
                     vm["add-host"].as< std::vector<std::string> >( );

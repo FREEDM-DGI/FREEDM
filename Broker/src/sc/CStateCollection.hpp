@@ -132,7 +132,10 @@ class SCAgent : public IReadHandler, public SCPeerNode,
     unsigned int m_countmarker;
     ///count number of "Done" messages
     unsigned int m_countdone;
-        
+   
+    ///save leader
+    std::string m_scleader;
+
     ///flag to indicate save channel message
     bool m_NotifyToSave;
         

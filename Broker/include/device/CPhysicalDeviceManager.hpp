@@ -33,14 +33,15 @@
 #ifndef PHYSICALDEVICEMANAGER_HPP
 #define PHYSICALDEVICEMANAGER_HPP
 
-#include "types/IDevice.hpp"
-
 #include <string>
 #include <map>
 #include <list>
 #include <boost/noncopyable.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/enable_shared_from_this.hpp>
+
+#include "IPhysicalAdapter.hpp"
+#include "types/IDevice.hpp"
 
 namespace freedm {
 namespace broker {

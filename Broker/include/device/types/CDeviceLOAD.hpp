@@ -31,28 +31,26 @@
 
 namespace freedm {
 namespace broker {
+namespace device {
 
 // forward declaration of device manager
 class CPhysicalDeviceManager;
 
-namespace device {
-
 /// Implementation of physical loads
 class CDeviceLOAD
-    : public virtual IDevice
+: public virtual IDevice
 {
 public:
     /// Convenience type for a shared pointer to self
     typedef boost::shared_ptr<CDeviceLOAD> DevicePtr;
 
     /// Constructor which takes a manager, identifier, and internal structure
-    CDeviceLOAD( CPhysicalDeviceManager & manager, Identifier device,
-        IDeviceStructure::DevicePtr structure )
-        : IDevice(manager,device,structure)
-        {}
+    CDeviceLOAD(CPhysicalDeviceManager & manager, Identifier device,
+            IPhysicalAdapter & adapter)
+    : IDevice(manager, device, adapter) { }
 
     /// Virtual destructor for derived classes
-    virtual ~CDeviceLOAD() {}
+    virtual ~CDeviceLOAD() { }
 };
 
 } // namespace device

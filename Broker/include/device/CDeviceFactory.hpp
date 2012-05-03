@@ -29,14 +29,12 @@
 #include <boost/asio/io_service.hpp>
 #include <boost/noncopyable.hpp>
 
-#include "CDeviceStructureGeneric.hpp"
-#include "CDeviceStructurePSCAD.hpp"
-#include "CDeviceStructureRTDS.hpp"
+#include "CGenericAdapter.hpp"
 #include "CLogger.hpp"
 #include "CPhysicalDeviceManager.hpp"
 #include "CPscadAdapter.hpp"
 #include "CRtdsAdapter.hpp"
-#include "IPhysicalDevice.hpp"
+#include "IPhysicalAdapter.hpp"
 
 namespace freedm {
 namespace broker {
@@ -102,15 +100,12 @@ public:
 private:
     /// Constructs the device factory.
     CDeviceFactory();
+    
+    /// Tears down the device factory.
+    ~CDeviceFactory();
 
-    /// Creates the internal structure of the device.
-    IDeviceStructure::DevicePtr CreateStructure() const;
-
-    /// Client to the PSCAD simulation server.
-    CPscadAdapter::TPointer m_lineClient;
-
-    /// Client for the RTDS.
-    CRtdsAdapter::RTDSPointer m_rtdsClient;
+    /// Device adapter to attach to created devices.
+    IPhysicalAdapter* m_adapter;
 
     /// Device manager to handle created devices.
     CPhysicalDeviceManager* m_manager;
@@ -157,13 +152,7 @@ void CDeviceFactory::CreateDevice(const Identifier deviceID)
         ss << __PRETTY_FUNCTION__ << " called before factory init" << std::endl;
         throw std::runtime_error(ss.str());
     }
-    IDeviceStructure::DevicePtr ds;
-    IDevice::DevicePtr dev;
-    // create and register the device structure
-    ds = CreateStructure();
-    ds->Register(deviceID);
-    // create the new device from the structure
-    dev = IDevice::DevicePtr(new DeviceType(*m_manager, deviceID, ds));
+    IDevice::DevicePtr dev(new DeviceType(*m_manager, deviceID, *m_adapter));
     // add the device to the manager
     m_manager->AddDevice(dev);
 }

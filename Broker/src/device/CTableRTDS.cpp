@@ -31,7 +31,6 @@
 /////////////////////////////////////////////////////////
 #include "CLogger.hpp"
 #include "device/CTableRTDS.hpp"
-#include "device/IPhysicalDevice.hpp"
 
 namespace freedm
 {

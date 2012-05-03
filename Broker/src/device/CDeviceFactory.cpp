@@ -31,7 +31,7 @@
 namespace freedm {
 namespace broker {
 namespace device {
-    
+
 /// This file's logger.
 static CLocalLogger Logger(__FILE__);
 
@@ -66,6 +66,9 @@ CDeviceFactory& CDeviceFactory::instance()
 ///  factory is ever used.  For example:
 ///  <code>CDeviceFactory::instance().init(params)</code>
 ///
+/// @SharedMemory The factory keeps a reference to the passed device manager and
+///  IO service, which are shared among other program modules.
+///
 /// @pre Relevant parameters are set appropriately.
 /// @post CDeviceFactory::instance() will retrieve the factory instance.
 ///
@@ -80,6 +83,8 @@ CDeviceFactory& CDeviceFactory::instance()
 /// @param xml if RTDS is enabled, the name of the FPGA configuration file.
 ///
 /// @limitations Must be called before anything else is done with this factory.
+///
+/// @todo Write CGenericAdapter class.
 ////////////////////////////////////////////////////////////////////////////////
 void CDeviceFactory::init(CPhysicalDeviceManager& manager,
         boost::asio::io_service& ios, const std::string host,
@@ -89,12 +94,16 @@ void CDeviceFactory::init(CPhysicalDeviceManager& manager,
     Logger.Info << "Initialized the device factory" << std::endl;
     m_manager = &manager;
 #if defined USE_DEVICE_PSCAD
-    m_lineClient = CPscadAdapter::Create(ios);
-    m_lineClient->Connect(host, port);
+    CPscadAdapter* pscadAdapter = new CPscadAdapter::Create(ios);
+    pscadAdapter->Connect(host, port);
+    m_adapter = pscadAdapter;
 #elif defined USE_DEVICE_RTDS
-    m_rtdsClient = CRtdsAdapter::Create(ios, xml);
-    m_rtdsClient->Connect(host, port);
-    m_rtdsClient->Run();
+    CRtdsAdapter* rtdsAdapter = new CRtdsAdapter::Create(ios, xml);
+    rtdsAdapter->Connect(host, port);
+    rtdsAdapter->Run();
+    m_adapter = rtdsAdapter;
+#else
+    m_adapter = new CGenericAdapter;
 #endif
     m_initialized = true;
 }
@@ -263,52 +272,27 @@ void CDeviceFactory::CreateDevices(const std::vector<std::string>& deviceList)
 ///  before doing anything with it.
 ////////////////////////////////////////////////////////////////////////////////
 CDeviceFactory::CDeviceFactory()
-: m_lineClient(CPscadAdapter::TPointer()),
-m_rtdsClient(CRtdsAdapter::RTDSPointer()), m_manager(0), m_registry(),
-m_initialized(false)
+: m_adapter(0), m_manager(0), m_registry(), m_initialized(false)
 {
     Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-/// @function CDeviceFactory::CreateStructure()
+/// @function CDeviceFactory::~CDeviceFactory()
 ///
-/// @description Creates the internal structure of a device.  Intended to be
-///  immediately passed to a device constructor when the device is created by
-///  CreateDevice.
+/// @description Tears down the factory. This isn't necessary since the 
+///  singleton factory will exist until the simulation terminates.
 ///
-/// @ErrorHandling Throws an exception if the factory is not initialized.
+/// @pre None.
+/// @post Releases dynamic memory allocated by the factory.
 ///
-/// @pre factory must be configured by CDeviceFactory::init.
-/// @post desired device structure is created and returned.
-///
-/// @return an internal device structure for PSCAD, RTDS, or generic devices.
-///
-/// @limitations only PSCAD, RTDS, and generic devices are supported.
-///
-/// @todo remove this function. Adapters should be connected directly.
+/// @limitations None.
 ////////////////////////////////////////////////////////////////////////////////
-IDeviceStructure::DevicePtr CDeviceFactory::CreateStructure() const
+CDeviceFactory::~CDeviceFactory()
 {
     Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
-    if (!m_initialized)
-    {
-        std::stringstream ss;
-        ss << __PRETTY_FUNCTION__ << " called before factory init" << std::endl;
-        throw std::runtime_error(ss.str());
-    }
-#if defined USE_DEVICE_PSCAD
-    Logger.Debug << "Creating a PSCAD device structure" << std::endl;
-    return IDeviceStructure::DevicePtr(
-            new CDeviceStructurePSCAD(m_lineClient));
-#elif defined USE_DEVICE_RTDS
-    Logger.Debug << "Creating an RTDS device structure" << std::endl;
-    return IDeviceStructure::DevicePtr(
-            new CDeviceStructureRTDS(m_rtdsClient));
-#else
-    Logger.Debug << "Creating a generic device structure" << std::endl;
-    return IDeviceStructure::DevicePtr(new CDeviceStructureGeneric());
-#endif
+    delete m_adapter;
+    // Do not delete the device manager, since we didn't create it.
 }
 
 } // namespace device

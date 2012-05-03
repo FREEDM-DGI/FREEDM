@@ -34,47 +34,47 @@ namespace device
 {
 
 ////////////////////////////////////////////////////////////////////////////////
-/// IDevice( CPhysicalDeviceManager &, Identifier, IDeviceStructure::DevicePtr )
+/// IDevice( CPhysicalDeviceManager &, Identifier, IPhysicalAdapter & )
 /// @description Called by subclass constructors to initialize the device
 /// @pre none
 /// @post Base of the device created and initialized
 /// @param manager The device manager that will handle the device
 /// @param device The unique device identifier for the device
-/// @param structure The implementation scheme of the device
+/// @param adapter The implementation scheme of the device
 ////////////////////////////////////////////////////////////////////////////////
 IDevice::IDevice( CPhysicalDeviceManager & manager, Identifier device,
-                  IDeviceStructure::DevicePtr structure )
+                  IPhysicalAdapter & adapter )
     : m_manager(manager)
-    , m_device(device)
-    , m_structure(structure)
+    , m_identifier(device)
+    , m_adapter(adapter)
 {
     // skip
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-/// Get( const SettingKey & )
+/// Get( const SettingKey )
 /// @description Gets a device setting value from the internal structure
 /// @pre m_structure must contain an entry for the passed key
 /// @post m_structure is queried for the value of the key
 /// @param key The key of the device setting to retrieve
 /// @return SettingValue associated with the passed key
 ////////////////////////////////////////////////////////////////////////////////
-SettingValue IDevice::Get( const SettingKey & key )
+SettingValue IDevice::Get( const SettingKey key )
 {
-    return m_structure->Get(key);
+    return m_adapter.Get(m_identifier, key);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-/// Set( const SettingKey &, const SettingValue & )
+/// Set( const SettingKey, const SettingValue )
 /// @description Sets a device setting value in the internal structure
 /// @pre m_structure must contain an entry for the passed key
 /// @post m_structure is queried to set the key to the passed value
 /// @param key The key of the device setting to update
 /// @param value The value to set for the setting key
 ////////////////////////////////////////////////////////////////////////////////
-void IDevice::Set( const SettingKey & key, const SettingValue & value )
+void IDevice::Set( const SettingKey key, const SettingValue value )
 {
-    m_structure->Set(key,value);
+    m_adapter.Set(m_identifier, key, value);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -139,12 +139,12 @@ bool IDevice::TryLock()
 /// GetID() const
 /// @description Accessor for the unique device identifier
 /// @pre none
-/// @post Returns const reference to m_device
-/// @return const reference to m_device
+/// @post none
+/// @return this device's identifier
 ////////////////////////////////////////////////////////////////////////////////
-const Identifier & IDevice::GetID() const
+Identifier IDevice::GetID() const
 {
-    return m_device;
+    return m_identifier;
 }
 
 } // namespace device

@@ -13,9 +13,6 @@ set(
     CSUConnection.cpp
     device/CDeviceFactory.cpp
     device/CDeviceKeyCoupled.cpp
-    device/CDeviceStructureGeneric.cpp
-    device/CDeviceStructurePSCAD.cpp
-    device/CDeviceStructureRTDS.cpp
     device/CPhysicalDeviceManager.cpp
     device/CPscadAdapter.cpp
     device/CRtdsAdapter.cpp

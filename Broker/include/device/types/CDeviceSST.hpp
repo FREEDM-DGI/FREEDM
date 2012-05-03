@@ -53,8 +53,8 @@ public:
 
     /// Constructor which takes a manager, identifier, and internal structure
     CDeviceSST(CPhysicalDeviceManager & manager, Identifier device,
-            IDeviceStructure::DevicePtr structure)
-    : IDevice(manager, device, structure) { }
+            IPhysicalAdapter& adapter)
+    : IDevice(manager, device, adapter) { }
 
     /// Virtual destructor for derived classes
     virtual ~CDeviceSST() { }

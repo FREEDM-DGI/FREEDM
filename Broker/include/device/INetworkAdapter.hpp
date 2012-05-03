@@ -62,6 +62,9 @@ public:
 
     /// Closes the connection.
     virtual void Quit() = 0;
+    
+    /// Virtual destructor for derived classes.
+    virtual ~INetworkAdapter() { };
 
 protected:
     /// Constructor to initialize the socket.

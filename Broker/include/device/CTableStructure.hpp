@@ -52,7 +52,7 @@
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/xml_parser.hpp>
 
-#include "device/CDeviceKeyCoupled.hpp"
+#include "CDeviceKeyCoupled.hpp"
 
 namespace freedm
 {

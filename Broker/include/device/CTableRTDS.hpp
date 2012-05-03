@@ -44,9 +44,9 @@
 
 #include <boost/thread/shared_mutex.hpp>
 
-#include "device/CDeviceKeyCoupled.hpp"
+#include "CDeviceKeyCoupled.hpp"
 #include "CTableStructure.hpp"
-#include "device/IPhysicalDevice.hpp"
+#include "types/IDevice.hpp"
 
 namespace freedm
 {

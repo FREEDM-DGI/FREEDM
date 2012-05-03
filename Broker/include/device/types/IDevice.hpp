@@ -1,8 +1,9 @@
 ////////////////////////////////////////////////////////////////////////////////
 /// @file           IDevice.hpp
 ///
-/// @author         Stephen Jackson <scj7t4@mst.edu>
-///                 Thomas Roth <tprfh7@mst.edu>
+/// @author         Stephen Jackson <scj7t4@mst.edu>,
+///                 Thomas Roth <tprfh7@mst.edu>,
+///                 Michael Catanzaro <michael.catanzaro@mst.edu>
 ///
 /// @project        FREEDM DGI
 ///
@@ -29,7 +30,7 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/thread.hpp>
 
-#include "../IPhysicalDevice.hpp"
+#include "../IPhysicalAdapter.hpp"
 
 namespace freedm {
 namespace broker {
@@ -53,9 +54,6 @@ boost::shared_ptr<TargetType> device_cast( ObjectType object )
 
 /// Physical device with implementation delegated to private member
 class IDevice
-    : public IDeviceGet
-    , public IDeviceSet
-    , private boost::noncopyable
 {
 public:
     /// Convenience type for a shared pointer to self
@@ -65,10 +63,10 @@ public:
     virtual ~IDevice() {}
 
     /// Gets the setting of some key from the structure
-    virtual SettingValue Get( const SettingKey & key );
+    virtual SettingValue Get( const SettingKey key );
 
     /// Sets the value of some key in the structure
-    virtual void Set( const SettingKey & key, const SettingValue & value );
+    virtual void Set( const SettingKey key, const SettingValue value );
 
     /// Gets the device manager for the device
     CPhysicalDeviceManager & GetManager();
@@ -86,11 +84,12 @@ public:
     bool TryLock();
 
     /// Gets the device identifier
-    const Identifier & GetID() const;
+    Identifier GetID() const;
+    
 protected:
-    /// Constructor which takes a manager, identifier, and internal structure
+    /// Constructor which takes a manager, identifier, and device adapter
     IDevice( CPhysicalDeviceManager & manager, Identifier device,
-        IDeviceStructure::DevicePtr structure );
+        IPhysicalAdapter & adapter );
 
     /// Device manager that handles the device
     CPhysicalDeviceManager & m_manager;
@@ -99,10 +98,10 @@ protected:
     mutable boost::mutex m_mutex;
 
     /// Unique identifier for the device
-    Identifier m_device;
+    Identifier m_identifier;
 
-    /// Structure that handles the device data
-    IDeviceStructure::DevicePtr m_structure;
+    /// "Driver" that handles the device data
+    IPhysicalAdapter & m_adapter;
 };
 
 } // namespace device

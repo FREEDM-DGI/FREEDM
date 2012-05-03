@@ -399,14 +399,14 @@ void lbAgent::LoadTable()
     ss << " ----------- LOAD TABLE (Power Management) ------------"
             << std::endl;
     ss << "| " << "Net DRER (" << numDRERs << "): " << m_Gen
-            << std::setw(14) << "Net DESD (" << numDESDs << "): "
-            << m_Storage << std::setw(20) << "|" << std::endl;
+            << std::setw(14) << "Net DESD (" << numDESDs << "): " 
+            << "   " << m_Storage << std::setw(17) << "|" << std::endl;
     ss << "| " << "Net Load (" << numLOADs << "): " << m_Load
             << std::setw(17) << "Net Gateway (" << numSSTs
             << "): " << m_Gateway << std::setw(17) << "|" << std::endl;
     ss << "| Normal = " << m_Normal << std::setw(23)
-            << "Calc Gateway: " << m_CalcGateway << std::setw(20) << "|" 
-            << std::endl;
+            << "Calc Gateway: " << "   " << m_CalcGateway 
+            << std::setw(17) << "|" << std::endl;
     ss << "| ---------------------------------------------------- |"
             << std::endl;
     ss << "| " << std::setw(20) << "UUID" << std::setw(27) << "State"

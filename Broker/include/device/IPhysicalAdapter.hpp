@@ -29,11 +29,18 @@
 
 #include <boost/noncopyable.hpp>
 
-#include "device/IPhysicalDevice.hpp"
-
 namespace freedm {
 namespace broker {
 namespace device {
+
+/// Type of the unique device identifier
+typedef std::string Identifier;
+
+/// Type of the key for device settings
+typedef std::string SettingKey;
+
+/// Type of the value for device settings
+typedef float SettingValue;
 
 ////////////////////////////////////////////////////////////////////////////////
 /// @brief  Physical adapter device interface.
@@ -62,6 +69,9 @@ public:
     /// Set a value on a device.
     virtual void Set(const Identifier device, const SettingKey key,
             const SettingValue value) = 0;
+
+    /// Virtual destructor for derived classes.
+    virtual ~IPhysicalAdapter() { };
 };
 
 }

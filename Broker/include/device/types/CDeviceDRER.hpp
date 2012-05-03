@@ -31,28 +31,26 @@
 
 namespace freedm {
 namespace broker {
+namespace device {
 
 // forward declaration of device manager
 class CPhysicalDeviceManager;
 
-namespace device {
-
 /// Implementation of distributed renewable energy resources
 class CDeviceDRER
-    : public virtual IDevice
+: public virtual IDevice
 {
 public:
     /// Convenience type for a shared pointer to self
     typedef boost::shared_ptr<CDeviceDRER> DevicePtr;
 
     /// Constructor which takes a manager, identifier, and internal structure
-    CDeviceDRER( CPhysicalDeviceManager & manager, Identifier device,
-        IDeviceStructure::DevicePtr structure )
-        : IDevice(manager,device,structure)
-        {}
+    CDeviceDRER(CPhysicalDeviceManager & manager, Identifier device,
+            IPhysicalAdapter & adapter)
+    : IDevice(manager, device, adapter) { }
 
     /// Virtual destructor for derived classes
-    virtual ~CDeviceDRER() {}
+    virtual ~CDeviceDRER() { }
 };
 
 } // namespace device

@@ -396,22 +396,22 @@ void lbAgent::LoadTable()
     m_CalcGateway = m_Load - m_Gen;
 
     std::stringstream ss;
-    ss << " ----------- LOAD TABLE (Power Management) ------------"
+    ss << "\t ----------- LOAD TABLE (Power Management) ------------"
             << std::endl;
-    ss << "| " << "Net DRER (" << numDRERs << "): " << m_Gen
+    ss << "\t| " << "Net DRER (" << numDRERs << "): " << m_Gen
             << std::setw(14) << "Net DESD (" << numDESDs << "): " 
             << "   " << m_Storage << std::setw(17) << "|" << std::endl;
-    ss << "| " << "Net Load (" << numLOADs << "): " << m_Load
+    ss << "\t| " << "Net Load (" << numLOADs << "): " << m_Load
             << std::setw(17) << "Net Gateway (" << numSSTs
             << "): " << m_Gateway << std::setw(17) << "|" << std::endl;
-    ss << "| Normal = " << m_Normal << std::setw(23)
+    ss << "\t| Normal = " << m_Normal << std::setw(23)
             << "Calc Gateway: " << "   " << m_CalcGateway 
             << std::setw(17) << "|" << std::endl;
-    ss << "| ---------------------------------------------------- |"
+    ss << "\t| ---------------------------------------------------- |"
             << std::endl;
-    ss << "| " << std::setw(20) << "UUID" << std::setw(27) << "State"
+    ss << "\t| " << std::setw(20) << "UUID" << std::setw(27) << "State"
             << std::setw(7) << "|" << std::endl;
-    ss << "| " << std::setw(20) << "----" << std::setw(27) << "-----"
+    ss << "\t| " << std::setw(20) << "----" << std::setw(27) << "-----"
             << std::setw(7) << "|" << std::endl;
 
     //Compute the Load state based on the current gateway value and Normal
@@ -460,26 +460,26 @@ void lbAgent::LoadTable()
         //                                   << std::setw(6) <<"|"<<std::endl;
         if (CountInPeerSet(m_HiNodes,p_) > 0 )
         {
-            ss<<"| " << p_->GetUUID() << std::setw(12)<< "Demand"
+            ss<<"\t| " << p_->GetUUID() << std::setw(12)<< "Demand"
                           << std::setw(6) <<"|"<<std::endl;
         }
         else if (CountInPeerSet(m_NoNodes,p_) > 0 )
         {
-            ss<<"| " << p_->GetUUID() << std::setw(12)<< "Normal"
+            ss<<"\t| " << p_->GetUUID() << std::setw(12)<< "Normal"
                           << std::setw(6) <<"|"<<std::endl;
         }
         else if (CountInPeerSet(m_LoNodes,p_) > 0 )
         {
-            ss<<"| " << p_->GetUUID() << std::setw(12)<< "Supply"
+            ss<<"\t| " << p_->GetUUID() << std::setw(12)<< "Supply"
                           << std::setw(6) <<"|"<<std::endl;
         }
         else
         {
-            ss<<"| " << p_->GetUUID() << std::setw(12)<< "------"
+            ss<<"\t| " << p_->GetUUID() << std::setw(12)<< "------"
                           << std::setw(6) <<"|"<<std::endl;
         }
     }
-    ss << " -----------------------------------------------------";
+    ss << "\t -----------------------------------------------------";
     
     Logger.Status << "\n" << ss.str() << std::endl;
 }//end LoadTable

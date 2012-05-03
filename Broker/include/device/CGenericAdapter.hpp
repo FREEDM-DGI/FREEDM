@@ -51,6 +51,12 @@ namespace device {
 class CGenericAdapter : public IPhysicalAdapter
 {  
 public:
+    /// Type of a generic adapter pointer
+    typedef boost::shared_ptr<CGenericAdapter> AdapterPointer;
+    
+    /// Creates a new generic adapter.
+    static AdapterPointer Create();
+    
     /// Retrieves a value from a device.
     virtual SettingValue Get(const Identifier device,
             const SettingKey key) const;
@@ -58,6 +64,9 @@ public:
     /// Sets a value on a device.
     virtual void Set(const Identifier device, const SettingKey key,
             const SettingValue value);
+    
+    /// Virtual destructor for derived classes.
+    virtual ~CGenericAdapter() { }
 
 private:
     /// Map of device setting keys to values.
@@ -65,9 +74,6 @@ private:
     
     /// Map of devices of KeyMaps.
     typedef std::map<Identifier, KeyMap> DeviceMap;
-    
-    /// Virtual destructor for derived classes.
-    virtual ~CGenericAdapter() { }
 
     /// Registry of device keys and values.
     mutable DeviceMap m_registry;

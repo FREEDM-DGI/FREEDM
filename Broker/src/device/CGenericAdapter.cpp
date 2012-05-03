@@ -34,6 +34,18 @@ namespace device {
 static CLocalLogger Logger(__FILE__);
 
 ////////////////////////////////////////////////////////////////////////////////
+/// @function CGenericAdapter::Create()
+///
+/// @description Creates a new generic device adapter.
+///
+/// @return a smart pointer to the new device adapter.
+////////////////////////////////////////////////////////////////////////////////
+CGenericAdapter::AdapterPointer CGenericAdapter::Create()
+{
+    return AdapterPointer(new CGenericAdapter);
+}
+
+////////////////////////////////////////////////////////////////////////////////
 /// @function CGenericAdapter::Get(const Identifier, const SettingKey)
 ///
 /// @description Sets the value of a device's setting. If the device is not

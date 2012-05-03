@@ -101,11 +101,8 @@ private:
     /// Constructs the device factory.
     CDeviceFactory();
     
-    /// Tears down the device factory.
-    ~CDeviceFactory();
-
     /// Device adapter to attach to created devices.
-    IPhysicalAdapter* m_adapter;
+    IPhysicalAdapter::AdapterPointer m_adapter;
 
     /// Device manager to handle created devices.
     CPhysicalDeviceManager* m_manager;

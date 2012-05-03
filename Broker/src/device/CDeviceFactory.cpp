@@ -54,7 +54,6 @@ CDeviceFactory& CDeviceFactory::instance()
     static CDeviceFactory instance;
     return instance;
 }
-
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 ////////////////////////////////////////////////////////////////////////////////
 /// @function CDeviceFactory::init(CPhysicalDeviceManager& manager,
@@ -83,8 +82,6 @@ CDeviceFactory& CDeviceFactory::instance()
 /// @param xml if RTDS is enabled, the name of the FPGA configuration file.
 ///
 /// @limitations Must be called before anything else is done with this factory.
-///
-/// @todo Write CGenericAdapter class.
 ////////////////////////////////////////////////////////////////////////////////
 void CDeviceFactory::init(CPhysicalDeviceManager& manager,
         boost::asio::io_service& ios, const std::string host,
@@ -94,16 +91,16 @@ void CDeviceFactory::init(CPhysicalDeviceManager& manager,
     Logger.Info << "Initialized the device factory" << std::endl;
     m_manager = &manager;
 #if defined USE_DEVICE_PSCAD
-    CPscadAdapter* pscadAdapter = new CPscadAdapter::Create(ios);
+    CPscadAdapter::TPointer pscadAdapter = CPscadAdapter::Create(ios);
     pscadAdapter->Connect(host, port);
     m_adapter = pscadAdapter;
 #elif defined USE_DEVICE_RTDS
-    CRtdsAdapter* rtdsAdapter = new CRtdsAdapter::Create(ios, xml);
+    CRtdsAdapter::RTDSPointer rtdsAdapter = CRtdsAdapter::Create(ios, xml);
     rtdsAdapter->Connect(host, port);
     rtdsAdapter->Run();
     m_adapter = rtdsAdapter;
 #else
-    m_adapter = new CGenericAdapter;
+    m_adapter = CGenericAdapter::Create();
 #endif
     m_initialized = true;
 }
@@ -272,27 +269,9 @@ void CDeviceFactory::CreateDevices(const std::vector<std::string>& deviceList)
 ///  before doing anything with it.
 ////////////////////////////////////////////////////////////////////////////////
 CDeviceFactory::CDeviceFactory()
-: m_adapter(0), m_manager(0), m_registry(), m_initialized(false)
+: m_adapter(), m_manager(0), m_registry(), m_initialized(false)
 {
     Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
-}
-
-////////////////////////////////////////////////////////////////////////////////
-/// @function CDeviceFactory::~CDeviceFactory()
-///
-/// @description Tears down the factory. This isn't necessary since the 
-///  singleton factory will exist until the simulation terminates.
-///
-/// @pre None.
-/// @post Releases dynamic memory allocated by the factory.
-///
-/// @limitations None.
-////////////////////////////////////////////////////////////////////////////////
-CDeviceFactory::~CDeviceFactory()
-{
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
-    delete m_adapter;
-    // Do not delete the device manager, since we didn't create it.
 }
 
 } // namespace device

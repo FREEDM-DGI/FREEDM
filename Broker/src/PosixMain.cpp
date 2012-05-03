@@ -281,7 +281,7 @@ int main(int argc, char* argv[])
         ss << uuid;
         ss >> uuidstr;
         // Instantiate and register the group management module
-        GMAgent GM(uuidstr, broker);
+        GMAgent GM(uuidstr, broker, phyManager);
         dispatch.RegisterReadHandler("gm", "gm", &GM);
         // Instantiate and register the power management module
         lbAgent LB(uuidstr, broker, phyManager);

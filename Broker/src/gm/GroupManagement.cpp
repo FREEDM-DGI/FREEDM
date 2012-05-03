@@ -131,14 +131,17 @@ void GMAgent::StartMonitor( const boost::system::error_code& err )
 /// @param p_dispatch: The dispatcher used by this module
 /// @param p_conManager: The connection manager to use in this class.
 ///////////////////////////////////////////////////////////////////////////////
-GMAgent::GMAgent(std::string p_uuid, freedm::broker::CBroker &broker)
+GMAgent::GMAgent(std::string p_uuid, freedm::broker::CBroker &broker,
+        freedm::broker::device::CPhysicalDeviceManager &devmanager)
     : GMPeerNode(p_uuid,broker.GetConnectionManager()),
     m_electiontimer(),
     m_ingrouptimer(),
     CHECK_TIMEOUT(boost::posix_time::seconds(10)),
     TIMEOUT_TIMEOUT(boost::posix_time::seconds(10)),
     GLOBAL_TIMEOUT(boost::posix_time::seconds(5)),
-    m_broker(broker)
+    FID_TIMEOUT(boost::posix_time::milliseconds(8)),
+    m_broker(broker),
+    m_phyDevManager(devmanager)
 {
     Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     AddPeer(GetUUID());
@@ -149,6 +152,7 @@ GMAgent::GMAgent(std::string p_uuid, freedm::broker::CBroker &broker)
     m_membership = 0;
     m_membershipchecks = 0;
     m_timer = broker.AllocateTimer("gm");
+    m_fidtimer = broker.AllocateTimer("gm");
     #ifdef RANDOM_PREMERGE
         srand(time(0)); 
     #endif
@@ -343,7 +347,8 @@ void GMAgent::SystemState()
         }
     } 
     nodestatus<<"Groups Elected/Formed: "<<m_groupselection<<"/"<<m_groupsformed<<std::endl;                        
-    nodestatus<<"Groups Joined/Broken: "<<m_groupsjoined<<"/"<<m_groupsbroken;                        
+    nodestatus<<"Groups Joined/Broken: "<<m_groupsjoined<<"/"<<m_groupsbroken<<std::endl;                        
+    nodestatus<<"FID state: "<< m_phyDevManager.GetNetValue<broker::device::CDeviceFID>("state");
     Logger.Status<<nodestatus.str()<<std::endl;
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -416,6 +421,28 @@ void GMAgent::Recovery()
     m_timerMutex.lock();
     m_broker.Schedule(m_timer, CHECK_TIMEOUT, 
         boost::bind(&GMAgent::Check, this, boost::asio::placeholders::error));
+    m_timerMutex.unlock();
+}
+
+void GMAgent::FIDCheck( const boost::system::error_code& err)
+{
+    static bool FIDsOn = false;
+    int attachedFIDs = m_phyDevManager.GetDevicesOfType<broker::device::CDeviceFID>().size();
+    double FIDState = m_phyDevManager.GetNetValue<broker::device::CDeviceFID>("state");
+    if(FIDsOn == true && attachedFIDs  > 0 && FIDState < 1.0)
+    {
+        Logger.Status<<"All FIDs offline. Entering Recovery State"<<std::endl;
+        Recovery();
+        FIDsOn = false;
+    }
+    else if(FIDsOn == false && attachedFIDs > 0 && FIDState >= 1.0)
+    {
+        Logger.Status<<"All FIDs Online. Checking for Peers"<<std::endl;
+        FIDsOn = true;
+    }
+    m_timerMutex.lock();
+    m_broker.Schedule(m_timer, FID_TIMEOUT, 
+        boost::bind(&GMAgent::FIDCheck, this, boost::asio::placeholders::error));
     m_timerMutex.unlock();
 }
 
@@ -830,7 +857,13 @@ void GMAgent::Timeout( const boost::system::error_code& err )
 void GMAgent::HandleRead(broker::CMessage msg)
 {
     Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
-
+    //If all my FIDs are off discard messages (Like a boss)
+    if(m_phyDevManager.GetDevicesOfType<broker::device::CDeviceFID>().size() > 0 &&
+        m_phyDevManager.GetNetValue<broker::device::CDeviceFID>("state") < 1.0)
+    {
+        Logger.Debug << "Dropping Incoming Message; All FIDs offline" <<std::endl;
+        return;
+    }
     PeerSet tempSet_;
     std::string coord_;
     MessagePtr m_;
@@ -1143,6 +1176,10 @@ int GMAgent::Run()
     {
         Logger.Notice << "! " <<p_->GetUUID() << " added to peer set" <<std::endl;
     }
+    m_timerMutex.lock();
+    m_broker.Schedule(m_timer, FID_TIMEOUT, 
+        boost::bind(&GMAgent::FIDCheck, this, boost::asio::placeholders::error));
+    m_timerMutex.unlock();
     Recovery();
     //m_localservice.post(boost::bind(&GMAgent::Recovery,this));
     //m_localservice.run();

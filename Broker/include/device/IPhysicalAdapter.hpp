@@ -1,5 +1,5 @@
 ////////////////////////////////////////////////////////////////////////////////
-/// @file           INetworkAdapter.hpp
+/// @file           IPhysicalAdapter.hpp
 ///
 /// @author         Thomas Roth <tprfh7@mst.edu>,
 ///                 Yaxi Liu <ylztf@mst.edu>,
@@ -28,6 +28,9 @@
 #define	IPHYSICALADAPTER_HPP
 
 #include <boost/noncopyable.hpp>
+#include <boost/shared_ptr.hpp>
+
+#include <string>
 
 namespace freedm {
 namespace broker {
@@ -52,9 +55,6 @@ typedef float SettingValue;
 ///     operations on devices. The adapter is, in effect, the device's "driver".
 ///     Note that the same adapter can be used for all devices in the
 ///     simulation if this is desirable.
-///
-/// @limitations    
-///     None.
 ////////////////////////////////////////////////////////////////////////////////
 class IPhysicalAdapter : private boost::noncopyable
 {
@@ -62,11 +62,11 @@ public:
     /// Pointer to a physical adapter.
     typedef boost::shared_ptr<IPhysicalAdapter> AdapterPointer;
 
-    /// Retrieve a value from a device.
+    /// Retrieves a value from a device.
     virtual SettingValue Get(const Identifier device,
             const SettingKey key) const = 0;
 
-    /// Set a value on a device.
+    /// Sets a value on a device.
     virtual void Set(const Identifier device, const SettingKey key,
             const SettingValue value) = 0;
 

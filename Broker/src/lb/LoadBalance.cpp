@@ -400,13 +400,12 @@ void lbAgent::LoadTable()
             << std::endl;
     ss << "\t| " << "Net DRER (" << numDRERs << "): " << m_Gen
             << std::setw(14) << "Net DESD (" << numDESDs << "): " 
-            << "   " << m_Storage << std::setw(17) << "|" << std::endl;
+            << "   " << m_Storage  << std::endl;
     ss << "\t| " << "Net Load (" << numLOADs << "): " << m_Load
-            << std::setw(17) << "Net Gateway (" << numSSTs
-            << "): " << m_Gateway << std::setw(17) << "|" << std::endl;
+            << std::setw(17) << "Net Gateway (" << numSSTs << "): " 
+            << m_Gateway << std::endl;
     ss << "\t| Normal = " << m_Normal << std::setw(23)
-            << "Calc Gateway: " << "   " << m_CalcGateway 
-            << std::setw(17) << "|" << std::endl;
+            << "Calc Gateway: " << "   " << m_CalcGateway  << std::endl;
     ss << "\t| ---------------------------------------------------- |"
             << std::endl;
     ss << "\t| " << std::setw(20) << "UUID" << std::setw(27) << "State"

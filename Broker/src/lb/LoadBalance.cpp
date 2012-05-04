@@ -329,7 +329,7 @@ void lbAgent::LoadManage()
     }
 
     //Start the timer; on timeout, this function is called again
-    m_broker.Schedule(m_GlobalTimer, boost::posix_time::seconds(LOAD_TIMEOUT), 
+    m_broker.Schedule(m_GlobalTimer, boost::posix_time::milliseconds(LOAD_TIMEOUT), 
         boost::bind(&lbAgent::LoadManage, this,boost::asio::placeholders::error));
 }//end LoadManage
 
@@ -1025,7 +1025,7 @@ void lbAgent::PStar(broker::device::SettingValue DemandValue)
 void lbAgent::StartStateTimer( unsigned int delay )
 {
     Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
-    m_broker.Schedule(m_StateTimer, boost::posix_time::seconds(delay),
+    m_broker.Schedule(m_StateTimer, boost::posix_time::milliseconds(delay),
         boost::bind(&lbAgent::HandleStateTimer, this, boost::asio::placeholders::error));
 }
 

@@ -14,6 +14,8 @@
 #include <time.h>
 
 #define BACKLOG 10     // how many pending connections queue will hold
+float * bufTo; //to send to DGI
+int BOBSAGET;
 
 void sigchld_handler(int s)
 {
@@ -42,6 +44,20 @@ void endian_swap(char *data, const int num_bytes)
         data[i] = tmp[i];
 }
 
+void change(int param)
+{
+    std::string f;
+    std::cout<<"?";
+    std::cin>>f;
+    if(f == "q") exit(0);
+    float g = atof(f.c_str());
+    std::cout<<"Putting "<<g<<" Into To buffer"<<std::endl;
+    for(int i=0; i < BOBSAGET; i++)
+    {
+        bufTo[i] = g;
+    }
+}
+
 //Use the machine hosting DGI as client.  The machine hosting this code as server.  Both use port 3888. 
 int main(int argc, char** argv)
 {
@@ -50,7 +66,7 @@ int main(int argc, char** argv)
         exit(122);
     }
     char * PORT = argv[1];
-    int BOBSAGET = atoi(argv[2]);
+    BOBSAGET = atoi(argv[2]);
     int sockfd, new_fd;  // listen on sock_fd, new connection on new_fd
     struct addrinfo hints, *servinfo, *p;
     struct sockaddr_storage their_addr; // the other end's address information
@@ -60,13 +76,15 @@ int main(int argc, char** argv)
     char s[INET6_ADDRSTRLEN];
     int rv;
     float * bufFrom = (float *)malloc(sizeof(float) * BOBSAGET); //to store received data from DGI. Initalize to random data.
-    float * bufTo = (float *)malloc(sizeof(float) * BOBSAGET); //to send to DGI
+    bufTo = (float *)malloc(sizeof(float) * BOBSAGET); //to send to DGI
     char * myPtr = (char*)bufTo;
     char * myPtr2 = (char*)bufFrom;
     int bufferLength = BOBSAGET * sizeof(float);
     std::cout<<"Buffer length is "<<bufferLength<<std::endl;
     time_t now;
-  
+ 
+    signal(SIGINT,change);
+ 
     memset(&hints, 0, sizeof hints);
     hints.ai_family = AF_UNSPEC;
     hints.ai_socktype = SOCK_STREAM;

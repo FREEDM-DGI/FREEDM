@@ -1,9 +1,9 @@
 ////////////////////////////////////////////////////////////////////////////////
 /// @file           IPhysicalAdapter.hpp
 ///
-/// @author         Thomas Roth <tprfh7@mst.edu>,
-///                 Yaxi Liu <ylztf@mst.edu>,
-///                 Michael Catanzaro <michael.catanzaro@mst.edu>
+/// @author         Thomas Roth <tprfh7@mst.edu>
+/// @author         Yaxi Liu <ylztf@mst.edu>
+/// @author         Michael Catanzaro <michael.catanzaro@mst.edu>
 ///
 /// @project        FREEDM DGI
 ///

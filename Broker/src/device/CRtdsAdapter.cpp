@@ -1,12 +1,12 @@
 ////////////////////////////////////////////////////////////////////////////////
-/// @file           CRtdsAdapter.cpp
+/// @file       CRtdsAdapter.cpp
 ///
-/// @author         Yaxi Liu <ylztf@mst.edu>,
-///                 Thomas Roth <tprfh7@mst.edu>,
-///                 Mark Stanovich <stanovic@cs.fsu.edu>,
-///                 Michael Catanzaro <michael.catanzaro@mst.edu>
+/// @author     Yaxi Liu <ylztf@mst.edu>,
+/// @author     Thomas Roth <tprfh7@mst.edu>,
+/// @author     Mark Stanovich <stanovic@cs.fsu.edu>,
+/// @author     Michael Catanzaro <michael.catanzaro@mst.edu>
 ///
-/// @project        FREEDM DGI
+/// @project    FREEDM DGI
 ///
 /// @description
 ///     DGI side implementation of the communication protocol to RTDS simulation

@@ -1,10 +1,10 @@
 ////////////////////////////////////////////////////////////////////////////////
-/// @file           CPscadAdapter.hpp
+/// @file       CPscadAdapter.hpp
 ///
-/// @author         Thomas Roth <tprfh7@mst.edu>,
-///                 Michael Catanzaro <michael.catanzaro@mst.edu>
+/// @author     Thomas Roth <tprfh7@mst.edu>
+/// @author     Michael Catanzaro <michael.catanzaro@mst.edu>
 ///
-/// @project        FREEDM DGI
+/// @project    FREEDM DGI
 ///
 /// @description
 ///     Client side implementation of the PSCAD simulation line protocol.

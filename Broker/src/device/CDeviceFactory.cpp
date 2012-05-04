@@ -1,12 +1,13 @@
 ////////////////////////////////////////////////////////////////////////////////
 /// @file           CDeviceFactory.cpp
 ///
-/// @author         Thomas Roth <tprfh7@mst.edu>,
-///                 Michael Catanzaro <michael.catanzaro@mst.edu>
+/// @author         Thomas Roth <tprfh7@mst.edu>
+/// @author         Michael Catanzaro <michael.catanzaro@mst.edu>
 ///
 /// @project        FREEDM DGI
 ///
-/// @description    Handles the creation of devices and their structures.
+/// @description    
+///     Handles the creation of devices and their structures.
 ///
 /// @copyright
 ///     These source code files were created at Missouri University of Science

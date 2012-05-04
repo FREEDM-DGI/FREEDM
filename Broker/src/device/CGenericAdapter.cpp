@@ -1,13 +1,12 @@
 ////////////////////////////////////////////////////////////////////////////////
 /// @file           CGenericAdapter.cpp
 ///
-/// @author         Michael Catanzaro <michael.catanzaro@mst.edu>,
-///                 Stephen Jackson <scj7t4@mst.edu>,
-///                 Thomas Roth <tprfh7@mst.edu>
+/// @author         Michael Catanzaro <michael.catanzaro@mst.edu>
 ///
 /// @project        FREEDM DGI
 ///
-/// @description    Interface for a generic physical device adapter.
+/// @description    
+///     Interface for a generic physical device adapter.
 ///
 /// @copyright
 ///     These source code files were created at Missouri University of Science

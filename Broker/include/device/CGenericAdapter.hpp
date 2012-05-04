@@ -1,9 +1,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 /// @file           CGenericAdapter.hpp
 ///
-/// @author         Michael Catanzaro <michael.catanzaro@mst.edu>,
-///                 Stephen Jackson <scj7t4@mst.edu>,
-///                 Thomas Roth <tprfh7@mst.edu>
+/// @author         Michael Catanzaro <michael.catanzaro@mst.edu>
 ///
 /// @project        FREEDM DGI
 ///

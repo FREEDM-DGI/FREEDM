@@ -82,7 +82,7 @@ public:
     /// Loads the factory with device manager and networking data.
     void init(CPhysicalDeviceManager& manager,
             boost::asio::io_service& ios, const std::string host,
-            const std::string port, const std::string xml);
+            const std::string port);
 
     /// Registers a device class with the factory.
     void RegisterDeviceClass(const std::string key, FactoryFunction value);

@@ -82,11 +82,11 @@ static CLocalLogger Logger(__FILE__);
 ///     none
 ///
 ////////////////////////////////////////////////////////////////////////////
-CRtdsAdapter::RTDSPointer CRtdsAdapter::Create(
+CRtdsAdapter::AdapterPointer CRtdsAdapter::Create(
         boost::asio::io_service & service, const std::string xml)
 {
     Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
-    return CRtdsAdapter::RTDSPointer(new CRtdsAdapter(service, xml));
+    return CRtdsAdapter::AdapterPointer(new CRtdsAdapter(service, xml));
 }
 
 ////////////////////////////////////////////////////////////////////////////

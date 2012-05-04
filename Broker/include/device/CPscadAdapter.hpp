@@ -58,8 +58,8 @@ class CPscadAdapter : public INetworkAdapter
     ///
     ////////////////////////////////////////////////////////////////////////////////
 public:
-    typedef boost::shared_ptr<CPscadAdapter> TPointer;
-    static TPointer Create(boost::asio::io_service & service);
+    typedef boost::shared_ptr<CPscadAdapter> AdapterPointer;
+    static AdapterPointer Create(boost::asio::io_service & service);
 
     ////////////////////////////////////////////////////////////////////////////
     /// Set( const string &, const string &, const string & )

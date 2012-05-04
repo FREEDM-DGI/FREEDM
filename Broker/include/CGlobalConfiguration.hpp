@@ -64,19 +64,24 @@ class CGlobalConfiguration : public boost::noncopyable
         void SetUUID(std::string u) { m_uuid = u; };
         /// Set the address to on
         void SetListenAddress(std::string a) { m_address = a; };
+        /// Set the filename of the FPGA message specification.
+        void SetFpgaMessage(std::string f) { m_fpgaMessage = f; };
         /// Get the hostname
-        std::string GetHostname() { return m_hostname; };
+        std::string GetHostname() const { return m_hostname; };
         /// Get the port
-        std::string GetListenPort() { return m_port; };
+        std::string GetListenPort() const { return m_port; };
         /// Get the UUID
-        std::string GetUUID() { return m_uuid; };
+        std::string GetUUID() const { return m_uuid; };
         /// Get the address
-        std::string GetListenAddress() { return m_address; };
+        std::string GetListenAddress() const { return m_address; };
+        /// Get the filename of the FPGA message specification.
+        std::string GetFpgaMessage() const { return m_fpgaMessage; };
     private:
         std::string m_hostname; /// Node hostname
         std::string m_port; /// Port number
         std::string m_uuid; /// The node uuid
         std::string m_address; /// The listening address.
+        std::string m_fpgaMessage; /// The filename of the FPGA message specs.
 };
 
 } // namespace freedm

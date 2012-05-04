@@ -244,6 +244,7 @@ int main(int argc, char* argv[])
         CGlobalConfiguration::instance().SetUUID(uuidstr2);
         CGlobalConfiguration::instance().SetListenPort(port);
         CGlobalConfiguration::instance().SetListenAddress(listenIP);
+        CGlobalConfiguration::instance().SetFpgaMessage(fpgaCfgFile);
         //constructors for initial mapping
         broker::CConnectionManager conManager;
         broker::device::CPhysicalDeviceManager phyManager;
@@ -254,7 +255,7 @@ int main(int argc, char* argv[])
         // interHost is the hostname of the machine that runs the simulation
         // interPort is the port number this DGI and simulation communicate in
         broker::device::CDeviceFactory::instance().init(
-                phyManager, ios, interHost, interPort, fpgaCfgFile);
+                phyManager, ios, interHost, interPort);
 
         // Create Devices
         if (vm.count("add-device") > 0)

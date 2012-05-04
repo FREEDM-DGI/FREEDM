@@ -71,10 +71,10 @@ class CRtdsAdapter : public INetworkAdapter
     ////////////////////////////////////////////////////////
 public:
     /// pointer to an CClientRTDS object
-    typedef boost::shared_ptr<CRtdsAdapter> RTDSPointer;
+    typedef boost::shared_ptr<CRtdsAdapter> AdapterPointer;
 
     /// create a CClientRTDS object and returns a pointer to it
-    static RTDSPointer Create(boost::asio::io_service & service,
+    static AdapterPointer Create(boost::asio::io_service & service,
             const std::string xml);
 
     /// updates command table

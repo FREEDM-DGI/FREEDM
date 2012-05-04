@@ -25,6 +25,7 @@
 
 #include <boost/foreach.hpp>
 
+#include "CGlobalConfiguration.hpp"
 #include "config.hpp"
 #include "device/CDeviceFactory.hpp"
 
@@ -58,7 +59,7 @@ CDeviceFactory& CDeviceFactory::instance()
 ////////////////////////////////////////////////////////////////////////////////
 /// @function CDeviceFactory::init(CPhysicalDeviceManager& manager,
 ///     boost::asio::io_service& ios, const std::string host,
-///     const std::string port, const std::string xml)
+///     const std::string port)
 ///
 /// @description Initializes the device factory with a device manager and
 ///  networking information. This function should be called once, before the
@@ -68,7 +69,9 @@ CDeviceFactory& CDeviceFactory::instance()
 /// @SharedMemory The factory keeps a reference to the passed device manager and
 ///  IO service, which are shared among other program modules.
 ///
-/// @pre Relevant parameters are set appropriately.
+/// @pre Relevant parameters are set appropriately. If RTDS is enabled, the
+///  filename of the fpga message specification must be set in the global
+///  configuration.
 /// @post CDeviceFactory::instance() will retrieve the factory instance.
 ///
 /// @param manager the device manager with which this factory should register
@@ -79,23 +82,23 @@ CDeviceFactory& CDeviceFactory::instance()
 ///  runs the simulation.
 /// @param port if PSCAD or RTDS is enabled, the port number this DGI and the
 ///  simulation communicate with.
-/// @param xml if RTDS is enabled, the name of the FPGA configuration file.
 ///
 /// @limitations Must be called before anything else is done with this factory.
 ////////////////////////////////////////////////////////////////////////////////
 void CDeviceFactory::init(CPhysicalDeviceManager& manager,
         boost::asio::io_service& ios, const std::string host,
-        const std::string port, const std::string xml)
+        const std::string port)
 {
     Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     Logger.Info << "Initialized the device factory" << std::endl;
     m_manager = &manager;
 #if defined USE_DEVICE_PSCAD
-    CPscadAdapter::TPointer pscadAdapter = CPscadAdapter::Create(ios);
+    CPscadAdapter::AdapterPointer pscadAdapter = CPscadAdapter::Create(ios);
     pscadAdapter->Connect(host, port);
     m_adapter = pscadAdapter;
 #elif defined USE_DEVICE_RTDS
-    CRtdsAdapter::RTDSPointer rtdsAdapter = CRtdsAdapter::Create(ios, xml);
+    CRtdsAdapter::AdapterPointer rtdsAdapter = CRtdsAdapter::Create(ios,
+            CGlobalConfiguration::instance().GetFpgaMessage());
     rtdsAdapter->Connect(host, port);
     rtdsAdapter->Run();
     m_adapter = rtdsAdapter;

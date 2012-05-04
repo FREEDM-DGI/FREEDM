@@ -441,7 +441,7 @@ void GMAgent::FIDCheck( const boost::system::error_code& err)
         FIDsOn = true;
     }
     m_timerMutex.lock();
-    m_broker.Schedule(m_timer, FID_TIMEOUT, 
+    m_broker.Schedule(m_fidtimer, FID_TIMEOUT, 
         boost::bind(&GMAgent::FIDCheck, this, boost::asio::placeholders::error));
     m_timerMutex.unlock();
 }
@@ -1177,7 +1177,7 @@ int GMAgent::Run()
         Logger.Notice << "! " <<p_->GetUUID() << " added to peer set" <<std::endl;
     }
     m_timerMutex.lock();
-    m_broker.Schedule(m_timer, FID_TIMEOUT, 
+    m_broker.Schedule(m_fidtimer, FID_TIMEOUT, 
         boost::bind(&GMAgent::FIDCheck, this, boost::asio::placeholders::error));
     m_timerMutex.unlock();
     Recovery();

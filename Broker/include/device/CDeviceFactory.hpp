@@ -63,8 +63,8 @@ typedef std::map<const std::string, FactoryFunction> DeviceRegistryType;
 ///  To register a device class, rather than mess with member function
 ///  pointer syntax, simply call the REGISTER_DEVICE_CLASS macro with the
 ///  name of the device class to be created, less the "CDevice" prefix. The
-///  macro should not be followed by a semicolon. For example, to register
-///  the class CDeviceSST, call REGISTER_DEVICE_CLASS(SST).
+///  macro should then be followed by a semicolon. For example, to register
+///  the class CDeviceSST, call REGISTER_DEVICE_CLASS(SST);
 ///
 /// @limitations The singleton instance must be configured with the init
 ///  function before any devices are created. It is, however, safe to

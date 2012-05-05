@@ -348,15 +348,14 @@ void lbAgent::LoadTable()
     typedef broker::device::CDeviceDRER DRER;
     typedef broker::device::CDeviceDESD DESD;
     typedef broker::device::CDeviceLOAD LOAD;
-    typedef broker::device::CDeviceGRID GRID;
+    typedef broker::device::CDeviceSST SST;
 
     int numDRERs = m_phyDevManager.GetDevicesOfType<DRER>().size();
     int numDESDs = m_phyDevManager.GetDevicesOfType<DESD>().size();
     int numLOADs = m_phyDevManager.GetDevicesOfType<LOAD>().size();
-    int numGRIDs = m_phyDevManager.GetDevicesOfType<GRID>().size();
+    int numSSTs = m_phyDevManager.GetDevicesOfType<SST>().size();
 
     // obtain sum of readings from devices of a certain type
-    // we should only have one GRID device, but the function works.
     // m_Gen can be 0 and positive values only
     m_Gen = m_phyDevManager.GetNetValue<DRER>("powerLevel");
     // for m_Storage, 
@@ -366,10 +365,10 @@ void lbAgent::LoadTable()
     m_soc = m_phyDevManager.GetNetValue<DESD>("stateOfCharge");
     // m_Load can be 0 and positive values only
     m_Load = m_phyDevManager.GetNetValue<LOAD>("powerLevel");
-    // for m_Grid, 
+    // for m_GateWay, 
     //       positive value -- power is flowing out to grid.  So power doner
     //       negative value -- power is flowing in from grid. So power receiver 
-    m_Grid = m_phyDevManager.GetNetValue<GRID>("powerLevel");
+    m_GateWay = m_phyDevManager.GetNetValue<SST>("powerLevel");
     
     Logger.Status <<" ----------- LOAD TABLE (Power Management) ------------"
                    << std::endl;
@@ -379,8 +378,8 @@ void lbAgent::LoadTable()
                   << std::setw(14) << "Net DESD (" << numDESDs << "): "
                   << m_Storage << std::endl;
     Logger.Status <<"| " << "Net Load (" << numLOADs << "): "<< m_Load
-                  << std::setw(16) << "Net Grid (" << numGRIDs 
-                  << "): " << m_Grid << std::endl;
+                  << std::setw(16) << "Net GateWay (" << numSSTs 
+                  << "): " << m_GateWay << std::endl;
     Logger.Status <<"| ---------------------------------------------------- |"
                   << std::endl;
     Logger.Status <<"| " << std::setw(20) << "UUID" << std::setw(27)<< "State"
@@ -390,11 +389,11 @@ void lbAgent::LoadTable()
 
     //Compute the Load state based on the current power generation vs.
     //power consumption, as well as extra power received or donated to grid
-    if(m_Load < m_Gen - m_Grid - NORMAL_TOLERANCE)
+    if(m_Load < m_Gen - m_GateWay - NORMAL_TOLERANCE)
     {
         m_Status = LPeerNode::SUPPLY;
     }
-    else if(m_Load > m_Gen - m_Grid + NORMAL_TOLERANCE)
+    else if(m_Load > m_Gen - m_GateWay + NORMAL_TOLERANCE)
     {
         m_Status = LPeerNode::DEMAND;
         m_DemandVal = m_Load-m_Gen;

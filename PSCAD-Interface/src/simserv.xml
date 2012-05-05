@@ -22,7 +22,7 @@
     <parent>1</parent>
   </entry>
   <entry index = "5">
-    <device>gird1</device>
+    <device>sst1</device>
     <key>powerLevel</key>
     <parent>2</parent>
   </entry> 

@@ -153,11 +153,8 @@ class lbAgent
         float   m_soc;
         /// Target value of grid
         float   m_PStar;
-        /// Current power level on grid
-        //this is the equivalent of the gateway in FREEDM
-        float   m_Grid;
-        /// Calculated gateway
-        //float   m_CalcGateway;
+        /// Current power output to the grid by the syncher(SST)
+        float   m_GateWay;
         /// Demand cost of this node in Demand
         float   m_DemandVal;
         /// Current Demand state of this node  

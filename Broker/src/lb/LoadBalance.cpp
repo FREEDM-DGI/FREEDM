@@ -753,15 +753,17 @@ void lbAgent::HandleRead(broker::CMessage msg)
 		typedef broker::device::CDeviceGRID GRID;
 		broker::device::CPhysicalDeviceManager::PhysicalDevice<GRID>::Container GRIDContainer;
 		broker::device::CPhysicalDeviceManager::PhysicalDevice<DESD>::Container DESDContainer;
-		GRIDContainer = m_phyDevManager.GetDevicesOfType<GRID>();       
-		GRIDContainer.front()->turnOn();
+		GRIDContainer = m_phyDevManager.GetDevicesOfType<GRID>();
+		//turn grid connection on       
+		GRIDContainer.front()->Set("onOffSwitch", 1);
 		Logger.Notice << "Grid turned on " << std::endl;
             
 		//Make sure your battery is off when receiving power. Need more thinking
 		/*	if( (GRIDContainer.front()->get("powerLevel") < 0) || 
 		    (GRIDContainer.front()->get("powerLevel") == 0) ) {
-		  DESDContainer = m_phyDevManager.GetDevicesOfType<DESD>();       
-		  DESDContainer.front()->turnOff();
+		  DESDContainer = m_phyDevManager.GetDevicesOfType<DESD>();
+		  //turn grid connection off       
+		  DESDContainer.front()->Set("onOffSwitch", 0);
 		  Logger.Notice << "Battery turned off " << std::endl;
 		  }*/
                 Step_PStar();
@@ -793,8 +795,9 @@ void lbAgent::HandleRead(broker::CMessage msg)
 	    // Turn on grid.  It may already be on, we don't care
 	    typedef broker::device::CDeviceGRID GRID;
 	    broker::device::CPhysicalDeviceManager::PhysicalDevice<GRID>::Container GRIDContainer;
-	    GRIDContainer = m_phyDevManager.GetDevicesOfType<GRID>();       
-	    GRIDContainer.front()->turnOn();
+	    GRIDContainer = m_phyDevManager.GetDevicesOfType<GRID>();
+	    //turn grid connection on       
+	    GRIDContainer.front()->Set("onOffSwitch", 1);
 	    Logger.Notice << "Grid turned on " << std::endl;
             
             Step_PStar();

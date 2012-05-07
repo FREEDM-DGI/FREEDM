@@ -222,7 +222,7 @@ class GMAgent
     freedm::broker::CBroker& m_broker;
 
     //The device manager!
-    freedm::broker::device::CPhysicalDeviceManager m_phyDevManager;
+    freedm::broker::device::CPhysicalDeviceManager &m_phyDevManager;
 };
 
   }

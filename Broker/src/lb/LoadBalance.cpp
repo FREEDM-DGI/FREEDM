@@ -112,6 +112,26 @@ lbAgent::lbAgent(std::string uuid_,
     m_Leader = GetUUID();
     m_GlobalTimer = broker.AllocateTimer("lb");
     m_StateTimer = broker.AllocateTimer("lb");
+
+    // Turn off grid and DG off at the beginning.  Battery should be on  
+    typedef broker::device::CDeviceDESD DESD;
+    typedef broker::device::CDeviceGRID GRID;
+    typedef broker::device::CDeviceDG DG;
+    broker::device::CPhysicalDeviceManager::PhysicalDevice<GRID>::Container GRIDContainer;
+    broker::device::CPhysicalDeviceManager::PhysicalDevice<DESD>::Container DESDContainer;
+    broker::device::CPhysicalDeviceManager::PhysicalDevice<DG>::Container DGContainer;
+    GRIDContainer = m_phyDevManager.GetDevicesOfType<GRID>();
+    DESDContainer = m_phyDevManager.GetDevicesOfType<DESD>();
+    DGContainer = m_phyDevManager.GetDevicesOfType<DG>();
+    //turn grid connection off       
+    GRIDContainer.front()->Set("onOffSwitch", 1);
+    Logger.Notice << "Grid turned off " << std::endl;
+    //turn battery on       
+    DESDContainer.front()->Set("onOffSwitch", 0);
+    Logger.Notice << "DESD turned on " << std::endl;
+    //turn diesel generator off       
+    DGContainer.front()->Set("onOffSwitch", 1);
+    Logger.Notice << "DG turned off " << std::endl;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -755,7 +775,7 @@ void lbAgent::HandleRead(broker::CMessage msg)
 		broker::device::CPhysicalDeviceManager::PhysicalDevice<DESD>::Container DESDContainer;
 		GRIDContainer = m_phyDevManager.GetDevicesOfType<GRID>();
 		//turn grid connection on       
-		GRIDContainer.front()->Set("onOffSwitch", 1);
+		GRIDContainer.front()->Set("onOffSwitch", 0);
 		Logger.Notice << "Grid turned on " << std::endl;
             
 		//Make sure your battery is off when receiving power. Need more thinking
@@ -763,7 +783,7 @@ void lbAgent::HandleRead(broker::CMessage msg)
 		    (GRIDContainer.front()->get("powerLevel") == 0) ) {
 		  DESDContainer = m_phyDevManager.GetDevicesOfType<DESD>();
 		  //turn grid connection off       
-		  DESDContainer.front()->Set("onOffSwitch", 0);
+		  DESDContainer.front()->Set("onOffSwitch", 1);
 		  Logger.Notice << "Battery turned off " << std::endl;
 		  }*/
                 Step_PStar();
@@ -797,7 +817,7 @@ void lbAgent::HandleRead(broker::CMessage msg)
 	    broker::device::CPhysicalDeviceManager::PhysicalDevice<GRID>::Container GRIDContainer;
 	    GRIDContainer = m_phyDevManager.GetDevicesOfType<GRID>();
 	    //turn grid connection on       
-	    GRIDContainer.front()->Set("onOffSwitch", 1);
+	    GRIDContainer.front()->Set("onOffSwitch", 0);
 	    Logger.Notice << "Grid turned on " << std::endl;
             
             Step_PStar();
@@ -877,14 +897,14 @@ void lbAgent::Step_PStar()
       {
 	m_PStar = m_PStar - P_Migrate;
 	SSTContainer.front()->Set("level", m_PStar);
-	Logger.Notice << "Syncher level set to " << m_PStar << std::endl;
+	Logger.Notice << "!!!!!!!!!!!!!!!!!Syncher level set to " << m_PStar << std::endl;
             
         }
         else if(LPeerNode::SUPPLY == m_Status)
         {
 	  m_PStar = m_PStar + P_Migrate;
 	  SSTContainer.front()->Set("level", m_PStar);
-	  Logger.Notice << "Syncher level set to " << m_PStar << std::endl;
+	  Logger.Notice << "!!!!!!!!!!!!!!!!!!!!!!Syncher level set to " << m_PStar << std::endl;
     
         }
         else

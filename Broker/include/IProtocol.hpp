@@ -61,7 +61,7 @@ class IProtocol
         /// Destroy all humans
         virtual ~IProtocol() { };
         /// Public write to channel function
-        virtual void Send(CMessage msg) = 0;
+        virtual void Send(CMessage & msg) = 0;
         /// Public facing function that handles marking ACKS
         virtual void RecieveACK(const CMessage &msg) = 0;
         /// Function that determines if a message should dispatched
@@ -80,7 +80,7 @@ class IProtocol
         virtual void WriteCallback(const boost::system::error_code& e) { }
 #pragma GCC diagnostic warning "-Wunused-parameter"
         /// Handles writing the message to the underlying connection
-        virtual void Write(CMessage msg);
+        virtual void Write(const CMessage & msg);
     private:
         /// Write buffer
         boost::array<char, CReliableConnection::MAX_PACKET_SIZE> m_buffer;

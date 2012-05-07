@@ -377,7 +377,7 @@ bool CMessage::Load( std::istream &p_is )
 /// @post The message has been written to the input "output stream"
 /// @param p_os The output stream to write the message to.
 ///////////////////////////////////////////////////////////////////////////////
-void CMessage::Save( std::ostream &p_os )
+void CMessage::Save( std::ostream &p_os ) const
 {
     Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     using boost::property_tree::ptree;
@@ -395,7 +395,7 @@ void CMessage::Save( std::ostream &p_os )
 /// @pre None
 /// @post Casts the message as a ptree
 ///////////////////////////////////////////////////////////////////////////////
-CMessage::operator ptree ()
+CMessage::operator ptree () const
 {
     Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     // This is basically the same as Save() except it doesn't

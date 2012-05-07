@@ -58,7 +58,7 @@ class CSUConnection : public IProtocol
         /// Destructor
         virtual ~CSUConnection() { };
         /// Public facing send function that sends a message
-        void Send(CMessage msg);
+        void Send(CMessage & msg);
         /// Public facing function that handles marking down ACKs for sent messages
         void RecieveACK(const CMessage &msg);
         /// deterimines if a  messageshould be given to the dispatcher

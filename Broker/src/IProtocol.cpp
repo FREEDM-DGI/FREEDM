@@ -43,7 +43,7 @@ static CLocalLogger Logger(__FILE__);
 namespace freedm {
     namespace broker {
 
-void IProtocol::Write(CMessage msg)
+void IProtocol::Write(const CMessage & msg)
 {
     Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     boost::array<char, CReliableConnection::MAX_PACKET_SIZE>::iterator it;

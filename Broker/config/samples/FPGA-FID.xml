@@ -36,7 +36,7 @@
   </entry>  
 </command>
 </rtds>
-<fid1>
+<fid0>
 <host>127.0.0.1</host>
 <port>3889</port>
 <state>
@@ -51,7 +51,7 @@
     <key>state</key>
   </entry>
 </command>
-</fid1>
+</fid0>
 <fid8>
 <host>127.0.0.1</host>
 <port>3890</port>

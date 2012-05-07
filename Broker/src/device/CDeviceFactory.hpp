@@ -25,12 +25,17 @@
 #ifndef C_DEVICE_FACTORY_HPP
 #define C_DEVICE_FACTORY_HPP
 
+#include <stack>
+
 #include <boost/asio/io_service.hpp>
 #include <boost/foreach.hpp>
 #include <boost/noncopyable.hpp>
+#include <boost/property_tree/ptree.hpp>
+#include <boost/property_tree/xml_parser.hpp>
 
 #define foreach BOOST_FOREACH
 
+#include "config.hpp"
 #include "CClientRTDS.hpp"
 #include "CDeviceStructureGeneric.hpp"
 #include "CDeviceStructurePSCAD.hpp"
@@ -39,6 +44,7 @@
 #include "CLogger.hpp"
 #include "CPhysicalDeviceManager.hpp"
 #include "IPhysicalDevice.hpp"
+#include "types/CDeviceFID.hpp"
 
 static CLocalLogger CDeviceFactoryHPPLogger(__FILE__);
 
@@ -103,6 +109,12 @@ public:
     void CreateDevices(const std::vector<std::string>& deviceList);
 
 private:
+    /// The io service
+    boost::asio::io_service *m_ios;
+
+    /// The xml file
+    std::string m_xml;
+
     /// Constructs the device factory.
     CDeviceFactory();
 
@@ -114,6 +126,9 @@ private:
 
     /// Client for the RTDS.
     CClientRTDS::RTDSPointer m_rtdsClient;
+
+    /// The clients for the FPGA
+    std::stack<CClientRTDS::RTDSPointer> m_fidClients;
 
     /// Device manager to handle created devices.
     CPhysicalDeviceManager* m_manager;
@@ -153,20 +168,15 @@ private:
 template <class DeviceType>
 void CDeviceFactory::CreateDevice(const Identifier& deviceID)
 {
-    CDeviceFactoryHPPLogger.Debug << __PRETTY_FUNCTION__ << std::endl;
     if (!m_initialized)
     {
-        std::stringstream ss;
-        ss << __PRETTY_FUNCTION__ << " called before factory init" << std::endl;
-        throw std::runtime_error(ss.str());
+        throw "CDeviceFactory::CreateDevice (private) called before init";
     }
-    IDeviceStructure::DevicePtr ds;
-    IDevice::DevicePtr dev;
-    // create and register the device structure
-    ds = CreateStructure();
+    IDeviceStructure::DevicePtr ds = CreateStructure();
     ds->Register(deviceID);
     // create the new device from the structure
-    dev = IDevice::DevicePtr(new DeviceType(*m_manager, deviceID, ds));
+    IDevice::DevicePtr dev = IDevice::DevicePtr(
+            new DeviceType(*m_manager, deviceID, ds));
     // add the device to the manager
     m_manager->AddDevice(dev);
 }

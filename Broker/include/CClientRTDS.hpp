@@ -88,7 +88,7 @@ class CClientRTDS : private boost::noncopyable
         
         /// create a CClientRTDS object and returns a pointer to it
         static RTDSPointer Create( boost::asio::io_service & p_service,
-                                   const std::string p_xml );
+                                   const std::string p_xml, const std::string p_tag );
                                    
         /// handles connection to FPGA
         void Connect( const std::string p_hostname, const std::string p_port );
@@ -111,8 +111,7 @@ class CClientRTDS : private boost::noncopyable
         
     private:
         /// constructor
-        CClientRTDS( boost::asio::io_service & p_service, 
-                const std::string p_xml );
+        CClientRTDS( boost::asio::io_service & p_service, const std::string p_xml, const std::string p_tag );
         /// do byte order conversion if DGI and FPGA have opposite endianess
         static void endian_swap(char * data, const int num_bytes);
         

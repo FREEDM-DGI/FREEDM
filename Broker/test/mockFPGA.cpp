@@ -13,9 +13,9 @@
 #include <iostream>
 #include <time.h>
 
-#define PORT "3890"  // the port PSCAD will be connecting to
-
 #define BACKLOG 10     // how many pending connections queue will hold
+float * bufTo; //to send to DGI
+int BOBSAGET;
 
 void sigchld_handler(int s)
 {
@@ -44,9 +44,29 @@ void endian_swap(char *data, const int num_bytes)
         data[i] = tmp[i];
 }
 
-//Use the machine hosting DGI as client.  The machine hosting this code as server.  Both use port 3888. 
-int main(void)
+void change(int param)
 {
+    std::string f;
+    std::cout<<"?";
+    std::cin>>f;
+    if(f == "q") exit(0);
+    float g = atof(f.c_str());
+    std::cout<<"Putting "<<g<<" Into To buffer"<<std::endl;
+    for(int i=0; i < BOBSAGET; i++)
+    {
+        bufTo[i] = g;
+    }
+}
+
+//Use the machine hosting DGI as client.  The machine hosting this code as server.  Both use port 3888. 
+int main(int argc, char** argv)
+{
+    if(argc != 3)
+    {
+        exit(122);
+    }
+    char * PORT = argv[1];
+    BOBSAGET = atoi(argv[2]);
     int sockfd, new_fd;  // listen on sock_fd, new connection on new_fd
     struct addrinfo hints, *servinfo, *p;
     struct sockaddr_storage their_addr; // the other end's address information
@@ -55,14 +75,16 @@ int main(void)
     int yes=1;
     char s[INET6_ADDRSTRLEN];
     int rv;
-    float bufFrom[4] = {888, 999, 10000, 11111}; //to store received data from DGI. Initalize to random data.
-    float bufTo[4] = {16.0, 0, 0, 0}; //to send to DGI
+    float * bufFrom = (float *)malloc(sizeof(float) * BOBSAGET); //to store received data from DGI. Initalize to random data.
+    bufTo = (float *)malloc(sizeof(float) * BOBSAGET); //to send to DGI
     char * myPtr = (char*)bufTo;
     char * myPtr2 = (char*)bufFrom;
-    int bufferLength = 4 * sizeof(float);
+    int bufferLength = BOBSAGET * sizeof(float);
     std::cout<<"Buffer length is "<<bufferLength<<std::endl;
     time_t now;
-  
+ 
+    signal(SIGINT,change);
+ 
     memset(&hints, 0, sizeof hints);
     hints.ai_family = AF_UNSPEC;
     hints.ai_socktype = SOCK_STREAM;
@@ -140,16 +162,31 @@ int main(void)
 	  perror("send");
 	}
 	else {
-	  printf("server: received %f,%f,%f,%f \n", bufFrom[0], bufFrom[1], bufFrom[2], bufFrom[3]);
+	  printf("server: received");
+      for(int i=0; i < BOBSAGET; i++)
+      {
+        printf(" %f", bufFrom[i]);
+      }
+	  printf("\n");
 	  //fake Big endian
-	  for (int q=0; q<4; q++)
+	  for (int q=0; q<BOBSAGET; q++)
 	    endian_swap((char*)&myPtr2[4*q],4);
-	  printf("server: received after endian convert %f,%f,%f,%f \n", bufFrom[0], bufFrom[1], bufFrom[2], bufFrom[3]);
-	}
+	  printf("server: received after endian convert");
+      for(int i=0; i < BOBSAGET; i++)
+      {
+        printf(" %f", bufFrom[i]);
+      }
+	  printf("\n");
+    }
+	  printf("server: send before endian convert");
+      for(int i=0; i < BOBSAGET; i++)
+      {
+        printf(" %f", bufTo[i]);
+      }
+	  printf("\n");
 
-	printf("server: to send before endian_swap %f,%f,%f,%f \n", bufTo[0], bufTo[1], bufTo[2], bufTo[3]);
 	//fake Big endian
-	for (int p=0; p<4; p++)
+	for (int p=0; p<BOBSAGET; p++)
 	  endian_swap((char*)&myPtr[4*p],4);
 
 	if (send(new_fd, bufTo, bufferLength, 0) == -1){
@@ -163,10 +200,10 @@ int main(void)
 
 	//reset back to original state
 	bufTo[0] = bufFrom[0]; 
-	bufTo[1] = 0;
-	bufTo[2] = 0;
-	bufTo[3] = 0;
-
+	for(int i=1; i < BOBSAGET; i++)
+    {
+        bufTo[i] = 0;
+    }
 	usleep(30000);//time control.  Now it's set to 30 milliseconds
       }//end of while()
       close(new_fd);

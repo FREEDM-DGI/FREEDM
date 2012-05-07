@@ -57,6 +57,8 @@ using boost::property_tree::ptree;
 #include "CConnectionManager.hpp"
 #include "CConnection.hpp"
 #include "types/remotehost.hpp"
+#include "device/CPhysicalDeviceManager.hpp"
+#include "device/PhysicalDeviceTypes.hpp"
 
 #include "Stopwatch.hpp"
 
@@ -80,7 +82,7 @@ class GMAgent
     /// Default constructor
     GMAgent();
     /// Constructor for using this object as a module.
-    GMAgent(std::string uuid_, freedm::broker::CBroker &broker);
+    GMAgent(std::string uuid_, freedm::broker::CBroker &broker, freedm::broker::device::CPhysicalDeviceManager &devmanager);
     /// Copy constructor for the module
     GMAgent(const GMAgent&);
     /// Copy constructor for the module
@@ -158,6 +160,8 @@ class GMAgent
     /// Returns the coordinators uuid.
     std::string Coordinator() const { return m_GroupLeader; }
     
+    void FIDCheck( const boost::system::error_code& err);
+    
     /// Nodes In My Group
     PeerSet	m_UpNodes;
     /// Known Coordinators
@@ -186,6 +190,7 @@ class GMAgent
     boost::interprocess::interprocess_mutex m_timerMutex;
     /// A timer for stepping through the election process
     freedm::broker::CBroker::TimerHandle m_timer;
+    freedm::broker::CBroker::TimerHandle m_fidtimer;
     /// What I like to call the TRANSIENT ELIMINATOR
     //deadline_timer m_transient;
     
@@ -211,9 +216,13 @@ class GMAgent
     boost::posix_time::time_duration CHECK_TIMEOUT;
     boost::posix_time::time_duration TIMEOUT_TIMEOUT;
     boost::posix_time::time_duration GLOBAL_TIMEOUT;
+    boost::posix_time::time_duration FID_TIMEOUT;
 
     //The broker!
     freedm::broker::CBroker& m_broker;
+
+    //The device manager!
+    freedm::broker::device::CPhysicalDeviceManager &m_phyDevManager;
 };
 
   }

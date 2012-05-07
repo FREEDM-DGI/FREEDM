@@ -89,9 +89,7 @@ void IProtocol::Write(const CMessage & msg)
     #endif
     // The length of the contents placed in the buffer should be the same length as
     // The string that was written into it.
-    GetConnection()->GetSocket().async_send(boost::asio::buffer(m_buffer,raw.length()), 
-            boost::bind(&IProtocol::WriteCallback, this,
-            boost::asio::placeholders::error));
+    GetConnection()->GetSocket().send(boost::asio::buffer(m_buffer,raw.length()));
 }
 
     }

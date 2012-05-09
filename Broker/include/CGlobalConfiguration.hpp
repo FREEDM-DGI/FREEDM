@@ -45,6 +45,7 @@
 #include <string>
 
 #include "Utility.hpp"
+#include "boost/date_time/posix_time/posix_time.hpp"
 
 namespace freedm {
 
@@ -62,6 +63,8 @@ class CGlobalConfiguration : public Templates::Singleton<CGlobalConfiguration>
         void SetUUID(std::string u) { m_uuid = u; };
         /// Set the address to on
         void SetListenAddress(std::string a) { m_address = a; };
+        /// Get the clock skew
+        void SetClockSkew(boost::posix_time::time_duration t) { m_clockskew = t; };
         /// Get the hostname
         std::string GetHostname() { return m_hostname; };
         /// Get the port
@@ -70,11 +73,14 @@ class CGlobalConfiguration : public Templates::Singleton<CGlobalConfiguration>
         std::string GetUUID() { return m_uuid; };
         /// Get the address
         std::string GetListenAddress() { return m_address; };
+        /// Get the Skew of the local clock
+        boost::posix_time::time_duration GetClockSkew() { return m_clockskew; };
     private:
         std::string m_hostname; /// Node hostname
         std::string m_port; /// Port number
         std::string m_uuid; /// The node uuid
         std::string m_address; /// The listening address.
+        boost::posix_time::time_duration m_clockskew; /// The skew of the clock
 };
 
 } // namespace freedm

@@ -90,6 +90,12 @@ CBroker::CBroker(const std::string& p_address, const std::string& p_port,
     m_newConnection->GetSocket().bind(endpoint);;
     m_connManager.Start(m_newConnection);
     m_busy = false;
+    
+    // Try to align on the first phase change
+    boost::posix_time::ptime now = boost::posix_time::microsec_clock::universal_time();
+    now += CGlobalConfiguration::instance().GetClockSkew();
+    now -= boost::posix_time::milliseconds(2*ALIGNMENT_DURATION);
+    m_last_alignment = now;
 }
 
 CBroker::~CBroker()
@@ -267,15 +273,36 @@ void CBroker::ChangePhase(const boost::system::error_code &err)
     Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     m_schmutex.lock();
     m_phase++;
+    // Get the time without millisec and with millisec then see how many millsec we
+    // are into this second.
+    boost::posix_time::ptime now = boost::posix_time::microsec_clock::universal_time();
+    now += CGlobalConfiguration::instance().GetClockSkew();
+    boost::posix_time::time_duration time = now.time_of_day();
     if(m_phase >= m_modules.size())
     {
         m_phase = 0;
     }
+    unsigned int millisecs = time.total_milliseconds();
+    unsigned int slices = millisecs / PHASE_DURATION;
+    unsigned int cphase = slices % m_modules.size();
+    unsigned int remaining = PHASE_DURATION - (millisecs % PHASE_DURATION);
+    unsigned int sched_duration = PHASE_DURATION;
+    // How we want to do this is that every so of tone we want to figure out
+    // what phase it should be and then schedule that phase?
+    // As an aside, you could tune alignment duration down to 0 so that every
+    // phase is specifically assigned to a time slice.
+    if(now-m_last_alignment > boost::posix_time::milliseconds(ALIGNMENT_DURATION))
+    {
+        Logger.Notice<<"Aligned phase to "<<cphase<<" (was "<<m_phase<<") for "
+                   <<sched_duration<<" ms"<<std::endl;
+        m_phase = cphase;
+        m_last_alignment = now;
+        sched_duration = remaining;
+    }
     if(m_modules.size() > 0)
     {
-        Logger.Notice<<"="<<m_modules[m_phase];
+        Logger.Debug<<"Phase: "<<m_modules[m_phase]<<std::endl;
     }
-    Logger.Notice<<std::endl;
     //If the worker isn't going, start him again when you change phases.
     if(!m_busy)
     {
@@ -283,7 +310,7 @@ void CBroker::ChangePhase(const boost::system::error_code &err)
         Worker();
         m_schmutex.lock();
     }
-    m_phasetimer.expires_from_now(boost::posix_time::milliseconds(PHASE_DURATION));
+    m_phasetimer.expires_from_now(boost::posix_time::milliseconds(sched_duration));
     m_phasetimer.async_wait(boost::bind(&CBroker::ChangePhase,this,
         boost::asio::placeholders::error));
     m_schmutex.unlock();

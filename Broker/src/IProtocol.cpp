@@ -89,7 +89,15 @@ void IProtocol::Write(const CMessage & msg)
     #endif
     // The length of the contents placed in the buffer should be the same length as
     // The string that was written into it.
-    GetConnection()->GetSocket().send(boost::asio::buffer(m_buffer,raw.length()));
+    try
+    {
+        GetConnection()->GetSocket().send(boost::asio::buffer(m_buffer,raw.length()));
+    }
+    catch(boost::system::system_error &e)
+    {
+        Logger.Debug << "Writing Failed: " << e.what() << std::endl;
+        GetConnection()->Stop(); 
+    }
 }
 
     }

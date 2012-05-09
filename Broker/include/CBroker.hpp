@@ -57,7 +57,11 @@ namespace freedm {
     namespace broker {
 
 class CDispatcher;
+
+/// How long weach module is allowed to run for.
 const unsigned int PHASE_DURATION = 50;
+/// How long we should wait before aligning the modules again
+const unsigned int ALIGNMENT_DURATION = 1000;
 
 /// Central monolith of the Broker Architecture.
 class CBroker : private boost::noncopyable
@@ -143,6 +147,9 @@ private:
     ///Flag for if the executer is scheduled to run again.
     bool m_busy;
     
+    ///The last time the phases were aligned
+    boost::posix_time::ptime m_last_alignment;
+
     ///List of modules for the scheduler
     ModuleVector m_modules;
     
@@ -166,6 +173,7 @@ private:
 
     ///Lock for the scheduler.
     boost::shared_mutex m_schmutex;
+
 };
 
     } // namespace broker

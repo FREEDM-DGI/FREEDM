@@ -60,7 +60,7 @@ CSUConnection::CSUConnection(CConnection *  conn)
     m_acceptmod = SEQUENCE_MODULO/WINDOW_SIZE;
 }
 
-void CSUConnection::Send(CMessage & msg)
+void CSUConnection::Send(CMessage msg)
 {
     unsigned int msgseq;
 

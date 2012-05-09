@@ -61,7 +61,7 @@ class IProtocol
         /// Destroy all humans
         virtual ~IProtocol() { };
         /// Public write to channel function
-        virtual void Send(CMessage & msg) = 0;
+        virtual void Send(CMessage msg) = 0;
         /// Public facing function that handles marking ACKS
         virtual void RecieveACK(const CMessage &msg) = 0;
         /// Function that determines if a message should dispatched

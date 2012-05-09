@@ -72,7 +72,9 @@ public:
         InternalServerError = 500,
         NotImplemented = 501,
         BadGateway = 502,
-        ServiceUnavailable = 503
+        ServiceUnavailable = 503,
+        ReadClock = 800,
+        ClockReading = 801
     };
 
     /// Accessor for uuid

@@ -106,7 +106,6 @@ void CConnection::Stop()
         (*sit).second->Stop();
     }   
     Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
-    m_protocols.clear();
     GetSocket().close();
 }
  

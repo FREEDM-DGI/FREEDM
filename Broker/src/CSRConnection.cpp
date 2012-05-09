@@ -91,7 +91,7 @@ CSRConnection::CSRConnection(CConnection *  conn)
 ///     If a message is written to the channel, the m_killable flag is set.
 /// @param msg The message to write to the channel.
 ///////////////////////////////////////////////////////////////////////////////
-void CSRConnection::Send(CMessage & msg)
+void CSRConnection::Send(CMessage msg)
 {
     Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     unsigned int msgseq;

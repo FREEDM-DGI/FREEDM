@@ -245,6 +245,7 @@ int main(int argc, char* argv[])
         CGlobalConfiguration::instance().SetUUID(uuidstr2);
         CGlobalConfiguration::instance().SetListenPort(port);
         CGlobalConfiguration::instance().SetListenAddress(listenIP);
+        CGlobalConfiguration::instance().SetClockSkew(boost::posix_time::milliseconds(0));
         //constructors for initial mapping
         broker::CConnectionManager conManager;
         broker::device::CPhysicalDeviceManager phyManager;

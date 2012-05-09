@@ -339,7 +339,9 @@ freedm::broker::CMessage GMAgent::PeerList()
 	ss_.clear();
 	foreach( PeerNodePtr peer_, m_UpNodes | boost::adaptors::map_values)
     {
-        m_.m_submessages.add("any.peers.peer",peer_->GetUUID());
+        m_.m_submessages.add("any.peers.peer.uuid",peer_->GetUUID());
+        m_.m_submessages.add("any.peers.peer.host",peer_->GetHostname());
+        m_.m_submessages.add("any.peers.peer.port",peer_->GetPort());
     }
     m_.m_submessages.add("any.peers.peer",GetUUID());
     m_.SetNeverExpires();
@@ -410,7 +412,7 @@ void GMAgent::PushPeerList()
                                  << peer_->GetUUID() << std::endl;             
         peer_->AsyncSend(m_);                
     }
-    GetPeer(GetUUID())->AsyncSend(m_);
+    if(GetPeer(GetUUID())) GetPeer(GetUUID())->AsyncSend(m_);
     Logger.Debug << __PRETTY_FUNCTION__ << "FINISH" <<    std::endl;
 }
 
@@ -1019,9 +1021,20 @@ void GMAgent::HandleRead(broker::CMessage msg)
             m_UpNodes.clear();
             foreach(ptree::value_type &v, pt.get_child("any.peers"))
             {
+                ptree sub_pt = v.second;
+                std::string nuuid = sub_pt.get<std::string>("uuid");
+                std::string nhost = sub_pt.get<std::string>("host");
+                std::string nport = sub_pt.get<std::string>("port");
+                PeerNodePtr p = GetPeer(nuuid);
+                if(!p)
+                {
+                    //If you don't already know about the peer, make sure it is in the connection manager
+                    GetConnectionManager().PutHostname(nuuid, nhost, nport);
+                    AddPeer(nuuid);
+                }
                 if(v.second.data() != GetUUID())
                 {
-                    InsertInPeerSet(m_UpNodes,GetPeer(v.second.data()));
+                    InsertInPeerSet(m_UpNodes,p);
                 }
             }
             m_membership += m_UpNodes.size()+1;

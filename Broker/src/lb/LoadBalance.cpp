@@ -12,8 +12,8 @@
 /// @functions  
 ///	lbAgent
 ///     LB
-///     add_peer
-///     get_peer
+///     AddPeer
+///     GetPeer
 ///     SendMsg
 ///     SendNormal
 ///     CollectState
@@ -142,13 +142,13 @@ int lbAgent::LB()
 }
 
 ////////////////////////////////////////////////////////////
-/// add_peer
+/// AddPeer
 /// @description Adds the peer to the set of all peers
 /// @pre: This module should have received the list of peers in the group from leader
 /// @post: Peer set is populated with a pointer to the added node
 /// @limitations Addition of new peers is strictly based on group membership
 /////////////////////////////////////////////////////////
-lbAgent::PeerNodePtr lbAgent::add_peer(std::string uuid)
+lbAgent::PeerNodePtr lbAgent::AddPeer(std::string uuid)
 {
     Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     PeerNodePtr tmp_;
@@ -159,13 +159,13 @@ lbAgent::PeerNodePtr lbAgent::add_peer(std::string uuid)
 }
 
 ////////////////////////////////////////////////////////////
-/// get_peer
+/// GetPeer
 /// @description Returns the pointer to a peer from the set of all peers
 /// @pre: none
 /// @post: Returns a pointer to the requested peer, if exists
 /// @limitations Limited to members in this group
 /////////////////////////////////////////////////////////
-lbAgent::PeerNodePtr lbAgent::get_peer(std::string uuid)
+lbAgent::PeerNodePtr lbAgent::GetPeer(std::string uuid)
 {
     PeerSet::iterator it = m_AllPeers.find(uuid);
 
@@ -279,7 +279,7 @@ void lbAgent::CollectState()
     m_cs.m_submessages.put("sc.module", "lb");
     try
     {
-       get_peer(GetUUID())->Send(m_cs);
+       GetPeer(GetUUID())->Send(m_cs);
        Logger.Status << "LB module requested State Collection" << std::endl;
     }
     catch (boost::system::system_error& e)
@@ -542,7 +542,7 @@ void lbAgent::HandleRead(broker::CMessage msg)
     {
         Logger.Debug << "Flag " <<std::endl;
         // Update the peer entry, if needed
-        peer_ = get_peer(line_);
+        peer_ = GetPeer(line_);
 
         if( peer_ != NULL)
         {
@@ -552,8 +552,8 @@ void lbAgent::HandleRead(broker::CMessage msg)
         {
             // Add the peer, if an entry wasn`t found
             Logger.Debug << "Peer doesn`t exist. Add it up to LBPeerSet" <<std::endl;
-            add_peer(line_);
-            peer_ = get_peer(line_);
+            AddPeer(line_);
+            peer_ = GetPeer(line_);
         }
     }//endif
 
@@ -587,23 +587,25 @@ void lbAgent::HandleRead(broker::CMessage msg)
             EraseInPeerSet(m_LoNodes,p_);
             EraseInPeerSet(m_NoNodes,p_);
         }
-
-        // Tokenize the peer list string
         foreach(ptree::value_type &v, pt.get_child("any.peers"))
         {
-            peer_ = get_peer(v.second.data());
-
-            if( false != peer_ )
+            ptree sub_pt = v.second;
+            std::string nuuid = sub_pt.get<std::string>("uuid");
+            std::string nhost = sub_pt.get<std::string>("host");
+            std::string nport = sub_pt.get<std::string>("port");
+            PeerNodePtr p = GetPeer(nuuid);
+            if(!p)
+            {
+                Logger.Debug << "LB sees a new member "<<nuuid
+                              << " in the group " <<std::endl;
+                //If you don't already know about the peer, make sure it is in the connection manager
+                GetConnectionManager().PutHostname(nuuid, nhost, nport);
+                AddPeer(nuuid);
+            }
+            if(v.second.data() != GetUUID())
             {
                 Logger.Debug << "LB knows this peer " <<std::endl;
             }
-            else
-            {
-                Logger.Debug << "LB sees a new member "<< v.second.data()
-                              << " in the group " <<std::endl;
-                add_peer(v.second.data());
-            }
-
         }
 
     }//end if("peerlist")

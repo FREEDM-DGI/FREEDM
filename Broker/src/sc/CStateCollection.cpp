@@ -517,20 +517,23 @@ void SCAgent::HandleRead(broker::CMessage msg)
             if (peer_->GetUUID() != GetUUID())
                 EraseInPeerSet(m_AllPeers,peer_);
         }
-        
         foreach(ptree::value_type &v, pt.get_child("any.peers"))
         {
-            peer_ = GetPeer(v.second.data());
-            
-            if( false != peer_ )
+            ptree sub_pt = v.second;
+            std::string nuuid = sub_pt.get<std::string>("uuid");
+            std::string nhost = sub_pt.get<std::string>("host");
+            std::string nport = sub_pt.get<std::string>("port");
+            PeerNodePtr p = GetPeer(nuuid);
+            if(!p)
             {
-                Logger.Debug << "SC knows this peer " <<std::endl;
+                Logger.Debug<<"SC adds new peer from peerlist"<<std::endl;
+                //If you don't already know about the peer, make sure it is in the connection manager
+                GetConnectionManager().PutHostname(nuuid, nhost, nport);
+                AddPeer(nuuid);
             }
             else
             {
-                Logger.Debug << "SC sees a new member "<< v.second.data()
-                              << " in the group " <<std::endl;
-                AddPeer(v.second.data());
+                Logger.Debug << "SC knows this peer " <<std::endl;
             }
         }
         

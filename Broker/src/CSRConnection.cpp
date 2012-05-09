@@ -63,6 +63,7 @@ CSRConnection::CSRConnection(CConnection *  conn)
     : IProtocol(conn), 
       m_timeout(conn->GetSocket().get_io_service())
 {
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     //Sequence Numbers
     m_outseq = 0;
     m_inseq = 0;

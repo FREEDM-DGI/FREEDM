@@ -100,6 +100,7 @@ void CConnection::Start()
 ///////////////////////////////////////////////////////////////////////////////
 void CConnection::Stop()
 {
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     ProtocolMap::iterator sit;
     for(sit = m_protocols.begin(); sit != m_protocols.end(); sit++)
     {

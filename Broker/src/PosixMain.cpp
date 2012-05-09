@@ -198,9 +198,9 @@ int main(int argc, char* argv[])
         {
             if (uuidgenerator == "")
             {
-                uuidgenerator = boost::asio::ip::host_name()+port;
+                uuidgenerator = boost::asio::ip::host_name();
             }
-            uuid = freedm::CUuid::from_dns(uuidgenerator);
+            uuid = freedm::CUuid::from_dns(uuidgenerator,port);
             std::cout << uuid << std::endl;
             return 0;
         }
@@ -222,9 +222,9 @@ int main(int argc, char* argv[])
         else
         {
             // Try to resolve the host's dns name
-            hostname = boost::asio::ip::host_name()+port;
+            hostname = boost::asio::ip::host_name();
             Logger.Info << "Hostname: " << hostname << std::endl;
-            uuid = CUuid::from_dns(hostname);
+            uuid = CUuid::from_dns(hostname,port);
             Logger.Info << "Generated UUID: " << uuid << std::endl;
         }
         // Refine the logger verbosity settings.
@@ -315,7 +315,7 @@ int main(int argc, char* argv[])
                 std::string host(s.begin(), s.begin() + idx),
                         port1(s.begin() + ( idx + 1 ), s.end());
                 // Construct the UUID of host from its DNS
-                CUuid u1 = CUuid::from_dns(host+port1);
+                CUuid u1 = CUuid::from_dns(host,port1);
                 //Load the UUID into string
                 std::stringstream uu;
                 uu << u1;

@@ -247,6 +247,9 @@ freedm::broker::CMessage GMAgent::Response(std::string payload,std::string type,
     m_.m_submessages.put("gm.source", GetUUID());
     m_.m_submessages.put("gm.payload", payload);
     m_.m_submessages.put("gm.type",type);
+    m_.m_submessages.put("gm.ldruuid", Coordinator());
+    m_.m_submessages.put("gm.ldrhost", GetPeer(Coordinator())->GetHostname());
+    m_.m_submessages.put("gm.ldrport", GetPeer(Coordinator())->GetPort());
     m_.SetExpireTime(exp);
     return m_;
 }
@@ -1201,6 +1204,10 @@ void GMAgent::HandleRead(broker::CMessage msg)
             }
             else if(pt.get<std::string>("gm.payload") == "no")
             {
+                std::string nuuid = pt.get<std::string>("gm.ldruuid");
+                std::string nhost = pt.get<std::string>("gm.ldrhost");
+                std::string nport = pt.get<std::string>("gm.ldrport");
+                GetConnectionManager().PutHostname(nuuid, nhost, nport);
                 EraseInPeerSet(m_Coordinators,peer_);
             }
             else

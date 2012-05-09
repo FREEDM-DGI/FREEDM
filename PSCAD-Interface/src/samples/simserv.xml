@@ -1,29 +1,92 @@
-<SSTCount>3</SSTCount>
+<?xml version="1.0" encoding="UTF-8"?>
+<SSTCount>2</SSTCount>
 <state>
   <entry index = "1">
-    <device>SST1</device>
+    <device>grid0</device>
     <key>powerLevel</key>
-  </entry>
+    <parent>1</parent>
+  </entry> 
   <entry index = "2">
-    <device>SST2</device>
+    <device>gendev0</device>
     <key>powerLevel</key>
-  </entry>
+    <parent>1</parent>
+  </entry> 
   <entry index = "3">
-    <device>SST3</device>
+    <device>loaddev0</device>
     <key>powerLevel</key>
+    <parent>1</parent>
+  </entry>
+  <entry index = "4">
+    <device>stodev0</device>
+    <key>stateOfCharge</key>
+    <parent>1</parent>
+  </entry>
+  <entry index = "5">
+    <device>sst1</device>
+    <key>powerLevel</key>
+    <parent>2</parent>
+  </entry> 
+  <entry index = "6">
+    <device>gendev1</device>
+    <key>powerLevel</key>
+    <parent>2</parent>
+  </entry> 
+  <entry index = "7">
+    <device>loaddev1</device>
+    <key>powerLevel</key>
+    <parent>2</parent>
+  </entry>
+  <entry index = "8">
+    <device>stodev1</device>
+    <key>stateOfCharge</key>
+    <parent>2</parent>
+  </entry>
+  <entry index = "9">
+    <device>sst1</device>
+    <key>time</key>
+    <parent>2</parent>
   </entry>
 </state>
 <command>
-  <entry index = "1">
-    <device>SST1</device>
-    <key>powerLevel</key>
+ <entry index = "1">
+    <device>sst1</device>
+    <key>level</key>
+    <parent>2</parent>
   </entry>
   <entry index = "2">
-    <device>SST2</device>
-    <key>powerLevel</key>
+    <device>dg0</device>
+    <key>onOffSwitch</key>
+    <parent>1</parent>
   </entry>
   <entry index = "3">
-    <device>SST3</device>
-    <key>powerLevel</key>
+    <device>dg0</device>
+    <key>level</key>
+    <parent>1</parent>
+  </entry>
+  <entry index = "4">
+    <device>stodev0</device>
+    <key>onOffSwitch</key>
+    <parent>1</parent>
+  </entry>
+  <entry index = "5">
+    <device>dg1</device>
+    <key>onOffSwitch</key>
+    <parent>2</parent>
+  </entry>
+  <entry index = "6">
+    <device>dg1</device>
+    <key>level</key>
+    <parent>2</parent>
+  </entry>
+  <entry index = "7">
+    <device>stodev1</device>
+    <key>onOffSwitch</key>
+    <parent>2</parent>
+  </entry>
+  <entry index = "8">
+    <device>grid1</device>
+    <key>onOffSwitch</key>
+    <parent>2</parent>
   </entry>
 </command>
+

@@ -78,10 +78,12 @@ namespace freedm
 
 const double NORMAL_TOLERANCE = 0.5;
 const unsigned int STATE_TIMEOUT = 15;
-// Global constants
+// LOAD_TIMEOUT specify how long to wait before the next round of LoadManage() is performed.
+// It needs to be a fairly large number as PSCAD's power migration is very slow.
+// OR we could use the "time" reading passed in from PSCAD and sync that way.
 enum
 {
-    LOAD_TIMEOUT = 5
+  LOAD_TIMEOUT = 120   //in seconds
 };
 
 
@@ -155,6 +157,9 @@ class lbAgent
         float   m_PStar;
         /// Current power output to the grid by the syncher(SST)
         float   m_GateWay;
+        /// Current time in PSCAD simulation's running clock.  
+        //  This value is obtained but not used now.
+        float   m_SimuTime;
         /// Demand cost of this node in Demand
         float   m_DemandVal;
         /// Current Demand state of this node  

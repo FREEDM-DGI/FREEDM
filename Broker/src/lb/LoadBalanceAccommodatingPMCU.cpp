@@ -112,27 +112,21 @@ lbAgent::lbAgent(std::string uuid_,
     m_Leader = GetUUID();
     m_GlobalTimer = broker.AllocateTimer("lb");
     m_StateTimer = broker.AllocateTimer("lb");
-    m_PStar = 0;
-
-    // Turn off grid and DG off at the beginning.  Battery should be on  
+    
+     // Turn off DG off at the beginning.  Battery should be on  
     typedef broker::device::CDeviceDESD DESD;
-    typedef broker::device::CDeviceGRID GRID;
     typedef broker::device::CDeviceDG DG;
-    broker::device::CPhysicalDeviceManager::PhysicalDevice<GRID>::Container GRIDContainer;
     broker::device::CPhysicalDeviceManager::PhysicalDevice<DESD>::Container DESDContainer;
     broker::device::CPhysicalDeviceManager::PhysicalDevice<DG>::Container DGContainer;
-    GRIDContainer = m_phyDevManager.GetDevicesOfType<GRID>();
     DESDContainer = m_phyDevManager.GetDevicesOfType<DESD>();
     DGContainer = m_phyDevManager.GetDevicesOfType<DG>();
-    //turn grid connection off       
-    GRIDContainer.front()->Set("onOffSwitch", 1);
-    Logger.Notice << "Grid turned off " << std::endl;
     //turn battery on       
     DESDContainer.front()->Set("onOffSwitch", 0);
     Logger.Notice << "DESD turned on " << std::endl;
     //turn diesel generator off       
     DGContainer.front()->Set("onOffSwitch", 1);
-    Logger.Notice << "DG turned off " << std::endl;
+    Logger.Notice << "DG turned on " << std::endl;
+    m_PStar = 0;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -275,9 +269,9 @@ void lbAgent::CollectState()
 ///               broadcasting load changes computed by LoadTable() and
 ///               initiating SendDraftRequest() if in Supply
 ///
-/// @special note:  To work with current PSCAD model, this DGI has the power
-///                 to set syncher(like a SST) to a certain level.  The other 
-///                 DGI in the grid passively accommondates.
+/// @special note:  To work with current PSCAD model, this DGI does NOT
+///                 have the power to set syncher(like a SST) to a level.
+///                 It only passively accommondates the one that does.
 /// 
 /// @pre: Node is not in Fail state
 /// @post: Load state change is monitored, specific load changes are
@@ -369,14 +363,15 @@ void lbAgent::LoadTable()
     typedef broker::device::CDeviceDRER DRER;
     typedef broker::device::CDeviceDESD DESD;
     typedef broker::device::CDeviceLOAD LOAD;
-    typedef broker::device::CDeviceSST SST;
+    typedef broker::device::CDeviceGRID GRID;
 
     int numDRERs = m_phyDevManager.GetDevicesOfType<DRER>().size();
     int numDESDs = m_phyDevManager.GetDevicesOfType<DESD>().size();
     int numLOADs = m_phyDevManager.GetDevicesOfType<LOAD>().size();
-    int numSSTs = m_phyDevManager.GetDevicesOfType<SST>().size();
+    int numGRIDs = m_phyDevManager.GetDevicesOfType<GRID>().size();
 
     // obtain sum of readings from devices of a certain type
+    // we should only have one GRID device, but the function works.
     // m_Gen can be 0 and positive values only
     m_Gen = m_phyDevManager.GetNetValue<DRER>("powerLevel");
     // for m_Storage, 
@@ -386,19 +381,10 @@ void lbAgent::LoadTable()
     m_soc = m_phyDevManager.GetNetValue<DESD>("stateOfCharge");
     // m_Load can be 0 and positive values only
     m_Load = m_phyDevManager.GetNetValue<LOAD>("powerLevel");
-    // for m_GateWay, 
+    // for m_Grid, 
     //       positive value -- power is flowing out to grid.  So power doner
     //       negative value -- power is flowing in from grid. So power receiver 
-    m_GateWay = m_phyDevManager.GetNetValue<SST>("powerLevel");
-    // get the PSCAD's current simulation time.
-    // i.e. how long the simulation has run in terms of PSCAD's clock
-    // it is A LOT slower than real time. 
-    m_SimuTime = m_phyDevManager.GetNetValue<SST>("time");
-    // print the current simulation time.
-    // Future work:  
-    //   m_SimuTime can be used to control the pace of load balance.
-    Logger.Status <<"Current simulation time is "<< m_SimuTime << " seconds"<< std::endl;
-
+    m_Grid = m_phyDevManager.GetNetValue<GRID>("powerLevel");
     
     Logger.Status <<" ----------- LOAD TABLE (Power Management) ------------"
                    << std::endl;
@@ -408,8 +394,8 @@ void lbAgent::LoadTable()
                   << std::setw(14) << "Net DESD (" << numDESDs << "): "
                   << m_Storage << std::endl;
     Logger.Status <<"| " << "Net Load (" << numLOADs << "): "<< m_Load
-                  << std::setw(16) << "Net GateWay (" << numSSTs 
-                  << "): " << m_GateWay << std::endl;
+                  << std::setw(16) << "Net Grid (" << numGRIDs 
+                  << "): " << m_Grid << std::endl;
     Logger.Status <<"| ---------------------------------------------------- |"
                   << std::endl;
     Logger.Status <<"| " << std::setw(20) << "UUID" << std::setw(27)<< "State"
@@ -419,11 +405,11 @@ void lbAgent::LoadTable()
 
     //Compute the Load state based on the current power generation vs.
     //power consumption, as well as extra power received or donated to grid
-    if(m_Load < m_Gen - m_GateWay - NORMAL_TOLERANCE)
+    if(m_Load < m_Gen - m_Grid - NORMAL_TOLERANCE)
     {
         m_Status = LPeerNode::SUPPLY;
     }
-    else if(m_Load > m_Gen - m_GateWay + NORMAL_TOLERANCE)
+    else if(m_Load > m_Gen - m_Grid + NORMAL_TOLERANCE)
     {
         m_Status = LPeerNode::DEMAND;
         m_DemandVal = m_Load-m_Gen;
@@ -777,26 +763,17 @@ void lbAgent::HandleRead(broker::CMessage msg)
                 // Make necessary power setting accordingly to allow power migration
                 // We probably should wait until receiving msg from doner saying
                 // power donating already started before we do this
-
-		// Turn on grid.  It may already be on, we don't care
-		typedef broker::device::CDeviceDESD DESD;
-		typedef broker::device::CDeviceGRID GRID;
-		broker::device::CPhysicalDeviceManager::PhysicalDevice<GRID>::Container GRIDContainer;
-		broker::device::CPhysicalDeviceManager::PhysicalDevice<DESD>::Container DESDContainer;
-		GRIDContainer = m_phyDevManager.GetDevicesOfType<GRID>();
-		//turn grid connection on       
-		GRIDContainer.front()->Set("onOffSwitch", 0);
-		Logger.Notice << "Grid turned on " << std::endl;
             
 		//Make sure your battery is off when receiving power. Need more thinking
 		/*	if( (GRIDContainer.front()->get("powerLevel") < 0) || 
 		    (GRIDContainer.front()->get("powerLevel") == 0) ) {
-		  DESDContainer = m_phyDevManager.GetDevicesOfType<DESD>();
-		  //turn grid connection off       
+		  DESDContainer = m_phyDevManager.GetDevicesOfType<DESD>();                       //turn grid connection off
 		  DESDContainer.front()->Set("onOffSwitch", 1);
 		  Logger.Notice << "Battery turned off " << std::endl;
 		  }*/
-                Step_PStar();
+
+		//This side is completely passive, so do nothing
+		// Step_PStar();
             }
             else
             {
@@ -821,16 +798,9 @@ void lbAgent::HandleRead(broker::CMessage msg)
         {
             // Make necessary power setting accordingly to allow power migration
             Logger.Warn<<"Migrating power on request from: "<< peer_->GetUUID() << std::endl;
-	   
-	    // Turn on grid.  It may already be on, we don't care
-	    typedef broker::device::CDeviceGRID GRID;
-	    broker::device::CPhysicalDeviceManager::PhysicalDevice<GRID>::Container GRIDContainer;
-	    GRIDContainer = m_phyDevManager.GetDevicesOfType<GRID>();
-	    //turn grid connection on       
-	    GRIDContainer.front()->Set("onOffSwitch", 0);
-	    Logger.Notice << "Grid turned on " << std::endl;
-            
-            Step_PStar();
+	        
+	    //this side is completely passive. So do nothing.
+	    //            Step_PStar();
 	    // should probably send msg saying power is migrated
 	    
         }//end if( LPeerNode::SUPPLY == m_Status)
@@ -885,12 +855,16 @@ void lbAgent::HandleRead(broker::CMessage msg)
 ///              Set on syncher is done according to demand state
 /// @pre: Current load state of this node is 'Supply' or 'Demand'
 /// @post: Set command(s) to Syncher (SST)
-/// @limitations Syncher takes some time to work.
-///              So even though a set PStar command is sent,
-///              it may be a long time before syncher would actually
-///              get the power running on the shared bus. 
-///              (In PSCAD graph, that's when both breakers on either 
-///              side of syncher will turn red)
+/// @limitations Although there are a few different types of storage
+///              in the LWI project.  Only battery can respond to
+///              charge/discharge commands in a timely manner
+///              So we decide to only manipulate the battery
+///              Unless we know the battery's deviceID (which will
+///              lead to hard code DGI), it is hard to just set battery
+///              and not, say vrb, as they are all type DESD.
+///              For simplicity at this stage, we will turn other
+///              storage devices off in PSCAD model and leave only battery
+///              on.
 /////////////////////////////////////////////////////////
 void lbAgent::Step_PStar()
 {

@@ -249,20 +249,26 @@ ConnectionPtr CConnectionManager::GetConnectionByUUID(std::string uuid_)
     std::map<std::string, remotehost>::iterator mapIt_;
     mapIt_ = m_hostnames.find(uuid_);
     if(mapIt_ == m_hostnames.end())
+    {
+        Logger.Warn<<"Couldn't find peer in host list"<<std::endl;
         return ConnectionPtr();
+    }
     s_ = mapIt_->second.hostname;
     port = mapIt_->second.port;
 
     // Create a new CConnection object for this host	
+    Logger.Debug<<"Constructing CConnection"<<std::endl;
     c_.reset(new CConnection(m_inchannel->GetIOService(), *this, m_inchannel->GetBroker(), uuid_));  
    
     // Initiate the TCP connection
+    Logger.Debug<<"Computing remote endpoint"<<endl;
     boost::asio::ip::udp::resolver resolver(m_inchannel->GetIOService());
     boost::asio::ip::udp::resolver::query query( s_, port);
     boost::asio::ip::udp::endpoint endpoint = *resolver.resolve( query );
     c_->GetSocket().connect( endpoint ); 
 
     //Once the connection is built, connection manager gets a call back to register it.    
+    Logger.Debug<<"Inserting connection"<<std::endl;
     PutConnection(uuid_,c_);
     #ifdef CUSTOMNETWORK
     LoadNetworkConfig();

@@ -56,7 +56,8 @@ if(SHOW_WARNINGS)
     set(WARNING_FLAGS "-Wall -Wextra")
 endif(SHOW_WARNINGS)
 
-set(CMAKE_CXX_FLAGS "-pedantic -std=c++98 -g ${WARNING_FLAGS}")
+# Don't add -g here. Run -DCMAKE_BUILD_TYPE=RELEASE if you need debugging.
+set(CMAKE_CXX_FLAGS "-pedantic -std=c++98 ${WARNING_FLAGS}")
 set(CMAKE_EXE_LINKER_FLAGS "-lpthread")
 
 # generate the configuration file

@@ -315,7 +315,7 @@ int main(int argc, char* argv[])
                 std::string host(s.begin(), s.begin() + idx),
                         port1(s.begin() + ( idx + 1 ), s.end());
                 // Construct the UUID of host from its DNS
-                CUuid u1 = CUuid::from_dns(host);
+                CUuid u1 = CUuid::from_dns(host+port1);
                 //Load the UUID into string
                 std::stringstream uu;
                 uu << u1;

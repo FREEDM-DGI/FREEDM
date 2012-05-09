@@ -1042,7 +1042,7 @@ void GMAgent::HandleRead(broker::CMessage msg)
                 {
                     //If you don't already know about the peer, make sure it is in the connection manager
                     GetConnectionManager().PutHostname(nuuid, nhost, nport);
-                    AddPeer(nuuid);
+                    p = AddPeer(nuuid);
                 }
                 if(nuuid != GetUUID())
                 {

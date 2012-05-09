@@ -331,6 +331,7 @@ freedm::broker::CMessage GMAgent::PeerList()
 {
     freedm::broker::CMessage m_;
 	std::stringstream ss_;
+    ptree me_pt;
 	ss_.clear();
 	ss_ << GetUUID();
 	m_.m_submessages.put("any.source", ss_.str());
@@ -339,11 +340,16 @@ freedm::broker::CMessage GMAgent::PeerList()
 	ss_.clear();
 	foreach( PeerNodePtr peer_, m_UpNodes | boost::adaptors::map_values)
     {
-        m_.m_submessages.add("any.peers.peer.uuid",peer_->GetUUID());
-        m_.m_submessages.add("any.peers.peer.host",peer_->GetHostname());
-        m_.m_submessages.add("any.peers.peer.port",peer_->GetPort());
+        ptree sub_pt;
+        sub_pt.add("uuid",peer_->GetUUID());
+        sub_pt.add("host",peer_->GetHostname());
+        sub_pt.add("port",peer_->GetPort());
+        m_.m_submessages.add_child("any.peers.peer",sub_pt);
     }
-    m_.m_submessages.add("any.peers.peer",GetUUID());
+    me_pt.add("uuid",GetUUID());
+    me_pt.add("host",GetHostname());
+    me_pt.add("port",GetPort());
+    m_.m_submessages.add_child("any.peers.peer",me_pt);
     m_.SetNeverExpires();
     return m_;
 }
@@ -1019,12 +1025,15 @@ void GMAgent::HandleRead(broker::CMessage msg)
                 m_timerMutex.unlock();
             }
             m_UpNodes.clear();
+            Logger.Debug<<"Looping Peer List"<<std::endl;
             foreach(ptree::value_type &v, pt.get_child("any.peers"))
             {
+                Logger.Debug<<"Peer Item"<<std::endl;
                 ptree sub_pt = v.second;
                 std::string nuuid = sub_pt.get<std::string>("uuid");
                 std::string nhost = sub_pt.get<std::string>("host");
                 std::string nport = sub_pt.get<std::string>("port");
+                Logger.Debug<<"Got Peer ("<<nuuid<<","<<nhost<<","<<nport<<")"<<std::endl;
                 PeerNodePtr p = GetPeer(nuuid);
                 if(!p)
                 {
@@ -1032,7 +1041,7 @@ void GMAgent::HandleRead(broker::CMessage msg)
                     GetConnectionManager().PutHostname(nuuid, nhost, nport);
                     AddPeer(nuuid);
                 }
-                if(v.second.data() != GetUUID())
+                if(nuuid != GetUUID())
                 {
                     InsertInPeerSet(m_UpNodes,p);
                 }

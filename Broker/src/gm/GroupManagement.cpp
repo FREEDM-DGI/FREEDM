@@ -1208,6 +1208,7 @@ void GMAgent::HandleRead(broker::CMessage msg)
                 std::string nhost = pt.get<std::string>("gm.ldrhost");
                 std::string nport = pt.get<std::string>("gm.ldrport");
                 GetConnectionManager().PutHostname(nuuid, nhost, nport);
+                AddPeer(nuuid);
                 EraseInPeerSet(m_Coordinators,peer_);
             }
             else

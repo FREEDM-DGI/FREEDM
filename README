@@ -17,7 +17,7 @@ Dr. Bruce McMillin, Department of Computer Science, Missour University of
 Science and Technology, Rolla, MO  65409 (ff@mst.edu).
 
 Code in this branch is supposed to work only with a LWI PSCAD model with two PMCUs
-and one Syncher.
+and one Syncher.  The model only runs on PSCAD version 4.3
 For questions and comments, please contact Yaxi Liu (ylztf@mst.edu).
 
 Building This Project

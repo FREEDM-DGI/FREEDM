@@ -63,6 +63,7 @@ namespace po = boost::program_options;
 #include "version.h"
 
 using namespace freedm;
+using namespace broker;
 
 static CLocalLogger Logger(__FILE__);
 
@@ -248,23 +249,23 @@ int main(int argc, char* argv[])
         CGlobalConfiguration::instance().SetListenAddress(listenIP);
         CGlobalConfiguration::instance().SetFpgaMessage(fpgaCfgFile);
         //constructors for initial mapping
-        broker::CConnectionManager conManager;
-        broker::device::CPhysicalDeviceManager::ManagerPtr 
+        CConnectionManager conManager;
+        device::CPhysicalDeviceManager::ManagerPtr 
             phyManager(new broker::device::CPhysicalDeviceManager());
-        broker::ConnectionPtr newConnection;
+        ConnectionPtr newConnection;
         boost::asio::io_service ios;
 
         // configure the device factory
         // interHost is the hostname of the machine that runs the simulation
         // interPort is the port number this DGI and simulation communicate in
-        broker::device::CDeviceFactory::instance().init(
+        device::CDeviceFactory::instance().init(
                 phyManager, ios, interHost, interPort);
 
         // Create Devices
         if (vm.count("add-device") > 0)
         {
-            broker::device::RegisterPhysicalDevices();
-            broker::device::CDeviceFactory::instance().CreateDevices(
+            device::RegisterPhysicalDevices();
+            device::CDeviceFactory::instance().CreateDevices(
                     vm["add-device"].as< std::vector<std::string> >( ));
         }
         else
@@ -273,11 +274,11 @@ int main(int argc, char* argv[])
         }
 
         // Instantiate Dispatcher for message delivery
-        broker::CDispatcher dispatch;
+        CDispatcher dispatch;
         // Register UUID handler
         //dispatch_.RegisterWriteHandler( "any", &uuidHandler_ );
         // Run server in background thread
-        broker::CBroker broker(listenIP, port, dispatch, ios, conManager);
+        CBroker broker(listenIP, port, dispatch, ios, conManager);
         // Load the UUID into string
         std::stringstream ss;
         std::string uuidstr;

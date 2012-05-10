@@ -72,10 +72,13 @@ public:
     typedef std::map<TimerHandle, ModuleIdent> TimerAlloc;
     typedef std::map<TimerHandle, boost::asio::deadline_timer* > TimersMap;
     typedef std::map<ModuleIdent, std::list< BoundScheduleable > > ReadyMap;
+    
+    /// Type of a pointer to a Broker.
+    typedef boost::shared_ptr<CBroker> BrokerPtr;
 
 
     /// Initialize the broker and begin accepting connections and messages 
-    explicit CBroker(const std::string& address, const std::string& port,
+    CBroker(const std::string& address, const std::string& port,
                    CDispatcher& p_dispatch, boost::asio::io_service &m_ios,
                    freedm::broker::CConnectionManager &m_conMan);
 

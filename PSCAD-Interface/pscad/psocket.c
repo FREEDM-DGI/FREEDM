@@ -482,7 +482,7 @@ void pscad_recv__( int * ip1, int * ip2, int * ip3, int * ip4, int * port,
 /// on both the version of PSCAD and the Fortran compiler. if this code does
 /// not compile, rename the function pscad_recv_close_ with a single underscore
 ///////////////////////////////////////////////////////////////////////////////
-void pscad_recv_close__( int * status )
+void pscad_recv_close__( )
 {
     print_footer( RECVLOG );
 }

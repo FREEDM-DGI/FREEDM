@@ -115,7 +115,7 @@ CRtdsAdapter::AdapterPointer CRtdsAdapter::Create(
 ////////////////////////////////////////////////////////////////////////////
 CRtdsAdapter::CRtdsAdapter(boost::asio::io_service & service,
         const std::string xml)
-: INetworkAdapter(service), m_cmdTable(xml, "command"),
+: IConnectionAdapter(service), m_cmdTable(xml, "command"),
 m_stateTable(xml, "state"), m_GlobalTimer(service)
 {
     Logger.Debug << __PRETTY_FUNCTION__ << std::endl;

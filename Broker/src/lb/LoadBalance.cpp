@@ -100,7 +100,8 @@ static CLocalLogger Logger(__FILE__);
 ///////////////////////////////////////////////////////////////////////////////
 lbAgent::lbAgent(std::string uuid_,
                  broker::CBroker &broker,
-                 broker::device::CPhysicalDeviceManager &m_phyManager):
+                 broker::device::CPhysicalDeviceManager::ManagerPtr 
+                    m_phyManager):
     LPeerNode(uuid_, broker.GetConnectionManager()),
     m_phyDevManager(m_phyManager),
     m_broker(broker)
@@ -384,15 +385,15 @@ void lbAgent::LoadTable()
     typedef broker::device::CDeviceLOAD LOAD;
     typedef broker::device::CDeviceSST SST;
 
-    int numDRERs = m_phyDevManager.GetDevicesOfType<DRER>().size();
-    int numDESDs = m_phyDevManager.GetDevicesOfType<DESD>().size();
-    int numLOADs = m_phyDevManager.GetDevicesOfType<LOAD>().size();
-    int numSSTs = m_phyDevManager.GetDevicesOfType<SST>().size();
+    int numDRERs = m_phyDevManager->GetDevicesOfType<DRER>().size();
+    int numDESDs = m_phyDevManager->GetDevicesOfType<DESD>().size();
+    int numLOADs = m_phyDevManager->GetDevicesOfType<LOAD>().size();
+    int numSSTs = m_phyDevManager->GetDevicesOfType<SST>().size();
 
-    m_Gen = m_phyDevManager.GetNetValue<DRER>("powerLevel");
-    m_Storage = m_phyDevManager.GetNetValue<DESD>("powerLevel");
-    m_Load = m_phyDevManager.GetNetValue<LOAD>("powerLevel");
-    m_Gateway = m_phyDevManager.GetNetValue<SST>("powerLevel");
+    m_Gen = m_phyDevManager->GetNetValue<DRER>("powerLevel");
+    m_Storage = m_phyDevManager->GetNetValue<DESD>("powerLevel");
+    m_Load = m_phyDevManager->GetNetValue<LOAD>("powerLevel");
+    m_Gateway = m_phyDevManager->GetNetValue<SST>("powerLevel");
     m_CalcGateway = m_Load - m_Gen;
 
     std::stringstream ss;
@@ -874,7 +875,7 @@ void lbAgent::Step_PStar()
     typedef broker::device::CDeviceSST SST;
     broker::device::CPhysicalDeviceManager::PhysicalDevice<SST>::Container SSTContainer;
     broker::device::CPhysicalDeviceManager::PhysicalDevice<SST>::iterator it, end;
-    SSTContainer = m_phyDevManager.GetDevicesOfType<SST>();
+    SSTContainer = m_phyDevManager->GetDevicesOfType<SST>();
 
     for( it = SSTContainer.begin(), end = SSTContainer.end(); it != end; it++ )
     {
@@ -915,7 +916,7 @@ void lbAgent::PStar(broker::device::SettingValue DemandValue)
     typedef broker::device::CDeviceSST SST;
     broker::device::CPhysicalDeviceManager::PhysicalDevice<SST>::Container SSTContainer;
     broker::device::CPhysicalDeviceManager::PhysicalDevice<SST>::iterator it, end;
-    SSTContainer = m_phyDevManager.GetDevicesOfType<SST>();
+    SSTContainer = m_phyDevManager->GetDevicesOfType<SST>();
 
     for( it = SSTContainer.begin(), end = SSTContainer.end(); it != end; it++ )
     {
@@ -975,7 +976,7 @@ void lbAgent::PStar(broker::device::SettingValue DemandValue)
 //  broker::device::SettingValue V_in, V_out;
 
 //  //Sort the DESDs by decreasing order of their "vin"s; achieved by inserting into map
-//  DESDContainer = m_phyDevManager.GetDevicesOfType<DESD>();
+//  DESDContainer = m_phyDevManager->GetDevicesOfType<DESD>();
 //  for( it = DESDContainer.begin(), end = DESDContainer.end(); it != end; it++ )
 //  {
 //    DESDMap.insert( DeviceMap::value_type((*it)->Get("powerLevel"), (*it)->GetID()) );
@@ -1000,14 +1001,14 @@ void lbAgent::PStar(broker::device::SettingValue DemandValue)
 //    {
 //      V_in = V_in - temp_;
 //      //Then set the V_in accordingly on that particular device
-//      //m_phyDevManager.GetDevice(mapIt_->second)->Set("vin", V_in);
+//      //m_phyDevManager->GetDevice(mapIt_->second)->Set("vin", V_in);
 //    }
 //    else
 //    {
 //      temp_ = temp_ - V_in;
 //      V_in = 0;
 //      //Then set the vin and vout accordingly on that particular device
-//      //m_phyDevManager.GetDevice(mapIt_->second)->Set("vin", V_in);
+//      //m_phyDevManager->GetDevice(mapIt_->second)->Set("vin", V_in);
 //    }
 //  }//end for
 

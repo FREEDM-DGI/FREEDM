@@ -38,9 +38,6 @@ namespace freedm {
 namespace broker {
 namespace device {
 
-// forward declaration of device manager
-class CPhysicalDeviceManager;
-
 ////////////////////////////////////////////////////////////////////////////////
 /// device_cast<TargetType>( ObjectType )
 /// @pre ObjectType must be a boost::shared_ptr<T> for some T
@@ -70,12 +67,6 @@ public:
     /// Sets the value of some key in the structure
     virtual void Set( const SettingKey key, const SettingValue value );
 
-    /// Gets the device manager for the device
-    CPhysicalDeviceManager & GetManager();
-
-    /// Gets the device manager for the device
-    const CPhysicalDeviceManager & GetManager() const;
-
     /// Acquires the mutex
     void Lock();
 
@@ -89,12 +80,8 @@ public:
     Identifier GetID() const;
     
 protected:
-    /// Constructor which takes a manager, identifier, and device adapter
-    IDevice( CPhysicalDeviceManager & manager, Identifier device,
-        IPhysicalAdapter & adapter );
-
-    /// Device manager that handles the device
-    CPhysicalDeviceManager & m_manager;
+    /// Constructor which takes an identifier and device adapter
+    IDevice(Identifier device, IPhysicalAdapter::AdapterPtr adapter );
 
     /// Mutex to protect the device from other threads
     mutable boost::mutex m_mutex;
@@ -103,7 +90,7 @@ protected:
     Identifier m_identifier;
 
     /// "Driver" that handles the device data
-    IPhysicalAdapter & m_adapter;
+    IPhysicalAdapter::AdapterPtr m_adapter;
 };
 
 } // namespace device

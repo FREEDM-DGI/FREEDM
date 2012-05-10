@@ -19,14 +19,14 @@ set(
     device/CRtdsAdapter.cpp
     device/CTableRTDS.cpp
     device/CTableStructure.cpp
-    device/INetworkAdapter.cpp
+    device/IConnectionAdapter.cpp
     device/PhysicalDeviceTypes.cpp
     device/types/IDevice.cpp
     IPeerNode.cpp
     IProtocol.cpp
     gm/GroupManagement.cpp
     lb/LoadBalance.cpp
-    sc/CStateCollection.cpp
+    sc/StateCollection.cpp
    )
 
 # Generate PhysicalDeviceTypes files based on contents of device/types directory

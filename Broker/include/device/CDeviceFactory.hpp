@@ -80,7 +80,7 @@ public:
     static CDeviceFactory& instance();
 
     /// Loads the factory with device manager and networking data.
-    void init(CPhysicalDeviceManager& manager,
+    void init(CPhysicalDeviceManager::ManagerPtr manager,
             boost::asio::io_service& ios, const std::string host,
             const std::string port);
 
@@ -102,10 +102,10 @@ private:
     CDeviceFactory();
     
     /// Device adapter to attach to created devices.
-    IPhysicalAdapter::AdapterPointer m_adapter;
+    IPhysicalAdapter::AdapterPtr m_adapter;
 
     /// Device manager to handle created devices.
-    CPhysicalDeviceManager* m_manager;
+    CPhysicalDeviceManager::ManagerPtr m_manager;
 
     /// Maps strings of device names to a factory function for that class.
     DeviceRegistryType m_registry;
@@ -149,8 +149,7 @@ void CDeviceFactory::CreateDevice(const Identifier deviceID)
         ss << __PRETTY_FUNCTION__ << " called before factory init" << std::endl;
         throw std::runtime_error(ss.str());
     }
-    IDevice::DevicePtr dev(new DeviceType(*m_manager, deviceID, *m_adapter));
-    // add the device to the manager
+    IDevice::DevicePtr dev(new DeviceType(deviceID, m_adapter));
     m_manager->AddDevice(dev);
 }
 

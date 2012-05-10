@@ -59,7 +59,7 @@ namespace po = boost::program_options;
 #include "device/PhysicalDeviceTypes.hpp"
 #include "gm/GroupManagement.hpp"
 #include "lb/LoadBalance.hpp"
-#include "sc/CStateCollection.hpp"
+#include "sc/StateCollection.hpp"
 #include "version.h"
 
 using namespace freedm;
@@ -249,7 +249,8 @@ int main(int argc, char* argv[])
         CGlobalConfiguration::instance().SetFpgaMessage(fpgaCfgFile);
         //constructors for initial mapping
         broker::CConnectionManager conManager;
-        broker::device::CPhysicalDeviceManager phyManager;
+        broker::device::CPhysicalDeviceManager::ManagerPtr 
+            phyManager(new broker::device::CPhysicalDeviceManager());
         broker::ConnectionPtr newConnection;
         boost::asio::io_service ios;
 

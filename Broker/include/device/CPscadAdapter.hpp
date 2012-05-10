@@ -35,14 +35,14 @@
 #include <boost/utility.hpp>
 #include <boost/shared_ptr.hpp>
 
-#include "INetworkAdapter.hpp"
+#include "IConnectionAdapter.hpp"
 
 namespace freedm {
 namespace broker {
 namespace device {
 
 /// Provides an interface for communicating commands to a PSCAD model
-class CPscadAdapter : public INetworkAdapter
+class CPscadAdapter : public IConnectionAdapter
 {
     ////////////////////////////////////////////////////////////////////////////////
     /// CLineClient

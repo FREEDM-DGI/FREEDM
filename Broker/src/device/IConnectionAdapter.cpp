@@ -25,7 +25,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 #include "CLogger.hpp"
-#include "device/INetworkAdapter.hpp"
+#include "device/IConnectionAdapter.hpp"
 
 namespace freedm {
 namespace broker {
@@ -47,7 +47,7 @@ static CLocalLogger Logger(__FILE__);
 ///
 /// @limitations None.
 ////////////////////////////////////////////////////////////////////////////
-INetworkAdapter::INetworkAdapter(boost::asio::io_service& service)
+IConnectionAdapter::IConnectionAdapter(boost::asio::io_service& service)
 : m_socket(service) {
     // skip
 }
@@ -67,7 +67,7 @@ INetworkAdapter::INetworkAdapter(boost::asio::io_service& service)
 ///
 /// @limitations TCP connections only.
 ////////////////////////////////////////////////////////////////////////////////
-void INetworkAdapter::Connect(const std::string hostname,
+void IConnectionAdapter::Connect(const std::string hostname,
         const std::string port)
 {
     Logger.Debug << __PRETTY_FUNCTION__ << std::endl;

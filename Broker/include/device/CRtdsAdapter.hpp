@@ -40,14 +40,14 @@
 #include <boost/thread/thread.hpp>
 
 #include "CTableRTDS.hpp"
-#include "INetworkAdapter.hpp"
+#include "IConnectionAdapter.hpp"
 
 namespace freedm {
 namespace broker {
 namespace device {
 
 /// Provides an interface for communicating with a RTDS simulation model
-class CRtdsAdapter : public INetworkAdapter
+class CRtdsAdapter : public IConnectionAdapter
 {
     ////////////////////////////////////////////////////////
     ///

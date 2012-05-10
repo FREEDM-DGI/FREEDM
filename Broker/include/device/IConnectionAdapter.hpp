@@ -54,21 +54,24 @@ namespace device {
 ///     Build in some safety so that an error occurs if the network adapter is
 ///     used before it is connected.
 ////////////////////////////////////////////////////////////////////////////////
-class INetworkAdapter : public IPhysicalAdapter
+class IConnectionAdapter : public IPhysicalAdapter
 {
 public:
+    /// Type of a pointer to a connection adapter.
+    typedef boost::shared_ptr<IConnectionAdapter> ConnectionAdapterPtr;
+
     /// Creates a socket connection to the given hostname and service.
     virtual void Connect(const std::string hostname, const std::string port);
 
     /// Closes the connection.
     virtual void Quit() = 0;
-    
+
     /// Virtual destructor for derived classes.
-    virtual ~INetworkAdapter() { };
+    virtual ~IConnectionAdapter() { };
 
 protected:
     /// Constructor to initialize the socket.
-    INetworkAdapter(boost::asio::io_service& service);
+    IConnectionAdapter(boost::asio::io_service& service);
 
     /// Socket to use for the connection.
     mutable boost::asio::ip::tcp::socket m_socket;

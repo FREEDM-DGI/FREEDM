@@ -33,18 +33,15 @@ namespace device
 {
 
 ////////////////////////////////////////////////////////////////////////////////
-/// IDevice( CPhysicalDeviceManager &, Identifier, IPhysicalAdapter & )
+/// IDevice( Identifier, IPhysicalAdapter::AdapterPtr )
 /// @description Called by subclass constructors to initialize the device
 /// @pre none
 /// @post Base of the device created and initialized
-/// @param manager The device manager that will handle the device
 /// @param device The unique device identifier for the device
 /// @param adapter The implementation scheme of the device
 ////////////////////////////////////////////////////////////////////////////////
-IDevice::IDevice( CPhysicalDeviceManager & manager, Identifier device,
-                  IPhysicalAdapter & adapter )
-    : m_manager(manager)
-    , m_identifier(device)
+IDevice::IDevice(Identifier device, IPhysicalAdapter::AdapterPtr adapter )
+    : m_identifier(device)
     , m_adapter(adapter)
 {
     // skip
@@ -60,7 +57,7 @@ IDevice::IDevice( CPhysicalDeviceManager & manager, Identifier device,
 ////////////////////////////////////////////////////////////////////////////////
 SettingValue IDevice::Get( const SettingKey key )
 {
-    return m_adapter.Get(m_identifier, key);
+    return m_adapter->Get(m_identifier, key);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -73,31 +70,7 @@ SettingValue IDevice::Get( const SettingKey key )
 ////////////////////////////////////////////////////////////////////////////////
 void IDevice::Set( const SettingKey key, const SettingValue value )
 {
-    m_adapter.Set(m_identifier, key, value);
-}
-
-////////////////////////////////////////////////////////////////////////////////
-/// GetManager()
-/// @description Accessor for m_manager
-/// @pre none
-/// @post returns a reference to the device manager
-/// @return reference to m_manager
-////////////////////////////////////////////////////////////////////////////////
-CPhysicalDeviceManager & IDevice::GetManager()
-{
-    return m_manager;
-}
-
-////////////////////////////////////////////////////////////////////////////////
-/// GetManager() const
-/// @description Accessor for m_manager
-/// @pre none
-/// @post returns a const reference to the device manager
-/// @return const reference to m_manager
-////////////////////////////////////////////////////////////////////////////////
-const CPhysicalDeviceManager & IDevice::GetManager() const
-{
-    return m_manager;
+    m_adapter->Set(m_identifier, key, value);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

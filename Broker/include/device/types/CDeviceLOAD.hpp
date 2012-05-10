@@ -28,6 +28,7 @@
 
 #include <boost/shared_ptr.hpp>
 
+#include "../CPhysicalDeviceManager.hpp"
 #include "IDevice.hpp"
 
 namespace freedm {
@@ -45,10 +46,9 @@ public:
     /// Convenience type for a shared pointer to self
     typedef boost::shared_ptr<CDeviceLOAD> DevicePtr;
 
-    /// Constructor which takes a manager, identifier, and internal structure
-    CDeviceLOAD(CPhysicalDeviceManager & manager, Identifier device,
-            IPhysicalAdapter & adapter)
-    : IDevice(manager, device, adapter) { }
+    /// Constructor which takes an identifier and internal structure
+    CDeviceLOAD(Identifier device, IPhysicalAdapter::AdapterPtr adapter)
+    : IDevice(device, adapter) { }
 
     /// Virtual destructor for derived classes
     virtual ~CDeviceLOAD() { }

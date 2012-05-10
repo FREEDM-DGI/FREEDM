@@ -41,13 +41,15 @@ namespace broker {
 namespace device {
 
 /// Provides a container that manages physical device instances
-class CPhysicalDeviceManager
+class CPhysicalDeviceManager : public boost::noncopyable
 {
 public:
+    /// Type of a pointer to a device manager
+    typedef boost::shared_ptr<CPhysicalDeviceManager> ManagerPtr;
     /// A typedef for the mapping of identifier to device ptrs
     typedef std::map<device::Identifier,
                      device::IDevice::DevicePtr> PhysicalDeviceSet;
-    /// A typedef providing an iteraator for this object
+    /// A typedef providing an iterator for this object
     typedef PhysicalDeviceSet::iterator iterator;
     /// Initialize the physical device manger
     CPhysicalDeviceManager();

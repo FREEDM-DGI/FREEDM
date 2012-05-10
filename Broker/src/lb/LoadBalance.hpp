@@ -102,7 +102,8 @@ class lbAgent
         /// Constructor for using this object as a module
         lbAgent(std::string uuid_,
                 freedm::broker::CBroker &broker,
-                freedm::broker::device::CPhysicalDeviceManager &m_phyManager);
+                freedm::broker::device::CPhysicalDeviceManager::ManagerPtr 
+                    m_phyManager);
         /// Destructor for the module  
         ~lbAgent();
 
@@ -175,7 +176,8 @@ class lbAgent
         PeerSet     m_AllPeers;
 
         // Instance of physical device manager
-        freedm::broker::device::CPhysicalDeviceManager &m_phyDevManager;
+        freedm::broker::device::CPhysicalDeviceManager::ManagerPtr 
+            m_phyDevManager;
 
         // Power migration functions 
         /// 'Power migration' through controlling devices

@@ -43,7 +43,7 @@
 ///
 /////////////////////////////////////////////////////////
 
-#include "CStateCollection.hpp"
+#include "StateCollection.hpp"
 #include "SCPeerNode.hpp"
 
 #include "CMessage.hpp"
@@ -122,7 +122,8 @@ namespace freedm
 ///////////////////////////////////////////////////////////////////////////////
 
 SCAgent::SCAgent(std::string uuid, freedm::broker::CBroker &broker,
-                 freedm::broker::device::CPhysicalDeviceManager &m_phyManager):
+                 freedm::broker::device::CPhysicalDeviceManager::ManagerPtr 
+                    m_phyManager):
     SCPeerNode(uuid, broker.GetConnectionManager()),
     m_countstate(0),
     m_NotifyToSave(false),
@@ -349,7 +350,7 @@ void SCAgent::TakeSnapshot()
     typedef broker::device::CDeviceSST SST;
     broker::device::CPhysicalDeviceManager::PhysicalDevice<SST>::Container SSTContainer;
     broker::device::CPhysicalDeviceManager::PhysicalDevice<SST>::iterator it, end;
-    SSTContainer = m_phyDevManager.GetDevicesOfType<SST>();
+    SSTContainer = m_phyDevManager->GetDevicesOfType<SST>();
     broker::device::SettingValue PowerValue = 0;
     
     for( it = SSTContainer.begin(), end = SSTContainer.end(); it != end; it++ )
@@ -357,7 +358,7 @@ void SCAgent::TakeSnapshot()
         PowerValue +=(*it)->Get("powerLevel");
     }
     
-    //list = m_phyDevManager.GetDevicesOfType<SST>();
+    //list = m_phyDevManager->GetDevicesOfType<SST>();
     //for(it = list.begin(), end = list.end();it != end; it++)
     //{
     //  PowerValue += (*it)->Get("powerLevel");
@@ -621,7 +622,7 @@ void SCAgent::HandleRead(broker::CMessage msg)
             m_countmarker = 1;
             Logger.Info << "Marker is " << m_curversion.first << " " << m_curversion.second << std::endl;
             //physical device information
-            Logger.Debug << "SC module identified "<< m_phyDevManager.DeviceCount()
+            Logger.Debug << "SC module identified "<< m_phyDevManager->DeviceCount()
                           << " physical devices on this node" << std::endl;
             //collect local state
             TakeSnapshot();

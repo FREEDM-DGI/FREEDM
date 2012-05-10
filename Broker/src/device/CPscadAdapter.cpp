@@ -36,7 +36,7 @@ CPscadAdapter::AdapterPointer CPscadAdapter::Create(boost::asio::io_service & se
     return CPscadAdapter::AdapterPointer(new CPscadAdapter(service));
 }
 CPscadAdapter::CPscadAdapter(boost::asio::io_service & service)
-: INetworkAdapter(service) {
+: IConnectionAdapter(service) {
     // skip
 }
 void CPscadAdapter::Set(const Identifier device, const SettingKey key,

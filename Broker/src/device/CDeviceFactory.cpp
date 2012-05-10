@@ -58,7 +58,7 @@ CDeviceFactory& CDeviceFactory::instance()
 }
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 ////////////////////////////////////////////////////////////////////////////////
-/// @function CDeviceFactory::init(CPhysicalDeviceManager& manager,
+/// @function CDeviceFactory::init(CPhysicalDeviceManager::ManagerPtr manager,
 ///     boost::asio::io_service& ios, const std::string host,
 ///     const std::string port)
 ///
@@ -86,13 +86,13 @@ CDeviceFactory& CDeviceFactory::instance()
 ///
 /// @limitations Must be called before anything else is done with this factory.
 ////////////////////////////////////////////////////////////////////////////////
-void CDeviceFactory::init(CPhysicalDeviceManager& manager,
+void CDeviceFactory::init(CPhysicalDeviceManager::ManagerPtr manager,
         boost::asio::io_service& ios, const std::string host,
         const std::string port)
 {
     Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     Logger.Info << "Initialized the device factory" << std::endl;
-    m_manager = &manager;
+    m_manager = manager;
 #if defined USE_DEVICE_PSCAD
     CPscadAdapter::AdapterPointer pscadAdapter = CPscadAdapter::Create(ios);
     pscadAdapter->Connect(host, port);
@@ -273,7 +273,7 @@ void CDeviceFactory::CreateDevices(const std::vector<std::string>& deviceList)
 ///  before doing anything with it.
 ////////////////////////////////////////////////////////////////////////////////
 CDeviceFactory::CDeviceFactory()
-: m_adapter(), m_manager(0), m_registry(), m_initialized(false)
+: m_adapter(), m_manager(), m_registry(), m_initialized(false)
 {
     Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
 }

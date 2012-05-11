@@ -42,17 +42,15 @@
 ///  device type headers in PhysicalDeviceTypes.hpp and generates the
 ///  RegisterPhysicalDevices function in PhysicalDeviceTypes.cpp to register all
 ///  detected device types with CDeviceFactory. Types are detected if they are
-///  stored in files in src/device/types and have filenames beginning with
+///  stored in files in include/device/types and have filenames beginning with
 ///  "CDevice".
 ///
 /// @ErrorHandling In the event of an I/O error, simply gives up. Prints a
 ///  warning to stderr, but this might be suppressed by CMake.
 ///
-/// @pre Each instantiable device class must be located in device/types and be
-///  declared in a file whose name follows the convention "CDeviceType.hpp",
-///  where Type can be any string. Any equivalent implementation file must be
-///  named "CDeviceType.cpp", since if an implementation file exists in addition
-///  to the header, either could be used to register the class.
+/// @pre Each instantiable device class must be located in include/device/types
+///  and be declared in a file whose name follows the convention
+///  "CDeviceType.hpp", where Type can be any string.
 /// @post Generates PhysicalDeviceTypes.hpp and PhysicalDeviceTypes.cpp.
 ///
 /// @return 0 if successful, or 1 otherwise.

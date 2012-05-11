@@ -380,20 +380,20 @@ void lbAgent::LoadTable()
     Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     
     // device typedef for convenience
-    typedef broker::device::CDeviceDRER DRER;
-    typedef broker::device::CDeviceDESD DESD;
-    typedef broker::device::CDeviceLOAD LOAD;
-    typedef broker::device::CDeviceSST SST;
+    typedef broker::device::CDeviceDrer DRER;
+    typedef broker::device::CDeviceDesd DESD;
+    typedef broker::device::CDeviceLoad LOAD;
+    typedef broker::device::CDeviceSst SST;
 
     int numDRERs = m_phyDevManager->GetDevicesOfType<DRER>().size();
     int numDESDs = m_phyDevManager->GetDevicesOfType<DESD>().size();
     int numLOADs = m_phyDevManager->GetDevicesOfType<LOAD>().size();
     int numSSTs = m_phyDevManager->GetDevicesOfType<SST>().size();
 
-    m_Gen = m_phyDevManager->GetNetValue<DRER>("powerLevel");
-    m_Storage = m_phyDevManager->GetNetValue<DESD>("powerLevel");
-    m_Load = m_phyDevManager->GetNetValue<LOAD>("powerLevel");
-    m_Gateway = m_phyDevManager->GetNetValue<SST>("powerLevel");
+    m_Gen = m_phyDevManager->GetNetValue<DRER>("generation");
+    m_Storage = m_phyDevManager->GetNetValue<DESD>("storage");
+    m_Load = m_phyDevManager->GetNetValue<LOAD>("drain");
+    m_Gateway = m_phyDevManager->GetNetValue<SST>("gateway");
     m_CalcGateway = m_Load - m_Gen;
 
     std::stringstream ss;
@@ -872,7 +872,7 @@ void lbAgent::HandleRead(broker::CMessage msg)
 void lbAgent::Step_PStar()
 {
     Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
-    typedef broker::device::CDeviceSST SST;
+    typedef broker::device::CDeviceSst SST;
     broker::device::CPhysicalDeviceManager::PhysicalDevice<SST>::Container SSTContainer;
     broker::device::CPhysicalDeviceManager::PhysicalDevice<SST>::iterator it, end;
     SSTContainer = m_phyDevManager->GetDevicesOfType<SST>();
@@ -881,17 +881,15 @@ void lbAgent::Step_PStar()
     {
         if(LPeerNode::DEMAND == m_Status)
         {
-            m_PStar = (*it)->Get("powerLevel") - P_Migrate;
-            (*it)->Set("powerLevel", m_PStar);
+            m_PStar = (*it)->GetGateway() - P_Migrate;
+            (*it)->StepGateway(-P_Migrate);
             Logger.Notice << "P* = " << m_PStar << std::endl;
-            
         }
         else if(LPeerNode::SUPPLY == m_Status)
         {
-            m_PStar = (*it)->Get("powerLevel") + P_Migrate;
-            (*it)->Set("powerLevel", m_PStar);
+            m_PStar = (*it)->GetGateway() + P_Migrate;
+            (*it)->StepGateway(P_Migrate);
             Logger.Notice << "P* = " << m_PStar << std::endl;
-            
         }
         else
         {
@@ -913,7 +911,7 @@ void lbAgent::Step_PStar()
 void lbAgent::PStar(broker::device::SettingValue DemandValue)
 {
     Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
-    typedef broker::device::CDeviceSST SST;
+    typedef broker::device::CDeviceSst SST;
     broker::device::CPhysicalDeviceManager::PhysicalDevice<SST>::Container SSTContainer;
     broker::device::CPhysicalDeviceManager::PhysicalDevice<SST>::iterator it, end;
     SSTContainer = m_phyDevManager->GetDevicesOfType<SST>();
@@ -922,24 +920,20 @@ void lbAgent::PStar(broker::device::SettingValue DemandValue)
     {
         if(LPeerNode::DEMAND == m_Status)
         {
-            m_PStar = (*it)->Get("powerLevel") - P_Migrate;
+            m_PStar = (*it)->GetGateway() - P_Migrate;
             Logger.Notice << "P* = " << m_PStar << std::endl;
-            (*it)->Set("powerLevel", m_PStar);
-            
+            (*it)->StepGateway(-P_Migrate);
         }
         else if(LPeerNode::SUPPLY == m_Status)
         {
             if( DemandValue <= m_Gateway + NORMAL_TOLERANCE - m_Normal )
             {
                 Logger.Notice << "P* = " << m_Gateway + DemandValue << std::endl;
-                (*it)->Set("powerLevel", m_Gateway + DemandValue);
-                
+                (*it)->StepGateway(P_Migrate);
             }
             else
             {
                 Logger.Notice << "P* = " << m_Normal << std::endl;
-                (*it)->Set("powerLevel", m_Normal);
-                
             }
         }
         else

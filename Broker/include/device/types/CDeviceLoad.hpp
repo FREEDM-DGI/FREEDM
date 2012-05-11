@@ -1,12 +1,14 @@
 ////////////////////////////////////////////////////////////////////////////////
-/// @file           CDeviceDRER.hpp
+/// @file       CDeviceLoad.hpp
 ///
-/// @author         Yaxi Liu <ylztf@mst.edu>
-/// @author         Thomas Roth <tprfh7@mst.edu>
+/// @author     Yaxi Liu <ylztf@mst.edu>
+/// @author     Thomas Roth <tprfh7@mst.edu>
+/// @author     Michael Catanzaro <michael.catanzaro@mst.edu>
 ///
-/// @project        FREEDM DGI
+/// @project    FREEDM DGI
 ///
-/// @description    Physical device class for DRER
+/// @description
+///     Represents a load.
 ///
 /// @copyright
 ///     These source code files were created at Missouri University of Science
@@ -23,39 +25,40 @@
 ///     University of Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
 ////////////////////////////////////////////////////////////////////////////////
 
-#ifndef C_DEVICE_DRER_HPP
-#define C_DEVICE_DRER_HPP
+#ifndef C_DEVICE_LOAD_HPP
+#define C_DEVICE_LOAD_HPP
 
 #include <boost/shared_ptr.hpp>
 
-#include "../CPhysicalDeviceManager.hpp"
 #include "IDevice.hpp"
 
 namespace freedm {
 namespace broker {
 namespace device {
 
-// forward declaration of device manager
-class CPhysicalDeviceManager;
-
-/// Implementation of distributed renewable energy resources
-class CDeviceDRER
+/// Implementation of physical loads
+class CDeviceLoad
 : public virtual IDevice
 {
 public:
     /// Convenience type for a shared pointer to self
-    typedef boost::shared_ptr<CDeviceDRER> DevicePtr;
+    typedef boost::shared_ptr<CDeviceLoad> DevicePtr;
 
     /// Constructor which takes an identifier and internal structure
-    CDeviceDRER(Identifier device, IPhysicalAdapter::AdapterPtr adapter)
-    : IDevice(device, adapter) { }
+    CDeviceLoad(Identifier device, IPhysicalAdapter::AdapterPtr adapter);
 
     /// Virtual destructor for derived classes
-    virtual ~CDeviceDRER() { }
+    virtual ~CDeviceLoad();
+
+    /// Determine the energy drain of this load.
+    SettingValue GetDrain() const;
+
+    /// Increases the energy drain of this load by the specified amount.
+    void StepDrain(const SettingValue step);
 };
 
 } // namespace device
 } // namespace broker
 } // namespace freedm
 
-#endif // C_DEVICE_DRER_HPP
+#endif // C_DEVICE_LOAD_HPP

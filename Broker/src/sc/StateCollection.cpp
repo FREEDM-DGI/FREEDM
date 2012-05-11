@@ -347,7 +347,7 @@ void SCAgent::TakeSnapshot()
     // broker::CPhysicalDeviceManager::PhysicalDevice<SST>::Container list;
     // broker::CPhysicalDeviceManager::PhysicalDevice<SST>::iterator it, end;
     // broker::device::SettingValue PowerValue = 0;
-    typedef broker::device::CDeviceSST SST;
+    typedef broker::device::CDeviceSst SST;
     broker::device::CPhysicalDeviceManager::PhysicalDevice<SST>::Container SSTContainer;
     broker::device::CPhysicalDeviceManager::PhysicalDevice<SST>::iterator it, end;
     SSTContainer = m_phyDevManager->GetDevicesOfType<SST>();
@@ -355,7 +355,7 @@ void SCAgent::TakeSnapshot()
     
     for( it = SSTContainer.begin(), end = SSTContainer.end(); it != end; it++ )
     {
-        PowerValue +=(*it)->Get("powerLevel");
+        PowerValue +=(*it)->GetGateway();
     }
     
     //list = m_phyDevManager->GetDevicesOfType<SST>();

@@ -1,12 +1,14 @@
 ////////////////////////////////////////////////////////////////////////////////
-/// @file           CDeviceLOAD.hpp
+/// @file       CDeviceDesd.hpp
 ///
-/// @author         Yaxi Liu <ylztf@mst.edu>
-/// @author         Thomas Roth <tprfh7@mst.edu>
+/// @author     Yaxi Liu <ylztf@mst.edu>
+/// @author     Thomas Roth <tprfh7@mst.edu>
+/// @author     Michael Catanzaro <michael.catanzaro@mst.edu>
 ///
-/// @project        FREEDM DGI
+/// @project    FREEDM DGI
 ///
-/// @description    Physical device class for loads
+/// @description
+///     Represents a distributed energy storage device.
 ///
 /// @copyright
 ///     These source code files were created at Missouri University of Science
@@ -23,39 +25,40 @@
 ///     University of Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
 ////////////////////////////////////////////////////////////////////////////////
 
-#ifndef C_DEVICE_LOAD_HPP
-#define C_DEVICE_LOAD_HPP
+#ifndef C_DEVICE_DESD_HPP
+#define C_DEVICE_DESD_HPP
 
 #include <boost/shared_ptr.hpp>
 
-#include "../CPhysicalDeviceManager.hpp"
 #include "IDevice.hpp"
 
 namespace freedm {
 namespace broker {
 namespace device {
 
-// forward declaration of device manager
-class CPhysicalDeviceManager;
-
-/// Implementation of physical loads
-class CDeviceLOAD
+/// Implementation of distributed energy storage devices
+class CDeviceDesd
 : public virtual IDevice
 {
 public:
     /// Convenience type for a shared pointer to self
-    typedef boost::shared_ptr<CDeviceLOAD> DevicePtr;
+    typedef boost::shared_ptr<CDeviceDesd> DevicePtr;
 
     /// Constructor which takes an identifier and internal structure
-    CDeviceLOAD(Identifier device, IPhysicalAdapter::AdapterPtr adapter)
-    : IDevice(device, adapter) { }
+    CDeviceDesd(Identifier device, IPhysicalAdapter::AdapterPtr adapter);
 
     /// Virtual destructor for derived classes
-    virtual ~CDeviceLOAD() { }
+    virtual ~CDeviceDesd();
+
+    /// Determine the energy storage of this DESD.
+    SettingValue GetStorage() const;
+
+    /// Increases the storage of this DESD by the specified amount.
+    void StepStorage(const SettingValue step);
 };
 
 } // namespace device
 } // namespace broker
 } // namespace freedm
 
-#endif // C_DEVICE_LOAD_HPP
+#endif // C_DEVICE_DESD_HPP

@@ -106,6 +106,7 @@ public:
     }
     
     /// Returns the sum of a key's values for all devices of a type.
+    /// @todo Eliminate!
     template <class DeviceType>
     SettingValue GetNetValue(std::string key)
     {

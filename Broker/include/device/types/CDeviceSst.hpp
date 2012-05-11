@@ -1,13 +1,14 @@
 ////////////////////////////////////////////////////////////////////////////////
-/// @file           CDeviceSST.hpp
+/// @file       CDeviceSst.hpp
 ///
-/// @author         Yaxi Liu <ylztf@mst.edu>
-/// @author         Thomas Roth <tprfh7@mst.edu>
-/// @author         Ravi Akella <rcaq5c@mst.edu>
+/// @author     Yaxi Liu <ylztf@mst.edu>
+/// @author     Thomas Roth <tprfh7@mst.edu>
+/// @author     Michael Catanzaro <michael.catanzaro@mst.edu>
 ///
-/// @project        FREEDM DGI
+/// @project    FREEDM DGI
 ///
-/// @description    Physical device class for SST.
+/// @description
+///     Represents a solid state transformer.
 ///
 /// @copyright
 ///     These source code files were created at Missouri University of Science
@@ -29,34 +30,31 @@
 
 #include <boost/shared_ptr.hpp>
 
-#include "../CPhysicalDeviceManager.hpp"
 #include "IDevice.hpp"
 
-namespace freedm
-{
-namespace broker
-{
+namespace freedm {
+namespace broker {
+namespace device {
 
-// forward declaration of device manager
-class CPhysicalDeviceManager;
-
-namespace device
-{
-
-/// Implementation of distributed renewable energy resources
-class CDeviceSST
+/// Implementation of solid state transformers
+class CDeviceSst
 : public virtual IDevice
 {
 public:
     /// Convenience type for a shared pointer to self
-    typedef boost::shared_ptr<CDeviceSST> DevicePtr;
+    typedef boost::shared_ptr<CDeviceSst> DevicePtr;
 
     /// Constructor which takes an identifier and internal structure
-    CDeviceSST(Identifier device, IPhysicalAdapter::AdapterPtr adapter)
-    : IDevice(device, adapter) { }
+    CDeviceSst(Identifier device, IPhysicalAdapter::AdapterPtr adapter);
 
     /// Virtual destructor for derived classes
-    virtual ~CDeviceSST() { }
+    virtual ~CDeviceSst();
+    
+    /// Determine the gateway value of this SST.
+    SettingValue GetGateway() const;
+    
+    /// Increases the gateway value of this SST by the specified amount.
+    void StepGateway(const SettingValue step);
 };
 
 } // namespace device

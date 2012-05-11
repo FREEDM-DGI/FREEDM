@@ -30,6 +30,8 @@
 #include "config.hpp"
 #include "device/CDeviceFactory.hpp"
 
+#define foreach BOOST_FOREACH
+
 namespace freedm {
 namespace broker {
 namespace device {
@@ -56,6 +58,7 @@ CDeviceFactory& CDeviceFactory::instance()
     static CDeviceFactory instance;
     return instance;
 }
+
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 ////////////////////////////////////////////////////////////////////////////////
 /// @function CDeviceFactory::init(CPhysicalDeviceManager::ManagerPtr manager,
@@ -136,6 +139,7 @@ void CDeviceFactory::RegisterDeviceClass(const std::string key,
         FactoryFunction value)
 {
     Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+
     if (m_registry.count(key) != 0)
     {
         std::stringstream ss;
@@ -143,6 +147,7 @@ void CDeviceFactory::RegisterDeviceClass(const std::string key,
                 << key << ", which has already been registered.";
         throw std::runtime_error(ss.str());
     }
+
     m_registry.insert(std::make_pair(key, value));
     Logger.Info << "Registered device class " << key << std::endl;
 }
@@ -175,12 +180,14 @@ void CDeviceFactory::CreateDevice(const Identifier deviceID,
         const std::string deviceType)
 {
     Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+
     if (!m_initialized)
     {
         std::stringstream ss;
         ss << __PRETTY_FUNCTION__ << " called before factory init" << std::endl;
         throw std::runtime_error(ss.str());
     }
+
     // Ensure the specified device type exists
     if (m_registry.find(deviceType) == m_registry.end())
     {
@@ -218,13 +225,14 @@ void CDeviceFactory::CreateDevice(const Identifier deviceID,
 void CDeviceFactory::CreateDevices(const std::vector<std::string>& deviceList)
 {
     Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+
     if (!m_initialized)
     {
         std::stringstream ss;
         ss << __PRETTY_FUNCTION__ << " called before factory init" << std::endl;
         throw std::runtime_error(ss.str());
     }
-    BOOST_FOREACH (std::string device, deviceList)
+    foreach(std::string device, deviceList)
     {
         size_t colon = device.find(':');
 

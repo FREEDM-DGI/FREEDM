@@ -33,7 +33,7 @@
 #include <boost/thread.hpp>
 
 #include "../IPhysicalAdapter.hpp"
- 
+
 namespace freedm {
 namespace broker {
 namespace device {
@@ -46,26 +46,23 @@ namespace device {
 /// @return empty boost::shared_ptr<TargetType> if conversion impossible
 ////////////////////////////////////////////////////////////////////////////////
 template <class TargetType, class ObjectType>
-boost::shared_ptr<TargetType> device_cast( ObjectType object )
+boost::shared_ptr<TargetType> device_cast(ObjectType object)
 {
-    return boost::dynamic_pointer_cast<TargetType>(object);
+    return boost::dynamic_pointer_cast<TargetType > ( object );
 }
 
 /// Physical device with implementation delegated to private member
-class IDevice
+class IDevice : private boost::noncopyable
 {
 public:
     /// Convenience type for a shared pointer to self
     typedef boost::shared_ptr<IDevice> DevicePtr;
 
     /// Virtual destructor for derived classes
-    virtual ~IDevice() {}
+    virtual ~IDevice();
 
-    /// Gets the setting of some key from the structure
-    virtual SettingValue Get( const SettingKey key );
-
-    /// Sets the value of some key in the structure
-    virtual void Set( const SettingKey key, const SettingValue value );
+    /// Gets the device identifier
+    Identifier GetID() const;
 
     /// Acquires the mutex
     void Lock();
@@ -76,15 +73,20 @@ public:
     /// Tries to acquire the mutex
     bool TryLock();
 
-    /// Gets the device identifier
-    Identifier GetID() const;
-    
 protected:
+    friend class CPhysicalDeviceManager; // Temporary?
+    
     /// Constructor which takes an identifier and device adapter
-    IDevice(Identifier device, IPhysicalAdapter::AdapterPtr adapter );
+    IDevice(Identifier device, IPhysicalAdapter::AdapterPtr adapter);
+
+    /// Gets the setting of some key from the structure
+    virtual SettingValue Get(const SettingKey key) const;
+
+    /// Sets the value of some key in the structure
+    virtual void Set(const SettingKey key, const SettingValue value);
 
     /// Mutex to protect the device from other threads
-    mutable boost::mutex m_mutex;
+    boost::mutex m_mutex;
 
     /// Unique identifier for the device
     Identifier m_identifier;

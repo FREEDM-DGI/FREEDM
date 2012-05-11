@@ -21,6 +21,10 @@ set(
     device/CTableStructure.cpp
     device/IConnectionAdapter.cpp
     device/PhysicalDeviceTypes.cpp
+    device/types/CDeviceDesd.cpp
+    device/types/CDeviceDrer.cpp
+    device/types/CDeviceLoad.cpp
+    device/types/CDeviceSst.cpp
     device/types/IDevice.cpp
     IPeerNode.cpp
     IProtocol.cpp

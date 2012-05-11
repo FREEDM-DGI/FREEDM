@@ -1,12 +1,14 @@
 ////////////////////////////////////////////////////////////////////////////////
-/// @file           CDeviceDESD.hpp
+/// @file       CDeviceDrer.hpp
 ///
-/// @author         Yaxi Liu <ylztf@mst.edu>
-/// @author         Thomas Roth <tprfh7@mst.edu>
+/// @author     Yaxi Liu <ylztf@mst.edu>
+/// @author     Thomas Roth <tprfh7@mst.edu>
+/// @author     Michael Catanzaro <michael.catanzaro@mst.edu>
 ///
-/// @project        FREEDM DGI
+/// @project    FREEDM DGI
 ///
-/// @description    Physical device class for DESD
+/// @description
+///     Represents a distributed renewable energy resource.
 ///
 /// @copyright
 ///     These source code files were created at Missouri University of Science
@@ -23,38 +25,40 @@
 ///     University of Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
 ////////////////////////////////////////////////////////////////////////////////
 
-#ifndef C_DEVICE_DESD_HPP
-#define C_DEVICE_DESD_HPP
+#ifndef C_DEVICE_DRER_HPP
+#define C_DEVICE_DRER_HPP
 
 #include <boost/shared_ptr.hpp>
 
-#include "../CPhysicalDeviceManager.hpp"
 #include "IDevice.hpp"
 
 namespace freedm {
 namespace broker {
 namespace device {
 
-// forward declaration of device manager
-class CPhysicalDeviceManager;
-
-/// Implementation of distributed energy storage devices
-class CDeviceDESD
+/// Implementation of distributed renewable energy resources
+class CDeviceDrer
 : public virtual IDevice
 {
 public:
     /// Convenience type for a shared pointer to self
-    typedef boost::shared_ptr<CDeviceDESD> DevicePtr;
+    typedef boost::shared_ptr<CDeviceDrer> DevicePtr;
 
     /// Constructor which takes an identifier and internal structure
-    CDeviceDESD(Identifier device, IPhysicalAdapter::AdapterPtr adapter)
-    : IDevice(device, adapter) { }
+    CDeviceDrer(Identifier device, IPhysicalAdapter::AdapterPtr adapter);
+
     /// Virtual destructor for derived classes
-    virtual ~CDeviceDESD() { }
+    virtual ~CDeviceDrer();
+    
+    /// Determine the energy generation of this DRER.
+    SettingValue GetGeneration() const;
+    
+    /// Increases the energy generation of this DRER by step.
+    void StepGeneration(const SettingValue step);
 };
 
 } // namespace device
 } // namespace broker
 } // namespace freedm
 
-#endif // C_DEVICE_DESD_HPP
+#endif // C_DEVICE_DRER_HPP

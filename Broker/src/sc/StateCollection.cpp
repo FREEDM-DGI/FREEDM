@@ -600,7 +600,7 @@ void SCAgent::HandleRead(broker::CMessage msg)
         m_module = pt.get<std::string>("sc.module");
         //call initiate to start state collection
         Logger.Notice << "Receiving state collect request from " << m_module << " ( " << pt.get<std::string>("sc.source")
-                       << " ) " << std::endl;
+                       << " )" << std::endl;
 	Initiate();
     }
     //check if this is a marker message

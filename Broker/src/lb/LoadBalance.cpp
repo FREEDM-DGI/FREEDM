@@ -481,7 +481,7 @@ void lbAgent::LoadTable()
     }
     ss << "\t -----------------------------------------------------";
     
-    Logger.Status << "\n" << ss.str() << std::endl;
+    Logger.Status << ss.str() << std::endl;
 }//end LoadTable
 
 

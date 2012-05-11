@@ -100,7 +100,7 @@ class CLog : public boost::iostreams::sink
     public:
         /// Constructor; prepares a log of a specified level.
         CLog(const CLoggerPointer p, const unsigned int level_,
-                const char * name_, std::ostream *out_= &std::clog );
+                const std::string name_, std::ostream *out_= &std::clog );
         /// Writes from a character array into the logger stream
         std::streamsize write( const char* s, std::streamsize n);
         /// Determine the level of this logger

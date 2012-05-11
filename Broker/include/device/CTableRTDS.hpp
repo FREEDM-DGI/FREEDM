@@ -37,53 +37,48 @@
 #include "CTableStructure.hpp"
 #include "types/IDevice.hpp"
 
-namespace freedm
-{
-namespace broker
-{
-namespace device
-{
+namespace freedm {
+namespace broker {
+namespace device {
 
 class CRtdsAdapter;
 
-/// Provides storage for data obtained from RTDS or commands to send to RTDS
+////////////////////////////////////////////////////////////////////////////////
+/// @brief Provides storage for data obtained from RTDS or commands to send.
+/// 
+/// @description The table class stores a set of data indexed by device-key
+///  combo object. Its internal structure is defined by an XML file passed to 
+///  the constructor.
+///
+/// @limitations None.
+////////////////////////////////////////////////////////////////////////////////
 class CTableRTDS
 {
-        ////////////////////////////////////////////////////////////////////////////////
-        ///
-        /// @description
-        /// The table class stores a set of data indexed by device-key combo object. Its
-        /// internal structure is defined by an XML file passed to the constructor.
-        ///
-        /// @limitations
-        /// none
-        ///
-        ////////////////////////////////////////////////////////////////////////////////
-    public:
-        /// constructor
-        CTableRTDS( const std::string & p_xml, const std::string & p_tag );
-        
-        /// set value in command table
-        void SetValue( const CDeviceKeyCoupled & p_dkey, SettingValue p_value );
-        
-        /// get value from state table
-        SettingValue GetValue( const CDeviceKeyCoupled & p_dkey) const;
-        
-        ~CTableRTDS();
+public:
+    /// constructor
+    CTableRTDS(const std::string & p_xml, const std::string & p_tag);
 
-        friend class CRtdsAdapter;
-    private:
-        /// manages the XML specification
-        CTableStructure m_structure;
+    /// set value in command table
+    void SetValue(const CDeviceKeyCoupled & p_dkey, SettingValue p_value);
 
-        /// read-write mutex for m_data
-        mutable boost::shared_mutex m_mutex;
+    /// get value from state table
+    SettingValue GetValue(const CDeviceKeyCoupled & p_dkey) const;
 
-        /// actual values. Notice this is in float type
-        float * m_data;
+    ~CTableRTDS();
 
-        /// number of m_data elements
-        size_t m_length;
+    friend class CRtdsAdapter;
+private:
+    /// manages the XML specification
+    CTableStructure m_structure;
+
+    /// read-write mutex for m_data
+    mutable boost::shared_mutex m_mutex;
+
+    /// actual values. Notice this is in float type
+    float * m_data;
+
+    /// number of m_data elements
+    size_t m_length;
 };
 
 }//namespace broker

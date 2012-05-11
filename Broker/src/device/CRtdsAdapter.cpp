@@ -1,9 +1,9 @@
 ////////////////////////////////////////////////////////////////////////////////
 /// @file       CRtdsAdapter.cpp
 ///
-/// @author     Yaxi Liu <ylztf@mst.edu>,
-/// @author     Thomas Roth <tprfh7@mst.edu>,
-/// @author     Mark Stanovich <stanovic@cs.fsu.edu>,
+/// @author     Yaxi Liu <ylztf@mst.edu>
+/// @author     Thomas Roth <tprfh7@mst.edu>
+/// @author     Mark Stanovich <stanovic@cs.fsu.edu>
 /// @author     Michael Catanzaro <michael.catanzaro@mst.edu>
 ///
 /// @project    FREEDM DGI

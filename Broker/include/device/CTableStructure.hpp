@@ -47,21 +47,18 @@ namespace broker
 namespace device
 {
 
+////////////////////////////////////////////////////////////////////////////////
+/// @brief Maintains an internal state for device data.
+///
+/// @description The table structure class maintains an internal state that can
+///  be accessed or modified by a device-key pair, which are bundled into one
+///  object called CDeviceKeyCoupled. Its internal structure is defined
+///  by the XML file used to create the class instance.
+///
+/// @limitations None
+////////////////////////////////////////////////////////////////////////////////
 class CTableStructure
 {
-////////////////////////////////////////////////////////////////////////////////
-/// CTableStructure
-///
-/// @description
-/// The table structure class maintains an internal state that can be
-/// accessed or modified by a device-key pair, which are bundled into one
-/// object called CDeviceKeyCoupled. Its internal structure is defined
-/// by the XML file used to create the class instance.
-///
-/// @limitations
-/// none
-///
-////////////////////////////////////////////////////////////////////////////////
     public:
         /// constructor
         CTableStructure( const std::string & p_xml, const std::string & p_tag );

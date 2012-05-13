@@ -56,7 +56,8 @@ if(SHOW_WARNINGS)
     set(WARNING_FLAGS "-Wall -Wextra")
 endif(SHOW_WARNINGS)
 
-# Don't add -g here. Run -DCMAKE_BUILD_TYPE=RELEASE if you need debugging.
+# Run -DCMAKE_BUILD_TYPE=DEBUG if you need debugging -g
+# Run -DCMAKE_BUILD_TYPE=RELEASE for optimization -O2
 set(CMAKE_CXX_FLAGS "-pedantic -std=c++98 ${WARNING_FLAGS}")
 set(CMAKE_EXE_LINKER_FLAGS "-lpthread")
 

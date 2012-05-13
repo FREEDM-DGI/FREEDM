@@ -184,7 +184,11 @@ void CDeviceFactory::CreateDevice(const Identifier deviceID,
                 << deviceType.c_str();
         throw std::runtime_error(ss.str());
     }
-
+    
+    // m_registry[deviceType] is a member function pointer.
+    // So *m_registry[deviceType] is a member function.
+    // So (this->*m_registry[deviceType])() is the same as this->functionName()
+    // And we call it with one parameter....
     ( this->*m_registry[deviceType] )( deviceID );
 }
 

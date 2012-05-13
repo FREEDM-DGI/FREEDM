@@ -46,11 +46,16 @@ class CPhysicalDeviceManager : public boost::noncopyable
 public:
     /// Type of a pointer to a device manager
     typedef boost::shared_ptr<CPhysicalDeviceManager> ManagerPtr;
+    
     /// A typedef for the mapping of identifier to device ptrs
-    typedef std::map<device::Identifier,
-                     device::IDevice::DevicePtr> PhysicalDeviceSet;
+    typedef std::map<Identifier, IDevice::DevicePtr> PhysicalDeviceSet;
+    
     /// A typedef providing an iterator for this object
     typedef PhysicalDeviceSet::iterator iterator;
+    
+    /// A typedef providing a const iterator for this object
+    typedef PhysicalDeviceSet::const_iterator const_iterator;
+    
     /// Initialize the physical device manger
     CPhysicalDeviceManager();
 
@@ -60,15 +65,23 @@ public:
     /// Remove a device by its identifier
     void RemoveDevice(device::Identifier devid);
 
-    /// Devices iterator
+    /// Iterator to the first managed device.
     iterator begin() { return m_devices.begin(); };
+    
+    /// Iterator past the last managed device.
     iterator end() { return m_devices.end(); };
 
-    /// Get A Device By ID
-    device::IDevice::DevicePtr GetDevice(device::Identifier devid);
+    /// Iterator to the first managed device.
+    const_iterator begin() const { return m_devices.begin(); };
+    
+    /// Iterator past the last managed device.
+    const_iterator end() const { return m_devices.end(); };
+    
+    /// Gets a device by its identifier
+    IDevice::DevicePtr GetDevice(Identifier devid);
 
     /// Tests to see if a device exists
-    bool DeviceExists(device::Identifier devid) const;
+    bool DeviceExists(Identifier devid) const;
 
     /// Gives a count of connected devices
     size_t DeviceCount() const;

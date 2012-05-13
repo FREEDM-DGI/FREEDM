@@ -40,9 +40,7 @@ namespace device {
 static CLocalLogger Logger(__FILE__);
 
 ////////////////////////////////////////////////////////////////////////////////
-/// @function CDeviceFactory::instance()
-///
-/// @description Retrieves the singleton factory instance.
+/// Retrieves the singleton factory instance.
 ///
 /// @pre None.
 /// @post Nothing happens. This function only provides access to the factory.
@@ -61,14 +59,10 @@ CDeviceFactory& CDeviceFactory::instance()
 
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 ////////////////////////////////////////////////////////////////////////////////
-/// @function CDeviceFactory::init(CPhysicalDeviceManager::ManagerPtr manager,
-///     boost::asio::io_service& ios, const std::string host,
-///     const std::string port)
-///
-/// @description Initializes the device factory with a device manager and
-///  networking information. This function should be called once, before the
-///  factory is ever used.  For example:
-///  <code>CDeviceFactory::instance().init(params)</code>
+/// Initializes the device factory with a device manager and connection
+/// information for its device adapter(s). This function should be called once, 
+/// before the factory is ever used.  For example:
+/// <code>CDeviceFactory::instance().init(params)</code>
 ///
 /// @SharedMemory The factory keeps a reference to the passed device manager and
 ///  IO service, which are shared among other program modules.
@@ -114,13 +108,10 @@ void CDeviceFactory::init(CPhysicalDeviceManager::ManagerPtr manager,
 #pragma GCC diagnostic warning "-Wunused-parameter"
 
 ////////////////////////////////////////////////////////////////////////////////
-/// @function CDeviceFactory::RegisterDeviceClass(const std::string key,
-///     FactoryFunction value)
-///
-/// @description Registers a device creation function with the factory under the
-///  specified string key. The key for the function should be the name of the
-///  class, less the "CDevice" prefix. To simplify usage of this function, use
-///  the REGISTER_DEVICE_CLASS macro as explained in the class comment block.
+/// Registers a device creation function with the factory under the specified 
+/// string key. The key for the function should be the name of the class,
+/// less the "CDevice" prefix. To simplify usage of this function, use the
+/// REGISTER_DEVICE_CLASS macro as explained in the class comment block.
 ///
 /// @ErrorHandling Throws an exception if the key has already been registered.
 ///
@@ -154,11 +145,8 @@ void CDeviceFactory::RegisterDeviceClass(const std::string key,
 
 
 ////////////////////////////////////////////////////////////////////////////////
-/// @function CDeviceFactory::CreateDevice(const Identifier deviceID,
-///        const std::string deviceType)
-///
-/// @description Translates a string into a class type, then creates a new
-///  device of this type with the specified identifier.
+/// Translates a string into a class type, then creates a new device of this 
+/// type with the specified identifier.
 ///
 /// @ErrorHandling Throws an exception if the device type is not registered
 ///  with the factory, or if the factory is uninitialized.
@@ -201,13 +189,9 @@ void CDeviceFactory::CreateDevice(const Identifier deviceID,
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-/// @function CDeviceFactory::CreateDevices(
-///    const std::vector<std::string>& deviceList)
-///
-/// @description Creates all devices specified by the passed vector. The vector
-///  is intended to be generated in main by a configuration file (e.g.
-///  freedm.cfg). Devices should be of the format name:type (e.g. sst1:SST) and
-///  the type is no longer optional.
+/// Creates all devices specified by the passed vector. The vector is intended
+/// to be generated in main by a configuration file (e.g. freedm.cfg). Devices 
+/// should be of the mandatory format name:type (e.g. sst1:SST).
 ///
 /// @ErrorHandling Exceptions are thrown if one of the strings does not follow
 ///  the correct format, if two devices are created with the same name, if
@@ -267,10 +251,8 @@ void CDeviceFactory::CreateDevices(const std::vector<std::string>& deviceList)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-/// @function CDeviceFactory::CDeviceFactory()
-///
-/// @description Constructs the factory. Should only ever be called from
-///  CDeviceFactory::instance.
+/// Constructs the factory. Should only ever be called from 
+/// CDeviceFactory::instance.
 ///
 /// @pre None.
 /// @post Nothing happens. This function only provides access to the factory.

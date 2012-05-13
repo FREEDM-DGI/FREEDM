@@ -6,8 +6,7 @@
 ///
 /// @project        FREEDM DGI
 ///
-/// @description    
-///     Handles the creation of devices and their structures.
+/// @description    Handles the creation of devices and their structures.
 ///
 /// @copyright
 ///     These source code files were created at Missouri University of Science

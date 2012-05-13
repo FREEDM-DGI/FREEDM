@@ -31,11 +31,11 @@
 namespace freedm {
 namespace broker {
 namespace device {
-
+    
 static CLocalLogger Logger(__FILE__);
 
 ///////////////////////////////////////////////////////////////////////////////
-/// @fn CPhysicalDeviceManager::CPhysicalDeviceManager()
+/// @fn CPhysicalDeviceManager
 /// @brief Constructor for the physical device manager
 /// @pre None
 /// @post PhysicalDeviceManager is ready to accept & distribute devices.
@@ -44,7 +44,6 @@ CPhysicalDeviceManager::CPhysicalDeviceManager()
 {
     //intentionally left blank
 }
-
 ///////////////////////////////////////////////////////////////////////////////
 /// @fn CPhysicalDeviceManager::AddDevice
 /// @brief Registers a device with the physical device manager.
@@ -78,10 +77,10 @@ void CPhysicalDeviceManager::RemoveDevice(device::Identifier devid)
 /// @return A DevicePtr to the device, or NULL if the device wasn't found.
 ///////////////////////////////////////////////////////////////////////////////
 device::IDevice::DevicePtr CPhysicalDeviceManager::GetDevice(
-        device::Identifier devid)
+    device::Identifier devid)
 {
     iterator di = m_devices.find(devid);
-    if (di != m_devices.end())
+    if(di != m_devices.end())
     {
         return di->second;
     }
@@ -101,7 +100,7 @@ device::IDevice::DevicePtr CPhysicalDeviceManager::GetDevice(
 ///////////////////////////////////////////////////////////////////////////////
 bool CPhysicalDeviceManager::DeviceExists(device::Identifier devid) const
 {
-    if (m_devices.count(devid))
+    if(m_devices.count(devid))
         return true;
     return false;
 }

@@ -59,9 +59,9 @@ namespace freedm {
 class CDispatcher;
 
 /// How long weach module is allowed to run for.
-const unsigned int PHASE_DURATION = 50;
+const unsigned int PHASE_DURATION = 90;
 /// How long we should wait before aligning the modules again
-const unsigned int ALIGNMENT_DURATION = 1000;
+const unsigned int ALIGNMENT_DURATION = 2000;
 
 /// Central monolith of the Broker Architecture.
 class CBroker : private boost::noncopyable

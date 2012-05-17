@@ -85,7 +85,7 @@ void CSUConnection::Send(CMessage msg)
     {
         Write(outmsg);
         m_timeout.cancel();
-        m_timeout.expires_from_now(boost::posix_time::milliseconds(50));
+        m_timeout.expires_from_now(boost::posix_time::milliseconds(REFIRE_TIME));
         m_timeout.async_wait(boost::bind(&CSUConnection::Resend,this,
             boost::asio::placeholders::error)); 
     }
@@ -120,7 +120,7 @@ void CSUConnection::Resend(const boost::system::error_code& err)
         if(m_window.size() > 0)
         {
             m_timeout.cancel();
-            m_timeout.expires_from_now(boost::posix_time::milliseconds(50));
+            m_timeout.expires_from_now(boost::posix_time::milliseconds(REFIRE_TIME));
             m_timeout.async_wait(boost::bind(&CSUConnection::Resend,this,
                 boost::asio::placeholders::error));
         }

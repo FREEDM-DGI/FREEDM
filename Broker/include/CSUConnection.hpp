@@ -88,6 +88,8 @@ class CSUConnection : public IProtocol
         const static unsigned int WINDOW_SIZE = 8;
         /// The sequence modulo
         const static unsigned int SEQUENCE_MODULO = 1024;
+        /// The refire time in ms
+        const static unsigned int REFIRE_TIME = 200;
         /// Queue item
         struct QueueItem {
             int ret; //The retries remaining

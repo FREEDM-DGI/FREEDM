@@ -530,7 +530,7 @@ void GMAgent::ComputeSkew( const boost::system::error_code& err)
     {
         if((*it).first == GetUUID())
             continue; // My skew is always off by sum.
-        tmp = (true_clock - (*it).second) + sum;
+        tmp = sum - (true_clock - (*it).second);
         // tmp is now the skew to report, author messages to report that skew.
         m = ClockSkew(tmp);
         if( GetPeer((*it).first) )

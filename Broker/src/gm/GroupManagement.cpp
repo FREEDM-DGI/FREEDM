@@ -1256,13 +1256,15 @@ void GMAgent::HandleRead(broker::CMessage msg)
         Logger.Info<<"Clock Skew From "<<msg_source<<std::endl;
         if(msg_source == Coordinator())
         {
-            Logger.Debug<<"Raw Skew Value "<<pt.get<int>("gm.clockskew");
+            Logger.Debug<<"Raw Skew Value "<<pt.get<std::string>("gm.clockskew")<<std::endl;
             boost::posix_time::time_duration t = boost::posix_time::microseconds(pt.get<int>("gm.clockskew"));
             // We are actually making adjustments on the skew with each iteration
+            Logger.Debug<<"Loaded time duration from Ptree"<<std::endl;
             t = t + CGlobalConfiguration::instance().GetClockSkew();
             Logger.Notice<<"Adjusting My Skew To "<<t<<std::endl;
             CGlobalConfiguration::instance().SetClockSkew(t);
         }
+        Logger.Debug<<"Finished Adjusting Clock"<<std::endl;
     }
     else
     {

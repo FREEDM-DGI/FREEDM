@@ -817,11 +817,11 @@ void lbAgent::HandleRead(broker::CMessage msg)
     // --------------------------------------------------------------
     else if(pt.get<std::string>("lb") == "CollectedState")
     {
-        int peer_count=0;
+        unsigned int peer_count=0;
         double agg_gateway=0;
 	foreach(ptree::value_type &v, pt.get_child("CollectedState.gateway"))
 	{
-	    Logger.Notice << "SC module returned gateway values: "
+	    Logger.Status << "SC module returned gateway values: "
 			  << v.second.data() << std::endl;
  	    peer_count++;
             agg_gateway += boost::lexical_cast<double>(v.second.data());
@@ -835,12 +835,19 @@ void lbAgent::HandleRead(broker::CMessage msg)
 	     Logger.Status << "SC module returned intransit messages: "
 	                   << v.second.data() << std::endl;
              if(v.second.data() == "accept")
-              	 agg_gateway += P_Migrate;
+              	 agg_gateway = agg_gateway + P_Migrate;
 	  }
         }
-        if(peer_count != 0) m_Normal =  agg_gateway/peer_count;
-        Logger.Info << "Computed Normal: " << m_Normal << std::endl;
-        SendNormal(m_Normal);
+        if(peer_count != 0 && peer_count == m_AllPeers.size())
+        {
+          m_Normal =  agg_gateway/peer_count;
+          Logger.Info << "Computed Normal: " << m_Normal << std::endl;
+          SendNormal(m_Normal);
+        }
+        else
+	{
+          Logger.Notice << "Returned global state incomplete: Dropped" << std::endl;
+	}
     }//end if("CollectedState")
 
     // --------------------------------------------------------------

@@ -77,7 +77,7 @@ namespace freedm
 {
 
 const double NORMAL_TOLERANCE = 0.5;
-const unsigned int STATE_TIMEOUT = 300; //milliseconds
+const unsigned int STATE_TIMEOUT = 90; //milliseconds
 // Global constants
 enum
 {

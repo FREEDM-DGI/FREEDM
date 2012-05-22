@@ -530,7 +530,7 @@ void GMAgent::ComputeSkew( const boost::system::error_code& err)
     {
         if((*it).first == GetUUID())
             continue; // My skew is always off by sum.
-        tmp = sum - (true_clock - (*it).second);
+        tmp = (true_clock - (*it).second)+sum;
         // tmp is now the skew to report, author messages to report that skew.
         m = ClockSkew(tmp);
         if( GetPeer((*it).first) )
@@ -1257,7 +1257,7 @@ void GMAgent::HandleRead(broker::CMessage msg)
         if(msg_source == Coordinator())
         {
             Logger.Debug<<"Raw Skew Value "<<pt.get<std::string>("gm.clockskew")<<std::endl;
-            boost::posix_time::time_duration t = boost::posix_time::microseconds(pt.get<int>("gm.clockskew"));
+            boost::posix_time::time_duration t = boost::posix_time::microseconds(pt.get<long>("gm.clockskew"));
             // We are actually making adjustments on the skew with each iteration
             Logger.Debug<<"Loaded time duration from Ptree"<<std::endl;
             t = t + CGlobalConfiguration::instance().GetClockSkew();

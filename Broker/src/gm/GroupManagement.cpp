@@ -503,62 +503,65 @@ void GMAgent::FIDCheck( const boost::system::error_code& err)
 void GMAgent::ComputeSkew( const boost::system::error_code& err)
 {
     Logger.Debug<<__PRETTY_FUNCTION__<<std::endl;
-    if(!IsCoordinator())
-        return;
-    freedm::broker::CMessage m;
-    ClockRepliesMap::iterator it;
-    boost::posix_time::ptime true_clock = m_clocks[GetUUID()];
-    boost::posix_time::time_duration tmp, sum;
-    int good_clocks = 1;
-    Logger.Debug<<"Computing Skew from "<<m_clocks.size()<<" responses"<<std::endl;
-    /// First find the sum of the skew from me.
-    for(it = m_clocks.begin(); it != m_clocks.end(); it++)
+    if(!err)
     {
-        if((*it).first == GetUUID())
-            continue;
-        tmp = true_clock - (*it).second;
-        if(-MAX_SKEW < tmp.total_milliseconds() && tmp.total_milliseconds() < MAX_SKEW)
+        if(!IsCoordinator())
+            return;
+        freedm::broker::CMessage m;
+        ClockRepliesMap::iterator it;
+        boost::posix_time::ptime true_clock = m_clocks[GetUUID()];
+        boost::posix_time::time_duration tmp, sum;
+        int good_clocks = 1;
+        Logger.Debug<<"Computing Skew from "<<m_clocks.size()<<" responses"<<std::endl;
+        /// First find the sum of the skew from me.
+        for(it = m_clocks.begin(); it != m_clocks.end(); it++)
         {
-            sum += tmp;
-            good_clocks += 1;
+            if((*it).first == GetUUID())
+                continue;
+            tmp = true_clock - (*it).second;
+            if(-MAX_SKEW < tmp.total_milliseconds() && tmp.total_milliseconds() < MAX_SKEW)
+            {
+                sum += tmp;
+                good_clocks += 1;
+            }
         }
-    }
-    // Find the average skew off of true;
-    sum /= good_clocks;
-    Logger.Debug<<"Computed an average skew off of me of: "<<sum<<std::endl;
-    for(it = m_clocks.begin(); it != m_clocks.end(); it++)
-    {
-        if((*it).first == GetUUID())
-            continue; // My skew is always off by sum.
-        tmp = (true_clock - (*it).second)+sum;
-        // tmp is now the skew to report, author messages to report that skew.
-        m = ClockSkew(tmp);
-        if( GetPeer((*it).first) )
+        // Find the average skew off of true;
+        sum /= good_clocks;
+        Logger.Debug<<"Computed an average skew off of me of: "<<sum<<std::endl;
+        for(it = m_clocks.begin(); it != m_clocks.end(); it++)
         {
-            Logger.Debug<<"Telling "<<(*it).first<<" skew is "<<tmp<<std::endl;
-            GetPeer((*it).first)->Send(m);
+            if((*it).first == GetUUID())
+                continue; // My skew is always off by sum.
+            tmp = (true_clock - (*it).second)+sum;
+            // tmp is now the skew to report, author messages to report that skew.
+            m = ClockSkew(tmp);
+            if( GetPeer((*it).first) )
+            {
+                Logger.Debug<<"Telling "<<(*it).first<<" skew is "<<tmp<<std::endl;
+                GetPeer((*it).first)->Send(m);
+            }
         }
+        // Set my skew
+        CGlobalConfiguration::instance().SetClockSkew(sum);
+        m = ClockRequest();
+        /// Initiate a new round of clocks
+        tmp = CGlobalConfiguration::instance().GetClockSkew();
+        Logger.Debug<<"Starting New Skew Computation"<<std::endl;
+        m_clocks.clear();
+        /// Report my clock with our computed skew
+        m_clocks[GetUUID()] = boost::posix_time::microsec_clock::universal_time()+tmp;
+        /// Send to all up nodes
+        foreach( PeerNodePtr peer_, m_UpNodes | boost::adaptors::map_values)
+        {
+            if(peer_->GetUUID() == GetUUID())
+                continue;
+            peer_->Send(m);
+        }
+        m_timerMutex.lock();
+        m_broker.Schedule(m_skewtimer, SKEW_TIMEOUT, 
+            boost::bind(&GMAgent::ComputeSkew, this, boost::asio::placeholders::error));
+        m_timerMutex.unlock();
     }
-    // Set my skew
-    CGlobalConfiguration::instance().SetClockSkew(sum);
-    m = ClockRequest();
-    /// Initiate a new round of clocks
-    tmp = CGlobalConfiguration::instance().GetClockSkew();
-    Logger.Debug<<"Starting New Skew Computation"<<std::endl;
-    m_clocks.clear();
-    /// Report my clock with our computed skew
-    m_clocks[GetUUID()] = boost::posix_time::microsec_clock::universal_time()+tmp;
-    /// Send to all up nodes
-    foreach( PeerNodePtr peer_, m_UpNodes | boost::adaptors::map_values)
-    {
-        if(peer_->GetUUID() == GetUUID())
-            continue;
-        peer_->Send(m);
-    }
-    m_timerMutex.lock();
-    m_broker.Schedule(m_skewtimer, SKEW_TIMEOUT, 
-        boost::bind(&GMAgent::ComputeSkew, this, boost::asio::placeholders::error));
-    m_timerMutex.unlock();
 }
 #pragma GCC diagnostic warning "-Wunused-parameter"
 

@@ -106,7 +106,7 @@ class SCAgent : public IReadHandler, public SCPeerNode, public Templates::Single
     ///Save local state
     void    TakeSnapshot();
     ///Peer sends collected states back to the initiator
-    void    SendStateBack();
+    void    SendStateBack(StateVersion marker);
     ///Peer sends "Done" message to the initiator to indicate finishing sending states back
     void    SendDoneBack();
     ///Initiator sends collected states back to the request module

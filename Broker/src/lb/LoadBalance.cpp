@@ -551,9 +551,7 @@ void lbAgent::HandleRead(broker::CMessage msg)
         else
         {
             // Add the peer, if an entry wasn`t found
-            Logger.Debug << "Peer doesn`t exist. Add it up to LBPeerSet" <<std::endl;
-            AddPeer(line_);
-            peer_ = GetPeer(line_);
+            Logger.Debug << "Message source not in peer list" <<std::endl;
         }
     }//endif
 
@@ -565,6 +563,11 @@ void lbAgent::HandleRead(broker::CMessage msg)
     {
         Logger.Notice << "\nPeer List received from Group Leader: " << line_ <<std::endl;
         m_Leader = line_;
+        if( peer_ == NULL)
+        {
+            AddPeer(line_);
+            peer_ = GetPeer(line_);
+        }
 
         if(m_Leader == GetUUID())
         {
@@ -607,11 +610,18 @@ void lbAgent::HandleRead(broker::CMessage msg)
                 Logger.Debug << "LB knows this peer " <<std::endl;
             }
         }
-
+        return;
     }//end if("peerlist")
 
+    // Ignore all other messages from creepy strangers:
+    if( peer_ == NULL)
+    {
+        Logger.Notice<<"<LB> Dropping Message. Not in my group"<<std::endl;
+        return;
+    }
+
     // If there isn't an lb message, just leave.
-    else if(pt.get<std::string>("lb","NOEXCEPTION") == "NOEXCEPTION")
+    if(pt.get<std::string>("lb","NOEXCEPTION") == "NOEXCEPTION")
     {
         return;
     }

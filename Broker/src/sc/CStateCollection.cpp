@@ -501,18 +501,15 @@ void SCAgent::HandleRead(broker::CMessage msg)
     //check the coming peer node
     line_ = msg.GetSourceUUID();
     
-    if(line_ != GetUUID())
+    peer_ = GetPeer(line_);
+    
+    if(peer_ != NULL)
     {
-        peer_ = GetPeer(line_);
-        
-        if(peer_ != NULL)
-        {
-            Logger.Debug << "Peer already exists. Do Nothing " <<std::endl;
-        }
-        else
-        {
-            Logger.Debug << "Message source not in peer list" <<std::endl;
-        }//end if
+        Logger.Debug << "Peer already exists. Do Nothing " <<std::endl;
+    }
+    else
+    {
+        Logger.Debug << "Message source not in peer list" <<std::endl;
     }//end if
     
     //receive updated peerlist from groupmanager, which means group has been changed
@@ -589,8 +586,16 @@ void SCAgent::HandleRead(broker::CMessage msg)
     // Ignore all other messages from creepy strangers:
     if( peer_ == NULL)
     {
-        Logger.Notice<<"<SC> Dropping Message. Not in my group"<<std::endl;
-        return;
+        if(line_ == GetUUID())
+        {
+            AddPeer(line_);
+            peer_ = GetPeer(line_);
+        }
+        else
+        {
+            Logger.Notice<<"<SC> Dropping Message. Not in my group"<<std::endl;
+            return;
+        }
     }
 
     //if flag=true save lb's transit message in m_curstate

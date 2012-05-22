@@ -538,22 +538,18 @@ void lbAgent::HandleRead(broker::CMessage msg)
     Logger.Debug << "Message '" <<pt.get<std::string>("lb","NOEXECPTION")<<"' received from "<< line_<<std::endl;
     
     // Evaluate the identity of the message source
-    if(line_ != GetUUID())
-    {
-        Logger.Debug << "Flag " <<std::endl;
-        // Update the peer entry, if needed
-        peer_ = GetPeer(line_);
+    // Update the peer entry, if needed
+    peer_ = GetPeer(line_);
 
-        if( peer_ != NULL)
-        {
-            Logger.Debug << "Peer already exists. Do Nothing " <<std::endl;
-        }
-        else
-        {
-            // Add the peer, if an entry wasn`t found
-            Logger.Debug << "Message source not in peer list" <<std::endl;
-        }
-    }//endif
+    if( peer_ != NULL)
+    {
+        Logger.Debug << "Peer already exists. Do Nothing " <<std::endl;
+    }
+    else
+    {
+        // Add the peer, if an entry wasn`t found
+        Logger.Debug << "Message source not in peer list" <<std::endl;
+    }
 
     // --------------------------------------------------------------
     // If you receive a peerList from your new leader, process it and
@@ -616,8 +612,16 @@ void lbAgent::HandleRead(broker::CMessage msg)
     // Ignore all other messages from creepy strangers:
     if( peer_ == NULL)
     {
-        Logger.Notice<<"<LB> Dropping Message. Not in my group"<<std::endl;
-        return;
+        if(line_ == GetUUID())
+        {
+            AddPeer(line_);
+            peer_ = GetPeer(line_);
+        }
+        else
+        {
+            Logger.Notice<<"<LB> Dropping Message. Not in my group"<<std::endl;
+            return;
+        }
     }
 
     // If there isn't an lb message, just leave.

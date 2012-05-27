@@ -183,23 +183,12 @@ ALIASES                = "Limitations=\par Limitations:\n" \
                          "limitations=\par Limitations:\n" \
                          "IO=\par Device I/O:\n" \
                          "Peers=\par Interaction Peers:\n" \
-                         "peers=\par Interaction Peers:\n" \
                          "SharedMemory=\par Shared Memory Blocks:\n" \
-                         "Shared_Memory=\par Shared Memory Blocks:\n" \
                          "ErrorHandling=\par Error Handling:\n" \
-                         "Error_Handling=\par Error Handling:\n" \
                          "RealTime=\par Real-Time Bounds:\n" \
-                         "Real_Time=\par Real-Time Bounds:\n" \
-                         "Citations=\par Citations:\n" \
-                         "citations=\par Citations:\n" \
-                         "Description=\par Description:\n" \
-                         "description=\par Description:\n" \
-                         "Project=\par Project:\n" \
-                         "project=\par Project:\n" \
-                         "Function=@fn" \
-                         "function=@fn" \
-                         "Functions=\par Functions:\n" \
-                         "functions=\par Functions:\n"
+                         "Citation=\par Citation:\n" \
+			 "citation=\par Citation:\n" \
+                         "project=\par Project:\n"
 
 # Set the OPTIMIZE_OUTPUT_FOR_C tag to YES if your project consists of C
 # sources only. Doxygen will then generate output that is more tailored for C.

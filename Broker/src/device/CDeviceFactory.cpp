@@ -28,6 +28,8 @@
 #include "CGlobalConfiguration.hpp"
 #include "config.hpp"
 #include "device/CDeviceFactory.hpp"
+#include "device/CPscadAdapter.hpp"
+#include "device/CRtdsAdapter.hpp"
 #include "device/types/CDeviceFid.hpp"
 
 #define foreach BOOST_FOREACH
@@ -188,11 +190,8 @@ void CDeviceFactory::CreateDevice(const Identifier deviceID,
         throw std::runtime_error(ss.str());
     }
 
-    // m_registry[deviceType] is a member function pointer.
-    // So *m_registry[deviceType] is a member function.
-    // So (this->*m_registry[deviceType])() is the same as this->functionName()
-    // And we call it with one parameter....
-    ( this->*m_registry[deviceType] )( deviceID );
+    //( this->*m_registry[deviceType] )( deviceID );
+    m_registry[deviceType](this, deviceID);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

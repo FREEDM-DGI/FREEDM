@@ -27,13 +27,13 @@
 #define C_DEVICE_FACTORY_HPP
 
 #include <boost/asio/io_service.hpp>
+#include <boost/function.hpp>
 #include <boost/noncopyable.hpp>
 
 #include "CGenericAdapter.hpp"
 #include "CLogger.hpp"
 #include "CPhysicalDeviceManager.hpp"
-#include "CPscadAdapter.hpp"
-#include "CRtdsAdapter.hpp"
+#include "IPhysicalAdapter.hpp"
 
 namespace freedm {
 namespace broker {
@@ -42,13 +42,16 @@ namespace device {
 /// This file's logger.
 static CLocalLogger CDeviceFactoryHPPLogger(__FILE__);
 
+class CDeviceFactory;
+
+/// Registers a class of device with the device factory.
 #define REGISTER_DEVICE_CLASS(SUFFIX) CDeviceFactory::instance().\
 RegisterDeviceClass(#SUFFIX, &CDeviceFactory::CreateDevice<CDevice##SUFFIX>)
 
-class CDeviceFactory;
-
 /// Type of the factory functions.
-typedef void (CDeviceFactory::*FactoryFunction )(const Identifier);
+//typedef void (CDeviceFactory::*FactoryFunction )(const Identifier);
+typedef boost::function<void (CDeviceFactory*, const std::string ) >
+FactoryFunction;
 
 /// Type of the device registry.
 typedef std::map<const std::string, FactoryFunction> DeviceRegistryType;
@@ -109,11 +112,11 @@ private:
 
     /// Used to indicate whether or not init has been called on this factory.
     bool m_initialized;
-    
+
 #ifdef USE_DEVICE_RTDS
     /// IO service for RTDS adapters, @todo manage own memory!!
     boost::asio::io_service *m_ios;
-    
+
     /// Name of the file containing the FPGA message specification 
     std::string m_fpgaCfgFile;
 #endif

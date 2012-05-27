@@ -6,11 +6,6 @@ Makefile
 */CMakeFiles
 */cmake_install.cmake
 */Makefile
-src/version.h
 PosixBroker
-src/device/DeviceRegistrationGenerator
-test/mockFPGA
-include/device/PhysicalDeviceTypes.hpp
-src/device/PhysicalDeviceTypes.cpp
+/nbproject/
 *.[oa]
-src/src

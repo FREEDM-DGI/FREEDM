@@ -187,7 +187,7 @@ ALIASES                = "Limitations=\par Limitations:\n" \
                          "ErrorHandling=\par Error Handling:\n" \
                          "RealTime=\par Real-Time Bounds:\n" \
                          "Citation=\par Citation:\n" \
-			 "citation=\par Citation:\n" \
+                         "citation=\par Citation:\n" \
                          "project=\par Project:\n"
 
 # Set the OPTIMIZE_OUTPUT_FOR_C tag to YES if your project consists of C

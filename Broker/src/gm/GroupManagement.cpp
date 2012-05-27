@@ -129,14 +129,18 @@ void GMAgent::StartMonitor( const boost::system::error_code& err )
 /// @param p_dispatch: The dispatcher used by this module
 /// @param p_conManager: The connection manager to use in this class.
 ///////////////////////////////////////////////////////////////////////////////
-GMAgent::GMAgent(std::string p_uuid, freedm::broker::CBroker &broker)
+GMAgent::GMAgent(std::string p_uuid, freedm::broker::CBroker &broker,
+        freedm::broker::device::CPhysicalDeviceManager::ManagerPtr devmanager)
     : GMPeerNode(p_uuid,broker.GetConnectionManager()),
     m_electiontimer(),
     m_ingrouptimer(),
-    CHECK_TIMEOUT(boost::posix_time::seconds(10)),
-    TIMEOUT_TIMEOUT(boost::posix_time::seconds(10)),
-    GLOBAL_TIMEOUT(boost::posix_time::seconds(5)),
-    m_broker(broker)
+    CHECK_TIMEOUT(boost::posix_time::seconds(3)),
+    TIMEOUT_TIMEOUT(boost::posix_time::seconds(3)),
+    GLOBAL_TIMEOUT(boost::posix_time::seconds(1)),
+    FID_TIMEOUT(boost::posix_time::milliseconds(8)),
+    SKEW_TIMEOUT(boost::posix_time::seconds(2)),
+    m_broker(broker),
+    m_phyDevManager(devmanager)
 {
     Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     AddPeer(GetUUID());
@@ -147,6 +151,8 @@ GMAgent::GMAgent(std::string p_uuid, freedm::broker::CBroker &broker)
     m_membership = 0;
     m_membershipchecks = 0;
     m_timer = broker.AllocateTimer("gm");
+    m_fidtimer = broker.AllocateTimer("gm");
+    m_skewtimer = broker.AllocateTimer("gm");
     #ifdef RANDOM_PREMERGE
         srand(time(0)); 
     #endif
@@ -239,6 +245,9 @@ freedm::broker::CMessage GMAgent::Response(std::string payload,std::string type,
     m_.m_submessages.put("gm.source", GetUUID());
     m_.m_submessages.put("gm.payload", payload);
     m_.m_submessages.put("gm.type",type);
+    m_.m_submessages.put("gm.ldruuid", Coordinator());
+    m_.m_submessages.put("gm.ldrhost", GetPeer(Coordinator())->GetHostname());
+    m_.m_submessages.put("gm.ldrport", GetPeer(Coordinator())->GetPort());
     m_.SetExpireTime(exp);
     return m_;
 }
@@ -280,7 +289,40 @@ freedm::broker::CMessage GMAgent::AreYouThere()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// peer_list
+/// ClockRequest
+/// @description: Generates a request for a node to read and report their clock
+/// @pre: This node is in a group.
+/// @post: No Change.
+/// @return: A CMessage with the contents of an AreYouThere message
+///////////////////////////////////////////////////////////////////////////////
+freedm::broker::CMessage GMAgent::ClockRequest()
+{
+    freedm::broker::CMessage m_;
+    m_.SetStatus(freedm::broker::CMessage::ReadClock);
+    m_.m_submessages.put("req", "gm");
+    return m_;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+/// ClockSkew
+/// @description: Generates a message with the group's clock skew
+/// @pre: This node is in a group.
+/// @post: No Change.
+/// @return: A CMessage with the contents of an AreYouThere message
+///////////////////////////////////////////////////////////////////////////////
+freedm::broker::CMessage GMAgent::ClockSkew(boost::posix_time::time_duration t)
+{
+    freedm::broker::CMessage m_;
+    m_.m_submessages.put("gm", "ClockSkew");
+    m_.m_submessages.put("gm.source", GetUUID());
+    m_.m_submessages.put("gm.groupid",m_GroupID);
+    m_.m_submessages.put("gm.groupleader",m_GroupLeader);
+    m_.m_submessages.put("gm.clockskew",t.total_microseconds());
+    return m_;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+/// PeerList
 /// @description: Packs the group list (Up_Nodes) in CMessage
 /// @pre: This node is a leader.
 /// @post: No Change.
@@ -290,6 +332,7 @@ freedm::broker::CMessage GMAgent::PeerList()
 {
     freedm::broker::CMessage m_;
 	std::stringstream ss_;
+    ptree me_pt;
 	ss_.clear();
 	ss_ << GetUUID();
 	m_.m_submessages.put("any.source", ss_.str());
@@ -298,9 +341,16 @@ freedm::broker::CMessage GMAgent::PeerList()
 	ss_.clear();
 	foreach( PeerNodePtr peer_, m_UpNodes | boost::adaptors::map_values)
     {
-        m_.m_submessages.add("any.peers.peer",peer_->GetUUID());
+        ptree sub_pt;
+        sub_pt.add("uuid",peer_->GetUUID());
+        sub_pt.add("host",peer_->GetHostname());
+        sub_pt.add("port",peer_->GetPort());
+        m_.m_submessages.add_child("any.peers.peer",sub_pt);
     }
-    m_.m_submessages.add("any.peers.peer",GetUUID());
+    me_pt.add("uuid",GetUUID());
+    me_pt.add("host",GetHostname());
+    me_pt.add("port",GetPort());
+    m_.m_submessages.add_child("any.peers.peer",me_pt);
     m_.SetNeverExpires();
     return m_;
 }
@@ -341,7 +391,8 @@ void GMAgent::SystemState()
         }
     } 
     nodestatus<<"Groups Elected/Formed: "<<m_groupselection<<"/"<<m_groupsformed<<std::endl;                        
-    nodestatus<<"Groups Joined/Broken: "<<m_groupsjoined<<"/"<<m_groupsbroken;                        
+    nodestatus<<"Groups Joined/Broken: "<<m_groupsjoined<<"/"<<m_groupsbroken<<std::endl;                        
+    nodestatus<<"FID state: "<< m_phyDevManager->GetNetValue<broker::device::CDeviceFid>("state");
     Logger.Status<<nodestatus.str()<<std::endl;
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -368,7 +419,7 @@ void GMAgent::PushPeerList()
                                  << peer_->GetUUID() << std::endl;             
         peer_->AsyncSend(m_);                
     }
-    GetPeer(GetUUID())->AsyncSend(m_);
+    if(GetPeer(GetUUID())) GetPeer(GetUUID())->AsyncSend(m_);
     Logger.Debug << __PRETTY_FUNCTION__ << "FINISH" <<    std::endl;
 }
 
@@ -415,7 +466,99 @@ void GMAgent::Recovery()
     m_broker.Schedule(m_timer, CHECK_TIMEOUT, 
         boost::bind(&GMAgent::Check, this, boost::asio::placeholders::error));
     m_timerMutex.unlock();
+    // On recovery, we will reset the clock skew to 0 and start trying to synch again
+    CGlobalConfiguration::instance().SetClockSkew(boost::posix_time::seconds(0));
+    m_timerMutex.lock();
+    m_broker.Schedule(m_skewtimer, SKEW_TIMEOUT, 
+        boost::bind(&GMAgent::ComputeSkew, this, boost::asio::placeholders::error));
+    m_timerMutex.unlock();
 }
+
+#pragma GCC diagnostic ignored "-Wunused-parameter"
+void GMAgent::FIDCheck( const boost::system::error_code& err)
+{
+    static bool FIDsOn = false;
+    int attachedFIDs = m_phyDevManager->GetDevicesOfType<broker::device::CDeviceFid>().size();
+    double FIDState = m_phyDevManager->GetNetValue<broker::device::CDeviceFid>("state");
+    if(FIDsOn == true && attachedFIDs  > 0 && FIDState < 1.0)
+    {
+        Logger.Status<<"All FIDs offline. Entering Recovery State"<<std::endl;
+        Recovery();
+        FIDsOn = false;
+    }
+    else if(FIDsOn == false && attachedFIDs > 0 && FIDState >= 1.0)
+    {
+        Logger.Status<<"All FIDs Online. Checking for Peers"<<std::endl;
+        FIDsOn = true;
+    }
+    m_timerMutex.lock();
+    m_broker.Schedule(m_fidtimer, FID_TIMEOUT, 
+        boost::bind(&GMAgent::FIDCheck, this, boost::asio::placeholders::error));
+    m_timerMutex.unlock();
+}
+
+
+void GMAgent::ComputeSkew( const boost::system::error_code& err)
+{
+    Logger.Debug<<__PRETTY_FUNCTION__<<std::endl;
+    if(!IsCoordinator())
+        return;
+    freedm::broker::CMessage m;
+    ClockRepliesMap::iterator it;
+    boost::posix_time::ptime true_clock = m_clocks[GetUUID()];
+    boost::posix_time::time_duration tmp, sum;
+    int good_clocks = 1;
+    Logger.Debug<<"Computing Skew from "<<m_clocks.size()<<" responses"<<std::endl;
+    /// First find the sum of the skew from me.
+    for(it = m_clocks.begin(); it != m_clocks.end(); it++)
+    {
+        if((*it).first == GetUUID())
+            continue;
+        tmp = true_clock - (*it).second;
+        if(-MAX_SKEW < tmp.total_milliseconds() && tmp.total_milliseconds() < MAX_SKEW)
+        {
+            sum += tmp;
+            good_clocks += 1;
+        }
+    }
+    // Find the average skew off of true;
+    sum /= good_clocks;
+    Logger.Debug<<"Computed an average skew off of me of: "<<sum<<std::endl;
+    for(it = m_clocks.begin(); it != m_clocks.end(); it++)
+    {
+        if((*it).first == GetUUID())
+            continue; // My skew is always off by sum.
+        tmp = (true_clock - (*it).second) + sum;
+        // tmp is now the skew to report, author messages to report that skew.
+        m = ClockSkew(tmp);
+        if( GetPeer((*it).first) )
+        {
+            Logger.Debug<<"Telling "<<(*it).first<<" skew is "<<tmp<<std::endl;
+            GetPeer((*it).first)->Send(m);
+        }
+    }
+    // Set my skew
+    CGlobalConfiguration::instance().SetClockSkew(sum);
+    m = ClockRequest();
+    /// Initiate a new round of clocks
+    tmp = CGlobalConfiguration::instance().GetClockSkew();
+    Logger.Debug<<"Starting New Skew Computation"<<std::endl;
+    m_clocks.clear();
+    /// Report my clock with our computed skew
+    m_clocks[GetUUID()] = boost::posix_time::microsec_clock::universal_time()+tmp;
+    /// Send to all up nodes
+    foreach( PeerNodePtr peer_, m_UpNodes | boost::adaptors::map_values)
+    {
+        if(peer_->GetUUID() == GetUUID())
+            continue;
+        peer_->Send(m);
+    }
+    m_timerMutex.lock();
+    m_broker.Schedule(m_skewtimer, SKEW_TIMEOUT, 
+        boost::bind(&GMAgent::ComputeSkew, this, boost::asio::placeholders::error));
+    m_timerMutex.unlock();
+}
+#pragma GCC diagnostic warning "-Wunused-parameter"
 
 ///////////////////////////////////////////////////////////////////////////////
 /// Recovery
@@ -564,8 +707,8 @@ void GMAgent::Premerge( const boost::system::error_code &err )
                 }
             }
             float wait_val_;
-            int maxWait = 30; /* The longest a node would have to wait to Merge */
-            int minWait = 10;
+            int maxWait = 5; /* The longest a node would have to wait to Merge */
+            int minWait = 1;
             int granularity = 10; /* How finely it can slip in */
             int delta = ((maxWait-minWait)*1.0)/(granularity*1.0);
             if( myPriority < maxPeer_ )
@@ -828,7 +971,13 @@ void GMAgent::Timeout( const boost::system::error_code& err )
 void GMAgent::HandleRead(broker::CMessage msg)
 {
     Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
-
+    //If all my FIDs are off discard messages (Like a boss)
+    if(m_phyDevManager->GetDevicesOfType<broker::device::CDeviceFid>().size() > 0 &&
+        m_phyDevManager->GetNetValue<broker::device::CDeviceFid>("state") < 1.0)
+    {
+        Logger.Debug << "Dropping Incoming Message; All FIDs offline" <<std::endl;
+        return;
+    }
     PeerSet tempSet_;
     std::string coord_;
     MessagePtr m_;
@@ -877,11 +1026,25 @@ void GMAgent::HandleRead(broker::CMessage msg)
                 m_timerMutex.unlock();
             }
             m_UpNodes.clear();
+            Logger.Debug<<"Looping Peer List"<<std::endl;
             foreach(ptree::value_type &v, pt.get_child("any.peers"))
             {
-                if(v.second.data() != GetUUID())
+                Logger.Debug<<"Peer Item"<<std::endl;
+                ptree sub_pt = v.second;
+                std::string nuuid = sub_pt.get<std::string>("uuid");
+                std::string nhost = sub_pt.get<std::string>("host");
+                std::string nport = sub_pt.get<std::string>("port");
+                Logger.Debug<<"Got Peer ("<<nuuid<<","<<nhost<<","<<nport<<")"<<std::endl;
+                PeerNodePtr p = GetPeer(nuuid);
+                if(!p)
                 {
-                    InsertInPeerSet(m_UpNodes,GetPeer(v.second.data()));
+                    //If you don't already know about the peer, make sure it is in the connection manager
+                    GetConnectionManager().PutHostname(nuuid, nhost, nport);
+                    p = AddPeer(nuuid);
+                }
+                if(nuuid != GetUUID())
+                {
+                    InsertInPeerSet(m_UpNodes,p);
                 }
             }
             m_membership += m_UpNodes.size()+1;
@@ -1039,6 +1202,11 @@ void GMAgent::HandleRead(broker::CMessage msg)
             }
             else if(pt.get<std::string>("gm.payload") == "no")
             {
+                std::string nuuid = pt.get<std::string>("gm.ldruuid");
+                std::string nhost = pt.get<std::string>("gm.ldrhost");
+                std::string nport = pt.get<std::string>("gm.ldrport");
+                GetConnectionManager().PutHostname(nuuid, nhost, nport);
+                AddPeer(nuuid);
                 EraseInPeerSet(m_Coordinators,peer_);
             }
             else
@@ -1074,6 +1242,24 @@ void GMAgent::HandleRead(broker::CMessage msg)
         else
         {
             Logger.Warn << "Invalid Response Type:" << pt.get<std::string>("gm.type") << std::endl;
+        }
+    }
+    else if(pt.get<std::string>("gm") == "Clock")
+    {
+        Logger.Info<<"Clock Reading From "<<msg_source<<std::endl;
+        m_clocks[msg_source] = pt.get<boost::posix_time::ptime>("gm.value");
+    }
+    else if(pt.get<std::string>("gm") == "ClockSkew")
+    {
+        Logger.Info<<"Clock Skew From "<<msg_source<<std::endl;
+        if(msg_source == Coordinator())
+        {
+            Logger.Debug<<"Raw Skew Value "<<pt.get<int>("gm.clockskew");
+            boost::posix_time::time_duration t = boost::posix_time::microseconds(pt.get<int>("gm.clockskew"));
+            // We are actually making adjustments on the skew with each iteration
+            t = t + CGlobalConfiguration::instance().GetClockSkew();
+            Logger.Notice<<"Adjusting My Skew To "<<t<<std::endl;
+            CGlobalConfiguration::instance().SetClockSkew(t);
         }
     }
     else
@@ -1141,6 +1327,10 @@ int GMAgent::Run()
     {
         Logger.Notice << "! " <<p_->GetUUID() << " added to peer set" <<std::endl;
     }
+    m_timerMutex.lock();
+    m_broker.Schedule(m_fidtimer, FID_TIMEOUT, 
+        boost::bind(&GMAgent::FIDCheck, this, boost::asio::placeholders::error));
+    m_timerMutex.unlock();
     Recovery();
     //m_localservice.post(boost::bind(&GMAgent::Recovery,this));
     //m_localservice.run();

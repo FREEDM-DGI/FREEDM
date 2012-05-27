@@ -23,6 +23,7 @@ set(
     device/PhysicalDeviceTypes.cpp
     device/types/CDeviceDesd.cpp
     device/types/CDeviceDrer.cpp
+    device/types/CDeviceFid.cpp
     device/types/CDeviceLoad.cpp
     device/types/CDeviceSst.cpp
     device/types/IDevice.cpp

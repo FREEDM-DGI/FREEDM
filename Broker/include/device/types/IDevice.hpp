@@ -77,7 +77,7 @@ protected:
     friend class CPhysicalDeviceManager; // Temporary?
     
     /// Constructor which takes an identifier and device adapter
-    IDevice(Identifier device, IPhysicalAdapter::AdapterPtr adapter);
+    IDevice(Identifier device, IPhysicalAdapter::Pointer adapter);
 
     /// Gets the setting of some key from the structure
     virtual SettingValue Get(const SettingKey key) const;
@@ -92,7 +92,7 @@ protected:
     Identifier m_identifier;
 
     /// "Driver" that handles the device data
-    IPhysicalAdapter::AdapterPtr m_adapter;
+    IPhysicalAdapter::Pointer m_adapter;
 };
 
 } // namespace device

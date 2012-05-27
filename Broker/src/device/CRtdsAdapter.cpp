@@ -82,11 +82,12 @@ static CLocalLogger Logger(__FILE__);
 ///     none
 ///
 ////////////////////////////////////////////////////////////////////////////
-CRtdsAdapter::AdapterPointer CRtdsAdapter::Create(
-        boost::asio::io_service & service, const std::string xml)
+CRtdsAdapter::Pointer CRtdsAdapter::Create(
+        boost::asio::io_service & service, const std::string xml,
+        const std::string tag)
 {
     Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
-    return CRtdsAdapter::AdapterPointer(new CRtdsAdapter(service, xml));
+    return CRtdsAdapter::Pointer(new CRtdsAdapter(service, xml, tag));
 }
 
 ////////////////////////////////////////////////////////////////////////////
@@ -114,9 +115,9 @@ CRtdsAdapter::AdapterPointer CRtdsAdapter::Create(
 ///
 ////////////////////////////////////////////////////////////////////////////
 CRtdsAdapter::CRtdsAdapter(boost::asio::io_service & service,
-        const std::string xml)
-: IConnectionAdapter(service), m_cmdTable(xml, "command"),
-m_stateTable(xml, "state"), m_GlobalTimer(service)
+        const std::string xml, const std::string tag)
+: IConnectionAdapter(service), m_cmdTable(xml, tag + ".command"),
+m_stateTable(xml, tag + ".state"), m_GlobalTimer(service)
 {
     Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     m_rxCount = m_stateTable.m_length;

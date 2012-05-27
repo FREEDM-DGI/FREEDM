@@ -28,13 +28,13 @@ public:
     {}
 
     /// Returns a UUID in the DNS namespace for the given hostname.
-    static CUuid from_dns( const std::string &s )
+    static CUuid from_dns( const std::string &s, const std::string &p )
 	{
     	boost::uuids::uuid dns_namespace =
     		boost::uuids::string_generator()(
     				"{6ba7b810-9dad-11d1-80b4-00c04fd430c8}"
     		);
-    	return CUuid(boost::uuids::name_generator(dns_namespace)(s));
+    	return CUuid(boost::uuids::name_generator(dns_namespace)(s+":"+p));
 	}
 };
 

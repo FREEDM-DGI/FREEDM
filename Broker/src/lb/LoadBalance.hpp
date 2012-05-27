@@ -12,8 +12,8 @@
 /// @functions  
 ///     lbAgent
 ///     LB
-///     add_peer
-///     get_peer
+///     AddPeer
+///     GetPeer
 ///     SendMsg
 ///     SendNormal
 ///     CollectState
@@ -137,9 +137,9 @@ class lbAgent
         /// Handles the incoming messages according to the message label
         virtual void HandleRead(broker::CMessage msg);
         /// Adds a new node to the list of known peers using its UUID
-        PeerNodePtr add_peer(std::string uuid);
+        PeerNodePtr AddPeer(std::string uuid);
         /// Returns a pointer to the peer based on its UUID
-        PeerNodePtr get_peer(std::string uuid);
+        PeerNodePtr GetPeer(std::string uuid);
 
         // Variables
         /// Calculated Normal

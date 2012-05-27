@@ -34,7 +34,6 @@
 #include "CPhysicalDeviceManager.hpp"
 #include "CPscadAdapter.hpp"
 #include "CRtdsAdapter.hpp"
-#include "IPhysicalAdapter.hpp"
 
 namespace freedm {
 namespace broker {
@@ -79,8 +78,8 @@ public:
 
     /// Loads the factory with device manager and networking data.
     void init(CPhysicalDeviceManager::ManagerPtr manager,
-            boost::asio::io_service& ios, const std::string host,
-            const std::string port);
+            boost::asio::io_service& ios, const std::string fpgaCfgFile,
+            const std::string host, const std::string port);
 
     /// Registers a device class with the factory.
     void RegisterDeviceClass(const std::string key, FactoryFunction value);
@@ -100,7 +99,7 @@ private:
     CDeviceFactory();
 
     /// Device adapter to attach to created devices.
-    IPhysicalAdapter::AdapterPtr m_adapter;
+    IPhysicalAdapter::Pointer m_adapter;
 
     /// Device manager to handle created devices.
     CPhysicalDeviceManager::ManagerPtr m_manager;
@@ -110,6 +109,14 @@ private:
 
     /// Used to indicate whether or not init has been called on this factory.
     bool m_initialized;
+    
+#ifdef USE_DEVICE_RTDS
+    /// IO service for RTDS adapters, @todo manage own memory!!
+    boost::asio::io_service *m_ios;
+    
+    /// Name of the file containing the FPGA message specification 
+    std::string m_fpgaCfgFile;
+#endif
 };
 
 ////////////////////////////////////////////////////////////////////////////////

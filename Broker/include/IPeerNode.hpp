@@ -90,6 +90,7 @@ class IPeerNode
         ///              string
         /////////////////////////////////////////////////////////////
         std::string GetHostname() const { return m_connmgr.GetHostnameByUUID(GetUUID()).hostname; };
+        std::string GetPort() const { return m_connmgr.GetHostnameByUUID(GetUUID()).port; };
         /// Gives a connection ptr to this peer
         broker::ConnectionPtr GetConnection();
         /////////////////////////////////////////////////////////////

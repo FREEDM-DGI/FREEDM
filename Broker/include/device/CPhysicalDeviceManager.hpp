@@ -41,7 +41,7 @@ namespace broker {
 namespace device {
 
 /// Provides a container that manages physical device instances
-class CPhysicalDeviceManager : public boost::noncopyable
+class CPhysicalDeviceManager : private boost::noncopyable
 {
 public:
     /// Type of a pointer to a device manager

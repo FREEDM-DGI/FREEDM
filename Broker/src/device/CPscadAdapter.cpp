@@ -31,9 +31,9 @@
 namespace freedm {
 namespace broker {
 namespace device {
-CPscadAdapter::AdapterPointer CPscadAdapter::Create(boost::asio::io_service & service)
+CPscadAdapter::Pointer CPscadAdapter::Create(boost::asio::io_service & service)
 {
-    return CPscadAdapter::AdapterPointer(new CPscadAdapter(service));
+    return CPscadAdapter::Pointer(new CPscadAdapter(service));
 }
 CPscadAdapter::CPscadAdapter(boost::asio::io_service & service)
 : IConnectionAdapter(service) {

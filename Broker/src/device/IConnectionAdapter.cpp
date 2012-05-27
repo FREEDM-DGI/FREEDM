@@ -1,5 +1,5 @@
 ////////////////////////////////////////////////////////////////////////////////
-/// @file           INetworkAdapter.hpp
+/// @file           IConnectionAdapter.hpp
 ///
 /// @author         Thomas Roth <tprfh7@mst.edu>,
 /// @author         Michael Catanzaro <michael.catanzaro@mst.edu>
@@ -34,7 +34,7 @@ namespace device {
 static CLocalLogger Logger(__FILE__);
 
 ////////////////////////////////////////////////////////////////////////////
-/// INetworkAdapter::INetworkAdapter(boost::asio::io_service& service)
+/// IConnectionAdapter::IConnectionAdapter(boost::asio::io_service& service)
 ///
 /// @description Private constructor to initialize the socket.
 ///
@@ -53,7 +53,7 @@ IConnectionAdapter::IConnectionAdapter(boost::asio::io_service& service)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-/// INetworkAdapter::Connect(const std::string hostname, const std::string port)
+/// IConnectionAdapter::Connect(const std::string hostname, const std::string port)
 ///
 /// @description Creates a socket connection to the given hostname and service.
 ///

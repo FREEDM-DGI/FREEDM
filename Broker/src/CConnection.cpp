@@ -101,13 +101,13 @@ void CConnection::Start()
 ///////////////////////////////////////////////////////////////////////////////
 void CConnection::Stop()
 {
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     ProtocolMap::iterator sit;
     for(sit = m_protocols.begin(); sit != m_protocols.end(); sit++)
     {
         (*sit).second->Stop();
     }   
     Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
-    m_protocols.clear();
     GetSocket().close();
 }
  
@@ -123,7 +123,7 @@ void CConnection::Stop()
 ///   the timeout timer is cancelled and reset.
 /// @param p_mesg A CMessage to write to the channel.
 ///////////////////////////////////////////////////////////////////////////////
-void CConnection::Send(CMessage p_mesg)
+void CConnection::Send(CMessage & p_mesg)
 {
     Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
 

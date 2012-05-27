@@ -45,7 +45,7 @@ public:
     typedef boost::shared_ptr<CDeviceDesd> DevicePtr;
 
     /// Constructor which takes an identifier and internal structure
-    CDeviceDesd(Identifier device, IPhysicalAdapter::AdapterPtr adapter);
+    CDeviceDesd(const Identifier device, IPhysicalAdapter::Pointer adapter);
 
     /// Virtual destructor for derived classes
     virtual ~CDeviceDesd();

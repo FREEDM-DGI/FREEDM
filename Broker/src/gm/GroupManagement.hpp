@@ -56,6 +56,8 @@ using boost::property_tree::ptree;
 #include "CConnectionManager.hpp"
 #include "CConnection.hpp"
 #include "types/remotehost.hpp"
+#include "device/CPhysicalDeviceManager.hpp"
+#include "device/PhysicalDeviceTypes.hpp"
 
 #include "Stopwatch.hpp"
 
@@ -74,14 +76,8 @@ class GMAgent
     public IAgent< boost::shared_ptr<GMPeerNode> >
 {
   public:
-    /// Default constructor
-    GMAgent();
     /// Constructor for using this object as a module.
-    GMAgent(std::string uuid_, freedm::broker::CBroker &broker);
-    /// Copy constructor for the module
-    GMAgent(const GMAgent&);
-    /// Copy constructor for the module
-    GMAgent& operator=(const GMAgent&);
+    GMAgent(std::string uuid_, freedm::broker::CBroker &broker, freedm::broker::device::CPhysicalDeviceManager::ManagerPtr devmanager);
     /// Module destructor
     ~GMAgent();
     
@@ -125,7 +121,11 @@ class GMAgent
     freedm::broker::CMessage AreYouThere();
     /// Generates a peer list
     freedm::broker::CMessage PeerList();
- 
+    /// Generates a request to read the remote clock
+    freedm::broker::CMessage ClockRequest();
+    /// Generates a message informing a node of their new clock skew
+    freedm::broker::CMessage ClockSkew(boost::posix_time::time_duration t);
+
     // This is the main loop of the algorithm
     /// Called to start the system
     int	Run();
@@ -154,6 +154,10 @@ class GMAgent
     void StartMonitor(const boost::system::error_code& err);
     /// Returns the coordinators uuid.
     std::string Coordinator() const { return m_GroupLeader; }
+    /// Checks the status of the FIDs
+    void FIDCheck(const boost::system::error_code& err);
+    /// Checks the skew on the clock
+    void ComputeSkew(const boost::system::error_code& err);
     
     /// Nodes In My Group
     PeerSet	m_UpNodes;
@@ -183,6 +187,8 @@ class GMAgent
     boost::interprocess::interprocess_mutex m_timerMutex;
     /// A timer for stepping through the election process
     freedm::broker::CBroker::TimerHandle m_timer;
+    freedm::broker::CBroker::TimerHandle m_fidtimer;
+    freedm::broker::CBroker::TimerHandle m_skewtimer;
     /// What I like to call the TRANSIENT ELIMINATOR
     //deadline_timer m_transient;
     
@@ -201,16 +207,29 @@ class GMAgent
     int m_membership;
     /// The number of times we've checked it
     int m_membershipchecks;
+    /// Timers
     Stopwatch m_electiontimer;
     Stopwatch m_ingrouptimer;
+
+    typedef std::map<std::string,boost::posix_time::ptime> ClockRepliesMap;
+    
+    ClockRepliesMap m_clocks;
 
     // Timeouts
     boost::posix_time::time_duration CHECK_TIMEOUT;
     boost::posix_time::time_duration TIMEOUT_TIMEOUT;
     boost::posix_time::time_duration GLOBAL_TIMEOUT;
+    boost::posix_time::time_duration FID_TIMEOUT;
+    boost::posix_time::time_duration SKEW_TIMEOUT;
+
+    //Maximum clock skew in milliseconds;
+    static const int MAX_SKEW = 100;
 
     //The broker!
     freedm::broker::CBroker& m_broker;
+
+    //The device manager!
+    freedm::broker::device::CPhysicalDeviceManager::ManagerPtr m_phyDevManager;
 };
 
   }

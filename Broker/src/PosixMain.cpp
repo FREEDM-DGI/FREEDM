@@ -24,16 +24,13 @@
 ///     University of Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
 ////////////////////////////////////////////////////////////////////////////////
 
-#ifndef _WIN32
+#ifdef __unix__
 
 #include <iostream>
 #include <set>
 #include <string>
 #include <sstream>
 #include <vector>
-
-#include <pthread.h>
-#include <signal.h>
 
 #include <boost/asio.hpp>
 #include <boost/asio/ip/host_name.hpp> //for ip::host_name()
@@ -202,7 +199,7 @@ int main(int argc, char* argv[])
             {
                 uuidgenerator = boost::asio::ip::host_name();
             }
-            uuid = CUuid::from_dns(uuidgenerator);
+            uuid = CUuid::from_dns(uuidgenerator, port);
             std::cout << uuid << std::endl;
             return 0;
         }
@@ -226,7 +223,7 @@ int main(int argc, char* argv[])
             // Try to resolve the host's dns name
             hostname = boost::asio::ip::host_name();
             Logger.Info << "Hostname: " << hostname << std::endl;
-            uuid = CUuid::from_dns(hostname);
+            uuid = CUuid::from_dns(hostname,port);
             Logger.Info << "Generated UUID: " << uuid << std::endl;
         }
         // Refine the logger verbosity settings.
@@ -247,7 +244,8 @@ int main(int argc, char* argv[])
         CGlobalConfiguration::instance().SetUUID(uuidstr2);
         CGlobalConfiguration::instance().SetListenPort(port);
         CGlobalConfiguration::instance().SetListenAddress(listenIP);
-        CGlobalConfiguration::instance().SetFpgaMessage(fpgaCfgFile);
+        CGlobalConfiguration::instance().SetClockSkew(
+                boost::posix_time::milliseconds(0));
         //constructors for initial mapping
         CConnectionManager conManager;
         device::CPhysicalDeviceManager::ManagerPtr 
@@ -259,7 +257,7 @@ int main(int argc, char* argv[])
         // interHost is the hostname of the machine that runs the simulation
         // interPort is the port number this DGI and simulation communicate in
         device::CDeviceFactory::instance().init(
-                phyManager, ios, interHost, interPort);
+                phyManager, ios, fpgaCfgFile, interHost, interPort);
 
         // Create Devices
         if (vm.count("add-device") > 0)
@@ -285,7 +283,7 @@ int main(int argc, char* argv[])
         ss << uuid;
         ss >> uuidstr;
         // Instantiate and register the group management module
-        GMAgent GM(uuidstr, broker);
+        GMAgent GM(uuidstr, broker, phyManager);
         dispatch.RegisterReadHandler("gm", "gm", &GM);
         // Instantiate and register the power management module
         lbAgent LB(uuidstr, broker, phyManager);
@@ -316,7 +314,7 @@ int main(int argc, char* argv[])
                 std::string host(s.begin(), s.begin() + idx),
                         port1(s.begin() + ( idx + 1 ), s.end());
                 // Construct the UUID of host from its DNS
-                CUuid u1 = CUuid::from_dns(host);
+                CUuid u1 = CUuid::from_dns(host,port1);
                 //Load the UUID into string
                 std::stringstream uu;
                 uu << u1;
@@ -333,48 +331,18 @@ int main(int argc, char* argv[])
 
         // Add the local connection to the hostname list
         conManager.PutHostname(uuidstr, "localhost", port);
-        // Block all signals for background thread.
-        /*
-        sigset_t new_mask;
-        sigfillset(&new_mask);
-        sigset_t old_mask;
-        pthread_sigmask(SIG_BLOCK, &new_mask, &old_mask);
-         */
-        //Logger.Info << "Starting CBroker thread" << std::endl;
-        //boost::thread thread_
-        //        (boost::bind(&broker::CBroker::Run, &broker));
-        // Restore previous signals.
-        //pthread_sigmask(SIG_SETMASK, &old_mask, 0);
+
         Logger.Debug << "Starting thread of Modules" << std::endl;
         broker.Schedule("gm", boost::bind(&GMAgent::Run, &GM), false);
         broker.Schedule("lb", boost::bind(&lbAgent::LB, &LB), false);
         broker.Run();
-        // Wait for signal indicating time to shut down.
-        /*
-        sigset_t wait_mask;
-        sigemptyset(&wait_mask);
-        sigaddset(&wait_mask, SIGINT);
-        sigaddset(&wait_mask, SIGQUIT);
-        sigaddset(&wait_mask, SIGTERM);
-        pthread_sigmask(SIG_BLOCK, &wait_mask, 0);
-        int sig = 0;
-        sigwait(&wait_mask, &sig);
-        std::cout << "Shutting down cleanly." << std::endl;
-        // Stop the modules
-        GM.Stop();
-        // Stop the server.
-        broker.Stop();
-        // Bring in threads.
-        thread_.join();
-        std::cout << "Goodbye..." << std::endl;
-         */
     }
     catch (std::exception& e)
     {
-        Logger.Error << e.what() << std::endl;
+        Logger.Error << "Exception caught in main:" << e.what() << std::endl;
     }
 
     return 0;
 }
 
-#endif // !(_WIN32)
+#endif // __unix__

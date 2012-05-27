@@ -1,3 +1,4 @@
+<rtds>
 <state>
   <entry index = "1">
     <device>sst</device>
@@ -34,3 +35,4 @@
     <key>drain</key>
   </entry>  
 </command>
+</rtds>

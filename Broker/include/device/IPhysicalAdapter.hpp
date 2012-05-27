@@ -60,7 +60,7 @@ class IPhysicalAdapter : private boost::noncopyable
 {
 public:
     /// Pointer to a physical adapter.
-    typedef boost::shared_ptr<IPhysicalAdapter> AdapterPtr;
+    typedef boost::shared_ptr<IPhysicalAdapter> Pointer;
 
     /// Retrieves a value from a device.
     virtual SettingValue Get(const Identifier device,

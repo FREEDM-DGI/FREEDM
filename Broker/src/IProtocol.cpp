@@ -43,7 +43,7 @@ namespace freedm {
         
 static CLocalLogger Logger(__FILE__);
 
-void IProtocol::Write(CMessage msg)
+void IProtocol::Write(const CMessage & msg)
 {
     Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     boost::array<char, CReliableConnection::MAX_PACKET_SIZE>::iterator it;
@@ -89,9 +89,15 @@ void IProtocol::Write(CMessage msg)
     #endif
     // The length of the contents placed in the buffer should be the same length as
     // The string that was written into it.
-    GetConnection()->GetSocket().async_send(boost::asio::buffer(m_buffer,raw.length()), 
-            boost::bind(&IProtocol::WriteCallback, this,
-            boost::asio::placeholders::error));
+    try
+    {
+        GetConnection()->GetSocket().send(boost::asio::buffer(m_buffer,raw.length()));
+    }
+    catch(boost::system::system_error &e)
+    {
+        Logger.Debug << "Writing Failed: " << e.what() << std::endl;
+        GetConnection()->Stop(); 
+    }
 }
 
     }

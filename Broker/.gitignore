@@ -8,5 +8,9 @@ Makefile
 */Makefile
 src/version.h
 PosixBroker
+src/device/DeviceRegistrationGenerator
+test/mockFPGA
+include/device/PhysicalDeviceTypes.hpp
+src/device/PhysicalDeviceTypes.cpp
 *.[oa]
 src/src

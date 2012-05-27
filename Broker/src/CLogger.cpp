@@ -51,9 +51,9 @@ std::streamsize CLog::write(const char* s, std::streamsize n)
     if (GetOutputLevel() >= m_level)
     {
         *m_ostream << microsec_clock::local_time() << " : "
-                << m_name << "(" << m_level << ") :\n";
+                << m_name << "(" << m_level << "):\n\t";
         boost::iostreams::write(*m_ostream, s, n);
-        *m_ostream << std::endl;
+        //*m_ostream << std::endl;
     }
     return n;
 }

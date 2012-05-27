@@ -80,7 +80,7 @@ class IProtocol
         virtual void WriteCallback(const boost::system::error_code& e) { }
 #pragma GCC diagnostic warning "-Wunused-parameter"
         /// Handles writing the message to the underlying connection
-        virtual void Write(CMessage msg);
+        virtual void Write(const CMessage & msg);
     private:
         /// Write buffer
         boost::array<char, CReliableConnection::MAX_PACKET_SIZE> m_buffer;

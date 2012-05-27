@@ -40,8 +40,8 @@ static CLocalLogger Logger(__FILE__);
 /// @param device The unique device identifier for the device.
 /// @param adapter The adapter that implements operations for this device.
 ////////////////////////////////////////////////////////////////////////////////
-CDeviceDesd::CDeviceDesd(Identifier device,
-        IPhysicalAdapter::AdapterPtr adapter)
+CDeviceDesd::CDeviceDesd(const Identifier device,
+        IPhysicalAdapter::Pointer adapter)
 : IDevice(device, adapter)
 {
     Logger.Debug << __PRETTY_FUNCTION__ << std::endl;

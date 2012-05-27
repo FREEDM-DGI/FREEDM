@@ -1,5 +1,5 @@
 ////////////////////////////////////////////////////////////////////////////////
-/// @file       CDeviceSst.hpp
+/// @file       CDeviceFid.hpp
 ///
 /// @author     Yaxi Liu <ylztf@mst.edu>
 /// @author     Thomas Roth <tprfh7@mst.edu>
@@ -8,7 +8,7 @@
 /// @project    FREEDM DGI
 ///
 /// @description
-///     Represents a solid state transformer.
+///     Represents an FID.
 ///
 /// @copyright
 ///     These source code files were created at Missouri University of Science
@@ -25,8 +25,8 @@
 ///     University of Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
 ////////////////////////////////////////////////////////////////////////////////
 
-#ifndef C_DEVICE_SST_HPP
-#define C_DEVICE_SST_HPP
+#ifndef C_DEVICE_FID_HPP
+#define C_DEVICE_FID_HPP
 
 #include <boost/shared_ptr.hpp>
 
@@ -36,29 +36,26 @@ namespace freedm {
 namespace broker {
 namespace device {
 
-/// Implementation of solid state transformers
-class CDeviceSst
+/// Implementation of physical loads
+class CDeviceFid
 : public virtual IDevice
 {
 public:
     /// Convenience type for a shared pointer to self
-    typedef boost::shared_ptr<CDeviceSst> DevicePtr;
+    typedef boost::shared_ptr<CDeviceFid> DevicePtr;
 
     /// Constructor which takes an identifier and internal structure
-    CDeviceSst(const Identifier device, IPhysicalAdapter::Pointer adapter);
+    CDeviceFid(const Identifier device, IPhysicalAdapter::Pointer adapter);
 
     /// Virtual destructor for derived classes
-    virtual ~CDeviceSst();
-    
-    /// Determine the gateway value of this SST.
-    SettingValue GetGateway() const;
-    
-    /// Increases the gateway value of this SST by the specified amount.
-    void StepGateway(const SettingValue step);
+    virtual ~CDeviceFid();
+
+    /// Determine whether or not this FID is active.
+    bool IsActive() const;
 };
 
 } // namespace device
 } // namespace broker
 } // namespace freedm
 
-#endif // C_DEVICE_SST_HPP
+#endif // C_DEVICE_FID_HPP

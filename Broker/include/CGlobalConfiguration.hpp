@@ -44,6 +44,8 @@
 
 #include <string>
 
+#include "boost/date_time/posix_time/posix_time.hpp"
+
 namespace freedm {
 
 /// A singleton class which tracks commonly used configuration options.
@@ -64,8 +66,9 @@ class CGlobalConfiguration : public boost::noncopyable
         void SetUUID(std::string u) { m_uuid = u; };
         /// Set the address to on
         void SetListenAddress(std::string a) { m_address = a; };
-        /// Set the filename of the FPGA message specification.
-        void SetFpgaMessage(std::string f) { m_fpgaMessage = f; };
+        /// Get the clock skew
+        void SetClockSkew(boost::posix_time::time_duration t) 
+                { m_clockskew = t; };
         /// Get the hostname
         std::string GetHostname() const { return m_hostname; };
         /// Get the port
@@ -74,14 +77,15 @@ class CGlobalConfiguration : public boost::noncopyable
         std::string GetUUID() const { return m_uuid; };
         /// Get the address
         std::string GetListenAddress() const { return m_address; };
-        /// Get the filename of the FPGA message specification.
-        std::string GetFpgaMessage() const { return m_fpgaMessage; };
+        /// Get the Skew of the local clock
+        boost::posix_time::time_duration GetClockSkew() const 
+                { return m_clockskew; };
     private:
         std::string m_hostname; /// Node hostname
         std::string m_port; /// Port number
         std::string m_uuid; /// The node uuid
         std::string m_address; /// The listening address.
-        std::string m_fpgaMessage; /// The filename of the FPGA message specs.
+        boost::posix_time::time_duration m_clockskew; /// The skew of the clock
 };
 
 } // namespace freedm

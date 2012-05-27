@@ -1,12 +1,12 @@
 ////////////////////////////////////////////////////////////////////////////////
-/// @file       CDeviceSst.cpp
+/// @file       CDeviceFid.cpp
 ///
 /// @author     Michael Catanzaro <michael.catanzaro@mst.edu>
 ///
 /// @project    FREEDM DGI
 ///
 /// @description
-///     Represents a distributed energy storage device.
+///     Represents an FID.
 ///
 /// @copyright
 ///     These source code files were created at Missouri University of Science
@@ -24,7 +24,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 #include "CLogger.hpp"
-#include "device/types/CDeviceSst.hpp"
+#include "device/types/CDeviceFid.hpp"
 
 namespace freedm {
 namespace broker {
@@ -33,14 +33,14 @@ namespace device {
 static CLocalLogger Logger(__FILE__);
 
 ////////////////////////////////////////////////////////////////////////////////
-/// CDeviceSst::CDeviceSst(Identifier, IPhysicalAdapter::AdapterPtr)
+/// CDeviceFid::CDeviceFid(Identifier, IPhysicalAdapter::AdapterPtr)
 ///
 /// @description Instantiates a device.
 ///
 /// @param device The unique device identifier for the device.
 /// @param adapter The adapter that implements operations for this device.
 ////////////////////////////////////////////////////////////////////////////////
-CDeviceSst::CDeviceSst(const Identifier device,
+CDeviceFid::CDeviceFid(const Identifier device,
         IPhysicalAdapter::Pointer adapter)
 : IDevice(device, adapter)
 {
@@ -48,40 +48,26 @@ CDeviceSst::CDeviceSst(const Identifier device,
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-/// CDeviceSst::~CDeviceSst()
+/// CDeviceFid::~CDeviceFid()
 ///
 /// @description Virtual destructor for derived classes.
 ////////////////////////////////////////////////////////////////////////////////
-CDeviceSst::~CDeviceSst()
+CDeviceFid::~CDeviceFid()
 {
     Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-/// CDeviceSst::GetGateway() const
+/// CDeviceFid::IsActive() const
 ///
-/// @description Retrieve the gateway value of this SST.
+/// @description Determines if this FID is active.
 ///
-/// @return The gateway of this SST.
+/// @return True if this FID is active (good), or false otherwise (bad). 
 ////////////////////////////////////////////////////////////////////////////////
-SettingValue CDeviceSst::GetGateway() const
+bool CDeviceFid::IsActive() const
 {
     Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
-    return Get("gateway");
-}
-
-////////////////////////////////////////////////////////////////////////////////
-/// CDeviceSst::StepGateway(const SettingValue)
-///
-/// @description Increases the gateway value of this SST by the amount step.
-///
-/// @pre None.
-/// @post The gateway has been increased by step.
-////////////////////////////////////////////////////////////////////////////////
-void CDeviceSst::StepGateway(const SettingValue step)
-{
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
-    Set("gateway", GetGateway() + step);
+    return Get("active") == 1;  // if not exactly 1, then something is wrong.
 }
 
 }

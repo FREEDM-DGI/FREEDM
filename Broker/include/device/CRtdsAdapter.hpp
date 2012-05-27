@@ -71,11 +71,11 @@ class CRtdsAdapter : public IConnectionAdapter
     ////////////////////////////////////////////////////////
 public:
     /// pointer to an CClientRTDS object
-    typedef boost::shared_ptr<CRtdsAdapter> AdapterPointer;
+    typedef boost::shared_ptr<CRtdsAdapter> Pointer;
 
     /// create a CClientRTDS object and returns a pointer to it
-    static AdapterPointer Create(boost::asio::io_service & service,
-            const std::string xml);
+    static Pointer Create(boost::asio::io_service & service,
+            const std::string xml, const std::string tag);
 
     /// updates command table
     void Set(const Identifier device, const SettingKey key,
@@ -96,7 +96,7 @@ public:
 private:
     /// constructor
     CRtdsAdapter(boost::asio::io_service & service,
-            const std::string xml);
+            const std::string xml, const std::string tag);
     /// do byte order conversion if DGI and FPGA have opposite endianess
     static void endian_swap(char * data, const int num_bytes);
 

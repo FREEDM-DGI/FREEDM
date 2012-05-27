@@ -28,6 +28,7 @@
 #include "CGlobalConfiguration.hpp"
 #include "config.hpp"
 #include "device/CDeviceFactory.hpp"
+#include "device/types/CDeviceFid.hpp"
 
 #define foreach BOOST_FOREACH
 
@@ -79,26 +80,29 @@ CDeviceFactory& CDeviceFactory::instance()
 ///  runs the simulation.
 /// @param port if PSCAD or RTDS is enabled, the port number this DGI and the
 ///  simulation communicate with.
+/// @todo update and figure out what parameters this function ought to have ...
 ///
 /// @limitations Must be called before anything else is done with this factory.
 ////////////////////////////////////////////////////////////////////////////////
 void CDeviceFactory::init(CPhysicalDeviceManager::ManagerPtr manager,
-        boost::asio::io_service& ios, const std::string host,
-        const std::string port)
+        boost::asio::io_service& ios, const std::string fpgaCfgFile,
+        const std::string host, const std::string port)
 {
     Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     Logger.Info << "Initialized the device factory" << std::endl;
     m_manager = manager;
 #if defined USE_DEVICE_PSCAD
-    CPscadAdapter::AdapterPointer pscadAdapter = CPscadAdapter::Create(ios);
+    CPscadAdapter::Pointer pscadAdapter = CPscadAdapter::Create(ios);
     pscadAdapter->Connect(host, port);
     m_adapter = pscadAdapter;
 #elif defined USE_DEVICE_RTDS
-    CRtdsAdapter::AdapterPointer rtdsAdapter = CRtdsAdapter::Create(ios,
-            CGlobalConfiguration::instance().GetFpgaMessage());
+    CRtdsAdapter::Pointer rtdsAdapter = CRtdsAdapter::Create(
+            ios, fpgaCfgFile, "rtds");
     rtdsAdapter->Connect(host, port);
     rtdsAdapter->Run();
     m_adapter = rtdsAdapter;
+    m_ios = &ios;
+    m_fpgaCfgFile = fpgaCfgFile;
 #else
     m_adapter = CGenericAdapter::Create();
 #endif
@@ -183,7 +187,7 @@ void CDeviceFactory::CreateDevice(const Identifier deviceID,
                 << deviceType.c_str();
         throw std::runtime_error(ss.str());
     }
-    
+
     // m_registry[deviceType] is a member function pointer.
     // So *m_registry[deviceType] is a member function.
     // So (this->*m_registry[deviceType])() is the same as this->functionName()
@@ -270,6 +274,46 @@ CDeviceFactory::CDeviceFactory()
 {
     Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
 }
+
+
+#ifdef USE_DEVICE_RTDS
+
+///
+/// Temporary hack to get FIDs working.
+template <>
+void CDeviceFactory::CreateDevice<CDeviceFid>(const Identifier deviceID)
+{
+    if (!m_initialized)
+    {
+        std::stringstream ss;
+        ss << __PRETTY_FUNCTION__ << " called before factory init" << std::endl;
+        throw std::runtime_error(ss.str());
+    }
+
+    CRtdsAdapter::Pointer adapter =
+            CRtdsAdapter::Create(*m_ios, m_fpgaCfgFile, deviceID);
+    
+    // Connect and start the adapter
+    boost::property_tree::ptree xmlTree;
+    read_xml(m_fpgaCfgFile, xmlTree);
+    std::string host, port;
+    try
+    {
+        host = xmlTree.get<std::string > ( deviceID + ".host" );
+        port = xmlTree.get<std::string > ( deviceID + ".port" );
+    }
+    catch (...)
+    {
+        throw std::runtime_error("Couldn't read hostname or port for FID "
+                + deviceID);
+    }
+    adapter->Connect(host, port);
+    adapter->Run();
+
+    // Attach the adapter to a new FID and register it with the device manager.
+    m_manager->AddDevice(IDevice::DevicePtr(new CDeviceFid(deviceID, adapter)));
+}
+#endif
 
 } // namespace device
 } // namespace freedm

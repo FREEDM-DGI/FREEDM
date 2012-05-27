@@ -62,31 +62,29 @@ CSUConnection::CSUConnection(CConnection *  conn)
 
 void CSUConnection::Send(CMessage msg)
 {
-    ptree x = static_cast<ptree>(msg);
     unsigned int msgseq;
 
-    CMessage outmsg(x);
     
     msgseq = m_outseq;
-    outmsg.SetSequenceNumber(msgseq);
+    msg.SetSequenceNumber(msgseq);
     m_outseq = (m_outseq+1) % SEQUENCE_MODULO;
 
-    outmsg.SetSourceUUID(GetConnection()->GetConnectionManager().GetUUID());
-    outmsg.SetSourceHostname(
+    msg.SetSourceUUID(GetConnection()->GetConnectionManager().GetUUID());
+    msg.SetSourceHostname(
             GetConnection()->GetConnectionManager().GetHostname());
-    outmsg.SetProtocol(GetIdentifier());
-    outmsg.SetSendTimestampNow();
+    msg.SetProtocol(GetIdentifier());
+    msg.SetSendTimestampNow();
 
     QueueItem q;
 
     q.ret = MAX_RETRIES;
-    q.msg = outmsg;
+    q.msg = msg;
 
     m_window.push_back(q);
     
     if(m_window.size() < WINDOW_SIZE)
     {
-        Write(outmsg);
+        Write(msg);
         m_timeout.cancel();
         m_timeout.expires_from_now(boost::posix_time::milliseconds(50));
         m_timeout.async_wait(boost::bind(&CSUConnection::Resend,this,

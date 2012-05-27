@@ -63,6 +63,7 @@ CSRConnection::CSRConnection(CConnection *  conn)
     : IProtocol(conn), 
       m_timeout(conn->GetSocket().get_io_service())
 {
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     //Sequence Numbers
     m_outseq = 0;
     m_inseq = 0;
@@ -94,7 +95,6 @@ CSRConnection::CSRConnection(CConnection *  conn)
 void CSRConnection::Send(CMessage msg)
 {
     Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
-    ptree x = static_cast<ptree>(msg);
     unsigned int msgseq;
 
     if(m_outsync == false)
@@ -102,26 +102,25 @@ void CSRConnection::Send(CMessage msg)
         SendSYN();
     }
 
-    CMessage outmsg(x);
     
     msgseq = m_outseq;
-    outmsg.SetSequenceNumber(msgseq);
+    msg.SetSequenceNumber(msgseq);
     m_outseq = (m_outseq+1) % SEQUENCE_MODULO;
 
-    outmsg.SetSourceUUID(GetConnection()->GetConnectionManager().GetUUID());
-    outmsg.SetSourceHostname(GetConnection()->GetConnectionManager().GetHostname());
-    outmsg.SetProtocol(GetIdentifier());
-    outmsg.SetSendTimestampNow();
-    if(!outmsg.HasExpireTime())
+    msg.SetSourceUUID(GetConnection()->GetConnectionManager().GetUUID());
+    msg.SetSourceHostname(GetConnection()->GetConnectionManager().GetHostname());
+    msg.SetProtocol(GetIdentifier());
+    msg.SetSendTimestampNow();
+    if(!msg.HasExpireTime())
     {
         Logger.Debug<<"Set Expire time"<<std::endl;
-        outmsg.SetExpireTimeFromNow(boost::posix_time::milliseconds(3000));
+        msg.SetExpireTimeFromNow(boost::posix_time::milliseconds(3000));
     }
-    m_window.push_back(outmsg);
+    m_window.push_back(msg);
     
     if(m_window.size() == 1)
     {
-        Write(outmsg);
+        Write(msg);
         boost::system::error_code x;
         Resend(x);
     }

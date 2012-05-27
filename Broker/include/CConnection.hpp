@@ -75,7 +75,7 @@ public:
     void Stop();
 
     /// Puts a CMessage into the channel.
-    void Send(CMessage p_mesg);
+    void Send(CMessage & p_mesg);
 
     /// Handles Notification of an acknowledment being recieved
     void RecieveACK(const CMessage &msg);

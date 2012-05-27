@@ -50,10 +50,10 @@ class CGenericAdapter : public IPhysicalAdapter
 {  
 public:
     /// Type of a generic adapter pointer
-    typedef boost::shared_ptr<CGenericAdapter> AdapterPointer;
+    typedef boost::shared_ptr<CGenericAdapter> Pointer;
     
     /// Creates a new generic adapter.
-    static AdapterPointer Create();
+    static Pointer Create();
     
     /// Retrieves a value from a device.
     virtual SettingValue Get(const Identifier device,

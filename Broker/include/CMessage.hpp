@@ -72,7 +72,9 @@ public:
         InternalServerError = 500,
         NotImplemented = 501,
         BadGateway = 502,
-        ServiceUnavailable = 503
+        ServiceUnavailable = 503,
+        ReadClock = 800,
+        ClockReading = 801
     };
 
     /// Accessor for uuid
@@ -164,10 +166,10 @@ public:
         throw ( boost::property_tree::file_parser_error );
     
     /// Put CMessage to a stream.
-    virtual void Save( std::ostream &p_os );
+    virtual void Save( std::ostream &p_os ) const;
 
     /// Implicit conversion operator
-    virtual operator ptree ();
+    virtual operator ptree () const;
 
     /// A way to load a CMessage from a property tree.
     explicit CMessage( const ptree &pt );

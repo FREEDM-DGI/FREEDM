@@ -149,6 +149,7 @@ void CListener::HandleRead(const boost::system::error_code& e,
         ///Get the pointer to the connection:
         CConnection::ConnectionPtr conn;
         conn = GetConnectionManager().GetConnectionByUUID(uuid);
+        Logger.Debug<<"Fetched Connection"<<std::endl;
 #ifdef CUSTOMNETWORK
         if((rand()%100) >= GetReliability())
         {
@@ -159,11 +160,28 @@ void CListener::HandleRead(const boost::system::error_code& e,
 #endif
         if(m_message.GetStatus() == freedm::broker::CMessage::Accepted)
         {
+            Logger.Debug<<"Processing Accept Message"<<std::endl;
             ptree pp = m_message.GetProtocolProperties();
             size_t hash = pp.get<size_t>("src.hash");
             Logger.Debug<<"Recieved ACK"<<hash<<":"
                             <<m_message.GetSequenceNumber()<<std::endl;
             conn->RecieveACK(m_message);
+        }
+        else if(m_message.GetStatus() == freedm::broker::CMessage::ReadClock)
+        {
+            if(conn->Recieve(m_message))
+            {
+                Logger.Debug<<"Recieved Clock Request"<<std::endl;
+                // Generate a clock reading and reply immediately:
+                CMessage reply;
+                // Determine the requesting module:
+                std::string req = m_message.GetSubMessages().get<std::string>("req");
+                boost::posix_time::time_duration skew = CGlobalConfiguration::instance().GetClockSkew();
+                // Generate a message that is addressed to the requesting module
+                reply.m_submessages.put(req,"Clock");
+                reply.m_submessages.put(req+".value",boost::posix_time::microsec_clock::universal_time()+skew);
+                conn->Send(reply);
+            }
         }
         else if(conn->Recieve(m_message))
         {
@@ -177,6 +195,7 @@ void CListener::HandleRead(const boost::system::error_code& e,
                           <<m_message.GetSequenceNumber()<<std::endl;
         }
 listen:
+        Logger.Debug<<"Listening for next message"<<std::endl;
         GetSocket().async_receive_from(boost::asio::buffer(m_buffer, CReliableConnection::MAX_PACKET_SIZE),
                 m_endpoint, boost::bind(&CListener::HandleRead, this,
                 boost::asio::placeholders::error,

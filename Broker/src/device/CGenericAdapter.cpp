@@ -39,9 +39,9 @@ static CLocalLogger Logger(__FILE__);
 ///
 /// @return a smart pointer to the new device adapter.
 ////////////////////////////////////////////////////////////////////////////////
-CGenericAdapter::AdapterPointer CGenericAdapter::Create()
+CGenericAdapter::Pointer CGenericAdapter::Create()
 {
-    return AdapterPointer(new CGenericAdapter);
+    return Pointer(new CGenericAdapter);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

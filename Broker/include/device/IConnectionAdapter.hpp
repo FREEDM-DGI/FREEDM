@@ -1,5 +1,5 @@
 ////////////////////////////////////////////////////////////////////////////////
-/// @file           INetworkAdapter.hpp
+/// @file           IConnectionAdapter.hpp
 ///
 /// @author         Thomas Roth <tprfh7@mst.edu>,
 ///                 Michael Catanzaro <michael.catanzaro@mst.edu>
@@ -24,8 +24,8 @@
 ///     University of Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
 ////////////////////////////////////////////////////////////////////////////////
 
-#ifndef INETWORKADAPTER_HPP
-#define	INETWORKADAPTER_HPP
+#ifndef ICONNECTIONADAPTER_HPP
+#define	ICONNECTIONADAPTER_HPP
 
 #include <boost/asio.hpp>
 
@@ -58,7 +58,7 @@ class IConnectionAdapter : public IPhysicalAdapter
 {
 public:
     /// Type of a pointer to a connection adapter.
-    typedef boost::shared_ptr<IConnectionAdapter> ConnectionAdapterPtr;
+    typedef boost::shared_ptr<IConnectionAdapter> Pointer;
 
     /// Creates a socket connection to the given hostname and service.
     virtual void Connect(const std::string hostname, const std::string port);
@@ -81,4 +81,4 @@ protected:
 }
 }
 
-#endif	// INETWORKADAPTER_HPP
+#endif	// ICONNECTIONADAPTER_HPP

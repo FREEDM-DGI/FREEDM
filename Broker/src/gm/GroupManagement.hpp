@@ -77,7 +77,7 @@ class GMAgent
 {
   public:
     /// Constructor for using this object as a module.
-    GMAgent(std::string uuid_, freedm::broker::CBroker &broker, freedm::broker::device::CPhysicalDeviceManager::ManagerPtr devmanager);
+    GMAgent(std::string uuid_, freedm::broker::CBroker &broker, freedm::broker::device::CPhysicalDeviceManager::Pointer devmanager);
     /// Module destructor
     ~GMAgent();
     
@@ -229,7 +229,7 @@ class GMAgent
     freedm::broker::CBroker& m_broker;
 
     //The device manager!
-    freedm::broker::device::CPhysicalDeviceManager::ManagerPtr m_phyDevManager;
+    freedm::broker::device::CPhysicalDeviceManager::Pointer m_phyDevManager;
 };
 
   }

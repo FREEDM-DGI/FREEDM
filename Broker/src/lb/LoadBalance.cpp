@@ -64,6 +64,7 @@
 #include <string>
 #include <stdlib.h>
 #include <iostream>
+#include <vector>
 
 #include <boost/asio.hpp>
 #include <boost/bind.hpp>
@@ -100,7 +101,7 @@ static CLocalLogger Logger(__FILE__);
 ///////////////////////////////////////////////////////////////////////////////
 lbAgent::lbAgent(std::string uuid_,
                  broker::CBroker &broker,
-                 broker::device::CPhysicalDeviceManager::ManagerPtr 
+                 broker::device::CPhysicalDeviceManager::Pointer 
                     m_phyManager):
     LPeerNode(uuid_, broker.GetConnectionManager()),
     m_phyDevManager(m_phyManager),
@@ -875,8 +876,8 @@ void lbAgent::Step_PStar()
 {
     Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     typedef broker::device::CDeviceSst SST;
-    broker::device::CPhysicalDeviceManager::PhysicalDevice<SST>::Container SSTContainer;
-    broker::device::CPhysicalDeviceManager::PhysicalDevice<SST>::iterator it, end;
+    std::vector<SST::Pointer> SSTContainer;
+    std::vector<SST::Pointer>::iterator it, end;
     SSTContainer = m_phyDevManager->GetDevicesOfType<SST>();
 
     for( it = SSTContainer.begin(), end = SSTContainer.end(); it != end; it++ )
@@ -914,8 +915,8 @@ void lbAgent::PStar(broker::device::SettingValue DemandValue)
 {
     Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     typedef broker::device::CDeviceSst SST;
-    broker::device::CPhysicalDeviceManager::PhysicalDevice<SST>::Container SSTContainer;
-    broker::device::CPhysicalDeviceManager::PhysicalDevice<SST>::iterator it, end;
+    std::vector<SST::Pointer> SSTContainer;
+    std::vector<SST::Pointer>::iterator it, end;
     SSTContainer = m_phyDevManager->GetDevicesOfType<SST>();
 
     for( it = SSTContainer.begin(), end = SSTContainer.end(); it != end; it++ )

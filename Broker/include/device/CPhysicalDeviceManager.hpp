@@ -1,12 +1,13 @@
 ////////////////////////////////////////////////////////////////////////////////
-/// @file      CPhysicalDeviceManager.hpp
+/// @file       CPhysicalDeviceManager.hpp
 ///
-/// @author    Stephen Jackson <scj7t4@mst.edu>
+/// @author     Stephen Jackson <scj7t4@mst.edu>
+/// @author     Michael Catanzaro <michael.catanzaro@mst.edu>
 ///
-/// @project   FREEDM DGI
+/// @project    FREEDM DGI
 ///
 /// @description
-///     A class to bridge the gap between the DGI and the device interface.
+///     Bridges the gap between the DGI and the device interface.
 ///
 /// @copyright
 ///     These source code files were created at Missouri University of Science
@@ -29,9 +30,11 @@
 #include <string>
 #include <map>
 #include <list>
+
+#include <boost/enable_shared_from_this.hpp>
+#include <boost/function.hpp>
 #include <boost/noncopyable.hpp>
 #include <boost/shared_ptr.hpp>
-#include <boost/enable_shared_from_this.hpp>
 
 #include "IPhysicalAdapter.hpp"
 #include "types/IDevice.hpp"
@@ -45,10 +48,10 @@ class CPhysicalDeviceManager : private boost::noncopyable
 {
 public:
     /// Type of a pointer to a device manager
-    typedef boost::shared_ptr<CPhysicalDeviceManager> ManagerPtr;
+    typedef boost::shared_ptr<CPhysicalDeviceManager> Pointer;
     
     /// A typedef for the mapping of identifier to device ptrs
-    typedef std::map<Identifier, IDevice::DevicePtr> PhysicalDeviceSet;
+    typedef std::map<Identifier, IDevice::Pointer> PhysicalDeviceSet;
     
     /// A typedef providing an iterator for this object
     typedef PhysicalDeviceSet::iterator iterator;
@@ -60,11 +63,23 @@ public:
     CPhysicalDeviceManager();
 
     /// Add the specified device to the manager.
-    void AddDevice(device::IDevice::DevicePtr resource);
+    void AddDevice(IDevice::Pointer resource);
 
     /// Remove a device by its identifier
-    void RemoveDevice(device::Identifier devid);
+    void RemoveDevice(Identifier devid);
+    
+    /// Gets a device by its identifier
+    IDevice::Pointer GetDevice(Identifier devid);
+    
+    /// Gets a device by its identifier
+    const IDevice::Pointer GetDevice(Identifier devid) const;
 
+    /// Tests to see if a device exists
+    bool DeviceExists(Identifier devid) const;
+
+    /// Gives a count of connected devices
+    size_t DeviceCount() const;
+    
     /// Iterator to the first managed device.
     iterator begin() { return m_devices.begin(); };
     
@@ -76,40 +91,20 @@ public:
     
     /// Iterator past the last managed device.
     const_iterator end() const { return m_devices.end(); };
-    
-    /// Gets a device by its identifier
-    IDevice::DevicePtr GetDevice(Identifier devid);
-
-    /// Tests to see if a device exists
-    bool DeviceExists(Identifier devid) const;
-
-    /// Gives a count of connected devices
-    size_t DeviceCount() const;
-
-    /// Structure of typedefs for GetDevicesOfType
-    template <class DeviceType>
-    struct PhysicalDevice
-    {
-        /// Container type returned by the GetDevicesOfType function
-        typedef std::list<typename DeviceType::DevicePtr> Container;
-
-        /// Iterator to the container type
-        typedef typename Container::iterator iterator;
-    };
 
     /// Selects all the devices of a given type
     template <class DeviceType>
-    typename PhysicalDevice<DeviceType>::Container GetDevicesOfType()
+    std::vector<typename DeviceType::Pointer> GetDevicesOfType()
     {
-        typename PhysicalDevice<DeviceType>::Container result;
-        typename DeviceType::DevicePtr next_device;
+        std::vector<typename DeviceType::Pointer> result;
+        typename DeviceType::Pointer next_device;
         iterator it = m_devices.begin();
         iterator end = m_devices.end();
 
         for( ; it != end; it++ )
         {
             // attempt to convert each managed device to DeviceType
-            if( (next_device = device::device_cast<DeviceType>(it->second)) )
+            if( (next_device = device_cast<DeviceType>(it->second)) )
             {
                 result.push_back(next_device);
             }
@@ -124,14 +119,14 @@ public:
     SettingValue GetNetValue(std::string key)
     {
         SettingValue result = 0;
-        typename DeviceType::DevicePtr next_device;
+        typename DeviceType::Pointer next_device;
         iterator it = m_devices.begin();
         iterator end = m_devices.end();
 
         for( ; it != end; it++ )
         {
             // attempt to convert each managed device to DeviceType
-            if( (next_device = device::device_cast<DeviceType>(it->second)) )
+            if( (next_device = device_cast<DeviceType>(it->second)) )
             {
                 result += next_device->Get(key);
             }

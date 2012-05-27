@@ -87,7 +87,7 @@ class SCAgent : public IReadHandler, public SCPeerNode,
 {
   public:
     ///Constructor        
-    SCAgent(std::string uuid, freedm::broker::CBroker &broker, freedm::broker::device::CPhysicalDeviceManager::ManagerPtr m_phyManager);
+    SCAgent(std::string uuid, freedm::broker::CBroker &broker, freedm::broker::device::CPhysicalDeviceManager::Pointer m_phyManager);
     ///Destructor
     ~SCAgent();
     //Handler
@@ -148,7 +148,7 @@ class SCAgent : public IReadHandler, public SCPeerNode,
     ptree               m_curstate;
     
     ///physical device manager
-    freedm::broker::device::CPhysicalDeviceManager::ManagerPtr m_phyDevManager;
+    freedm::broker::device::CPhysicalDeviceManager::Pointer m_phyDevManager;
     ///all known peers
     PeerSet m_AllPeers;
 

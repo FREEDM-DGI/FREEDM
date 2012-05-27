@@ -56,7 +56,7 @@ class IDevice : private boost::noncopyable
 {
 public:
     /// Convenience type for a shared pointer to self
-    typedef boost::shared_ptr<IDevice> DevicePtr;
+    typedef boost::shared_ptr<IDevice> Pointer;
 
     /// Virtual destructor for derived classes
     virtual ~IDevice();

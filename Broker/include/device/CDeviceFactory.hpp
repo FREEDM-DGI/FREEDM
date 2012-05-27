@@ -1,12 +1,13 @@
 ////////////////////////////////////////////////////////////////////////////////
-/// @file           CDeviceFactory.hpp
+/// @file       CDeviceFactory.hpp
 ///
-/// @author         Thomas Roth <tprfh7@mst.edu>
-/// @author         Michael Catanzaro <michael.catanzaro@mst.edu>
+/// @author     Thomas Roth <tprfh7@mst.edu>
+/// @author     Michael Catanzaro <michael.catanzaro@mst.edu>
 ///
-/// @project        FREEDM DGI
+/// @project    FREEDM DGI
 ///
-/// @description    Handles the creation of devices and their structures.
+/// @description
+///     Handles the creation of devices and their structures.
 ///
 /// @copyright
 ///     These source code files were created at Missouri University of Science
@@ -17,7 +18,7 @@
 ///     implied, nor assume any legal responsibility for the accuracy,
 ///     completeness, or usefulness of these files or any information
 ///     distributed with these files.
-///     
+///    
 ///     Suggested modifications or questions about these files can be directed
 ///     to Dr. Bruce McMillin, Department of Computer Science, Missouri
 ///     University of Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
@@ -48,14 +49,6 @@ class CDeviceFactory;
 #define REGISTER_DEVICE_CLASS(SUFFIX) CDeviceFactory::instance().\
 RegisterDeviceClass(#SUFFIX, &CDeviceFactory::CreateDevice<CDevice##SUFFIX>)
 
-/// Type of the factory functions.
-//typedef void (CDeviceFactory::*FactoryFunction )(const Identifier);
-typedef boost::function<void (CDeviceFactory*, const std::string ) >
-FactoryFunction;
-
-/// Type of the device registry.
-typedef std::map<const std::string, FactoryFunction> DeviceRegistryType;
-
 /// Handles the creation of devices and their structures.
 ////////////////////////////////////////////////////////////////////////////////
 /// Singleton factory that accepts registrations of device classes and creates
@@ -76,11 +69,15 @@ typedef std::map<const std::string, FactoryFunction> DeviceRegistryType;
 class CDeviceFactory : private boost::noncopyable
 {
 public:
+    /// Type of the factory functions.
+    typedef boost::function<void (CDeviceFactory*, const std::string ) >
+    FactoryFunction;
+
     /// Retrieves the static instance of the device factory class.
     static CDeviceFactory& instance();
 
     /// Loads the factory with device manager and networking data.
-    void init(CPhysicalDeviceManager::ManagerPtr manager,
+    void init(CPhysicalDeviceManager::Pointer manager,
             boost::asio::io_service& ios, const std::string fpgaCfgFile,
             const std::string host, const std::string port);
 
@@ -98,6 +95,9 @@ public:
     void CreateDevices(const std::vector<std::string>& deviceList);
 
 private:
+    /// Type of the device registry.
+    typedef std::map<const std::string, FactoryFunction> DeviceRegistryType;
+    
     /// Constructs the device factory.
     CDeviceFactory();
 
@@ -105,7 +105,7 @@ private:
     IPhysicalAdapter::Pointer m_adapter;
 
     /// Device manager to handle created devices.
-    CPhysicalDeviceManager::ManagerPtr m_manager;
+    CPhysicalDeviceManager::Pointer m_manager;
 
     /// Maps strings of device names to a factory function for that class.
     DeviceRegistryType m_registry;
@@ -155,7 +155,7 @@ void CDeviceFactory::CreateDevice(const Identifier deviceID)
         ss << __PRETTY_FUNCTION__ << " called before factory init" << std::endl;
         throw std::runtime_error(ss.str());
     }
-    IDevice::DevicePtr dev(new DeviceType(deviceID, m_adapter));
+    IDevice::Pointer dev(new DeviceType(deviceID, m_adapter));
     m_manager->AddDevice(dev);
 }
 

@@ -248,7 +248,7 @@ int main(int argc, char* argv[])
                 boost::posix_time::milliseconds(0));
         //constructors for initial mapping
         CConnectionManager conManager;
-        device::CPhysicalDeviceManager::ManagerPtr 
+        device::CPhysicalDeviceManager::Pointer 
             phyManager(new broker::device::CPhysicalDeviceManager());
         ConnectionPtr newConnection;
         boost::asio::io_service ios;

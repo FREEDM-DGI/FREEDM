@@ -1,12 +1,13 @@
 ////////////////////////////////////////////////////////////////////////////////
-/// @file           CDeviceFactory.cpp
+/// @file       CDeviceFactory.cpp
 ///
-/// @author         Thomas Roth <tprfh7@mst.edu>
-/// @author         Michael Catanzaro <michael.catanzaro@mst.edu>
+/// @author     Thomas Roth <tprfh7@mst.edu>
+/// @author     Michael Catanzaro <michael.catanzaro@mst.edu>
 ///
-/// @project        FREEDM DGI
+/// @project    FREEDM DGI
 ///
-/// @description    Handles the creation of devices and their structures.
+/// @description
+///     Handles the creation of devices and their structures.
 ///
 /// @copyright
 ///     These source code files were created at Missouri University of Science
@@ -86,7 +87,7 @@ CDeviceFactory& CDeviceFactory::instance()
 ///
 /// @limitations Must be called before anything else is done with this factory.
 ////////////////////////////////////////////////////////////////////////////////
-void CDeviceFactory::init(CPhysicalDeviceManager::ManagerPtr manager,
+void CDeviceFactory::init(CPhysicalDeviceManager::Pointer manager,
         boost::asio::io_service& ios, const std::string fpgaCfgFile,
         const std::string host, const std::string port)
 {
@@ -190,7 +191,6 @@ void CDeviceFactory::CreateDevice(const Identifier deviceID,
         throw std::runtime_error(ss.str());
     }
 
-    //( this->*m_registry[deviceType] )( deviceID );
     m_registry[deviceType](this, deviceID);
 }
 
@@ -310,7 +310,7 @@ void CDeviceFactory::CreateDevice<CDeviceFid>(const Identifier deviceID)
     adapter->Run();
 
     // Attach the adapter to a new FID and register it with the device manager.
-    m_manager->AddDevice(IDevice::DevicePtr(new CDeviceFid(deviceID, adapter)));
+    m_manager->AddDevice(IDevice::Pointer(new CDeviceFid(deviceID, adapter)));
 }
 #endif
 

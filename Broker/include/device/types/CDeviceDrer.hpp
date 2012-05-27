@@ -42,7 +42,7 @@ class CDeviceDrer
 {
 public:
     /// Convenience type for a shared pointer to self
-    typedef boost::shared_ptr<CDeviceDrer> DevicePtr;
+    typedef boost::shared_ptr<CDeviceDrer> Pointer;
 
     /// Constructor which takes an identifier and internal structure
     CDeviceDrer(const Identifier device, IPhysicalAdapter::Pointer adapter);

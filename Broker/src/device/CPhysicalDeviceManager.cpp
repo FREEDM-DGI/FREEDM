@@ -1,12 +1,13 @@
 ////////////////////////////////////////////////////////////////////////////////
-/// @file      CPhysicalDeviceManager.cpp
+/// @file       CPhysicalDeviceManager.cpp
 ///
-/// @author    Stephen Jackson <scj7t4@mst.edu>
+/// @author     Stephen Jackson <scj7t4@mst.edu>
+/// @author     Michael Catanzaro <michael.catanzaro@mst.edu>
 ///
-/// @project   FREEDM DGI
+/// @project    FREEDM DGI
 ///
 /// @description
-///     Handles access and distribution of physical devices.
+///     A class to bridge the gap between the DGI and the device interface.
 ///
 /// @copyright
 ///     These source code files were created at Missouri University of Science
@@ -23,10 +24,10 @@
 ///     University of Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
 ////////////////////////////////////////////////////////////////////////////////
 
-#include "device/CPhysicalDeviceManager.hpp"
-#include "CLogger.hpp"
-
 #include <boost/bind.hpp>
+
+#include "CLogger.hpp"
+#include "device/CPhysicalDeviceManager.hpp"
 
 namespace freedm {
 namespace broker {
@@ -35,8 +36,8 @@ namespace device {
 static CLocalLogger Logger(__FILE__);
 
 ///////////////////////////////////////////////////////////////////////////////
-/// @fn CPhysicalDeviceManager
-/// @brief Constructor for the physical device manager
+/// Constructor for the physical device manager
+/// 
 /// @pre None
 /// @post PhysicalDeviceManager is ready to accept & distribute devices.
 ///////////////////////////////////////////////////////////////////////////////
@@ -45,57 +46,75 @@ CPhysicalDeviceManager::CPhysicalDeviceManager()
     //intentionally left blank
 }
 ///////////////////////////////////////////////////////////////////////////////
-/// @fn CPhysicalDeviceManager::AddDevice
-/// @brief Registers a device with the physical device manager.
+/// Registers a device with the physical device manager.
+/// 
 /// @pre The physical device manager is initialized
 /// @post The device has been registered with the manager and is ready to
-///       retrieve
+///  retrieve
+/// 
 /// @param resource a IPhysicalDevice::DevicePtr to the device.
 ///////////////////////////////////////////////////////////////////////////////
-void CPhysicalDeviceManager::AddDevice(device::IDevice::DevicePtr resource)
+void CPhysicalDeviceManager::AddDevice(IDevice::Pointer resource)
 {
     m_devices[resource->GetID()] = resource;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// @fn CPhysicalDeviceManager::RemoveDevice
-/// @brief Removes the registration of the device from the manager.
+/// Removes the registration of the device from the manager.
+///
 /// @pre The device in question has its identifier in the devices table
 /// @post The device with the matching identifier is removed from the table.
+///
 /// @param devid The identifier which will be used to specify the device removed
 ///////////////////////////////////////////////////////////////////////////////
-void CPhysicalDeviceManager::RemoveDevice(device::Identifier devid)
+void CPhysicalDeviceManager::RemoveDevice(Identifier devid)
 {
     m_devices.erase(devid);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// @fn CPhysicalDeviceManager::GetDevice
-/// @brief Returns a shared ptr to the device specified
+/// Returns a shared ptr to the device specified
+///
 /// @pre The device in question is in the devices table
 /// @post No change
+///
 /// @return A DevicePtr to the device, or NULL if the device wasn't found.
 ///////////////////////////////////////////////////////////////////////////////
-device::IDevice::DevicePtr CPhysicalDeviceManager::GetDevice(
-    device::Identifier devid)
+const IDevice::Pointer CPhysicalDeviceManager::GetDevice(Identifier devid) 
+        const
 {
-    iterator di = m_devices.find(devid);
+    const_iterator di = m_devices.find(devid);
     if(di != m_devices.end())
     {
         return di->second;
     }
     else
     {
-        return device::IDevice::DevicePtr();
+        return IDevice::Pointer();
     }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// @fn CPhysicalDeviceManager::DeviceExists
-/// @brief Tests to see if the device exists in the devices table.
+/// Returns a shared ptr to the device specified
+///
+/// @pre The device in question is in the devices table
+/// @post No change
+///
+/// @return A DevicePtr to the device, or NULL if the device wasn't found.
+///////////////////////////////////////////////////////////////////////////////
+IDevice::Pointer CPhysicalDeviceManager::GetDevice(Identifier devid)
+{
+    return GetDevice(devid);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+/// Tests to see if the device exists in the devices table.
+///
 /// @pre The object is initialized.
 /// @post No change.
+///
 /// @param devid The device to look for.
+///
 /// @return True if the device is in the device table, false otherwise
 ///////////////////////////////////////////////////////////////////////////////
 bool CPhysicalDeviceManager::DeviceExists(device::Identifier devid) const
@@ -106,10 +125,11 @@ bool CPhysicalDeviceManager::DeviceExists(device::Identifier devid) const
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// @fn CPhysicalDeviceManager::DeviceCount
-/// @brief returns a count of the number of devices being tracked at the moment
+/// Returns a count of the number of devices being tracked at the moment
+///
 /// @pre The object is initialized
 /// @post No change.
+///
 /// @return The number of devices currently being tracked.
 ///////////////////////////////////////////////////////////////////////////////
 size_t CPhysicalDeviceManager::DeviceCount() const

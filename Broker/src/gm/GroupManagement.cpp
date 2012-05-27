@@ -130,7 +130,7 @@ void GMAgent::StartMonitor( const boost::system::error_code& err )
 /// @param p_conManager: The connection manager to use in this class.
 ///////////////////////////////////////////////////////////////////////////////
 GMAgent::GMAgent(std::string p_uuid, freedm::broker::CBroker &broker,
-        freedm::broker::device::CPhysicalDeviceManager::ManagerPtr devmanager)
+        freedm::broker::device::CPhysicalDeviceManager::Pointer devmanager)
     : GMPeerNode(p_uuid,broker.GetConnectionManager()),
     m_electiontimer(),
     m_ingrouptimer(),

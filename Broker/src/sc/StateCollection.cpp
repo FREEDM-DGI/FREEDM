@@ -59,6 +59,7 @@
 #include <stdlib.h>
 #include <iostream>
 #include <set>
+#include <vector>
 
 #include <boost/asio.hpp>
 #include <boost/bind.hpp>
@@ -122,7 +123,7 @@ namespace freedm
 ///////////////////////////////////////////////////////////////////////////////
 
 SCAgent::SCAgent(std::string uuid, freedm::broker::CBroker &broker,
-                 freedm::broker::device::CPhysicalDeviceManager::ManagerPtr 
+                 freedm::broker::device::CPhysicalDeviceManager::Pointer 
                     m_phyManager):
     SCPeerNode(uuid, broker.GetConnectionManager()),
     m_countstate(0),
@@ -359,8 +360,8 @@ void SCAgent::TakeSnapshot()
     // broker::CPhysicalDeviceManager::PhysicalDevice<SST>::iterator it, end;
     // broker::device::SettingValue PowerValue = 0;
     typedef broker::device::CDeviceSst SST;
-    broker::device::CPhysicalDeviceManager::PhysicalDevice<SST>::Container SSTContainer;
-    broker::device::CPhysicalDeviceManager::PhysicalDevice<SST>::iterator it, end;
+    std::vector<SST::Pointer> SSTContainer;
+    std::vector<SST::Pointer>::iterator it, end;
     SSTContainer = m_phyDevManager->GetDevicesOfType<SST>();
     broker::device::SettingValue PowerValue = 0;
     

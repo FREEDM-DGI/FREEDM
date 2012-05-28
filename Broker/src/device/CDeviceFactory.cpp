@@ -26,8 +26,6 @@
 
 #include <boost/foreach.hpp>
 
-#include "CGlobalConfiguration.hpp"
-#include "config.hpp"
 #include "device/CDeviceFactory.hpp"
 #include "device/CGenericAdapter.hpp"
 #include "device/CPscadAdapter.hpp"

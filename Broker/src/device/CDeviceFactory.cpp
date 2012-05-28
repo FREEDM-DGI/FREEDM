@@ -29,6 +29,7 @@
 #include "CGlobalConfiguration.hpp"
 #include "config.hpp"
 #include "device/CDeviceFactory.hpp"
+#include "device/CGenericAdapter.hpp"
 #include "device/CPscadAdapter.hpp"
 #include "device/CRtdsAdapter.hpp"
 #include "device/types/CDeviceFid.hpp"
@@ -191,7 +192,9 @@ void CDeviceFactory::CreateDevice(const Identifier deviceID,
         throw std::runtime_error(ss.str());
     }
 
-    m_registry[deviceType](this, deviceID);
+    // *m_registry[deviceType] is a member function.
+    // Call it with the argument deviceID...
+    ( this->*m_registry[deviceType] )( deviceID );
 }
 
 ////////////////////////////////////////////////////////////////////////////////

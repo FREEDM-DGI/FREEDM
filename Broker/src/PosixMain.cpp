@@ -300,7 +300,7 @@ int main(int argc, char* argv[])
         {
             std::vector< std::string > arglist_ =
                     vm["add-host"].as< std::vector<std::string> >( );
-            foreach(std::string& s, arglist_)
+            foreach(std::string s, arglist_)
             {
                 size_t idx = s.find(':');
 

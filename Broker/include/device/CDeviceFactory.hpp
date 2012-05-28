@@ -28,10 +28,8 @@
 #define C_DEVICE_FACTORY_HPP
 
 #include <boost/asio/io_service.hpp>
-#include <boost/function.hpp>
 #include <boost/noncopyable.hpp>
 
-#include "CGenericAdapter.hpp"
 #include "CLogger.hpp"
 #include "CPhysicalDeviceManager.hpp"
 #include "IPhysicalAdapter.hpp"
@@ -43,9 +41,6 @@ namespace device {
 /// This file's logger.
 static CLocalLogger CDeviceFactoryHPPLogger(__FILE__);
 
-class CDeviceFactory;
-
-/// Registers a class of device with the device factory.
 #define REGISTER_DEVICE_CLASS(SUFFIX) CDeviceFactory::instance().\
 RegisterDeviceClass(#SUFFIX, &CDeviceFactory::CreateDevice<CDevice##SUFFIX>)
 
@@ -70,8 +65,7 @@ class CDeviceFactory : private boost::noncopyable
 {
 public:
     /// Type of the factory functions.
-    typedef boost::function<void (CDeviceFactory*, const std::string ) >
-    FactoryFunction;
+    typedef void (CDeviceFactory::*FactoryFunction )(const Identifier);
 
     /// Retrieves the static instance of the device factory class.
     static CDeviceFactory& instance();
@@ -97,7 +91,7 @@ public:
 private:
     /// Type of the device registry.
     typedef std::map<const std::string, FactoryFunction> DeviceRegistryType;
-    
+
     /// Constructs the device factory.
     CDeviceFactory();
 

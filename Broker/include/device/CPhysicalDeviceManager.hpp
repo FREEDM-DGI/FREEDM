@@ -94,7 +94,7 @@ public:
 
     /// Selects all the devices of a given type
     template <class DeviceType>
-    std::vector<typename DeviceType::Pointer> GetDevicesOfType()
+    const std::vector<typename DeviceType::Pointer> GetDevicesOfType()
     {
         std::vector<typename DeviceType::Pointer> result;
         typename DeviceType::Pointer next_device;

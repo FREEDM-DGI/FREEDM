@@ -45,7 +45,12 @@ using boost::property_tree::ptree;
 namespace freedm {
 namespace broker {
     
-static CLocalLogger Logger(__FILE__);
+namespace {
+
+/// This file's logger.
+CLocalLogger Logger(__FILE__);
+
+}
 
 namespace status_strings {
     // These are HTTP RFC status codes. Only a subset is currently used.

@@ -107,7 +107,12 @@ namespace freedm
 {
 //  namespace sc{
     
-    static CLocalLogger Logger(__FILE__);
+namespace {
+
+/// This file's logger.
+CLocalLogger Logger(__FILE__);
+
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 /// SCAgent

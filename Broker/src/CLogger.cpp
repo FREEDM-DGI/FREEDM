@@ -32,7 +32,13 @@ using namespace boost::posix_time;
 
 namespace freedm {
 
-static CLocalLogger Logger(__FILE__);
+namespace {
+
+/// This file's logger.
+CLocalLogger Logger(__FILE__);
+
+}
+
 std::string basename(const std::string s)
 {
     // This works for both Windows and UNIX-style paths

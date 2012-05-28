@@ -46,8 +46,12 @@
 namespace freedm {
 namespace broker {
     
-static CLocalLogger Logger(__FILE__);
+namespace {
 
+/// This file's logger.
+CLocalLogger Logger(__FILE__);
+
+}
 ///////////////////////////////////////////////////////////////////////////////
 /// @fn CConnectionManager::CConnectionManager
 /// @description: Initializes the connection manager object

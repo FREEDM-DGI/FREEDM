@@ -43,7 +43,12 @@
 namespace freedm {
     namespace broker {
         
-static CLocalLogger Logger(__FILE__);
+namespace {
+
+/// This file's logger.
+CLocalLogger Logger(__FILE__);
+
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 /// @fn CDispatcher::CDispatcher
@@ -295,6 +300,7 @@ void CDispatcher::RegisterWriteHandler(const std::string &module, const std::str
         );
     }
 }
+#pragma GCC diagnostic warning "-Wunused-parameter"
 
     } //namespace broker
 } // namespace freedm

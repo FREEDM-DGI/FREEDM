@@ -62,7 +62,12 @@ namespace po = boost::program_options;
 using namespace freedm;
 using namespace broker;
 
-static CLocalLogger Logger(__FILE__);
+namespace {
+
+/// This file's logger.
+CLocalLogger Logger(__FILE__);
+
+}
 
 /// The copyright year for this DGI release.
 const unsigned int COPYRIGHT_YEAR = 2012;

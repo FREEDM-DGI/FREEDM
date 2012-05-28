@@ -41,7 +41,12 @@
 namespace freedm {
     namespace broker {
         
-static CLocalLogger Logger(__FILE__);
+namespace {
+
+/// This file's logger.
+CLocalLogger Logger(__FILE__);
+
+}
 
 void IProtocol::Write(const CMessage & msg)
 {

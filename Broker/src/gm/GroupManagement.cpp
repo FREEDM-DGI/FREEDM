@@ -84,7 +84,12 @@ using boost::property_tree::ptree;
 namespace freedm {
     //    namespace gm{
 
-    static CLocalLogger Logger(__FILE__);
+namespace {
+
+/// This file's logger.
+CLocalLogger Logger(__FILE__);
+
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 /// StartMonitor

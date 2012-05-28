@@ -30,7 +30,12 @@ namespace freedm {
 namespace broker {
 namespace device {
 
-static CLocalLogger Logger(__FILE__);
+namespace {
+
+/// This file's logger.
+CLocalLogger Logger(__FILE__);
+
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 /// @function CGenericAdapter::Create()
@@ -41,6 +46,7 @@ static CLocalLogger Logger(__FILE__);
 ////////////////////////////////////////////////////////////////////////////////
 CGenericAdapter::Pointer CGenericAdapter::Create()
 {
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     return Pointer(new CGenericAdapter);
 }
 

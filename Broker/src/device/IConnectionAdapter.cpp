@@ -31,7 +31,12 @@ namespace freedm {
 namespace broker {
 namespace device {
 
-static CLocalLogger Logger(__FILE__);
+namespace {
+
+/// This file's logger.
+CLocalLogger Logger(__FILE__);
+
+}
 
 ////////////////////////////////////////////////////////////////////////////
 /// IConnectionAdapter::IConnectionAdapter(boost::asio::io_service& service)
@@ -49,7 +54,7 @@ static CLocalLogger Logger(__FILE__);
 ////////////////////////////////////////////////////////////////////////////
 IConnectionAdapter::IConnectionAdapter(boost::asio::io_service& service)
 : m_socket(service) {
-    // skip
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

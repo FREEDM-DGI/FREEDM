@@ -38,8 +38,12 @@ namespace freedm {
 namespace broker {
 namespace device {
 
+namespace {
+
 /// This file's logger.
-static CLocalLogger Logger(__FILE__);
+CLocalLogger Logger(__FILE__);
+
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 /// Retrieves the singleton factory instance.
@@ -292,7 +296,7 @@ void CDeviceFactory::CreateDevice<CDeviceFid>(const Identifier deviceID)
 
     CRtdsAdapter::Pointer adapter =
             CRtdsAdapter::Create(*m_ios, m_fpgaCfgFile, deviceID);
-    
+
     // Connect and start the adapter
     boost::property_tree::ptree xmlTree;
     read_xml(m_fpgaCfgFile, xmlTree);

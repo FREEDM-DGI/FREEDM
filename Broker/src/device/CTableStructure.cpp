@@ -27,15 +27,17 @@
 #include "CLogger.hpp"
 #include "device/CTableStructure.hpp"
 
-namespace freedm
-{
-namespace broker
-{
-namespace device
-{
+namespace freedm {
+namespace broker {
+namespace device {
 
-static CLocalLogger Logger(__FILE__);    
-    
+namespace {
+
+/// This file's logger.
+CLocalLogger Logger(__FILE__);
+
+}
+
 ////////////////////////////////////////////////////////////////////////////
 /// CTableStructure( const string &, const string & )
 ///
@@ -77,8 +79,9 @@ static CLocalLogger Logger(__FILE__);
 /// </root>
 ///
 ////////////////////////////////////////////////////////////////////////////
-CTableStructure::CTableStructure( const std::string & p_xml, const std::string & p_tag )
+CTableStructure::CTableStructure(const std::string & p_xml, const std::string & p_tag)
 {
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     using boost::property_tree::ptree;
     std::stringstream error;
     std::string device;
@@ -86,41 +89,41 @@ CTableStructure::CTableStructure( const std::string & p_xml, const std::string &
     ptree xmlTree;
     size_t index;
     // create property tree from the XML input
-    read_xml( p_xml, xmlTree );
+    read_xml(p_xml, xmlTree);
     // each child of p_tag is a table entry
     m_TableSize = xmlTree.get_child(p_tag).size();
-    BOOST_FOREACH( ptree::value_type & child, xmlTree.get_child(p_tag) )
+    BOOST_FOREACH(ptree::value_type & child, xmlTree.get_child(p_tag))
     {
-        index = child.second.get<size_t>("<xmlattr>.index");
-        device = child.second.get<std::string>("device");
-        key = child.second.get<std::string>("key");
+        index = child.second.get<size_t > ( "<xmlattr>.index" );
+        device = child.second.get<std::string > ( "device" );
+        key = child.second.get<std::string > ( "key" );
         // create the data structures
-        CDeviceKeyCoupled dkey( device, key );
+        CDeviceKeyCoupled dkey(device, key);
         std::set<size_t> plist;
-        
+
         // validate the element index
-        if ( index == 0 || index > m_TableSize )
+        if (index == 0 || index > m_TableSize)
         {
             error << p_tag << " has an entry with index " << index;
-            throw std::out_of_range( error.str() );
+            throw std::out_of_range(error.str());
         }
-        
+
         // prevent duplicate element indexes
-        if ( m_TableHeaders.by<SIndex>().count(index) > 0 )
+        if (m_TableHeaders.by<SIndex > ( ).count(index) > 0)
         {
             error << p_tag << " has multiple entries with index " << index;
-            throw std::logic_error( error.str() );
+            throw std::logic_error(error.str());
         }
-        
+
         // prevent duplicate device keys
-        if ( m_TableHeaders.by<SDevice>().count(dkey) > 0 )
+        if (m_TableHeaders.by<SDevice > ( ).count(dkey) > 0)
         {
             error << p_tag << " has multiple entries with device and key combo " << dkey;
-            throw std::logic_error( error.str() );
+            throw std::logic_error(error.str());
         }
-        
+
         // store the table entry
-        m_TableHeaders.insert( TBimap::value_type(dkey,index-1) );
+        m_TableHeaders.insert(TBimap::value_type(dkey, index - 1));
     }
 }
 
@@ -152,10 +155,11 @@ CTableStructure::CTableStructure( const std::string & p_xml, const std::string &
 /// none
 ///
 ////////////////////////////////////////////////////////////////////////////
-size_t CTableStructure::FindIndex( const CDeviceKeyCoupled & p_dkey ) const
+size_t CTableStructure::FindIndex(const CDeviceKeyCoupled & p_dkey) const
 {
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     // search by device for the requested p_dkey
-    return( m_TableHeaders.by<SDevice>().at(p_dkey) );
+    return ( m_TableHeaders.by<SDevice > ( ).at(p_dkey) );
 }
 }//namespace broker
 } // namespace freedm

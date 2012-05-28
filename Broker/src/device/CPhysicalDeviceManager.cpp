@@ -32,8 +32,13 @@
 namespace freedm {
 namespace broker {
 namespace device {
-    
-static CLocalLogger Logger(__FILE__);
+
+namespace {
+
+/// This file's logger.
+CLocalLogger Logger(__FILE__);
+
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 /// Constructor for the physical device manager
@@ -43,7 +48,7 @@ static CLocalLogger Logger(__FILE__);
 ///////////////////////////////////////////////////////////////////////////////
 CPhysicalDeviceManager::CPhysicalDeviceManager()
 {
-    //intentionally left blank
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
 }
 ///////////////////////////////////////////////////////////////////////////////
 /// Registers a device with the physical device manager.
@@ -56,6 +61,7 @@ CPhysicalDeviceManager::CPhysicalDeviceManager()
 ///////////////////////////////////////////////////////////////////////////////
 void CPhysicalDeviceManager::AddDevice(IDevice::Pointer resource)
 {
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     m_devices[resource->GetID()] = resource;
 }
 
@@ -69,6 +75,7 @@ void CPhysicalDeviceManager::AddDevice(IDevice::Pointer resource)
 ///////////////////////////////////////////////////////////////////////////////
 void CPhysicalDeviceManager::RemoveDevice(Identifier devid)
 {
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     m_devices.erase(devid);
 }
 
@@ -80,11 +87,12 @@ void CPhysicalDeviceManager::RemoveDevice(Identifier devid)
 ///
 /// @return A DevicePtr to the device, or NULL if the device wasn't found.
 ///////////////////////////////////////////////////////////////////////////////
-const IDevice::Pointer CPhysicalDeviceManager::GetDevice(Identifier devid) 
-        const
+const IDevice::Pointer CPhysicalDeviceManager::GetDevice(Identifier devid)
+const
 {
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     const_iterator di = m_devices.find(devid);
-    if(di != m_devices.end())
+    if (di != m_devices.end())
     {
         return di->second;
     }
@@ -104,6 +112,7 @@ const IDevice::Pointer CPhysicalDeviceManager::GetDevice(Identifier devid)
 ///////////////////////////////////////////////////////////////////////////////
 IDevice::Pointer CPhysicalDeviceManager::GetDevice(Identifier devid)
 {
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     return GetDevice(devid);
 }
 
@@ -119,9 +128,8 @@ IDevice::Pointer CPhysicalDeviceManager::GetDevice(Identifier devid)
 ///////////////////////////////////////////////////////////////////////////////
 bool CPhysicalDeviceManager::DeviceExists(device::Identifier devid) const
 {
-    if(m_devices.count(devid))
-        return true;
-    return false;
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    return m_devices.count(devid);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -134,6 +142,7 @@ bool CPhysicalDeviceManager::DeviceExists(device::Identifier devid) const
 ///////////////////////////////////////////////////////////////////////////////
 size_t CPhysicalDeviceManager::DeviceCount() const
 {
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     return m_devices.size();
 }
 

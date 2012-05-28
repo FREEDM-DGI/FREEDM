@@ -52,7 +52,12 @@ namespace freedm {
 namespace broker {
 namespace device {
 
-static CLocalLogger Logger(__FILE__);
+namespace {
+
+/// This file's logger.
+CLocalLogger Logger(__FILE__);
+
+}
 
 ////////////////////////////////////////////////////////////////////////////
 /// Create

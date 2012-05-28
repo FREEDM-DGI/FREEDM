@@ -49,7 +49,12 @@
 namespace freedm {
     namespace broker {
         
-static CLocalLogger Logger(__FILE__);
+namespace {
+
+/// This file's logger.
+CLocalLogger Logger(__FILE__);
+
+}
 
 CSUConnection::CSUConnection(CConnection *  conn)
     : IProtocol(conn),

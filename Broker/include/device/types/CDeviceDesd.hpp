@@ -54,7 +54,7 @@ public:
     SettingValue GetStorage() const;
 
     /// Increases the storage of this DESD by the specified amount.
-    void StepStorage(const SettingValue step);
+    void StepStorage(const SettingValue step = 1.0);
 };
 
 } // namespace device

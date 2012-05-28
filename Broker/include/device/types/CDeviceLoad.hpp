@@ -54,7 +54,7 @@ public:
     SettingValue GetDrain() const;
 
     /// Increases the energy drain of this load by the specified amount.
-    void StepDrain(const SettingValue step);
+    void StepDrain(const SettingValue step = 1.0);
 };
 
 } // namespace device

@@ -54,7 +54,7 @@ public:
     SettingValue GetGeneration() const;
     
     /// Increases the energy generation of this DRER by step.
-    void StepGeneration(const SettingValue step);
+    void StepGeneration(const SettingValue step = 1.0);
 };
 
 } // namespace device

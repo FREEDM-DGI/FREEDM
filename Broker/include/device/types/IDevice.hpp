@@ -77,7 +77,7 @@ protected:
     friend class CPhysicalDeviceManager; // Temporary?
     
     /// Constructor which takes an identifier and device adapter
-    IDevice(Identifier device, IPhysicalAdapter::Pointer adapter);
+    IDevice(const Identifier device, IPhysicalAdapter::Pointer adapter);
 
     /// Gets the setting of some key from the structure
     virtual SettingValue Get(const SettingKey key) const;
@@ -85,14 +85,14 @@ protected:
     /// Sets the value of some key in the structure
     virtual void Set(const SettingKey key, const SettingValue value);
 
-    /// Mutex to protect the device from other threads
-    boost::mutex m_mutex;
-
     /// Unique identifier for the device
     Identifier m_identifier;
 
     /// "Driver" that handles the device data
     IPhysicalAdapter::Pointer m_adapter;
+    
+    /// Mutex to protect the device from other threads
+    boost::mutex m_mutex;
 };
 
 } // namespace device

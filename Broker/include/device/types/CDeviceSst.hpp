@@ -54,7 +54,7 @@ public:
     SettingValue GetGateway() const;
     
     /// Increases the gateway value of this SST by the specified amount.
-    void StepGateway(const SettingValue step);
+    void StepGateway(const SettingValue step = 1.0);
 };
 
 } // namespace device

@@ -47,7 +47,7 @@ CLocalLogger Logger(__FILE__);
 /// @param adapter The implementation scheme of the device
 ////////////////////////////////////////////////////////////////////////////////
 IDevice::IDevice(Identifier device, IPhysicalAdapter::Pointer adapter)
-: m_mutex(), m_identifier(device), m_adapter(adapter)
+: m_identifier(device), m_adapter(adapter), m_mutex()
 {
     Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
 }

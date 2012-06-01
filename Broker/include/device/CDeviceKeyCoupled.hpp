@@ -29,10 +29,15 @@
 #include <string>
 #include <fstream>
 
+#include "IPhysicalAdapter.hpp"
+
 namespace freedm
 {
 namespace broker
 {
+namespace device
+{
+
 /// forward declaration
 class CDeviceKeyCoupled;
 
@@ -80,12 +85,13 @@ class CDeviceKeyCoupled
                                           const CDeviceKeyCoupled & p_dkey );
     private:
         /// unique device identifier
-        std::string m_device;
+        Identifier m_device;
         
         /// variable of interest
-        std::string m_key;
+        SettingKey m_key;
 };
 }//namespace broker
 } // namespace freedm
+} // namespace device
 
 #endif // C_DEVICE_KEY_COUPLED_HPP

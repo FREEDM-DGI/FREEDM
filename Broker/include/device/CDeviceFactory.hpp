@@ -80,7 +80,8 @@ public:
             const std::string host, const std::string port);
 
     /// Registers a device class with the factory.
-    void RegisterDeviceClass(const std::string key, FactoryFunction value);
+    void RegisterDeviceClass(const std::string key,
+            const FactoryFunction value);
 
     /// Creates a device and registers it with the factory's device manager.
     void CreateDevice(const Identifier deviceID, const std::string deviceType);

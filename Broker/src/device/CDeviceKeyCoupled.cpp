@@ -30,6 +30,9 @@ namespace freedm
 {
 namespace broker
 {
+namespace device
+{
+
 ////////////////////////////////////////////////////////////////////////////////
 /// operator<( const CDeviceKeyCoupled &, const CDeviceKeyCoupled & )
 ///
@@ -118,5 +121,7 @@ CDeviceKeyCoupled::CDeviceKeyCoupled( const std::string & p_device,
 {
     // skip
 }
+
+} // namespace device
 }//namespace broker
 } // namespace freedm

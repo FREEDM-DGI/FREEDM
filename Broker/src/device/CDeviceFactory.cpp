@@ -136,7 +136,7 @@ void CDeviceFactory::init(CPhysicalDeviceManager::Pointer manager,
 ///  the factory is configured with init.
 ////////////////////////////////////////////////////////////////////////////////
 void CDeviceFactory::RegisterDeviceClass(const std::string key,
-        FactoryFunction value)
+        const FactoryFunction value)
 {
     Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
 

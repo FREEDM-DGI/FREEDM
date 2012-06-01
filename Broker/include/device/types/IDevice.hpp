@@ -80,10 +80,10 @@ protected:
     IDevice(const Identifier device, IPhysicalAdapter::Pointer adapter);
 
     /// Gets the setting of some key from the structure
-    virtual SettingValue Get(const SettingKey key) const;
+    SettingValue Get(const SettingKey key) const;
 
     /// Sets the value of some key in the structure
-    virtual void Set(const SettingKey key, const SettingValue value);
+    void Set(const SettingKey key, const SettingValue value);
 
     /// Unique identifier for the device
     Identifier m_identifier;

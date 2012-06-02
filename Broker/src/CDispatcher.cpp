@@ -58,7 +58,7 @@ CLocalLogger Logger(__FILE__);
 ///////////////////////////////////////////////////////////////////////////////
 CDispatcher::CDispatcher()
 {
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
 }
 
@@ -73,7 +73,7 @@ CDispatcher::CDispatcher()
 ///////////////////////////////////////////////////////////////////////////////
 void CDispatcher::HandleRequest(CBroker &broker, CMessage msg)
 {
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     ptree sub_;
     ptree::const_iterator it_;
     std::map< std::string, IReadHandler *>::const_iterator mapIt_;
@@ -108,7 +108,7 @@ void CDispatcher::HandleRequest(CBroker &broker, CMessage msg)
         ptree sub_ = p_mesg.get_child("message.submessages");
         for( it_ = sub_.begin(); it_ != sub_.end(); ++it_ )
         {
-            Logger.Debug << "Processing " << it_->first
+            Logger.Trace << "Processing " << it_->first
                     << std::endl;
 
             // Retrieve current key and iterate through all matching
@@ -149,7 +149,7 @@ void CDispatcher::HandleRequest(CBroker &broker, CMessage msg)
                     m_readHandlers.upper_bound( key_)     )
                 {
                     // Just log this for now
-                    Logger.Debug << "Submessage '" << key_ << "' had no read handlers.";
+                    Logger.Trace << "Submessage '" << key_ << "' had no read handlers.";
                 }
             }
         }
@@ -158,7 +158,7 @@ void CDispatcher::HandleRequest(CBroker &broker, CMessage msg)
         if( sub_.begin() == sub_.end() )
         {
             // Just log this for now
-            Logger.Debug << "Message had no submessages.";
+            Logger.Trace << "Message had no submessages.";
         }
     }
     catch( boost::property_tree::ptree_bad_path &e )
@@ -186,7 +186,7 @@ void CDispatcher::ReadHandlerCallback(IReadHandler *h, CMessage msg)
 ///////////////////////////////////////////////////////////////////////////////
 void CDispatcher::HandleWrite( ptree &p_mesg )
 {
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     ptree sub_;
     ptree::const_iterator it_;
     std::map< std::string, IWriteHandler *>::const_iterator mapIt_;
@@ -205,7 +205,7 @@ void CDispatcher::HandleWrite( ptree &p_mesg )
                 mapIt_ != m_writeHandlers.upper_bound( "any" );
                 ++mapIt_ )
         {
-           Logger.Debug << "Processing 'any'" << std::endl;  
+           Logger.Trace << "Processing 'any'" << std::endl;  
 	  (mapIt_->second)->HandleWrite( p_mesg );
         }
 
@@ -214,7 +214,7 @@ void CDispatcher::HandleWrite( ptree &p_mesg )
         ptree sub_ = p_mesg.get_child("message.submessages");
         for( it_ = sub_.begin(); it_ != sub_.end(); ++it_ )
         {
-            Logger.Debug << "Processing " << it_->first
+            Logger.Trace << "Processing " << it_->first
                     << std::endl;
 
             // Retrieve current key and iterate through all matching
@@ -234,7 +234,7 @@ void CDispatcher::HandleWrite( ptree &p_mesg )
                 m_writeHandlers.upper_bound( key_)     )
             {
                 // Just log this for now
-                Logger.Debug << "Submessage '" << key_ << "' had no write handlers.";
+                Logger.Trace << "Submessage '" << key_ << "' had no write handlers.";
             }
         }
 
@@ -262,7 +262,7 @@ void CDispatcher::HandleWrite( ptree &p_mesg )
 void CDispatcher::RegisterReadHandler(const std::string &module, const std::string &p_type,
         IReadHandler *p_handler)
 {
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
     {
         // Scoped lock, will release mutex at end of {}
@@ -290,7 +290,7 @@ void CDispatcher::RegisterReadHandler(const std::string &module, const std::stri
 void CDispatcher::RegisterWriteHandler(const std::string &module, const std::string &p_type,
         IWriteHandler *p_handler )
 {
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     {
         // Scoped lock, will release mutex at end of {}
         boost::lock_guard< boost::mutex > scopedLock_( m_wMutex );

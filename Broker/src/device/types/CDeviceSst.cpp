@@ -49,7 +49,7 @@ CDeviceSst::CDeviceSst(const Identifier device,
         IPhysicalAdapter::Pointer adapter)
 : IDevice(device, adapter)
 {
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -59,7 +59,7 @@ CDeviceSst::CDeviceSst(const Identifier device,
 ////////////////////////////////////////////////////////////////////////////////
 CDeviceSst::~CDeviceSst()
 {
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -71,7 +71,7 @@ CDeviceSst::~CDeviceSst()
 ////////////////////////////////////////////////////////////////////////////////
 SettingValue CDeviceSst::GetGateway() const
 {
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     return Get("gateway");
 }
 
@@ -85,7 +85,7 @@ SettingValue CDeviceSst::GetGateway() const
 ////////////////////////////////////////////////////////////////////////////////
 void CDeviceSst::StepGateway(const SettingValue step)
 {
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     Set("gateway", GetGateway() + step);
 }
 

@@ -49,12 +49,12 @@ std::string basename(const std::string s)
     return s.substr(idx + 1);
 }
 CLog::CLog(const CLoggerPointer p, const unsigned int level_,
-        std::string name_, std::ostream *out_) :
+        std::string name_, std::ostream* const out_) :
 m_parent(p), m_level(level_), m_name(name_), m_ostream(out_)
 {
     //pass
 }
-std::streamsize CLog::write(const char* s, std::streamsize n)
+std::streamsize CLog::write(const char* const s, std::streamsize n)
 {
     if (GetOutputLevel() >= m_level)
     {
@@ -70,7 +70,8 @@ unsigned int CLog::GetOutputLevel() const
     return m_parent->GetOutputLevel();
 }
 CLocalLogger::CLocalLogger(const std::string loggername)
-: Debug(this, 7, basename(loggername) + " : Debug"),
+: Trace(this, 8, basename(loggername) + " : Trace"),
+Debug(this, 7, basename(loggername) + " : Debug"),
 Info(this, 6, basename(loggername) + " : Info"),
 Notice(this, 5, basename(loggername) + " : Notice"),
 Status(this, 4, basename(loggername) + " : Status"),
@@ -174,9 +175,9 @@ void CGlobalLogger::SetInitialLoggerLevels(const std::string loggerCfgFile)
         }
     }
 }
-void CGlobalLogger::ListLoggers()
+void CGlobalLogger::ListLoggers() const
 {
-    OutputMap::iterator it;
+    OutputMap::const_iterator it;
     for (it = m_loggers.begin(); it != m_loggers.end(); it++)
     {
         std::cout << ( *it ).first << "=" << ( *it ).second << std::endl;

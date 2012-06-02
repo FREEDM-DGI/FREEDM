@@ -50,7 +50,7 @@ CLocalLogger Logger(__FILE__);
 
 void IProtocol::Write(const CMessage & msg)
 {
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     boost::array<char, CReliableConnection::MAX_PACKET_SIZE>::iterator it;
 
     /// Previously, we would call Synthesize here. Unfortunately, that was an
@@ -82,7 +82,7 @@ void IProtocol::Write(const CMessage & msg)
     /// Use std::copy to copy the string into the buffer starting at it.
     it = std::copy(raw.begin(),raw.end(),it);
     
-    Logger.Debug<<"Writing "<<raw.length()<<" bytes to channel"<<std::endl;
+    Logger.Trace<<"Writing "<<raw.length()<<" bytes to channel"<<std::endl;
 
     #ifdef CUSTOMNETWORK
     if((rand()%100) >= GetConnection()->GetReliability()) 
@@ -100,7 +100,7 @@ void IProtocol::Write(const CMessage & msg)
     }
     catch(boost::system::system_error &e)
     {
-        Logger.Debug << "Writing Failed: " << e.what() << std::endl;
+        Logger.Trace << "Writing Failed: " << e.what() << std::endl;
         GetConnection()->Stop(); 
     }
 }

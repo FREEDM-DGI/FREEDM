@@ -37,7 +37,7 @@ boost::tuple<boost::tribool, InputIterator> Parse(CMessage &req,
         InputIterator begin, InputIterator end)
 {
     static CLocalLogger RPLogger(__PRETTY_FUNCTION__);
-    RPLogger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    RPLogger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
     std::stringstream ss_;
     std::ostreambuf_iterator<char> ss_buf( ss_ );
@@ -46,7 +46,7 @@ boost::tuple<boost::tribool, InputIterator> Parse(CMessage &req,
 
     try 
     {
-        RPLogger.Debug << "Loading xml: " << std::endl
+        RPLogger.Trace << "Loading xml: " << std::endl
                 << ss_.str() << std::endl;
         result = req.Load( ss_ );
     }
@@ -64,7 +64,7 @@ boost::tuple< boost::tribool, OutputIterator> Synthesize( CMessage &msg,
     OutputIterator begin, size_t p_outMaxLength )
 {
     static CLocalLogger RPLogger(__PRETTY_FUNCTION__);
-    RPLogger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    RPLogger.Trace << __PRETTY_FUNCTION__ << std::endl;
     std::stringstream ss_;
     std::string str_;
     boost::tribool result = boost::indeterminate;
@@ -73,7 +73,7 @@ boost::tuple< boost::tribool, OutputIterator> Synthesize( CMessage &msg,
     try
     {
         msg.Save( ss_ );
-        RPLogger.Debug << "Saved xml: " << std::endl
+        RPLogger.Trace << "Saved xml: " << std::endl
                 << ss_.str() << std::endl;
         result = true;
     }

@@ -58,7 +58,7 @@ CLocalLogger Logger(__FILE__);
 ////////////////////////////////////////////////////////////////////////////////
 CDeviceFactory& CDeviceFactory::instance()
 {
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     static CDeviceFactory instance;
     return instance;
 }
@@ -94,7 +94,7 @@ void CDeviceFactory::init(CPhysicalDeviceManager::Pointer manager,
         boost::asio::io_service& ios, const std::string fpgaCfgFile,
         const std::string host, const std::string port)
 {
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     Logger.Info << "Initialized the device factory" << std::endl;
     m_manager = manager;
 #if defined USE_DEVICE_PSCAD
@@ -138,7 +138,7 @@ void CDeviceFactory::init(CPhysicalDeviceManager::Pointer manager,
 void CDeviceFactory::RegisterDeviceClass(const std::string key,
         const FactoryFunction value)
 {
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
     if (m_registry.count(key) != 0)
     {
@@ -176,7 +176,7 @@ void CDeviceFactory::RegisterDeviceClass(const std::string key,
 void CDeviceFactory::CreateDevice(const Identifier deviceID,
         const std::string deviceType)
 {
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
     if (!m_initialized)
     {
@@ -219,7 +219,7 @@ void CDeviceFactory::CreateDevice(const Identifier deviceID,
 ////////////////////////////////////////////////////////////////////////////////
 void CDeviceFactory::CreateDevices(const std::vector<std::string>& deviceList)
 {
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
     if (!m_initialized)
     {
@@ -276,7 +276,7 @@ void CDeviceFactory::CreateDevices(const std::vector<std::string>& deviceList)
 CDeviceFactory::CDeviceFactory()
 : m_adapter(), m_manager(), m_registry(), m_initialized(false)
 {
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 }
 
 

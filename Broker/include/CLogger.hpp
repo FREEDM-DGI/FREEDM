@@ -53,6 +53,7 @@ std::string basename( const std::string s );
 
 class CLocalLogger;
 
+/// Boost requires this to be a raw pointer.
 typedef CLocalLogger* CLoggerPointer;
 
 /// Tracks the global logging configuration
@@ -79,7 +80,7 @@ class CGlobalLogger : public boost::noncopyable
         /// Reads the logging levels of all loggers from the config file.
         void SetInitialLoggerLevels(const std::string loggerCfgFile);
         /// Lists all the avaible loggers and their current levels
-        void ListLoggers();
+        void ListLoggers() const;
     private:
         /// What the output level is if not set specifically.
         unsigned int m_default;
@@ -101,9 +102,9 @@ class CLog : public boost::iostreams::sink
     public:
         /// Constructor; prepares a log of a specified level.
         CLog(const CLoggerPointer p, const unsigned int level_,
-                const std::string name_, std::ostream *out_= &std::clog );
+                const std::string name_, std::ostream* const out_= &std::clog );
         /// Writes from a character array into the logger stream
-        std::streamsize write( const char* s, std::streamsize n);
+        std::streamsize write( const char* const s, std::streamsize n);
         /// Determine the level of this logger
         unsigned int GetOutputLevel() const;
     private:
@@ -114,7 +115,7 @@ class CLog : public boost::iostreams::sink
         /// String name of this logger
         const std::string m_name;
         /// Output stream to use.
-        std::ostream *m_ostream;
+        std::ostream * const m_ostream;
 };
 
 class CLocalLogger : private boost::noncopyable
@@ -131,6 +132,8 @@ class CLocalLogger : private boost::noncopyable
     public:
         ///Initializes the local statics
         CLocalLogger(const std::string loggername);
+        ///Logger
+        boost::iostreams::stream<CLog> Trace;
         ///Logger
 	boost::iostreams::stream<CLog> Debug;
         ///Logger

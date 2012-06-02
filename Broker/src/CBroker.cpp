@@ -84,7 +84,7 @@ CBroker::CBroker(const std::string& p_address, const std::string& p_port,
       m_newConnection(new CListener(m_ioService, m_connManager, *this, m_conMan.GetUUID())),
       m_phasetimer(m_ios)
 {
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     // Open the acceptor with the option to reuse the address (i.e. SO_REUSEADDR).
     boost::asio::ip::udp::resolver resolver(m_ioService);
     boost::asio::ip::udp::resolver::query query( p_address, p_port);
@@ -124,7 +124,7 @@ CBroker::~CBroker()
 ///////////////////////////////////////////////////////////////////////////////
 void CBroker::Run()
 {
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     // The io_service::run() call will block until all asynchronous operations
     // have finished. While the server is running, there is always at least one
     // asynchronous operation outstanding: the asynchronous accept call waiting
@@ -139,7 +139,7 @@ void CBroker::Run()
 ///////////////////////////////////////////////////////////////////////////////
 boost::asio::io_service& CBroker::GetIOService()
 {
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     return m_ioService;
 }
 
@@ -154,7 +154,7 @@ boost::asio::io_service& CBroker::GetIOService()
 ///////////////////////////////////////////////////////////////////////////////
 void CBroker::Stop()
 {
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     // Post a call to the stop function so that CBroker::stop() is safe to call
     // from any thread.
     m_ioService.post(boost::bind(&CBroker::HandleStop, this));
@@ -169,7 +169,7 @@ void CBroker::Stop()
 ///////////////////////////////////////////////////////////////////////////////
 void CBroker::HandleStop()
 {
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     // The server is stopped by canceling all outstanding asynchronous
     // operations. Once all operations have finished the io_service::run() call
     // will exit.
@@ -179,7 +179,7 @@ void CBroker::HandleStop()
 
 void CBroker::RegisterModule(CBroker::ModuleIdent m)
 {
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     m_schmutex.lock();
     boost::system::error_code err;
     bool exists;
@@ -213,7 +213,7 @@ void CBroker::RegisterModule(CBroker::ModuleIdent m)
 ///////////////////////////////////////////////////////////////////////////////
 CBroker::TimerHandle CBroker::AllocateTimer(CBroker::ModuleIdent module)
 {
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     m_schmutex.lock();
     CBroker::TimerHandle myhandle;
     boost::asio::deadline_timer* t = new boost::asio::deadline_timer(m_ioService);
@@ -238,19 +238,19 @@ CBroker::TimerHandle CBroker::AllocateTimer(CBroker::ModuleIdent module)
 void CBroker::Schedule(CBroker::TimerHandle h,
     boost::posix_time::time_duration wait, CBroker::Scheduleable x)
 {
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     m_schmutex.lock();
     CBroker::Scheduleable s;
     m_timers[h]->expires_from_now(wait);
     s = boost::bind(&CBroker::ScheduledTask,this,x,h,boost::asio::placeholders::error);
-    Logger.Debug<<"Scheduled task for timer "<<h<<std::endl;
+    Logger.Trace<<"Scheduled task for timer "<<h<<std::endl;
     m_timers[h]->async_wait(s);
     m_schmutex.unlock();
 }
 
 void CBroker::Schedule(ModuleIdent m, BoundScheduleable x, bool start_worker)
 {
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     RegisterModule(m);
     m_schmutex.lock();
     m_ready[m].push_back(x);
@@ -260,8 +260,8 @@ void CBroker::Schedule(ModuleIdent m, BoundScheduleable x, bool start_worker)
         Worker();
         m_schmutex.lock();
     }
-    Logger.Debug<<"Module "<<m<<" now has queue size: "<<m_ready[m].size()<<std::endl;
-    Logger.Debug<<"Scheduled task (NODELAY) for "<<m<<std::endl;
+    Logger.Trace<<"Module "<<m<<" now has queue size: "<<m_ready[m].size()<<std::endl;
+    Logger.Trace<<"Scheduled task (NODELAY) for "<<m<<std::endl;
     m_schmutex.unlock();
 }
 
@@ -275,7 +275,7 @@ void CBroker::Schedule(ModuleIdent m, BoundScheduleable x, bool start_worker)
 ///////////////////////////////////////////////////////////////////////////////
 void CBroker::ChangePhase(const boost::system::error_code &err)
 {
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     m_schmutex.lock();
     m_phase++;
     // Get the time without millisec and with millisec then see how many millsec we
@@ -306,7 +306,7 @@ void CBroker::ChangePhase(const boost::system::error_code &err)
     }
     if(m_modules.size() > 0)
     {
-        Logger.Debug<<"Phase: "<<m_modules[m_phase]<<std::endl;
+        Logger.Trace<<"Phase: "<<m_modules[m_phase]<<std::endl;
     }
     //If the worker isn't going, start him again when you change phases.
     if(!m_busy)
@@ -333,15 +333,15 @@ void CBroker::ChangePhase(const boost::system::error_code &err)
 void CBroker::ScheduledTask(CBroker::Scheduleable x, CBroker::TimerHandle handle,
     const boost::system::error_code &err)
 {
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     m_schmutex.lock();
     ModuleIdent module = m_allocs[handle];
-    Logger.Debug<<"Handle finished: "<<handle<<" For module "<<module<<std::endl;
+    Logger.Trace<<"Handle finished: "<<handle<<" For module "<<module<<std::endl;
     // First, prepare another bind, which uses the given error
     CBroker::BoundScheduleable y = boost::bind(x,err);
     // Put it into the ready queue
     m_ready[module].push_back(y);
-    Logger.Debug<<"Module "<<module<<" now has queue size: "<<m_ready[module].size()<<std::endl;
+    Logger.Trace<<"Module "<<module<<" now has queue size: "<<m_ready[module].size()<<std::endl;
     if(!m_busy)
     {
         m_schmutex.unlock();
@@ -364,7 +364,7 @@ void CBroker::ScheduledTask(CBroker::Scheduleable x, CBroker::TimerHandle handle
 ///////////////////////////////////////////////////////////////////////////////
 void CBroker::Worker()
 {
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     m_schmutex.lock();
     if(m_phase >= m_modules.size())
     {
@@ -375,7 +375,7 @@ void CBroker::Worker()
     std::string active = m_modules[m_phase];
     if(m_ready[active].size() > 0)
     {
-        Logger.Debug<<"Performing Job"<<std::endl;
+        Logger.Trace<<"Performing Job"<<std::endl;
         // Mark that the worker has something to do
         m_busy = true;
         // Extract the first item from the work queue:
@@ -391,7 +391,7 @@ void CBroker::Worker()
     else
     {
         m_busy = false;
-        Logger.Debug<<"Worker Idle"<<std::endl;
+        Logger.Trace<<"Worker Idle"<<std::endl;
     }
     m_schmutex.unlock();
 }

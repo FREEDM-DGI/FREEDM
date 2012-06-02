@@ -74,7 +74,7 @@ CReliableConnection::CReliableConnection(boost::asio::io_service& p_ioService,
     m_broker(p_broker),
     m_uuid(uuid)
 {
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     m_reliability = 100;
 }
 
@@ -87,7 +87,7 @@ CReliableConnection::CReliableConnection(boost::asio::io_service& p_ioService,
 ///////////////////////////////////////////////////////////////////////////////
 boost::asio::ip::udp::socket& CReliableConnection::GetSocket()
 {
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
     return m_socket;
 }

@@ -91,7 +91,7 @@ CRtdsAdapter::Pointer CRtdsAdapter::Create(
         boost::asio::io_service & service, const std::string xml,
         const std::string tag)
 {
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     return CRtdsAdapter::Pointer(new CRtdsAdapter(service, xml, tag));
 }
 
@@ -124,7 +124,7 @@ CRtdsAdapter::CRtdsAdapter(boost::asio::io_service & service,
 : IConnectionAdapter(service), m_cmdTable(xml, tag + ".command"),
 m_stateTable(xml, tag + ".state"), m_GlobalTimer(service)
 {
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     m_rxCount = m_stateTable.m_length;
     m_txCount = m_cmdTable.m_length;
 
@@ -167,7 +167,7 @@ m_stateTable(xml, tag + ".state"), m_GlobalTimer(service)
 //////////////////////////////////////////////////////////////////////////
 void CRtdsAdapter::Run()
 {
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     //TIMESTEP is used by deadline_timer.async_wait at the end of Run().  
     //We keep TIMESTEP very small as we actually do not care if we wait at all.
     //We simply need to use deadline_timer.async_wait to pass control back
@@ -180,10 +180,10 @@ void CRtdsAdapter::Run()
     //**********************************
     {
         boost::shared_lock<boost::shared_mutex> lockRead(m_cmdTable.m_mutex);
-        Logger.Debug << "Client_RTDS - obtained mutex as reader" << std::endl;
+        Logger.Trace << "Client_RTDS - obtained mutex as reader" << std::endl;
         //read from cmdTable
         memcpy(m_txBuffer, m_cmdTable.m_data, m_txBufSize);
-        Logger.Debug << "Client_RTDS - released reader mutex" << std::endl;
+        Logger.Trace << "Client_RTDS - released reader mutex" << std::endl;
     }// the scope is needed for mutex to auto release
 
     // FPGA will send values in big-endian byte order
@@ -238,12 +238,12 @@ void CRtdsAdapter::Run()
 #endif
     {
         boost::unique_lock<boost::shared_mutex> lockWrite(m_stateTable.m_mutex);
-        Logger.Debug << "Client_RTDS - obtained mutex as writer" << std::endl;
+        Logger.Trace << "Client_RTDS - obtained mutex as writer" << std::endl;
 
         //write to stateTable
         memcpy(m_stateTable.m_data, m_rxBuffer, m_rxBufSize);
 
-        Logger.Debug << "Client_RTDS - released writer mutex" << std::endl;
+        Logger.Trace << "Client_RTDS - released writer mutex" << std::endl;
     } //scope is needed for mutex to auto release
 
     //Start the timer; on timeout, this function is called again
@@ -280,7 +280,7 @@ void CRtdsAdapter::Run()
 void CRtdsAdapter::Set(const Identifier device, const SettingKey key,
         const SettingValue value)
 {
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
     try
     {
@@ -326,7 +326,7 @@ void CRtdsAdapter::Set(const Identifier device, const SettingKey key,
 SettingValue CRtdsAdapter::Get(const Identifier device, 
         const SettingKey key) const
 {
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
     try
     {
@@ -359,7 +359,7 @@ SettingValue CRtdsAdapter::Get(const Identifier device,
 ////////////////////////////////////////////////////////////////////////////
 void CRtdsAdapter::Quit()
 {
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     // close connection
     m_socket.close();
 }
@@ -382,7 +382,7 @@ void CRtdsAdapter::Quit()
 ////////////////////////////////////////////////////////////////////////////
 CRtdsAdapter::~CRtdsAdapter()
 {
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     //  perform teardown
     if (m_socket.is_open())
     {
@@ -416,7 +416,7 @@ CRtdsAdapter::~CRtdsAdapter()
 ////////////////////////////////////////////////////////////////////////////////
 void CRtdsAdapter::endian_swap(char *data, const int num_bytes)
 {
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     char * tmp = new char[num_bytes];
 
     for (int i = 0; i < num_bytes; ++i)

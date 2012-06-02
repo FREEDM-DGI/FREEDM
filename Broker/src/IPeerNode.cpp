@@ -72,7 +72,7 @@ IPeerNode::IPeerNode(std::string uuid, ConnManagerPtr connmgr)
     : m_uuid(uuid),
       m_connmgr(connmgr)
 {
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 }
 
 
@@ -87,7 +87,7 @@ IPeerNode::IPeerNode(std::string uuid, ConnManagerPtr connmgr)
 ////////////////////////////////////////////////////////////
 void IPeerNode::SetStatus(int status)
 {
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     m_status = status;
 }
 
@@ -139,7 +139,7 @@ bool IPeerNode::Send(freedm::broker::CMessage msg)
         Logger.Warn << "Couldn't Send Message To Peer (Sending Failed)" << std::endl;
         return false;
     }
-    Logger.Debug << "Sent message to peer" << std::endl;
+    Logger.Trace << "Sent message to peer" << std::endl;
     return true;
 }
 

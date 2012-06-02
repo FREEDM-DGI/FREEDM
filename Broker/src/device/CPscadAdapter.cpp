@@ -41,18 +41,18 @@ CLocalLogger Logger(__FILE__);
 }
 CPscadAdapter::Pointer CPscadAdapter::Create(boost::asio::io_service & service)
 {
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     return CPscadAdapter::Pointer(new CPscadAdapter(service));
 }
 CPscadAdapter::CPscadAdapter(boost::asio::io_service & service)
 : IConnectionAdapter(service)
 {
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 }
 void CPscadAdapter::Set(const Identifier device, const SettingKey key,
         const SettingValue value)
 {
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
     boost::asio::streambuf request;
     std::ostream request_stream(&request);
@@ -83,7 +83,7 @@ void CPscadAdapter::Set(const Identifier device, const SettingKey key,
 SettingValue CPscadAdapter::Get(const Identifier device,
         const SettingKey key) const
 {
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
     boost::asio::streambuf request;
     std::ostream request_stream(&request);
@@ -114,7 +114,7 @@ SettingValue CPscadAdapter::Get(const Identifier device,
 }
 void CPscadAdapter::Quit()
 {
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
     boost::asio::streambuf request;
     std::ostream request_stream(&request);
@@ -145,7 +145,7 @@ void CPscadAdapter::Quit()
 }
 CPscadAdapter::~CPscadAdapter()
 {
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
     //  perform teardown
     if (m_socket.is_open())

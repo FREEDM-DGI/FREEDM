@@ -49,7 +49,7 @@ CDeviceFid::CDeviceFid(const Identifier device,
         IPhysicalAdapter::Pointer adapter)
 : IDevice(device, adapter)
 {
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -59,7 +59,7 @@ CDeviceFid::CDeviceFid(const Identifier device,
 ////////////////////////////////////////////////////////////////////////////////
 CDeviceFid::~CDeviceFid()
 {
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -71,7 +71,7 @@ CDeviceFid::~CDeviceFid()
 ////////////////////////////////////////////////////////////////////////////////
 bool CDeviceFid::IsActive() const
 {
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     return Get("state") == 1;  // if not exactly 1, then something is wrong.
 }
 

@@ -142,7 +142,7 @@ namespace status_strings {
 CMessage::CMessage( CMessage::StatusType p_stat)
     : m_status ( p_stat ), m_never_expires(false)
 {
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 }
 
 /// Copy Constructor
@@ -158,7 +158,7 @@ CMessage::CMessage( const CMessage &p_m ) :
     m_sendtime( p_m.m_sendtime ),
     m_expiretime( p_m.m_expiretime )
 {
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 }
 
 /// Cmessage Equals operator
@@ -345,7 +345,7 @@ size_t CMessage::GetHash() const
 bool CMessage::Load( std::istream &p_is )
     throw ( boost::property_tree::file_parser_error )
 {
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     using boost::property_tree::ptree;
     ptree pt;
     bool result;
@@ -364,9 +364,9 @@ bool CMessage::Load( std::istream &p_is )
     // return false;
     try 
     {
-        Logger.Debug << "Loading pt." << std::endl;
+        Logger.Trace << "Loading pt." << std::endl;
         *this = CMessage( pt );
-        Logger.Debug << "UUID: " << m_srcUUID << std::endl
+        Logger.Trace << "UUID: " << m_srcUUID << std::endl
                 << "Status: "
                 << status_strings::toString( m_status )
         << std::endl;
@@ -392,7 +392,7 @@ bool CMessage::Load( std::istream &p_is )
 ///////////////////////////////////////////////////////////////////////////////
 void CMessage::Save( std::ostream &p_os ) const
 {
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     using boost::property_tree::ptree;
     ptree pt;
 
@@ -410,7 +410,7 @@ void CMessage::Save( std::ostream &p_os ) const
 ///////////////////////////////////////////////////////////////////////////////
 CMessage::operator ptree () const
 {
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     // This is basically the same as Save() except it doesn't
     // perform the XML conversion
     using boost::property_tree::ptree;
@@ -438,7 +438,7 @@ CMessage::operator ptree () const
 ///////////////////////////////////////////////////////////////////////////////
 CMessage::CMessage( const ptree &pt )
 {
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     try
     {
         std::string time_tmp;

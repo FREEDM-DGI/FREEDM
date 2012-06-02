@@ -81,7 +81,7 @@ CLocalLogger Logger(__FILE__);
 ////////////////////////////////////////////////////////////////////////////
 CTableStructure::CTableStructure(const std::string & p_xml, const std::string & p_tag)
 {
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     using boost::property_tree::ptree;
     std::stringstream error;
     std::string device;
@@ -157,7 +157,7 @@ CTableStructure::CTableStructure(const std::string & p_xml, const std::string & 
 ////////////////////////////////////////////////////////////////////////////
 size_t CTableStructure::FindIndex(const CDeviceKeyCoupled & p_dkey) const
 {
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     // search by device for the requested p_dkey
     return ( m_TableHeaders.by<SDevice > ( ).at(p_dkey) );
 }

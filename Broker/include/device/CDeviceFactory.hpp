@@ -147,7 +147,7 @@ private:
 template <class DeviceType>
 void CDeviceFactory::CreateDevice(const Identifier deviceID)
 {
-    CDeviceFactoryHPPLogger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    CDeviceFactoryHPPLogger.Trace << __PRETTY_FUNCTION__ << std::endl;
     if (!m_initialized)
     {
         std::stringstream ss;

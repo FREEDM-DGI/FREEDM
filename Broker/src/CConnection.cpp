@@ -75,7 +75,7 @@ CConnection::CConnection(boost::asio::io_service& p_ioService,
   CConnectionManager& p_manager, CBroker& p_broker, std::string uuid)
   : CReliableConnection(p_ioService,p_manager,p_broker,uuid)
 {
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     m_protocols.insert(ProtocolMap::value_type(CSUConnection::Identifier(),
         ProtocolPtr(new CSUConnection(this))));
     m_protocols.insert(ProtocolMap::value_type(CSRConnection::Identifier(),
@@ -92,7 +92,7 @@ CConnection::CConnection(boost::asio::io_service& p_ioService,
 ///////////////////////////////////////////////////////////////////////////////
 void CConnection::Start()
 {
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -106,13 +106,13 @@ void CConnection::Start()
 ///////////////////////////////////////////////////////////////////////////////
 void CConnection::Stop()
 {
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     ProtocolMap::iterator sit;
     for(sit = m_protocols.begin(); sit != m_protocols.end(); sit++)
     {
         (*sit).second->Stop();
     }   
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     GetSocket().close();
 }
  
@@ -130,7 +130,7 @@ void CConnection::Stop()
 ///////////////////////////////////////////////////////////////////////////////
 void CConnection::Send(CMessage & p_mesg)
 {
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
     // If the UUID of the reciepient (The value stored by GetUUID of this
     // object) is the same as the this node's uuid (As stored by the
@@ -165,7 +165,7 @@ void CConnection::Send(CMessage & p_mesg)
 ///////////////////////////////////////////////////////////////////////////////
 void CConnection::RecieveACK(const CMessage &msg)
 {
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     std::string protocol = msg.GetProtocol();
     ProtocolMap::iterator sit = m_protocols.find(protocol);
     if(sit != m_protocols.end())
@@ -185,7 +185,7 @@ void CConnection::RecieveACK(const CMessage &msg)
 ///////////////////////////////////////////////////////////////////////////////
 bool CConnection::Recieve(const CMessage &msg)
 {
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     ProtocolMap::iterator sit = m_protocols.find(msg.GetProtocol());
     if(sit != m_protocols.end())
     {

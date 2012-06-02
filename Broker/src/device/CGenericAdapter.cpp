@@ -46,7 +46,7 @@ CLocalLogger Logger(__FILE__);
 ////////////////////////////////////////////////////////////////////////////////
 CGenericAdapter::Pointer CGenericAdapter::Create()
 {
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     return Pointer(new CGenericAdapter);
 }
 
@@ -65,7 +65,7 @@ CGenericAdapter::Pointer CGenericAdapter::Create()
 SettingValue CGenericAdapter::Get(const Identifier device,
         const SettingKey key) const
 {
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     
     // Get a map of keys/values from the map of devices/maps.
     // Then look up the value in that map.
@@ -99,7 +99,7 @@ SettingValue CGenericAdapter::Get(const Identifier device,
 void CGenericAdapter::Set(const Identifier device, const SettingKey key,
         const SettingValue value)
 {
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     m_registry[device][key] = value;
 }
 

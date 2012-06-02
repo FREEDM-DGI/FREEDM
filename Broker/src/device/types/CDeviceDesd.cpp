@@ -49,7 +49,7 @@ CDeviceDesd::CDeviceDesd(const Identifier device,
         IPhysicalAdapter::Pointer adapter)
 : IDevice(device, adapter)
 {
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -59,7 +59,7 @@ CDeviceDesd::CDeviceDesd(const Identifier device,
 ////////////////////////////////////////////////////////////////////////////////
 CDeviceDesd::~CDeviceDesd()
 {
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -71,7 +71,7 @@ CDeviceDesd::~CDeviceDesd()
 ////////////////////////////////////////////////////////////////////////////////
 SettingValue CDeviceDesd::GetStorage() const
 {
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     return Get("storage");
 }
 
@@ -85,7 +85,7 @@ SettingValue CDeviceDesd::GetStorage() const
 ////////////////////////////////////////////////////////////////////////////////
 void CDeviceDesd::StepStorage(const SettingValue step)
 {
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     Set("storage", GetStorage() + step);
 }
 

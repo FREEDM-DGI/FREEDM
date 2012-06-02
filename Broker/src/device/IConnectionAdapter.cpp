@@ -54,7 +54,7 @@ CLocalLogger Logger(__FILE__);
 ////////////////////////////////////////////////////////////////////////////
 IConnectionAdapter::IConnectionAdapter(boost::asio::io_service& service)
 : m_socket(service) {
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -75,7 +75,7 @@ IConnectionAdapter::IConnectionAdapter(boost::asio::io_service& service)
 void IConnectionAdapter::Connect(const std::string hostname,
         const std::string port)
 {
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     boost::asio::ip::tcp::resolver resolver(m_socket.get_io_service());
     boost::asio::ip::tcp::resolver::query query(hostname, port);
     boost::asio::ip::tcp::resolver::iterator it = resolver.resolve(query);

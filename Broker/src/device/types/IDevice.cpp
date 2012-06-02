@@ -49,7 +49,7 @@ CLocalLogger Logger(__FILE__);
 IDevice::IDevice(Identifier device, IPhysicalAdapter::Pointer adapter)
 : m_identifier(device), m_adapter(adapter), m_mutex()
 {
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -59,7 +59,7 @@ IDevice::IDevice(Identifier device, IPhysicalAdapter::Pointer adapter)
 ////////////////////////////////////////////////////////////////////////////////
 IDevice::~IDevice()
 {
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -72,7 +72,7 @@ IDevice::~IDevice()
 ////////////////////////////////////////////////////////////////////////////////
 SettingValue IDevice::Get(const SettingKey key) const
 {
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     return m_adapter->Get(m_identifier, key);
 }
 
@@ -86,7 +86,7 @@ SettingValue IDevice::Get(const SettingKey key) const
 ////////////////////////////////////////////////////////////////////////////////
 void IDevice::Set(const SettingKey key, const SettingValue value)
 {
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     m_adapter->Set(m_identifier, key, value);
 }
 
@@ -98,7 +98,7 @@ void IDevice::Set(const SettingKey key, const SettingValue value)
 ////////////////////////////////////////////////////////////////////////////////
 void IDevice::Lock()
 {
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     m_mutex.lock();
 }
 
@@ -110,7 +110,7 @@ void IDevice::Lock()
 ////////////////////////////////////////////////////////////////////////////////
 void IDevice::Unlock()
 {
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     m_mutex.unlock();
 }
 
@@ -123,7 +123,7 @@ void IDevice::Unlock()
 ////////////////////////////////////////////////////////////////////////////////
 bool IDevice::TryLock()
 {
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     return m_mutex.try_lock();
 }
 
@@ -136,7 +136,7 @@ bool IDevice::TryLock()
 ////////////////////////////////////////////////////////////////////////////////
 Identifier IDevice::GetID() const
 {
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     return m_identifier;
 }
 

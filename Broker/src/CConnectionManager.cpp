@@ -60,7 +60,7 @@ CLocalLogger Logger(__FILE__);
 ///////////////////////////////////////////////////////////////////////////////
 CConnectionManager::CConnectionManager()
 {
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     m_uuid = CGlobalConfiguration::instance().GetUUID();
     m_hostname.hostname = CGlobalConfiguration::instance().GetHostname();
     m_hostname.port = CGlobalConfiguration::instance().GetListenPort();
@@ -75,7 +75,7 @@ CConnectionManager::CConnectionManager()
 ///////////////////////////////////////////////////////////////////////////////
 void CConnectionManager::Start (CListener::ConnectionPtr c)
 {
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     c->Start();
     m_inchannel = c; 
 }
@@ -90,7 +90,7 @@ void CConnectionManager::Start (CListener::ConnectionPtr c)
 ///////////////////////////////////////////////////////////////////////////////
 void CConnectionManager::PutConnection(std::string uuid, ConnectionPtr c)
 {
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     {  
         boost::lock_guard< boost::mutex > scopedLock_( m_Mutex );
         m_connections.insert(connectionmap::value_type(uuid,c));
@@ -107,7 +107,7 @@ void CConnectionManager::PutConnection(std::string uuid, ConnectionPtr c)
 ///////////////////////////////////////////////////////////////////////////////
 void CConnectionManager::PutHostname(std::string u_, std::string host_, std::string port)
 {
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;  
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;  
     {
         boost::lock_guard< boost::mutex > scopedLock_( m_Mutex );
         remotehost x;
@@ -128,7 +128,7 @@ void CConnectionManager::PutHostname(std::string u_, std::string host_, std::str
 ///////////////////////////////////////////////////////////////////////////////
 void CConnectionManager::PutHostname(std::string u_, remotehost host_)
 {
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;  
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;  
     {
         boost::lock_guard< boost::mutex > scopedLock_( m_Mutex );
         m_hostnames.insert(std::pair<std::string, remotehost>(u_, host_));  
@@ -143,7 +143,7 @@ void CConnectionManager::PutHostname(std::string u_, remotehost host_)
 ///////////////////////////////////////////////////////////////////////////////
 void CConnectionManager::Stop (CConnection::ConnectionPtr c)
 {
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     if(m_connections.right.count(c))
     {
         m_connections.right.erase(c);
@@ -160,7 +160,7 @@ void CConnectionManager::Stop (CConnection::ConnectionPtr c)
 ///////////////////////////////////////////////////////////////////////////////
 void CConnectionManager::Stop (CListener::ConnectionPtr c)
 {
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     c->Stop();
     //TODO: Make the whole thing terminate if the listner says stop.
 }
@@ -175,14 +175,14 @@ void CConnectionManager::Stop (CListener::ConnectionPtr c)
 ///////////////////////////////////////////////////////////////////////////////
 void CConnectionManager::StopAll ()
 {
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     while(m_connections.size() > 0)
     {
       Stop((*m_connections.left.begin()).second); //Side effect of stop should make this map smaller
     }
     m_connections.clear();
     Stop(m_inchannel);
-    Logger.Debug << "All Connections Closed" << std::endl;
+    Logger.Trace << "All Connections Closed" << std::endl;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -223,7 +223,7 @@ remotehost CConnectionManager::GetHostnameByUUID(std::string uuid) const
 ///////////////////////////////////////////////////////////////////////////////
 ConnectionPtr CConnectionManager::GetConnectionByUUID(std::string uuid_)
 {
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
     ConnectionPtr c_;  
     std::string s_,port;
@@ -261,18 +261,18 @@ ConnectionPtr CConnectionManager::GetConnectionByUUID(std::string uuid_)
     port = mapIt_->second.port;
 
     // Create a new CConnection object for this host	
-    Logger.Debug<<"Constructing CConnection"<<std::endl;
+    Logger.Trace<<"Constructing CConnection"<<std::endl;
     c_.reset(new CConnection(m_inchannel->GetIOService(), *this, m_inchannel->GetBroker(), uuid_));  
    
     // Initiate the TCP connection
-    Logger.Debug<<"Computing remote endpoint"<<std::endl;
+    Logger.Trace<<"Computing remote endpoint"<<std::endl;
     boost::asio::ip::udp::resolver resolver(m_inchannel->GetIOService());
     boost::asio::ip::udp::resolver::query query( s_, port);
     boost::asio::ip::udp::endpoint endpoint = *resolver.resolve( query );
     c_->GetSocket().connect( endpoint ); 
 
     //Once the connection is built, connection manager gets a call back to register it.    
-    Logger.Debug<<"Inserting connection"<<std::endl;
+    Logger.Trace<<"Inserting connection"<<std::endl;
     PutConnection(uuid_,c_);
     #ifdef CUSTOMNETWORK
     LoadNetworkConfig();
@@ -290,7 +290,7 @@ ConnectionPtr CConnectionManager::GetConnectionByUUID(std::string uuid_)
 ///////////////////////////////////////////////////////////////////////////////
 void CConnectionManager::LoadNetworkConfig()
 {
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     boost::property_tree::ptree pt;
     boost::property_tree::read_xml("network.xml",pt);    
     int inreliability = pt.get("network.incoming.reliability",100);

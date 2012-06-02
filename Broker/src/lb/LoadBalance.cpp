@@ -116,7 +116,7 @@ lbAgent::lbAgent(std::string uuid_,
     m_phyDevManager(m_phyManager),
     m_broker(broker)
 {
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     PeerNodePtr self_(this);
     InsertInPeerSet(m_AllPeers, self_);
     m_Leader = GetUUID();
@@ -144,7 +144,7 @@ lbAgent::~lbAgent()
 /////////////////////////////////////////////////////////
 int lbAgent::LB()
 {
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     // This initializes the algorithm
     LoadManage();
     StartStateTimer( STATE_TIMEOUT );
@@ -160,7 +160,7 @@ int lbAgent::LB()
 /////////////////////////////////////////////////////////
 lbAgent::PeerNodePtr lbAgent::AddPeer(std::string uuid)
 {
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     PeerNodePtr tmp_;
     tmp_.reset(new LPeerNode(uuid,GetConnectionManager()));
     InsertInPeerSet(m_AllPeers,tmp_);
@@ -203,7 +203,7 @@ lbAgent::PeerNodePtr lbAgent::GetPeer(std::string uuid)
 /////////////////////////////////////////////////////////
 void lbAgent::SendMsg(std::string msg, PeerSet peerSet_)
 {
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     CMessage m_;
     m_.m_submessages.put("lb.source", GetUUID());
     m_.m_submessages.put("lb", msg);
@@ -244,7 +244,7 @@ void lbAgent::SendMsg(std::string msg, PeerSet peerSet_)
 /////////////////////////////////////////////////////////
 void lbAgent::SendNormal(double Normal)
 {
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
     if(m_Leader == GetUUID())
     {
@@ -282,7 +282,7 @@ void lbAgent::SendNormal(double Normal)
 /////////////////////////////////////////////////////////
 void lbAgent::CollectState()
 {
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     CMessage m_cs;
     m_cs.m_submessages.put("sc", "request");
     m_cs.m_submessages.put("sc.source", GetUUID());
@@ -312,7 +312,7 @@ void lbAgent::CollectState()
 /////////////////////////////////////////////////////////
 void lbAgent::LoadManage()
 {
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     //Remember previous load before computing current load
     m_prevStatus = m_Status;
     //Call LoadTable to update load state of the system as observed by this node
@@ -353,7 +353,7 @@ void lbAgent::LoadManage()
 /////////////////////////////////////////////////////////
 void lbAgent::LoadManage( const boost::system::error_code& err )
 {
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     
     if(!err)
     {
@@ -387,7 +387,7 @@ void lbAgent::LoadManage( const boost::system::error_code& err )
 /////////////////////////////////////////////////////////
 void lbAgent::LoadTable()
 {
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     
     // device typedef for convenience
     typedef device::CDeviceDrer DRER;
@@ -509,7 +509,7 @@ void lbAgent::LoadTable()
 /////////////////////////////////////////////////////////
 void lbAgent::SendDraftRequest()
 {
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     
     if(LPeerNode::SUPPLY == m_Status)
     {
@@ -540,7 +540,7 @@ void lbAgent::SendDraftRequest()
 /////////////////////////////////////////////////////////
 void lbAgent::HandleRead(CMessage msg)
 {
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     PeerSet tempSet_;
     MessagePtr m_;
     std::string line_;
@@ -548,23 +548,23 @@ void lbAgent::HandleRead(CMessage msg)
     PeerNodePtr peer_;
     line_ = msg.GetSourceUUID();
     ptree pt = msg.GetSubMessages();
-    Logger.Debug << "Message '" <<pt.get<std::string>("lb","NOEXECPTION")<<"' received from "<< line_<<std::endl;
+    Logger.Trace << "Message '" <<pt.get<std::string>("lb","NOEXECPTION")<<"' received from "<< line_<<std::endl;
     
     // Evaluate the identity of the message source
     if(line_ != GetUUID())
     {
-        Logger.Debug << "Flag " <<std::endl;
+        Logger.Trace << "Flag " <<std::endl;
         // Update the peer entry, if needed
         peer_ = GetPeer(line_);
 
         if( peer_ != NULL)
         {
-            Logger.Debug << "Peer already exists. Do Nothing " <<std::endl;
+            Logger.Trace << "Peer already exists. Do Nothing " <<std::endl;
         }
         else
         {
             // Add the peer, if an entry wasn`t found
-            Logger.Debug << "Peer doesn`t exist. Add it up to LBPeerSet" <<std::endl;
+            Logger.Trace << "Peer doesn`t exist. Add it up to LBPeerSet" <<std::endl;
             AddPeer(line_);
             peer_ = GetPeer(line_);
         }
@@ -609,7 +609,7 @@ void lbAgent::HandleRead(CMessage msg)
             PeerNodePtr p = GetPeer(nuuid);
             if(!p)
             {
-                Logger.Debug << "LB sees a new member "<<nuuid
+                Logger.Trace << "LB sees a new member "<<nuuid
                               << " in the group " <<std::endl;
                 //If you don't already know about the peer, make sure it is in the connection manager
                 GetConnectionManager().PutHostname(nuuid, nhost, nport);
@@ -617,7 +617,7 @@ void lbAgent::HandleRead(CMessage msg)
             }
             if(v.second.data() != GetUUID())
             {
-                Logger.Debug << "LB knows this peer " <<std::endl;
+                Logger.Trace << "LB knows this peer " <<std::endl;
             }
         }
 
@@ -887,7 +887,7 @@ void lbAgent::HandleRead(CMessage msg)
 /////////////////////////////////////////////////////////
 void lbAgent::Step_PStar()
 {
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     typedef device::CDeviceSst SST;
     std::vector<SST::Pointer> SSTContainer;
     std::vector<SST::Pointer>::iterator it, end;
@@ -926,7 +926,7 @@ void lbAgent::Step_PStar()
 /////////////////////////////////////////////////////////
 void lbAgent::PStar(device::SettingValue DemandValue)
 {
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     typedef device::CDeviceSst SST;
     std::vector<SST::Pointer> SSTContainer;
     std::vector<SST::Pointer>::iterator it, end;
@@ -1035,7 +1035,7 @@ void lbAgent::PStar(device::SettingValue DemandValue)
 /////////////////////////////////////////////////////////
 void lbAgent::StartStateTimer( unsigned int delay )
 {
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     m_broker.Schedule(m_StateTimer, boost::posix_time::milliseconds(delay),
         boost::bind(&lbAgent::HandleStateTimer, this, boost::asio::placeholders::error));
 }
@@ -1049,7 +1049,7 @@ void lbAgent::StartStateTimer( unsigned int delay )
 /////////////////////////////////////////////////////////
 void lbAgent::HandleStateTimer( const boost::system::error_code & error )
 {
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     
     if( !error && (m_Leader == GetUUID()) )
     {

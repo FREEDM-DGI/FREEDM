@@ -49,7 +49,7 @@ CDeviceDrer::CDeviceDrer(const Identifier device,
         IPhysicalAdapter::Pointer adapter)
 : IDevice(device, adapter)
 {
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -59,7 +59,7 @@ CDeviceDrer::CDeviceDrer(const Identifier device,
 ////////////////////////////////////////////////////////////////////////////////
 CDeviceDrer::~CDeviceDrer()
 {
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -71,7 +71,7 @@ CDeviceDrer::~CDeviceDrer()
 ////////////////////////////////////////////////////////////////////////////////
 SettingValue CDeviceDrer::GetGeneration() const
 {
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     return Get("generation");
 }
 
@@ -85,7 +85,7 @@ SettingValue CDeviceDrer::GetGeneration() const
 ////////////////////////////////////////////////////////////////////////////////
 void CDeviceDrer::StepGeneration(const SettingValue step)
 {
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     Set("generation", GetGeneration() + step);
 }
 

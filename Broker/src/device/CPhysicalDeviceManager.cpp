@@ -28,6 +28,7 @@
 
 #include "CLogger.hpp"
 #include "device/CPhysicalDeviceManager.hpp"
+#include "device/types/CDeviceFid.hpp"
 
 namespace freedm {
 namespace broker {
@@ -144,6 +145,24 @@ size_t CPhysicalDeviceManager::DeviceCount() const
 {
     Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     return m_devices.size();
+}
+
+/// @todo - temporary?
+unsigned int CPhysicalDeviceManager::CountActiveFids() const
+{
+    unsigned int result;
+    CDeviceFid::Pointer next_device;
+
+    for (const_iterator it = m_devices.begin(); it != m_devices.end(); it++)
+    {
+        // attempt to convert each managed device to DeviceType
+        if (( next_device = device_cast<CDeviceFid > ( it->second ) ))
+        {
+            result++;
+        }
+    }
+
+    return result;
 }
 
 } // namespace device

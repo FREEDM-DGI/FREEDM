@@ -75,11 +75,11 @@
 
 #include "CConnection.hpp"
 #include "CBroker.hpp"
+#include "CLogger.hpp"
 
 #include <boost/property_tree/ptree.hpp>
 using boost::property_tree::ptree;
 
-#include "CLogger.hpp"
 
 namespace freedm {
     //    namespace gm{
@@ -397,7 +397,7 @@ void GMAgent::SystemState()
     } 
     nodestatus<<"Groups Elected/Formed: "<<m_groupselection<<"/"<<m_groupsformed<<std::endl;                        
     nodestatus<<"Groups Joined/Broken: "<<m_groupsjoined<<"/"<<m_groupsbroken<<std::endl;                        
-    nodestatus<<"FID state: "<< m_phyDevManager->GetNetValue<broker::device::CDeviceFid>("state");
+    nodestatus<<"FID state: "<< m_phyDevManager->CountActiveFids();
     Logger.Status<<nodestatus.str()<<std::endl;
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -484,7 +484,7 @@ void GMAgent::FIDCheck( const boost::system::error_code& err)
 {
     static bool FIDsOn = false;
     int attachedFIDs = m_phyDevManager->GetDevicesOfType<broker::device::CDeviceFid>().size();
-    double FIDState = m_phyDevManager->GetNetValue<broker::device::CDeviceFid>("state");
+    double FIDState = m_phyDevManager->CountActiveFids();
     if(FIDsOn == true && attachedFIDs  > 0 && FIDState < 1.0)
     {
         Logger.Status<<"All FIDs offline. Entering Recovery State"<<std::endl;
@@ -978,7 +978,7 @@ void GMAgent::HandleRead(broker::CMessage msg)
     Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     //If all my FIDs are off discard messages (Like a boss)
     if(m_phyDevManager->GetDevicesOfType<broker::device::CDeviceFid>().size() > 0 &&
-        m_phyDevManager->GetNetValue<broker::device::CDeviceFid>("state") < 1.0)
+        m_phyDevManager->CountActiveFids() < 1.0)
     {
         Logger.Debug << "Dropping Incoming Message; All FIDs offline" <<std::endl;
         return;

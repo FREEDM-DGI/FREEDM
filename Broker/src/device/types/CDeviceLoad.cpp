@@ -69,7 +69,7 @@ CDeviceLoad::~CDeviceLoad()
 ///
 /// @return The energy drain of this load.
 ////////////////////////////////////////////////////////////////////////////////
-SettingValue CDeviceLoad::GetDrain() const
+SettingValue CDeviceLoad::GetLoad() const
 {
     Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     return Get("drain");
@@ -83,10 +83,10 @@ SettingValue CDeviceLoad::GetDrain() const
 /// @pre None.
 /// @post The gateway has been increased by step.
 ////////////////////////////////////////////////////////////////////////////////
-void CDeviceLoad::StepDrain(const SettingValue step)
+void CDeviceLoad::StepLoad(const SettingValue step)
 {
     Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
-    Set("drain", GetDrain() + step);
+    Set("drain", GetLoad() + step);
 }
 
 }

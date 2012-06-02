@@ -19,6 +19,7 @@ set(
     device/CRtdsAdapter.cpp
     device/CTableRTDS.cpp
     device/CTableStructure.cpp
+    device/DeviceMath.cpp
     device/IConnectionAdapter.cpp
     device/PhysicalDeviceTypes.cpp
     device/types/CDeviceDesd.cpp

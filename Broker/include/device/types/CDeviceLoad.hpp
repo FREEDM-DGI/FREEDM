@@ -51,10 +51,10 @@ public:
     virtual ~CDeviceLoad();
 
     /// Determine the energy drain of this load.
-    SettingValue GetDrain() const;
+    SettingValue GetLoad() const;
 
     /// Increases the energy drain of this load by the specified amount.
-    void StepDrain(const SettingValue step = 1.0);
+    void StepLoad(const SettingValue step = 1.0);
 };
 
 } // namespace device

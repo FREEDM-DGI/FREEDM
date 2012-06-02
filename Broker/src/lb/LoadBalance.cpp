@@ -81,6 +81,7 @@
 using boost::property_tree::ptree;
 
 #include "CLogger.hpp"
+#include "device/DeviceMath.hpp"
 
 namespace freedm
 {
@@ -396,10 +397,14 @@ void lbAgent::LoadTable()
     int numLOADs = m_phyDevManager->GetDevicesOfType<LOAD>().size();
     int numSSTs = m_phyDevManager->GetDevicesOfType<SST>().size();
 
-    m_Gen = m_phyDevManager->GetNetValue<DRER>("generation");
-    m_Storage = m_phyDevManager->GetNetValue<DESD>("storage");
-    m_Load = m_phyDevManager->GetNetValue<LOAD>("drain");
-    m_Gateway = m_phyDevManager->GetNetValue<SST>("gateway");
+    m_Gen = m_phyDevManager->GetValue<DRER>(&DRER::GetGeneration, 
+            &broker::device::SumValues);
+    m_Storage = m_phyDevManager->GetValue<DESD>(&DESD::GetStorage, 
+            &broker::device::SumValues);
+    m_Load = m_phyDevManager->GetValue<LOAD>(&LOAD::GetLoad, 
+            &broker::device::SumValues);
+    m_Gateway = m_phyDevManager->GetValue<SST>(&SST::GetGateway, 
+            &broker::device::SumValues);
     m_CalcGateway = m_Load - m_Gen;
 
     std::stringstream ss;

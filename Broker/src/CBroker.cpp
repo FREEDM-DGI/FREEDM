@@ -243,7 +243,7 @@ void CBroker::Schedule(CBroker::TimerHandle h,
     CBroker::Scheduleable s;
     m_timers[h]->expires_from_now(wait);
     s = boost::bind(&CBroker::ScheduledTask,this,x,h,boost::asio::placeholders::error);
-    Logger.Trace<<"Scheduled task for timer "<<h<<std::endl;
+    Logger.Debug<<"Scheduled task for timer "<<h<<std::endl;
     m_timers[h]->async_wait(s);
     m_schmutex.unlock();
 }
@@ -260,8 +260,8 @@ void CBroker::Schedule(ModuleIdent m, BoundScheduleable x, bool start_worker)
         Worker();
         m_schmutex.lock();
     }
-    Logger.Trace<<"Module "<<m<<" now has queue size: "<<m_ready[m].size()<<std::endl;
-    Logger.Trace<<"Scheduled task (NODELAY) for "<<m<<std::endl;
+    Logger.Debug<<"Module "<<m<<" now has queue size: "<<m_ready[m].size()<<std::endl;
+    Logger.Debug<<"Scheduled task (NODELAY) for "<<m<<std::endl;
     m_schmutex.unlock();
 }
 
@@ -306,7 +306,7 @@ void CBroker::ChangePhase(const boost::system::error_code &err)
     }
     if(m_modules.size() > 0)
     {
-        Logger.Trace<<"Phase: "<<m_modules[m_phase]<<std::endl;
+        Logger.Debug<<"Phase: "<<m_modules[m_phase]<<std::endl;
     }
     //If the worker isn't going, start him again when you change phases.
     if(!m_busy)
@@ -336,12 +336,12 @@ void CBroker::ScheduledTask(CBroker::Scheduleable x, CBroker::TimerHandle handle
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     m_schmutex.lock();
     ModuleIdent module = m_allocs[handle];
-    Logger.Trace<<"Handle finished: "<<handle<<" For module "<<module<<std::endl;
+    Logger.Debug<<"Handle finished: "<<handle<<" For module "<<module<<std::endl;
     // First, prepare another bind, which uses the given error
     CBroker::BoundScheduleable y = boost::bind(x,err);
     // Put it into the ready queue
     m_ready[module].push_back(y);
-    Logger.Trace<<"Module "<<module<<" now has queue size: "<<m_ready[module].size()<<std::endl;
+    Logger.Debug<<"Module "<<module<<" now has queue size: "<<m_ready[module].size()<<std::endl;
     if(!m_busy)
     {
         m_schmutex.unlock();
@@ -375,7 +375,7 @@ void CBroker::Worker()
     std::string active = m_modules[m_phase];
     if(m_ready[active].size() > 0)
     {
-        Logger.Trace<<"Performing Job"<<std::endl;
+        Logger.Debug<<"Performing Job"<<std::endl;
         // Mark that the worker has something to do
         m_busy = true;
         // Extract the first item from the work queue:
@@ -391,7 +391,7 @@ void CBroker::Worker()
     else
     {
         m_busy = false;
-        Logger.Trace<<"Worker Idle"<<std::endl;
+        Logger.Debug<<"Worker Idle"<<std::endl;
     }
     m_schmutex.unlock();
 }

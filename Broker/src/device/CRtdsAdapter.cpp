@@ -74,7 +74,7 @@ CLocalLogger Logger(__FILE__);
 ///
 /// @post
 ///     io_service is shared with m_socket
-///     CClientRTDS object is created and a pointer to it is returned
+///     CRtdsAdapter object is created and a pointer to it is returned
 ///
 /// @param
 ///     service is the io_service the socket runs on
@@ -96,7 +96,7 @@ CRtdsAdapter::Pointer CRtdsAdapter::Create(
 }
 
 ////////////////////////////////////////////////////////////////////////////
-/// CClientRTDS
+/// CRtdsAdapter
 ///
 /// @description
 ///     Private constructor
@@ -149,7 +149,7 @@ m_stateTable(xml, tag + ".state"), m_GlobalTimer(service)
 ///     Both DGI and FPGA sides' receive function will block until a message
 ///     arrives, creating a synchronous, lock-step communication between DGI
 ///     and FPGA. In this sense, how frequently send and receive get executed
-///     by CClientRTDS is dependent on how fast FPGA runs.
+///     by CRtdsAdapter is dependent on how fast FPGA runs.
 ///
 /// @Error_Handling
 ///     Throws an exception if reading from or writing to the socket fails
@@ -180,10 +180,10 @@ void CRtdsAdapter::Run()
     //**********************************
     {
         boost::shared_lock<boost::shared_mutex> lockRead(m_cmdTable.m_mutex);
-        Logger.Trace << "Client_RTDS - obtained mutex as reader" << std::endl;
+        Logger.Debug << "Obtained mutex as reader" << std::endl;
         //read from cmdTable
         memcpy(m_txBuffer, m_cmdTable.m_data, m_txBufSize);
-        Logger.Trace << "Client_RTDS - released reader mutex" << std::endl;
+        Logger.Debug << "Released reader mutex" << std::endl;
     }// the scope is needed for mutex to auto release
 
     // FPGA will send values in big-endian byte order
@@ -238,12 +238,12 @@ void CRtdsAdapter::Run()
 #endif
     {
         boost::unique_lock<boost::shared_mutex> lockWrite(m_stateTable.m_mutex);
-        Logger.Trace << "Client_RTDS - obtained mutex as writer" << std::endl;
+        Logger.Debug << "Client_RTDS - obtained mutex as writer" << std::endl;
 
         //write to stateTable
         memcpy(m_stateTable.m_data, m_rxBuffer, m_rxBufSize);
 
-        Logger.Trace << "Client_RTDS - released writer mutex" << std::endl;
+        Logger.Debug << "Client_RTDS - released writer mutex" << std::endl;
     } //scope is needed for mutex to auto release
 
     //Start the timer; on timeout, this function is called again

@@ -118,7 +118,7 @@ void CSRConnection::Send(CMessage msg)
     msg.SetSendTimestampNow();
     if(!msg.HasExpireTime())
     {
-        Logger.Trace<<"Set Expire time"<<std::endl;
+        Logger.Debug<<"Set Expire time"<<std::endl;
         msg.SetExpireTimeFromNow(boost::posix_time::milliseconds(3000));
     }
     m_window.push_back(msg);
@@ -321,7 +321,7 @@ bool CSRConnection::Recieve(const CMessage &msg)
             return false;
             Logger.Notice<<"Duplicate Sync"<<std::endl;
         }
-        Logger.Trace<<"Got Sync"<<std::endl;
+        Logger.Debug<<"Got Sync"<<std::endl;
         m_inseq = (msg.GetSequenceNumber()+1)%SEQUENCE_MODULO;
         m_insynctime = msg.GetSendTimestamp();
         m_inresyncs++;
@@ -408,7 +408,7 @@ void CSRConnection::SendACK(const CMessage &msg)
     outmsg.SetSendTimestampNow();
     outmsg.SetProtocol(GetIdentifier());
     outmsg.SetProtocolProperties(pp);
-    Logger.Trace<<"Generating ACK. Source exp time "<<msg.GetExpireTime()<<std::endl;
+    Logger.Debug<<"Generating ACK. Source exp time "<<msg.GetExpireTime()<<std::endl;
     outmsg.SetExpireTime(msg.GetExpireTime());
     Write(outmsg);
     m_ackmutex.lock();

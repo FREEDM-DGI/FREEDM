@@ -182,7 +182,7 @@ void CConnectionManager::StopAll ()
     }
     m_connections.clear();
     Stop(m_inchannel);
-    Logger.Trace << "All Connections Closed" << std::endl;
+    Logger.Debug << "All Connections Closed" << std::endl;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -261,18 +261,18 @@ ConnectionPtr CConnectionManager::GetConnectionByUUID(std::string uuid_)
     port = mapIt_->second.port;
 
     // Create a new CConnection object for this host	
-    Logger.Trace<<"Constructing CConnection"<<std::endl;
+    Logger.Debug<<"Constructing CConnection"<<std::endl;
     c_.reset(new CConnection(m_inchannel->GetIOService(), *this, m_inchannel->GetBroker(), uuid_));  
    
     // Initiate the TCP connection
-    Logger.Trace<<"Computing remote endpoint"<<std::endl;
+    Logger.Debug<<"Computing remote endpoint"<<std::endl;
     boost::asio::ip::udp::resolver resolver(m_inchannel->GetIOService());
     boost::asio::ip::udp::resolver::query query( s_, port);
     boost::asio::ip::udp::endpoint endpoint = *resolver.resolve( query );
     c_->GetSocket().connect( endpoint ); 
 
     //Once the connection is built, connection manager gets a call back to register it.    
-    Logger.Trace<<"Inserting connection"<<std::endl;
+    Logger.Debug<<"Inserting connection"<<std::endl;
     PutConnection(uuid_,c_);
     #ifdef CUSTOMNETWORK
     LoadNetworkConfig();

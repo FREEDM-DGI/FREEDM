@@ -59,7 +59,7 @@ class CRtdsAdapter : public IConnectionAdapter
     ///
     /// @peers
     ///     The FPGA device used by FREEDM research at Florida State 
-    ///     University directly communicates with CClientRTDS.
+    ///     University directly communicates with CRtdsAdapter.
     ///     For more details about the code on the FPGA, please contact
     ///     Dr. Mischa Steurer (steurer@caps.fsu.edu)
     ///
@@ -70,10 +70,10 @@ class CRtdsAdapter : public IConnectionAdapter
     ///
     ////////////////////////////////////////////////////////
 public:
-    /// pointer to an CClientRTDS object
+    /// pointer to an CRtdsAdapter object
     typedef boost::shared_ptr<CRtdsAdapter> Pointer;
 
-    /// create a CClientRTDS object and returns a pointer to it
+    /// create a CRtdsAdapter object and returns a pointer to it
     static Pointer Create(boost::asio::io_service & service,
             const std::string xml, const std::string tag);
 

@@ -82,7 +82,7 @@ void IProtocol::Write(const CMessage & msg)
     /// Use std::copy to copy the string into the buffer starting at it.
     it = std::copy(raw.begin(),raw.end(),it);
     
-    Logger.Trace<<"Writing "<<raw.length()<<" bytes to channel"<<std::endl;
+    Logger.Debug<<"Writing "<<raw.length()<<" bytes to channel"<<std::endl;
 
     #ifdef CUSTOMNETWORK
     if((rand()%100) >= GetConnection()->GetReliability()) 
@@ -100,7 +100,7 @@ void IProtocol::Write(const CMessage & msg)
     }
     catch(boost::system::system_error &e)
     {
-        Logger.Trace << "Writing Failed: " << e.what() << std::endl;
+        Logger.Debug << "Writing Failed: " << e.what() << std::endl;
         GetConnection()->Stop(); 
     }
 }

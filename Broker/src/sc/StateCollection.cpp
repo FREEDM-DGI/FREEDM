@@ -232,12 +232,12 @@ void SCAgent::Initiate()
     //count marker
     m_countmarker = 1;
     //current peers in a group
-    Logger.Trace << " ------------ INITIAL, current peerList : -------------- "<<std::endl;
+    Logger.Debug << " ------------ INITIAL, current peerList : -------------- "<<std::endl;
     foreach(PeerNodePtr peer_, m_AllPeers | boost::adaptors::map_values)
     {
         Logger.Trace << peer_->GetUUID() <<std::endl;
     }
-    Logger.Trace << " --------------------------------------------- "<<std::endl;
+    Logger.Debug << " --------------------------------------------- "<<std::endl;
     //collect states of local devices
     Logger.Info << "TakeSnapshot: collect states of " << GetUUID() << std::endl;
     TakeSnapshot();
@@ -523,11 +523,11 @@ void SCAgent::HandleRead(CMessage msg)
         
         if(peer_ != NULL)
         {
-            Logger.Trace << "Peer already exists. Do Nothing " <<std::endl;
+            Logger.Debug << "Peer already exists. Do Nothing " <<std::endl;
         }
         else
         {
-            Logger.Trace << "PeerPeer doesn't exist. Add it up to PeerSet" <<std::endl;
+            Logger.Debug << "PeerPeer doesn't exist. Add it up to PeerSet" <<std::endl;
             AddPeer(line_);
             peer_ = GetPeer(line_);
         }//end if
@@ -552,14 +552,14 @@ void SCAgent::HandleRead(CMessage msg)
             PeerNodePtr p = GetPeer(nuuid);
             if(!p)
             {
-                Logger.Trace<<"SC adds new peer from peerlist"<<std::endl;
+                Logger.Debug<<"SC adds new peer from peerlist"<<std::endl;
                 //If you don't already know about the peer, make sure it is in the connection manager
                 GetConnectionManager().PutHostname(nuuid, nhost, nport);
                 AddPeer(nuuid);
             }
             else
             {
-                Logger.Trace << "SC knows this peer " <<std::endl;
+                Logger.Debug << "SC knows this peer " <<std::endl;
             }
         }
         
@@ -653,7 +653,7 @@ void SCAgent::HandleRead(CMessage msg)
             m_countmarker = 1;
             Logger.Info << "Marker is " << m_curversion.first << " " << m_curversion.second << std::endl;
             //physical device information
-            Logger.Trace << "SC module identified "<< m_phyDevManager->DeviceCount()
+            Logger.Debug << "SC module identified "<< m_phyDevManager->DeviceCount()
                           << " physical devices on this node" << std::endl;
             //collect local state
             TakeSnapshot();
@@ -907,7 +907,7 @@ void SCAgent::HandleRead(CMessage msg)
         //send done back to initiator
         {
             m_countdone++;
-            Logger.Trace << "done :-------------" << m_countdone << std::endl;
+            Logger.Debug << "done :-------------" << m_countdone << std::endl;
 	}
 
         

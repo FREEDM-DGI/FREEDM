@@ -364,9 +364,9 @@ bool CMessage::Load( std::istream &p_is )
     // return false;
     try 
     {
-        Logger.Trace << "Loading pt." << std::endl;
+        Logger.Debug << "Loading pt." << std::endl;
         *this = CMessage( pt );
-        Logger.Trace << "UUID: " << m_srcUUID << std::endl
+        Logger.Debug << "UUID: " << m_srcUUID << std::endl
                 << "Status: "
                 << status_strings::toString( m_status )
         << std::endl;

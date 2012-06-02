@@ -139,7 +139,7 @@ bool IPeerNode::Send(freedm::broker::CMessage msg)
         Logger.Warn << "Couldn't Send Message To Peer (Sending Failed)" << std::endl;
         return false;
     }
-    Logger.Trace << "Sent message to peer" << std::endl;
+    Logger.Debug << "Sent message to peer" << std::endl;
     return true;
 }
 

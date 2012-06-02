@@ -548,23 +548,23 @@ void lbAgent::HandleRead(CMessage msg)
     PeerNodePtr peer_;
     line_ = msg.GetSourceUUID();
     ptree pt = msg.GetSubMessages();
-    Logger.Trace << "Message '" <<pt.get<std::string>("lb","NOEXECPTION")<<"' received from "<< line_<<std::endl;
+    Logger.Debug << "Message '" <<pt.get<std::string>("lb","NOEXECPTION")<<"' received from "<< line_<<std::endl;
     
     // Evaluate the identity of the message source
     if(line_ != GetUUID())
     {
-        Logger.Trace << "Flag " <<std::endl;
+        Logger.Debug << "Flag " <<std::endl;
         // Update the peer entry, if needed
         peer_ = GetPeer(line_);
 
         if( peer_ != NULL)
         {
-            Logger.Trace << "Peer already exists. Do Nothing " <<std::endl;
+            Logger.Debug << "Peer already exists. Do Nothing " <<std::endl;
         }
         else
         {
             // Add the peer, if an entry wasn`t found
-            Logger.Trace << "Peer doesn`t exist. Add it up to LBPeerSet" <<std::endl;
+            Logger.Debug << "Peer doesn`t exist. Add it up to LBPeerSet" <<std::endl;
             AddPeer(line_);
             peer_ = GetPeer(line_);
         }
@@ -609,7 +609,7 @@ void lbAgent::HandleRead(CMessage msg)
             PeerNodePtr p = GetPeer(nuuid);
             if(!p)
             {
-                Logger.Trace << "LB sees a new member "<<nuuid
+                Logger.Debug << "LB sees a new member "<<nuuid
                               << " in the group " <<std::endl;
                 //If you don't already know about the peer, make sure it is in the connection manager
                 GetConnectionManager().PutHostname(nuuid, nhost, nport);
@@ -617,7 +617,7 @@ void lbAgent::HandleRead(CMessage msg)
             }
             if(v.second.data() != GetUUID())
             {
-                Logger.Trace << "LB knows this peer " <<std::endl;
+                Logger.Debug << "LB knows this peer " <<std::endl;
             }
         }
 

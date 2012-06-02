@@ -46,7 +46,7 @@ boost::tuple<boost::tribool, InputIterator> Parse(CMessage &req,
 
     try 
     {
-        RPLogger.Trace << "Loading xml: " << std::endl
+        RPLogger.Debug << "Loading xml: " << std::endl
                 << ss_.str() << std::endl;
         result = req.Load( ss_ );
     }
@@ -73,7 +73,7 @@ boost::tuple< boost::tribool, OutputIterator> Synthesize( CMessage &msg,
     try
     {
         msg.Save( ss_ );
-        RPLogger.Trace << "Saved xml: " << std::endl
+        RPLogger.Debug << "Saved xml: " << std::endl
                 << ss_.str() << std::endl;
         result = true;
     }

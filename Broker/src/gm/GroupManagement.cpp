@@ -423,7 +423,7 @@ void GMAgent::PushPeerList()
     CMessage m_ = PeerList();
     foreach( PeerNodePtr peer_, m_UpNodes | boost::adaptors::map_values)
     {
-        Logger.Trace<<"Send group list to all members of this group containing "
+        Logger.Debug<<"Send group list to all members of this group containing "
                                  << peer_->GetUUID() << std::endl;             
         peer_->AsyncSend(m_);                
     }
@@ -516,7 +516,7 @@ void GMAgent::ComputeSkew( const boost::system::error_code& err)
     boost::posix_time::ptime true_clock = m_clocks[GetUUID()];
     boost::posix_time::time_duration tmp, sum;
     int good_clocks = 1;
-    Logger.Trace<<"Computing Skew from "<<m_clocks.size()<<" responses"<<std::endl;
+    Logger.Debug<<"Computing Skew from "<<m_clocks.size()<<" responses"<<std::endl;
     /// First find the sum of the skew from me.
     for(it = m_clocks.begin(); it != m_clocks.end(); it++)
     {
@@ -531,7 +531,7 @@ void GMAgent::ComputeSkew( const boost::system::error_code& err)
     }
     // Find the average skew off of true;
     sum /= good_clocks;
-    Logger.Trace<<"Computed an average skew off of me of: "<<sum<<std::endl;
+    Logger.Debug<<"Computed an average skew off of me of: "<<sum<<std::endl;
     for(it = m_clocks.begin(); it != m_clocks.end(); it++)
     {
         if((*it).first == GetUUID())
@@ -541,7 +541,7 @@ void GMAgent::ComputeSkew( const boost::system::error_code& err)
         m = ClockSkew(tmp);
         if( GetPeer((*it).first) )
         {
-            Logger.Trace<<"Telling "<<(*it).first<<" skew is "<<tmp<<std::endl;
+            Logger.Debug<<"Telling "<<(*it).first<<" skew is "<<tmp<<std::endl;
             GetPeer((*it).first)->Send(m);
         }
     }
@@ -550,7 +550,7 @@ void GMAgent::ComputeSkew( const boost::system::error_code& err)
     m = ClockRequest();
     /// Initiate a new round of clocks
     tmp = CGlobalConfiguration::instance().GetClockSkew();
-    Logger.Trace<<"Starting New Skew Computation"<<std::endl;
+    Logger.Debug<<"Starting New Skew Computation"<<std::endl;
     m_clocks.clear();
     /// Report my clock with our computed skew
     m_clocks[GetUUID()] = boost::posix_time::microsec_clock::universal_time()+tmp;
@@ -797,7 +797,7 @@ void GMAgent::Merge( const boost::system::error_code& err )
         // Create new invitation and send it to all Coordinators
         CMessage m_ = Invitation();
         Logger.Info <<"SEND: Sending out Invites (Invite Coordinators)"<<std::endl;
-        Logger.Trace <<"Tempset is "<<tempSet_.size()<<" Nodes (IC)"<<std::endl;
+        Logger.Debug <<"Tempset is "<<tempSet_.size()<<" Nodes (IC)"<<std::endl;
         foreach( PeerNodePtr peer_, m_Coordinators | boost::adaptors::map_values)
         {
             if( peer_->GetUUID() == GetUUID())
@@ -844,7 +844,7 @@ void GMAgent::InviteGroupNodes( const boost::system::error_code& err, PeerSet p_
          * we are no longer waiting on more replies  */
         CMessage m_ = Invitation();
         Logger.Info <<"SEND: Sending out Invites (Invite Group Nodes):"<<std::endl;
-        Logger.Trace <<"Tempset is "<<p_tempSet.size()<<" Nodes (IGN)"<<std::endl;
+        Logger.Debug <<"Tempset is "<<p_tempSet.size()<<" Nodes (IGN)"<<std::endl;
         foreach( PeerNodePtr peer_, p_tempSet | boost::adaptors::map_values)
         {
             if( peer_->GetUUID() == GetUUID())
@@ -944,11 +944,11 @@ void GMAgent::Timeout( const boost::system::error_code& err )
             peer_ = GetPeer(line_);
             if(peer_ != NULL)
             {
-                Logger.Trace << "Peer already exists. Do Nothing " <<std::endl;
+                Logger.Debug << "Peer already exists. Do Nothing " <<std::endl;
             }
             else
             {
-                Logger.Trace << "Peer doesn't exist." <<std::endl;
+                Logger.Debug << "Peer doesn't exist." <<std::endl;
                 peer_ = AddPeer(line_);
             } 
             if( false != peer_ && peer_->GetUUID() != GetUUID())
@@ -983,7 +983,7 @@ void GMAgent::HandleRead(CMessage msg)
     if(m_phyDevManager->GetDevicesOfType<device::CDeviceFid>().size() > 0 &&
         m_phyDevManager->CountActiveFids() < 1.0)
     {
-        Logger.Trace << "Dropping Incoming Message; All FIDs offline" <<std::endl;
+        Logger.Debug << "Dropping Incoming Message; All FIDs offline" <<std::endl;
         return;
     }
     PeerSet tempSet_;
@@ -1001,11 +1001,11 @@ void GMAgent::HandleRead(CMessage msg)
         peer_ = GetPeer(line_);
         if(peer_ != NULL)
         {
-            Logger.Trace << "Peer already exists. Do Nothing " <<std::endl;
+            Logger.Debug << "Peer already exists. Do Nothing " <<std::endl;
         }
         else
         {
-            Logger.Trace << "Peer doesn't exist. Add it up to PeerSet" <<std::endl;
+            Logger.Debug << "Peer doesn't exist. Add it up to PeerSet" <<std::endl;
             peer_ = AddPeer(line_);
         }
     }
@@ -1034,15 +1034,15 @@ void GMAgent::HandleRead(CMessage msg)
                 m_timerMutex.unlock();
             }
             m_UpNodes.clear();
-            Logger.Trace<<"Looping Peer List"<<std::endl;
+            Logger.Debug<<"Looping Peer List"<<std::endl;
             foreach(ptree::value_type &v, pt.get_child("any.peers"))
             {
-                Logger.Trace<<"Peer Item"<<std::endl;
+                Logger.Debug<<"Peer Item"<<std::endl;
                 ptree sub_pt = v.second;
                 std::string nuuid = sub_pt.get<std::string>("uuid");
                 std::string nhost = sub_pt.get<std::string>("host");
                 std::string nport = sub_pt.get<std::string>("port");
-                Logger.Trace<<"Got Peer ("<<nuuid<<","<<nhost<<","<<nport<<")"<<std::endl;
+                Logger.Debug<<"Got Peer ("<<nuuid<<","<<nhost<<","<<nport<<")"<<std::endl;
                 PeerNodePtr p = GetPeer(nuuid);
                 if(!p)
                 {
@@ -1192,7 +1192,7 @@ void GMAgent::HandleRead(CMessage msg)
         if(pt.get<std::string>("gm.type") == "AreYouCoordinator")
         {
             Logger.Info << "RECV: Response (AYC) ("<<answer<<") from " <<msg_source << std::endl;
-            Logger.Trace << "Checking expected responses." << std::endl;
+            Logger.Debug << "Checking expected responses." << std::endl;
             bool expected = CountInPeerSet(m_AYCResponse,peer_);
             EraseInPeerSet(m_AYCResponse,peer_);
             if(expected == true && pt.get<std::string>("gm.payload") == "yes")
@@ -1225,7 +1225,7 @@ void GMAgent::HandleRead(CMessage msg)
         else if(pt.get<std::string>("gm.type") == "AreYouThere")
         {
             Logger.Info << "RECV: Response (AYT) ("<<answer<<") from " <<msg_source << std::endl;
-            Logger.Trace << "Checking expected responses." << std::endl;
+            Logger.Debug << "Checking expected responses." << std::endl;
             bool expected = CountInPeerSet(m_AYTResponse,peer_);
             EraseInPeerSet(m_AYTResponse,peer_);
             if(expected == true && pt.get<std::string>("gm.payload") == "yes")
@@ -1262,7 +1262,7 @@ void GMAgent::HandleRead(CMessage msg)
         Logger.Info<<"Clock Skew From "<<msg_source<<std::endl;
         if(msg_source == Coordinator())
         {
-            Logger.Trace<<"Raw Skew Value "<<pt.get<int>("gm.clockskew");
+            Logger.Debug<<"Raw Skew Value "<<pt.get<int>("gm.clockskew");
             boost::posix_time::time_duration t = boost::posix_time::microseconds(pt.get<int>("gm.clockskew"));
             // We are actually making adjustments on the skew with each iteration
             t = t + CGlobalConfiguration::instance().GetClockSkew();

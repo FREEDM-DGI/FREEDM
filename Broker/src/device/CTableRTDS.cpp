@@ -121,7 +121,7 @@ SettingValue CTableRTDS::GetValue( const CDeviceKeyCoupled & p_dkey) const
     std::stringstream error;
     // enter critical section of m_data as reader
     boost::shared_lock<boost::shared_mutex> lock(m_mutex);
-    Logger.Trace << " obtained mutex as reader" << std::endl;
+    Logger.Debug << " obtained mutex as reader" << std::endl;
     // convert the key to an index and return its value
     float value = m_data[m_structure.FindIndex(p_dkey)];
     return boost::lexical_cast<double>(value);
@@ -166,7 +166,7 @@ void CTableRTDS::SetValue( const CDeviceKeyCoupled & p_dkey,
     std::stringstream error;
     // enter critical section of m_data as writer
     boost::unique_lock<boost::shared_mutex> lock(m_mutex);
-    Logger.Trace << " obtained mutex as writer" << std::endl;
+    Logger.Debug << " obtained mutex as writer" << std::endl;
     // convert the key to an index and set its value
     float value = boost::lexical_cast<float>(p_value);
     m_data[m_structure.FindIndex(p_dkey)] = value;

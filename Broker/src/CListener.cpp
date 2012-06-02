@@ -133,7 +133,7 @@ void CListener::HandleRead(const boost::system::error_code& e,
         
         try
         {
-            Logger.Trace<<"Loading xml:"<<std::endl;
+            Logger.Debug<<"Loading xml:"<<std::endl;
             m_message.Load(iss);
         }
         catch(std::exception &e)
@@ -154,21 +154,21 @@ void CListener::HandleRead(const boost::system::error_code& e,
         ///Get the pointer to the connection:
         CConnection::ConnectionPtr conn;
         conn = GetConnectionManager().GetConnectionByUUID(uuid);
-        Logger.Trace<<"Fetched Connection"<<std::endl;
+        Logger.Debug<<"Fetched Connection"<<std::endl;
 #ifdef CUSTOMNETWORK
         if((rand()%100) >= GetReliability())
         {
-            Logger.Trace<<"Dropped datagram "<<m_message.GetHash()<<":"
+            Logger.Debug<<"Dropped datagram "<<m_message.GetHash()<<":"
                           <<m_message.GetSequenceNumber()<<std::endl;
             goto listen;
         }
 #endif
         if(m_message.GetStatus() == freedm::broker::CMessage::Accepted)
         {
-            Logger.Trace<<"Processing Accept Message"<<std::endl;
+            Logger.Debug<<"Processing Accept Message"<<std::endl;
             ptree pp = m_message.GetProtocolProperties();
             size_t hash = pp.get<size_t>("src.hash");
-            Logger.Trace<<"Recieved ACK"<<hash<<":"
+            Logger.Debug<<"Recieved ACK"<<hash<<":"
                             <<m_message.GetSequenceNumber()<<std::endl;
             conn->RecieveACK(m_message);
         }
@@ -176,7 +176,7 @@ void CListener::HandleRead(const boost::system::error_code& e,
         {
             if(conn->Recieve(m_message))
             {
-                Logger.Trace<<"Recieved Clock Request"<<std::endl;
+                Logger.Debug<<"Recieved Clock Request"<<std::endl;
                 // Generate a clock reading and reply immediately:
                 CMessage reply;
                 // Determine the requesting module:
@@ -190,17 +190,17 @@ void CListener::HandleRead(const boost::system::error_code& e,
         }
         else if(conn->Recieve(m_message))
         {
-            Logger.Trace<<"Accepted message "<<m_message.GetHash()<<":"
+            Logger.Debug<<"Accepted message "<<m_message.GetHash()<<":"
                           <<m_message.GetSequenceNumber()<<std::endl;
             GetDispatcher().HandleRequest(GetBroker(),m_message);
         }
         else if(m_message.GetStatus() != freedm::broker::CMessage::Created)
         {
-            Logger.Trace<<"Rejected message "<<m_message.GetHash()<<":"
+            Logger.Debug<<"Rejected message "<<m_message.GetHash()<<":"
                           <<m_message.GetSequenceNumber()<<std::endl;
         }
 listen:
-        Logger.Trace<<"Listening for next message"<<std::endl;
+        Logger.Debug<<"Listening for next message"<<std::endl;
         GetSocket().async_receive_from(boost::asio::buffer(m_buffer, CReliableConnection::MAX_PACKET_SIZE),
                 m_endpoint, boost::bind(&CListener::HandleRead, this,
                 boost::asio::placeholders::error,

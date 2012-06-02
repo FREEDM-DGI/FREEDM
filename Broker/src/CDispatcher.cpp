@@ -108,7 +108,7 @@ void CDispatcher::HandleRequest(CBroker &broker, CMessage msg)
         ptree sub_ = p_mesg.get_child("message.submessages");
         for( it_ = sub_.begin(); it_ != sub_.end(); ++it_ )
         {
-            Logger.Trace << "Processing " << it_->first
+            Logger.Debug << "Processing " << it_->first
                     << std::endl;
 
             // Retrieve current key and iterate through all matching
@@ -149,7 +149,7 @@ void CDispatcher::HandleRequest(CBroker &broker, CMessage msg)
                     m_readHandlers.upper_bound( key_)     )
                 {
                     // Just log this for now
-                    Logger.Trace << "Submessage '" << key_ << "' had no read handlers.";
+                    Logger.Debug << "Submessage '" << key_ << "' had no read handlers.";
                 }
             }
         }
@@ -158,7 +158,7 @@ void CDispatcher::HandleRequest(CBroker &broker, CMessage msg)
         if( sub_.begin() == sub_.end() )
         {
             // Just log this for now
-            Logger.Trace << "Message had no submessages.";
+            Logger.Debug << "Message had no submessages.";
         }
     }
     catch( boost::property_tree::ptree_bad_path &e )
@@ -205,7 +205,7 @@ void CDispatcher::HandleWrite( ptree &p_mesg )
                 mapIt_ != m_writeHandlers.upper_bound( "any" );
                 ++mapIt_ )
         {
-           Logger.Trace << "Processing 'any'" << std::endl;  
+           Logger.Debug << "Processing 'any'" << std::endl;  
 	  (mapIt_->second)->HandleWrite( p_mesg );
         }
 
@@ -214,7 +214,7 @@ void CDispatcher::HandleWrite( ptree &p_mesg )
         ptree sub_ = p_mesg.get_child("message.submessages");
         for( it_ = sub_.begin(); it_ != sub_.end(); ++it_ )
         {
-            Logger.Trace << "Processing " << it_->first
+            Logger.Debug << "Processing " << it_->first
                     << std::endl;
 
             // Retrieve current key and iterate through all matching
@@ -234,7 +234,7 @@ void CDispatcher::HandleWrite( ptree &p_mesg )
                 m_writeHandlers.upper_bound( key_)     )
             {
                 // Just log this for now
-                Logger.Trace << "Submessage '" << key_ << "' had no write handlers.";
+                Logger.Debug << "Submessage '" << key_ << "' had no write handlers.";
             }
         }
 

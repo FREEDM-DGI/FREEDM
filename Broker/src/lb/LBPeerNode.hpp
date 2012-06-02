@@ -43,8 +43,11 @@
 #include "IPeerNode.hpp"
 
 
-namespace freedm
-{
+namespace freedm {
+
+namespace broker {
+
+namespace lb {
 
 //////////////////////////////////////////////////////////
 /// class LPeerNode
@@ -61,6 +64,11 @@ class LPeerNode : public IPeerNode
             IPeerNode(uuid,connmgr) {};
         enum EStatus { SUPPLY, NORM, DEMAND };
 };
-}
+
+} // namespace lb
+
+} // namespace broker
+
+} // namespace freedm
 
 #endif

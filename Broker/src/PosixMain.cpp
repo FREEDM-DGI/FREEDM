@@ -288,13 +288,13 @@ int main(int argc, char* argv[])
         ss << uuid;
         ss >> uuidstr;
         // Instantiate and register the group management module
-        GMAgent GM(uuidstr, broker, phyManager);
+        gm::GMAgent GM(uuidstr, broker, phyManager);
         dispatch.RegisterReadHandler("gm", "gm", &GM);
         // Instantiate and register the power management module
-        lbAgent LB(uuidstr, broker, phyManager);
+        lb::lbAgent LB(uuidstr, broker, phyManager);
         dispatch.RegisterReadHandler("lb", "lb", &LB);
         // Instantiate and register the state collection module
-        SCAgent SC(uuidstr, broker, phyManager);
+        sc::SCAgent SC(uuidstr, broker, phyManager);
         dispatch.RegisterReadHandler("sc", "any", &SC);
 
         // The peerlist should be passed into constructors as references or
@@ -338,8 +338,8 @@ int main(int argc, char* argv[])
         conManager.PutHostname(uuidstr, "localhost", port);
 
         Logger.Debug << "Starting thread of Modules" << std::endl;
-        broker.Schedule("gm", boost::bind(&GMAgent::Run, &GM), false);
-        broker.Schedule("lb", boost::bind(&lbAgent::LB, &LB), false);
+        broker.Schedule("gm", boost::bind(&gm::GMAgent::Run, &GM), false);
+        broker.Schedule("lb", boost::bind(&lb::lbAgent::LB, &LB), false);
         broker.Run();
     }
     catch (std::exception& e)

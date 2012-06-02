@@ -12,6 +12,10 @@ namespace boost {
 #include <boost/property_tree/ptree_fwd.hpp>
 using boost::property_tree::ptree;
 
+namespace freedm {
+
+namespace broker {
+
 ///An interface for an object which can handle recieving incoming messages
 class IReadHandler
 {
@@ -55,6 +59,10 @@ public:
     /// Handle completion of a write operation.
     virtual void HandleWrite( ptree &p_tree ) = 0;
 };
+
+} // namespace freedm
+
+} // namespace broker
 
 #endif // IHANDLER_HPP
 

@@ -4,6 +4,12 @@
 #include "boost/date_time/posix_time/posix_time.hpp"
 #include <iostream>
 
+namespace freedm {
+
+namespace broker {
+
+namespace gm {
+
 class Stopwatch
 {
     public:
@@ -44,5 +50,11 @@ class Stopwatch
         bool timer_running;
         boost::posix_time::time_duration elapsed;
 };
+
+} // namespace gm
+
+} // namespace broker
+
+} // namespace freedm
 
 #endif

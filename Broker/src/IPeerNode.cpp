@@ -48,6 +48,8 @@
 #include "CLogger.hpp"
 
 namespace freedm {
+
+namespace broker {
         
 namespace {
 
@@ -170,4 +172,6 @@ bool operator<(const IPeerNode& a, const IPeerNode& b)
   return (a.GetUUID() < b.GetUUID());
 }
 
-}
+} // namespace broker
+
+} // namespace freedm

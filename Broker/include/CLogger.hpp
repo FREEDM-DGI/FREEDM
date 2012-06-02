@@ -46,6 +46,7 @@ std::string(" line ") + boost::lexical_cast<std::string>(__LINE__) ).c_str()
 #endif
 
 namespace freedm {
+namespace broker {
 
 /// Turns a qualified path into just a filename.
 std::string basename( const std::string s );
@@ -158,6 +159,7 @@ class CLocalLogger : private boost::noncopyable
         const std::string m_name;
 };
 
-}
+} // namespace broker
+} // namespace freedm
 
 #endif

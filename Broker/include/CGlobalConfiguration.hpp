@@ -47,6 +47,7 @@
 #include "boost/date_time/posix_time/posix_time.hpp"
 
 namespace freedm {
+namespace broker {
 
 /// A singleton class which tracks commonly used configuration options.
 class CGlobalConfiguration : public boost::noncopyable
@@ -88,6 +89,7 @@ class CGlobalConfiguration : public boost::noncopyable
         boost::posix_time::time_duration m_clockskew; /// The skew of the clock
 };
 
+} // namespace broker
 } // namespace freedm
 
 #endif

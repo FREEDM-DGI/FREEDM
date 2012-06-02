@@ -83,8 +83,11 @@ using boost::property_tree::ptree;
 #include "CLogger.hpp"
 #include "device/DeviceMath.hpp"
 
-namespace freedm
-{
+namespace freedm {
+
+namespace broker {
+
+namespace lb {
     
 namespace {
 
@@ -106,8 +109,8 @@ CLocalLogger Logger(__FILE__);
 /// @limitations: None
 ///////////////////////////////////////////////////////////////////////////////
 lbAgent::lbAgent(std::string uuid_,
-                 broker::CBroker &broker,
-                 broker::device::CPhysicalDeviceManager::Pointer 
+                 CBroker &broker,
+                 device::CPhysicalDeviceManager::Pointer 
                     m_phyManager):
     LPeerNode(uuid_, broker.GetConnectionManager()),
     m_phyDevManager(m_phyManager),
@@ -201,7 +204,7 @@ lbAgent::PeerNodePtr lbAgent::GetPeer(std::string uuid)
 void lbAgent::SendMsg(std::string msg, PeerSet peerSet_)
 {
     Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
-    broker::CMessage m_;
+    CMessage m_;
     m_.m_submessages.put("lb.source", GetUUID());
     m_.m_submessages.put("lb", msg);
     Logger.Notice << "Sending '" << msg << "' from: "
@@ -246,7 +249,7 @@ void lbAgent::SendNormal(double Normal)
     if(m_Leader == GetUUID())
     {
         Logger.Info <<"Sending Computed Normal to the group members" <<std::endl;
-        broker::CMessage m_;
+        CMessage m_;
         m_.m_submessages.put("lb.source", GetUUID());
         m_.m_submessages.put("lb", "ComputedNormal");
         m_.m_submessages.put("lb.cnorm", boost::lexical_cast<std::string>(Normal));
@@ -280,7 +283,7 @@ void lbAgent::SendNormal(double Normal)
 void lbAgent::CollectState()
 {
     Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
-    freedm::broker::CMessage m_cs;
+    CMessage m_cs;
     m_cs.m_submessages.put("sc", "request");
     m_cs.m_submessages.put("sc.source", GetUUID());
     m_cs.m_submessages.put("sc.module", "lb");
@@ -387,10 +390,10 @@ void lbAgent::LoadTable()
     Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     
     // device typedef for convenience
-    typedef broker::device::CDeviceDrer DRER;
-    typedef broker::device::CDeviceDesd DESD;
-    typedef broker::device::CDeviceLoad LOAD;
-    typedef broker::device::CDeviceSst SST;
+    typedef device::CDeviceDrer DRER;
+    typedef device::CDeviceDesd DESD;
+    typedef device::CDeviceLoad LOAD;
+    typedef device::CDeviceSst SST;
 
     int numDRERs = m_phyDevManager->GetDevicesOfType<DRER>().size();
     int numDESDs = m_phyDevManager->GetDevicesOfType<DESD>().size();
@@ -398,13 +401,13 @@ void lbAgent::LoadTable()
     int numSSTs = m_phyDevManager->GetDevicesOfType<SST>().size();
 
     m_Gen = m_phyDevManager->GetValue<DRER>(&DRER::GetGeneration, 
-            &broker::device::SumValues);
+            &device::SumValues);
     m_Storage = m_phyDevManager->GetValue<DESD>(&DESD::GetStorage, 
-            &broker::device::SumValues);
+            &device::SumValues);
     m_Load = m_phyDevManager->GetValue<LOAD>(&LOAD::GetLoad, 
-            &broker::device::SumValues);
+            &device::SumValues);
     m_Gateway = m_phyDevManager->GetValue<SST>(&SST::GetGateway, 
-            &broker::device::SumValues);
+            &device::SumValues);
     m_CalcGateway = m_Load - m_Gen;
 
     std::stringstream ss;
@@ -535,7 +538,7 @@ void lbAgent::SendDraftRequest()
 /// @peers The members of the group or a subset of, from whom message was received
 /// @limitations: 
 /////////////////////////////////////////////////////////
-void lbAgent::HandleRead(broker::CMessage msg)
+void lbAgent::HandleRead(CMessage msg)
 {
     Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     PeerSet tempSet_;
@@ -679,7 +682,7 @@ void lbAgent::HandleRead(broker::CMessage msg)
         // Insert into set of Supply nodes
         InsertInPeerSet(m_LoNodes,peer_);
         // Create your response to the Draft request sent by the source
-        broker::CMessage m_;
+        CMessage m_;
         m_.m_submessages.put("lb.source", GetUUID());
         std::stringstream ss_;
 
@@ -726,7 +729,7 @@ void lbAgent::HandleRead(broker::CMessage msg)
             //Initiate drafting with a message accordingly
             //TODO: Selection of node that you are drafting with needs to be performed
             //      Currently, whoever responds to draft request gets the slice
-            broker::CMessage m_;
+            CMessage m_;
             m_.m_submessages.put("lb.source", GetUUID());
             std::stringstream ss_;
             ss_.clear();
@@ -763,7 +766,7 @@ void lbAgent::HandleRead(broker::CMessage msg)
         
         if(LPeerNode::DEMAND == m_Status)
         {
-            broker::CMessage m_;
+            CMessage m_;
             m_.m_submessages.put("lb.source", GetUUID());
             std::stringstream ss_;
             ss_.clear();
@@ -802,7 +805,7 @@ void lbAgent::HandleRead(broker::CMessage msg)
     // --------------------------------------------------------------
     else if(pt.get<std::string>("lb") == "accept" && peer_->GetUUID() != GetUUID())
     {
-        broker::device::SettingValue DemValue;
+        device::SettingValue DemValue;
         std::stringstream ss_;
         ss_ << pt.get<std::string>("lb.value");
         ss_ >> DemValue;
@@ -885,7 +888,7 @@ void lbAgent::HandleRead(broker::CMessage msg)
 void lbAgent::Step_PStar()
 {
     Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
-    typedef broker::device::CDeviceSst SST;
+    typedef device::CDeviceSst SST;
     std::vector<SST::Pointer> SSTContainer;
     std::vector<SST::Pointer>::iterator it, end;
     SSTContainer = m_phyDevManager->GetDevicesOfType<SST>();
@@ -921,10 +924,10 @@ void lbAgent::Step_PStar()
 /// @limitations It could be revised based on requirements. Might not be 
 ///		 necessary after adding the code to handle intransit messages
 /////////////////////////////////////////////////////////
-void lbAgent::PStar(broker::device::SettingValue DemandValue)
+void lbAgent::PStar(device::SettingValue DemandValue)
 {
     Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
-    typedef broker::device::CDeviceSst SST;
+    typedef device::CDeviceSst SST;
     std::vector<SST::Pointer> SSTContainer;
     std::vector<SST::Pointer>::iterator it, end;
     SSTContainer = m_phyDevManager->GetDevicesOfType<SST>();
@@ -967,20 +970,20 @@ void lbAgent::PStar(broker::device::SettingValue DemandValue)
 ///      in use to charge DESDs
 ///TODO: This function may be used in future; obsolete for now
 /////////////////////////////////////////////////////////
-//void lbAgent::InitiatePowerMigration(broker::device::SettingValue DemandValue)
+//void lbAgent::InitiatePowerMigration(device::SettingValue DemandValue)
 //{
-//  typedef std::map<broker::device::SettingValue,broker::device::Identifier> DeviceMap;
-//  typedef broker::device::CDeviceDESD DESD;
+//  typedef std::map<device::SettingValue,device::Identifier> DeviceMap;
+//  typedef device::CDeviceDESD DESD;
 
 //  // Container and iterators for the result of GetDevicesOfType
-//  broker::CPhysicalDeviceManager::PhysicalDevice<DESD>::Container DESDContainer;
-//  broker::CPhysicalDeviceManager::PhysicalDevice<DESD>::iterator it, end;
+//  CPhysicalDeviceManager::PhysicalDevice<DESD>::Container DESDContainer;
+//  CPhysicalDeviceManager::PhysicalDevice<DESD>::iterator it, end;
 
 //  // Make a map of DESDs
 //  DeviceMap DESDMap;
 
 //  // Temp variables to hold "vin" and "vout"
-//  broker::device::SettingValue V_in, V_out;
+//  device::SettingValue V_in, V_out;
 
 //  //Sort the DESDs by decreasing order of their "vin"s; achieved by inserting into map
 //  DESDContainer = m_phyDevManager->GetDevicesOfType<DESD>();
@@ -992,7 +995,7 @@ void lbAgent::PStar(broker::device::SettingValue DemandValue)
 //  //Use a reverse iterator on map to retrieve elements in reverse sorted order
 //  DeviceMap::reverse_iterator mapIt_;
 //  // temp variable to hold the P_migrate set by Demanding node
-//  broker::device::SettingValue temp_ = m_DemandVal;
+//  device::SettingValue temp_ = m_DemandVal;
 
 //  for( mapIt_ = DESDMap.rbegin(); mapIt_ != DESDMap.rend(); ++mapIt_ )
 //  {
@@ -1057,6 +1060,9 @@ void lbAgent::HandleStateTimer( const boost::system::error_code & error )
     StartStateTimer( STATE_TIMEOUT );
 }
 
+} // namespace lb
+
+} // namespace broker
 
 } // namespace freedm
 

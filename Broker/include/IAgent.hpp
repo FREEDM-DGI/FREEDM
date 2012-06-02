@@ -4,6 +4,9 @@
 #ifndef IAGENT_HPP_
 #define IAGENT_HPP_
 
+namespace freedm {
+namespace broker {
+
 template<class T>
 /// Common functions useful for all sorts of broker modules
 class IAgent
@@ -29,4 +32,7 @@ class IAgent
             { ps.insert(std::pair<std::string,T>(m->GetUUID(),m)); };
 };
 
-#endif
+} // namespace freedm
+} // namespace broker
+
+#endif // IAGENT_HPP_

@@ -41,7 +41,7 @@
 #include "GMPeerNode.hpp"
 
 #include "CMessage.hpp"
-#include "types/remotehost.hpp"
+#include "remotehost.hpp"
 
 #include <algorithm>
 #include <cassert>
@@ -82,7 +82,10 @@ using boost::property_tree::ptree;
 
 
 namespace freedm {
-    //    namespace gm{
+
+namespace broker {
+
+namespace gm {
 
 namespace {
 
@@ -134,8 +137,8 @@ void GMAgent::StartMonitor( const boost::system::error_code& err )
 /// @param p_dispatch: The dispatcher used by this module
 /// @param p_conManager: The connection manager to use in this class.
 ///////////////////////////////////////////////////////////////////////////////
-GMAgent::GMAgent(std::string p_uuid, freedm::broker::CBroker &broker,
-        freedm::broker::device::CPhysicalDeviceManager::Pointer devmanager)
+GMAgent::GMAgent(std::string p_uuid, CBroker &broker,
+        device::CPhysicalDeviceManager::Pointer devmanager)
     : GMPeerNode(p_uuid,broker.GetConnectionManager()),
     m_electiontimer(),
     m_ingrouptimer(),
@@ -187,9 +190,9 @@ GMAgent::~GMAgent()
 /// @return: A CMessage with the contents of an Are You Coordinator Message.
 /// @limitations: Can only author messages from this node.
 ///////////////////////////////////////////////////////////////////////////////
-freedm::broker::CMessage GMAgent::AreYouCoordinator()
+CMessage GMAgent::AreYouCoordinator()
 {
-    freedm::broker::CMessage m_;
+    CMessage m_;
     m_.m_submessages.put("gm","AreYouCoordinator");
     m_.m_submessages.put("gm.source",GetUUID());
     m_.SetExpireTimeFromNow(GLOBAL_TIMEOUT);
@@ -204,9 +207,9 @@ freedm::broker::CMessage GMAgent::AreYouCoordinator()
 /// @post: No change
 /// @return: A CMessage with the contents of a Invitation message.
 ///////////////////////////////////////////////////////////////////////////////
-freedm::broker::CMessage GMAgent::Invitation()
+CMessage GMAgent::Invitation()
 {
-    freedm::broker::CMessage m_;
+    CMessage m_;
     m_.m_submessages.put("gm", "Invite");
     m_.m_submessages.put("gm.source", m_GroupLeader);
     m_.m_submessages.put("gm.groupid",m_GroupID);
@@ -222,9 +225,9 @@ freedm::broker::CMessage GMAgent::Invitation()
 /// @post: No Change.
 /// @return: A CMessage with the contents of a Ready Message.
 ///////////////////////////////////////////////////////////////////////////////
-freedm::broker::CMessage GMAgent::Ready()
+CMessage GMAgent::Ready()
 {
-    freedm::broker::CMessage m_;
+    CMessage m_;
     m_.m_submessages.put("gm","Ready");
     m_.m_submessages.put("gm.source", GetUUID());
     m_.m_submessages.put("gm.groupid",m_GroupID);
@@ -242,10 +245,10 @@ freedm::broker::CMessage GMAgent::Ready()
 /// @param type: What this message is in response to.
 /// @return: A CMessage with the contents of a Response message
 ///////////////////////////////////////////////////////////////////////////////
-freedm::broker::CMessage GMAgent::Response(std::string payload,std::string type,
+CMessage GMAgent::Response(std::string payload,std::string type,
     const boost::posix_time::ptime& exp)
 {
-    freedm::broker::CMessage m_;
+    CMessage m_;
     m_.m_submessages.put("gm","Response");
     m_.m_submessages.put("gm.source", GetUUID());
     m_.m_submessages.put("gm.payload", payload);
@@ -264,9 +267,9 @@ freedm::broker::CMessage GMAgent::Response(std::string payload,std::string type,
 /// @post: No change.
 /// @return: A CMessage with the contents of an Accept message
 ///////////////////////////////////////////////////////////////////////////////
-freedm::broker::CMessage GMAgent::Accept()
+CMessage GMAgent::Accept()
 {
-    freedm::broker::CMessage m_;
+    CMessage m_;
     m_.m_submessages.put("gm", "Accept");
     m_.m_submessages.put("gm.source", GetUUID());
     m_.m_submessages.put("gm.groupid",m_GroupID);
@@ -282,9 +285,9 @@ freedm::broker::CMessage GMAgent::Accept()
 /// @post: No Change.
 /// @return: A CMessage with the contents of an AreYouThere message
 ///////////////////////////////////////////////////////////////////////////////
-freedm::broker::CMessage GMAgent::AreYouThere()
+CMessage GMAgent::AreYouThere()
 {
-    freedm::broker::CMessage m_;
+    CMessage m_;
     m_.m_submessages.put("gm", "AreYouThere");
     m_.m_submessages.put("gm.source", GetUUID());
     m_.m_submessages.put("gm.groupid",m_GroupID);
@@ -300,10 +303,10 @@ freedm::broker::CMessage GMAgent::AreYouThere()
 /// @post: No Change.
 /// @return: A CMessage with the contents of an AreYouThere message
 ///////////////////////////////////////////////////////////////////////////////
-freedm::broker::CMessage GMAgent::ClockRequest()
+CMessage GMAgent::ClockRequest()
 {
-    freedm::broker::CMessage m_;
-    m_.SetStatus(freedm::broker::CMessage::ReadClock);
+    CMessage m_;
+    m_.SetStatus(CMessage::ReadClock);
     m_.m_submessages.put("req", "gm");
     return m_;
 }
@@ -315,9 +318,9 @@ freedm::broker::CMessage GMAgent::ClockRequest()
 /// @post: No Change.
 /// @return: A CMessage with the contents of an AreYouThere message
 ///////////////////////////////////////////////////////////////////////////////
-freedm::broker::CMessage GMAgent::ClockSkew(boost::posix_time::time_duration t)
+CMessage GMAgent::ClockSkew(boost::posix_time::time_duration t)
 {
-    freedm::broker::CMessage m_;
+    CMessage m_;
     m_.m_submessages.put("gm", "ClockSkew");
     m_.m_submessages.put("gm.source", GetUUID());
     m_.m_submessages.put("gm.groupid",m_GroupID);
@@ -333,9 +336,9 @@ freedm::broker::CMessage GMAgent::ClockSkew(boost::posix_time::time_duration t)
 /// @post: No Change.
 /// @return: A CMessage with the contents of group membership
 ///////////////////////////////////////////////////////////////////////////////
-freedm::broker::CMessage GMAgent::PeerList()
+CMessage GMAgent::PeerList()
 {
-    freedm::broker::CMessage m_;
+    CMessage m_;
 	std::stringstream ss_;
     ptree me_pt;
 	ss_.clear();
@@ -417,7 +420,7 @@ void GMAgent::SystemState()
 void GMAgent::PushPeerList()
 {
     Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
-    freedm::broker::CMessage m_ = PeerList();
+    CMessage m_ = PeerList();
     foreach( PeerNodePtr peer_, m_UpNodes | boost::adaptors::map_values)
     {
         Logger.Debug<<"Send group list to all members of this group containing "
@@ -483,7 +486,7 @@ void GMAgent::Recovery()
 void GMAgent::FIDCheck( const boost::system::error_code& err)
 {
     static bool FIDsOn = false;
-    int attachedFIDs = m_phyDevManager->GetDevicesOfType<broker::device::CDeviceFid>().size();
+    int attachedFIDs = m_phyDevManager->GetDevicesOfType<device::CDeviceFid>().size();
     double FIDState = m_phyDevManager->CountActiveFids();
     if(FIDsOn == true && attachedFIDs  > 0 && FIDState < 1.0)
     {
@@ -508,7 +511,7 @@ void GMAgent::ComputeSkew( const boost::system::error_code& err)
     Logger.Debug<<__PRETTY_FUNCTION__<<std::endl;
     if(!IsCoordinator())
         return;
-    freedm::broker::CMessage m;
+    CMessage m;
     ClockRepliesMap::iterator it;
     boost::posix_time::ptime true_clock = m_clocks[GetUUID()];
     boost::posix_time::time_duration tmp, sum;
@@ -625,7 +628,7 @@ void GMAgent::Check( const boost::system::error_code& err )
             // Reset and find all group leaders
             m_Coordinators.clear();
             m_AYCResponse.clear();
-            freedm::broker::CMessage m_ = AreYouCoordinator();
+            CMessage m_ = AreYouCoordinator();
             Logger.Info <<"SEND: Sending out AYC"<<std::endl;
             foreach( PeerNodePtr peer_, m_AllPeers | boost::adaptors::map_values)
             {
@@ -792,7 +795,7 @@ void GMAgent::Merge( const boost::system::error_code& err )
         PeerSet tempSet_ = m_UpNodes;
         m_UpNodes.clear();
         // Create new invitation and send it to all Coordinators
-        freedm::broker::CMessage m_ = Invitation();
+        CMessage m_ = Invitation();
         Logger.Info <<"SEND: Sending out Invites (Invite Coordinators)"<<std::endl;
         Logger.Debug <<"Tempset is "<<tempSet_.size()<<" Nodes (IC)"<<std::endl;
         foreach( PeerNodePtr peer_, m_Coordinators | boost::adaptors::map_values)
@@ -839,7 +842,7 @@ void GMAgent::InviteGroupNodes( const boost::system::error_code& err, PeerSet p_
         /* If the timer expired, err should be false, if canceled,
          * second condition is true.    Timer should only be canceled if
          * we are no longer waiting on more replies  */
-        freedm::broker::CMessage m_ = Invitation();
+        CMessage m_ = Invitation();
         Logger.Info <<"SEND: Sending out Invites (Invite Group Nodes):"<<std::endl;
         Logger.Debug <<"Tempset is "<<p_tempSet.size()<<" Nodes (IGN)"<<std::endl;
         foreach( PeerNodePtr peer_, p_tempSet | boost::adaptors::map_values)
@@ -882,7 +885,7 @@ void GMAgent::Reorganize( const boost::system::error_code& err )
         SetStatus(GMPeerNode::REORGANIZATION);
         Logger.Notice << "+ State change: REORGANIZATION: " << __LINE__    << std::endl; 
         // Send Ready msg to all up nodes in this group
-        freedm::broker::CMessage m_ = Ready();
+        CMessage m_ = Ready();
         Logger.Info <<"SEND: Sending out Ready"<<std::endl;
         // Send new membership list to group members 
         // Peerlist is the new READY
@@ -937,7 +940,7 @@ void GMAgent::Timeout( const boost::system::error_code& err )
         {
             std::string line_ = Coordinator();
             Logger.Info << "SEND: Sending AreYouThere messages." << std::endl;
-            freedm::broker::CMessage m_ = AreYouThere();
+            CMessage m_ = AreYouThere();
             peer_ = GetPeer(line_);
             if(peer_ != NULL)
             {
@@ -973,11 +976,11 @@ void GMAgent::Timeout( const boost::system::error_code& err )
     }
 }
  
-void GMAgent::HandleRead(broker::CMessage msg)
+void GMAgent::HandleRead(CMessage msg)
 {
     Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     //If all my FIDs are off discard messages (Like a boss)
-    if(m_phyDevManager->GetDevicesOfType<broker::device::CDeviceFid>().size() > 0 &&
+    if(m_phyDevManager->GetDevicesOfType<device::CDeviceFid>().size() > 0 &&
         m_phyDevManager->CountActiveFids() < 1.0)
     {
         Logger.Debug << "Dropping Incoming Message; All FIDs offline" <<std::endl;
@@ -1095,14 +1098,14 @@ void GMAgent::HandleRead(broker::CMessage msg)
         {
             // We are the group Coordinator AND we are at normal operation
             Logger.Info << "SEND: AYC Response (YES) to "<<msg_source<<std::endl;
-            freedm::broker::CMessage m_ = Response("yes","AreYouCoordinator",msg.GetExpireTime());
+            CMessage m_ = Response("yes","AreYouCoordinator",msg.GetExpireTime());
             peer_->AsyncSend(m_);
         }
         else
         {
             // We are not the Coordinator OR we are not at normal operation
             Logger.Info << "SEND: AYC Response (NO) to "<<msg_source<<std::endl;
-            freedm::broker::CMessage m_ = Response("no","AreYouCoordinator",msg.GetExpireTime());
+            CMessage m_ = Response("no","AreYouCoordinator",msg.GetExpireTime());
             peer_->AsyncSend(m_);
         }
     }
@@ -1116,14 +1119,14 @@ void GMAgent::HandleRead(broker::CMessage msg)
             Logger.Info << "SEND: AYT Response (YES) to "<<msg_source<<std::endl;
             // We are Coordinator, peer is in our group, and peer is up
             // SCJ: I Don't think thats what the conditional Checks tho.
-            freedm::broker::CMessage m_ = Response("yes","AreYouThere",msg.GetExpireTime());
+            CMessage m_ = Response("yes","AreYouThere",msg.GetExpireTime());
             peer_->AsyncSend(m_);
         }
         else
         {
             Logger.Info << "SEND: AYT Response (NO) to "<<msg_source<<std::endl;
             // We are not Coordinator OR peer is not in our groups OR peer is down
-            freedm::broker::CMessage m_ = Response("no","AreYouThere",msg.GetExpireTime());
+            CMessage m_ = Response("no","AreYouThere",msg.GetExpireTime());
             peer_->AsyncSend(m_);
         }
     }
@@ -1149,7 +1152,7 @@ void GMAgent::HandleRead(broker::CMessage msg)
             {
                 Logger.Info << "SEND: Sending invitations to former group members" << std::endl;
                 // Forward invitation to all members of my group
-                freedm::broker::CMessage m_ = Invitation();
+                CMessage m_ = Invitation();
                 // We will set the expire time to be the same as the source message
                 m_.SetExpireTime(msg.GetExpireTime());    
                 foreach(PeerNodePtr peer_, tempSet_ | boost::adaptors::map_values)
@@ -1159,7 +1162,7 @@ void GMAgent::HandleRead(broker::CMessage msg)
                     peer_->AsyncSend(m_);
                 }
             }
-            freedm::broker::CMessage m_ = Accept();
+            CMessage m_ = Accept();
             Logger.Info << "SEND: Invitation accept to "<<msg_source<< std::endl;
             //Send Accept
             //If this is a forwarded invite, the source may not be where I want
@@ -1319,7 +1322,7 @@ int GMAgent::Run()
 {
     Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
 
-    std::map<std::string, broker::remotehost>::iterator mapIt_;
+    std::map<std::string, remotehost>::iterator mapIt_;
 
     for( mapIt_ = GetConnectionManager().GetHostnamesBegin();
         mapIt_ != GetConnectionManager().GetHostnamesEnd(); ++mapIt_ )
@@ -1359,6 +1362,9 @@ void GMAgent::Stop()
     actionlog.close();
 }
 
-//namespace
-}
+} // namespace gm
+
+} // namespace broker
+
+} // namespace freedm
 

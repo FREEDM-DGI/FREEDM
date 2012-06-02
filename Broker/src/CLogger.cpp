@@ -32,6 +32,8 @@ using namespace boost::posix_time;
 
 namespace freedm {
 
+namespace broker {
+
 namespace {
 
 /// This file's logger.
@@ -181,4 +183,6 @@ void CGlobalLogger::ListLoggers()
     }
 }
 
-}
+} // namespace broker
+
+} // namespace freedm

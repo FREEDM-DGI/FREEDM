@@ -48,6 +48,9 @@
 #include "CConnectionManager.hpp"
 
 namespace freedm {
+
+namespace broker {
+
 typedef boost::shared_ptr<freedm::broker::CMessage> MessagePtr;
 typedef freedm::broker::CConnectionManager& ConnManagerPtr;
 /// Base interface for agents/broker modules
@@ -114,6 +117,7 @@ class IPeerNode
 bool operator==(const IPeerNode& a, const IPeerNode& b);
 bool operator<(const IPeerNode& a, const IPeerNode& b);
 
-} // End freedm
+} // namespace broker
+} // namespace freedm
 
 #endif

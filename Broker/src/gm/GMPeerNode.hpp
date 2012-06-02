@@ -46,6 +46,10 @@
 
 namespace freedm {
 
+namespace broker {
+
+namespace gm {
+
 /// A container for an individual group management peer
 class GMPeerNode : public IPeerNode {
     public:
@@ -56,6 +60,10 @@ class GMPeerNode : public IPeerNode {
         enum { NORMAL,DOWN,RECOVERY,REORGANIZATION,ELECTION };
 };
 
-} // End freedm
+} // namespace gm
+
+} // namespace broker
+
+} // namespace freedm
 
 #endif

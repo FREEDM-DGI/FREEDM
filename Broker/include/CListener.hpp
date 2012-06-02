@@ -36,7 +36,7 @@
 #include "CMessage.hpp"
 #include "CBroker.hpp"
 #include "CReliableConnection.hpp"
-#include "types/remotehost.hpp"
+#include "remotehost.hpp"
 
 #include <boost/asio.hpp>
 #include <boost/array.hpp>

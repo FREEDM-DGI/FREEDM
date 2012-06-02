@@ -6,6 +6,8 @@
 #include <boost/uuid/uuid_io.hpp>
 
 namespace freedm {
+namespace broker {
+
 /// A rarely used type for uuids, used for initial generation of uuids
 class CUuid : public boost::uuids::uuid
 {
@@ -38,6 +40,7 @@ public:
 	}
 };
 
-}
+} // namespace broker
+} // namespace freedm
 
 #endif // FREEDM_UUID_HPP

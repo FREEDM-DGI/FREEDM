@@ -73,8 +73,11 @@ using boost::asio::ip::tcp;
 
 using namespace boost::asio;
 
-namespace freedm
-{
+namespace freedm {
+
+namespace broker {
+
+namespace lb {
 
 const double NORMAL_TOLERANCE = 0.5;
 const unsigned int STATE_TIMEOUT = 110; //milliseconds
@@ -101,8 +104,8 @@ class lbAgent
         lbAgent();
         /// Constructor for using this object as a module
         lbAgent(std::string uuid_,
-                freedm::broker::CBroker &broker,
-                freedm::broker::device::CPhysicalDeviceManager::Pointer 
+                CBroker &broker,
+                device::CPhysicalDeviceManager::Pointer 
                     m_phyManager);
         /// Destructor for the module  
         ~lbAgent();
@@ -135,7 +138,7 @@ class lbAgent
 
         // Handlers
         /// Handles the incoming messages according to the message label
-        virtual void HandleRead(broker::CMessage msg);
+        virtual void HandleRead(CMessage msg);
         /// Adds a new node to the list of known peers using its UUID
         PeerNodePtr AddPeer(std::string uuid);
         /// Returns a pointer to the peer based on its UUID
@@ -176,27 +179,31 @@ class lbAgent
         PeerSet     m_AllPeers;
 
         // Instance of physical device manager
-        freedm::broker::device::CPhysicalDeviceManager::Pointer 
+        device::CPhysicalDeviceManager::Pointer 
             m_phyDevManager;
 
         // Power migration functions 
         /// 'Power migration' through controlling devices
-        void InitiatePowerMigration(broker::device::SettingValue DemandValue);
+        void InitiatePowerMigration(device::SettingValue DemandValue);
         /// 'Power migration' by stepping up/down P* by a constant value
         void Step_PStar();
         /// 'Power migration' by stepping up/down P* basing on the demand cost
-        void PStar(broker::device::SettingValue DemandValue);
+        void PStar(device::SettingValue DemandValue);
         
         // IO and Timers 
         /// Timer until check of demand state change
-        freedm::broker::CBroker::TimerHandle     m_GlobalTimer;
+        CBroker::TimerHandle     m_GlobalTimer;
         /// Timer until next periodic state collection
-        freedm::broker::CBroker::TimerHandle      m_StateTimer;
+        CBroker::TimerHandle      m_StateTimer;
         
-        freedm::broker::CBroker &m_broker;
+        CBroker &m_broker;
 };
 
-}
+} // namespace lb
+
+} // namespace broker
+
+} // namespace freedm
 
 #endif
 

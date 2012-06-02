@@ -55,11 +55,9 @@ using boost::property_tree::ptree;
 #include "CDispatcher.hpp"
 #include "CConnectionManager.hpp"
 #include "CConnection.hpp"
-#include "types/remotehost.hpp"
+#include "remotehost.hpp"
 #include "device/CPhysicalDeviceManager.hpp"
 #include "device/PhysicalDeviceTypes.hpp"
-
-#include "Stopwatch.hpp"
 
 #include "Stopwatch.hpp"
 
@@ -68,7 +66,10 @@ using boost::asio::ip::tcp;
 using namespace boost::asio;
 
 namespace freedm {
-  // namespace gm{
+
+namespace broker {
+
+namespace gm {
 
 ///	Declaration of Garcia-Molina Invitation Leader Election algorithm.
 class GMAgent
@@ -77,7 +78,7 @@ class GMAgent
 {
   public:
     /// Constructor for using this object as a module.
-    GMAgent(std::string uuid_, freedm::broker::CBroker &broker, freedm::broker::device::CPhysicalDeviceManager::Pointer devmanager);
+    GMAgent(std::string uuid_, CBroker &broker, device::CPhysicalDeviceManager::Pointer devmanager);
     /// Module destructor
     ~GMAgent();
     
@@ -89,7 +90,7 @@ class GMAgent
 
     // Handlers
     /// Handles receiving incoming messages.
-    virtual void HandleRead(broker::CMessage msg );
+    virtual void HandleRead(CMessage msg );
     
     //Routines
     /// Checks for other up leaders
@@ -107,24 +108,24 @@ class GMAgent
     
     // Messages
     /// Creates AYC Message.
-    freedm::broker::CMessage AreYouCoordinator();
+    CMessage AreYouCoordinator();
     /// Creates Group Invitation Message
-    freedm::broker::CMessage Invitation();
+    CMessage Invitation();
     /// Creates Ready Message
-    freedm::broker::CMessage Ready();
+    CMessage Ready();
     /// Creates A Response message
-    freedm::broker::CMessage Response(std::string payload,std::string type,
+    CMessage Response(std::string payload,std::string type,
         const boost::posix_time::ptime& exp);
     /// Creates an Accept Message
-    freedm::broker::CMessage Accept();
+    CMessage Accept();
     /// Creates a AYT, used for Timeout
-    freedm::broker::CMessage AreYouThere();
+    CMessage AreYouThere();
     /// Generates a peer list
-    freedm::broker::CMessage PeerList();
+    CMessage PeerList();
     /// Generates a request to read the remote clock
-    freedm::broker::CMessage ClockRequest();
+    CMessage ClockRequest();
     /// Generates a message informing a node of their new clock skew
-    freedm::broker::CMessage ClockSkew(boost::posix_time::time_duration t);
+    CMessage ClockSkew(boost::posix_time::time_duration t);
 
     // This is the main loop of the algorithm
     /// Called to start the system
@@ -186,9 +187,9 @@ class GMAgent
     /// A mutex to make the timers threadsafe
     boost::interprocess::interprocess_mutex m_timerMutex;
     /// A timer for stepping through the election process
-    freedm::broker::CBroker::TimerHandle m_timer;
-    freedm::broker::CBroker::TimerHandle m_fidtimer;
-    freedm::broker::CBroker::TimerHandle m_skewtimer;
+    CBroker::TimerHandle m_timer;
+    CBroker::TimerHandle m_fidtimer;
+    CBroker::TimerHandle m_skewtimer;
     /// What I like to call the TRANSIENT ELIMINATOR
     //deadline_timer m_transient;
     
@@ -226,13 +227,16 @@ class GMAgent
     static const int MAX_SKEW = 100;
 
     //The broker!
-    freedm::broker::CBroker& m_broker;
+    CBroker& m_broker;
 
     //The device manager!
-    freedm::broker::device::CPhysicalDeviceManager::Pointer m_phyDevManager;
+    device::CPhysicalDeviceManager::Pointer m_phyDevManager;
 };
 
-  }
-//}
+} // namespace gm
+
+} // namespace broker
+
+} // namespace freedm
 
 #endif

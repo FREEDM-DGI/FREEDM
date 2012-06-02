@@ -66,11 +66,11 @@ using boost::asio::ip::tcp;
 
 using namespace boost::asio;
 
-namespace freedm
-{
-// namespace sc{
+namespace freedm {
 
+namespace broker {
 
+namespace sc {
 
 ///////////////////////////////////////////////////////////////////////////////
 /// @class          SCAgent
@@ -87,12 +87,12 @@ class SCAgent : public IReadHandler, public SCPeerNode,
 {
   public:
     ///Constructor        
-    SCAgent(std::string uuid, freedm::broker::CBroker &broker, freedm::broker::device::CPhysicalDeviceManager::Pointer m_phyManager);
+    SCAgent(std::string uuid, CBroker &broker, device::CPhysicalDeviceManager::Pointer m_phyManager);
     ///Destructor
     ~SCAgent();
     //Handler
     ///Handle receiving messages      
-    virtual void HandleRead(broker::CMessage msg);
+    virtual void HandleRead(CMessage msg);
 
   private:
     //Marker structure
@@ -112,7 +112,7 @@ class SCAgent : public IReadHandler, public SCPeerNode,
         
     // Messages
     ///Create a marker message
-    freedm::broker::CMessage marker();          
+    CMessage marker();          
         
     //Peer set operations
     ///Add a peer to peer set from UUID
@@ -148,18 +148,22 @@ class SCAgent : public IReadHandler, public SCPeerNode,
     ptree               m_curstate;
     
     ///physical device manager
-    freedm::broker::device::CPhysicalDeviceManager::Pointer m_phyDevManager;
+    device::CPhysicalDeviceManager::Pointer m_phyDevManager;
     ///all known peers
     PeerSet m_AllPeers;
 
     ///Timeout Timer
-    freedm::broker::CBroker::TimerHandle m_TimeoutTimer;
+    CBroker::TimerHandle m_TimeoutTimer;
     
     /// The broker    
-    freedm::broker::CBroker &m_broker;
+    CBroker &m_broker;
 };
 
-}
+} // namespace sc
+
+} // namespace broker
+
+} // namespace freedm
 
 #endif
 

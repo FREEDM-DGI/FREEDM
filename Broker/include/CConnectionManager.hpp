@@ -38,7 +38,7 @@
 #include "CConnection.hpp"
 #include "CListener.hpp"
 #include "CReliableConnection.hpp"
-#include "types/remotehost.hpp"
+#include "remotehost.hpp"
 #include "CGlobalConfiguration.hpp"
 
 #include <set>

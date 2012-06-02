@@ -101,11 +101,11 @@ using boost::property_tree::ptree;
 ///       other nodes (these messages belong to the channel between the nodes).
 /////////////////////////////////////////////////////////////////////////////////
 
+namespace freedm {
 
+namespace broker {
 
-namespace freedm
-{
-//  namespace sc{
+namespace sc {
     
 namespace {
 
@@ -127,8 +127,8 @@ CLocalLogger Logger(__FILE__);
 /// @limitations: None
 ///////////////////////////////////////////////////////////////////////////////
 
-SCAgent::SCAgent(std::string uuid, freedm::broker::CBroker &broker,
-                 freedm::broker::device::CPhysicalDeviceManager::Pointer 
+SCAgent::SCAgent(std::string uuid, CBroker &broker,
+                 device::CPhysicalDeviceManager::Pointer 
                     m_phyManager):
     SCPeerNode(uuid, broker.GetConnectionManager()),
     m_countstate(0),
@@ -162,9 +162,9 @@ SCAgent::~SCAgent()
 /// @return: A CMessage with the contents of marker (UUID + Int) and its source UUID
 ///////////////////////////////////////////////////////////////////////////////
 
-freedm::broker::CMessage SCAgent::marker()
+CMessage SCAgent::marker()
 {
-    freedm::broker::CMessage m_;
+    CMessage m_;
     m_.m_submessages.put("sc", "marker");
     m_.m_submessages.put("sc.source", GetUUID());
     m_.m_submessages.put("sc.id", m_curversion.second);
@@ -182,7 +182,7 @@ freedm::broker::CMessage SCAgent::marker()
 
 void SCAgent::SendDoneBack(StateVersion marker)
 {
-    freedm::broker::CMessage m_;
+    CMessage m_;
     m_.m_submessages.put("sc", "done");
     //make message associate with marker
     m_.m_submessages.put("sc.marker.UUID", marker.first);
@@ -253,7 +253,7 @@ void SCAgent::Initiate()
     
     //prepare marker tagged with UUID + Int
     Logger.Info << "Marker is ready from " << GetUUID() << std::endl;
-    freedm::broker::CMessage m_ = marker();
+    CMessage m_ = marker();
     //send tagged marker to all other peers
     foreach(PeerNodePtr peer_, m_AllPeers | boost::adaptors::map_values)
     {
@@ -280,7 +280,7 @@ void SCAgent::StateResponse()
 {
     Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     //Initiator extracts information from multimap "collectstate" and send back to request module
-    freedm::broker::CMessage m_;
+    CMessage m_;
     if (m_countmarker == m_AllPeers.size() && m_NotifyToSave == false)
     {
 	Logger.Status << "*******************************************" << std::endl;
@@ -360,15 +360,15 @@ void SCAgent::StateResponse()
 //////////////////////////////////////////////////////////////////
 void SCAgent::TakeSnapshot()
 {
-    // typedef broker::device::CDeviceDRER SST;
-    // broker::CPhysicalDeviceManager::PhysicalDevice<SST>::Container list;
-    // broker::CPhysicalDeviceManager::PhysicalDevice<SST>::iterator it, end;
-    // broker::device::SettingValue PowerValue = 0;
-    typedef broker::device::CDeviceSst SST;
+    // typedef device::CDeviceDRER SST;
+    // CPhysicalDeviceManager::PhysicalDevice<SST>::Container list;
+    // CPhysicalDeviceManager::PhysicalDevice<SST>::iterator it, end;
+    // device::SettingValue PowerValue = 0;
+    typedef device::CDeviceSst SST;
     std::vector<SST::Pointer> SSTContainer;
     std::vector<SST::Pointer>::iterator it, end;
     SSTContainer = m_phyDevManager->GetDevicesOfType<SST>();
-    broker::device::SettingValue PowerValue = 0;
+    device::SettingValue PowerValue = 0;
     
     for( it = SSTContainer.begin(), end = SSTContainer.end(); it != end; it++ )
     {
@@ -398,8 +398,8 @@ void SCAgent::SendStateBack()
 {
     //Peer send collected states to initiator
     //for each in collectstate, extract ptree as a message then send to initiator
-    freedm::broker::CMessage m_;
-    freedm::broker::CMessage m_done;
+    CMessage m_;
+    CMessage m_done;
     Logger.Status << "(Peer)The number of collected states is " << int(collectstate.size()) << std::endl;
     
     //send collected states to initiator
@@ -505,7 +505,7 @@ void SCAgent::SendStateBack()
 /// @Real_Time: time of longest code segment
 //////////////////////////////////////////////////////////////////
 
-void SCAgent::HandleRead(broker::CMessage msg)
+void SCAgent::HandleRead(CMessage msg)
 {
     Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     std::string line_;
@@ -976,7 +976,8 @@ SCAgent::PeerNodePtr SCAgent::GetPeer(std::string uuid)
     }
 }
 
-//namespace
-}
+} // namespace sc
 
+} // namespace broker
 
+} // namespace freedm

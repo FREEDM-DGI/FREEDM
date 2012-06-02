@@ -45,9 +45,11 @@
 #include "CConnection.hpp"
 #include "IPeerNode.hpp"
 
+namespace freedm {
 
-namespace freedm
-{
+namespace broker {
+
+namespace sc {
 
 //////////////////////////////////////////////////////////
 /// class SCPeerNode
@@ -65,6 +67,10 @@ class SCPeerNode : public IPeerNode
             IPeerNode(uuid, connmgr) {};
 };
 
-} // End freedm
+} // namespace sc
+
+} // namespace broker
+
+} // namespace freedm
 
 #endif

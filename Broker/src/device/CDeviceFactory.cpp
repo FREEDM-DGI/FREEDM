@@ -31,6 +31,7 @@
 #include "device/CPscadAdapter.hpp"
 #include "device/CRtdsAdapter.hpp"
 #include "device/types/CDeviceFid.hpp"
+#include "config.hpp"
 
 #define foreach BOOST_FOREACH
 

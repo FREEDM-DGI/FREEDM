@@ -79,23 +79,25 @@ if __name__ == "__main__":
     f.write(exp.tsv_head()+"\n")
     hs = ",".join(options.hostnames)
     while 1:
-        print exp.expcounter
-        f.write(exp.tsv_entry()+"\n")
-        hostlist = exp.generate_files()
-        for (host,fd) in hostlist.iteritems():
-            with settings(host_string=host):
-                fabfile.setup_sim(fd)
+        #Repeat the test 40 times
+        for xxxxxxxx in range(40):
+            print exp.expcounter
+            f.write(exp.tsv_entry()+"\n")
+            hostlist = exp.generate_files()
+            for (host,fd) in hostlist.iteritems():
+                with settings(host_string=host):
+                    fabfile.setup_sim(fd)
     
-        if not options.dryrun:
-            #This simplifies the operations and lets us "spy" on the running tasks.
-            cmd = ['fab','-H', ",".join(options.hostnames), "start_sim:%s" % options.time, "--linewise" ]
-            #Uses suprocess to run the sim
-            subprocess.call(cmd)
-        else:
-            print "Skipping start_sim; dry run."
+            if not options.dryrun:
+                #This simplifies the operations and lets us "spy" on the running tasks.
+                cmd = ['fab','-H', ",".join(options.hostnames), "start_sim:%s" % options.time, "--linewise" ]
+                #Uses suprocess to run the sim
+                subprocess.call(cmd)
+            else:
+                print "Skipping start_sim; dry run."
 
-        print "All runs should now be dead. Sleeping to let everything clean."
-        time.sleep(10)
+            print "All runs should now be dead. Sleeping to let everything clean."
+            time.sleep(10)
  
         if exp.next() == None:
             break

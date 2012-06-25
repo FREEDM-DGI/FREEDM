@@ -55,6 +55,11 @@ public:
 
     /// Increases the energy drain of this load by the specified amount.
     void StepLoad(const SettingValue step = 1.0);
+private:
+    /// redefine base accessor as private
+    IDevice::Get;
+    /// redefine base mutator as private
+    IDevice::Set;
 };
 
 } // namespace device

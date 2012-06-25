@@ -52,6 +52,11 @@ public:
 
     /// Determine whether or not this FID is active.
     bool IsActive() const;
+private:
+    /// redefine base accessor as private
+    IDevice::Get;
+    /// redefine base mutator as private
+    IDevice::Set;
 };
 
 } // namespace device

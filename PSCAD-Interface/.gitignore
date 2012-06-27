@@ -4,3 +4,6 @@ CMakeFiles
 Makefile
 libsimserv.a
 driver
+config/simserv.cfg
+config/simserv.xml
+config/logger.cfg

@@ -1,0 +1,139 @@
+<root>
+<adapter type = "simulation" port = "5000">
+    <state>
+        <entry index="1">
+            <device>SST1</device>
+            <signal>gateway</signal>
+        </entry>
+        <entry index="2">
+            <device>SST2</device>
+            <signal>gateway</signal>
+        </entry>
+        <entry index="3">
+            <device>SST3</device>
+            <signal>gateway</signal>
+        </entry>
+        <entry index="4">
+            <device>SST4</device>
+            <signal>gateway</signal>
+        </entry>
+        <entry index="5">
+            <device>SST5</device>
+            <signal>gateway</signal>
+        </entry>
+        <entry index="6">
+            <device>SST6</device>
+            <signal>gateway</signal>
+        </entry>
+        <entry index="7">
+            <device>FID1</device>
+            <signal>state</signal>
+            <value>1</value>
+        </entry>
+        <entry index="8">
+            <device>FID2</device>
+            <signal>state</signal>
+            <value>1</value>
+        </entry>
+        <entry index="9">
+            <device>FID3</device>
+            <signal>state</signal>
+            <value>1</value>
+        </entry>
+        <entry index="10">
+            <device>FID4</device>
+            <signal>state</signal>
+            <value>1</value>
+        </entry>
+        <entry index="11">
+            <device>FID5</device>
+            <signal>state</signal>
+            <value>1</value>
+        </entry>
+        <entry index="12">
+            <device>FID6</device>
+            <signal>state</signal>
+            <value>1</value>
+        </entry>
+        <entry index="13">
+            <device>FID7</device>
+            <signal>state</signal>
+            <value>1</value>
+        </entry>
+        <entry index="14">
+            <device>FID8</device>
+            <signal>state</signal>
+            <value>1</value>
+        </entry>
+    </state>
+    <command>
+        <entry index="1">
+            <device>SST1</device>
+            <signal>gateway</signal>
+        </entry>
+        <entry index="2">
+            <device>SST2</device>
+            <signal>gateway</signal>
+        </entry>
+        <entry index="3">
+            <device>SST3</device>
+            <signal>gateway</signal>
+        </entry>
+    </command>
+</adapter>
+<adapter type="rtds" port="5001">
+    <state>
+        <entry index="1">
+            <device>SST1</device>
+            <signal>gateway</signal>
+        </entry>
+        <entry index="2">
+            <device>FID1</device>
+            <signal>status</signal>
+        </entry>
+    </state>
+    <command>
+        <entry index="1">
+            <device>SST1</device>
+            <signal>gateway</signal>
+        </entry>
+    </command>
+</adapter>
+<adapter type="rtds" port="5002">
+    <state>
+        <entry index="1">
+            <device>SST2</device>
+            <signal>gateway</signal>
+        </entry>
+        <entry index="2">
+            <device>FID2</device>
+            <signal>status</signal>
+        </entry>
+    </state>
+    <command>
+        <entry index="1">
+            <device>SST2</device>
+            <signal>gateway</signal>
+        </entry>
+    </command>
+</adapter>
+<adapter type="rtds" port="5003">
+    <state>
+        <entry index="1">
+            <device>SST3</device>
+            <signal>gateway</signal>
+        </entry>
+        <entry index="2">
+            <device>FID3</device>
+            <signal>status</signal>
+        </entry>
+    </state>
+    <command>
+        <entry index="1">
+            <device>SST3</device>
+            <signal>gateway</signal>
+        </entry>
+    </command>
+</adapter>
+</root>
+

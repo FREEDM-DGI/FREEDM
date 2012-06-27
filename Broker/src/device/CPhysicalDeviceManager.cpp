@@ -151,7 +151,7 @@ size_t CPhysicalDeviceManager::DeviceCount() const
 /// @todo - temporary?
 unsigned int CPhysicalDeviceManager::CountActiveFids() const
 {
-    unsigned int result;
+    unsigned int result = 0;
     CDeviceFid::Pointer next_device;
 
     for (const_iterator it = m_devices.begin(); it != m_devices.end(); it++)

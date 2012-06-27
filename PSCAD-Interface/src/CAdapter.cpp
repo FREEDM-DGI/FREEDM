@@ -120,7 +120,7 @@ void CAdapter::ReadDetails( const boost::property_tree::ptree & tree,
             index   = child.second.get<TIndex>("<xmlattr>.index");
             device  = child.second.get<std::string>("device");
             signal  = child.second.get<std::string>("signal");
-            value   = child.second.get_optional<TSignalValue>("initial");
+            value   = child.second.get_optional<TSignalValue>("value");
         }
         catch( std::exception & e )
         {
@@ -176,7 +176,7 @@ void CAdapter::ReadDetails( const boost::property_tree::ptree & tree,
             }
             lock->SetValue(devsig,value.get());
             Logger.Info << "Set the initial value " << devsig << "="
-                        << value.get() << std::endl;
+                        << lock->GetValue(devsig) << std::endl;
         }
     }
 }

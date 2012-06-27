@@ -139,6 +139,7 @@ SDeviceTable & CTableManager::GetInstance( std::string identifier )
     if( it == m_instance.end() )
     {
         // create new instance if not found
+        Logger.Notice << "Created instance for " << identifier << std::endl;
         std::pair<std::string,SDeviceTable> value(identifier,SDeviceTable());
         SDeviceTable::TSharedMutex mutex( new boost::shared_mutex );
         value.second.s_mutex = mutex;

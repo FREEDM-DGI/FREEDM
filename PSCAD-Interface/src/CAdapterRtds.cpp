@@ -69,8 +69,10 @@ void CAdapterRtds::HandleConnection()
     typedef float TSignalValue;
     TSignalValue * recvBuffer = new TSignalValue[m_CommandDetails.size()];
     TSignalValue * sendBuffer = new TSignalValue[m_StateDetails.size()];
-    std::size_t recvSize = sizeof(TSignalValue) * m_CommandDetails.size();
-    std::size_t sendSize = sizeof(TSignalValue) * m_StateDetails.size();
+    std::size_t recvBytes = sizeof(TSignalValue) * m_CommandDetails.size();
+    std::size_t sendBytes = sizeof(TSignalValue) * m_StateDetails.size();
+    std::size_t recvSize = m_CommandDetails.size();
+    std::size_t sendSize = m_StateDetails.size();
     CTableManager::TWriter writeLock;
     CTableManager::TReader readLock;
     
@@ -80,8 +82,8 @@ void CAdapterRtds::HandleConnection()
         {
             Logger.Info << "Waiting for client data." << std::endl;
             boost::asio::read( m_socket,
-                    boost::asio::buffer(recvBuffer,recvSize) );
-            ChangeEndian( (char *)recvBuffer, recvSize );
+                    boost::asio::buffer(recvBuffer,recvBytes) );
+            ChangeEndian( (char *)recvBuffer, recvBytes );
             
             Logger.Info << "Updating the command table." << std::endl;
             writeLock = CTableManager::AsWriter(COMMAND_TABLE);
@@ -93,16 +95,16 @@ void CAdapterRtds::HandleConnection()
             
             Logger.Info << "Reading the state table." << std::endl;
             readLock = CTableManager::AsReader(STATE_TABLE);
-            for( std::size_t i = 0; i < recvSize; i++ )
+            for( std::size_t i = 0; i < sendSize; i++ )
             {
                 sendBuffer[i] = readLock->GetValue(m_StateDetails[i]);
             }
             readLock.reset();
             
             Logger.Info << "Writing a response." << std::endl;
-            ChangeEndian( (char *)sendBuffer, sendSize );
+            ChangeEndian( (char *)sendBuffer, sendBytes );
             boost::asio::write( m_socket,
-                    boost::asio::buffer(sendBuffer,sendSize) );
+                    boost::asio::buffer(sendBuffer,sendBytes) );
         }
     }
     catch( boost::system::system_error & e )

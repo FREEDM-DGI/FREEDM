@@ -89,7 +89,7 @@
         </entry>
         <entry index="2">
             <device>FID1</device>
-            <signal>status</signal>
+            <signal>state</signal>
         </entry>
     </state>
     <command>
@@ -107,7 +107,7 @@
         </entry>
         <entry index="2">
             <device>FID2</device>
-            <signal>status</signal>
+            <signal>state</signal>
         </entry>
     </state>
     <command>
@@ -125,7 +125,7 @@
         </entry>
         <entry index="2">
             <device>FID3</device>
-            <signal>status</signal>
+            <signal>state</signal>
         </entry>
     </state>
     <command>

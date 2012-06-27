@@ -29,6 +29,7 @@
 #include "CLogger.hpp"
 #include "device/CPhysicalDeviceManager.hpp"
 #include "device/types/CDeviceFid.hpp"
+#include "device/CDeviceFactory.hpp"
 
 namespace freedm {
 namespace broker {
@@ -162,6 +163,26 @@ unsigned int CPhysicalDeviceManager::CountActiveFids() const
         }
     }
 
+    return result;
+}
+
+// @todo
+SettingValue CPhysicalDeviceManager::NetValue(std::string type,
+    std::string signal) const
+{
+    SettingValue result = 0;
+    const_iterator it, end;    
+
+    IDevice::Pointer goal = CDeviceFactory::instance().GetInstance(type);    
+
+    for( it = m_devices.begin(), end = m_devices.end(); it != end; it++ )
+    {
+        if( device_cast(it->second, goal->GetReference()) )
+        {
+            result = SumValues( result, it->second->Get(signal) );
+        }
+    }
+    
     return result;
 }
 

@@ -55,6 +55,8 @@ public:
     
     /// Increases the gateway value of this SST by the specified amount.
     void StepGateway(const SettingValue step = 1.0);
+
+    virtual const CDeviceSst & GetReference() const { return *this; }
 private:
     /// redefine base accessor as private
     IDevice::Get;

@@ -55,6 +55,8 @@ public:
 
     /// Increases the energy drain of this load by the specified amount.
     void StepLoad(const SettingValue step = 1.0);
+    
+    virtual const CDeviceLoad & GetReference() const { return *this; }
 private:
     /// redefine base accessor as private
     IDevice::Get;

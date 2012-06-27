@@ -69,7 +69,7 @@ class CDeviceFactory : private boost::noncopyable
 {
 public:
     /// Type of the factory functions.
-    typedef void (CDeviceFactory::*FactoryFunction )(const Identifier);
+    typedef IDevice::Pointer (CDeviceFactory::*FactoryFunction )(const Identifier);
 
     /// Retrieves the static instance of the device factory class.
     static CDeviceFactory& instance();
@@ -88,11 +88,13 @@ public:
 
     /// Creates a device and registers it with the factory's device manager.
     template <class DeviceType>
-    void CreateDevice(const Identifier deviceID);
+    IDevice::Pointer CreateDevice(const Identifier deviceID);
 
     /// Creates all devices specified by a vector.
     void CreateDevices(const std::vector<std::string>& deviceList);
 
+    /// Creates and returns an instance of the specified device type
+    IDevice::Pointer GetInstance(std::string deviceType);
 private:
     /// Type of the device registry.
     typedef std::map<const std::string, FactoryFunction> DeviceRegistryType;
@@ -112,6 +114,9 @@ private:
     /// Used to indicate whether or not init has been called on this factory.
     bool m_initialized;
 
+    /// @todo don't ask
+    unsigned int m_addToManager;
+
 #ifdef USE_DEVICE_RTDS
     /// IO service for RTDS adapters, @todo manage own memory!!
     boost::asio::io_service *m_ios;
@@ -121,6 +126,7 @@ private:
 #endif
 };
 
+// @todo fix how badly I messed up this function
 ////////////////////////////////////////////////////////////////////////////////
 /// Creates a DeviceType with the given identifier and registers it with the
 /// factory's device manager. It is intended that this function not be called
@@ -145,7 +151,7 @@ private:
 ///  created.
 ////////////////////////////////////////////////////////////////////////////////
 template <class DeviceType>
-void CDeviceFactory::CreateDevice(const Identifier deviceID)
+IDevice::Pointer CDeviceFactory::CreateDevice(const Identifier deviceID)
 {
     CDeviceFactoryHPPLogger.Trace << __PRETTY_FUNCTION__ << std::endl;
     if (!m_initialized)
@@ -155,7 +161,11 @@ void CDeviceFactory::CreateDevice(const Identifier deviceID)
         throw std::runtime_error(ss.str());
     }
     IDevice::Pointer dev(new DeviceType(deviceID, m_adapter));
-    m_manager->AddDevice(dev);
+    if( m_addToManager )
+    {
+        m_manager->AddDevice(dev);
+    }
+    return dev;
 }
 
 } // namespace device

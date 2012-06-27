@@ -38,6 +38,7 @@
 
 #include "IPhysicalAdapter.hpp"
 #include "types/IDevice.hpp"
+#include "DeviceMath.hpp"
 
 #define CALL_MEMBER_FN(object,ptrToMember)  ((object).*(ptrToMember))
 
@@ -119,10 +120,12 @@ public:
     template <class DeviceType>
     std::vector<SettingValue> GetValueVector(
         SettingValue(DeviceType::*getter)( ) const) const;
-    
+ 
     /// @todo
     unsigned int CountActiveFids() const;
 
+    /// @todo
+    SettingValue NetValue(std::string type, std::string signal ) const;
 private:
     /// Mapping From Identifier To Device Set
     PhysicalDeviceSet m_devices;

@@ -51,6 +51,13 @@ boost::shared_ptr<TargetType> device_cast(ObjectType object)
     return boost::dynamic_pointer_cast<TargetType > ( object );
 }
 
+// @todo i really don't even know anymore
+template <class ObjectType, class TargetType>
+boost::shared_ptr<TargetType> device_cast(ObjectType object, const TargetType & goal)
+{
+    return boost::dynamic_pointer_cast<TargetType>( object );
+}
+
 /// Physical device with implementation delegated to private member
 class IDevice : private boost::noncopyable
 {
@@ -73,17 +80,19 @@ public:
     /// Tries to acquire the mutex
     bool TryLock();
 
-protected:
-    friend class CPhysicalDeviceManager; // Temporary?
-    
-    /// Constructor which takes an identifier and device adapter
-    IDevice(const Identifier device, IPhysicalAdapter::Pointer adapter);
-
     /// Gets the setting of some key from the structure
     SettingValue Get(const SettingKey key) const;
 
     /// Sets the value of some key in the structure
     void Set(const SettingKey key, const SettingValue value);
+    
+    /// @this is needed for a convoluted call chain to get type
+    virtual const IDevice & GetReference() const = 0;
+protected:
+    friend class CPhysicalDeviceManager; // Temporary?
+    
+    /// Constructor which takes an identifier and device adapter
+    IDevice(const Identifier device, IPhysicalAdapter::Pointer adapter);
 
     /// Unique identifier for the device
     Identifier m_identifier;

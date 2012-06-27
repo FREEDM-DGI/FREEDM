@@ -31,6 +31,7 @@
 #include "device/CPscadAdapter.hpp"
 #include "device/CRtdsAdapter.hpp"
 #include "device/types/CDeviceFid.hpp"
+#include "config.hpp"
 
 #define foreach BOOST_FOREACH
 
@@ -112,6 +113,7 @@ void CDeviceFactory::init(CPhysicalDeviceManager::Pointer manager,
 #else
     m_adapter = CGenericAdapter::Create();
 #endif
+    m_addToManager = 1;
     m_initialized = true;
 }
 #pragma GCC diagnostic warning "-Wunused-parameter"
@@ -318,6 +320,36 @@ void CDeviceFactory::CreateDevice<CDeviceFid>(const Identifier deviceID)
     m_manager->AddDevice(IDevice::Pointer(new CDeviceFid(deviceID, adapter)));
 }
 #endif
+
+/// bad solution to get the type of a device by string identifier
+IDevice::Pointer CDeviceFactory::GetInstance(std::string deviceType)
+{
+    // this makes about as much sense to me as it does to you
+    IDevice::Pointer result;
+
+    if (!m_initialized)
+    {
+        std::stringstream ss;
+        ss << __PRETTY_FUNCTION__ << " called before factory init" << std::endl;
+        throw std::runtime_error(ss.str());
+    }
+
+    // Ensure the specified device type exists
+    if (m_registry.find(deviceType) == m_registry.end())
+    {
+        std::stringstream ss;
+        ss << "Attempted to create device of unregistered type "
+                << deviceType.c_str();
+        throw std::runtime_error(ss.str());
+    }
+
+    m_addToManager = 0;
+    result = (( this->*m_registry[deviceType] )( "null" ));
+    m_addToManager = 1;
+
+    return result;
+}
+
 
 } // namespace device
 } // namespace freedm

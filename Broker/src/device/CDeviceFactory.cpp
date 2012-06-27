@@ -287,7 +287,7 @@ CDeviceFactory::CDeviceFactory()
 ///
 /// Temporary hack to get FIDs working.
 template <>
-void CDeviceFactory::CreateDevice<CDeviceFid>(const Identifier deviceID)
+IDevice::Pointer CDeviceFactory::CreateDevice<CDeviceFid>(const Identifier deviceID)
 {
     if (!m_initialized)
     {

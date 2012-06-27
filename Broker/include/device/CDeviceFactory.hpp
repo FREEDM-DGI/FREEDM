@@ -33,6 +33,7 @@
 #include "CLogger.hpp"
 #include "CPhysicalDeviceManager.hpp"
 #include "IPhysicalAdapter.hpp"
+#include "config.hpp"
 
 namespace freedm {
 namespace broker {

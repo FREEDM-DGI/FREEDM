@@ -285,6 +285,8 @@ void lbAgent::CollectState()
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     CMessage m_cs;
     m_cs.m_submessages.put("sc", "request");
+    m_cs.m_submessages.put("sc.deviceType", "Sst");
+    m_cs.m_submessages.put("sc.valueType", "gateway");
     m_cs.m_submessages.put("sc.source", GetUUID());
     m_cs.m_submessages.put("sc.module", "lb");
     try
@@ -832,9 +834,9 @@ void lbAgent::HandleRead(CMessage msg)
     {
         int peer_count=0;
         double agg_gateway=0;
-	foreach(ptree::value_type &v, pt.get_child("CollectedState.gateway"))
+	foreach(ptree::value_type &v, pt.get_child("CollectedState.state"))
 	{
-	    Logger.Notice << "SC module returned gateway values: "
+	    Logger.Notice << "SC module returned values: "
 			  << v.second.data() << std::endl;
  	    peer_count++;
             agg_gateway += boost::lexical_cast<double>(v.second.data());

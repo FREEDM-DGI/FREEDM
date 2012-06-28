@@ -2,7 +2,7 @@
 /// @file         CStateCollection.hpp
 ///
 /// @author       Li Feng <lfqt5@mail.mst.edu>
-///		  Derek Ditch <derek.ditch@mst.edu>
+///       Derek Ditch <derek.ditch@mst.edu>
 ///
 /// @compiler     C++
 ///
@@ -66,97 +66,104 @@ using boost::asio::ip::tcp;
 
 using namespace boost::asio;
 
-namespace freedm {
+namespace freedm
+{
 
-namespace broker {
+namespace broker
+{
 
-namespace sc {
+namespace sc
+{
 
 ///////////////////////////////////////////////////////////////////////////////
 /// @class          SCAgent
 /// @description    Declaration of Chandy-Lamport Algorithm
 ///                 Each node that wants to initiate the state collection records its
 ///                 local state and sends a marker message to all other peer nodes.
-///       	    Upon receiving a marker for the first time, peer nodes record their local states
+///             Upon receiving a marker for the first time, peer nodes record their local states
 ///                 and start recording any message from incoming channel until receive marker from
 ///                 other nodes (these messages belong to the channel between the nodes).
 ///////////////////////////////////////////////////////////////////////////////
 
 class SCAgent : public IReadHandler, public SCPeerNode,
-    public IAgent< boost::shared_ptr<SCPeerNode> >
+        public IAgent< boost::shared_ptr<SCPeerNode> >
 {
-  public:
-    ///Constructor        
-    SCAgent(std::string uuid, CBroker &broker, device::CPhysicalDeviceManager::Pointer m_phyManager);
-    ///Destructor
-    ~SCAgent();
-    //Handler
-    ///Handle receiving messages      
-    virtual void HandleRead(CMessage msg);
-
-  private:
-    //Marker structure
-    typedef std::pair< std::string, int >  StateVersion;
+    public:
+        ///Constructor
+        SCAgent(std::string uuid, CBroker &broker, device::CPhysicalDeviceManager::Pointer m_phyManager);
+        ///Destructor
+        ~SCAgent();
+        //Handler
+        ///Handle receiving messages
+        virtual void HandleRead(CMessage msg);
         
-    //Internal
-    ///Initiator starts state collection
-    void    Initiate();
-    ///Save local state
-    void    TakeSnapshot();
-    ///Peer sends collected states back to the initiator
-    void    SendStateBack();
-    ///Peer sends "Done" message to the initiator to indicate finishing sending states back
-    void    SendDoneBack(StateVersion marker);
-    ///Initiator sends collected states back to the request module
-    void    StateResponse();
+    private:
+        //Marker structure
+        typedef std::pair< std::string, int >  StateVersion;
         
-    // Messages
-    ///Create a marker message
-    CMessage marker();          
+        //Internal
+        ///Initiator starts state collection
+        void    Initiate();
+        ///Save local state
+        void    TakeSnapshot(std::string deviceType, std::string valueType);
+        ///Peer sends collected states back to the initiator
+        void    SendStateBack();
+        ///Peer sends "Done" message to the initiator to indicate finishing sending states back
+        void    SendDoneBack(StateVersion marker);
+        ///Initiator sends collected states back to the request module
+        void    StateResponse();
         
-    //Peer set operations
-    ///Add a peer to peer set from UUID
-    PeerNodePtr AddPeer(std::string uuid);
-    ///Add a peer to peer set from a pointer to a peer node object
-    PeerNodePtr AddPeer(PeerNodePtr peer);
-    ///Get a pointer to a peer from UUID
-    PeerNodePtr GetPeer(std::string uuid);
-
-    ///collect states container and its iterator
-    std::multimap<StateVersion, ptree> collectstate;
-    std::multimap<StateVersion, ptree>::iterator it;
-    
-    ///count number of states    
-    unsigned int m_countstate;
-    ///count number of marker
-    unsigned int m_countmarker;
-    ///count number of "Done" messages
-    unsigned int m_countdone;
-   
-    ///save leader
-    std::string m_scleader;
-
-    ///flag to indicate save channel message
-    bool m_NotifyToSave;
+        // Messages
+        ///Create a marker message
+        CMessage marker();
         
-    ///module that request state collection
-    std::string m_module;
+        //Peer set operations
+        ///Add a peer to peer set from UUID
+        PeerNodePtr AddPeer(std::string uuid);
+        ///Add a peer to peer set from a pointer to a peer node object
+        PeerNodePtr AddPeer(PeerNodePtr peer);
+        ///Get a pointer to a peer from UUID
+        PeerNodePtr GetPeer(std::string uuid);
         
-    ///current version of marker
-    StateVersion        m_curversion;
-    ///current state
-    ptree               m_curstate;
-    
-    ///physical device manager
-    device::CPhysicalDeviceManager::Pointer m_phyDevManager;
-    ///all known peers
-    PeerSet m_AllPeers;
-
-    ///Timeout Timer
-    CBroker::TimerHandle m_TimeoutTimer;
-    
-    /// The broker    
-    CBroker &m_broker;
+        ///collect states container and its iterator
+        std::multimap<StateVersion, ptree> collectstate;
+        std::multimap<StateVersion, ptree>::iterator it;
+        
+        ///count number of states
+        unsigned int m_countstate;
+        ///count number of marker
+        unsigned int m_countmarker;
+        ///count number of "Done" messages
+        unsigned int m_countdone;
+        
+        ///save leader
+        std::string m_scleader;
+        
+        ///flag to indicate save channel message
+        bool m_NotifyToSave;
+        
+        ///module that request state collection
+        std::string m_module;
+        
+        ///type of device and value
+        std::string m_deviceType;
+        std::string m_valueType;
+        
+        ///current version of marker
+        StateVersion        m_curversion;
+        ///current state
+        ptree               m_curstate;
+        
+        ///physical device manager
+        device::CPhysicalDeviceManager::Pointer m_phyDevManager;
+        ///all known peers
+        PeerSet m_AllPeers;
+        
+        ///Timeout Timer
+        CBroker::TimerHandle m_TimeoutTimer;
+        
+        /// The broker
+        CBroker &m_broker;
 };
 
 } // namespace sc

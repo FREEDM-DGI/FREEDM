@@ -2,7 +2,7 @@
 /// @file         CStateCollection.cpp
 ///
 /// @author       Li Feng <lfqt5@mail.mst.edu>
-///		  Derek Ditch <derek.ditch@mst.edu>
+///       Derek Ditch <derek.ditch@mst.edu>
 ///
 /// @compiler     C++
 ///
@@ -12,12 +12,12 @@
 ///               snapshot algorithm to collect states
 ///
 /// @functions   Initiate()
-///          	 HandleRead()
-///         	 TakeSnapshot()
-///          	 StateResponse()
-///      	 StateSendBack()
-///          	 GetPeer()
-///          	 AddPeer()
+///              HandleRead()
+///              TakeSnapshot()
+///              StateResponse()
+///              StateSendBack()
+///              GetPeer()
+///              AddPeer()
 ///
 /// @citation: Distributed Snapshots: Determining Global States of Distributed Systems,
 ///            ACM Transactions on Computer Systems, Vol. 3, No. 1, 1985, pp. 63-75
@@ -101,13 +101,17 @@ using boost::property_tree::ptree;
 ///       other nodes (these messages belong to the channel between the nodes).
 /////////////////////////////////////////////////////////////////////////////////
 
-namespace freedm {
+namespace freedm
+{
 
-namespace broker {
+namespace broker
+{
 
-namespace sc {
-    
-namespace {
+namespace sc
+{
+
+namespace
+{
 
 /// This file's logger.
 CLocalLogger Logger(__FILE__);
@@ -128,14 +132,14 @@ CLocalLogger Logger(__FILE__);
 ///////////////////////////////////////////////////////////////////////////////
 
 SCAgent::SCAgent(std::string uuid, CBroker &broker,
-                 device::CPhysicalDeviceManager::Pointer 
-                    m_phyManager):
-    SCPeerNode(uuid, broker.GetConnectionManager()),
-    m_countstate(0),
-    m_NotifyToSave(false),
-    m_curversion("default", 0),
-    m_phyDevManager(m_phyManager),
-    m_broker(broker)
+                 device::CPhysicalDeviceManager::Pointer
+                 m_phyManager):
+        SCPeerNode(uuid, broker.GetConnectionManager()),
+        m_countstate(0),
+        m_NotifyToSave(false),
+        m_curversion("default", 0),
+        m_phyDevManager(m_phyManager),
+        m_broker(broker)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     PeerNodePtr self_(this);
@@ -168,6 +172,8 @@ CMessage SCAgent::marker()
     m_.m_submessages.put("sc", "marker");
     m_.m_submessages.put("sc.source", GetUUID());
     m_.m_submessages.put("sc.id", m_curversion.second);
+    m_.m_submessages.put("sc.deviceType", m_deviceType);
+    m_.m_submessages.put("sc.valueType", m_valueType);
     return m_;
 }
 
@@ -177,6 +183,7 @@ CMessage SCAgent::marker()
 /// @pre: The peer node finished sending states to peer called SCAgent::Initiate().
 /// @post: Send "done" message to peer called SCAgent::Initiate().
 /// @peers: SC modules in all peer list except peer called SCAgent::Initiate().
+/// @parameter: 
 /// @return: Send "done" message to peer called SCAgent::Initiate().
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -187,21 +194,21 @@ void SCAgent::SendDoneBack(StateVersion marker)
     //make message associate with marker
     m_.m_submessages.put("sc.marker.UUID", marker.first);
     m_.m_submessages.put("sc.marker.int", marker.second);
+    
     if (GetPeer(m_curversion.first) != NULL)
     {
         try
-    	{
+        {
             GetPeer(m_curversion.first)->AsyncSend(m_);
-    	}
-    	catch (boost::system::system_error& e)
-    	{
+        }
+        catch (boost::system::system_error& e)
+        {
             Logger.Info << "Couldn't Send Message To Peer" << std::endl;
-    	}
-    	//GetPeer(m_curversion.first)->AsyncSend(m_);
+        }
     }
     else
     {
-	Logger.Info << "Peer doesn't exist" << std::endl;
+        Logger.Info << "Peer doesn't exist" << std::endl;
     }
 }
 
@@ -210,7 +217,7 @@ void SCAgent::SendDoneBack(StateVersion marker)
 /// Initiate
 /// @description: Initiator redcords its local state and broadcasts marker.
 /// @pre: Receiving state collection request from other module.
-/// @post: The node (initiator) starts collecting state by saving its own states and 
+/// @post: The node (initiator) starts collecting state by saving its own states and
 ///        broadcasting a marker out.
 /// @I/O: TakeSnapshot()
 /// @return: Send a marker out to all known peers
@@ -240,7 +247,7 @@ void SCAgent::Initiate()
     Logger.Debug << " --------------------------------------------- "<<std::endl;
     //collect states of local devices
     Logger.Info << "TakeSnapshot: collect states of " << GetUUID() << std::endl;
-    TakeSnapshot();
+    TakeSnapshot(m_deviceType, m_valueType);
     //save state into the multimap "collectstate"
     collectstate.insert(std::pair<StateVersion, ptree>(m_curversion, m_curstate));
     m_countstate++;
@@ -281,50 +288,53 @@ void SCAgent::StateResponse()
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     //Initiator extracts information from multimap "collectstate" and send back to request module
     CMessage m_;
+    
     if (m_countmarker == m_AllPeers.size() && m_NotifyToSave == false)
     {
-	Logger.Status << "*******************************************" << std::endl;
-        //prepare collect states 
+        Logger.Status << "*******************************************" << std::endl;
+        //prepare collect states
         Logger.Info << "Sending requested state back to " << m_module << " module" << std::endl;
         m_.m_submessages.put(m_module, "CollectedState");
+        
         for (it = collectstate.begin(); it != collectstate.end(); it++)
         {
-	    Logger.Status << (*it).first.first << "+++" << (*it).first.second << "    " << (*it).second.get<std::string>("sc.source") << std::endl;
-            if((*it).first == m_curversion)
+            Logger.Status << (*it).first.first << "+++" << (*it).first.second << "    " << (*it).second.get<std::string>("sc.source") << std::endl;
+            
+            if ((*it).first == m_curversion)
             {
-                if((*it).second.get<std::string>("sc.type")== "gateway")
+                if ((*it).second.get<std::string>("sc.type")== m_valueType)
                 {
-        	    m_.m_submessages.add("CollectedState.gateway.value", (*it).second.get<std::string>("sc.gateway"));
+                    m_.m_submessages.add("CollectedState.state.value", (*it).second.get<std::string>("sc.value"));
                 }
-                else if((*it).second.get<std::string>("sc.type")== "Message")
+                else if ((*it).second.get<std::string>("sc.type")== "Message")
                 {
-        	    m_.m_submessages.add("CollectedState.intransit.value", (*it).second.get<std::string>("sc.transit.value"));
+                    m_.m_submessages.add("CollectedState.intransit.value", (*it).second.get<std::string>("sc.transit.value"));
                 }
             }
         }//end for
-	//send collected states to the request module
-	if (GetPeer(GetUUID()) != NULL)
-	{
-    	    try
-    	    {
-            	GetPeer(GetUUID())->AsyncSend(m_);
-    	    }
-    	    catch (boost::system::system_error& e)
-    	    {
-            	Logger.Info << "Couldn't Send Message To Peer" << std::endl;
-    	    }
-	}
-        //GetPeer(GetUUID())->AsyncSend(m_);
-    	else
-    	{
-	    Logger.Info << "Peer doesn't exist" << std::endl;
-    	}
+        
+        //send collected states to the request module
+        if (GetPeer(GetUUID()) != NULL)
+        {
+            try
+            {
+                GetPeer(GetUUID())->AsyncSend(m_);
+            }
+            catch (boost::system::system_error& e)
+            {
+                Logger.Info << "Couldn't Send Message To Peer" << std::endl;
+            }
+        }
+        else
+        {
+            Logger.Info << "Peer doesn't exist" << std::endl;
+        }
+        
         //clear collectstate
         collectstate.clear();
         m_countmarker = 0;
         m_countstate = 0;
     }
-
     else
     {
         Logger.Notice << "(Initiator) Not receiving all states back. Peerlist size is " << m_AllPeers.size()<< std::endl;
@@ -338,15 +348,15 @@ void SCAgent::StateResponse()
             Logger.Status << m_countmarker << " + " << "FALSE" << std::endl;
         }
         
-	for(it = collectstate.begin(); it!= collectstate.end(); it++)
-	{
-    	    //Logger.Status << (*it).first.first << "+++" << (*it).first.second << "    " << (*it).second.get<std::string>("sc.source") << std::endl;
-	}
-	m_countmarker = 0;
-	m_NotifyToSave = false;
+        for (it = collectstate.begin(); it!= collectstate.end(); it++)
+        {
+            //Logger.Status << (*it).first.first << "+++" << (*it).first.second << "    " << (*it).second.get<std::string>("sc.source") << std::endl;
+        }
+        
+        m_countmarker = 0;
+        m_NotifyToSave = false;
         //collectstate.clear();
     }
-
 }
 
 
@@ -358,32 +368,18 @@ void SCAgent::StateResponse()
 /// @limitation: Currently, it is used to collect only the gateway values for LB module
 ///
 //////////////////////////////////////////////////////////////////
-void SCAgent::TakeSnapshot()
+void SCAgent::TakeSnapshot(std::string deviceType, std::string valueType)
 {
-    // typedef device::CDeviceDRER SST;
-    // CPhysicalDeviceManager::PhysicalDevice<SST>::Container list;
-    // CPhysicalDeviceManager::PhysicalDevice<SST>::iterator it, end;
-    // device::SettingValue PowerValue = 0;
-    typedef device::CDeviceSst SST;
-    std::vector<SST::Pointer> SSTContainer;
-    std::vector<SST::Pointer>::iterator it, end;
-    SSTContainer = m_phyDevManager->GetDevicesOfType<SST>();
-    device::SettingValue PowerValue = 0;
-    
-    for( it = SSTContainer.begin(), end = SSTContainer.end(); it != end; it++ )
-    {
-        PowerValue +=(*it)->GetGateway();
-    }
-    
-    //list = m_phyDevManager->GetDevicesOfType<SST>();
-    //for(it = list.begin(), end = list.end();it != end; it++)
-    //{
-    //  PowerValue += (*it)->Get("powerLevel");
-    //}
-    //get gateway value from SST and save into a CMessage (here use a fake one)
-    m_curstate.put("sc.type", "gateway");
-    m_curstate.put("sc.gateway", PowerValue);
+    device::SettingValue PowerValue;  
+    //Logger.Status << "&&&&&&&&&&&&&&&&&&&&&& call NetValue funciton &&&&&&&&&&&&&&" << std::endl;  
+    PowerValue = m_phyDevManager->NetValue(deviceType, valueType);
+    //Logger.Status << "&&&&&&&&&&&&&&&&&&&&&&" << PowerValue << "&&&&&&&&&&&&&&&&&&&" << std::endl;
+
+    //save state 
+    m_curstate.put("sc.type", valueType);
+    m_curstate.put("sc.value", PowerValue);
     m_curstate.put("sc.source", GetUUID());
+
 }
 
 
@@ -407,56 +403,57 @@ void SCAgent::SendStateBack()
     {
         if ((*it).first == m_curversion)
         {
-            if((*it).second.get<std::string>("sc.type")== "gateway")
+            if ((*it).second.get<std::string>("sc.type")== m_valueType)
             {
                 m_.m_submessages.put("sc", "state");
                 m_.m_submessages.put("sc.type", (*it).second.get<std::string>("sc.type"));
-                m_.m_submessages.put("sc.gateway", (*it).second.get<std::string>("sc.gateway"));
+                m_.m_submessages.put("sc.value", (*it).second.get<std::string>("sc.value"));
                 m_.m_submessages.put("sc.source", (*it).second.get<std::string>("sc.source"));
-		m_.m_submessages.put("sc.marker.UUID", m_curversion.first);
-		m_.m_submessages.put("sc.marker.int", m_curversion.second);
-		if (GetPeer(m_curversion.first) != NULL)
-		{
-	    	    try
-	    	    {
-		        GetPeer(m_curversion.first)->AsyncSend(m_);
-	    	    }
-	    	    catch (boost::system::system_error& e)
-	    	    {
-		        Logger.Info << "Couldn't Send Message To Peer" << std::endl;
-	    	    }
-		}
-		else
-     		{
-		    Logger.Info << "Peer doesn't exist" << std::endl;
-    		}
-                //GetPeer(m_curversion.first)->AsyncSend(m_);
-                //Logger.Notice << "SendStateBack(): gateway "<< (*it).second.get<std::string>("sc.gateway") << std::endl;
-                //Logger.Notice << "Sending state back to initiator: " << m_curversion.first << std::endl;
+                m_.m_submessages.put("sc.marker.UUID", m_curversion.first);
+                m_.m_submessages.put("sc.marker.int", m_curversion.second);
+                
+                if (GetPeer(m_curversion.first) != NULL)
+                {
+                    try
+                    {
+                        GetPeer(m_curversion.first)->AsyncSend(m_);
+                    }
+                    catch (boost::system::system_error& e)
+                    {
+                        Logger.Info << "Couldn't Send Message To Peer" << std::endl;
+                    }
+                }
+                else
+                {
+                    Logger.Info << "Peer doesn't exist" << std::endl;
+                }
+                
             }
-            else if((*it).second.get<std::string>("sc.type")== "Message")
+            else if ((*it).second.get<std::string>("sc.type")== "Message")
             {
                 m_.m_submessages.put("sc", "state");
                 m_.m_submessages.put("sc.type", (*it).second.get<std::string>("sc.type"));
                 m_.m_submessages.put("sc.transit.value", (*it).second.get<std::string>("sc.transit.value"));
+                
                 //m_.m_submessages.put("sc.transit.source", (*it).second.get<std::string>("sc.transit.source"));
                 //m_.m_submessages.put("sc.transit.destin", (*it).second.get<std::string>("sc.transit.destin"));
-		if (GetPeer(m_curversion.first) != NULL)
-		{
-	    	    try
-	    	    {
-		        GetPeer(m_curversion.first)->AsyncSend(m_);
-	    	    }
-	    	    catch (boost::system::system_error& e)
-	    	    {
-		        Logger.Info << "Couldn't Send Message To Peer" << std::endl;
-	    	    }
-		}
-		else
-     		{
-		    Logger.Info << "Peer doesn't exist" << std::endl;
-    		}
-                //GetPeer(m_curversion.first)->AsyncSend(m_);
+                m_.m_submessages.put("sc.marker.UUID", m_curversion.first);
+                m_.m_submessages.put("sc.marker.int", m_curversion.second);
+                if (GetPeer(m_curversion.first) != NULL)
+                {
+                    try
+                    {
+                        GetPeer(m_curversion.first)->AsyncSend(m_);
+                    }
+                    catch (boost::system::system_error& e)
+                    {
+                        Logger.Info << "Couldn't Send Message To Peer" << std::endl;
+                    }
+                }
+                else
+                {
+                    Logger.Info << "Peer doesn't exist" << std::endl;
+                }
             }
         }
     }//end for
@@ -468,33 +465,31 @@ void SCAgent::SendStateBack()
     //make done message associate with marker
     m_done.m_submessages.put("sc.marker.UUID", m_curversion.first);
     m_done.m_submessages.put("sc.marker.int", m_curversion.second);
-
-    if(GetPeer(m_curversion.first) != NULL )
+    
+    if (GetPeer(m_curversion.first) != NULL )
     {
-	try
+        try
         {
             //Logger.Status << "m_curversion = " << m_curversion.first << "+++++++++++" << m_curversion.second << std::endl;
-	    GetPeer(m_curversion.first)->AsyncSend(m_done);
-	    //Logger.Status << "*************peer send done message to the Initiator***************" << std::endl;
-
-	}
-	catch (boost::system::system_error& e)
-	{
-	    Logger.Info << "Couldn't Send Message To Peer" << std::endl;
-	}
+            GetPeer(m_curversion.first)->AsyncSend(m_done);
+            //Logger.Status << "*************peer send done message to the Initiator***************" << std::endl;
+        }
+        catch (boost::system::system_error& e)
+        {
+            Logger.Info << "Couldn't Send Message To Peer" << std::endl;
+        }
     }
     else
     {
-	Logger.Info << "Peer doesn't exist" << std::endl;
+        Logger.Info << "Peer doesn't exist" << std::endl;
     }
-    //GetPeer(m_curversion.first)->AsyncSend(m_done);
 }
 
 
 ///////////////////////////////////////////////////////////////////
 /// HandleRead
 /// @description: HandleRead will be called upon every incoming message and operations will
-///		  be performed based on chandy-lamport algorithm.
+///       be performed based on chandy-lamport algorithm.
 /// @pre: Messages are obtained.
 /// @post: parsing messages
 /// @peers: Invoked by dispatcher, other SC
@@ -517,11 +512,11 @@ void SCAgent::HandleRead(CMessage msg)
     //check the coming peer node
     line_ = msg.GetSourceUUID();
     
-    if(line_ != GetUUID())
+    if (line_ != GetUUID())
     {
         peer_ = GetPeer(line_);
         
-        if(peer_ != NULL)
+        if (peer_ != NULL)
         {
             Logger.Debug << "Peer already exists. Do Nothing " <<std::endl;
         }
@@ -534,9 +529,9 @@ void SCAgent::HandleRead(CMessage msg)
     }//end if
     
     //receive updated peerlist from groupmanager, which means group has been changed
-    if(pt.get<std::string>("any","NOEXCEPTION") == "PeerList")
+    if (pt.get<std::string>("any","NOEXCEPTION") == "PeerList")
     {
-	m_scleader = line_;
+        m_scleader = line_;
         Logger.Info << "Peer List received from Group Leader: " << line_ <<std::endl;
         foreach(PeerNodePtr peer_, m_AllPeers | boost::adaptors::map_values)
         {
@@ -550,7 +545,8 @@ void SCAgent::HandleRead(CMessage msg)
             std::string nhost = sub_pt.get<std::string>("host");
             std::string nport = sub_pt.get<std::string>("port");
             PeerNodePtr p = GetPeer(nuuid);
-            if(!p)
+            
+            if (!p)
             {
                 Logger.Debug<<"SC adds new peer from peerlist"<<std::endl;
                 //If you don't already know about the peer, make sure it is in the connection manager
@@ -574,46 +570,46 @@ void SCAgent::HandleRead(CMessage msg)
         {
             Logger.Info << "Keep going!" << std::endl;
         }
-	else if(line_ == GetUUID() && line_ != m_curversion.first)
-	//group leader is changed to a new one
- 	{
+        else if (line_ == GetUUID() && line_ != m_curversion.first)
+            //group leader is changed to a new one
+        {
             m_curversion.first = "default";
             m_curversion.second = 0;
             collectstate.clear();
-	    m_NotifyToSave = false;
-	    m_countstate = 0;
-	    m_countmarker = 0;
-	    m_countdone = 0;	
-	}
-	else
-	{
+            m_NotifyToSave = false;
+            m_countstate = 0;
+            m_countmarker = 0;
+            m_countdone = 0;
+        }
+        else
+        {
             m_curversion.first = "default";
             m_curversion.second = 0;
             collectstate.clear();
-	    m_NotifyToSave = false;
-	    m_countstate = 0;
-	    m_countmarker = 0;
-	}
-
+            m_NotifyToSave = false;
+            m_countstate = 0;
+            m_countmarker = 0;
+        }
     }//if peerList
+    
     //if flag=true save lb's transit message in m_curstate
     else if (pt.get<std::string>("lb","NOEXCEPTION") != "NOEXCEPTION")
-    {  
-	if (m_NotifyToSave == true)
-	{ 
+    {
+        if (m_NotifyToSave == true)
+        {
             m_curstate.put("sc.type", "Message");
             m_curstate.put("sc.transit.value", pt.get<std::string>("lb"));
             //m_curstate.put("sc.transit.source", pt.get<std::string>("sc.source"));
             //m_curstate.put("sc.transit.destin", GetUUID());
             collectstate.insert(std::pair<StateVersion, ptree>(m_curversion, m_curstate));
             m_countstate++;
-         }
+        }
     }
     //if flag=true save gm's transit message in m_curstate
     else if (pt.get<std::string>("gm","NOEXCEPTION") != "NOEXCEPTION")
     {
-	if (m_NotifyToSave == true)
-	{ 
+        if (m_NotifyToSave == true)
+        {
             m_curstate.put("sc.type", "Message");
             m_curstate.put("sc.transit.value", pt.get<std::string>("gm"));
             //m_curstate.put("sc.transit.source", pt.get<std::string>("sc.source"));
@@ -621,16 +617,20 @@ void SCAgent::HandleRead(CMessage msg)
             collectstate.insert(std::pair<StateVersion, ptree>(m_curversion, m_curstate));
             m_countstate++;
         }
-     }
+    }
     //receive state request for gateway
     else if (pt.get<std::string>("sc") == "request")
     {
-        //extract request source from "LB" or "GM"
+        //extract module that made request
         m_module = pt.get<std::string>("sc.module");
+        //extract type of device and value from other modules
+        m_deviceType = pt.get<std::string>("sc.deviceType");
+        m_valueType = pt.get<std::string>("sc.valueType");
+
         //call initiate to start state collection
         Logger.Notice << "Receiving state collect request from " << m_module << " ( " << pt.get<std::string>("sc.source")
-                       << " )" << std::endl;
-	Initiate();
+        << " )" << std::endl;
+        Initiate();
     }
     //check if this is a marker message
     else if (pt.get<std::string>("sc") == "marker")
@@ -642,10 +642,10 @@ void SCAgent::HandleRead(CMessage msg)
         incomingVer_.second = pt.get<unsigned int>("sc.id");
         
         if (m_curversion.first == "default")
-        //peer receives first marker
+            //peer receives first marker
         {
-	    Logger.Status << "---------------------------first maker with default state ---------------------" << std::endl;
-	    collectstate.clear();
+            Logger.Status << "---------------------------first maker with default state ---------------------" << std::endl;
+            collectstate.clear();
             //assign incoming version to current version
             m_curversion = incomingVer_;
             //count unique marker
@@ -654,41 +654,43 @@ void SCAgent::HandleRead(CMessage msg)
             Logger.Info << "Marker is " << m_curversion.first << " " << m_curversion.second << std::endl;
             //physical device information
             Logger.Debug << "SC module identified "<< m_phyDevManager->DeviceCount()
-                          << " physical devices on this node" << std::endl;
+            << " physical devices on this node" << std::endl;
+
+            //extract type of device and value from message
+            m_deviceType = pt.get<std::string>("sc.deviceType");
+            m_valueType = pt.get<std::string>("sc.valueType");
+
             //collect local state
-            TakeSnapshot();
+            TakeSnapshot(m_deviceType, m_valueType);
             //save state into the multimap "collectstate"
-            //Logger.Notice << "Peer m_curstate contains gateway value:" << m_curstate.get<std::string>("sc.gateway")
-            //          << " of"<< m_curstate.get<std::string>("sc.source")<<std::endl;
             collectstate.insert(std::pair<StateVersion, ptree>(m_curversion, m_curstate));
             m_countstate++;
             
             if (m_AllPeers.size()==2)
                 //only two nodes, peer finish collecting states: send marker then state back
             {
-		if(GetPeer(m_curversion.first) != NULL)
-    		{
-		    try
-		    {
-			GetPeer(m_curversion.first)->AsyncSend(msg);
-		    }
-		    catch (boost::system::system_error& e)
-		    {
-			Logger.Info << "Couldn't Send Message To Peer" << std::endl;
-		    }	            
-	            //send marker back to initiator
-		    //GetPeer(m_curversion.first)->AsyncSend(msg);
-		    //send collected states to initiator
-		    SendStateBack();
-		    m_curversion.first = "default";
-		    m_curversion.second = 0;
-		    m_countmarker = 0;
-		    collectstate.clear();
-		}
-		else
-		{
-		    Logger.Info << "Peer doesn't exist" << std::endl;
-		}
+                if (GetPeer(m_curversion.first) != NULL)
+                {
+                    try
+                    {
+                        GetPeer(m_curversion.first)->AsyncSend(msg);
+                    }
+                    catch (boost::system::system_error& e)
+                    {
+                        Logger.Info << "Couldn't Send Message To Peer" << std::endl;
+                    }
+                    
+                    //send collected states to initiator
+                    SendStateBack();
+                    m_curversion.first = "default";
+                    m_curversion.second = 0;
+                    m_countmarker = 0;
+                    collectstate.clear();
+                }
+                else
+                {
+                    Logger.Info << "Peer doesn't exist" << std::endl;
+                }
             }
             else
                 //more than two nodes
@@ -707,7 +709,7 @@ void SCAgent::HandleRead(CMessage msg)
             }
         }//first receive marker
         else if (m_curversion == incomingVer_ && m_curversion.first == GetUUID())
-        //initiator receives his marker before
+            //initiator receives his marker before
         {
             //number of marker is increased by 1
             m_countmarker++;
@@ -719,7 +721,7 @@ void SCAgent::HandleRead(CMessage msg)
             }
         }
         else if (m_curversion == incomingVer_ && m_curversion.first != GetUUID())
-        //peer receives this marker before
+            //peer receives this marker before
         {
             //number of marker is increased by 1
             m_countmarker++;
@@ -739,54 +741,52 @@ void SCAgent::HandleRead(CMessage msg)
         else if (incomingVer_ != m_curversion && m_curversion.first != "default")
             //receive a new marker from other peer
         {
-	    //Logger.Status << "===================================================" << std::endl;
+            //Logger.Status << "===================================================" << std::endl;
             //Logger.Status << "Receive a new marker different from current one." << std::endl;
-	    //Logger.Status << "Current version is " << m_curversion.first << " + " << m_curversion.second << std::endl;
-	    //Logger.Status << "Incoming version is " << incomingVer_.first << " + " << incomingVer_.second << std::endl;
-
+            //Logger.Status << "Current version is " << m_curversion.first << " + " << m_curversion.second << std::endl;
+            //Logger.Status << "Incoming version is " << incomingVer_.first << " + " << incomingVer_.second << std::endl;
+            
             //assign incoming version to current version if the incoming is newer
-	    if (m_curversion.first == incomingVer_.first && incomingVer_.second > m_curversion.second)
-	    {   
-		//Logger.Status << "====================are we here?===================" << std::endl;
-		collectstate.clear();
+            if (m_curversion.first == incomingVer_.first && incomingVer_.second > m_curversion.second)
+            {
+                //Logger.Status << "====================are we here?===================" << std::endl;
+                collectstate.clear();
                 m_curversion = incomingVer_;
-	        //count marker
+                //count marker
                 m_countmarker = 1;
                 //collect local state
-                TakeSnapshot();
+                TakeSnapshot(m_deviceType, m_valueType);
                 //save state into the multimap "collectstate"
                 collectstate.insert(std::pair<StateVersion, ptree>(m_curversion, m_curstate));
                 m_countstate++;
-            
+                
                 if (m_AllPeers.size()==2)
-                //only two nodes, peer finish collecting states: send marker then state back
+                    //only two nodes, peer finish collecting states: send marker then state back
                 {
-		    if(GetPeer(m_curversion.first) != NULL)
-		    {
-		        try
-		        {
-			    GetPeer(m_curversion.first)->AsyncSend(msg);
-		        }
-		        catch (boost::system::system_error& e)
-		        {
-			    Logger.Info << "Couldn't Send Message To Peer" << std::endl;
-		        }	            
-	                //send marker back to initiator
-		        //GetPeer(m_curversion.first)->AsyncSend(msg);
-		        //send collected states to initiator
-		        SendStateBack();
-		        m_curversion.first = "default";
-		        m_curversion.second = 0;
-		        m_countmarker = 0;
-		        collectstate.clear();
-		    }
-		    else
-		    {
-		        Logger.Info << "Peer doesn't exist" << std::endl;
-		    }
+                    if (GetPeer(m_curversion.first) != NULL)
+                    {
+                        try
+                        {
+                            GetPeer(m_curversion.first)->AsyncSend(msg);
+                        }
+                        catch (boost::system::system_error& e)
+                        {
+                            Logger.Info << "Couldn't Send Message To Peer" << std::endl;
+                        }
+                        //send collected states to initiator
+                        SendStateBack();
+                        m_curversion.first = "default";
+                        m_curversion.second = 0;
+                        m_countmarker = 0;
+                        collectstate.clear();
+                    }
+                    else
+                    {
+                        Logger.Info << "Peer doesn't exist" << std::endl;
+                    }
                 }
                 else
-                //more than two nodes
+                    //more than two nodes
                 {
                     //broadcast marker to all other peers
                     foreach(PeerNodePtr peer_, m_AllPeers | boost::adaptors::map_values)
@@ -800,49 +800,47 @@ void SCAgent::HandleRead(CMessage msg)
                     //set flag to start to record messages in channel
                     m_NotifyToSave = true;
                 }
-	    }
+            }
             //assign incoming version to current version if the incoming is from leader
-	    else if (m_curversion.first != incomingVer_.first && incomingVer_.first == m_scleader)
-	    {
-		collectstate.clear();
+            else if (m_curversion.first != incomingVer_.first && incomingVer_.first == m_scleader)
+            {
+                collectstate.clear();
                 m_curversion = incomingVer_;
-	        //count marker
+                //count marker
                 m_countmarker = 1;
                 //collect local state
-                TakeSnapshot();
+                TakeSnapshot(m_deviceType, m_valueType);
                 //save state into the multimap "collectstate"
                 collectstate.insert(std::pair<StateVersion, ptree>(m_curversion, m_curstate));
                 m_countstate++;
-            
+                
                 if (m_AllPeers.size()==2)
-                //only two nodes, peer finish collecting states: send marker then state back
+                    //only two nodes, peer finish collecting states: send marker then state back
                 {
-		    if(GetPeer(m_curversion.first) != NULL)
-		    {
-		        try
-		        {
-			    GetPeer(m_curversion.first)->AsyncSend(msg);
-		        }
-		        catch (boost::system::system_error& e)
-		        {
-			    Logger.Info << "Couldn't Send Message To Peer" << std::endl;
-		        }	            
-	                //send marker back to initiator
-		        //GetPeer(m_curversion.first)->AsyncSend(msg);
-		        //send collected states to initiator
-		        SendStateBack();
-		        m_curversion.first = "default";
-		        m_curversion.second = 0;
-		        m_countmarker = 0;
-		        collectstate.clear();
-		    }
-		    else
-		    {
-		        Logger.Info << "Peer doesn't exist" << std::endl;
-		    }
+                    if (GetPeer(m_curversion.first) != NULL)
+                    {
+                        try
+                        {
+                            GetPeer(m_curversion.first)->AsyncSend(msg);
+                        }
+                        catch (boost::system::system_error& e)
+                        {
+                            Logger.Info << "Couldn't Send Message To Peer" << std::endl;
+                        }
+                        //send collected states to initiator
+                        SendStateBack();
+                        m_curversion.first = "default";
+                        m_curversion.second = 0;
+                        m_countmarker = 0;
+                        collectstate.clear();
+                    }
+                    else
+                    {
+                        Logger.Info << "Peer doesn't exist" << std::endl;
+                    }
                 }
                 else
-                //more than two nodes
+                    //more than two nodes
                 {
                     //broadcast marker to all other peers
                     foreach(PeerNodePtr peer_, m_AllPeers | boost::adaptors::map_values)
@@ -856,60 +854,61 @@ void SCAgent::HandleRead(CMessage msg)
                     //set flag to start to record messages in channel
                     m_NotifyToSave = true;
                 }
-	    }
+            }
         }
     }
     //check if this is a response state
     else if (pt.get<std::string>("sc") == "state")
     {
         //save states
-
+        
         //parsing the states
         if (pt.get<std::string>("sc.type") == "Message")
         {
-            Logger.Notice << "Receive channel message from peer " << pt.get<std::string>("sc.source") << std::endl;
-            m_curstate.put("sc.type", "Message");
-            m_curstate.put("sc.transit.value", pt.get<std::string>("sc.transit.value"));
-            //m_curstate.put("sc.transit.source", pt.get<std::string>("sc.source"));
-            //m_curstate.put("sc.transit.destin", pt.get<std::string>("sc.destin"));
-            collectstate.insert(std::pair<StateVersion, ptree>( m_curversion, m_curstate));
-            m_countstate++;
+            if (m_curversion.first==pt.get<std::string>("sc.marker.UUID") && m_curversion.second==boost::lexical_cast<int>(pt.get<std::string>("sc.marker.int")))
+            {
+                Logger.Notice << "Receive channel message from peer " << pt.get<std::string>("sc.source") << std::endl;
+                m_curstate.put("sc.type", "Message");
+                m_curstate.put("sc.transit.value", pt.get<std::string>("sc.transit.value"));
+                //m_curstate.put("sc.transit.source", pt.get<std::string>("sc.source"));
+                //m_curstate.put("sc.transit.destin", pt.get<std::string>("sc.destin"));
+                collectstate.insert(std::pair<StateVersion, ptree>( m_curversion, m_curstate));
+                m_countstate++;
+            }
         }
-        else if (pt.get<std::string>("sc.type") == "gateway")
+        else if (pt.get<std::string>("sc.type") == m_valueType)
         {
-      	    if(m_curversion.first==pt.get<std::string>("sc.marker.UUID") && m_curversion.second==boost::lexical_cast<int>(pt.get<std::string>("sc.marker.int")))
-	    {
+            if (m_curversion.first==pt.get<std::string>("sc.marker.UUID") && m_curversion.second==boost::lexical_cast<int>(pt.get<std::string>("sc.marker.int")))
+            {
                 Logger.Notice << "Receive status from peer " << pt.get<std::string>("sc.source") << std::endl;
-                m_curstate.put("sc.type", "gateway");
-                m_curstate.put("sc.gateway", pt.get<std::string>("sc.gateway"));
+                m_curstate.put("sc.type", m_valueType);
+                m_curstate.put("sc.value", pt.get<std::string>("sc.value"));
                 m_curstate.put("sc.source", pt.get<std::string>("sc.source"));
-                //Logger.Notice << "HandleRead(state): gateway "<< pt.get<std::string>("sc.gateway") << std::endl;
+
                 //save state into the map "collectstate"
                 collectstate.insert(std::pair<StateVersion, ptree>( m_curversion, m_curstate));
                 m_countstate++;
-	    }
+            }
         }
-        else if(pt.get<std::string>("sc.type")=="done")
+        else if (pt.get<std::string>("sc.type")=="done")
         {
             Logger.Status << "Receive done message from peer " << pt.get<std::string>("sc.source") << std::endl;
-
-	    if(m_curversion.first==pt.get<std::string>("sc.marker.UUID") && m_curversion.second==boost::lexical_cast<int>(pt.get<std::string>("sc.marker.int")))
-            //send done back to initiator
+            
+            if (m_curversion.first==pt.get<std::string>("sc.marker.UUID") && m_curversion.second==boost::lexical_cast<int>(pt.get<std::string>("sc.marker.int")))
+                //send done back to initiator
             {
-		SendDoneBack(m_curversion);
-	    }
+                SendDoneBack(m_curversion);
+            }
         }
-      
     }
     else if (pt.get<std::string>("sc")=="done")
     {
-	if(m_curversion.first==pt.get<std::string>("sc.marker.UUID") && m_curversion.second==boost::lexical_cast<int>(pt.get<std::string>("sc.marker.int")))
-        //send done back to initiator
+        if (m_curversion.first==pt.get<std::string>("sc.marker.UUID") && m_curversion.second==boost::lexical_cast<int>(pt.get<std::string>("sc.marker.int")))
+            //send done back to initiator
         {
             m_countdone++;
             Logger.Debug << "done :-------------" << m_countdone << std::endl;
-	}
-
+        }
         
         //if "done" is received from all peers
         if (m_countdone == m_AllPeers.size()-1)
@@ -924,7 +923,7 @@ void SCAgent::HandleRead(CMessage msg)
 /// AddPeer
 /// @description: Add a peer to peer set m_AllPeers from UUID.
 ///               m_AllPeers is a specific peer set for SC module.
-/// @pre: m_AllPeers 
+/// @pre: m_AllPeers
 /// @post: Add a peer to m_AllPeers
 /// @param: uuid string
 /// @return: a pointer to a peer node
@@ -942,7 +941,7 @@ SCAgent::PeerNodePtr SCAgent::AddPeer(std::string uuid)
 /// AddPeer
 /// @description: Add a peer to peer set from a pointer to a peer node object
 ///               m_AllPeers is a specific peer set for SC module.
-/// @pre: m_AllPeers 
+/// @pre: m_AllPeers
 /// @post: Add a peer to m_AllPeers
 /// @param: a pointer to a peer node
 /// @return: a pointer to a peer node
@@ -957,7 +956,7 @@ SCAgent::PeerNodePtr SCAgent::AddPeer(PeerNodePtr peer)
 /// GetPeer
 /// @description: Get a pointer to a peer from UUID.
 ///               m_AllPeers is a specific peer set for SC module.
-/// @pre: m_AllPeers 
+/// @pre: m_AllPeers
 /// @post: Add a peer to m_AllPeers
 /// @param: uuid string
 /// @return: a pointer to the peer
@@ -966,7 +965,7 @@ SCAgent::PeerNodePtr SCAgent::GetPeer(std::string uuid)
 {
     PeerSet::iterator it = m_AllPeers.find(uuid);
     
-    if(it != m_AllPeers.end())
+    if (it != m_AllPeers.end())
     {
         return it->second;
     }

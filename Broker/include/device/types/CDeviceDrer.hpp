@@ -55,8 +55,6 @@ public:
     
     /// Increases the energy generation of this DRER by step.
     void StepGeneration(const SettingValue step = 1.0);
-
-    virtual const CDeviceDrer & GetReference() const { return *this; }
 private:
     /// redefine base accessor as private
     IDevice::Get;

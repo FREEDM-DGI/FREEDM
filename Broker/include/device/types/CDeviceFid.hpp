@@ -52,8 +52,6 @@ public:
 
     /// Determine whether or not this FID is active.
     bool IsActive() const;
-
-    virtual const CDeviceFid & GetReference() const { return *this; }
 private:
     /// redefine base accessor as private
     IDevice::Get;

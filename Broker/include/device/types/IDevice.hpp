@@ -51,13 +51,6 @@ boost::shared_ptr<TargetType> device_cast(ObjectType object)
     return boost::dynamic_pointer_cast<TargetType > ( object );
 }
 
-// @todo i really don't even know anymore
-template <class ObjectType, class TargetType>
-boost::shared_ptr<TargetType> device_cast(ObjectType object, const TargetType & goal)
-{
-    return boost::dynamic_pointer_cast<TargetType>( object );
-}
-
 /// Physical device with implementation delegated to private member
 class IDevice : private boost::noncopyable
 {
@@ -85,9 +78,6 @@ public:
 
     /// Sets the value of some key in the structure
     void Set(const SettingKey key, const SettingValue value);
-    
-    /// @this is needed for a convoluted call chain to get type
-    virtual const IDevice & GetReference() const = 0;
 protected:
     friend class CPhysicalDeviceManager; // Temporary?
     

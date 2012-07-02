@@ -123,6 +123,8 @@ public:
     /// @todo
     unsigned int CountActiveFids() const;
 
+    /// Retrieves all the stored devices of a specified type.
+    const std::vector<IDevice::Pointer> GetDevicesOfType(std::string type);
 private:
     /// Mapping From Identifier To Device Set
     PhysicalDeviceSet m_devices;

@@ -89,6 +89,7 @@
 using boost::property_tree::ptree;
 
 #include "CLogger.hpp"
+#include "device/DeviceMath.hpp"
 
 #include <map>
 
@@ -372,7 +373,7 @@ void SCAgent::TakeSnapshot(std::string deviceType, std::string valueType)
 {
     device::SettingValue PowerValue;  
     //Logger.Status << "&&&&&&&&&&&&&&&&&&&&&& call NetValue funciton &&&&&&&&&&&&&&" << std::endl;  
-    PowerValue = m_phyDevManager->NetValue(deviceType, valueType);
+    PowerValue = m_phyDevManager->GetValue(deviceType, valueType, &device::SumValues);
     //Logger.Status << "&&&&&&&&&&&&&&&&&&&&&&" << PowerValue << "&&&&&&&&&&&&&&&&&&&" << std::endl;
 
     //save state 

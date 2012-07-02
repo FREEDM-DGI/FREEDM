@@ -58,8 +58,6 @@ namespace freedm {
 
 class CDispatcher;
 
-/// How long weach module is allowed to run for.
-const unsigned int PHASE_DURATION = 90;
 /// How long we should wait before aligning the modules again
 const unsigned int ALIGNMENT_DURATION = 2000;
 
@@ -70,7 +68,8 @@ public:
     typedef boost::function<void (boost::system::error_code)> Scheduleable;
     typedef boost::function<void ()> BoundScheduleable;
     typedef std::string ModuleIdent;
-    typedef std::vector<ModuleIdent> ModuleVector;
+    typedef std::pair<ModuleIdent, boost::posix_time::time_duration> PhaseTuple;
+    typedef std::vector< PhaseTuple > ModuleVector;
     typedef unsigned int PhaseMarker;
     typedef unsigned int TimerHandle;
     typedef std::map<TimerHandle, ModuleIdent> TimerAlloc;
@@ -118,10 +117,11 @@ public:
     
     /// Access The dispatcher
     CDispatcher& GetDispatcher() { return m_dispatch; };
+    
+    /// Registers a module for the scheduler
+    void RegisterModule(ModuleIdent m, boost::posix_time::time_duration phase);
 
 private:
-    /// Registers a module for the scheduler
-    void RegisterModule(ModuleIdent m);
 
     /// Handle completion of an asynchronous accept operation.
     void HandleAccept(const boost::system::error_code& e);

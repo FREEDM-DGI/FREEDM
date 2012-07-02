@@ -73,7 +73,7 @@ CLocalLogger Logger(__FILE__);
 /// @param p_dispatch The message dispatcher associated with this Broker
 /// @param m_ios The ioservice used by this broker to perform socket operations
 /// @param m_conMan The connection manager used by this broker.
-/// @limiations Fails if the port is already in use.
+/// @limitations Fails if the port is already in use.
 ///////////////////////////////////////////////////////////////////////////////
 CBroker::CBroker(const std::string& p_address, const std::string& p_port,
     CDispatcher &p_dispatch, boost::asio::io_service &m_ios,
@@ -103,6 +103,14 @@ CBroker::CBroker(const std::string& p_address, const std::string& p_port,
     m_last_alignment = now;
 }
 
+///////////////////////////////////////////////////////////////////////////////
+/// @fn CBroker::~CBroker
+/// @description Cleans up all the timers from this module since the timers are
+///     stored as pointers.
+/// @pre None
+/// @post All the timers are destroyed and their handles no longer point at
+///     valid resources.
+///////////////////////////////////////////////////////////////////////////////
 CBroker::~CBroker()
 {
     TimersMap::iterator it;
@@ -164,8 +172,8 @@ void CBroker::Stop()
 /// @fn CBroker::HandleStop
 /// @description Handles closing all the sockets connection managers and
 ///              Services.
-/// @pre: The ioservice is running.
-/// @post: The ioservice is stopped.
+/// @pre The ioservice is running.
+/// @post The ioservice is stopped.
 ///////////////////////////////////////////////////////////////////////////////
 void CBroker::HandleStop()
 {
@@ -177,7 +185,18 @@ void CBroker::HandleStop()
     m_ioService.stop(); 
 }
 
-void CBroker::RegisterModule(CBroker::ModuleIdent m)
+///////////////////////////////////////////////////////////////////////////////
+/// @fn CBroker::RegisterModule
+/// @description Places the module in to the list of schedulable phases. The
+///   scheduler cycles through these in order to do real-time round robin
+///   scheduling.
+/// @pre None
+/// @post The module is registered with a phase duration specified by the
+///   parameter phase.
+/// @param m the identifier for the module.
+/// @param phase the duration of the phase.
+///////////////////////////////////////////////////////////////////////////////
+void CBroker::RegisterModule(CBroker::ModuleIdent m, boost::posix_time::time_duration phase)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     m_schmutex.lock();
@@ -185,7 +204,7 @@ void CBroker::RegisterModule(CBroker::ModuleIdent m)
     bool exists;
     for(unsigned int i=0; i < m_modules.size(); i++)
     {
-        if(m_modules[i] == m)
+        if(m_modules[i].first == m)
         {
             exists = true;
             break;
@@ -193,7 +212,7 @@ void CBroker::RegisterModule(CBroker::ModuleIdent m)
     }
     if(!exists)
     {
-        m_modules.push_back(m);
+        m_modules.push_back(PhaseTuple(m,phase));
         if(m_modules.size() == 1)
         {
             m_schmutex.unlock();
@@ -208,8 +227,9 @@ void CBroker::RegisterModule(CBroker::ModuleIdent m)
 /// @fn CBroker::AllocateTimer
 /// @description Returns a handle to a timer to use for scheduling tasks.
 ///     timer recycling helps prevent forest fires (and accidental branching
-/// @pre None
+/// @pre The module is registered
 /// @post A handle to a timer is returned.
+/// @param module the module the timer should be allocated to
 ///////////////////////////////////////////////////////////////////////////////
 CBroker::TimerHandle CBroker::AllocateTimer(CBroker::ModuleIdent module)
 {
@@ -217,9 +237,6 @@ CBroker::TimerHandle CBroker::AllocateTimer(CBroker::ModuleIdent module)
     m_schmutex.lock();
     CBroker::TimerHandle myhandle;
     boost::asio::deadline_timer* t = new boost::asio::deadline_timer(m_ioService);
-    m_schmutex.unlock();
-    RegisterModule(module);
-    m_schmutex.lock();
     myhandle = m_handlercounter;
     m_handlercounter++;
     m_allocs.insert(CBroker::TimerAlloc::value_type(myhandle,module));
@@ -232,7 +249,7 @@ CBroker::TimerHandle CBroker::AllocateTimer(CBroker::ModuleIdent module)
 /// @fn CBroker::Schedule
 /// @description Given a binding to a function that should be run into the
 ///   future, prepares it to be run... in the future.
-/// @pre None
+/// @pre The module is registered
 /// @post A function is scheduled to be called in the future.
 ///////////////////////////////////////////////////////////////////////////////
 void CBroker::Schedule(CBroker::TimerHandle h,
@@ -248,10 +265,23 @@ void CBroker::Schedule(CBroker::TimerHandle h,
     m_schmutex.unlock();
 }
 
+///////////////////////////////////////////////////////////////////////////////
+/// @fn CBroker::Schedule
+/// @description Given a module and a bound schedulable, enter that schedulable
+///     into that modules job queue.
+/// @pre The module is registered.
+/// @post The task is placed in the work queue for the module m. If the
+///     start_worker parameter is set to true, the module's worker will be
+///     activated if it isn't already.
+/// @param m The module the schedulable should be run as.
+/// @param x The method that will be run.
+/// @param start_worker tells the worker to begin processing again, if it is
+///     currently idle [The worker will be idle if the work queue is empty; this
+///     can be useful to defer an activity to the next round if the node is not busy
+///////////////////////////////////////////////////////////////////////////////
 void CBroker::Schedule(ModuleIdent m, BoundScheduleable x, bool start_worker)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    RegisterModule(m);
     m_schmutex.lock();
     m_ready[m].push_back(x);
     if(!m_busy && start_worker)
@@ -276,6 +306,12 @@ void CBroker::Schedule(ModuleIdent m, BoundScheduleable x, bool start_worker)
 void CBroker::ChangePhase(const boost::system::error_code &err)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    if(m_modules.size() == 0)
+    {
+        m_phase=0;
+        return;
+    }
+    // Past this point assume there is at least one module.
     m_schmutex.lock();
     m_phase++;
     // Get the time without millisec and with millisec then see how many millsec we
@@ -287,11 +323,28 @@ void CBroker::ChangePhase(const boost::system::error_code &err)
     {
         m_phase = 0;
     }
+    unsigned int round = 0;
+    for(unsigned int i=0; i < m_modules.size(); i++)
+    {
+        round += m_modules[i].second.total_milliseconds();
+    }
     unsigned int millisecs = time.total_milliseconds();
-    unsigned int slices = millisecs / PHASE_DURATION;
-    unsigned int cphase = slices % m_modules.size();
-    unsigned int remaining = PHASE_DURATION - (millisecs % PHASE_DURATION);
-    unsigned int sched_duration = PHASE_DURATION;
+    unsigned int intoround = (millisecs % round);
+    unsigned int cphase = 0;
+    unsigned int tmp = m_modules[0].second.total_milliseconds();
+    // Pre: Assume it should be the first phase.
+    // Step: Consider how long the phase would be if it ran in its entirety. If
+    //  completing that phase would go beyod the amount of time in the
+    //  round so far (considering all the time that would be used by other phases up
+    //  to that point) then that phase is the current one.
+    // Post: CPhase should be the current phase and tmp should be 
+    while(cphase < m_modules.size() && tmp < intoround)
+    {
+        cphase++;
+        tmp += m_modules[cphase].second.total_milliseconds();
+    }
+    unsigned int remaining = tmp-intoround;
+    unsigned int sched_duration = m_modules[m_phase].second.total_milliseconds();
     // How we want to do this is that every so of tone we want to figure out
     // what phase it should be and then schedule that phase?
     // As an aside, you could tune alignment duration down to 0 so that every
@@ -299,14 +352,14 @@ void CBroker::ChangePhase(const boost::system::error_code &err)
     if(now-m_last_alignment > boost::posix_time::milliseconds(ALIGNMENT_DURATION))
     {
         Logger.Notice<<"Aligned phase to "<<cphase<<" (was "<<m_phase<<") for "
-                   <<sched_duration<<" ms"<<std::endl;
+                   <<remaining<<" ms"<<std::endl;
         m_phase = cphase;
         m_last_alignment = now;
         sched_duration = remaining;
     }
     if(m_modules.size() > 0)
     {
-        Logger.Debug<<"Phase: "<<m_modules[m_phase]<<std::endl;
+        Logger.Debug<<"Phase: "<<m_modules[m_phase].first<<std::endl;
     }
     //If the worker isn't going, start him again when you change phases.
     if(!m_busy)
@@ -372,7 +425,7 @@ void CBroker::Worker()
         m_schmutex.unlock();
         return;
     }
-    std::string active = m_modules[m_phase];
+    std::string active = m_modules[m_phase].first;
     if(m_ready[active].size() > 0)
     {
         Logger.Debug<<"Performing Job"<<std::endl;

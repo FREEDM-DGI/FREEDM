@@ -95,43 +95,11 @@ CLocalLogger Logger(__FILE__);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// StartMonitor
-/// Sets all the monitor variables to a state ready for data collection
-///////////////////////////////////////////////////////////////////////////////
-#pragma GCC diagnostic ignored "-Wunused-parameter"
-void GMAgent::StartMonitor( const boost::system::error_code& err )
-{
-    m_electiontimer.Reset();
-    m_ingrouptimer.Reset();
-    m_groupsbroken = 0;
-    if(m_UpNodes.size() > 0 || (!IsCoordinator() && GetStatus() == GMPeerNode::NORMAL))
-    {
-        if(!IsCoordinator())
-        {
-            m_groupsjoined = 1;
-        }
-        else
-        {
-            m_groupsformed = 1;
-            m_groupselection = 1;
-        }
-        m_ingrouptimer.Start();
-    }
-    if(GetStatus() == GMPeerNode::ELECTION)
-    {
-        m_electiontimer.Start();
-    }
-    m_membership = m_UpNodes.size()+1;
-    m_membershipchecks = 1;
-}
-#pragma GCC diagnostic warning "-Wunused-parameter"
-
-///////////////////////////////////////////////////////////////////////////////
-/// GMAgent
-/// @description: Constructor for the group management module.
-/// @limitations: None
-/// @pre: None
-/// @post: Object initialized and ready to enter run state.
+/// GMAgent::GMAgent
+/// @description Constructor for the group management module.
+/// @limitations None
+/// @pre None
+/// @post Object initialized and ready to enter run state.
 /// @param p_uuid: This object's uuid.
 /// @param p_ios: the io service this node will use to share memory
 /// @param p_dispatch: The dispatcher used by this module
@@ -140,13 +108,12 @@ void GMAgent::StartMonitor( const boost::system::error_code& err )
 GMAgent::GMAgent(std::string p_uuid, CBroker &broker,
         device::CPhysicalDeviceManager::Pointer devmanager)
     : GMPeerNode(p_uuid,broker.GetConnectionManager()),
-    m_electiontimer(),
-    m_ingrouptimer(),
     CHECK_TIMEOUT(boost::posix_time::seconds(3)),
     TIMEOUT_TIMEOUT(boost::posix_time::seconds(3)),
     GLOBAL_TIMEOUT(boost::posix_time::seconds(1)),
     FID_TIMEOUT(boost::posix_time::milliseconds(8)),
     SKEW_TIMEOUT(boost::posix_time::seconds(2)),
+    RESPONSE_TIMEOUT(boost::posix_time::milliseconds(50)),
     m_broker(broker),
     m_phyDevManager(devmanager)
 {
@@ -167,10 +134,10 @@ GMAgent::GMAgent(std::string p_uuid, CBroker &broker,
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// ~GMAgent
-/// @description: Class desctructor
-/// @pre: None
-/// @post: The object is ready to be destroyed.
+/// GMAgent::~GMAgent
+/// @description Class desctructor
+/// @pre None
+/// @post The object is ready to be destroyed.
 ///////////////////////////////////////////////////////////////////////////////
 GMAgent::~GMAgent()
 {
@@ -183,11 +150,11 @@ GMAgent::~GMAgent()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// AreYouCoordinator
-/// @description: Creates a new Are You Coordinator message, from this object
-/// @pre: The UUID is set
-/// @post: No change
-/// @return: A CMessage with the contents of an Are You Coordinator Message.
+/// GMAgent::AreYouCoordinator
+/// @description Creates a new Are You Coordinator message, from this object
+/// @pre The UUID is set
+/// @post No change
+/// @return A CMessage with the contents of an Are You Coordinator Message.
 /// @limitations: Can only author messages from this node.
 ///////////////////////////////////////////////////////////////////////////////
 CMessage GMAgent::AreYouCoordinator()
@@ -200,12 +167,12 @@ CMessage GMAgent::AreYouCoordinator()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// Invitation
-/// @description: Creates a new invation message from the leader of this node's
+/// GMAgent::Invitation
+/// @description Creates a new invation message from the leader of this node's
 ///                             current leader, to join this group.
-/// @pre: The node is currently in a group.
-/// @post: No change
-/// @return: A CMessage with the contents of a Invitation message.
+/// @pre The node is currently in a group.
+/// @post No change
+/// @return A CMessage with the contents of a Invitation message.
 ///////////////////////////////////////////////////////////////////////////////
 CMessage GMAgent::Invitation()
 {
@@ -219,11 +186,11 @@ CMessage GMAgent::Invitation()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// Ready
-/// @description: Creates a ready message from this node.
-/// @pre: This node is in a group.
-/// @post: No Change.
-/// @return: A CMessage with the contents of a Ready Message.
+/// GMAgent::Ready
+/// @description Creates a ready message from this node.
+/// @pre This node is in a group.
+/// @post No Change.
+/// @return A CMessage with the contents of a Ready Message.
 ///////////////////////////////////////////////////////////////////////////////
 CMessage GMAgent::Ready()
 {
@@ -237,13 +204,13 @@ CMessage GMAgent::Ready()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// Response
-/// @description: Creates a response message (Yes/No) message from this node
-/// @pre: This node has a UUID.
-/// @post: No change.
+/// GMAgent::Response
+/// @description Creates a response message (Yes/No) message from this node
+/// @pre This node has a UUID.
+/// @post No change.
 /// @param payload: Response message (typically yes or no)
 /// @param type: What this message is in response to.
-/// @return: A CMessage with the contents of a Response message
+/// @return A CMessage with the contents of a Response message
 ///////////////////////////////////////////////////////////////////////////////
 CMessage GMAgent::Response(std::string payload,std::string type,
     const boost::posix_time::ptime& exp)
@@ -261,11 +228,11 @@ CMessage GMAgent::Response(std::string payload,std::string type,
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// Accept
-/// @description: Creates a new accept message from this node
-/// @pre: This node is in a group.
-/// @post: No change.
-/// @return: A CMessage with the contents of an Accept message
+/// GMAgent::Accept
+/// @description Creates a new accept message from this node
+/// @pre This node is in a group.
+/// @post No change.
+/// @return A CMessage with the contents of an Accept message
 ///////////////////////////////////////////////////////////////////////////////
 CMessage GMAgent::Accept()
 {
@@ -279,11 +246,11 @@ CMessage GMAgent::Accept()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// AreYouThere
-/// @description: Creates a new AreYouThere message from this node
-/// @pre: This node is in a group.
-/// @post: No Change.
-/// @return: A CMessage with the contents of an AreYouThere message
+/// GMAgent::AreYouThere
+/// @description Creates a new AreYouThere message from this node
+/// @pre This node is in a group.
+/// @post No Change.
+/// @return A CMessage with the contents of an AreYouThere message
 ///////////////////////////////////////////////////////////////////////////////
 CMessage GMAgent::AreYouThere()
 {
@@ -297,11 +264,11 @@ CMessage GMAgent::AreYouThere()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// ClockRequest
-/// @description: Generates a request for a node to read and report their clock
-/// @pre: This node is in a group.
-/// @post: No Change.
-/// @return: A CMessage with the contents of an AreYouThere message
+/// GMAgent::ClockRequest
+/// @description Generates a request for a node to read and report their clock
+/// @pre This node is in a group.
+/// @post No Change.
+/// @return A CMessage with the contents of an AreYouThere message
 ///////////////////////////////////////////////////////////////////////////////
 CMessage GMAgent::ClockRequest()
 {
@@ -312,11 +279,11 @@ CMessage GMAgent::ClockRequest()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// ClockSkew
-/// @description: Generates a message with the group's clock skew
-/// @pre: This node is in a group.
-/// @post: No Change.
-/// @return: A CMessage with the contents of an AreYouThere message
+/// GMAgent::ClockSkew
+/// @description Generates a message with the group's clock skew
+/// @pre This node is in a group.
+/// @post No Change.
+/// @return A CMessage with the contents of an AreYouThere message
 ///////////////////////////////////////////////////////////////////////////////
 CMessage GMAgent::ClockSkew(boost::posix_time::time_duration t)
 {
@@ -330,11 +297,11 @@ CMessage GMAgent::ClockSkew(boost::posix_time::time_duration t)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// PeerList
-/// @description: Packs the group list (Up_Nodes) in CMessage
-/// @pre: This node is a leader.
-/// @post: No Change.
-/// @return: A CMessage with the contents of group membership
+/// GMAgent::PeerList
+/// @description Packs the group list (Up_Nodes) in CMessage
+/// @pre This node is a leader.
+/// @post No Change.
+/// @return A CMessage with the contents of group membership
 ///////////////////////////////////////////////////////////////////////////////
 CMessage GMAgent::PeerList()
 {
@@ -363,7 +330,7 @@ CMessage GMAgent::PeerList()
     return m_;
 }
 ///////////////////////////////////////////////////////////////////////////////
-/// SystemState
+/// GMAgent::SystemState
 /// @description Puts the system state to the logger.
 /// @pre None
 /// @post None
@@ -398,24 +365,16 @@ void GMAgent::SystemState()
             nodestatus<<"Unknown"<<std::endl;
         }
     } 
-    nodestatus<<"Groups Elected/Formed: "<<m_groupselection<<"/"<<m_groupsformed<<std::endl;                        
-    nodestatus<<"Groups Joined/Broken: "<<m_groupsjoined<<"/"<<m_groupsbroken<<std::endl;                        
     nodestatus<<"FID state: "<< m_phyDevManager->CountActiveFids();
     Logger.Status<<nodestatus.str()<<std::endl;
 }
 ///////////////////////////////////////////////////////////////////////////////
-/// PushPeerList
-/// @description: Sends the membership list to other modules of this node and
-///                                                     other nodes
-///                             
-/// @pre: This node is new group leader
-///             
-/// @post: No change
-///             
-/// @param peer_list CMessage
-///
-/// @return: Nothing
-///                    
+/// GMAgent::PushPeerList
+/// @description Sends the membership list to other modules of this node and
+///     other nodes
+/// @pre This node is new group leader
+/// @post A peer list is pushed to the group members
+/// @return Nothing
 ///////////////////////////////////////////////////////////////////////////////
 void GMAgent::PushPeerList()
 {
@@ -432,22 +391,18 @@ void GMAgent::PushPeerList()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// Recovery
-/// @description: The method used to set or reset a node into a "solo" state
+/// GMAgent::Recovery
+/// @description The method used to set or reset a node into a "solo" state
 ///                             where it is its own leader. To do this, it forms an empty
 ///                             group, then enters a normal state.
-/// @pre: None
-/// @post: The node enters a NORMAL state.
-/// @citation: Group Management Algorithmn (Recovery).
+/// @pre None
+/// @post The node enters a NORMAL state.
+/// @citation Group Management Algorithmn (Recovery).
 ///////////////////////////////////////////////////////////////////////////////
 void GMAgent::Recovery()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     std::stringstream ss_;
-    Logger.Notice << "Stopping in group timer "<<__LINE__<<std::endl;
-    m_ingrouptimer.Stop();
-    Logger.Notice << "Stopping election timer "<<__LINE__<<std::endl;
-    m_electiontimer.Stop();
     SetStatus(GMPeerNode::ELECTION);
     Logger.Notice << "+ State Change ELECTION : "<<__LINE__<<std::endl;
     m_GrpCounter++;
@@ -457,7 +412,6 @@ void GMAgent::Recovery()
     {
         if( peer_->GetUUID() == GetUUID())
             continue;
-        peer_->GetConnection()->Stop();
     }
     Logger.Notice << "Changed group: "<< m_GroupID<<" ("<< m_GroupLeader <<")"<<std::endl;
     // Empties the UpList
@@ -482,100 +436,118 @@ void GMAgent::Recovery()
     m_timerMutex.unlock();
 }
 
-#pragma GCC diagnostic ignored "-Wunused-parameter"
+///////////////////////////////////////////////////////////////////////////////
+/// GMAgent::FIDCheck
+/// @description: Checks the open and close status of all FIDs attached to this
+///     Node.
+/// @pre None
+/// @post: If all FIDs are open this node stops responding to messages.
+///////////////////////////////////////////////////////////////////////////////
 void GMAgent::FIDCheck( const boost::system::error_code& err)
 {
-    static bool FIDsOn = false;
-    int attachedFIDs = m_phyDevManager->GetDevicesOfType<device::CDeviceFid>().size();
-    double FIDState = m_phyDevManager->CountActiveFids();
-    if(FIDsOn == true && attachedFIDs  > 0 && FIDState < 1.0)
+    if(!err)
     {
-        Logger.Status<<"All FIDs offline. Entering Recovery State"<<std::endl;
-        Recovery();
-        FIDsOn = false;
+        static bool FIDsOn = false;
+        int attachedFIDs = m_phyDevManager->GetDevicesOfType<device::CDeviceFid>().size();
+        double FIDState = m_phyDevManager->CountActiveFids();
+        if(FIDsOn == true && attachedFIDs  > 0 && FIDState < 1.0)
+        {
+            Logger.Status<<"All FIDs offline. Entering Recovery State"<<std::endl;
+            Recovery();
+            FIDsOn = false;
+        }
+        else if(FIDsOn == false && attachedFIDs > 0 && FIDState >= 1.0)
+        {
+            Logger.Status<<"All FIDs Online. Checking for Peers"<<std::endl;
+            FIDsOn = true;
+        }
+        m_timerMutex.lock();
+        m_broker.Schedule(m_fidtimer, FID_TIMEOUT, 
+            boost::bind(&GMAgent::FIDCheck, this, boost::asio::placeholders::error));
+        m_timerMutex.unlock();
     }
-    else if(FIDsOn == false && attachedFIDs > 0 && FIDState >= 1.0)
-    {
-        Logger.Status<<"All FIDs Online. Checking for Peers"<<std::endl;
-        FIDsOn = true;
-    }
-    m_timerMutex.lock();
-    m_broker.Schedule(m_fidtimer, FID_TIMEOUT, 
-        boost::bind(&GMAgent::FIDCheck, this, boost::asio::placeholders::error));
-    m_timerMutex.unlock();
 }
 
-
+///////////////////////////////////////////////////////////////////////////////
+/// GMAgent::ComputeSkew
+/// @description Performs the Berkeley clock synchronization algorithm at a
+///     a specified interval.
+/// @pre The node calling this is the leader
+/// @post The node solicits clock measurements from its group members and then
+///     computes a clock skew for each of them which it reports back.
+///////////////////////////////////////////////////////////////////////////////
 void GMAgent::ComputeSkew( const boost::system::error_code& err)
 {
     Logger.Trace<<__PRETTY_FUNCTION__<<std::endl;
     if(!IsCoordinator())
         return;
-    CMessage m;
-    ClockRepliesMap::iterator it;
-    boost::posix_time::ptime true_clock = m_clocks[GetUUID()];
-    boost::posix_time::time_duration tmp, sum;
-    int good_clocks = 1;
-    Logger.Debug<<"Computing Skew from "<<m_clocks.size()<<" responses"<<std::endl;
-    /// First find the sum of the skew from me.
-    for(it = m_clocks.begin(); it != m_clocks.end(); it++)
+    if(!err)
     {
-        if((*it).first == GetUUID())
-            continue;
-        tmp = true_clock - (*it).second;
-        if(-MAX_SKEW < tmp.total_milliseconds() && tmp.total_milliseconds() < MAX_SKEW)
+        CMessage m;
+        ClockRepliesMap::iterator it;
+        boost::posix_time::ptime true_clock = m_clocks[GetUUID()];
+        boost::posix_time::time_duration tmp, sum;
+        int good_clocks = 1;
+        Logger.Debug<<"Computing Skew from "<<m_clocks.size()<<" responses"<<std::endl;
+        /// First find the sum of the skew from me.
+        for(it = m_clocks.begin(); it != m_clocks.end(); it++)
         {
-            sum += tmp;
-            good_clocks += 1;
+            if((*it).first == GetUUID())
+                continue;
+            tmp = true_clock - (*it).second;
+            if(-MAX_SKEW < tmp.total_milliseconds() && tmp.total_milliseconds() < MAX_SKEW)
+            {
+                sum += tmp;
+                good_clocks += 1;
+            }
         }
-    }
-    // Find the average skew off of true;
-    sum /= good_clocks;
-    Logger.Debug<<"Computed an average skew off of me of: "<<sum<<std::endl;
-    for(it = m_clocks.begin(); it != m_clocks.end(); it++)
-    {
-        if((*it).first == GetUUID())
-            continue; // My skew is always off by sum.
-        tmp = (true_clock - (*it).second) + sum;
-        // tmp is now the skew to report, author messages to report that skew.
-        m = ClockSkew(tmp);
-        if( GetPeer((*it).first) )
+        // Find the average skew off of true;
+        sum /= good_clocks;
+        Logger.Debug<<"Computed an average skew off of me of: "<<sum<<std::endl;
+        for(it = m_clocks.begin(); it != m_clocks.end(); it++)
         {
-            Logger.Debug<<"Telling "<<(*it).first<<" skew is "<<tmp<<std::endl;
-            GetPeer((*it).first)->Send(m);
+            if((*it).first == GetUUID())
+                continue; // My skew is always off by sum.
+            tmp = (true_clock - (*it).second) + sum;
+            // tmp is now the skew to report, author messages to report that skew.
+            m = ClockSkew(tmp);
+            if( GetPeer((*it).first) )
+            {
+                Logger.Debug<<"Telling "<<(*it).first<<" skew is "<<tmp<<std::endl;
+                GetPeer((*it).first)->Send(m);
+            }
         }
+        // Set my skew
+        CGlobalConfiguration::instance().SetClockSkew(sum);
+        m = ClockRequest();
+        /// Initiate a new round of clocks
+        tmp = CGlobalConfiguration::instance().GetClockSkew();
+        Logger.Debug<<"Starting New Skew Computation"<<std::endl;
+        m_clocks.clear();
+        /// Report my clock with our computed skew
+        m_clocks[GetUUID()] = boost::posix_time::microsec_clock::universal_time()+tmp;
+        /// Send to all up nodes
+        foreach( PeerNodePtr peer_, m_AllPeers | boost::adaptors::map_values)
+        {
+            if(peer_->GetUUID() == GetUUID())
+                continue;
+            peer_->Send(m);
+        }
+        m_timerMutex.lock();
+        m_broker.Schedule(m_skewtimer, SKEW_TIMEOUT, 
+            boost::bind(&GMAgent::ComputeSkew, this, boost::asio::placeholders::error));
+        m_timerMutex.unlock();
     }
-    // Set my skew
-    CGlobalConfiguration::instance().SetClockSkew(sum);
-    m = ClockRequest();
-    /// Initiate a new round of clocks
-    tmp = CGlobalConfiguration::instance().GetClockSkew();
-    Logger.Debug<<"Starting New Skew Computation"<<std::endl;
-    m_clocks.clear();
-    /// Report my clock with our computed skew
-    m_clocks[GetUUID()] = boost::posix_time::microsec_clock::universal_time()+tmp;
-    /// Send to all up nodes
-    foreach( PeerNodePtr peer_, m_UpNodes | boost::adaptors::map_values)
-    {
-        if(peer_->GetUUID() == GetUUID())
-            continue;
-        peer_->Send(m);
-    }
-    m_timerMutex.lock();
-    m_broker.Schedule(m_skewtimer, SKEW_TIMEOUT, 
-        boost::bind(&GMAgent::ComputeSkew, this, boost::asio::placeholders::error));
-    m_timerMutex.unlock();
 }
-#pragma GCC diagnostic warning "-Wunused-parameter"
 
 ///////////////////////////////////////////////////////////////////////////////
-/// Recovery
-/// @description: Recovery function extension for handling timer expirations.
-/// @pre: Some timer leading to this function has expired or been canceled.
-/// @post: If the timer has expired, Recovery begins, if the timer was canceled
+/// GMAgent::Recovery
+/// @description Recovery function extension for handling timer expirations.
+/// @pre Some timer leading to this function has expired or been canceled.
+/// @post If the timer has expired, Recovery begins, if the timer was canceled
 ///                and this node is NOT a Coordinator, this will cause a Timeout Check
 ///                using Timeout()
-/// @param: The error code associated with the calling timer.
+/// @param err The error code associated with the calling timer.
 ///////////////////////////////////////////////////////////////////////////////
 void GMAgent::Recovery( const boost::system::error_code& err )
 {
@@ -607,14 +579,14 @@ void GMAgent::Recovery( const boost::system::error_code& err )
     }
 }
 ///////////////////////////////////////////////////////////////////////////////
-/// Check
-/// @description: This method queries all nodes to Check and see if any of them
+/// GMAgent::Check
+/// @description This method queries all nodes to Check and see if any of them
 ///                             consider themselves to be Coordinators.
-/// @pre: This node is in the normal state.
-/// @post: Output of a system state and sent messages to all nodes to Check for
+/// @pre This node is in the normal state.
+/// @post Output of a system state and sent messages to all nodes to Check for
 ///                Coordinators.
-/// @param err: Error associated with calling timer.
-/// @citation: GroupManagement (Check).
+/// @param err Error associated with calling timer.
+/// @citation GroupManagement (Check).
 ///////////////////////////////////////////////////////////////////////////////
 void GMAgent::Check( const boost::system::error_code& err )
 {
@@ -640,7 +612,7 @@ void GMAgent::Check( const boost::system::error_code& err )
             // Wait for responses
             Logger.Info << "TIMER: Setting GlobalTimer (Premerge): " << __LINE__ << std::endl;
             m_timerMutex.lock();
-            m_broker.Schedule(m_timer, GLOBAL_TIMEOUT,
+            m_broker.Schedule(m_timer, RESPONSE_TIMEOUT,
                 boost::bind(&GMAgent::Premerge, this, boost::asio::placeholders::error));
             m_timerMutex.unlock();
         } // End if
@@ -657,14 +629,14 @@ void GMAgent::Check( const boost::system::error_code& err )
     }
 }
 ///////////////////////////////////////////////////////////////////////////////
-/// Premerge
-/// @description: Handles a proportional wait prior to calling Merge
-/// @pre: Check has been called and responses have been collected from other
+/// GMAgent::Premerge
+/// @description Handles a proportional wait prior to calling Merge
+/// @pre Check has been called and responses have been collected from other
 ///             nodes. This node is a Coordinator.
-/// @post: A timer has been set based on this node's UUID to break up ties
+/// @post A timer has been set based on this node's UUID to break up ties
 ///                before merging.
-/// @param err: An error associated with the clling timer.
-/// @citation: GroupManagement (Merge)
+/// @param err An error associated with the clling timer.
+/// @citation GroupManagement (Merge)
 ///////////////////////////////////////////////////////////////////////////////
 void GMAgent::Premerge( const boost::system::error_code &err )
 {
@@ -683,13 +655,7 @@ void GMAgent::Premerge( const boost::system::error_code &err )
                 list_change = true;
                 EraseInPeerSet(m_UpNodes,peer_);
                 Logger.Info << "No response from peer: "<<peer_->GetUUID()<<std::endl;
-                peer_->GetConnection()->Stop();
             }
-        }
-        if(m_UpNodes.size() == 0)
-        {
-            Logger.Notice << "Stopping in group timer "<<__LINE__<<std::endl;
-            m_ingrouptimer.Stop();
         }
         if(list_change)
         {
@@ -715,9 +681,9 @@ void GMAgent::Premerge( const boost::system::error_code &err )
                 }
             }
             float wait_val_;
-            int maxWait = 5; /* The longest a node would have to wait to Merge */
-            int minWait = 1;
-            int granularity = 10; /* How finely it can slip in */
+            int maxWait = 24; /* The longest a node would have to wait to Merge */
+            int minWait = 5;
+            int granularity = 2; /* How finely it can slip in */
             int delta = ((maxWait-minWait)*1.0)/(granularity*1.0);
             if( myPriority < maxPeer_ )
                 wait_val_ = (((maxPeer_ - myPriority)%(granularity+1))*1.0)*delta+minWait;
@@ -726,9 +692,9 @@ void GMAgent::Premerge( const boost::system::error_code &err )
             #ifdef RANDOM_PREMERGE
             wait_val_ = (rand() % 20) + 10;
             #endif
-            boost::posix_time::seconds proportional_Timeout( wait_val_ );
+            boost::posix_time::milliseconds proportional_Timeout( wait_val_ );
             /* Set deadline timer to call Merge() */
-            Logger.Notice << "TIMER: Waiting for Merge(): " << wait_val_ << " seconds." << std::endl;
+            Logger.Notice << "TIMER: Waiting for Merge(): " << wait_val_ << " ms." << std::endl;
             m_timerMutex.lock();
             m_broker.Schedule(m_timer, proportional_Timeout,
                 boost::bind(&GMAgent::Merge, this, boost::asio::placeholders::error));
@@ -752,18 +718,18 @@ void GMAgent::Premerge( const boost::system::error_code &err )
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// Merge
-/// @description: If this node is a Coordinator, this method sends invites to
-///                             join this node's group to all Coordinators, and then makes
-///                             a call to second function to invite all current members of
-///                             this node's old group to the new group.
-/// @pre: This node has waited for a Premerge.
-/// @post: If this node was a Coordinator, this node has been placed in an
-///                election state. Additionally, invitations have been sent to all
-///                Coordinators this node is aware of. Lastly, this function has called
-///                a function or set a timer to invite its old group nodes.
-/// @param err: A error associated with the calling timer.
-/// @citation: Group Management (Merge)
+/// GMAgent::Merge
+/// @description If this node is a Coordinator, this method sends invites to
+///   join this node's group to all Coordinators, and then makes
+///   a call to second function to invite all current members of
+///   this node's old group to the new group.
+/// @pre This node has waited for a Premerge.
+/// @post If this node was a Coordinator, this node has been placed in an
+///   election state. Additionally, invitations have been sent to all
+///   Coordinators this node is aware of. Lastly, this function has called
+///   a function or set a timer to invite its old group nodes.
+/// @param err A error associated with the calling timer.
+/// @citation Group Management (Merge)
 ///////////////////////////////////////////////////////////////////////////////
 void GMAgent::Merge( const boost::system::error_code& err )
 {
@@ -782,10 +748,6 @@ void GMAgent::Merge( const boost::system::error_code& err )
         // This proc forms a new group by inviting Coordinators in CoordinatorSet
         SetStatus(GMPeerNode::ELECTION);
         Logger.Notice << "+ State Change ELECTION : "<<__LINE__<<std::endl;
-        Logger.Notice << "Starting election timer "<<__LINE__<<std::endl;
-        m_electiontimer.Start();
-        Logger.Notice << "Stopping in group timer "<<__LINE__<<std::endl;
-        m_ingrouptimer.Stop();
         // Update GroupID
         m_GrpCounter++;
         m_GroupID = m_GrpCounter;
@@ -824,15 +786,15 @@ void GMAgent::Merge( const boost::system::error_code& err )
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// InviteGroupNodes
-/// @description: This function will invite all the members of a node's old
-///                             group to join it's new group.
-/// @pre: None
-/// @post: Invitations have been sent to members of this node's old group.
-///                if this node is a Coordinator, this node sets a timer for Reorganize
-/// @param err: The error message associated with the calling thimer
-/// @param p_tempSet: The set of nodes that were members of the old group.
-/// @citation: Group Management (Merge)
+/// GMAgent::InviteGroupNodes
+/// @description This function will invite all the members of a node's old
+///     group to join it's new group.
+/// @pre None
+/// @post Invitations have been sent to members of this node's old group.
+///     if this node is a Coordinator, this node sets a timer for Reorganize
+/// @param err The error message associated with the calling thimer
+/// @param p_tempSet The set of nodes that were members of the old group.
+/// @citation Group Management (Merge)
 ///////////////////////////////////////////////////////////////////////////////
 void GMAgent::InviteGroupNodes( const boost::system::error_code& err, PeerSet p_tempSet )
 {
@@ -855,7 +817,7 @@ void GMAgent::InviteGroupNodes( const boost::system::error_code& err, PeerSet p_
         {     // We only call Reorganize if we are the new leader
             Logger.Info << "TIMER: Setting GlobalTimer (Reorganize) : " << __LINE__ << std::endl;
             m_timerMutex.lock();
-            m_broker.Schedule(m_timer, GLOBAL_TIMEOUT,
+            m_broker.Schedule(m_timer, RESPONSE_TIMEOUT,
                 boost::bind(&GMAgent::Reorganize, this, boost::asio::placeholders::error));
             m_timerMutex.unlock();
         }
@@ -869,13 +831,13 @@ void GMAgent::InviteGroupNodes( const boost::system::error_code& err, PeerSet p_
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// Reorganize
-/// @description: Organizes the members of the group and prepares them to do
+/// GMAgent::Reorganize
+/// @description Organizes the members of the group and prepares them to do
 ///                             their much needed work!
-/// @pre: The node is a leader of group.
-/// @post: The group has recieved work assignments, ready messages have been
+/// @pre The node is a leader of group.
+/// @post The group has recieved work assignments, ready messages have been
 ///                sent out, and this node enters the NORMAL state.
-/// @citation: Group Management Reorganize
+/// @citation Group Management Reorganize
 /////////////////////////////////////////////////////////////////////////////// 
 void GMAgent::Reorganize( const boost::system::error_code& err )
 {
@@ -897,15 +859,6 @@ void GMAgent::Reorganize( const boost::system::error_code& err )
         Logger.Notice << "+ State change: NORMAL: " << __LINE__ << std::endl;
         m_groupsformed++;
         Logger.Notice << "Upnodes size: "<<m_UpNodes.size()<<std::endl;
-        
-        if(m_UpNodes.size() != 0)
-        {
-            Logger.Notice << "Starting in group timer "<<__LINE__<<std::endl;
-            m_ingrouptimer.Start();
-        }
-        Logger.Notice << "Stopping election timer "<<__LINE__<<std::endl;
-        m_electiontimer.Stop();
-
         // Back to work
         Logger.Info << "TIMER: Setting CheckTimer (Check): " << __LINE__ << std::endl;
         m_timerMutex.lock();
@@ -921,12 +874,12 @@ void GMAgent::Reorganize( const boost::system::error_code& err )
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// Timeout
+/// GMAgent::Timeout
 /// @description Sends an AreYouThere message to the coordinator and sets a timer
 ///                            if the timer expires, this node goes into recovery.
-/// @pre: The node is a member of a group, but not the leader
-/// @post: A timer for recovery is set.
-/// @citation: Group Managment Timeout
+/// @pre The node is a member of a group, but not the leader
+/// @post A timer for recovery is set.
+/// @citation Group Managment Timeout
 ///////////////////////////////////////////////////////////////////////////////
 void GMAgent::Timeout( const boost::system::error_code& err )
 {
@@ -959,7 +912,7 @@ void GMAgent::Timeout( const boost::system::error_code& err )
             }
             Logger.Info << "TIMER: Setting TimeoutTimer (Recovery):" << __LINE__ << std::endl;
             m_timerMutex.lock();
-            m_broker.Schedule(m_timer, TIMEOUT_TIMEOUT,
+            m_broker.Schedule(m_timer, RESPONSE_TIMEOUT,
                 boost::bind(&GMAgent::Recovery, this, boost::asio::placeholders::error));
             m_timerMutex.unlock();
         }
@@ -976,6 +929,12 @@ void GMAgent::Timeout( const boost::system::error_code& err )
     }
 }
  
+///////////////////////////////////////////////////////////////////////////////
+/// GMAgent::HandleRead
+/// @description This collossal beast handles processing all incoming messages.
+/// @pre None
+/// @post Lots of things
+///////////////////////////////////////////////////////////////////////////////
 void GMAgent::HandleRead(CMessage msg)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
@@ -1020,10 +979,6 @@ void GMAgent::HandleRead(CMessage msg)
                 SetStatus(GMPeerNode::NORMAL);
                 Logger.Notice << "+ State change: NORMAL: " << __LINE__ << std::endl;
                 m_groupsjoined++;
-                Logger.Notice << "Starting in group timer "<<__LINE__<<std::endl;
-                m_ingrouptimer.Start();
-                Logger.Notice << "Stopping election timer "<<__LINE__<<std::endl;
-                m_electiontimer.Stop();
                 // We are no longer the Coordinator, we must run Timeout()
                 Logger.Info << "TIMER: Canceling TimeoutTimer : " << __LINE__ << std::endl;
                 m_timerMutex.lock();
@@ -1140,10 +1095,6 @@ void GMAgent::HandleRead(CMessage msg)
             tempSet_ = m_UpNodes;
             SetStatus(GMPeerNode::ELECTION);
             Logger.Notice << "+ State Change ELECTION : "<<__LINE__<<std::endl;
-            Logger.Notice << "Stopping group timer "<<__LINE__<<std::endl;
-            m_ingrouptimer.Stop();
-            Logger.Notice << "Starting election timer "<<__LINE__<<std::endl;
-            m_electiontimer.Start();
             
             m_GroupID = pt.get<unsigned int>("gm.groupid");
             m_GroupLeader = pt.get<std::string>("gm.groupleader");
@@ -1262,13 +1213,15 @@ void GMAgent::HandleRead(CMessage msg)
         Logger.Info<<"Clock Skew From "<<msg_source<<std::endl;
         if(msg_source == Coordinator())
         {
-            Logger.Debug<<"Raw Skew Value "<<pt.get<int>("gm.clockskew");
-            boost::posix_time::time_duration t = boost::posix_time::microseconds(pt.get<int>("gm.clockskew"));
+            Logger.Debug<<"Raw Skew Value "<<pt.get<std::string>("gm.clockskew")<<std::endl;
+            boost::posix_time::time_duration t = boost::posix_time::microseconds(pt.get<long>("gm.clockskew"));
             // We are actually making adjustments on the skew with each iteration
+            Logger.Debug<<"Loaded time duration from Ptree"<<std::endl;
             t = t + CGlobalConfiguration::instance().GetClockSkew();
             Logger.Notice<<"Adjusting My Skew To "<<t<<std::endl;
             CGlobalConfiguration::instance().SetClockSkew(t);
         }
+        Logger.Debug<<"Finished Adjusting Clock"<<std::endl;
     }
     else
     {
@@ -1276,6 +1229,14 @@ void GMAgent::HandleRead(CMessage msg)
     }
 }
 
+///////////////////////////////////////////////////////////////////////////////
+/// GMAgent::AddPeer
+/// @description Adds a peer to allpeers by uuid.
+/// @pre the UUID is registered in the connection manager
+/// @post A new peer object is created and inserted in m_AllPeers.
+/// @return A pointer to the new peer
+/// @param uuid of the peer to add.
+///////////////////////////////////////////////////////////////////////////////
 GMAgent::PeerNodePtr GMAgent::AddPeer(std::string uuid)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
@@ -1285,12 +1246,30 @@ GMAgent::PeerNodePtr GMAgent::AddPeer(std::string uuid)
     return tmp_;
 }
 
+
+///////////////////////////////////////////////////////////////////////////////
+/// GMAgent::AddPeer
+/// @description Adds a peer to all peers by pointer.
+/// @pre the pointer is valid
+/// @post The peer object is inserted in m_AllPeers.
+/// @return A pointer that is the same as the input pointer
+/// @param peer a pointer to a peer.
+///////////////////////////////////////////////////////////////////////////////
 GMAgent::PeerNodePtr GMAgent::AddPeer(PeerNodePtr peer)
 {
     InsertInPeerSet(m_AllPeers,peer);
     return peer;
 }
 
+///////////////////////////////////////////////////////////////////////////////
+/// GMAgent::GetPeer
+/// @description Gets a peer from All Peers by uuid
+/// @pre None
+/// @post None
+/// @param uuid The uuid of the peer to fetch
+/// @return A pointer to the requested peer, or a null pointer if the peer
+///     could not be found.
+///////////////////////////////////////////////////////////////////////////////
 GMAgent::PeerNodePtr GMAgent::GetPeer(std::string uuid)
 {
     PeerSet::iterator it = m_AllPeers.find(uuid);
@@ -1304,19 +1283,10 @@ GMAgent::PeerNodePtr GMAgent::GetPeer(std::string uuid)
     }
 }
 ////////////////////////////////////////////////////////////
-/// run()
-///
+/// GMAgent::Run
 /// @description Main function which initiates the algorithm
-///
-/// @pre: connections to peers should be instantiated
-///
-/// @post: execution of drafting algorithm
-///
-///
-/// @return
-///
-/// @limitations
-///
+/// @pre connections to peers should be instantiated
+/// @post execution of group management algorithm
 /////////////////////////////////////////////////////////
 int GMAgent::Run()
 {
@@ -1340,26 +1310,7 @@ int GMAgent::Run()
         boost::bind(&GMAgent::FIDCheck, this, boost::asio::placeholders::error));
     m_timerMutex.unlock();
     Recovery();
-    //m_localservice.post(boost::bind(&GMAgent::Recovery,this));
-    //m_localservice.run();
-    //m_transient.expires_from_now( boost::posix_time::seconds(60) );
-    //m_transient.async_wait( boost::bind(&GMAgent::StartMonitor, this, boost::asio::placeholders::error));
     return 0;
-}
-
-void GMAgent::Stop()
-{
-    m_electiontimer.Stop();
-    m_ingrouptimer.Stop();
-    //m_localservice.stop();
-    std::ofstream actionlog;
-    actionlog.open("grouplog.dat",std::fstream::app);    
-    actionlog<<m_groupselection<<'\t'<<m_groupsformed<<'\t'
-             <<m_groupsjoined<<'\t'<<m_groupsbroken;
-    actionlog<<'\t'<<m_electiontimer.TotalElapsed()
-             <<'\t'<<m_ingrouptimer.TotalElapsed();
-    actionlog<<'\t'<<m_membership<<'\t'<<m_membershipchecks<<std::endl;
-    actionlog.close();
 }
 
 } // namespace gm

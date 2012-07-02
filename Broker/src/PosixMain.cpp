@@ -289,13 +289,16 @@ int main(int argc, char* argv[])
         ss >> uuidstr;
         // Instantiate and register the group management module
         gm::GMAgent GM(uuidstr, broker, phyManager);
+        broker.RegisterModule("gm",boost::posix_time::milliseconds(150));
         dispatch.RegisterReadHandler("gm", "gm", &GM);
-        // Instantiate and register the power management module
-        lb::lbAgent LB(uuidstr, broker, phyManager);
-        dispatch.RegisterReadHandler("lb", "lb", &LB);
         // Instantiate and register the state collection module
         sc::SCAgent SC(uuidstr, broker, phyManager);
+        broker.RegisterModule("sc",boost::posix_time::milliseconds(80));
         dispatch.RegisterReadHandler("sc", "any", &SC);
+        // Instantiate and register the power management module
+        lb::lbAgent LB(uuidstr, broker, phyManager);
+        broker.RegisterModule("lb",boost::posix_time::milliseconds(400));
+        dispatch.RegisterReadHandler("lb", "lb", &LB);
 
         // The peerlist should be passed into constructors as references or
         // pointers to each submodule to allow sharing peers. NOTE this requires

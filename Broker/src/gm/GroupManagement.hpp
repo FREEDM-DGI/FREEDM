@@ -130,12 +130,7 @@ class GMAgent
     // This is the main loop of the algorithm
     /// Called to start the system
     int	Run();
-    /// Called on program termination
-    void Stop();
 
-    //Get/Set   
-    //boost::asio::io_service& GetIOService() { return m_localservice; };
-   
     //Peer Set Manipulation
     /// Adds a peer to the peer set from UUID
     PeerNodePtr AddPeer(std::string uuid);
@@ -188,49 +183,53 @@ class GMAgent
     boost::interprocess::interprocess_mutex m_timerMutex;
     /// A timer for stepping through the election process
     CBroker::TimerHandle m_timer;
+    /// Timer for checking FIDs.
     CBroker::TimerHandle m_fidtimer;
+    /// Timer for checking clock shew
     CBroker::TimerHandle m_skewtimer;
-    /// What I like to call the TRANSIENT ELIMINATOR
-    //deadline_timer m_transient;
     
-    // Testing Functionality:
-    /// Counts the number of elections
-    int m_groupselection;
-    /// Counts the number of groups formed
-    int m_groupsformed;
-    /// Counts the number of groups this node as accepted invites to.
-    int m_groupsjoined;
-    /// Counts the number of groups this node has left
-    int m_groupsbroken;
-    /// The number of elections that have occured.
-    int m_rounds;
-    /// The running total of group membership.
-    int m_membership;
-    /// The number of times we've checked it
-    int m_membershipchecks;
-    /// Timers
-    Stopwatch m_electiontimer;
-    Stopwatch m_ingrouptimer;
-
+    /// Type for replies map
     typedef std::map<std::string,boost::posix_time::ptime> ClockRepliesMap;
-    
+   
+    /// Respondants to clock requests 
     ClockRepliesMap m_clocks;
 
     // Timeouts
+    /// How long between AYC checks
     boost::posix_time::time_duration CHECK_TIMEOUT;
+    /// How long beteween AYT checks
     boost::posix_time::time_duration TIMEOUT_TIMEOUT;
+    /// How long to wait for some timeouts
     boost::posix_time::time_duration GLOBAL_TIMEOUT;
+    /// How long to wait before checking attached FIDs
     boost::posix_time::time_duration FID_TIMEOUT;
+    /// How long to wait before computing skew again
     boost::posix_time::time_duration SKEW_TIMEOUT;
+    /// How long to wait for responses from other nodes.
+    boost::posix_time::time_duration RESPONSE_TIMEOUT;
 
-    //Maximum clock skew in milliseconds;
+    ///Maximum clock skew in milliseconds;
     static const int MAX_SKEW = 100;
 
-    //The broker!
+    ///The broker!
     CBroker& m_broker;
 
-    //The device manager!
+    ///The device manager!
     device::CPhysicalDeviceManager::Pointer m_phyDevManager;
+
+    /// Number of groups formed
+    int m_groupsformed ;
+    /// Number of groups broken
+    int m_groupsbroken ;
+    /// Number of elections started
+    int m_groupselection;
+    /// Number of accepts sent
+    int m_groupsjoined;
+    /// Total size of groups after all checks.
+    int m_membership;
+    /// Number of membership checks
+    int m_membershipchecks;
+
 };
 
 } // namespace gm

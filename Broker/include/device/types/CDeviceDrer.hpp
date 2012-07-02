@@ -57,9 +57,9 @@ public:
     void StepGeneration(const SettingValue step = 1.0);
 private:
     /// redefine base accessor as private
-    IDevice::Get;
+    using IDevice::Get;
     /// redefine base mutator as private
-    IDevice::Set;
+    using IDevice::Set;
 };
 
 } // namespace device

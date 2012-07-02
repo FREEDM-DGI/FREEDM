@@ -23,27 +23,47 @@
 ///     University of Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
 ////////////////////////////////////////////////////////////////////////////////
 
-#include <algorithm>
-#include <cstdlib>
 #include <cstdio>
 #include <cstring>
-#include <fstream>
-#include <sstream>
-#include <iostream>
-#include <string>
-#include <vector>
+#include <cstdlib>
 #include <dirent.h>  // POSIX
+
+#include <algorithm>
+#include <vector>
+#include <string>
+#include <sstream>
+#include <fstream>
+#include <iostream>
+
 #include <boost/foreach.hpp>
 #include <boost/xpressive/xpressive_static.hpp>
 
 using namespace boost::xpressive;
 
+////////////////////////////////////////////////////////////////////////////////
+/// Generates code from a template and a list of token replacements.
+/// @ErrorHandling Terminates if the output file cannot be generated due to i/o
+/// errors or an incorrect format for the template file.
+/// @pre The input file must contain at least as many ##BREAK statements as the
+/// size of the replacement vector given as an argument.
+/// @post Each appearance of the token "##BREAK" in the input file is replaced
+/// with an element of the replacement vector and streamed to the output file.
+/// @param inputFilename The name and path of the template input file.
+/// @param outputFilename The name and path for the generated code output.
+/// @param replacements The vector of strings to replace the ##BREAK tokens.
+/// @limitations Each ##BREAK statement in the template file must be on its own
+/// line.  Whitespace before or after the ##BREAK statement is ignored.  If the
+/// template has more ##BREAK statements than the number of replacements, there
+/// will be no error message and invalid code will be generated.
+////////////////////////////////////////////////////////////////////////////////
 void GenerateFile(std::string inputFilename, std::string outputFilename,
         std::vector<std::string> replacements)
 {
+    // pattern for the break token, evaluates to \n\s*##BREAK\s*\n
     sregex pattern = after(_n) >> *_s >> icase("##BREAK") >> *_s >> _n;
     sregex_token_iterator it, end;
     
+    // open and store the input file as a string
     std::ifstream fin(inputFilename.c_str());
     if( !fin )
     {
@@ -63,9 +83,13 @@ void GenerateFile(std::string inputFilename, std::string outputFilename,
         std::exit(1);
     }
     
+    // split the content of the input file based on the token pattern
     it = sregex_token_iterator( content.begin(), content.end(), pattern, -1 );
+    
+    // replace instances of ##BREAK with an element of replacements
     for( std::size_t i = 0, n = replacements.size(); i < n; i++, it++ )
     {
+        // determine if replacements.size() > number of ##BREAK tokens
         if( it == end )
         {
             std::cerr << inputFilename << " does not have the expected number "
@@ -74,11 +98,13 @@ void GenerateFile(std::string inputFilename, std::string outputFilename,
         }
         fout << *it << replacements[i];
     }
+    // output any remaining content
     if( it != end )
     {
         fout << *it;
     }
     fout.close();
+    return;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -108,8 +134,6 @@ void GenerateFile(std::string inputFilename, std::string outputFilename,
 ///  CALLED FROM SRC in order to create the file in the right location. This
 ///  program CANNOT be called from device, even if its executable resides there.
 ///  Be quite careful if editing the CMake settings.
-///
-/// @todo Have this print out a proper copyright header on each file.
 ////////////////////////////////////////////////////////////////////////////////
 int main()
 {
@@ -144,7 +168,9 @@ int main()
         std::exit(1);
     }
 
+    ////////////////////////////////////////////////////////////////////////////
     // Generate PhysicalDeviceTypes.hpp
+    ////////////////////////////////////////////////////////////////////////////
     input   = "../include/device/PhysicalDeviceTypes.hpp.txt";
     output  = "../include/device/PhysicalDeviceTypes.hpp";
     replace.clear();
@@ -157,8 +183,10 @@ int main()
     replace.push_back(ss.str());
     
     GenerateFile(input, output, replace);
-
+    
+    ////////////////////////////////////////////////////////////////////////////
     // Generate PhysicalDeviceTypes.cpp
+    ////////////////////////////////////////////////////////////////////////////
     input   = "device/PhysicalDeviceTypes.cpp.txt";
     output  = "device/PhysicalDeviceTypes.cpp";
     replace.clear();
@@ -186,5 +214,9 @@ int main()
     
     GenerateFile(input, output, replace);
 
+    ////////////////////////////////////////////////////////////////////////////
+    // done
+    ////////////////////////////////////////////////////////////////////////////
+    
     return 0;
 }

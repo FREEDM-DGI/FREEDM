@@ -111,6 +111,14 @@ public:
     const std::vector<typename DeviceType::Pointer> GetDevicesOfType();
 
     /// @todo
+    SettingValue GetValue(std::string devtype, std::string value
+        SettingValue(*math)( SettingValue, SettingValue )) const;
+    
+    /// @todo
+    std::vector<SettingValue> GetValueVector(std::string devtype,
+        std::string value) const;
+    
+    /// @todo
     template <class DeviceType>
     SettingValue GetValue(SettingValue(DeviceType::*getter)( ) const,
         SettingValue(*math)( SettingValue, SettingValue )) const;

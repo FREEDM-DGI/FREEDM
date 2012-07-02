@@ -165,6 +165,40 @@ unsigned int CPhysicalDeviceManager::CountActiveFids() const
     return result;
 }
 
+/// @todo
+SettingValue CPhysicalDeviceManager::GetValue(std::string devtype,
+std::string value, SettingValue(*math)( SettingValue, SettingValue )) const
+{
+    SettingValue result = 0;
+    
+    std::vector<IDevice::Pointer> devices = GetDevicesOfType(devtype);
+    std::vector<IDevice::Pointer>::const_iterator it, end;
+    
+    for( it = devices.begin(), end = devices.end(); it != end; it++ )
+    {
+        result = math(result, it->Get(value));
+    }
+    
+    return result;
+}
+
+/// @todo
+std::vector<SettingValue> CPhysicalDeviceManager::GetValueVector(
+    std::string devtype, std::string value) const
+{
+    std::vector<SettingValue> results;
+    
+    std::vector<IDevice::Pointer> devices = GetDevicesOfType(devtype);
+    std::vector<IDevice::Pointer>::const_iterator it, end;
+    
+    for( it = devices.begin(), end = devices.end(); it != end; it++ )
+    {
+        results.push_back(it->Get(value));
+    }
+    
+    return results;
+}
+
 } // namespace device
 } // namespace broker
 } // namespace freedm

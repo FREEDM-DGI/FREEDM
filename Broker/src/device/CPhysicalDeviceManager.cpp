@@ -167,16 +167,16 @@ unsigned int CPhysicalDeviceManager::CountActiveFids() const
 
 /// @todo
 SettingValue CPhysicalDeviceManager::GetValue(std::string devtype,
-std::string value, SettingValue(*math)( SettingValue, SettingValue )) const
+std::string value, SettingValue(*math)( SettingValue, SettingValue ))
 {
     SettingValue result = 0;
     
     std::vector<IDevice::Pointer> devices = GetDevicesOfType(devtype);
-    std::vector<IDevice::Pointer>::const_iterator it, end;
+    std::vector<IDevice::Pointer>::iterator it, end;
     
     for( it = devices.begin(), end = devices.end(); it != end; it++ )
     {
-        result = math(result, it->Get(value));
+        result = math(result, (*it)->Get(value));
     }
     
     return result;
@@ -184,16 +184,16 @@ std::string value, SettingValue(*math)( SettingValue, SettingValue )) const
 
 /// @todo
 std::vector<SettingValue> CPhysicalDeviceManager::GetValueVector(
-    std::string devtype, std::string value) const
+    std::string devtype, std::string value)
 {
     std::vector<SettingValue> results;
     
     std::vector<IDevice::Pointer> devices = GetDevicesOfType(devtype);
-    std::vector<IDevice::Pointer>::const_iterator it, end;
+    std::vector<IDevice::Pointer>::iterator it, end;
     
     for( it = devices.begin(), end = devices.end(); it != end; it++ )
     {
-        results.push_back(it->Get(value));
+        results.push_back((*it)->Get(value));
     }
     
     return results;

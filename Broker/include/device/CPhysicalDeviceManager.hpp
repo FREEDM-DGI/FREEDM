@@ -110,13 +110,13 @@ public:
     template <class DeviceType>
     const std::vector<typename DeviceType::Pointer> GetDevicesOfType();
 
-    /// @todo
-    SettingValue GetValue(std::string devtype, std::string value
-        SettingValue(*math)( SettingValue, SettingValue )) const;
+    /// @todo takes a bit of effort to make this const
+    SettingValue GetValue(std::string devtype, std::string value,
+        SettingValue(*math)( SettingValue, SettingValue ));
     
-    /// @todo
+    /// @todo takes a bit of effort to make this const
     std::vector<SettingValue> GetValueVector(std::string devtype,
-        std::string value) const;
+        std::string value);
     
     /// @todo
     template <class DeviceType>
@@ -132,7 +132,7 @@ public:
     unsigned int CountActiveFids() const;
 
     /// Retrieves all the stored devices of a specified type.
-    const std::vector<IDevice::Pointer> GetDevicesOfType(std::string type);
+    std::vector<IDevice::Pointer> GetDevicesOfType(std::string type);
 private:
     /// Mapping From Identifier To Device Set
     PhysicalDeviceSet m_devices;

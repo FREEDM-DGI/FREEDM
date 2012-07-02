@@ -55,7 +55,7 @@ void RegisterPhysicalDevices()
 /// @return A vector of shared pointers to all devices of the specified type.
 /// @limitations None.
 ////////////////////////////////////////////////////////////////////////////////
-const std::vector<IDevice::Pointer> CPhysicalDeviceManager::GetDevicesOfType(
+std::vector<IDevice::Pointer> CPhysicalDeviceManager::GetDevicesOfType(
         std::string type)
 {
     std::vector<IDevice::Pointer> result;

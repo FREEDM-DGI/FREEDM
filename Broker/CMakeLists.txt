@@ -73,12 +73,16 @@ include_directories("${CMAKE_BINARY_DIR}/src")
 # goto src/CMakeLists.txt
 add_subdirectory( src )
 
+# goto src/device/CMakeLists.txt
+add_subdirectory( src/device )
+
 add_executable(PosixBroker src/PosixMain.cpp)
 
 # link the executable to its dependencies
 target_link_libraries(
     PosixBroker
     broker
+    device
     ${Boost_THREAD_LIBRARY}
     ${Boost_SYSTEM_LIBRARY}
     ${Boost_SERIALIZATION_LIBRARY}

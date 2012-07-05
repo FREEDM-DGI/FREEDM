@@ -165,7 +165,9 @@ class GMAgent
     PeerSet m_AYCResponse;
     /// Nodes expecting AYT response from
     PeerSet m_AYTResponse;
-    
+    /// Nodes that I need to inspect in the future
+    PeerSet m_AlivePeers;   
+ 
     // Mutex for protecting the m_UpNodes above
     boost::mutex pList_Mutex;
     

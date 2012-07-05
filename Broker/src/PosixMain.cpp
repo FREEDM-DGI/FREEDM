@@ -290,7 +290,7 @@ int main(int argc, char* argv[])
         // Instantiate and register the group management module
         gm::GMAgent GM(uuidstr, broker, phyManager);
         broker.RegisterModule("gm",boost::posix_time::milliseconds(150));
-        dispatch.RegisterReadHandler("gm", "gm", &GM);
+        dispatch.RegisterReadHandler("gm", "any", &GM);
         // Instantiate and register the state collection module
         sc::SCAgent SC(uuidstr, broker, phyManager);
         broker.RegisterModule("sc",boost::posix_time::milliseconds(80));

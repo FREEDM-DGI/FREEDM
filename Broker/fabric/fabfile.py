@@ -1,4 +1,5 @@
 from fabric.api import *
+import os
 
 env.key_filename = ["/home/scj7t4/.ssh/id_rsa"]
 env.warn_only = True
@@ -67,10 +68,15 @@ def get_uuid():
         result = run("./PosixBroker -u")
     return str(result).strip()
 
+def mark_set(step)
+    string = "### Stage %s" % step
+    run("echo \"%s\" >> %s" % (string,os.path.join(SRC_DIR,'grouplog.dat')))
+    print "Marked set"
+
 def setup_sim(expconfig):
     """
     There is currently a bug with fabric.
     with cd(SRC_DIR):
     Doesn't work.
     """
-    put(expconfig,'/home/scj7t4/FREEDM/Broker/src/network.xml')
+    put(expconfig,os.path.join(SRC_DIR,'network.xml'))

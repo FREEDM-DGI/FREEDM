@@ -113,7 +113,7 @@ GMAgent::GMAgent(std::string p_uuid, CBroker &broker,
     GLOBAL_TIMEOUT(boost::posix_time::seconds(1)),
     FID_TIMEOUT(boost::posix_time::milliseconds(8)),
     SKEW_TIMEOUT(boost::posix_time::seconds(2)),
-    RESPONSE_TIMEOUT(boost::posix_time::milliseconds(50)),
+    RESPONSE_TIMEOUT(boost::posix_time::milliseconds(100)),
     m_broker(broker),
     m_phyDevManager(devmanager)
 {
@@ -604,11 +604,18 @@ void GMAgent::Check( const boost::system::error_code& err )
             Logger.Info <<"SEND: Sending out AYC"<<std::endl;
             foreach( PeerNodePtr peer_, m_AllPeers | boost::adaptors::map_values)
             {
+                // If a node is in the alive set, it has been sending us
+                // messages that didn't orgiinate from GM and are in our group
+                if( CountInPeerSet(m_AlivePeers, peer_) > 0 )
+                    continue;
                 if( peer_->GetUUID() == GetUUID())
                     continue;
                 peer_->AsyncSend(m_);
                 InsertInPeerSet(m_AYCResponse,peer_);
             }
+            // The AlivePeers set is no longer good, we should clear it and make them
+            // Send us new messages
+            m_AlivePeers.clear();
             // Wait for responses
             Logger.Info << "TIMER: Setting GlobalTimer (Premerge): " << __LINE__ << std::endl;
             m_timerMutex.lock();
@@ -663,6 +670,7 @@ void GMAgent::Premerge( const boost::system::error_code &err )
             m_membership += m_UpNodes.size()+1;
             m_membershipchecks++;
         }
+        // Clear the expected responses    
         m_AYCResponse.clear();
         if( 0 < m_Coordinators.size() )
         {
@@ -895,26 +903,37 @@ void GMAgent::Timeout( const boost::system::error_code& err )
             Logger.Info << "SEND: Sending AreYouThere messages." << std::endl;
             CMessage m_ = AreYouThere();
             peer_ = GetPeer(line_);
-            if(peer_ != NULL)
+            if( CountInPeerSet(m_AlivePeers, peer_) == 0 )
             {
-                Logger.Debug << "Peer already exists. Do Nothing " <<std::endl;
+                if(peer_ != NULL)
+                {
+                    Logger.Debug << "Peer already exists. Do Nothing " <<std::endl;
+                }
+                else
+                {
+                    Logger.Debug << "Peer doesn't exist." <<std::endl;
+                    peer_ = AddPeer(line_);
+                } 
+                if( false != peer_ && peer_->GetUUID() != GetUUID())
+                {
+                    peer_->AsyncSend(m_);
+                    Logger.Info << "Expecting response from "<<peer_->GetUUID()<<std::endl;
+                    InsertInPeerSet(m_AYTResponse,peer_);
+                }
+                Logger.Info << "TIMER: Setting TimeoutTimer (Recovery):" << __LINE__ << std::endl;
+                m_timerMutex.lock();
+                m_broker.Schedule(m_timer, RESPONSE_TIMEOUT,
+                    boost::bind(&GMAgent::Recovery, this, boost::asio::placeholders::error));
+                m_timerMutex.unlock();
             }
             else
             {
-                Logger.Debug << "Peer doesn't exist." <<std::endl;
-                peer_ = AddPeer(line_);
-            } 
-            if( false != peer_ && peer_->GetUUID() != GetUUID())
-            {
-                peer_->AsyncSend(m_);
-                Logger.Info << "Expecting response from "<<peer_->GetUUID()<<std::endl;
-                InsertInPeerSet(m_AYTResponse,peer_);
+                m_AlivePeers.clear();
+                Logger.Info << "TIMER: Setting TimeoutTimer (Timeout): " << __LINE__ << std::endl;
+                m_broker.Schedule(m_timer, TIMEOUT_TIMEOUT,
+                    boost::bind(&GMAgent::Timeout, this, boost::asio::placeholders::error));
+                m_timerMutex.unlock();
             }
-            Logger.Info << "TIMER: Setting TimeoutTimer (Recovery):" << __LINE__ << std::endl;
-            m_timerMutex.lock();
-            m_broker.Schedule(m_timer, RESPONSE_TIMEOUT,
-                boost::bind(&GMAgent::Recovery, this, boost::asio::placeholders::error));
-            m_timerMutex.unlock();
         }
     }
     else if(boost::asio::error::operation_aborted == err )
@@ -1001,6 +1020,7 @@ void GMAgent::HandleRead(CMessage msg)
                 PeerNodePtr p = GetPeer(nuuid);
                 if(!p)
                 {
+                    Logger.Debug<<"I don't recognize this peer"<<std::endl;
                     //If you don't already know about the peer, make sure it is in the connection manager
                     GetConnectionManager().PutHostname(nuuid, nhost, nport);
                     p = AddPeer(nuuid);
@@ -1020,13 +1040,18 @@ void GMAgent::HandleRead(CMessage msg)
 
     }    
 
+    if(line_ != GetUUID() && CountInPeerSet(m_UpNodes, peer_) > 0)
+    {
+        InsertInPeerSet(m_AlivePeers,peer_);
+    }
+
     try
     {
-      std::string x = pt.get<std::string>("gm");
+        std::string x = pt.get<std::string>("gm");
     }
     catch(boost::property_tree::ptree_bad_path &e)
     {
-      return;
+        return;
     }
 
     if(pt.get<std::string>("gm") == "Accept")

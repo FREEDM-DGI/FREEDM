@@ -176,6 +176,7 @@ void CSRConnection::Resend(const boost::system::error_code& err)
         Logger.Trace<<__PRETTY_FUNCTION__<<" Sent ACK"<<std::endl;
         while(m_window.size() > 0 && m_window.front().IsExpired())
         {
+            Logger.Trace<<__PRETTY_FUNCTION__<<" Flusing"<<std::endl;
             //First message in the window should be the only one
             //ever to have been written.
             m_sendkills = true;

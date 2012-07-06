@@ -48,7 +48,7 @@ CLocalLogger Logger(__FILE__);
 
 }
 
-void IProtocol::Write(const CMessage & msg)
+void IProtocol::Write(CMessage msg)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     boost::array<char, CReliableConnection::MAX_PACKET_SIZE>::iterator it;

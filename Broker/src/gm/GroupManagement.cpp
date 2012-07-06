@@ -920,16 +920,20 @@ void GMAgent::Timeout( const boost::system::error_code& err )
                     Logger.Info << "Expecting response from "<<peer_->GetUUID()<<std::endl;
                     InsertInPeerSet(m_AYTResponse,peer_);
                 }
+                Logger.Info << "TIMER: Setting TimeoutTimer (Recovery):" << __LINE__ << std::endl;
+                m_timerMutex.lock();
+                m_broker.Schedule(m_timer, RESPONSE_TIMEOUT,
+                    boost::bind(&GMAgent::Recovery, this, boost::asio::placeholders::error));
+                m_timerMutex.unlock();
             }
             else
             {
                 m_AlivePeers.clear();
+                Logger.Info << "TIMER: Setting TimeoutTimer (Timeout): " << __LINE__ << std::endl;
+                m_broker.Schedule(m_timer, TIMEOUT_TIMEOUT,
+                    boost::bind(&GMAgent::Timeout, this, boost::asio::placeholders::error));
+                m_timerMutex.unlock();
             }
-            Logger.Info << "TIMER: Setting TimeoutTimer (Recovery):" << __LINE__ << std::endl;
-            m_timerMutex.lock();
-            m_broker.Schedule(m_timer, RESPONSE_TIMEOUT,
-                boost::bind(&GMAgent::Recovery, this, boost::asio::placeholders::error));
-            m_timerMutex.unlock();
         }
     }
     else if(boost::asio::error::operation_aborted == err )

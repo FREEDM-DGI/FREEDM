@@ -1040,17 +1040,16 @@ void GMAgent::HandleRead(CMessage msg)
 
     }    
 
-    if(line_ != GetUUID() && CountInPeerSet(m_UpNodes, peer_) > 0)
-    {
-        InsertInPeerSet(m_AlivePeers,peer_);
-    }
-
     try
     {
         std::string x = pt.get<std::string>("gm");
     }
     catch(boost::property_tree::ptree_bad_path &e)
     {
+        if(line_ != GetUUID() && CountInPeerSet(m_UpNodes, peer_) > 0)
+        {
+            InsertInPeerSet(m_AlivePeers,peer_);
+        }
         return;
     }
 

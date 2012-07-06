@@ -1044,7 +1044,9 @@ void GMAgent::HandleRead(CMessage msg)
     catch(boost::property_tree::ptree_bad_path &e)
     {
         if(line_ == GetUUID())
-            return;
+            return; // Don't care about ourselves
+        if(CountInPeerSet(m_UpNodes, peer_) == 0)
+            return; // Don't care about peers that aren't in our group
         Logger.Debug<<"Not GM message. Noting that peer "<<line_<<" is active"<<std::endl;
         //This message isn't actually a GM message, it is proof that the other node is stil alive
         InsertInPeerSet(m_AlivePeers,peer_);

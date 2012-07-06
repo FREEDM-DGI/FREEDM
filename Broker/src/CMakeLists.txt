@@ -11,36 +11,12 @@ set(
     CReliableConnection.cpp
     CSRConnection.cpp
     CSUConnection.cpp
-    device/CDeviceFactory.cpp
-    device/CDeviceKeyCoupled.cpp
-    device/CGenericAdapter.cpp
-    device/CPhysicalDeviceManager.cpp
-    device/CPscadAdapter.cpp
-    device/CRtdsAdapter.cpp
-    device/CTableRTDS.cpp
-    device/CTableStructure.cpp
-    device/DeviceMath.cpp
-    device/IConnectionAdapter.cpp
-    device/PhysicalDeviceTypes.cpp
-    device/types/CDeviceDesd.cpp
-    device/types/CDeviceDrer.cpp
-    device/types/CDeviceFid.cpp
-    device/types/CDeviceLoad.cpp
-    device/types/CDeviceSst.cpp
-    device/types/IDevice.cpp
     IPeerNode.cpp
     IProtocol.cpp
     gm/GroupManagement.cpp
     lb/LoadBalance.cpp
     sc/StateCollection.cpp
    )
-
-# Generate PhysicalDeviceTypes files based on contents of device/types directory
-add_executable(device/DeviceRegistrationGenerator ${CMAKE_CURRENT_BINARY_DIR}/device/DeviceRegistrationGenerator.cpp)
-add_custom_command(
-    OUTPUT ${CMAKE_BINARY_DIR}/include/device/PhysicalDeviceTypes.hpp ${CMAKE_CURRENT_BINARY_DIR}/device/PhysicalDeviceTypes.cpp
-    COMMAND device/DeviceRegistrationGenerator
-    DEPENDS device/DeviceRegistrationGenerator )
 
 # set BROKER_VERSION macro : cp version.h.cmake version.h
 configure_file(version.h.cmake ${CMAKE_BINARY_DIR}/src/version.h @ONLY)

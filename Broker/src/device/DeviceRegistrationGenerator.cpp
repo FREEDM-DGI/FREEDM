@@ -130,10 +130,7 @@ void GenerateFile(std::string inputFilename, std::string outputFilename,
 ///
 /// @return 0 if successful, or 1 otherwise.
 ///
-/// @limitations Although this executable is stored in src/device, it MUST BE
-///  CALLED FROM SRC in order to create the file in the right location. This
-///  program CANNOT be called from device, even if its executable resides there.
-///  Be quite careful if editing the CMake settings.
+/// @limitations None.
 ////////////////////////////////////////////////////////////////////////////////
 int main()
 {
@@ -143,7 +140,7 @@ int main()
     
     // Determine which device classes we need to include and register.
     std::vector<std::string> types;
-    DIR *dir = opendir("../include/device/types");
+    DIR *dir = opendir("../../include/device/types");
     if (dir != 0) // opened successfully?
     {
         dirent *entry;
@@ -171,8 +168,8 @@ int main()
     ////////////////////////////////////////////////////////////////////////////
     // Generate PhysicalDeviceTypes.hpp
     ////////////////////////////////////////////////////////////////////////////
-    input   = "../include/device/PhysicalDeviceTypes.hpp.txt";
-    output  = "../include/device/PhysicalDeviceTypes.hpp";
+    input   = "../../include/device/PhysicalDeviceTypes.hpp.txt";
+    output  = "../../include/device/PhysicalDeviceTypes.hpp";
     replace.clear();
     ss.str("");
     
@@ -187,8 +184,8 @@ int main()
     ////////////////////////////////////////////////////////////////////////////
     // Generate PhysicalDeviceTypes.cpp
     ////////////////////////////////////////////////////////////////////////////
-    input   = "device/PhysicalDeviceTypes.cpp.txt";
-    output  = "device/PhysicalDeviceTypes.cpp";
+    input   = "PhysicalDeviceTypes.cpp.txt";
+    output  = "PhysicalDeviceTypes.cpp";
     replace.clear();
     ss.str("");
     

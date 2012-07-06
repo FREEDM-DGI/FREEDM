@@ -54,9 +54,9 @@ public:
     bool IsActive() const;
 private:
     /// redefine base accessor as private
-    IDevice::Get;
+    using IDevice::Get;
     /// redefine base mutator as private
-    IDevice::Set;
+    using IDevice::Set;
 };
 
 } // namespace device

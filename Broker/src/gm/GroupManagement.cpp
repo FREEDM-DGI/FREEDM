@@ -1016,6 +1016,7 @@ void GMAgent::HandleRead(CMessage msg)
                 PeerNodePtr p = GetPeer(nuuid);
                 if(!p)
                 {
+                    Logger.Debug<"I don't recognize this peer"<<std::endl;
                     //If you don't already know about the peer, make sure it is in the connection manager
                     GetConnectionManager().PutHostname(nuuid, nhost, nport);
                     p = AddPeer(nuuid);

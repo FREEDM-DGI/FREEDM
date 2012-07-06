@@ -1038,12 +1038,17 @@ void GMAgent::HandleRead(CMessage msg)
 
     try
     {
+        Logger.Debug<<"Checking If Message Is From GM"<<std::endl;
         std::string x = pt.get<std::string>("gm");
     }
     catch(boost::property_tree::ptree_bad_path &e)
     {
+        if(line_ == GetUUID())
+            return;
+        Logger.Debug<<"Not GM message. Noting that peer "<<line_<<" is active"<<std::endl;
         //This message isn't actually a GM message, it is proof that the other node is stil alive
         InsertInPeerSet(m_AlivePeers,peer_);
+        Logger.Debug<<"Noted peer was active"<<std::endl;
         return;
     }
 

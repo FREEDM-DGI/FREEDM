@@ -552,26 +552,6 @@ void lbAgent::HandleRead(CMessage msg)
     ptree pt = msg.GetSubMessages();
     Logger.Debug << "Message '" <<pt.get<std::string>("lb","NOEXECPTION")<<"' received from "<< line_<<std::endl;
     
-    // Evaluate the identity of the message source
-    if(line_ != GetUUID())
-    {
-        Logger.Debug << "Flag " <<std::endl;
-        // Update the peer entry, if needed
-        peer_ = GetPeer(line_);
-
-        if( peer_ != NULL)
-        {
-            Logger.Debug << "Peer already exists. Do Nothing " <<std::endl;
-        }
-        else
-        {
-            // Add the peer, if an entry wasn`t found
-            Logger.Debug << "Peer doesn`t exist. Add it up to LBPeerSet" <<std::endl;
-            AddPeer(line_);
-            peer_ = GetPeer(line_);
-        }
-    }//endif
-
     // --------------------------------------------------------------
     // If you receive a peerList from your new leader, process it and
     // identify your new group members
@@ -622,8 +602,22 @@ void lbAgent::HandleRead(CMessage msg)
                 Logger.Debug << "LB knows this peer " <<std::endl;
             }
         }
+        if(GetPeer(m_Leader) == NULL)
+            AddPeer(m_Leader); //Make sure everyone is in your peer list.
 
-    }//end if("peerlist")
+    }//end if("peerlist") 
+
+    // Evaluate the identity of the message source
+    if(line_ != GetUUID())
+    {
+        // Update the peer entry, if needed
+        peer_ = GetPeer(line_);
+        if( peer_ == NULL)
+        {
+            Logger.Notice << "LB Got message from unrecognized peer ("<<line_<<"). Dropping"<<std::endl;
+            return;
+        }
+    }//endif
 
     // If there isn't an lb message, just leave.
     else if(pt.get<std::string>("lb","NOEXCEPTION") == "NOEXCEPTION")

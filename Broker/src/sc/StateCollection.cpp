@@ -513,21 +513,6 @@ void SCAgent::HandleRead(CMessage msg)
     //check the coming peer node
     line_ = msg.GetSourceUUID();
     
-    if (line_ != GetUUID())
-    {
-        peer_ = GetPeer(line_);
-        
-        if (peer_ != NULL)
-        {
-            Logger.Debug << "Peer already exists. Do Nothing " <<std::endl;
-        }
-        else
-        {
-            Logger.Debug << "PeerPeer doesn't exist. Add it up to PeerSet" <<std::endl;
-            AddPeer(line_);
-            peer_ = GetPeer(line_);
-        }//end if
-    }//end if
     
     //receive updated peerlist from groupmanager, which means group has been changed
     if (pt.get<std::string>("any","NOEXCEPTION") == "PeerList")
@@ -559,6 +544,8 @@ void SCAgent::HandleRead(CMessage msg)
                 Logger.Debug << "SC knows this peer " <<std::endl;
             }
         }
+        if(GetPeer(m_scleader) == NULL)
+            AddPeer(m_scleader); //Make sure everyone is in your peer list.
         
         //if only one node left
         if (m_AllPeers.size()==1)
@@ -592,6 +579,18 @@ void SCAgent::HandleRead(CMessage msg)
             m_countmarker = 0;
         }
     }//if peerList
+    
+    // Evaluate the identity of the message source
+    if(line_ != GetUUID())
+    {
+        // Update the peer entry, if needed
+        peer_ = GetPeer(line_);
+        if( peer_ == NULL)
+        {
+            Logger.Notice << "SC Got message from unrecognized peer ("<<line_<<"). Dropping"<<std::endl;
+            return;
+        }
+    }//endif
     
     //if flag=true save lb's transit message in m_curstate
     else if (pt.get<std::string>("lb","NOEXCEPTION") != "NOEXCEPTION")

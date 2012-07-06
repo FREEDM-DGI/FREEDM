@@ -81,7 +81,7 @@
         </entry>
     </command>
 </adapter>
-<adapter type="rtds" port="5001">
+<adapter type="pscad" port="5001">
     <state>
         <entry index="1">
             <device>SST1</device>
@@ -99,7 +99,7 @@
         </entry>
     </command>
 </adapter>
-<adapter type="rtds" port="5002">
+<adapter type="pscad" port="5002">
     <state>
         <entry index="1">
             <device>SST2</device>
@@ -117,7 +117,7 @@
         </entry>
     </command>
 </adapter>
-<adapter type="rtds" port="5003">
+<adapter type="pscad" port="5003">
     <state>
         <entry index="1">
             <device>SST3</device>

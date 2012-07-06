@@ -157,6 +157,7 @@ bool CAdapterPscad::HandleMessage( std::string type, std::string content )
 std::string CAdapterPscad::SetExternalCommand( std::string content )
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    typedef float TSignalValue;
     std::stringstream ss(content);
     std::string device, signal, strval, result;
     TSignalValue value;
@@ -197,6 +198,7 @@ std::string CAdapterPscad::SetExternalCommand( std::string content )
 std::string CAdapterPscad::GetSimulationState( std::string content )
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    typedef float TSignalValue;
     std::stringstream ss(content);
     std::string device, signal, result;
     TSignalValue value;

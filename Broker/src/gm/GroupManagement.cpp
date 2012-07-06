@@ -449,14 +449,14 @@ void GMAgent::FIDCheck( const boost::system::error_code& err)
     {
         static bool FIDsOn = false;
         int attachedFIDs = m_phyDevManager->GetDevicesOfType<device::CDeviceFid>().size();
-        double FIDState = m_phyDevManager->CountActiveFids();
-        if(FIDsOn == true && attachedFIDs  > 0 && FIDState < 1.0)
+        unsigned int FIDState = m_phyDevManager->CountActiveFids();
+        if(FIDsOn == true && attachedFIDs  > 0 && FIDState == 0)
         {
             Logger.Status<<"All FIDs offline. Entering Recovery State"<<std::endl;
             Recovery();
             FIDsOn = false;
         }
-        else if(FIDsOn == false && attachedFIDs > 0 && FIDState >= 1.0)
+        else if(FIDsOn == false && attachedFIDs > 0 && FIDState > 0)
         {
             Logger.Status<<"All FIDs Online. Checking for Peers"<<std::endl;
             FIDsOn = true;
@@ -959,7 +959,7 @@ void GMAgent::HandleRead(CMessage msg)
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     //If all my FIDs are off discard messages (Like a boss)
     if(m_phyDevManager->GetDevicesOfType<device::CDeviceFid>().size() > 0 &&
-        m_phyDevManager->CountActiveFids() < 1.0)
+        m_phyDevManager->CountActiveFids() == 0)
     {
         Logger.Debug << "Dropping Incoming Message; All FIDs offline" <<std::endl;
         return;

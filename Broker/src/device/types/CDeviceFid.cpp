@@ -72,7 +72,7 @@ CDeviceFid::~CDeviceFid()
 bool CDeviceFid::IsActive() const
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    return Get("state") == 1;  // if not exactly 1, then something is wrong.
+    return Get("state") == 1.0;  // if not exactly 1, then something is wrong.
 }
 
 }

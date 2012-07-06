@@ -158,7 +158,10 @@ unsigned int CPhysicalDeviceManager::CountActiveFids() const
         // attempt to convert each managed device to DeviceType
         if (( next_device = device_cast<CDeviceFid > ( it->second ) ))
         {
-            result++;
+            if( next_device->IsActive() )
+            {
+                result++;
+            }
         }
     }
 

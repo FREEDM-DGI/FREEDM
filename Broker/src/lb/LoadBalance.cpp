@@ -620,7 +620,7 @@ void lbAgent::HandleRead(CMessage msg)
     }//endif
 
     // If there isn't an lb message, just leave.
-    else if(pt.get<std::string>("lb","NOEXCEPTION") == "NOEXCEPTION")
+    if(pt.get<std::string>("lb","NOEXCEPTION") == "NOEXCEPTION")
     {
         return;
     }

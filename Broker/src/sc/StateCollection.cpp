@@ -593,7 +593,7 @@ void SCAgent::HandleRead(CMessage msg)
     }//endif
     
     //if flag=true save lb's transit message in m_curstate
-    else if (pt.get<std::string>("lb","NOEXCEPTION") != "NOEXCEPTION")
+    if (pt.get<std::string>("lb","NOEXCEPTION") != "NOEXCEPTION")
     {
         if (m_NotifyToSave == true)
         {

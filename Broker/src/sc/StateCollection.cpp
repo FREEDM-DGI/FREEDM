@@ -578,6 +578,7 @@ void SCAgent::HandleRead(CMessage msg)
             m_countstate = 0;
             m_countmarker = 0;
         }
+        return;
     }//if peerList
     
     // Evaluate the identity of the message source

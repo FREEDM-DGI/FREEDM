@@ -88,7 +88,7 @@ private:
     void ReadHandlerCallback(IReadHandler *h, CMessage msg);
     
     /// All the registered read handlers.
-    std::map< const std::string, IReadHandler *> m_readHandlers;
+    std::multimap< const std::string, IReadHandler *> m_readHandlers;
 
     /// All the registered write handlers.
     std::map< const std::string, IWriteHandler *> m_writeHandlers;

@@ -604,7 +604,7 @@ void lbAgent::HandleRead(CMessage msg)
         }
         if(GetPeer(m_Leader) == NULL)
             AddPeer(m_Leader); //Make sure everyone is in your peer list.
-
+        return;
     }//end if("peerlist") 
 
     // Evaluate the identity of the message source

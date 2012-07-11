@@ -164,7 +164,7 @@ SettingValue CPhysicalDeviceManager::GetValue(
 SettingValue(DeviceType::*getter)( ) const,
 SettingValue(*math)( SettingValue, SettingValue )) const
 {
-    SettingValue result;
+    SettingValue result = 0;
     typename DeviceType::Pointer next_device;
 
     for (const_iterator it = m_devices.begin(); it != m_devices.end(); it++)

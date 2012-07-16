@@ -80,7 +80,7 @@ namespace broker {
 namespace lb {
 
 const double NORMAL_TOLERANCE = 0.5;
-const unsigned int STATE_TIMEOUT = 500; //milliseconds
+const unsigned int STATE_TIMEOUT = 1000; //milliseconds
 // Global constants
 enum
 {
@@ -197,6 +197,7 @@ class lbAgent
         CBroker::TimerHandle      m_StateTimer;
         
         CBroker &m_broker;
+        bool m_active;
 };
 
 } // namespace lb

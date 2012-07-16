@@ -371,11 +371,12 @@ void SCAgent::StateResponse()
 //////////////////////////////////////////////////////////////////
 void SCAgent::TakeSnapshot(std::string deviceType, std::string valueType)
 {
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     device::SettingValue PowerValue;  
     //Logger.Status << "&&&&&&&&&&&&&&&&&&&&&& call NetValue funciton &&&&&&&&&&&&&&" << std::endl;  
     PowerValue = m_phyDevManager->GetValue(deviceType, valueType, &device::SumValues);
     //Logger.Status << "&&&&&&&&&&&&&&&&&&&&&&" << PowerValue << "&&&&&&&&&&&&&&&&&&&" << std::endl;
-
+std::cout << "Power = " << PowerValue << std::endl;
     //save state 
     m_curstate.put("sc.type", valueType);
     m_curstate.put("sc.value", PowerValue);
@@ -393,6 +394,7 @@ void SCAgent::TakeSnapshot(std::string deviceType, std::string valueType)
 //////////////////////////////////////////////////////////////////
 void SCAgent::SendStateBack()
 {
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     //Peer send collected states to initiator
     //for each in collectstate, extract ptree as a message then send to initiator
     CMessage m_;
@@ -412,7 +414,8 @@ void SCAgent::SendStateBack()
                 m_.m_submessages.put("sc.source", (*it).second.get<std::string>("sc.source"));
                 m_.m_submessages.put("sc.marker.UUID", m_curversion.first);
                 m_.m_submessages.put("sc.marker.int", m_curversion.second);
-                
+std::cout << it->second.get<std::string>("sc.value") << std::endl;                
+
                 if (GetPeer(m_curversion.first) != NULL)
                 {
                     try
@@ -861,6 +864,7 @@ void SCAgent::HandleRead(CMessage msg)
     //check if this is a response state
     else if (pt.get<std::string>("sc") == "state")
     {
+std::cout << "state get" << std::endl;
         //save states
         
         //parsing the states
@@ -949,6 +953,11 @@ SCAgent::PeerNodePtr SCAgent::AddPeer(std::string uuid)
 /////////////////////////////////////////////////////////
 SCAgent::PeerNodePtr SCAgent::AddPeer(PeerNodePtr peer)
 {
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    if( peer == NULL )
+std::cout << "UhOh" << std::endl;
+else
+std::cout << "kay" << std::endl;
     InsertInPeerSet(m_AllPeers,peer);
     return peer;
 }

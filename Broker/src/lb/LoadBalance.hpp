@@ -80,7 +80,7 @@ namespace broker {
 namespace lb {
 
 const double NORMAL_TOLERANCE = 0.5;
-const unsigned int STATE_TIMEOUT = 1000; //milliseconds
+const unsigned int STATE_TIMEOUT = 600; //milliseconds
 // Global constants
 enum
 {

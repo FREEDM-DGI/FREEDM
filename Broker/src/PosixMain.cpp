@@ -293,7 +293,7 @@ int main(int argc, char* argv[])
         dispatch.RegisterReadHandler("gm", "any", &GM);
         // Instantiate and register the state collection module
         sc::SCAgent SC(uuidstr, broker, phyManager);
-        broker.RegisterModule("sc",boost::posix_time::milliseconds(80));
+        broker.RegisterModule("sc",boost::posix_time::milliseconds(400));
         dispatch.RegisterReadHandler("sc", "any", &SC);
         // Instantiate and register the power management module
         lb::lbAgent LB(uuidstr, broker, phyManager);

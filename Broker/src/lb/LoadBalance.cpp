@@ -565,7 +565,7 @@ void lbAgent::HandleRead(CMessage msg)
         if(m_Leader == GetUUID())
         {
             //Initiate state collection if you are the leader
-            CollectState();
+            //CollectState();
         }
 
         //Update the PeerNode lists accordingly

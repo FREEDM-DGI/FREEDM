@@ -52,7 +52,7 @@ suffix=none
 #recursive
 
 # Indent C++ comments
-indent-col1-comments
+#indent-col1-comments
 
 # Pad empty lines around header blocks ("if", "for", "while")
 break-blocks
@@ -66,4 +66,4 @@ delete-empty-lines
 # Preserve Date
 preserve-date
 
-lineend=linux
+#lineend=linux

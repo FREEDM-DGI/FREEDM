@@ -112,6 +112,8 @@ class SCAgent : public IReadHandler, public SCPeerNode,
         void    SendDoneBack(StateVersion marker);
         ///Initiator sends collected states back to the request module
         void    StateResponse();
+        ///Peer save local state and forward maker
+        void    SaveForward(StateVersion latest, CMessage msg);
         
         // Messages
         ///Create a marker message

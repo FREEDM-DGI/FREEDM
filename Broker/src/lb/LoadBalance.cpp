@@ -123,6 +123,7 @@ lbAgent::lbAgent(std::string uuid_,
     m_Normal = 0;
     m_GlobalTimer = broker.AllocateTimer("lb");
     m_StateTimer = broker.AllocateTimer("lb");
+    m_active = false;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1032,8 +1033,13 @@ void lbAgent::PStar(device::SettingValue DemandValue)
 void lbAgent::StartStateTimer( unsigned int delay )
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    m_broker.Schedule(m_StateTimer, boost::posix_time::milliseconds(delay),
-        boost::bind(&lbAgent::HandleStateTimer, this, boost::asio::placeholders::error));
+
+    if( !m_active )
+    {
+        m_broker.Schedule(m_StateTimer, boost::posix_time::milliseconds(delay),
+            boost::bind(&lbAgent::HandleStateTimer, this, boost::asio::placeholders::error));
+        m_active = true;
+    }
 }
 
 ////////////////////////////////////////////////////////////
@@ -1053,6 +1059,7 @@ void lbAgent::HandleStateTimer( const boost::system::error_code & error )
         CollectState();
     }
 
+    m_active = false;
     StartStateTimer( STATE_TIMEOUT );
 }
 

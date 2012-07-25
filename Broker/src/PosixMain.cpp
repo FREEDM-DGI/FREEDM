@@ -289,14 +289,14 @@ int main(int argc, char* argv[])
         ss >> uuidstr;
         // Instantiate and register the group management module
         gm::GMAgent GM(uuidstr, broker, phyManager);
-        broker.RegisterModule("gm",boost::posix_time::milliseconds(200));
+        broker.RegisterModule("gm",boost::posix_time::milliseconds(500));
         dispatch.RegisterReadHandler("gm", "any", &GM);
         // Instantiate and register the state collection module
         sc::SCAgent SC(uuidstr, broker, phyManager);
         broker.RegisterModule("sc",boost::posix_time::milliseconds(400));
         dispatch.RegisterReadHandler("sc", "any", &SC);
         // Instantiate and register the power management module
-        lb::lbAgent LB(uuidstr, broker, phyManager);
+        lb::LBAgent LB(uuidstr, broker, phyManager);
         broker.RegisterModule("lb",boost::posix_time::milliseconds(400));
         dispatch.RegisterReadHandler("lb", "lb", &LB);
 
@@ -342,7 +342,7 @@ int main(int argc, char* argv[])
 
         Logger.Debug << "Starting thread of Modules" << std::endl;
         broker.Schedule("gm", boost::bind(&gm::GMAgent::Run, &GM), false);
-        broker.Schedule("lb", boost::bind(&lb::lbAgent::LB, &LB), false);
+        broker.Schedule("lb", boost::bind(&lb::LBAgent::Run, &LB), false);
         broker.Run();
     }
     catch (std::exception& e)

@@ -48,7 +48,7 @@ using boost::property_tree::ptree;
 #include <boost/progress.hpp>
 
 #include "CMessage.hpp"
-#include "SCPeerNode.hpp"
+#include "IPeerNode.hpp"
 //#include "ExtensibleLineProtocol.hpp"
 #include "IAgent.hpp"
 #include "IHandler.hpp"
@@ -85,8 +85,8 @@ namespace sc
 ///                 other nodes (these messages belong to the channel between the nodes).
 ///////////////////////////////////////////////////////////////////////////////
 
-class SCAgent : public IReadHandler, public SCPeerNode,
-        public IAgent< boost::shared_ptr<SCPeerNode> >
+class SCAgent : public IReadHandler, public IPeerNode,
+        public IAgent< boost::shared_ptr<IPeerNode> >
 {
     public:
         ///Constructor
@@ -95,7 +95,12 @@ class SCAgent : public IReadHandler, public SCPeerNode,
         ~SCAgent();
         //Handler
         ///Handle receiving messages
-        virtual void HandleRead(CMessage msg);
+        virtual void HandleAny(CMessage msg, PeerNodePtr peer);
+        void HandlePeerlist(CMessage msg, PeerNodePtr peer);
+        void HandleRequest(CMessage msg, PeerNodePtr peer);
+        void HandleMarker(CMessage msg, PeerNodePtr peer);
+        void HandleState(CMessage msg, PeerNodePtr peer);
+        void HandleDone(CMessage msg, PeerNodePtr peer);
         
     private:
         //Marker structure

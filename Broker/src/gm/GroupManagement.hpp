@@ -48,7 +48,8 @@ using boost::property_tree::ptree;
 #include <boost/interprocess/sync/interprocess_mutex.hpp>
 
 #include "CMessage.hpp"
-#include "GMPeerNode.hpp"
+#include "CGlobalPeerList.hpp"
+#include "IPeerNode.hpp"
 #include "IAgent.hpp"
 #include "IHandler.hpp"
 #include "CUuid.hpp"
@@ -73,10 +74,12 @@ namespace gm {
 
 ///	Declaration of Garcia-Molina Invitation Leader Election algorithm.
 class GMAgent
-  : public IReadHandler, public GMPeerNode,
-    public IAgent< boost::shared_ptr<GMPeerNode> >
+  : public IReadHandler, public IPeerNode,
+    public IAgent< boost::shared_ptr<IPeerNode> >
 {
   public:
+    /// Module states    
+    enum { NORMAL,DOWN,RECOVERY,REORGANIZATION,ELECTION };
     /// Constructor for using this object as a module.
     GMAgent(std::string uuid_, CBroker &broker, device::CPhysicalDeviceManager::Pointer devmanager);
     /// Module destructor
@@ -90,7 +93,29 @@ class GMAgent
 
     // Handlers
     /// Handles receiving incoming messages.
-    virtual void HandleRead(CMessage msg );
+    virtual void HandleAny(CMessage msg,PeerNodePtr peer);
+    /// Hadles recieving peerlists
+    void HandlePeerlist(CMessage msg,PeerNodePtr peer);
+    /// Handles recieving accept messsages
+    void HandleAccept(CMessage msg,PeerNodePtr peer);
+    /// Handles recieving are you coordinator messages
+    void HandleAreYouCoordinator(CMessage msg,PeerNodePtr peer);
+    /// Handles recieving are you there messsages
+    void HandleAreYouThere(CMessage msg,PeerNodePtr peer);
+    /// Handles recieving invite messages
+    void HandleInvite(CMessage msg,PeerNodePtr peer);
+    /// Handles recieving AYC responses
+    void HandleResponseAYC(CMessage msg,PeerNodePtr peer);
+    /// Handles recieving AYT responses
+    void HandleResponseAYT(CMessage msg,PeerNodePtr peer);
+    /// Handles recieving clock readings
+    void HandleClock(CMessage msg,PeerNodePtr peer);
+    /// Handles recieving clock skews
+    void HandleClockSkew(CMessage msg,PeerNodePtr peer);
+
+    // Processors
+    /// Handles Processing a Peerlist
+    static PeerSet ProcessPeerlist(CMessage msg, CConnectionManager& connmgr);
     
     //Routines
     /// Checks for other up leaders
@@ -140,6 +165,10 @@ class GMAgent
     PeerNodePtr GetPeer(std::string uuid);
 
   protected:
+    /// Gets the status of a node
+    int GetStatus() const;
+    /// Sets the status of the node
+    void SetStatus(int status);
     /// Sends invitations to all group members
     void InviteGroupNodes( const boost::system::error_code& err, PeerSet p_tempSet );
     /// Puts the system into the working state
@@ -159,8 +188,6 @@ class GMAgent
     PeerSet	m_UpNodes;
     /// Known Coordinators
     PeerSet m_Coordinators;
-    /// All known peers
-    PeerSet	m_AllPeers;
     /// Nodes expecting AYC response from
     PeerSet m_AYCResponse;
     /// Nodes expecting AYT response from
@@ -231,6 +258,8 @@ class GMAgent
     int m_membership;
     /// Number of membership checks
     int m_membershipchecks;
+    
+    int m_status; /// A store for the status of this node
 
 };
 

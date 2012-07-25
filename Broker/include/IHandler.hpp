@@ -1,7 +1,44 @@
+///////////////////////////////////////////////////////////////////////////////
+/// @file      IHandler.hpp
+///
+/// @author    Derek Ditch <derek.ditch@mst.edu>
+///            Stephen Jackson <scj7t4@mst.edu>
+///
+/// @compiler  C++
+///
+/// @project   FREEDM DGI
+///
+/// @description Provides handlers for module read/write operations 
+///
+/// @license
+/// These source code files were created at as part of the
+/// FREEDM DGI Subthrust, and are
+/// intended for use in teaching or research.  They may be 
+/// freely copied, modified and redistributed as long
+/// as modified versions are clearly marked as such and
+/// this notice is not removed.
+/// 
+/// Neither the authors nor the FREEDM Project nor the
+/// National Science Foundation
+/// make any warranty, express or implied, nor assumes
+/// any legal responsibility for the accuracy,
+/// completeness or usefulness of these codes or any
+/// information distributed with these codes.
+///
+/// Suggested modifications or questions about these codes 
+/// can be directed to Dr. Bruce McMillin, Department of 
+/// Computer Science, Missour University of Science and
+/// Technology, Rolla, MO  65409 (ff@mst.edu).
+///
+///////////////////////////////////////////////////////////////////////////////
 #ifndef IHANDLER_HPP
 #define IHANDLER_HPP
 
 #include "CMessage.hpp"
+
+#include <list>
+#include <boost/function.hpp>
+#include <boost/shared_ptr.hpp>
 
 namespace boost {
     namespace system {
@@ -16,6 +53,8 @@ namespace freedm {
 
 namespace broker {
 
+class IPeerNode;
+
 ///An interface for an object which can handle recieving incoming messages
 class IReadHandler
 {
@@ -29,10 +68,23 @@ class IReadHandler
 ///
 ///////////////////////////////////////////////////////////////////////////////
 public:
+    /// The signature for the functor bindings for the subhandlers
+    typedef boost::function<void (freedm::broker::CMessage,boost::shared_ptr<IPeerNode> )> SubhandleFunctor;
+    
+    /// The type of the map the functors are stored in
+    typedef std::list< std::pair<std::string, SubhandleFunctor> > SubhandleContainer;
+    
+    /// Destructor for the read handler
     virtual ~IReadHandler(){}
 
     /// Handle completion of a read operation.
-    virtual void HandleRead(freedm::broker::CMessage msg) = 0;
+    void HandleRead(freedm::broker::CMessage msg);
+
+    /// Registers a function to handle a specific submessage key
+    void RegisterSubhandle(std::string key, SubhandleFunctor f);
+private:
+    /// The individual handlers for the messages
+    SubhandleContainer m_handlers;
 };
 
 /// An interface for an object which writes on outgoing messages

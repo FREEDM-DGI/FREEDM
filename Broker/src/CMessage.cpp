@@ -156,7 +156,8 @@ CMessage::CMessage( const CMessage &p_m ) :
     m_protocol( p_m.m_protocol ),
     m_never_expires( p_m.m_never_expires ),
     m_sendtime( p_m.m_sendtime ),
-    m_expiretime( p_m.m_expiretime )
+    m_expiretime( p_m.m_expiretime ),
+    m_handler( p_m.m_handler )
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 }
@@ -174,6 +175,7 @@ CMessage& CMessage::operator = ( const CMessage &p_m )
     this->m_sendtime = p_m.m_sendtime;
     this->m_expiretime = p_m.m_expiretime;
     this->m_never_expires = p_m.m_never_expires;
+    this->m_handler = p_m.m_handler;
     return *this;
 }
 
@@ -207,6 +209,11 @@ CMessage::StatusType CMessage::GetStatus() const
 ptree& CMessage::GetSubMessages()
 {
     return m_submessages;
+}
+
+std::string CMessage::GetHandler() const
+{
+    return m_handler;
 }
 
 /// Setter for uuid
@@ -243,6 +250,11 @@ void CMessage::SetSendTimestampNow()
 void CMessage::SetSendTimestamp(boost::posix_time::ptime p)
 {
     m_sendtime = p;
+}
+
+void CMessage::SetHandler(std::string handler)
+{
+    m_handler = handler;
 }
 
 /// Getter for the send time
@@ -423,7 +435,8 @@ CMessage::operator ptree () const
     pt.put("message.status", m_status  );
     pt.put("message.sendtime",m_sendtime );
     pt.put("message.expiretime",m_expiretime );
-    pt.put("message.protocol",m_protocol );    
+    pt.put("message.protocol",m_protocol );
+    pt.put("message.handler",m_handler); 
     pt.add_child("message.properties", m_properties );
     pt.add_child("message.submessages", m_submessages );
 
@@ -450,6 +463,7 @@ CMessage::CMessage( const ptree &pt )
         m_sequenceno = pt.get< unsigned int >("message.sequenceno");
         m_protocol = pt.get< std::string >("message.protocol");
         m_sendtime = pt.get< boost::posix_time::ptime >("message.sendtime");
+        m_handler = pt.get< std::string >("message.handler");
         try
         {
            m_expiretime = pt.get< boost::posix_time::ptime >("message.expiretime");

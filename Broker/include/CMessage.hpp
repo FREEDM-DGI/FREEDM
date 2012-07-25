@@ -88,6 +88,9 @@ public:
 
     /// Accessor for status
     StatusType GetStatus() const;
+
+    /// Accessor for handler
+    std::string GetHandler() const;
     
     /// Accessor for submessages
     ptree& GetSubMessages();
@@ -106,6 +109,9 @@ public:
 
     /// Setter for the protocol
     void SetProtocol(std::string protocol);
+
+    /// Setter for the Handler
+    void SetHandler(std::string handler);
 
     /// Getter for the protocol
     std::string GetProtocol() const;
@@ -204,6 +210,8 @@ private:
     
     /// The time the message will expire
     boost::posix_time::ptime m_expiretime;
+
+    std::string m_handler;
 };
 
 } // namespace broker

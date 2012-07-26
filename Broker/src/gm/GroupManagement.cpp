@@ -685,6 +685,8 @@ void GMAgent::Check( const boost::system::error_code& err )
 void GMAgent::Premerge( const boost::system::error_code &err )
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    if(!IsCoodinator())
+        return;
     if( !err || (boost::asio::error::operation_aborted == err ))
     { 
         // Timer expired
@@ -888,7 +890,7 @@ void GMAgent::InviteGroupNodes( const boost::system::error_code& err, PeerSet p_
 void GMAgent::Reorganize( const boost::system::error_code& err )
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    if( !err || err == boost::asio::error::operation_aborted )
+    if( !err )
     {
         SetStatus(GMAgent::REORGANIZATION);
         Logger.Notice << "+ State change: REORGANIZATION: " << __LINE__    << std::endl; 

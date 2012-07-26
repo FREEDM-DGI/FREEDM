@@ -70,6 +70,7 @@ class IReadHandler
 public:
     /// The signature for the functor bindings for the subhandlers
     typedef boost::function<void (freedm::broker::CMessage,boost::shared_ptr<IPeerNode> )> SubhandleFunctor;
+    typedef boost::function<void (SubhandleFunctor,freedm::broker::CMessage,boost::shared_ptr<IPeerNode> )> PrehandleFunctor;
     
     /// The type of the map the functors are stored in
     typedef std::list< std::pair<std::string, SubhandleFunctor> > SubhandleContainer;
@@ -82,6 +83,9 @@ public:
 
     /// Registers a function to handle a specific submessage key
     void RegisterSubhandle(std::string key, SubhandleFunctor f);
+
+    /// Helps you specifie a prehandle, which is a common set of processing effects that apply for groups of handles.
+    SubhandleFunctor PrehandlerHelper(PrehandleFunctor f1, SubhandleFunctor f2);
 private:
     /// The individual handlers for the messages
     SubhandleContainer m_handlers;

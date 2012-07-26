@@ -117,6 +117,24 @@ void IReadHandler::HandleRead(freedm::broker::CMessage msg)
     Logger.Warn<<"No handlers found for message."<<std::endl;
 }
 
+///////////////////////////////////////////////////////////////////////////////
+/// IReadHandler::PrehandlerHelper
+/// @description Helps create bindings with prehandlers, which a functions that
+///     are applied before handlers. Typically this is for code that would be
+///     run for several handlers and can do effects like dropping messages.
+/// @param f1 The prehandle functor which takes a subhandle functor (and the message information)
+///         as arguments. The code of f1 is run and then f1 can make a call to f2.
+///         We use partial application to bind f1 down to the type of f2, Prehandlers
+///         can be chained.
+/// @param f2 The handlerfunctor which handles the actual processing of the message.
+/// @return A partially bound f1 (bound to f2) that is of the type of f2
+///////////////////////////////////////////////////////////////////////////////
+IReadHandler::SubhandleFunctor IReadHandler::PrehandlerHelper(PrehandleFunctor f1,SubhandleFunctor f2)
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    return boost::bind(f1, f2,  _1, _2);
+}
+
 }
 
 }

@@ -36,11 +36,12 @@
 #include <boost/asio/ip/host_name.hpp> //for ip::host_name()
 #include <boost/assign/list_of.hpp>
 #include <boost/bind.hpp>
-#include <boost/foreach.hpp>
 #include <boost/thread.hpp>
 #include <boost/program_options.hpp>
 
 #define foreach BOOST_FOREACH
+
+#include <boost/foreach.hpp>
 
 namespace po = boost::program_options;
 

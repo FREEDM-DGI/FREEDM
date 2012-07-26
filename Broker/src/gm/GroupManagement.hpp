@@ -92,6 +92,8 @@ class GMAgent
     bool IsCoordinator() const { return (Coordinator() == GetUUID()); };
 
     // Handlers
+    /// A set of common code to be run before every message
+    void Prehandler(SubhandleFunctor f,CMessage msg, PeerNodePtr peer);
     /// Handles receiving incoming messages.
     virtual void HandleAny(CMessage msg,PeerNodePtr peer);
     /// Hadles recieving peerlists
@@ -130,6 +132,10 @@ class GMAgent
     void Merge( const boost::system::error_code& err );
     /// Sends the peer list to all group members.
     void PushPeerList();
+    
+    // Sending Tools
+    /// Sends messages to remote peers if FIDs are closed.
+    void SendToPeer(PeerNodePtr peer,CMessage msg);
     
     // Messages
     /// Creates AYC Message.
@@ -258,9 +264,10 @@ class GMAgent
     int m_membership;
     /// Number of membership checks
     int m_membershipchecks;
-    
-    int m_status; /// A store for the status of this node
-
+    /// A store for the status of this node
+    int m_status;
+    /// A store for if all the fids are closed
+    bool m_fidsclosed;
 };
 
 } // namespace gm

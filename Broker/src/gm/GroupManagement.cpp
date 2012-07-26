@@ -364,7 +364,7 @@ void GMAgent::SendToPeer(PeerNodePtr peer, CMessage msg)
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     if(m_fidsclosed == true)
     {
-        SendToPeer(peer,msg);
+        peer->Send(msg);
     }
     else
     {

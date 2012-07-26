@@ -646,10 +646,6 @@ void GMAgent::Check( const boost::system::error_code& err )
             Logger.Info <<"SEND: Sending out AYC"<<std::endl;
             foreach( PeerNodePtr peer, CGlobalPeerList::instance().PeerList() | boost::adaptors::map_values)
             {
-                // If a node is in the alive set, it has been sending us
-                // messages that didn't orgiinate from GM and are in our group
-                if( CountInPeerSet(m_AlivePeers, peer) > 0 )
-                    continue;
                 if( peer->GetUUID() == GetUUID())
                     continue;
                 SendToPeer(peer,m_);
@@ -657,7 +653,6 @@ void GMAgent::Check( const boost::system::error_code& err )
             }
             // The AlivePeers set is no longer good, we should clear it and make them
             // Send us new messages
-            m_AlivePeers.clear();
             // Wait for responses
             Logger.Info << "TIMER: Setting GlobalTimer (Premerge): " << __LINE__ << std::endl;
             m_timerMutex.lock();
@@ -699,13 +694,14 @@ void GMAgent::Premerge( const boost::system::error_code &err )
         bool list_change = false;
         foreach( PeerNodePtr peer, m_AYCResponse | boost::adaptors::map_values)
         {
-            if(CountInPeerSet(m_UpNodes,peer))
+            if(CountInPeerSet(m_UpNodes,peer) && CountInPeerSet(m_AlivePeers,peer) == 0)
             {
                 list_change = true;
                 EraseInPeerSet(m_UpNodes,peer);
                 Logger.Info << "No response from peer: "<<peer->GetUUID()<<std::endl;
             }
         }
+        m_AlivePeers.clear();
         if(list_change)
         {
             PushPeerList();

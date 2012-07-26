@@ -130,7 +130,7 @@ GMAgent::GMAgent(std::string p_uuid, CBroker &broker,
     m_fidsclosed = true;   
  
     PrehandleFunctor f = boost::bind(&GMAgent::Prehandler, this, _1, _2, _3);    
-    RegisterSubhandle("any.peerlist",
+    RegisterSubhandle("any.Peerlist",
         PrehandlerHelper(f,boost::bind(&GMAgent::HandlePeerlist, this, _1, _2)));
     RegisterSubhandle("gm.Invite",
         PrehandlerHelper(f,boost::bind(&GMAgent::HandleInvite, this, _1, _2)));

@@ -731,9 +731,9 @@ void GMAgent::Premerge( const boost::system::error_code &err )
                 }
             }
             float wait_val_;
-            int maxWait = 24; /* The longest a node would have to wait to Merge */
-            int minWait = 5;
-            int granularity = 2; /* How finely it can slip in */
+            int maxWait = 128; /* The longest a node would have to wait to Merge */
+            int minWait = 16;
+            int granularity = 16; /* How finely it can slip in */
             int delta = ((maxWait-minWait)*1.0)/(granularity*1.0);
             if( myPriority < maxPeer_ )
                 wait_val_ = (((maxPeer_ - myPriority)%(granularity+1))*1.0)*delta+minWait;

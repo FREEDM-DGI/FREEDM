@@ -685,7 +685,7 @@ void GMAgent::Check( const boost::system::error_code& err )
 void GMAgent::Premerge( const boost::system::error_code &err )
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    if(!IsCoodinator())
+    if(!IsCoordinator())
         return;
     if( !err || (boost::asio::error::operation_aborted == err ))
     { 

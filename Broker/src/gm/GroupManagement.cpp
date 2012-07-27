@@ -112,7 +112,7 @@ GMAgent::GMAgent(std::string p_uuid, CBroker &broker,
     GLOBAL_TIMEOUT(boost::posix_time::seconds(1)),
     FID_TIMEOUT(boost::posix_time::milliseconds(8)),
     SKEW_TIMEOUT(boost::posix_time::seconds(2)),
-    RESPONSE_TIMEOUT(boost::posix_time::milliseconds(300)),
+    RESPONSE_TIMEOUT(boost::posix_time::milliseconds(75)),
     m_broker(broker),
     m_phyDevManager(devmanager)
 {
@@ -729,9 +729,9 @@ void GMAgent::Premerge( const boost::system::error_code &err )
                 }
             }
             float wait_val_;
-            int maxWait = 128; /* The longest a node would have to wait to Merge */
-            int minWait = 16;
-            int granularity = 16; /* How finely it can slip in */
+            int maxWait = 75; /* The longest a node would have to wait to Merge */
+            int minWait = 10;
+            int granularity = 5; /* How finely it can slip in */
             int delta = ((maxWait-minWait)*1.0)/(granularity*1.0);
             if( myPriority < maxPeer_ )
                 wait_val_ = (((maxPeer_ - myPriority)%(granularity+1))*1.0)*delta+minWait;

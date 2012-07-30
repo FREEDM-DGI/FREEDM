@@ -1094,6 +1094,15 @@ void GMAgent::HandlePeerlist(CMessage msg, PeerNodePtr peer)
         m_UpNodes.erase(GetUUID());
         Logger.Notice<<"Updated Peer Set."<<std::endl;
     }
+    else if(peer->GetUUID() == m_GroupLeader && GetStatus() == GMAgent::NORMAL)
+    {
+        m_UpNodes.clear();
+        m_UpNodes = ProcessPeerlist(msg,GetConnectionManager());
+        m_membership != m_UpNodes.size();
+        m_membershipchecks++;
+        m_UpNodes.erase(GetUUID());
+        Logger.Notice<<"Updated peer set (UPDATE)"<<std::endl;
+    }
 }
 
 ///////////////////////////////////////////////////////////////////////////////

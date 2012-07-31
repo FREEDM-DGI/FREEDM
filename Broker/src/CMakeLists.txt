@@ -11,8 +11,10 @@ set(
     CReliableConnection.cpp
     CSRConnection.cpp
     CSUConnection.cpp
+    CGlobalPeerList.cpp
     IPeerNode.cpp
     IProtocol.cpp
+    IHandler.cpp
     gm/GroupManagement.cpp
     lb/LoadBalance.cpp
     sc/StateCollection.cpp

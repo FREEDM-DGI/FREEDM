@@ -122,6 +122,11 @@ void CDispatcher::HandleRequest(CBroker &broker, CMessage msg)
                      mapIt_ != m_readHandlers.end();
                      ++mapIt_)
                 {
+                    if(mapIt_->first == "any")
+                    {
+                        //Prevents modules with any flags from processing some messages twice
+                        continue;
+                    }
                     try
                     {
                         CBroker::BoundScheduleable x = boost::bind(&CDispatcher::ReadHandlerCallback,

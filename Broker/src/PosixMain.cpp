@@ -36,9 +36,9 @@
 #include <boost/asio/ip/host_name.hpp> //for ip::host_name()
 #include <boost/assign/list_of.hpp>
 #include <boost/bind.hpp>
-#include <boost/foreach.hpp>
 #include <boost/thread.hpp>
 #include <boost/program_options.hpp>
+#include <boost/foreach.hpp>
 
 #define foreach BOOST_FOREACH
 
@@ -296,7 +296,7 @@ int main(int argc, char* argv[])
         broker.RegisterModule("sc",boost::posix_time::milliseconds(400));
         dispatch.RegisterReadHandler("sc", "any", &SC);
         // Instantiate and register the power management module
-        lb::lbAgent LB(uuidstr, broker, phyManager);
+        lb::LBAgent LB(uuidstr, broker, phyManager);
         broker.RegisterModule("lb",boost::posix_time::milliseconds(400));
         dispatch.RegisterReadHandler("lb", "lb", &LB);
 
@@ -342,7 +342,7 @@ int main(int argc, char* argv[])
 
         Logger.Debug << "Starting thread of Modules" << std::endl;
         broker.Schedule("gm", boost::bind(&gm::GMAgent::Run, &GM), false);
-        broker.Schedule("lb", boost::bind(&lb::lbAgent::LB, &LB), false);
+        broker.Schedule("lb", boost::bind(&lb::LBAgent::Run, &LB), false);
         broker.Run();
     }
     catch (std::exception& e)

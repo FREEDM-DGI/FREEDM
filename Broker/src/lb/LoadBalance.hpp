@@ -10,7 +10,7 @@
 /// @description  DGI Load Balancing Module
 ///
 /// @functions  
-///     lbAgent
+///     LBAgent
 ///     LB
 ///     AddPeer
 ///     GetPeer
@@ -61,7 +61,7 @@ using boost::property_tree::ptree;
 #include <boost/shared_ptr.hpp>
 
 #include "CMessage.hpp"
-#include "LBPeerNode.hpp"
+#include "IPeerNode.hpp"
 #include "IAgent.hpp"
 #include "CUuid.hpp"
 #include "CDispatcher.hpp"
@@ -80,40 +80,36 @@ namespace broker {
 namespace lb {
 
 const double NORMAL_TOLERANCE = 0.5;
+const unsigned int LOAD_TIMEOUT = 0; //milliseconds
 const unsigned int STATE_TIMEOUT = 600; //milliseconds
-// Global constants
-enum
-{
-    LOAD_TIMEOUT = 0 //milliseconds
-};
-
 
 //////////////////////////////////////////////////////////
-/// class lbAgent
+/// class LBAgent
 ///
 /// @description 
-/// Declaration of lbAgent class for load balancing algorithm
+/// Declaration of LBAgent class for load balancing algorithm
 /////////////////////////////////////////////////////////
-class lbAgent
+class LBAgent
     : public IReadHandler,
-      public LPeerNode,
-      public IAgent< boost::shared_ptr<LPeerNode> >
+      public IPeerNode,
+      public IAgent< boost::shared_ptr<IPeerNode> >
 {
     public:
         /// Default constructor
-        lbAgent();
+        LBAgent();
         /// Constructor for using this object as a module
-        lbAgent(std::string uuid_,
+        LBAgent(std::string uuid_,
                 CBroker &broker,
                 device::CPhysicalDeviceManager::Pointer 
                     m_phyManager);
         /// Destructor for the module  
-        ~lbAgent();
+        ~LBAgent();
 
         /// Main loop of the algorithm called from PosixBroker
-        int LB();
+        int Run();
 
-    private: 
+    private:
+        enum EStatus { SUPPLY, NORM, DEMAND }; 
          // Routines
         /// Advertises a draft request to demand nodes on Supply 
         void SendDraftRequest();
@@ -138,9 +134,23 @@ class lbAgent
 
         // Handlers
         /// Handles the incoming messages according to the message label
-        virtual void HandleRead(CMessage msg);
+        virtual void HandleAny(CMessage msg,PeerNodePtr peer);
+        void HandlePeerlist(CMessage msg, PeerNodePtr peer); 
+        void HandleDemand(CMessage msg, PeerNodePtr peer); 
+        void HandleNormal(CMessage msg, PeerNodePtr peer); 
+        void HandleSupply(CMessage msg, PeerNodePtr peer); 
+        void HandleRequest(CMessage msg, PeerNodePtr peer); 
+        void HandleYes(CMessage msg, PeerNodePtr peer); 
+        void HandleNo(CMessage msg, PeerNodePtr peer); 
+        void HandleDrafting(CMessage msg, PeerNodePtr peer); 
+        void HandleAccept(CMessage msg, PeerNodePtr peer); 
+        void HandleCollectedState(CMessage msg, PeerNodePtr peer); 
+        void HandleComputedNormal(CMessage msg, PeerNodePtr peer); 
+        
         /// Adds a new node to the list of known peers using its UUID
         PeerNodePtr AddPeer(std::string uuid);
+        /// Adds a new peer by a pointer
+        PeerNodePtr AddPeer(PeerNodePtr peer);
         /// Returns a pointer to the peer based on its UUID
         PeerNodePtr GetPeer(std::string uuid);
 
@@ -164,9 +174,9 @@ class lbAgent
         /// Demand cost of this node in Demand
         float   m_DemandVal;
         /// Current Demand state of this node  
-        LPeerNode::EStatus   m_Status;
+        EStatus   m_Status;
         /// Previous demand state of this node before state change
-        LPeerNode::EStatus   m_prevStatus;  
+        EStatus   m_prevStatus;  
    
         // Peer lists
         /// Set of known peers in Demand State

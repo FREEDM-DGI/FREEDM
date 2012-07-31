@@ -77,18 +77,41 @@ IPeerNode::IPeerNode(std::string uuid, ConnManagerPtr connmgr)
 
 
 ////////////////////////////////////////////////////////////
-/// @fn IPeerNode::SetStatus
-/// @description Sets the internal status variable, m_status
-///   based on the paramter status. See GetStatus for tips
-///   on establishing the status code numbers.
-/// @param status The status code to set
-/// @pre None
-/// @post The modules status code has been set to "status"
-////////////////////////////////////////////////////////////
-void IPeerNode::SetStatus(int status)
+/// @fn IPeerNode::GetUUID
+/// @description Returns the uuid of this peer node as a
+///              string.
+/////////////////////////////////////////////////////////////
+std::string IPeerNode::GetUUID() const
 {
-    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    m_status = status;
+    return m_uuid;
+}
+
+/////////////////////////////////////////////////////////////
+/// @fn IPeerNode::GetHostname
+/// @description Returns the hostname of this peer node as a
+///              string
+/////////////////////////////////////////////////////////////
+std::string IPeerNode::GetHostname() const
+{ 
+    return m_connmgr.GetHostnameByUUID(GetUUID()).hostname;
+}
+////////////////////////////////////////////////////////////
+/// IPeerNode::GetPort
+/// @description Returns the port number this node communicates on
+////////////////////////////////////////////////////////////
+std::string IPeerNode::GetPort() const
+{
+    return m_connmgr.GetHostnameByUUID(GetUUID()).port;
+}
+
+/////////////////////////////////////////////////////////////
+/// @fn IPeerNode::GetConnectionManager
+/// @description Returns a reference to the connection manager
+///              this object was constructed with.
+/////////////////////////////////////////////////////////////
+ConnManagerPtr IPeerNode::GetConnectionManager()
+{
+    return m_connmgr;
 }
 
 /////////////////////////////////////////////////////////////
@@ -141,17 +164,6 @@ bool IPeerNode::Send(freedm::broker::CMessage msg)
     }
     Logger.Debug << "Sent message to peer" << std::endl;
     return true;
-}
-
-/////////////////////////////////////////////////////////////
-/// @fn IPeerNode::ASyncSend
-/// @description Calls send. This function is depreciated by
-///   our change to UDP. 
-/////////////////////////////////////////////////////////////
-void IPeerNode::AsyncSend(freedm::broker::CMessage msg)
-{
-    //Depcreciated by UDP.
-    Send(msg);
 }
 ///////////////////////////////////////////////////////////////////////////////
 /// @fn operator==

@@ -36,6 +36,7 @@
 #define IPEERNODE_HPP_
 
 #include <set>
+#include <list>
 #include <boost/asio.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/enable_shared_from_this.hpp>
@@ -43,7 +44,6 @@
 #include <boost/thread/mutex.hpp>
 
 #include "CUuid.hpp"
-#include "CBroker.hpp"
 #include "CConnection.hpp"
 #include "CConnectionManager.hpp"
 
@@ -53,6 +53,7 @@ namespace broker {
 
 typedef boost::shared_ptr<freedm::broker::CMessage> MessagePtr;
 typedef freedm::broker::CConnectionManager& ConnManagerPtr;
+
 /// Base interface for agents/broker modules
 class IPeerNode
   : public boost::enable_shared_from_this<IPeerNode>
@@ -70,48 +71,25 @@ class IPeerNode
         ///
         /////////////////////////////////////////////////////////
     public:
+        /// Construct a peer node
         IPeerNode(std::string uuid, ConnManagerPtr connmgr);
-        /////////////////////////////////////////////////////////////
-        /// @fn IPeerNode::GetStatus
-        /// @description returns the status stored in the node as an
-        ///   an integer. This means that in an inherited class, you
-        ///   may either define integer constants or an enumeration
-        ///   to generate status values.
-        /////////////////////////////////////////////////////////////
-        int GetStatus() const { return m_status; };
-        /// Sets the status of the node
-        void SetStatus(int status);
-        ////////////////////////////////////////////////////////////
-        /// @fn IPeerNode::GetUUID
-        /// @description Returns the uuid of this peer node as a
-        ///              string.
-        /////////////////////////////////////////////////////////////
-        std::string GetUUID() const { return m_uuid; };
-        /////////////////////////////////////////////////////////////
-        /// @fn IPeerNode::GetHostname
-        /// @description Returns the hostname of this peer node as a
-        ///              string
-        /////////////////////////////////////////////////////////////
-        std::string GetHostname() const { return m_connmgr.GetHostnameByUUID(GetUUID()).hostname; };
-        std::string GetPort() const { return m_connmgr.GetHostnameByUUID(GetUUID()).port; };
+        /// Gets the uuid of the node this addresses
+        std::string GetUUID() const;
         /// Gives a connection ptr to this peer
-        broker::ConnectionPtr GetConnection();
-        /////////////////////////////////////////////////////////////
-        /// @fn IPeerNode::GetConnectionManager
-        /// @description Returns a reference to the connection manager
-        ///              this object was constructed with.
-        /////////////////////////////////////////////////////////////
-        ConnManagerPtr GetConnectionManager() { return m_connmgr; };
-        ///Sends a message to peer
+        ConnectionPtr GetConnection();
+        /// Returns a pointer to the connection manager
+        ConnManagerPtr GetConnectionManager();
+        /// Gets the hostname of this peer
+        std::string GetHostname() const;
+        /// Gets the port of this peer.
+        std::string GetPort() const;
+        /// Sends a message to peer
         bool Send(freedm::broker::CMessage msg);
-        ///Depreciated.
-        void AsyncSend(freedm::broker::CMessage msg);
     protected:
         friend class CAgent;
     private:
         std::string m_uuid; /// This node's uuid.
         ConnManagerPtr m_connmgr; /// The connection manager to use
-        int m_status;
 };
 
 bool operator==(const IPeerNode& a, const IPeerNode& b);

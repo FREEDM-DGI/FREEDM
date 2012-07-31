@@ -304,17 +304,18 @@ void SCAgent::StateResponse()
         m_.SetHandler(m_module+".CollectedState");
         
         for (it = collectstate.begin(); it != collectstate.end(); it++)
-        {
-            Logger.Status << (*it).first.first << "+++" << (*it).first.second << "    " << (*it).second.get<std::string>("sc.source") << std::endl;
-            
+        {   
             if ((*it).first == m_curversion)
             {
                 if ((*it).second.get<std::string>("sc.type")== m_valueType)
                 {
+                    Logger.Status << (*it).first.first << "+++" << (*it).first.second << "    "                      
+                                  << (*it).second.get<std::string>("sc.value") << std::endl;
                     m_.m_submessages.add("CollectedState.state.value", (*it).second.get<std::string>("sc.value"));
                 }
                 else if ((*it).second.get<std::string>("sc.type")== "Message")
                 {
+                    Logger.Status << (*it).second.get<std::string>("sc.transit.value") << std::endl;
                     m_.m_submessages.add("CollectedState.intransit.value", (*it).second.get<std::string>("sc.transit.value"));
                 }
             }
@@ -381,7 +382,7 @@ void SCAgent::TakeSnapshot(std::string deviceType, std::string valueType)
     device::SettingValue PowerValue;  
     //Logger.Status << "&&&&&&&&&&&&&&&&&&&&&& call NetValue funciton &&&&&&&&&&&&&&" << std::endl;  
     PowerValue = m_phyDevManager->GetValue(deviceType, valueType, &device::SumValues);
-    //Logger.Status << "&&&&&&&&&&&&&&&&&&&&&&" << PowerValue << "&&&&&&&&&&&&&&&&&&&" << std::endl;
+    Logger.Status << "&&&&&&&&&&&&&&&         " << PowerValue << "       &&&&&&&&&&&&" << std::endl;
     //save state 
     m_curstate.put("sc.type", valueType);
     m_curstate.put("sc.value", PowerValue);
@@ -495,17 +496,14 @@ void SCAgent::SendStateBack()
 
 
 ///////////////////////////////////////////////////////////////////
-/// HandleRead
-/// @description: HandleRead will be called upon every incoming message and operations will
-///       be performed based on chandy-lamport algorithm.
+/// SCAgent::HandleAny
+/// @description: This function will be called by any incoming messages
+///               which might be in-transit messages in the channel in  
+///               one state collection cycle.           
 /// @pre: Messages are obtained.
-/// @post: parsing messages
+/// @post: parsing messages, save if its in-transit message
 /// @peers: Invoked by dispatcher, other SC
-/// @param: msg
-/// @return: Multiple decisions based on the receiving messages and chandy-lamport algorithm
-/// @limitation: Currently, only gateway values and channel transit messages (from lb and gm)
-///              are collected.
-/// @Real_Time: time of longest code segment
+/// @param: msg, peer
 //////////////////////////////////////////////////////////////////
 
 void SCAgent::HandleAny(CMessage msg, PeerNodePtr peer)
@@ -539,6 +537,16 @@ void SCAgent::HandleAny(CMessage msg, PeerNodePtr peer)
     }
 }
 
+
+///////////////////////////////////////////////////////////////////
+/// SCAgent::HandlePeerList
+/// @description: This function will be called to handle PeerList message. 
+/// @key: any.PeerList   
+/// @pre: Messages are obtained.
+/// @post: parsing messages, reset to default state if receiving PeerList from different leader.
+/// @peers: Invoked by dispatcher, other SC
+/// @param: msg, peer
+//////////////////////////////////////////////////////////////////
 void SCAgent::HandlePeerlist(CMessage msg, PeerNodePtr peer)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
@@ -582,6 +590,15 @@ void SCAgent::HandlePeerlist(CMessage msg, PeerNodePtr peer)
     return;
 } 
  
+
+///////////////////////////////////////////////////////////////////
+/// SCAgent::HandleRequest
+/// @description: This function will be called to handle state collect request message. 
+/// @key: sc.request   
+/// @pre: Messages are obtained.
+/// @post: start state collection by calling Initiate().
+/// @param: msg, peer
+//////////////////////////////////////////////////////////////////
 void SCAgent::HandleRequest(CMessage msg, PeerNodePtr peer)
 { 
     if(CountInPeerSet(m_AllPeers,peer) == 0)
@@ -600,6 +617,16 @@ void SCAgent::HandleRequest(CMessage msg, PeerNodePtr peer)
     Initiate();
 }
 
+
+///////////////////////////////////////////////////////////////////
+/// SCAgent::HandleMarker
+/// @description: This function will be called to handle marker message. 
+/// @key: sc.marker   
+/// @pre: Messages are obtained.
+/// @post: parsing marker messages based on different conditions.
+/// @peers: Invoked by dispatcher, other SC
+/// @param: msg, peer
+//////////////////////////////////////////////////////////////////
 void SCAgent::HandleMarker(CMessage msg, PeerNodePtr peer)
 { 
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
@@ -830,6 +857,16 @@ void SCAgent::HandleMarker(CMessage msg, PeerNodePtr peer)
     }
  }
 
+
+///////////////////////////////////////////////////////////////////
+/// SCAgent::HandleState
+/// @description: This function will be called to handle state message. 
+/// @key: sc.state
+/// @pre: Messages are obtained.
+/// @post: parsing messages based on state or in-transit channel message.
+/// @peers: Invoked by dispatcher, other SC
+/// @param: msg, peer
+//////////////////////////////////////////////////////////////////
 void SCAgent::HandleState(CMessage msg, PeerNodePtr peer)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
@@ -876,6 +913,15 @@ void SCAgent::HandleState(CMessage msg, PeerNodePtr peer)
     }
 }
 
+///////////////////////////////////////////////////////////////////
+/// SCAgent::HandleDone
+/// @description: This function will be called to handle done message. 
+/// @key: sc.done
+/// @pre: Messages are obtained.
+/// @post: If "done" is received from all peers, StateResponse() will be called.
+/// @peers: Invoked by dispatcher, other SC
+/// @param: msg, peer
+//////////////////////////////////////////////////////////////////
 void SCAgent::HandleDone(CMessage msg, PeerNodePtr peer)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;

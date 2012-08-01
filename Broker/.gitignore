@@ -2,10 +2,14 @@ CMakeCache.txt
 CMakeFiles
 cmake_install.cmake
 Makefile
+#*
+*~
 */CMakeCache.txt
 */CMakeFiles
 */cmake_install.cmake
 */Makefile
+*/#*
+*/*~
 PosixBroker
 /nbproject/
 *.[oa]

@@ -272,6 +272,8 @@ class GMAgent
     int m_status;
     /// A store for if all the fids are closed
     bool m_fidsclosed;
+    /// A store for if the response for the AYT is optional?
+    bool m_aytoptional;
 };
 
 } // namespace gm

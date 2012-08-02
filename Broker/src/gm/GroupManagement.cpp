@@ -951,24 +951,16 @@ void GMAgent::Timeout( const boost::system::error_code& err )
     {
         SystemState(); 
         /* If we are the group leader, we don't need to run this */
+        CMessage m_ = AreYouThere();
+        peer = GetPeer(Coordinator());
+        m_AYTResponse.clear();
+        m_aytoptional = false;
         if(!IsCoordinator())
         {
-            std::string line_ = Coordinator();
             Logger.Info << "SEND: Sending AreYouThere messages." << std::endl;
-            CMessage m_ = AreYouThere();
-            peer = GetPeer(line_);
             if( CountInPeerSet(m_AlivePeers, peer) == 0 )
             {
-                if(peer != NULL)
-                {
-                    Logger.Debug << "Peer already exists. Do Nothing " <<std::endl;
-                }
-                else
-                {
-                    Logger.Debug << "Peer doesn't exist." <<std::endl;
-                    peer = AddPeer(line_);
-                } 
-                if( false != peer && peer->GetUUID() != GetUUID())
+                if(peer->GetUUID() != GetUUID())
                 {
                     SendToPeer(peer,m_);
                     Logger.Info << "Expecting response from "<<peer->GetUUID()<<std::endl;
@@ -982,7 +974,12 @@ void GMAgent::Timeout( const boost::system::error_code& err )
             }
             else
             {
+                //We'll still check to see if we are considered a part of that group:
+                SendToPeer(peer,m_);
+                Logger.Info << "Expecting response from "<<peer->GetUUID()<<std::endl;
+                InsertInPeerSet(m_AYTResponse,peer);
                 m_AlivePeers.clear();
+                m_aytoptional = true;
                 Logger.Info << "TIMER: Setting TimeoutTimer (Timeout): " << __LINE__ << std::endl;
                 m_broker.Schedule(m_timer, TIMEOUT_TIMEOUT,
                     boost::bind(&GMAgent::Timeout, this, boost::asio::placeholders::error));
@@ -1082,6 +1079,10 @@ void GMAgent::HandleAny(CMessage msg, PeerNodePtr peer)
 /// GMAgent::HandlePeerList
 /// @description Handles recieveing the peerlist.
 /// @key any.PeerList
+/// @pre The node is in the reorganization or normal state
+/// @post The node's peerlist is updated to match that of the incoming message
+///     if the message has come from his coordinator.
+/// @peers Coordinator only.
 ///////////////////////////////////////////////////////////////////////////////
 void GMAgent::HandlePeerList(CMessage msg, PeerNodePtr peer)
 {
@@ -1123,6 +1124,12 @@ void GMAgent::HandlePeerList(CMessage msg, PeerNodePtr peer)
 /// GMAgent::HandleAccept
 /// @description Handles recieveing the invite accept
 /// @key gm.Accept
+/// @pre In an election, and invites have been sent out.
+/// @post The sender is added to the tenative list of accepted peers for the group,
+///     if the accept messag is for the correct group identifier.
+/// @peers Any node which has recieved an invite. (This can be any selection of
+///     the global peerlist, not just the ones this specific node sent the message
+///     to.)
 ///////////////////////////////////////////////////////////////////////////////
 void GMAgent::HandleAccept(CMessage msg, PeerNodePtr peer)
 {
@@ -1148,6 +1155,9 @@ void GMAgent::HandleAccept(CMessage msg, PeerNodePtr peer)
 /// GMAgent::HandleAreYouCoordinator
 /// @description Handles recieveing the AYC message
 /// @key gm.AreYouCoordinator
+/// @pre None
+/// @post The node responds yes or no to the request.
+/// @peers Any node in the system is eligible to recieve this at any time.
 ///////////////////////////////////////////////////////////////////////////////
 void GMAgent::HandleAreYouCoordinator(CMessage msg, PeerNodePtr peer)
 {
@@ -1174,6 +1184,9 @@ void GMAgent::HandleAreYouCoordinator(CMessage msg, PeerNodePtr peer)
 /// GMAgent::HandleAreYouThere
 /// @description Handles recieving the AYT message
 /// @key gm.AreYouThere
+/// @pre None
+/// @post The node responds yes or no to the request.
+/// @peers Any node in the system is eligible to recieve this message at any time.
 ///////////////////////////////////////////////////////////////////////////////
 void GMAgent::HandleAreYouThere(CMessage msg, PeerNodePtr peer)
 {
@@ -1202,6 +1215,12 @@ void GMAgent::HandleAreYouThere(CMessage msg, PeerNodePtr peer)
 /// GMAgent::HandleInvite
 /// @description Handles recieving the invite
 /// @key gm.Invite
+/// @pre The system is in the NORMAL state
+/// @post The system updates its group to accept the invite and switches to
+///     reorganization mode; it will wait for a timeout. If the Ready/Peerlist
+///     has not arrived, it will enter recovery. Otherwise, it will resume
+///     work as part of the group it was invited to.
+/// @peers Any node could send an invite at any time.
 ///////////////////////////////////////////////////////////////////////////////
 void GMAgent::HandleInvite(CMessage msg, PeerNodePtr peer)
 {
@@ -1270,6 +1289,11 @@ void GMAgent::HandleInvite(CMessage msg, PeerNodePtr peer)
 /// GMAgent::HandleResponseAYC
 /// @description Handles recieving the Response
 /// @key gm.Response.AreYouCoordinator
+/// @pre The timer for the AYC request batch the original request was a part
+///     of has not expired
+/// @post The response from the sender is noted, if yes, the groups will attempt
+///     to merge in the future.
+/// @peers A node the AYC request was sent to.
 ///////////////////////////////////////////////////////////////////////////////
 void GMAgent::HandleResponseAYC(CMessage msg, PeerNodePtr peer)
 {
@@ -1312,6 +1336,11 @@ void GMAgent::HandleResponseAYC(CMessage msg, PeerNodePtr peer)
 /// GMAgent::HandleResponseAYT
 /// @description Handles recieving the Response
 /// @key gm.Response.AreYouThere
+/// @pre The timer for the AYT request batch (typically 1) the original request
+///     was a part of has not expired
+/// @post The response from the sender is noted. If the answer is no, then this
+///     node will enter recovery, if the recovery timer has not already been
+///     set, otherwise we will allow it to expire.
 ///////////////////////////////////////////////////////////////////////////////
 void GMAgent::HandleResponseAYT(CMessage msg, PeerNodePtr peer)
 {
@@ -1332,9 +1361,12 @@ void GMAgent::HandleResponseAYT(CMessage msg, PeerNodePtr peer)
     }
     else if(pt.get<std::string>("gm.payload") == "no")
     {
-        //We have been removed from the group.
-        //The Recovery timer will still be running. It should expire and we will
-        //Enter Recovery.
+        // We've been removed from the group. if m_aytoptional is set, then we should
+        // recover (m_aytoptional == True iff the recovery timer is not already set.
+        if(m_aytoptional && peer->GetUUID() == Coordinator())
+        {
+            Recovery();
+        }    
     }
     else
     {
@@ -1346,6 +1378,8 @@ void GMAgent::HandleResponseAYT(CMessage msg, PeerNodePtr peer)
 /// GMAgent::HandleClock
 /// @description HAndles recieving the resultant clock values.
 /// @key gm.Clock
+/// @pre None
+/// @post The clocks table is updated with the reading from the peer.
 ///////////////////////////////////////////////////////////////////////////////
 void GMAgent::HandleClock(CMessage msg, PeerNodePtr peer)
 {
@@ -1359,6 +1393,9 @@ void GMAgent::HandleClock(CMessage msg, PeerNodePtr peer)
 /// GMAgent::HandleClockSkew
 /// @description Handles recieving the resultant clock skews.
 /// @key gm.ClockSkew
+/// @pre The sender is my coordinator
+/// @post I adjust my clock skew to align it with my coordinator.
+/// @peers Typically only the coordinator.
 ///////////////////////////////////////////////////////////////////////////////
 void GMAgent::HandleClockSkew(CMessage msg, PeerNodePtr peer)
 {

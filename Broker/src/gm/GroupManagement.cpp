@@ -128,6 +128,7 @@ GMAgent::GMAgent(std::string p_uuid, CBroker &broker,
     m_fidtimer = broker.AllocateTimer("gm");
     m_skewtimer = broker.AllocateTimer("gm");
     m_fidsclosed = true;   
+    m_GrpCounter = rand();
  
     PrehandleFunctor f = boost::bind(&GMAgent::Prehandler, this, _1, _2, _3);    
     RegisterSubhandle("any.PeerList",

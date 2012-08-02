@@ -96,7 +96,7 @@ class SCAgent : public IReadHandler, public IPeerNode,
         //Handler
         ///Handle receiving messages
         virtual void HandleAny(CMessage msg, PeerNodePtr peer);
-        void HandlePeerlist(CMessage msg, PeerNodePtr peer);
+        void HandlePeerList(CMessage msg, PeerNodePtr peer);
         void HandleRequest(CMessage msg, PeerNodePtr peer);
         void HandleMarker(CMessage msg, PeerNodePtr peer);
         void HandleState(CMessage msg, PeerNodePtr peer);

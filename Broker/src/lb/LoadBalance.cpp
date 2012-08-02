@@ -124,7 +124,7 @@ LBAgent::LBAgent(std::string uuid_,
     m_Normal = 0;
     m_GlobalTimer = broker.AllocateTimer("lb");
     m_StateTimer = broker.AllocateTimer("lb");
-    RegisterSubhandle("any.Peerlist",boost::bind(&LBAgent::HandlePeerlist, this, _1, _2));
+    RegisterSubhandle("any.PeerList",boost::bind(&LBAgent::HandlePeerList, this, _1, _2));
     RegisterSubhandle("lb.demand",boost::bind(&LBAgent::HandleDemand, this, _1, _2));
     RegisterSubhandle("lb.normal",boost::bind(&LBAgent::HandleNormal, this, _1, _2));
     RegisterSubhandle("lb.supply",boost::bind(&LBAgent::HandleSupply, this, _1, _2));
@@ -579,7 +579,7 @@ void LBAgent::HandleAny(CMessage msg, PeerNodePtr peer)
 }
    
 
-void LBAgent::HandlePeerlist(CMessage msg, PeerNodePtr peer)
+void LBAgent::HandlePeerList(CMessage msg, PeerNodePtr peer)
 { 
     // --------------------------------------------------------------
     // If you receive a peerList from your new leader, process it and
@@ -611,7 +611,7 @@ void LBAgent::HandlePeerlist(CMessage msg, PeerNodePtr peer)
         EraseInPeerSet(m_LoNodes,p_);
         EraseInPeerSet(m_NoNodes,p_);
     }
-    temp = gm::GMAgent::ProcessPeerlist(msg,GetConnectionManager());
+    temp = gm::GMAgent::ProcessPeerList(msg,GetConnectionManager());
     foreach( PeerNodePtr p_, temp | boost::adaptors::map_values )
     {
         PeerNodePtr p = GetPeer(p_->GetUUID());

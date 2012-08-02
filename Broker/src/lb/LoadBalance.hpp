@@ -135,7 +135,7 @@ class LBAgent
         // Handlers
         /// Handles the incoming messages according to the message label
         virtual void HandleAny(CMessage msg,PeerNodePtr peer);
-        void HandlePeerlist(CMessage msg, PeerNodePtr peer); 
+        void HandlePeerList(CMessage msg, PeerNodePtr peer); 
         void HandleDemand(CMessage msg, PeerNodePtr peer); 
         void HandleNormal(CMessage msg, PeerNodePtr peer); 
         void HandleSupply(CMessage msg, PeerNodePtr peer); 

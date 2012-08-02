@@ -130,8 +130,8 @@ GMAgent::GMAgent(std::string p_uuid, CBroker &broker,
     m_fidsclosed = true;   
  
     PrehandleFunctor f = boost::bind(&GMAgent::Prehandler, this, _1, _2, _3);    
-    RegisterSubhandle("any.Peerlist",
-        PrehandlerHelper(f,boost::bind(&GMAgent::HandlePeerlist, this, _1, _2)));
+    RegisterSubhandle("any.PeerList",
+        PrehandlerHelper(f,boost::bind(&GMAgent::HandlePeerList, this, _1, _2)));
     RegisterSubhandle("gm.Invite",
         PrehandlerHelper(f,boost::bind(&GMAgent::HandleInvite, this, _1, _2)));
     RegisterSubhandle("gm.Accept",
@@ -148,6 +148,8 @@ GMAgent::GMAgent(std::string p_uuid, CBroker &broker,
         PrehandlerHelper(f,boost::bind(&GMAgent::HandleClock, this, _1, _2)));
     RegisterSubhandle("gm.ClockSkew",
         PrehandlerHelper(f,boost::bind(&GMAgent::HandleClockSkew, this, _1, _2)));
+    RegisterSubhandle("gm.PeerListQuery",
+        PrehandlerHelper(f,boost::bind(&GMAgent::HandlePeerListQuery, this, _1, _2)));
     RegisterSubhandle("any",
         PrehandlerHelper(f,boost::bind(&GMAgent::HandleAny, this, _1, _2)));
     #ifdef RANDOM_PREMERGE
@@ -326,17 +328,13 @@ CMessage GMAgent::ClockSkew(boost::posix_time::time_duration t)
 /// @post No Change.
 /// @return A CMessage with the contents of group membership
 ///////////////////////////////////////////////////////////////////////////////
-CMessage GMAgent::PeerList()
+CMessage GMAgent::PeerList(std::string requester)
 {
     CMessage m_;
-	std::stringstream ss_;
     ptree me_pt;
-	ss_.clear();
-	ss_ << GetUUID();
-	m_.m_submessages.put("any.source", ss_.str());
-    m_.m_submessages.put("any.coordinator",GetUUID());
-	m_.SetHandler("any.Peerlist");
-	ss_.clear();
+	m_.m_submessages.put("any.source", GetUUID());
+    m_.m_submessages.put("any.coordinator",Coordinator());
+	m_.SetHandler(requester+".PeerList");
 	foreach( PeerNodePtr peer, m_UpNodes | boost::adaptors::map_values)
     {
         ptree sub_pt;
@@ -352,6 +350,24 @@ CMessage GMAgent::PeerList()
     m_.SetNeverExpires();
     return m_;
 }
+
+///////////////////////////////////////////////////////////////////////////////
+/// GMAgent::PeerListQuery
+/// @description Generates a CMessage that can be used to query the peerlist
+///     of a node.
+/// @pre: None
+/// @post: No change
+/// @param requester: The module who the response should be addressed to.
+/// @return A CMessage which can be used to query for 
+///////////////////////////////////////////////////////////////////////////////
+CMessage GMAgent::PeerListQuery(std::string requester)
+{
+    CMessage m_;
+    m_.SetHandler("gm.PeerListQuery");
+    m_.m_submessages.put("gm.requester",requester);
+    return m_;
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 /// GMAgent::SendToPeer
 /// @description Wrapper for peer->Send that checks to see if the FIDs are closed
@@ -445,7 +461,6 @@ void GMAgent::PushPeerList()
 void GMAgent::Recovery()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    std::stringstream ss_;
     SetStatus(GMAgent::ELECTION);
     Logger.Notice << "+ State Change ELECTION : "<<__LINE__<<std::endl;
     m_GrpCounter++;
@@ -792,7 +807,6 @@ void GMAgent::Merge( const boost::system::error_code& err )
     }
     if( !err )
     {
-        std::stringstream ss_;
         // This proc forms a new group by inviting Coordinators in CoordinatorSet
         SetStatus(GMAgent::ELECTION);
         Logger.Notice << "+ State Change ELECTION : "<<__LINE__<<std::endl;
@@ -898,7 +912,7 @@ void GMAgent::Reorganize( const boost::system::error_code& err )
         CMessage m_ = Ready();
         Logger.Info <<"SEND: Sending out Ready"<<std::endl;
         // Send new membership list to group members 
-        // Peerlist is the new READY
+        // PeerList is the new READY
         PushPeerList();
         m_membership += m_UpNodes.size()+1;
         m_membershipchecks++;
@@ -989,14 +1003,14 @@ void GMAgent::Timeout( const boost::system::error_code& err )
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// GMAgent::ProcessPeerlist
+/// GMAgent::ProcessPeerList
 /// @description Provides a utility function for correctly handling incoming
 ///     peer lists.
 /// @param msg The message to parse
 /// @param connmgr A connection manager to use for constructing unrecognized peers.
 /// @return A PeerSet with all nodes in the group.
 ///////////////////////////////////////////////////////////////////////////////
-GMAgent::PeerSet GMAgent::ProcessPeerlist(CMessage msg, CConnectionManager& connmgr)
+GMAgent::PeerSet GMAgent::ProcessPeerList(CMessage msg, CConnectionManager& connmgr)
 {
     // Note: The group leader inserts himself into the peer list.
     PeerSet tmp;
@@ -1065,11 +1079,11 @@ void GMAgent::HandleAny(CMessage msg, PeerNodePtr peer)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// GMAgent::HandlePeerlist
+/// GMAgent::HandlePeerList
 /// @description Handles recieveing the peerlist.
 /// @key any.PeerList
 ///////////////////////////////////////////////////////////////////////////////
-void GMAgent::HandlePeerlist(CMessage msg, PeerNodePtr peer)
+void GMAgent::HandlePeerList(CMessage msg, PeerNodePtr peer)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     ptree pt = msg.GetSubMessages();
@@ -1088,7 +1102,7 @@ void GMAgent::HandlePeerlist(CMessage msg, PeerNodePtr peer)
         m_timerMutex.unlock();
         Logger.Info << "RECV: PeerList (Ready) message from " <<peer->GetUUID() << std::endl;
         m_UpNodes.clear();
-        m_UpNodes = ProcessPeerlist(msg,GetConnectionManager());
+        m_UpNodes = ProcessPeerList(msg,GetConnectionManager());
         m_membership += m_UpNodes.size();
         m_membershipchecks++;
         m_UpNodes.erase(GetUUID());
@@ -1097,8 +1111,8 @@ void GMAgent::HandlePeerlist(CMessage msg, PeerNodePtr peer)
     else if(peer->GetUUID() == m_GroupLeader && GetStatus() == GMAgent::NORMAL)
     {
         m_UpNodes.clear();
-        m_UpNodes = ProcessPeerlist(msg,GetConnectionManager());
-        m_membership != m_UpNodes.size();
+        m_UpNodes = ProcessPeerList(msg,GetConnectionManager());
+        m_membership = m_UpNodes.size()+1;
         m_membershipchecks++;
         m_UpNodes.erase(GetUUID());
         Logger.Notice<<"Updated peer set (UPDATE)"<<std::endl;
@@ -1364,6 +1378,20 @@ void GMAgent::HandleClockSkew(CMessage msg, PeerNodePtr peer)
     Logger.Debug<<"Finished Adjusting Clock"<<std::endl;
 }
 
+///////////////////////////////////////////////////////////////////////////////
+/// GMAgent::HandlePeerListQuery
+/// @description Handles responding to peerlist queries.
+/// @key gm.PeerListQuery
+/// @pre None
+/// @post Dispatched a message to the requester with a peerlist.
+/// @peers Any. (Local or remote, doesn't have to be a member of group)
+///////////////////////////////////////////////////////////////////////////////
+void GMAgent::HandlePeerListQuery(CMessage msg, PeerNodePtr peer)
+{
+    ptree pt = msg.GetSubMessages();
+    std::string requester = pt.get<std::string>("gm.requester");
+    peer->Send(PeerList(requester));
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 /// GMAgent::AddPeer

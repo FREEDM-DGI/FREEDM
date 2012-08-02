@@ -145,7 +145,7 @@ SCAgent::SCAgent(std::string uuid, CBroker &broker,
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     AddPeer(uuid);
-    RegisterSubhandle("any.Peerlist",boost::bind(&SCAgent::HandlePeerlist,this,_1,_2)); 
+    RegisterSubhandle("any.PeerList",boost::bind(&SCAgent::HandlePeerList,this,_1,_2)); 
     RegisterSubhandle("sc.request",boost::bind(&SCAgent::HandleRequest,this,_1,_2)); 
     RegisterSubhandle("sc.marker",boost::bind(&SCAgent::HandleMarker,this,_1,_2)); 
     RegisterSubhandle("sc.state",boost::bind(&SCAgent::HandleState,this,_1,_2)); 
@@ -345,7 +345,7 @@ void SCAgent::StateResponse()
     }
     else
     {
-        Logger.Notice << "(Initiator) Not receiving all states back. Peerlist size is " << m_AllPeers.size()<< std::endl;
+        Logger.Notice << "(Initiator) Not receiving all states back. PeerList size is " << m_AllPeers.size()<< std::endl;
         
         if (m_NotifyToSave == true)
         {
@@ -621,14 +621,14 @@ void SCAgent::HandleAny(CMessage msg, PeerNodePtr peer)
 /// @peers: Invoked by dispatcher, other SC
 /// @param: msg, peer
 //////////////////////////////////////////////////////////////////
-void SCAgent::HandlePeerlist(CMessage msg, PeerNodePtr peer)
+void SCAgent::HandlePeerList(CMessage msg, PeerNodePtr peer)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     std::string line_ = peer->GetUUID();
     m_scleader = peer->GetUUID();
     Logger.Info << "Peer List received from Group Leader: " << peer->GetUUID() <<std::endl;
     // Process the peer list.
-    m_AllPeers = gm::GMAgent::ProcessPeerlist(msg,GetConnectionManager());
+    m_AllPeers = gm::GMAgent::ProcessPeerList(msg,GetConnectionManager());
     
     //if only one node left
     if (m_AllPeers.size()==1)

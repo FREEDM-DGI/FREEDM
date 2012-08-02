@@ -97,7 +97,7 @@ class GMAgent
     /// Handles receiving incoming messages.
     virtual void HandleAny(CMessage msg,PeerNodePtr peer);
     /// Hadles recieving peerlists
-    void HandlePeerlist(CMessage msg,PeerNodePtr peer);
+    void HandlePeerList(CMessage msg,PeerNodePtr peer);
     /// Handles recieving accept messsages
     void HandleAccept(CMessage msg,PeerNodePtr peer);
     /// Handles recieving are you coordinator messages
@@ -114,10 +114,12 @@ class GMAgent
     void HandleClock(CMessage msg,PeerNodePtr peer);
     /// Handles recieving clock skews
     void HandleClockSkew(CMessage msg,PeerNodePtr peer);
+    /// Handles recieving peerlist requests
+    void HandlePeerListQuery(CMessage msg, PeerNodePtr peer);
 
     // Processors
-    /// Handles Processing a Peerlist
-    static PeerSet ProcessPeerlist(CMessage msg, CConnectionManager& connmgr);
+    /// Handles Processing a PeerList
+    static PeerSet ProcessPeerList(CMessage msg, CConnectionManager& connmgr);
     
     //Routines
     /// Checks for other up leaders
@@ -152,11 +154,13 @@ class GMAgent
     /// Creates a AYT, used for Timeout
     CMessage AreYouThere();
     /// Generates a peer list
-    CMessage PeerList();
+    CMessage PeerList(std::string requester="any");
     /// Generates a request to read the remote clock
     CMessage ClockRequest();
     /// Generates a message informing a node of their new clock skew
     CMessage ClockSkew(boost::posix_time::time_duration t);
+    /// Generates a CMessage that can be used to query for the group
+    static CMessage PeerListQuery(std::string requester);
 
     // This is the main loop of the algorithm
     /// Called to start the system

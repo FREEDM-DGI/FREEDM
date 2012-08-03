@@ -226,7 +226,7 @@ void LBAgent::SendMsg(std::string msg, PeerSet peerSet_)
     m_.m_submessages.put("lb.source", GetUUID());
     m_.SetHandler("lb."+ msg);
     Logger.Notice << "Sending '" << msg << "' from: "
-                   << m_.m_submessages.get<std::string>("lb.source") <<std::endl;
+                   << m_.m_submessages.get<std::string>("lb.source") << std::endl;
     foreach( PeerNodePtr peer, peerSet_ | boost::adaptors::map_values)
     {
         if( peer->GetUUID() == GetUUID())
@@ -266,7 +266,7 @@ void LBAgent::SendNormal(double Normal)
 
     if(m_Leader == GetUUID())
     {
-        Logger.Info <<"Sending Computed Normal to the group members" <<std::endl;
+        Logger.Status <<"Sending Computed Normal to the group members" <<std::endl;
         CMessage m_;
         m_.m_submessages.put("lb.source", GetUUID());
         m_.SetHandler("lb.ComputedNormal");
@@ -428,7 +428,10 @@ void LBAgent::LoadTable()
             &device::SumValues);
     m_Gateway = m_phyDevManager->GetValue<SST>(&SST::GetGateway, 
             &device::SumValues);
-    m_CalcGateway = m_Load - m_Gen;
+    if (numSSTs >= 1)
+    m_CalcGateway = m_Gateway;
+    else
+    m_CalcGateway = m_Load - m_Gen - m_Storage;
 
     std::stringstream ss;
     ss << "----------- LOAD TABLE (Power Management) ------------"
@@ -450,11 +453,11 @@ void LBAgent::LoadTable()
 
     //Compute the Load state based on the current gateway value and Normal
     //TODO: API for future-could be the cost consensus algorithm from NCSU
-    if(m_Gateway < m_Normal - NORMAL_TOLERANCE)
+    if(m_CalcGateway < m_Normal - NORMAL_TOLERANCE)
     {
         m_Status = LBAgent::SUPPLY;
     }
-    else if(m_Gateway > m_Normal + NORMAL_TOLERANCE)
+    else if(m_CalcGateway > m_Normal + NORMAL_TOLERANCE)
     {
         m_Status = LBAgent::DEMAND;
         m_DemandVal = m_Gateway-m_Normal;
@@ -628,8 +631,9 @@ void LBAgent::HandleDemand(CMessage msg, PeerNodePtr peer)
     // --------------------------------------------------------------
     // You received a Demand message from the source
     // --------------------------------------------------------------
-    if(peer->GetUUID() != GetUUID())
+    if(peer->GetUUID() == GetUUID())
         return;
+
     if(CountInPeerSet(m_AllPeers,peer) == 0)
         return;
 
@@ -647,7 +651,7 @@ void LBAgent::HandleNormal(CMessage msg, PeerNodePtr peer)
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     if(CountInPeerSet(m_AllPeers,peer) == 0)
         return;
-    if(peer->GetUUID() != GetUUID())
+    if(peer->GetUUID() == GetUUID())
         return;
     // --------------------------------------------------------------
     // You received a Load change of source to Normal state
@@ -666,7 +670,7 @@ void LBAgent::HandleSupply(CMessage msg, PeerNodePtr peer)
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     if(CountInPeerSet(m_AllPeers,peer) == 0)
         return;
-    if(peer->GetUUID() != GetUUID())
+    if(peer->GetUUID() == GetUUID())
         return;
     // --------------------------------------------------------------
     // You received a message saying the source is in Supply state, which means
@@ -689,7 +693,7 @@ void LBAgent::HandleRequest(CMessage msg, PeerNodePtr peer)
     // --------------------------------------------------------------
     // You received a draft request
     // --------------------------------------------------------------
-    if(peer->GetUUID() != GetUUID())
+    if(peer->GetUUID() == GetUUID())
         return;
     Logger.Notice << "Request message received from: " << peer->GetUUID() << std::endl;
     // Just not to duplicate the peer, erase the existing entries of it
@@ -741,7 +745,7 @@ void LBAgent::HandleYes(CMessage msg, PeerNodePtr peer)
     // --------------------------------------------------------------
     if(CountInPeerSet(m_AllPeers,peer) == 0)
         return;
-    if(peer->GetUUID() != GetUUID())
+    if(peer->GetUUID() == GetUUID())
         return;
 
     Logger.Notice << "(Yes) from " << peer->GetUUID() << std::endl;
@@ -774,7 +778,7 @@ void LBAgent::HandleNo(CMessage msg, PeerNodePtr peer)
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     if(CountInPeerSet(m_AllPeers,peer) == 0)
         return;
-    if(peer->GetUUID() != GetUUID())
+    if(peer->GetUUID() == GetUUID())
         return;
     Logger.Notice << "(No) from " << peer->GetUUID() << std::endl;
 }
@@ -786,7 +790,7 @@ void LBAgent::HandleDrafting(CMessage msg, PeerNodePtr peer)
     //You received a Drafting message in reponse to your Demand
     //Ackowledge by sending an 'Accept' message
     // --------------------------------------------------------------
-    if(peer->GetUUID() != GetUUID())
+    if(peer->GetUUID() == GetUUID())
         return;
     if(CountInPeerSet(m_AllPeers,peer) == 0)
         return;
@@ -819,7 +823,10 @@ void LBAgent::HandleDrafting(CMessage msg, PeerNodePtr peer)
 
             // Make necessary power setting accordingly to allow power migration
             // !!!NOTE: You may use Step_PStar() or PStar(m_DemandVal) currently
-            Step_PStar();
+            if (numSSTs >= 1)
+               Step_PStar();
+            else
+               Desd_PStar();
         }
         else
         {
@@ -831,7 +838,7 @@ void LBAgent::HandleDrafting(CMessage msg, PeerNodePtr peer)
 void LBAgent::HandleAccept(CMessage msg, PeerNodePtr peer)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    if(peer->GetUUID() != GetUUID())
+    if(peer->GetUUID() == GetUUID())
         return;
     if(CountInPeerSet(m_AllPeers,peer) == 0)
         return;
@@ -850,8 +857,11 @@ void LBAgent::HandleAccept(CMessage msg, PeerNodePtr peer)
     {
         // Make necessary power setting accordingly to allow power migration
         Logger.Warn<<"Migrating power on request from: "<< peer->GetUUID() << std::endl;
-        // !!!NOTE: You may use Step_PStar() or PStar(DemandValue) currently
-        Step_PStar();
+	// !!!NOTE: You may use Step_PStar() or PStar(DemandValue) currently
+        if (numSSTs >= 1)
+           Step_PStar();
+        else
+           Desd_PStar();
     }//end if( LBAgent::SUPPLY == m_Status)
     else
     {
@@ -883,8 +893,11 @@ void LBAgent::HandleCollectedState(CMessage msg, PeerNodePtr peer)
         {
             Logger.Status << "SC module returned intransit messages: "
                 << v.second.data() << std::endl;
-            if(v.second.data() == "accept")
+            if(v.second.data() == "accept"){
+	    Logger.Notice << "SC module returned values: "
+			  << v.second.data() << std::endl;
                 agg_gateway += P_Migrate;
+             }
         }
     }
     if(peercount != 0)
@@ -989,6 +1002,44 @@ void LBAgent::PStar(device::SettingValue DemandValue)
         }
     }
 }
+
+////////////////////////////////////////////////////////////
+/// Desd_PStar
+/// @description Initiates 'power migration' by stepping up/down P* by value,
+///              P_Migrate. Set on DESD is done according to demand state
+/// @pre: Current load state of this node is 'Supply' or 'Demand'
+/// @post: Set command(s) to DESD
+/// @limitations Use the P_Migrate directive in this file to change step size
+/////////////////////////////////////////////////////////
+void LBAgent::Desd_PStar()
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    typedef device::CDeviceDesd DESD;
+    std::vector<DESD::Pointer> DESDContainer;
+    std::vector<DESD::Pointer>::iterator it, end;
+    DESDContainer = m_phyDevManager->GetDevicesOfType<DESD>();
+
+    for( it = DESDContainer.begin(), end = DESDContainer.end(); it != end; it++ )
+    {
+        if(LBAgent::DEMAND == m_Status)
+        {
+            m_PStar = (*it)->GetStorage() + P_Migrate;
+            (*it)->StepStorage(P_Migrate);
+            Logger.Notice << "P* (on DESD) = " << m_PStar << std::endl;
+        }
+        else if(LBAgent::SUPPLY == m_Status)
+        {
+            m_PStar = (*it)->GetStorage() - P_Migrate;
+            (*it)->StepStorage(-P_Migrate);
+            Logger.Notice << "P* (on DESD) = " << m_PStar << std::endl;
+        }
+        else
+        {
+            Logger.Warn << "Power migration aborted due to state change " << std::endl;
+        }
+    }
+}
+
 
 ////////////////////////////////////////////////////////////
 /// InitiatePowerMigration

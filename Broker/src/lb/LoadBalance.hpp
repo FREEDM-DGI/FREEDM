@@ -193,8 +193,6 @@ class LBAgent
             m_phyDevManager;
 
         // Power migration functions 
-        /// 'Power migration' through controlling devices
-        void InitiatePowerMigration(device::SettingValue DemandValue);
         /// 'Power migration' by stepping up/down P* by a constant value
         void Step_PStar();
         /// 'Power migration' by stepping up/down P* basing on the demand cost
@@ -210,6 +208,7 @@ class LBAgent
         
         CBroker &m_broker;
         bool m_active;
+        bool m_sstExists;
 };
 
 } // namespace lb

@@ -137,6 +137,7 @@ LBAgent::LBAgent(std::string uuid_,
     RegisterSubhandle("lb.ComputedNormal",boost::bind(&LBAgent::HandleComputedNormal, this, _1, _2));
     RegisterSubhandle("any",boost::bind(&LBAgent::HandleAny, this, _1, _2));
     m_active = false;
+    m_sstExists = false;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -429,7 +430,10 @@ void LBAgent::LoadTable()
     m_Gateway = m_phyDevManager->GetValue<SST>(&SST::GetGateway, 
             &device::SumValues);
     if (numSSTs >= 1)
+    {
     m_CalcGateway = m_Gateway;
+    m_sstExists = true;
+    }
     else
     m_CalcGateway = m_Load - m_Gen - m_Storage;
 
@@ -823,7 +827,7 @@ void LBAgent::HandleDrafting(CMessage msg, PeerNodePtr peer)
 
             // Make necessary power setting accordingly to allow power migration
             // !!!NOTE: You may use Step_PStar() or PStar(m_DemandVal) currently
-            if (numSSTs >= 1)
+            if (m_sstExists)
                Step_PStar();
             else
                Desd_PStar();
@@ -858,7 +862,7 @@ void LBAgent::HandleAccept(CMessage msg, PeerNodePtr peer)
         // Make necessary power setting accordingly to allow power migration
         Logger.Warn<<"Migrating power on request from: "<< peer->GetUUID() << std::endl;
 	// !!!NOTE: You may use Step_PStar() or PStar(DemandValue) currently
-        if (numSSTs >= 1)
+        if (m_sstExists)
            Step_PStar();
         else
            Desd_PStar();
@@ -1039,74 +1043,6 @@ void LBAgent::Desd_PStar()
         }
     }
 }
-
-
-////////////////////////////////////////////////////////////
-/// InitiatePowerMigration
-/// @description Initiates 'power migration' on Draft Accept
-///              message from a demand node
-/// @pre: Current load state of this node is 'Supply'
-/// @post: Set command(s) to reduce DESD charge
-/// @limitations Changes significantly depending on SST's control capability;
-///      for now, the supply node reduces the amount of power currently
-///      in use to charge DESDs
-///TODO: This function may be used in future; obsolete for now
-/////////////////////////////////////////////////////////
-//void LBAgent::InitiatePowerMigration(device::SettingValue DemandValue)
-//{
-//  typedef std::map<device::SettingValue,device::Identifier> DeviceMap;
-//  typedef device::CDeviceDESD DESD;
-
-//  // Container and iterators for the result of GetDevicesOfType
-//  CPhysicalDeviceManager::PhysicalDevice<DESD>::Container DESDContainer;
-//  CPhysicalDeviceManager::PhysicalDevice<DESD>::iterator it, end;
-
-//  // Make a map of DESDs
-//  DeviceMap DESDMap;
-
-//  // Temp variables to hold "vin" and "vout"
-//  device::SettingValue V_in, V_out;
-
-//  //Sort the DESDs by decreasing order of their "vin"s; achieved by inserting into map
-//  DESDContainer = m_phyDevManager->GetDevicesOfType<DESD>();
-//  for( it = DESDContainer.begin(), end = DESDContainer.end(); it != end; it++ )
-//  {
-//    DESDMap.insert( DeviceMap::value_type((*it)->Get("powerLevel"), (*it)->GetID()) );
-//  }
-
-//  //Use a reverse iterator on map to retrieve elements in reverse sorted order
-//  DeviceMap::reverse_iterator mapIt_;
-//  // temp variable to hold the P_migrate set by Demanding node
-//  device::SettingValue temp_ = m_DemandVal;
-
-//  for( mapIt_ = DESDMap.rbegin(); mapIt_ != DESDMap.rend(); ++mapIt_ )
-//  {
-//    V_in = mapIt_->first; //load "vin" from the DESDmap
-
-//    // Using the below if-else structure, what we are doing is as follows:
-//    // Use the DESD that has highest input from DRERs and reduce this input;
-//    // The key assumption here is that the SST (PSCAD Model) will figure out
-//    // the way to route this surplus on to the grid
-//    // Next use the DESD with next highest input and so on till net demand
-//    // (P_migrate) is satisfied
-//    if(temp_ <= V_in)
-//    {
-//      V_in = V_in - temp_;
-//      //Then set the V_in accordingly on that particular device
-//      //m_phyDevManager->GetDevice(mapIt_->second)->Set("vin", V_in);
-//    }
-//    else
-//    {
-//      temp_ = temp_ - V_in;
-//      V_in = 0;
-//      //Then set the vin and vout accordingly on that particular device
-//      //m_phyDevManager->GetDevice(mapIt_->second)->Set("vin", V_in);
-//    }
-//  }//end for
-
-//  // Clear the DRER map
-//  DESDMap.clear();
-//}
 
 ////////////////////////////////////////////////////////////
 /// StartStateTimer

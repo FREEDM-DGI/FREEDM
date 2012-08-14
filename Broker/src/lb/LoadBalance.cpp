@@ -9,7 +9,7 @@
 ///
 /// @description  Main file describing power management/load balancing algorithm
 ///
-/// @functions  
+/// @functions
 ///	LBAgent
 ///     Run
 ///     AddPeer
@@ -58,6 +58,7 @@
 #include <algorithm>
 #include <cassert>
 #include <exception>
+#include <functional>
 #include <sys/types.h>
 #include <unistd.h>
 #include <iomanip>
@@ -82,14 +83,14 @@
 using boost::property_tree::ptree;
 
 #include "CLogger.hpp"
-#include "device/DeviceMath.hpp"
+#include "device/CPhysicalDeviceManager.hpp"
 
 namespace freedm {
 
 namespace broker {
 
 namespace lb {
-    
+
 namespace {
 
 /// This file's logger.
@@ -111,7 +112,7 @@ CLocalLogger Logger(__FILE__);
 ///////////////////////////////////////////////////////////////////////////////
 LBAgent::LBAgent(std::string uuid_,
                  CBroker &broker,
-                 device::CPhysicalDeviceManager::Pointer 
+                 device::CPhysicalDeviceManager::Pointer
                     m_phyManager):
     IPeerNode(uuid_, broker.GetConnectionManager()),
     m_phyDevManager(m_phyManager),
@@ -213,11 +214,11 @@ LBAgent::PeerNodePtr LBAgent::GetPeer(std::string uuid)
 /// @description  Prepares a generic message and sends to a specific group
 /// @pre: The caller passes the message to be sent, as a string
 /// @post: Message is prepared and sent
-/// @param msg: The message to be sent  
+/// @param msg: The message to be sent
 /// @param peerSet_: The group of peers that should receive the message
 /// @peer Each peer that exists in the peerSet_
-/// @error If the message cannot be sent, an exception is thrown and the 
-///	   process continues 
+/// @error If the message cannot be sent, an exception is thrown and the
+///	   process continues
 /// @limitations Group should be a PeerSet
 /////////////////////////////////////////////////////////
 void LBAgent::SendMsg(std::string msg, PeerSet peerSet_)
@@ -252,13 +253,13 @@ void LBAgent::SendMsg(std::string msg, PeerSet peerSet_)
 /// SendNormal
 /// @description  Compute Normal if you are the Leader and push
 ///               it to the group members
-/// @pre: You should be the leader and you should have called StateNormalize() 
+/// @pre: You should be the leader and you should have called StateNormalize()
 ///	  prior to this
 /// @post: The group members are sent the computed normal
 /// @param Normal: The value of normal to be sent to the group memebers
 /// @peer Each peer that exists in the peer set, m_AllPeers
-/// @error If the message cannot be sent, an exception is thrown and the 
-///	   process continues 
+/// @error If the message cannot be sent, an exception is thrown and the
+///	   process continues
 /// @limitations None
 /////////////////////////////////////////////////////////
 void LBAgent::SendNormal(double Normal)
@@ -293,10 +294,10 @@ void LBAgent::SendNormal(double Normal)
 /// @pre: Called only on state timeout or when you are the new leader
 /// @post: SC module receives the request and initiates state collection
 /// @peer  This node (SC module)
-/// @error If the message cannot be sent, an exception is thrown and the 
+/// @error If the message cannot be sent, an exception is thrown and the
 ///	   process continues
 /// @limitations
-/// TODO: Have a generic request message with exact entity to be included in 
+/// TODO: Have a generic request message with exact entity to be included in
 ///       state collection; eg., LB requests gateways only.
 /////////////////////////////////////////////////////////
 void LBAgent::CollectState()
@@ -327,9 +328,9 @@ void LBAgent::CollectState()
 /// @pre: Node is not in Fail state
 /// @post: Load state change is monitored, specific load changes are
 ///        advertised to peers and restarts on timeout
-/// @peers All peers in case of Demand state and transition to Normal from 
-///        Demand;  
-/// @limitations                
+/// @peers All peers in case of Demand state and transition to Normal from
+///        Demand;
+/// @limitations
 /////////////////////////////////////////////////////////
 void LBAgent::LoadManage()
 {
@@ -361,7 +362,7 @@ void LBAgent::LoadManage()
     }
 
     //Start the timer; on timeout, this function is called again
-    m_broker.Schedule(m_GlobalTimer, boost::posix_time::milliseconds(LOAD_TIMEOUT), 
+    m_broker.Schedule(m_GlobalTimer, boost::posix_time::milliseconds(LOAD_TIMEOUT),
         boost::bind(&LBAgent::LoadManage, this,boost::asio::placeholders::error));
 }//end LoadManage
 
@@ -375,7 +376,7 @@ void LBAgent::LoadManage()
 void LBAgent::LoadManage( const boost::system::error_code& err )
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    
+
     if(!err)
     {
         LoadManage();
@@ -396,20 +397,20 @@ void LBAgent::LoadManage( const boost::system::error_code& err )
 
 ////////////////////////////////////////////////////////////
 /// LoadTable
-/// @description  Reads values from attached physical devices via the physical 
-///		  device manager, determines the demand state of this node 
+/// @description  Reads values from attached physical devices via the physical
+///		  device manager, determines the demand state of this node
 ///		  and prints the load table
 /// @pre: LoadManage calls this function
 /// @post: Aggregate attributes are computed, new demand state is determined and
 ///        demand states of peers are printed
 /// @limitations Some entries in Load table could become stale relative to the
-///              global state. The definition of Supply/Normal/Demand could 
+///              global state. The definition of Supply/Normal/Demand could
 ///		 change in future
 /////////////////////////////////////////////////////////
 void LBAgent::LoadTable()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    
+
     // device typedef for convenience
     typedef device::CDeviceDrer DRER;
     typedef device::CDeviceDesd DESD;
@@ -421,14 +422,14 @@ void LBAgent::LoadTable()
     int numLOADs = m_phyDevManager->GetDevicesOfType<LOAD>().size();
     int numSSTs = m_phyDevManager->GetDevicesOfType<SST>().size();
 
-    m_Gen = m_phyDevManager->GetValue<DRER>(&DRER::GetGeneration, 
-            &device::SumValues);
-    m_Storage = m_phyDevManager->GetValue<DESD>(&DESD::GetStorage, 
-            &device::SumValues);
-    m_Load = m_phyDevManager->GetValue<LOAD>(&LOAD::GetLoad, 
-            &device::SumValues);
-    m_Gateway = m_phyDevManager->GetValue<SST>(&SST::GetGateway, 
-            &device::SumValues);
+    m_Gen = m_phyDevManager->GetValue<DRER>(&DRER::GetGeneration,
+            std::plus<device::SettingValue>());
+    m_Storage = m_phyDevManager->GetValue<DESD>(&DESD::GetStorage,
+            std::plus<device::SettingValue>());
+    m_Load = m_phyDevManager->GetValue<LOAD>(&LOAD::GetLoad,
+            std::plus<device::SettingValue>());
+    m_Gateway = m_phyDevManager->GetValue<SST>(&SST::GetGateway,
+            std::plus<device::SettingValue>());
     if (numSSTs >= 1)
     {
     m_CalcGateway = m_Gateway;
@@ -441,10 +442,10 @@ void LBAgent::LoadTable()
     ss << "----------- LOAD TABLE (Power Management) ------------"
             << std::endl;
     ss << "\t| " << "Net DRER (" << numDRERs << "): " << m_Gen
-            << std::setw(14) << "Net DESD (" << numDESDs << "): " 
+            << std::setw(14) << "Net DESD (" << numDESDs << "): "
             << "   " << m_Storage  << std::endl;
     ss << "\t| " << "Net Load (" << numLOADs << "): " << m_Load
-            << std::setw(17) << "Net Gateway (" << numSSTs << "): " 
+            << std::setw(17) << "Net Gateway (" << numSSTs << "): "
             << m_Gateway << std::endl;
     ss << "\t| Normal = " << m_Normal << std::setw(23)
             << "Calc Gateway: " << "   " << m_CalcGateway  << std::endl;
@@ -473,7 +474,7 @@ void LBAgent::LoadTable()
 
     //Update info about this node in the load table based on above computation
     foreach( PeerNodePtr self_, m_AllPeers | boost::adaptors::map_values)
-    { 
+    {
         if( self_->GetUUID() == GetUUID())
         {
             EraseInPeerSet(m_LoNodes,self_);
@@ -521,7 +522,7 @@ void LBAgent::LoadTable()
         }
     }
     ss << "\t -----------------------------------------------------";
-    
+
     Logger.Status << ss.str() << std::endl;
 }//end LoadTable
 
@@ -532,12 +533,12 @@ void LBAgent::LoadTable()
 /// @pre: Current load state of this node is 'Supply'
 /// @post: Send "request" message to peers in demand state
 /// @limitations Currently broadcasts request to all the entries in the list of
-///              demand nodes. 
+///              demand nodes.
 /////////////////////////////////////////////////////////
 void LBAgent::SendDraftRequest()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    
+
     if(LBAgent::SUPPLY == m_Status)
     {
         if(m_HiNodes.empty())
@@ -561,9 +562,9 @@ void LBAgent::SendDraftRequest()
 /// @post: The sender of the message always gets a response from this node
 /// @return: Multiple objectives depending on the message received and
 ///          power migration on successful negotiation
-/// @param msg: The message dispatched by broker read handler 
+/// @param msg: The message dispatched by broker read handler
 /// @peers The members of the group or a subset of, from whom message was received
-/// @limitations: 
+/// @limitations:
 /////////////////////////////////////////////////////////
 void LBAgent::HandleAny(CMessage msg, PeerNodePtr peer)
 {
@@ -575,7 +576,7 @@ void LBAgent::HandleAny(CMessage msg, PeerNodePtr peer)
     line_ = msg.GetSourceUUID();
     ptree pt = msg.GetSubMessages();
     Logger.Debug << "Message '" <<pt.get<std::string>("lb","NOEXECPTION")<<"' received from "<< line_<<std::endl;
-    
+
     if(msg.GetHandler().find("lb") == 0)
     {
         Logger.Error<<"Unhandled Load Balancing Message"<<std::endl;
@@ -584,10 +585,10 @@ void LBAgent::HandleAny(CMessage msg, PeerNodePtr peer)
         throw std::runtime_error("Unhandled Load Balancing Message");
     }
 }
-   
+
 
 void LBAgent::HandlePeerList(CMessage msg, PeerNodePtr peer)
-{ 
+{
     // --------------------------------------------------------------
     // If you receive a peerList from your new leader, process it and
     // identify your new group members
@@ -604,14 +605,14 @@ void LBAgent::HandlePeerList(CMessage msg, PeerNodePtr peer)
     }
 
     //Update the PeerNode lists accordingly
-    //TODO:Not sure if similar loop is needed to erase each peerset 
+    //TODO:Not sure if similar loop is needed to erase each peerset
     //individually. peerset.clear() doesn`t work for obvious reasons
     foreach( PeerNodePtr p_, m_AllPeers | boost::adaptors::map_values)
     {
         if( p_->GetUUID() == GetUUID())
         {
             continue;
-        }          
+        }
         EraseInPeerSet(m_AllPeers,p_);
         //Assuming that any node in m_AllPeers exists in one of the following
         EraseInPeerSet(m_HiNodes,p_);
@@ -799,7 +800,7 @@ void LBAgent::HandleDrafting(CMessage msg, PeerNodePtr peer)
     if(CountInPeerSet(m_AllPeers,peer) == 0)
         return;
     Logger.Notice << "Drafting message received from: " << peer->GetUUID() << std::endl;
-    
+
     if(LBAgent::DEMAND == m_Status)
     {
         CMessage m_;
@@ -969,7 +970,7 @@ void LBAgent::Step_PStar()
 ///              to m_Normal
 /// @pre: Current load state of this node is 'Supply' or 'Demand'
 /// @post: Set command(s) to set SST
-/// @limitations It could be revised based on requirements. Might not be 
+/// @limitations It could be revised based on requirements. Might not be
 ///		 necessary after adding the code to handle intransit messages
 /////////////////////////////////////////////////////////
 void LBAgent::PStar(device::SettingValue DemandValue)
@@ -1072,7 +1073,7 @@ void LBAgent::StartStateTimer( unsigned int delay )
 void LBAgent::HandleStateTimer( const boost::system::error_code & error )
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    
+
     if( !error && (m_Leader == GetUUID()) )
     {
         //Initiate state collection if you are the m_Leader

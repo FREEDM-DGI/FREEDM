@@ -17,8 +17,8 @@
 ///     Neither the authors nor Missouri S&T make any warranty, express or
 ///     implied, nor assume any legal responsibility for the accuracy,
 ///     completeness, or usefulness of these files or any information
-///     distributed with these files. 
-///     
+///     distributed with these files.
+///
 ///     Suggested modifications or questions about these files can be directed
 ///     to Dr. Bruce McMillin, Department of Computer Science, Missouri
 ///     University of Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
@@ -43,7 +43,7 @@ CLocalLogger Logger(__FILE__);
 
 ///////////////////////////////////////////////////////////////////////////////
 /// Constructor for the physical device manager
-/// 
+///
 /// @pre None
 /// @post PhysicalDeviceManager is ready to accept & distribute devices.
 ///////////////////////////////////////////////////////////////////////////////
@@ -53,11 +53,11 @@ CPhysicalDeviceManager::CPhysicalDeviceManager()
 }
 ///////////////////////////////////////////////////////////////////////////////
 /// Registers a device with the physical device manager.
-/// 
+///
 /// @pre The physical device manager is initialized
 /// @post The device has been registered with the manager and is ready to
 ///  retrieve
-/// 
+///
 /// @param resource a IPhysicalDevice::DevicePtr to the device.
 ///////////////////////////////////////////////////////////////////////////////
 void CPhysicalDeviceManager::AddDevice(IDevice::Pointer resource)
@@ -169,36 +169,19 @@ unsigned int CPhysicalDeviceManager::CountActiveFids() const
 }
 
 /// @todo
-SettingValue CPhysicalDeviceManager::GetValue(std::string devtype,
-std::string value, SettingValue(*math)( SettingValue, SettingValue ))
-{
-    SettingValue result = 0;
-    
-    std::vector<IDevice::Pointer> devices = GetDevicesOfType(devtype);
-    std::vector<IDevice::Pointer>::iterator it, end;
-    
-    for( it = devices.begin(), end = devices.end(); it != end; it++ )
-    {
-        result = math(result, (*it)->Get(value));
-    }
-    
-    return result;
-}
-
-/// @todo
 std::vector<SettingValue> CPhysicalDeviceManager::GetValueVector(
     std::string devtype, std::string value)
 {
     std::vector<SettingValue> results;
-    
+
     std::vector<IDevice::Pointer> devices = GetDevicesOfType(devtype);
     std::vector<IDevice::Pointer>::iterator it, end;
-    
+
     for( it = devices.begin(), end = devices.end(); it != end; it++ )
     {
         results.push_back((*it)->Get(value));
     }
-    
+
     return results;
 }
 

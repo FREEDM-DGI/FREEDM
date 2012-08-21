@@ -17,8 +17,8 @@
 ///     Neither the authors nor Missouri S&T make any warranty, express or
 ///     implied, nor assume any legal responsibility for the accuracy,
 ///     completeness, or usefulness of these files or any information
-///     distributed with these files. 
-///     
+///     distributed with these files.
+///
 ///     Suggested modifications or questions about these files can be directed
 ///     to Dr. Bruce McMillin, Department of Computer Science, Missouri
 ///     University of Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
@@ -111,23 +111,25 @@ public:
     const std::vector<typename DeviceType::Pointer> GetDevicesOfType();
 
     /// @todo takes a bit of effort to make this const
-    SettingValue GetValue(std::string devtype, std::string value,
-        SettingValue(*math)( SettingValue, SettingValue ));
-    
+    template <class BinaryOp>
+    SettingValue GetValue(std::string devtype,
+                          std::string value,
+                          BinaryOp math);
+
     /// @todo takes a bit of effort to make this const
     std::vector<SettingValue> GetValueVector(std::string devtype,
         std::string value);
-    
+
     /// @todo
-    template <class DeviceType>
+    template <class DeviceType, class BinaryOp>
     SettingValue GetValue(SettingValue(DeviceType::*getter)( ) const,
-        SettingValue(*math)( SettingValue, SettingValue )) const;
+    BinaryOp math) const;
 
     /// @todo
     template <class DeviceType>
     std::vector<SettingValue> GetValueVector(
         SettingValue(DeviceType::*getter)( ) const) const;
- 
+
     /// @todo
     unsigned int CountActiveFids() const;
 
@@ -159,10 +161,10 @@ CPhysicalDeviceManager::GetDevicesOfType()
 }
 
 // @todo
-template <class DeviceType>
+template <class DeviceType, class BinaryOp>
 SettingValue CPhysicalDeviceManager::GetValue(
-SettingValue(DeviceType::*getter)( ) const,
-SettingValue(*math)( SettingValue, SettingValue )) const
+        SettingValue(DeviceType::*getter)( ) const,
+        BinaryOp math) const
 {
     SettingValue result = 0;
     typename DeviceType::Pointer next_device;
@@ -172,7 +174,7 @@ SettingValue(*math)( SettingValue, SettingValue )) const
         // attempt to convert each managed device to DeviceType
         if (( next_device = device_cast<DeviceType > ( it->second ) ))
         {
-            result = math(result, ( ( ( *next_device ).*( getter ) )( ) ));
+            result = math(result, ( ( *next_device ).*( getter ) )( ) );
         }
     }
 
@@ -197,6 +199,24 @@ SettingValue(DeviceType::*getter)( ) const) const
     }
 
     return results;
+}
+
+/// @todo
+template <class BinaryOp>
+SettingValue CPhysicalDeviceManager::GetValue(std::string devtype,
+std::string value, BinaryOp math)
+{
+    SettingValue result = 0;
+
+    std::vector<IDevice::Pointer> devices = GetDevicesOfType(devtype);
+    std::vector<IDevice::Pointer>::iterator it, end;
+
+    for( it = devices.begin(), end = devices.end(); it != end; it++ )
+    {
+        result = math(result, (*it)->Get(value));
+    }
+
+    return result;
 }
 
 } // namespace device

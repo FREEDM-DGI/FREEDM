@@ -53,6 +53,7 @@ namespace freedm {
 
 /// A reliable connection protocol with sweet as expirations.
 class CSRConnection : public IProtocol
+    , public boost::enable_shared_from_this<CSRConnection>
 {
     public:
         /// Initializes the protocol with the underlying connection
@@ -70,7 +71,7 @@ class CSRConnection : public IProtocol
         /// Sends a synchronizer
         void SendSYN();
         /// Stops the timers
-        void Stop() { m_timeout.cancel(); };
+        void Stop() { m_timeout.cancel(); SetStopped(true); };
         /// Returns the identifier
         std::string GetIdentifier() { return Identifier(); };
         /// Returns the identifier for this protocol.

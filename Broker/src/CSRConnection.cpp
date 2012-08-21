@@ -100,6 +100,7 @@ CSRConnection::CSRConnection(CConnection *  conn)
 void CSRConnection::Send(CMessage msg)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    
     unsigned int msgseq;
 
     if(m_outsync == false)
@@ -154,7 +155,7 @@ void CSRConnection::Send(CMessage msg)
 void CSRConnection::Resend(const boost::system::error_code& err)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    if(!err)
+    if(!err && !GetStopped())
     {
         Logger.Trace<<__PRETTY_FUNCTION__<<" Checking ACK"<<std::endl;
         // Check if the front of the queue is an ACK
@@ -211,7 +212,7 @@ void CSRConnection::Resend(const boost::system::error_code& err)
             // Head of window can be killed.
             m_timeout.cancel();
             m_timeout.expires_from_now(boost::posix_time::milliseconds(REFIRE_TIME));
-            m_timeout.async_wait(boost::bind(&CSRConnection::Resend,this,
+            m_timeout.async_wait(boost::bind(&CSRConnection::Resend,shared_from_this(),
                 boost::asio::placeholders::error));
         }
     }
@@ -418,7 +419,7 @@ void CSRConnection::SendACK(const CMessage &msg)
     /// Hook into resend until the message expires.
     m_timeout.cancel();
     m_timeout.expires_from_now(boost::posix_time::milliseconds(REFIRE_TIME));
-    m_timeout.async_wait(boost::bind(&CSRConnection::Resend,this,
+    m_timeout.async_wait(boost::bind(&CSRConnection::Resend,shared_from_this(),
         boost::asio::placeholders::error));
 }
 

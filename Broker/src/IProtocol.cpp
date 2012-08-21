@@ -57,6 +57,9 @@ void IProtocol::Write(CMessage msg)
     /// Appalling heap of junk that didn't even work the way you expected it
     /// to. So, we're going to do something different.
 
+    if(GetStopped())
+        return;
+
     std::stringstream oss;
     std::string raw;
     /// Record the out message to the stream

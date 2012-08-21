@@ -57,7 +57,7 @@ class IProtocol
 {
     public:
         /// Initializes the protocol with the underlying connection
-        IProtocol(CConnection * conn) : m_conn(conn) { };
+        IProtocol(CConnection * conn) : m_conn(conn), m_stopped(false) { };
         /// Destroy all humans
         virtual ~IProtocol() { };
         /// Public write to channel function
@@ -70,6 +70,10 @@ class IProtocol
         virtual void SendACK(const CMessage &msg) = 0;
         /// Handles Stopping the timers etc
         virtual void Stop() = 0;
+        /// Handles checking to see if the connection is stopped
+        bool GetStopped() { return m_stopped; };
+        /// Handles setting the stopped variable
+        void SetStopped(bool v) { m_stopped = v; };
         /// Returns the identifier for this protocol
         virtual std::string GetIdentifier() = 0;
         /// Returns a pointer to the underlying connection.
@@ -86,6 +90,8 @@ class IProtocol
         boost::array<char, CReliableConnection::MAX_PACKET_SIZE> m_buffer;
         /// The underlying and related connection object.
         CConnection * m_conn;
+        /// Tracker for the stoppedness of the connection
+        bool m_stopped;
 };
 
     }

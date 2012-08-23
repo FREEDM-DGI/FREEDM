@@ -91,7 +91,7 @@ target_link_libraries(
 )
 
 # run Doxygen
-add_custom_command(TARGET PosixBroker POST_BUILD COMMAND builddocs.sh)
+add_custom_command(TARGET PosixBroker POST_BUILD COMMAND ./builddocs.sh)
 
 if(BUILD_TESTS)
     enable_testing()

@@ -55,25 +55,33 @@ if not os.path.isfile(sys.argv[1]):
 
 state = KEEP_LINE_STATE
 
-def stateTransition(state):
+def stateTransition(state, line):
     """
-    1) Start throwing out lines when we reach @functions.
-    2) Stop throwing out lines when we reach the end of the comment header.
-    3) Don't throw out more lines if we hit @functions again.
+    stateTransition( int, string ) -> string
+
+    Start throwing out lines when we reach @functions or the license. Stop
+    throwing out lines when we reach the end of the comment header. The return
+    value of this function must be assigned to the state global
     """
     if state < 0 or state > 2:
         raise ValueError('Fatal: in unknown state %d' % state)
-    elif state == KEEP_LINE_STATE and '@functions' in line.lower():
-        state = DISCARD_LINE_STATE
-    elif state == KEEP_LINE_STATE and 'These source code files' in line.lower():
-        state = DISCARD_LINE_STATE
-    elif state == DISCARD_LINE_STATE and '/////////////////' in line:
-        state = KEEP_REMAINING_LINES_STATE
-    elif state == KEEP_REMAINING_LINES_STATE and '@functions' in line.lower():
-        print '%s: encountered @functions tag twice while parsing' % sys.argv[0]
+    elif state == KEEP_LINE_STATE:
+        if '@functions' in line:
+            return DISCARD_LINE_STATE
+        elif 'These source code files' in line:
+            return DISCARD_LINE_STATE
+        else:
+            return KEEP_LINE_STATE
+    elif state == DISCARD_LINE_STATE:
+        if '/////////////////' in line:
+            return KEEP_REMAINING_LINES_STATE
+        else:
+            return DISCARD_LINE_STATE
+    elif state == KEEP_REMAINING_LINES_STATE:
+        return KEEP_REMAINING_LINES_STATE
 
 for line in fileinput.input(): 
-    stateTransition(state)
+    state = stateTransition(state, line)
     if state == KEEP_LINE_STATE or state == KEEP_REMAINING_LINES_STATE:
         # Used for autogen code, but will trip up Doxygen
         if '##BREAK' in line:

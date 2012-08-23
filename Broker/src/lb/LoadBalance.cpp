@@ -1,15 +1,17 @@
-//////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
 /// @file         LoadBalance.cpp
 ///
 /// @author       Ravi Akella <rcaq5c@mst.edu>
-///
-/// @compiler     C++
 ///
 /// @project      FREEDM DGI
 ///
 /// @description  Main file describing power management/load balancing algorithm
 ///
-/// @functions
+/// @citations    A Distributed Drafting ALgorithm for Load Balancing,
+///               Lionel Ni, Chong Xu, Thomas Gendreau, IEEE Transactions on
+///               Software Engineering, 1985
+///
+/// @functions  
 ///	LBAgent
 ///     Run
 ///     AddPeer
@@ -26,70 +28,53 @@
 ///     StartStateTimer
 ///     HandleStateTimer
 ///
-/// @Citations  A Distributed Drafting ALgorithm for Load Balancing,
-///             Lionel Ni, Chong Xu, Thomas Gendreau, IEEE Transactions on
-///             Software Engineering, 1985
+/// These source code files were created at Missouri University of Science and
+/// Technology, and are intended for use in teaching or research. They may be
+/// freely copied, modified, and redistributed as long as modified versions are
+/// clearly marked as such and this notice is not removed. Neither the authors
+/// nor Missouri S&T make any warranty, express or implied, nor assume any legal
+/// responsibility for the accuracy, completeness, or usefulness of these files
+/// or any information distributed with these files.
 ///
-/// @license
-/// These source code files were created at as part of the
-/// FREEDM DGI Subthrust, and are
-/// intended for use in teaching or research.  They may be
-/// freely copied, modified and redistributed as long
-/// as modified versions are clearly marked as such and
-/// this notice is not removed.
-
-/// Neither the authors nor the FREEDM Project nor the
-/// National Science Foundation
-/// make any warranty, express or implied, nor assumes
-/// any legal responsibility for the accuracy,
-/// completeness or usefulness of these codes or any
-/// information distributed with these codes.
-
-/// Suggested modifications or questions about these codes
-/// can be directed to Dr. Bruce McMillin, Department of
-/// Computer Science, Missouri University of Science and
-/// Technology, Rolla,
-/// MO  65409 (ff@mst.edu).
-/////////////////////////////////////////////////////////
+/// Suggested modifications or questions about these files can be directed to
+/// Dr. Bruce McMillin, Department of Computer Science, Missouri University of
+/// Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
+////////////////////////////////////////////////////////////////////////////////
 
 #include "LoadBalance.hpp"
-#include "gm/GroupManagement.hpp"
+
+#include "CLogger.hpp"
 #include "CMessage.hpp"
+#include "gm/GroupManagement.hpp"
+
 #include <algorithm>
 #include <cassert>
+#include <cstdlib>
 #include <exception>
-#include <functional>
-#include <sys/types.h>
-#include <unistd.h>
-#include <iomanip>
 #include <fstream>
+#include <functional>
+#include <iomanip>
 #include <string>
-#include <stdlib.h>
-#include <iostream>
 #include <vector>
 
 #include <boost/asio.hpp>
 #include <boost/bind.hpp>
-#include <boost/range/adaptor/map.hpp>
-#include <boost/function.hpp>
-#include <boost/date_time/posix_time/posix_time_types.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
+#include <boost/date_time/posix_time/posix_time_types.hpp>
 #include <boost/foreach.hpp>
-#define foreach     BOOST_FOREACH
-
-#define P_Migrate 1
-
+#include <boost/function.hpp>
 #include <boost/property_tree/ptree.hpp>
-using boost::property_tree::ptree;
+#include <boost/range/adaptor/map.hpp>
 
-#include "CLogger.hpp"
-#include "device/CPhysicalDeviceManager.hpp"
+using boost::property_tree::ptree;
 
 namespace freedm {
 
 namespace broker {
 
 namespace lb {
+
+const unsigned int P_Migrate = 1;
 
 namespace {
 
@@ -229,7 +214,7 @@ void LBAgent::SendMsg(std::string msg, PeerSet peerSet_)
     m_.SetHandler("lb."+ msg);
     Logger.Notice << "Sending '" << msg << "' from: "
                    << m_.m_submessages.get<std::string>("lb.source") << std::endl;
-    foreach( PeerNodePtr peer, peerSet_ | boost::adaptors::map_values)
+    BOOST_FOREACH( PeerNodePtr peer, peerSet_ | boost::adaptors::map_values)
     {
         if( peer->GetUUID() == GetUUID())
         {
@@ -273,7 +258,7 @@ void LBAgent::SendNormal(double Normal)
         m_.m_submessages.put("lb.source", GetUUID());
         m_.SetHandler("lb.ComputedNormal");
         m_.m_submessages.put("lb.cnorm", boost::lexical_cast<std::string>(Normal));
-        foreach( PeerNodePtr peer, m_AllPeers | boost::adaptors::map_values)
+        BOOST_FOREACH( PeerNodePtr peer, m_AllPeers | boost::adaptors::map_values)
         {
             try
             {
@@ -473,7 +458,7 @@ void LBAgent::LoadTable()
     }
 
     //Update info about this node in the load table based on above computation
-    foreach( PeerNodePtr self_, m_AllPeers | boost::adaptors::map_values)
+    BOOST_FOREACH( PeerNodePtr self_, m_AllPeers | boost::adaptors::map_values)
     {
         if( self_->GetUUID() == GetUUID())
         {
@@ -496,7 +481,7 @@ void LBAgent::LoadTable()
         }
     }
     //Print the load information you have about the rest of the system
-    foreach( PeerNodePtr p_, m_AllPeers | boost::adaptors::map_values)
+    BOOST_FOREACH( PeerNodePtr p_, m_AllPeers | boost::adaptors::map_values)
     {
         //std::cout<<"| " << p_->GetUUID() << std::setw(12)<< "Grp Member"
         //                                   << std::setw(6) <<"|"<<std::endl;
@@ -607,7 +592,7 @@ void LBAgent::HandlePeerList(CMessage msg, PeerNodePtr peer)
     //Update the PeerNode lists accordingly
     //TODO:Not sure if similar loop is needed to erase each peerset
     //individually. peerset.clear() doesn`t work for obvious reasons
-    foreach( PeerNodePtr p_, m_AllPeers | boost::adaptors::map_values)
+    BOOST_FOREACH( PeerNodePtr p_, m_AllPeers | boost::adaptors::map_values)
     {
         if( p_->GetUUID() == GetUUID())
         {
@@ -620,7 +605,7 @@ void LBAgent::HandlePeerList(CMessage msg, PeerNodePtr peer)
         EraseInPeerSet(m_NoNodes,p_);
     }
     temp = gm::GMAgent::ProcessPeerList(msg,GetConnectionManager());
-    foreach( PeerNodePtr p_, temp | boost::adaptors::map_values )
+    BOOST_FOREACH( PeerNodePtr p_, temp | boost::adaptors::map_values )
     {
         PeerNodePtr p = GetPeer(p_->GetUUID());
         if(CountInPeerSet(m_AllPeers,p_) == 0)
@@ -883,7 +868,7 @@ void LBAgent::HandleCollectedState(CMessage msg, PeerNodePtr peer)
     int peercount=0;
     double agg_gateway=0;
     ptree pt = msg.GetSubMessages();
-	foreach(ptree::value_type &v, pt.get_child("CollectedState.state"))
+	BOOST_FOREACH(ptree::value_type &v, pt.get_child("CollectedState.state"))
 	{
 	    Logger.Notice << "SC module returned values: "
 			  << v.second.data() << std::endl;
@@ -894,7 +879,7 @@ void LBAgent::HandleCollectedState(CMessage msg, PeerNodePtr peer)
 	//Consider any intransit "accept" messages in agg_gateway calculation
     if(pt.get_child_optional("CollectedState.intransit"))
     {
-        foreach(ptree::value_type &v, pt.get_child("CollectedState.intransit"))
+        BOOST_FOREACH(ptree::value_type &v, pt.get_child("CollectedState.intransit"))
         {
             Logger.Status << "SC module returned intransit messages: "
                 << v.second.data() << std::endl;

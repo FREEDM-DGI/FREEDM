@@ -1,41 +1,39 @@
 ////////////////////////////////////////////////////////////////////////////////
-/// @file       CTableRTDS.hpp
+/// @file         CTableRTDS.hpp
 ///
-/// @author     Thomas Roth <tprfh7@mst.edu>
+/// @author       Thomas Roth <tprfh7@mst.edu>
 ///
-/// @project    FREEDM DGI
+/// @project      FREEDM DGI
 ///
-/// @description
-///     Defines a table of device variables defined by an XML input file.
+/// @description  Defines a table of device variables defined by an XML input
+///               file.
 ///
-/// @copyright
-///     These source code files were created at Missouri University of Science
-///     and Technology, and are intended for use in teaching or research. They
-///     may be freely copied, modified, and redistributed as long as modified
-///     versions are clearly marked as such and this notice is not removed.
-///     Neither the authors nor Missouri S&T make any warranty, express or
-///     implied, nor assume any legal responsibility for the accuracy,
-///     completeness, or usefulness of these files or any information
-///     distributed with these files. 
-///     
-///     Suggested modifications or questions about these files can be directed
-///     to Dr. Bruce McMillin, Department of Computer Science, Missouri
-///     University of Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
+/// These source code files were created at Missouri University of Science and
+/// Technology, and are intended for use in teaching or research. They may be
+/// freely copied, modified, and redistributed as long as modified versions are
+/// clearly marked as such and this notice is not removed. Neither the authors
+/// nor Missouri S&T make any warranty, express or implied, nor assume any legal
+/// responsibility for the accuracy, completeness, or usefulness of these files
+/// or any information distributed with these files.
+///
+/// Suggested modifications or questions about these files can be directed to
+/// Dr. Bruce McMillin, Department of Computer Science, Missouri University of
+/// Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
 ////////////////////////////////////////////////////////////////////////////////
 
 #ifndef C_TABLE_RTDS_HPP
 #define C_TABLE_RTDS_HPP
 
-#include <string>
-#include <sstream>
-#include <iostream>
-#include <stdexcept>
-
-#include <boost/thread/shared_mutex.hpp>
-
 #include "CDeviceKeyCoupled.hpp"
 #include "CTableStructure.hpp"
 #include "types/IDevice.hpp"
+
+#include <iostream>
+#include <sstream>
+#include <stdexcept>
+#include <string>
+
+#include <boost/thread/shared_mutex.hpp>
 
 namespace freedm {
 namespace broker {
@@ -43,9 +41,8 @@ namespace device {
 
 class CRtdsAdapter;
 
+/// Provides storage for data obtained from RTDS or commands to send.
 ////////////////////////////////////////////////////////////////////////////////
-/// @brief Provides storage for data obtained from RTDS or commands to send.
-/// 
 /// @description The table class stores a set of data indexed by device-key
 ///  combo object. Its internal structure is defined by an XML file passed to 
 ///  the constructor.

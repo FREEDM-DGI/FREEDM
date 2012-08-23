@@ -1,39 +1,39 @@
 ////////////////////////////////////////////////////////////////////////////////
-/// @file       CDeviceFactory.hpp
+/// @file         CDeviceFactory.hpp
 ///
-/// @author     Thomas Roth <tprfh7@mst.edu>
-/// @author     Michael Catanzaro <michael.catanzaro@mst.edu>
+/// @author       Thomas Roth <tprfh7@mst.edu>
+/// @author       Michael Catanzaro <michael.catanzaro@mst.edu>
 ///
-/// @project    FREEDM DGI
+/// @project      FREEDM DGI
 ///
-/// @description
-///     Handles the creation of devices and their structures.
+/// @description  Handles the creation of devices and their structures.
 ///
-/// @copyright
-///     These source code files were created at Missouri University of Science
-///     and Technology, and are intended for use in teaching or research. They
-///     may be freely copied, modified, and redistributed as long as modified
-///     versions are clearly marked as such and this notice is not removed.
-///     Neither the authors nor Missouri S&T make any warranty, express or
-///     implied, nor assume any legal responsibility for the accuracy,
-///     completeness, or usefulness of these files or any information
-///     distributed with these files.
-///    
-///     Suggested modifications or questions about these files can be directed
-///     to Dr. Bruce McMillin, Department of Computer Science, Missouri
-///     University of Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
+/// @functions
+///     CDeviceFactory::CreateDevice
+///
+/// These source code files were created at Missouri University of Science and
+/// Technology, and are intended for use in teaching or research. They may be
+/// freely copied, modified, and redistributed as long as modified versions are
+/// clearly marked as such and this notice is not removed. Neither the authors
+/// nor Missouri S&T make any warranty, express or implied, nor assume any legal
+/// responsibility for the accuracy, completeness, or usefulness of these files
+/// or any information distributed with these files.
+///
+/// Suggested modifications or questions about these files can be directed to
+/// Dr. Bruce McMillin, Department of Computer Science, Missouri University of
+/// Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
 ////////////////////////////////////////////////////////////////////////////////
 
-#ifndef C_DEVICE_FACTORY_HPP
-#define C_DEVICE_FACTORY_HPP
+#ifndef CDEVICEFACTORY_HPP
+#define CDEVICEFACTORY_HPP
+
+#include "CLogger.hpp"
+#include "config.hpp"
+#include "CPhysicalDeviceManager.hpp"
+#include "IPhysicalAdapter.hpp"
 
 #include <boost/asio/io_service.hpp>
 #include <boost/noncopyable.hpp>
-
-#include "CLogger.hpp"
-#include "CPhysicalDeviceManager.hpp"
-#include "IPhysicalAdapter.hpp"
-#include "config.hpp"
 
 namespace freedm {
 namespace broker {

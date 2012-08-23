@@ -1,47 +1,37 @@
-////////////////////////////////////////////////////////////////////
-/// @file      CConnectionManager.cpp
+////////////////////////////////////////////////////////////////////////////////
+/// @file         CConnectionManager.cpp
 ///
-/// @author    Derek Ditch <derek.ditch@mst.edu>
-///            Christopher M. Kohlhoff <chris@kohlhoff.com> (Boost Example)
-///            Stephen Jackson <scj7t4@mst.edu>
+/// @author       Derek Ditch <derek.ditch@mst.edu>
+/// @author       Christopher M. Kohlhoff <chris@kohlhoff.com> (Boost Example)
+/// @author       Stephen Jackson <scj7t4@mst.edu>
 ///
-/// @compiler  C++
+/// @project      FREEDM DGI
 ///
-/// @project   FREEDM DGI
+/// @description  ConnectionManager implemented based on a boost example 
 ///
-/// @description ConnectionManager implemented based on a boost example 
+/// These source code files were created at Missouri University of Science and
+/// Technology, and are intended for use in teaching or research. They may be
+/// freely copied, modified, and redistributed as long as modified versions are
+/// clearly marked as such and this notice is not removed. Neither the authors
+/// nor Missouri S&T make any warranty, express or implied, nor assume any legal
+/// responsibility for the accuracy, completeness, or usefulness of these files
+/// or any information distributed with these files.
 ///
-/// @license
-/// These source code files were created at as part of the
-/// FREEDM DGI Subthrust, and are
-/// intended for use in teaching or research.  They may be 
-/// freely copied, modified and redistributed as long
-/// as modified versions are clearly marked as such and
-/// this notice is not removed.
-/// 
-/// Neither the authors nor the FREEDM Project nor the
-/// National Science Foundation
-/// make any warranty, express or implied, nor assumes
-/// any legal responsibility for the accuracy,
-/// completeness or usefulness of these codes or any
-/// information distributed with these codes.
-///
-/// Suggested modifications or questions about these codes 
-/// can be directed to Dr. Bruce McMillin, Department of 
-/// Computer Science, Missouri University of Science and
-/// Technology, Rolla, MO  65409 (ff@mst.edu).
-////////////////////////////////////////////////////////////////////
+/// Suggested modifications or questions about these files can be directed to
+/// Dr. Bruce McMillin, Department of Computer Science, Missouri University of
+/// Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
+////////////////////////////////////////////////////////////////////////////////
 
-#include "CConnectionManager.hpp"
-#include "CConnection.hpp"
 #include "CBroker.hpp"
-#include <boost/thread/locks.hpp>
-
+#include "CConnection.hpp"
+#include "CConnectionManager.hpp"
 #include "config.hpp"
 #include "CLogger.hpp"
 
 #include <algorithm>
+
 #include <boost/bind.hpp>
+#include <boost/thread/locks.hpp>
 
 namespace freedm {
 namespace broker {
@@ -110,10 +100,10 @@ void CConnectionManager::PutHostname(std::string u_, std::string host_, std::str
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;  
     {
         boost::lock_guard< boost::mutex > scopedLock_( m_Mutex );
-        remotehost x;
+        SRemoteHost x;
         x.hostname = host_;
         x.port = port;
-        m_hostnames.insert(std::pair<std::string, remotehost>(u_, x));  
+        m_hostnames.insert(std::pair<std::string, SRemoteHost>(u_, x));  
     }
 }
 
@@ -126,12 +116,12 @@ void CConnectionManager::PutHostname(std::string u_, std::string host_, std::str
 /// @param u_ the uuid to enter into the map.
 /// @param host_ The hostname to enter into the map.
 ///////////////////////////////////////////////////////////////////////////////
-void CConnectionManager::PutHostname(std::string u_, remotehost host_)
+void CConnectionManager::PutHostname(std::string u_, SRemoteHost host_)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;  
     {
         boost::lock_guard< boost::mutex > scopedLock_( m_Mutex );
-        m_hostnames.insert(std::pair<std::string, remotehost>(u_, host_));  
+        m_hostnames.insert(std::pair<std::string, SRemoteHost>(u_, host_));  
     }
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -194,7 +184,7 @@ void CConnectionManager::StopAll ()
 /// @post No change.
 /// @return The hostname of the node with that uuid or an empty string.
 ///////////////////////////////////////////////////////////////////////////////
-remotehost CConnectionManager::GetHostnameByUUID(std::string uuid) const
+SRemoteHost CConnectionManager::GetHostnameByUUID(std::string uuid) const
 {
     if(m_hostnames.count(uuid))
     {
@@ -202,7 +192,7 @@ remotehost CConnectionManager::GetHostnameByUUID(std::string uuid) const
     }
     else
     {
-        remotehost x;
+        SRemoteHost x;
         return x;
     }
 }
@@ -250,7 +240,7 @@ ConnectionPtr CConnectionManager::GetConnectionByUUID(std::string uuid_)
     Logger.Info << "Making Fresh Connection to " << uuid_ << std::endl;
 
     // Find the requested host from the list of known hosts
-    std::map<std::string, remotehost>::iterator mapIt_;
+    std::map<std::string, SRemoteHost>::iterator mapIt_;
     mapIt_ = m_hostnames.find(uuid_);
     if(mapIt_ == m_hostnames.end())
     {

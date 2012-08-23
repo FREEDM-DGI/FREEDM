@@ -1,99 +1,76 @@
-//////////////////////////////////////////////////////////
-/// @file         CStateCollection.cpp
+////////////////////////////////////////////////////////////////////////////////
+/// @file         StateCollection.cpp
 ///
 /// @author       Li Feng <lfqt5@mail.mst.edu>
-///       Derek Ditch <derek.ditch@mst.edu>
-///
-/// @compiler     C++
+/// @author       Derek Ditch <derek.ditch@mst.edu>
 ///
 /// @project      FREEDM DGI
 ///
 /// @description  Main file which implement Chandy-Lamport
 ///               snapshot algorithm to collect states
 ///
-/// @functions   Initiate()
-///              HandleRead()
-///              TakeSnapshot()
-///              StateResponse()
-///              StateSendBack()
-///              GetPeer()
-///              AddPeer()
+/// @functions    Initiate()
+///               HandleRead()
+///               TakeSnapshot()
+///               StateResponse()
+///               StateSendBack()
+///               GetPeer()
+///               AddPeer()
 ///
-/// @citation: Distributed Snapshots: Determining Global States of Distributed Systems,
-///            ACM Transactions on Computer Systems, Vol. 3, No. 1, 1985, pp. 63-75
+/// @citation     Distributed Snapshots: Determining Global States of
+///               Distributed Systems, ACM Transactions on Computer Systems,
+///               Vol. 3, No. 1, 1985, pp. 63-75
 ///
-/// These source code files were created at as part of the
-/// FREEDM DGI Subthrust, and are
-/// intended for use in teaching or research.  They may be
-/// freely copied, modified and redistributed as long
-/// as modified versions are clearly marked as such and
-/// this notice is not removed.
-
-/// Neither the authors nor the FREEDM Project nor the
-/// National Science Foundation
-/// make any warranty, express or implied, nor assumes
-/// any legal responsibility for the accuracy,
-/// completeness or usefulness of these codes or any
-/// information distributed with these codes.
-
-/// Suggested modifications or questions about these codes
-/// can be directed to Dr. Bruce McMillin, Department of
-/// Computer Science, Missouri University of Science and
-/// Technology, Rolla, /// MO  65409 (ff@mst.edu).
+/// These source code files were created at Missouri University of Science and
+/// Technology, and are intended for use in teaching or research. They may be
+/// freely copied, modified, and redistributed as long as modified versions are
+/// clearly marked as such and this notice is not removed. Neither the authors
+/// nor Missouri S&T make any warranty, express or implied, nor assume any legal
+/// responsibility for the accuracy, completeness, or usefulness of these files
+/// or any information distributed with these files.
 ///
-/////////////////////////////////////////////////////////
+/// Suggested modifications or questions about these files can be directed to
+/// Dr. Bruce McMillin, Department of Computer Science, Missouri University of
+/// Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
+////////////////////////////////////////////////////////////////////////////////
 
 #include "StateCollection.hpp"
+
+#include "CBroker.hpp"
+#include "CConnection.hpp"
+#include "CLogger.hpp"
+#include "CMessage.hpp"
+#include "device/CPhysicalDeviceManager.hpp"
 #include "gm/GroupManagement.hpp"
 #include "IPeerNode.hpp"
 
-#include "CMessage.hpp"
-
 #include <algorithm>
 #include <cassert>
+#include <cstdlib>
 #include <exception>
-#include <functional>
-#include <sys/types.h>
-#include <unistd.h>
-#include <iomanip>
 #include <fstream>
-#include <string>
-#include <stdlib.h>
+#include <functional>
+#include <iomanip>
 #include <iostream>
+#include <map>
 #include <set>
+#include <string>
 #include <vector>
 
 #include <boost/asio.hpp>
-#include <boost/bind.hpp>
-#include <boost/function.hpp>
-#include <boost/range/adaptor/map.hpp>
-#include <boost/date_time/posix_time/posix_time_types.hpp>
-#include <boost/date_time/posix_time/posix_time.hpp>
-#include <boost/foreach.hpp>
-
-#define foreach     BOOST_FOREACH
-
-
-#include <vector>
 #include <boost/assign/list_of.hpp>
-
+#include <boost/bind.hpp>
+#include <boost/date_time/posix_time/posix_time.hpp>
+#include <boost/date_time/posix_time/posix_time_types.hpp>
+#include <boost/foreach.hpp>
+#include <boost/function.hpp>
+#include <boost/property_tree/ptree.hpp>
+#include <boost/range/adaptor/map.hpp>
 #include <boost/serialization/string.hpp>
 #include <boost/serialization/vector.hpp>
 #include <boost/serialization/shared_ptr.hpp>
 
-//#include "Serialization_Connection.hpp"
-#include "CConnection.hpp"
-#include "CBroker.hpp"
-//#include "ExtensibleLineProtocol.hpp"
-//using boost::asio::ip::tcp;
-
-#include <boost/property_tree/ptree.hpp>
 using boost::property_tree::ptree;
-
-#include "CLogger.hpp"
-#include "device/CPhysicalDeviceManager.hpp"
-
-#include <map>
 
 ///////////////////////////////////////////////////////////////////////////////////
 /// Chandy-Lamport snapshot algorithm
@@ -135,8 +112,7 @@ CLocalLogger Logger(__FILE__);
 ///////////////////////////////////////////////////////////////////////////////
 
 SCAgent::SCAgent(std::string uuid, CBroker &broker,
-                 device::CPhysicalDeviceManager::Pointer
-                 m_phyManager):
+                 device::CPhysicalDeviceManager::Pointer m_phyManager):
         IPeerNode(uuid, broker.GetConnectionManager()),
         m_countstate(0),
         m_NotifyToSave(false),
@@ -248,7 +224,7 @@ void SCAgent::Initiate()
     m_countmarker = 1;
     //current peers in a group
     Logger.Debug << " ------------ INITIAL, current peerList : -------------- "<<std::endl;
-    foreach(PeerNodePtr peer, m_AllPeers | boost::adaptors::map_values)
+    BOOST_FOREACH(PeerNodePtr peer, m_AllPeers | boost::adaptors::map_values)
     {
         Logger.Trace << peer->GetUUID() <<std::endl;
     }
@@ -270,7 +246,7 @@ void SCAgent::Initiate()
     Logger.Info << "Marker is ready from " << GetUUID() << std::endl;
     CMessage m_ = marker();
     //send tagged marker to all other peers
-    foreach(PeerNodePtr peer, m_AllPeers | boost::adaptors::map_values)
+    BOOST_FOREACH(PeerNodePtr peer, m_AllPeers | boost::adaptors::map_values)
     {
         if (peer->GetUUID()!= GetUUID())
         {
@@ -551,7 +527,7 @@ void SCAgent::SaveForward(StateVersion latest, CMessage msg)
     //more than two nodes
     {
         //broadcast marker to all other peers
-        foreach(PeerNodePtr peer_, m_AllPeers | boost::adaptors::map_values)
+        BOOST_FOREACH(PeerNodePtr peer_, m_AllPeers | boost::adaptors::map_values)
         {
             if (peer_->GetUUID()!= GetUUID())
             {

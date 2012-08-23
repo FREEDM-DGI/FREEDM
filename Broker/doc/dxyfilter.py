@@ -1,0 +1,83 @@
+#!/usr/bin/env python
+###############################################################################
+# @file             dxyfilter.py
+#
+# @author           Michael Catanzaro <michael.catanzaro@mst.edu>
+#
+# @project          FREEDM DGI
+#
+# These source code files were created at Missouri University of Science and
+# Technology, and are intended for use in teaching or research. They may be
+# freely copied, modified, and redistributed as long as modified versions are
+# clearly marked as such and this notice is not removed. Neither the authors
+# nor Missouri S&T make any warranty, express or implied, nor assume any legal
+# responsibility for the accuracy, completeness, or usefulness of these files
+# or any information distributed with these files.
+#
+# Suggested modifications or questions about these files can be directed to
+# Dr. Bruce McMillin, Department of Computer Science, Missouri University of
+# Science and Technology, Rolla, MO 65409 <ff@mst.edu>
+###############################################################################
+
+"""
+Translate a FREEDM source file into Doxygen-friendly form.
+
+This primarily entails throwing out the list of functions from the top of each
+source file, as well as the copyright notice that appears at the top of the
+file. While this text doesn't affect the class documentation, it does ruin the
+file documentation, and this script will get rid of it before Doxygen ever
+sees it.
+
+This file is a Doxygen input filter, configured in freedm.dxy. Doxygen will
+call this script every time it parses a FREEDM source file, and will pipe the
+text of that source file to this script's stdin. Doxygen will then run on this
+script's stdout, instead of the original source file. That is, the output of
+this script is what Doxygen actually sees.
+"""
+
+import fileinput
+import os
+import sys
+
+# We'll make this really simple. Print the line to stdout if we're in
+# KEEP_LINE_STATE or KEEP_REMAINING_LINES_STATE. Go on to the next line if
+# we're in DISCARD_LINE_STATE.
+
+KEEP_LINE_STATE = 0
+DISCARD_LINE_STATE = 1
+KEEP_REMAINING_LINES_STATE = 2
+
+if not __name__ == '__main__' or not len(sys.argv) == 2:
+    sys.exit("%s is intended to be called directly by Doxygen" % sys.argv[0])
+
+if not os.path.isfile(sys.argv[1]):
+    sys.exit('Oh no, %s is not a valid file!' % sys.argv[1])
+
+state = KEEP_LINE_STATE
+
+def stateTransition(state):
+    """
+    1) Start throwing out lines when we reach @functions.
+    2) Stop throwing out lines when we reach the end of the comment header.
+    3) Don't throw out more lines if we hit @functions again.
+    """
+    if state < 0 or state > 2:
+        raise ValueError('Fatal: in unknown state %d' % state)
+    elif state == KEEP_LINE_STATE and '@functions' in line.lower():
+        state = DISCARD_LINE_STATE
+    elif state == KEEP_LINE_STATE and 'These source code files' in line.lower():
+        state = DISCARD_LINE_STATE
+    elif state == DISCARD_LINE_STATE and '/////////////////' in line:
+        state = KEEP_REMAINING_LINES_STATE
+    elif state == KEEP_REMAINING_LINES_STATE and '@functions' in line.lower():
+        print '%s: encountered @functions tag twice while parsing' % sys.argv[0]
+
+for line in fileinput.input(): 
+    stateTransition(state)
+    if state == KEEP_LINE_STATE or state == KEEP_REMAINING_LINES_STATE:
+        # Used for autogen code, but will trip up Doxygen
+        if '##BREAK' in line:
+            line = line.replace('##BREAK', 'BREAK, after two octothorpes,')
+        # We could lose documentation because we abuse these tags. Hide them.
+        if '@function' not in line and '@fn' not in line:
+            sys.stdout.write(line)

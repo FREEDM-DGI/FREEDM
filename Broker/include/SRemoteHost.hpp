@@ -1,9 +1,9 @@
 ////////////////////////////////////////////////////////////////////////////////
-/// @file           config.hpp
+/// @file         SRemoteHost.hpp
 ///
-/// @project        FREEDM DGI
+/// @project      FREEDM DGI
 ///
-/// @description    Global flag definitions for project configuration
+/// @description  A container which holds the hostname and port of a peer.
 ///
 /// These source code files were created at Missouri University of Science and
 /// Technology, and are intended for use in teaching or research. They may be
@@ -18,13 +18,22 @@
 /// Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
 ////////////////////////////////////////////////////////////////////////////////
 
-#ifndef CONFIG_HPP
-#define CONFIG_HPP
+#ifndef REMOTEHOST_HPP
+#define REMOTEHOST_HPP
 
-#cmakedefine DATAGRAM
-#cmakedefine CUSTOMNETWORK
-#cmakedefine USE_DEVICE_PSCAD
-#cmakedefine USE_DEVICE_RTDS
+#include <string>
 
-#endif // CONFIG_HPP
+namespace freedm {
+namespace broker {
 
+/// A container which lists the hostname and and port of a peer.
+struct SRemoteHost
+{
+    std::string hostname; /// Remote endpoint hostnames
+    std::string port; /// Remote endpoint port
+};
+
+}
+}
+
+#endif

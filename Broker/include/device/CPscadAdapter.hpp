@@ -1,41 +1,39 @@
 ////////////////////////////////////////////////////////////////////////////////
-/// @file       CPscadAdapter.hpp
+/// @file         CPscadAdapter.hpp
 ///
-/// @author     Thomas Roth <tprfh7@mst.edu>
-/// @author     Michael Catanzaro <michael.catanzaro@mst.edu>
+/// @author       Thomas Roth <tprfh7@mst.edu>
+/// @author       Michael Catanzaro <michael.catanzaro@mst.edu>
 ///
-/// @project    FREEDM DGI
+/// @project      FREEDM DGI
 ///
-/// @description
-///     Client side implementation of the PSCAD simulation line protocol.
+/// @description  Client side implementation of the PSCAD simulation line
+///               protocol.
 ///
-/// @copyright
-///     These source code files were created at Missouri University of Science
-///     and Technology, and are intended for use in teaching or research. They
-///     may be freely copied, modified, and redistributed as long as modified
-///     versions are clearly marked as such and this notice is not removed.
-///     Neither the authors nor Missouri S&T make any warranty, express or
-///     implied, nor assume any legal responsibility for the accuracy,
-///     completeness, or usefulness of these files or any information
-///     distributed with these files. 
-///     
-///     Suggested modifications or questions about these files can be directed
-///     to Dr. Bruce McMillin, Department of Computer Science, Missouri
-///     University of Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
+/// These source code files were created at Missouri University of Science and
+/// Technology, and are intended for use in teaching or research. They may be
+/// freely copied, modified, and redistributed as long as modified versions are
+/// clearly marked as such and this notice is not removed. Neither the authors
+/// nor Missouri S&T make any warranty, express or implied, nor assume any legal
+/// responsibility for the accuracy, completeness, or usefulness of these files
+/// or any information distributed with these files.
+///
+/// Suggested modifications or questions about these files can be directed to
+/// Dr. Bruce McMillin, Department of Computer Science, Missouri University of
+/// Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
 ////////////////////////////////////////////////////////////////////////////////
 
 #ifndef CPSCADADAPTER_HPP
 #define CPSCADADAPTER_HPP
 
-#include <string>
+#include "IConnectionAdapter.hpp"
+
 #include <iostream>
 #include <stdexcept>
+#include <string>
 
 #include <boost/asio.hpp>
-#include <boost/utility.hpp>
 #include <boost/shared_ptr.hpp>
-
-#include "IConnectionAdapter.hpp"
+#include <boost/utility.hpp>
 
 namespace freedm {
 namespace broker {

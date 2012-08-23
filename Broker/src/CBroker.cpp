@@ -1,50 +1,40 @@
-////////////////////////////////////////////////////////////////////
-/// @file      CBroker.cpp
+////////////////////////////////////////////////////////////////////////////////
+/// @file         CBroker.cpp
 ///
-/// @author    Derek Ditch <derek.ditch@mst.edu>
+/// @author       Derek Ditch <derek.ditch@mst.edu>
 ///
-/// @compiler  C++
+/// @project      FREEDM DGI
 ///
-/// @project   FREEDM DGI
+/// @description  Implements the CBroker class. This class implements the
+///               "Broker" pattern from POSA1[1]. This implementation is modeled
+///               after the Boost.Asio "http server 1" example[2].
 ///
-/// @description Implements the CBroker class. This class
-/// implements the "Broker" pattern from POSA1[1]. This
-/// implementation is modeled after the Boost.Asio "http server 1"
-/// example[2].
+/// @citations  [1] Frank Buschmann, Regine Meunier, Hans Rohnert, Peter
+///                 Sommerlad, and Michael Stal. Pattern-Oriented Software
+///                 Architecture Volume 1: A System of Patterns. Wiley, 1 ed,
+///                 August 1996.
 ///
-/// [1] Frank Buschmann, Regine Meunier, Hans Rohnert, Peter
-///     Sommerlad, and Michael Stal. Pattern-Oriented Software
-///     Architecture Volume 1: A System of Patterns. Wiley, 1 ed,
-///     August 1996.
-///
-/// [2] Boost.Asio Examples
+///             [2] Boost.Asio Examples
 ///     <http://www.boost.org/doc/libs/1_41_0/doc/html/boost_asio/examples.html>
 ///
-/// @license
-/// These source code files were created at as part of the
-/// FREEDM DGI Subthrust, and are intended for use in teaching or
-/// research.  They may be freely copied, modified and redistributed
-/// as long as modified versions are clearly marked as such and
-/// this notice is not removed.
-/// 
-/// Neither the authors nor the FREEDM Project nor the
-/// National Science Foundation
-/// make any warranty, express or implied, nor assumes
-/// any legal responsibility for the accuracy,
-/// completeness or usefulness of these codes or any
-/// information distributed with these codes.
+/// These source code files were created at Missouri University of Science and
+/// Technology, and are intended for use in teaching or research. They may be
+/// freely copied, modified, and redistributed as long as modified versions are
+/// clearly marked as such and this notice is not removed. Neither the authors
+/// nor Missouri S&T make any warranty, express or implied, nor assume any legal
+/// responsibility for the accuracy, completeness, or usefulness of these files
+/// or any information distributed with these files.
 ///
-/// Suggested modifications or questions about these codes 
-/// can be directed to Dr. Bruce McMillin, Department of 
-/// Computer Science, Missouri University of Science and
-/// Technology, Rolla, MO  65409 (ff@mst.edu).
-////////////////////////////////////////////////////////////////////
+/// Suggested modifications or questions about these files can be directed to
+/// Dr. Bruce McMillin, Department of Computer Science, Missouri University of
+/// Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
+////////////////////////////////////////////////////////////////////////////////
 
 #include "CBroker.hpp"
 #include "CLogger.hpp"
 
-#include <boost/bind.hpp>
 #include <boost/asio/io_service.hpp>
+#include <boost/bind.hpp>
 
 /// General FREEDM Namespace
 namespace freedm {

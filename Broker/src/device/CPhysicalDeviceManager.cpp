@@ -1,34 +1,31 @@
 ////////////////////////////////////////////////////////////////////////////////
-/// @file       CPhysicalDeviceManager.cpp
+/// @file         CPhysicalDeviceManager.cpp
 ///
-/// @author     Stephen Jackson <scj7t4@mst.edu>
-/// @author     Michael Catanzaro <michael.catanzaro@mst.edu>
+/// @author       Stephen Jackson <scj7t4@mst.edu>
+/// @author       Michael Catanzaro <michael.catanzaro@mst.edu>
 ///
-/// @project    FREEDM DGI
+/// @project      FREEDM DGI
 ///
-/// @description
-///     A class to bridge the gap between the DGI and the device interface.
+/// @description  Bridges the gap between the DGI and the device interface.
 ///
-/// @copyright
-///     These source code files were created at Missouri University of Science
-///     and Technology, and are intended for use in teaching or research. They
-///     may be freely copied, modified, and redistributed as long as modified
-///     versions are clearly marked as such and this notice is not removed.
-///     Neither the authors nor Missouri S&T make any warranty, express or
-///     implied, nor assume any legal responsibility for the accuracy,
-///     completeness, or usefulness of these files or any information
-///     distributed with these files.
+/// These source code files were created at Missouri University of Science and
+/// Technology, and are intended for use in teaching or research. They may be
+/// freely copied, modified, and redistributed as long as modified versions are
+/// clearly marked as such and this notice is not removed. Neither the authors
+/// nor Missouri S&T make any warranty, express or implied, nor assume any legal
+/// responsibility for the accuracy, completeness, or usefulness of these files
+/// or any information distributed with these files.
 ///
-///     Suggested modifications or questions about these files can be directed
-///     to Dr. Bruce McMillin, Department of Computer Science, Missouri
-///     University of Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
+/// Suggested modifications or questions about these files can be directed to
+/// Dr. Bruce McMillin, Department of Computer Science, Missouri University of
+/// Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
 ////////////////////////////////////////////////////////////////////////////////
-
-#include <boost/bind.hpp>
 
 #include "CLogger.hpp"
 #include "device/CPhysicalDeviceManager.hpp"
 #include "device/types/CDeviceFid.hpp"
+
+#include <boost/bind.hpp>
 
 namespace freedm {
 namespace broker {
@@ -51,6 +48,7 @@ CPhysicalDeviceManager::CPhysicalDeviceManager()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 }
+
 ///////////////////////////////////////////////////////////////////////////////
 /// Registers a device with the physical device manager.
 ///
@@ -109,6 +107,8 @@ const
 /// @pre The device in question is in the devices table
 /// @post No change
 ///
+/// @todo this one might not work, maybe the below one, hi
+///
 /// @return A DevicePtr to the device, or NULL if the device wasn't found.
 ///////////////////////////////////////////////////////////////////////////////
 IDevice::Pointer CPhysicalDeviceManager::GetDevice(Identifier devid)
@@ -120,7 +120,7 @@ IDevice::Pointer CPhysicalDeviceManager::GetDevice(Identifier devid)
 ///////////////////////////////////////////////////////////////////////////////
 /// Tests to see if the device exists in the devices table.
 ///
-/// @pre The object is initialized.
+/// @pre None
 /// @post No change.
 ///
 /// @param devid The device to look for.
@@ -134,10 +134,10 @@ bool CPhysicalDeviceManager::DeviceExists(device::Identifier devid) const
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// Returns a count of the number of devices being tracked at the moment
+/// Returns a count of the number of devices being tracked at the moment.
 ///
-/// @pre The object is initialized
-/// @post No change.
+/// @pre None
+/// @post No change
 ///
 /// @return The number of devices currently being tracked.
 ///////////////////////////////////////////////////////////////////////////////
@@ -147,10 +147,17 @@ size_t CPhysicalDeviceManager::DeviceCount() const
     return m_devices.size();
 }
 
-/// @todo - temporary?
-unsigned int CPhysicalDeviceManager::CountActiveFids() const
+///////////////////////////////////////////////////////////////////////////////
+/// Returns a count of the number of FIDs being tracked at the moment.
+///
+/// @pre None
+/// @post No change
+///
+/// @return The number of FIDs currently being tracked.
+////////////////////////////////////////////////////////////////////////////////
+size_t CPhysicalDeviceManager::CountActiveFids() const
 {
-    unsigned int result = 0;
+    size_t result = 0;
     CDeviceFid::Pointer next_device;
 
     for (const_iterator it = m_devices.begin(); it != m_devices.end(); it++)

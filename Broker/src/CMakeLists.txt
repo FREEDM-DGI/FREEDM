@@ -5,13 +5,13 @@ set(
     CConnection.cpp
     CConnectionManager.cpp
     CDispatcher.cpp
+    CGlobalPeerList.cpp
     CListener.cpp
     CLogger.cpp
     CMessage.cpp
     CReliableConnection.cpp
     CSRConnection.cpp
     CSUConnection.cpp
-    CGlobalPeerList.cpp
     IPeerNode.cpp
     IProtocol.cpp
     IHandler.cpp

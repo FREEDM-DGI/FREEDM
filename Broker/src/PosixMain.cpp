@@ -1,63 +1,58 @@
 ////////////////////////////////////////////////////////////////////////////////
-/// @file      PosixMain.cpp
+/// @file         PosixMain.cpp
 ///
-/// @author    Derek Ditch <derek.ditch@mst.edu>
+/// @author       Derek Ditch <derek.ditch@mst.edu>
 ///
-/// @project   FREEDM DGI
+/// @project      FREEDM DGI
 ///
-/// @description 
-///     Main entry point for POSIX systems for the Broker system and
-///     accompanying software modules.
+/// @description  Main entry point for POSIX systems for the Broker system and
+///               accompanying software modules.
 ///
-/// @copyright
-///     These source code files were created at Missouri University of Science
-///     and Technology, and are intended for use in teaching or research. They
-///     may be freely copied, modified, and redistributed as long as modified
-///     versions are clearly marked as such and this notice is not removed.
-///     Neither the authors nor Missouri S&T make any warranty, express or
-///     implied, nor assume any legal responsibility for the accuracy,
-///     completeness, or usefulness of these files or any information
-///     distributed with these files. 
-///     
-///     Suggested modifications or questions about these files can be directed
-///     to Dr. Bruce McMillin, Department of Computer Science, Missouri
-///     University of Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
+/// These source code files were created at Missouri University of Science and
+/// Technology, and are intended for use in teaching or research. They may be
+/// freely copied, modified, and redistributed as long as modified versions are
+/// clearly marked as such and this notice is not removed. Neither the authors
+/// nor Missouri S&T make any warranty, express or implied, nor assume any legal
+/// responsibility for the accuracy, completeness, or usefulness of these files
+/// or any information distributed with these files.
+///
+/// Suggested modifications or questions about these files can be directed to
+/// Dr. Bruce McMillin, Department of Computer Science, Missouri University of
+/// Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
 ////////////////////////////////////////////////////////////////////////////////
 
 #ifdef __unix__
-
-#include <iostream>
-#include <set>
-#include <string>
-#include <sstream>
-#include <vector>
-
-#include <boost/asio.hpp>
-#include <boost/asio/ip/host_name.hpp> //for ip::host_name()
-#include <boost/assign/list_of.hpp>
-#include <boost/bind.hpp>
-#include <boost/thread.hpp>
-#include <boost/program_options.hpp>
-#include <boost/foreach.hpp>
-
-#define foreach BOOST_FOREACH
-
-namespace po = boost::program_options;
 
 #include "CBroker.hpp"
 #include "CConnectionManager.hpp"
 #include "CDispatcher.hpp"
 #include "CGlobalConfiguration.hpp"
 #include "CLogger.hpp"
-#include "CUuid.hpp"
 #include "config.hpp"
-#include "device/CPhysicalDeviceManager.hpp"
+#include "CUuid.hpp"
 #include "device/CDeviceFactory.hpp"
+#include "device/CPhysicalDeviceManager.hpp"
 #include "device/PhysicalDeviceTypes.hpp"
 #include "gm/GroupManagement.hpp"
 #include "lb/LoadBalance.hpp"
 #include "sc/StateCollection.hpp"
 #include "version.h"
+
+#include <iostream>
+#include <set>
+#include <sstream>
+#include <string>
+#include <vector>
+
+#include <boost/asio.hpp>
+#include <boost/asio/ip/host_name.hpp> //for ip::host_name()
+#include <boost/assign/list_of.hpp>
+#include <boost/bind.hpp>
+#include <boost/foreach.hpp>
+#include <boost/program_options.hpp>
+#include <boost/thread.hpp>
+
+namespace po = boost::program_options;
 
 using namespace freedm;
 using namespace broker;
@@ -308,7 +303,7 @@ int main(int argc, char* argv[])
         {
             std::vector< std::string > arglist_ =
                     vm["add-host"].as< std::vector<std::string> >( );
-            foreach(std::string s, arglist_)
+            BOOST_FOREACH(std::string s, arglist_)
             {
                 size_t idx = s.find(':');
 

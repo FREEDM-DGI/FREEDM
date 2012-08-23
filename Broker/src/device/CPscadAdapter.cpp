@@ -1,33 +1,30 @@
 ////////////////////////////////////////////////////////////////////////////////
-/// @file       CPscadAdapter.cpp
+/// @file          CPscadAdapter.cpp
 ///
-/// @author     Thomas Roth <tprfh7@mst.edu>,
-/// @author     Michael Catanzaro <michael.catanzaro@mst.edu>
+/// @author        Thomas Roth <tprfh7@mst.edu>,
+/// @author        Michael Catanzaro <michael.catanzaro@mst.edu>
 ///
-/// @project    FREEDM DGI
+/// @project       FREEDM DGI
 ///
-/// @description
-///     Client side implementation of the simulation line protocol.
+/// @description   Client side implementation of the simulation line protocol.
 ///
-/// @copyright
-///     These source code files were created at Missouri University of Science
-///     and Technology, and are intended for use in teaching or research. They
-///     may be freely copied, modified, and redistributed as long as modified
-///     versions are clearly marked as such and this notice is not removed.
-///     Neither the authors nor Missouri S&T make any warranty, express or
-///     implied, nor assume any legal responsibility for the accuracy,
-///     completeness, or usefulness of these files or any information
-///     distributed with these files. 
-///     
-///     Suggested modifications or questions about these files can be directed
-///     to Dr. Bruce McMillin, Department of Computer Science, Missouri
-///     University of Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
+/// These source code files were created at Missouri University of Science and
+/// Technology, and are intended for use in teaching or research. They may be
+/// freely copied, modified, and redistributed as long as modified versions are
+/// clearly marked as such and this notice is not removed. Neither the authors
+/// nor Missouri S&T make any warranty, express or implied, nor assume any legal
+/// responsibility for the accuracy, completeness, or usefulness of these files
+/// or any information distributed with these files.
+///
+/// Suggested modifications or questions about these files can be directed to
+/// Dr. Bruce McMillin, Department of Computer Science, Missouri University of
+/// Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
 ////////////////////////////////////////////////////////////////////////////////
-
-#include <boost/lexical_cast.hpp>
 
 #include "CLogger.hpp"
 #include "device/CPscadAdapter.hpp"
+
+#include <boost/lexical_cast.hpp>
 
 namespace freedm {
 namespace broker {
@@ -39,16 +36,19 @@ namespace {
 CLocalLogger Logger(__FILE__);
 
 }
+
 CPscadAdapter::Pointer CPscadAdapter::Create(boost::asio::io_service & service)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     return CPscadAdapter::Pointer(new CPscadAdapter(service));
 }
+
 CPscadAdapter::CPscadAdapter(boost::asio::io_service & service)
 : IConnectionAdapter(service)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 }
+
 void CPscadAdapter::Set(const Identifier device, const SettingKey key,
         const SettingValue value)
 {
@@ -80,6 +80,7 @@ void CPscadAdapter::Set(const Identifier device, const SettingKey key,
         throw std::runtime_error(ss.str());
     }
 }
+
 SettingValue CPscadAdapter::Get(const Identifier device,
         const SettingKey key) const
 {
@@ -112,6 +113,7 @@ SettingValue CPscadAdapter::Get(const Identifier device,
 
     return boost::lexical_cast<SettingValue > ( value );
 }
+
 void CPscadAdapter::Quit()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
@@ -143,6 +145,7 @@ void CPscadAdapter::Quit()
     // close connection
     m_socket.close();
 }
+
 CPscadAdapter::~CPscadAdapter()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;

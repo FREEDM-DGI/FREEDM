@@ -1,36 +1,25 @@
-//////////////////////////////////////////////////////////
-/// @file GroupManagement.cpp
+////////////////////////////////////////////////////////////////////////////////
+/// @file         GroupManagement.cpp
 ///
-/// @author Derek Ditch <derek.ditch@mst.edu>
-///         Stephen Jackson <scj7t4@mst.edu>
+/// @author       Derek Ditch <derek.ditch@mst.edu>
+/// @author       Stephen Jackson <scj7t4@mst.edu>
 ///
-/// @compiler         C++
+/// @project      FREEDM DGI
 ///
-/// @project            FREEDM DGI
+/// @description  Main file which includes Invitation algorithm   
 ///
-/// @description    Main file which includes Invitation algorithm
+/// These source code files were created at Missouri University of Science and
+/// Technology, and are intended for use in teaching or research. They may be
+/// freely copied, modified, and redistributed as long as modified versions are
+/// clearly marked as such and this notice is not removed. Neither the authors
+/// nor Missouri S&T make any warranty, express or implied, nor assume any legal
+/// responsibility for the accuracy, completeness, or usefulness of these files
+/// or any information distributed with these files.
 ///
-/// @functions     
-///
-/// These source code files were created at as part of the
-/// FREEDM DGI Subthrust, and are
-/// intended for use in teaching or research.    They may be
-/// freely copied, modified and redistributed as long
-/// as modified versions are clearly marked as such and
-/// this notice is not removed.
-
-/// Neither the authors nor the FREEDM Project nor the
-/// National Science Foundation
-/// make any warranty, express or implied, nor assumes
-/// any legal responsibility for the accuracy,
-/// completeness or usefulness of these codes or any
-/// information distributed with these codes.
-
-/// Suggested modifications or questions about these codes
-/// can be directed to Dr. Bruce McMillin, Department of
-/// Computer Science, Missouri University of Science and
-/// Technology, Rolla, MO    65409 (ff@mst.edu).
-/////////////////////////////////////////////////////////
+/// Suggested modifications or questions about these files can be directed to
+/// Dr. Bruce McMillin, Department of Computer Science, Missouri University of
+/// Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
+////////////////////////////////////////////////////////////////////////////////
 
 
 // !!!!!!!!!!!!!!!!!!!
@@ -39,46 +28,38 @@
 
 #include "GroupManagement.hpp"
 
+#include "CBroker.hpp"
+#include "CConnection.hpp"
+#include "CLogger.hpp"
 #include "CMessage.hpp"
-#include "remotehost.hpp"
+#include "SRemoteHost.hpp"
+#include "SStopwatch.hpp"
 
 #include <algorithm>
 #include <cassert>
+#include <cstdlib>
 #include <exception>
-#include <sys/types.h>
-#include <unistd.h>
+#include <fstream>
 #include <iomanip>
-#include <fstream>
-#include <string>
-#include <stdlib.h>
 #include <iostream>
-#include <fstream>
+#include <string>
+#include <vector>
 
 #include <boost/asio.hpp>
-#include <boost/bind.hpp>
-#include <boost/function.hpp>
-#include <boost/range/adaptor/map.hpp>
-#include <boost/date_time/posix_time/posix_time_types.hpp>
-#include <boost/date_time/posix_time/posix_time.hpp>
-#include <boost/foreach.hpp>
-#include <boost/functional/hash.hpp>
-#define foreach         BOOST_FOREACH
-#define P_Migrate 1
-
-#include <vector>
 #include <boost/assign/list_of.hpp>
-
+#include <boost/bind.hpp>
+#include <boost/date_time/posix_time/posix_time.hpp>
+#include <boost/date_time/posix_time/posix_time_types.hpp>
+#include <boost/foreach.hpp>
+#include <boost/function.hpp>
+#include <boost/functional/hash.hpp>
+#include <boost/property_tree/ptree.hpp>
+#include <boost/range/adaptor/map.hpp>
 #include <boost/serialization/string.hpp>
 #include <boost/serialization/vector.hpp>
 #include <boost/serialization/shared_ptr.hpp>
 
-#include "CConnection.hpp"
-#include "CBroker.hpp"
-#include "CLogger.hpp"
-
-#include <boost/property_tree/ptree.hpp>
 using boost::property_tree::ptree;
-
 
 namespace freedm {
 
@@ -336,7 +317,7 @@ CMessage GMAgent::PeerList(std::string requester)
 	m_.m_submessages.put("any.source", GetUUID());
     m_.m_submessages.put("any.coordinator",Coordinator());
 	m_.SetHandler(requester+".PeerList");
-	foreach( PeerNodePtr peer, m_UpNodes | boost::adaptors::map_values)
+	BOOST_FOREACH( PeerNodePtr peer, m_UpNodes | boost::adaptors::map_values)
     {
         ptree sub_pt;
         sub_pt.add("uuid",peer->GetUUID());
@@ -402,7 +383,7 @@ void GMAgent::SystemState()
     nodestatus<<"- SYSTEM STATE"<<std::endl
               <<"Me: "<<GetUUID()<<", Group: "<<m_GroupID<<" Leader:"<<Coordinator()<<std::endl
               <<"SYSTEM NODES"<<std::endl;
-    foreach(PeerNodePtr peer, CGlobalPeerList::instance().PeerList() | boost::adaptors::map_values)
+    BOOST_FOREACH(PeerNodePtr peer, CGlobalPeerList::instance().PeerList() | boost::adaptors::map_values)
     {
         nodestatus<<"Node: "<<peer->GetUUID()<<" State: ";
         if(peer->GetUUID() == GetUUID())
@@ -440,7 +421,7 @@ void GMAgent::PushPeerList()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     CMessage m_ = PeerList();
-    foreach( PeerNodePtr peer, m_UpNodes | boost::adaptors::map_values)
+    BOOST_FOREACH( PeerNodePtr peer, m_UpNodes | boost::adaptors::map_values)
     {
         Logger.Debug<<"Send group list to all members of this group containing "
                                  << peer->GetUUID() << std::endl;             
@@ -467,7 +448,7 @@ void GMAgent::Recovery()
     m_GrpCounter++;
     m_GroupID = m_GrpCounter;
     m_GroupLeader = GetUUID();
-    foreach( PeerNodePtr peer, CGlobalPeerList::instance().PeerList() | boost::adaptors::map_values)
+    BOOST_FOREACH( PeerNodePtr peer, CGlobalPeerList::instance().PeerList() | boost::adaptors::map_values)
     {
         if( peer->GetUUID() == GetUUID())
             continue;
@@ -585,7 +566,7 @@ void GMAgent::ComputeSkew( const boost::system::error_code& err)
         /// Report my clock with our computed skew
         m_clocks[GetUUID()] = boost::posix_time::microsec_clock::universal_time()+tmp;
         /// Send to all up nodes
-        foreach( PeerNodePtr peer, CGlobalPeerList::instance().PeerList() | boost::adaptors::map_values)
+        BOOST_FOREACH( PeerNodePtr peer, CGlobalPeerList::instance().PeerList() | boost::adaptors::map_values)
         {
             if(peer->GetUUID() == GetUUID())
                 continue;
@@ -660,7 +641,7 @@ void GMAgent::Check( const boost::system::error_code& err )
             m_AYCResponse.clear();
             CMessage m_ = AreYouCoordinator();
             Logger.Info <<"SEND: Sending out AYC"<<std::endl;
-            foreach( PeerNodePtr peer, CGlobalPeerList::instance().PeerList() | boost::adaptors::map_values)
+            BOOST_FOREACH( PeerNodePtr peer, CGlobalPeerList::instance().PeerList() | boost::adaptors::map_values)
             {
                 if( peer->GetUUID() == GetUUID())
                     continue;
@@ -710,7 +691,7 @@ void GMAgent::Premerge( const boost::system::error_code &err )
         // Remove everyone who didn't respond (Nodes that are still in AYCResponse)
         // From the upnodes list.
         bool list_change = false;
-        foreach( PeerNodePtr peer, m_AYCResponse | boost::adaptors::map_values)
+        BOOST_FOREACH( PeerNodePtr peer, m_AYCResponse | boost::adaptors::map_values)
         {
             if(CountInPeerSet(m_UpNodes,peer) && CountInPeerSet(m_AlivePeers,peer) == 0)
             {
@@ -736,7 +717,7 @@ void GMAgent::Premerge( const boost::system::error_code &err )
             boost::hash<std::string> string_hash;
             unsigned int myPriority = string_hash(GetUUID());
             unsigned int maxPeer_ = 0;
-            foreach( PeerNodePtr peer, m_Coordinators | boost::adaptors::map_values)
+            BOOST_FOREACH( PeerNodePtr peer, m_Coordinators | boost::adaptors::map_values)
             {
                 unsigned int temp = string_hash(peer->GetUUID());
                 if(temp > maxPeer_)
@@ -823,7 +804,7 @@ void GMAgent::Merge( const boost::system::error_code& err )
         CMessage m_ = Invitation();
         Logger.Info <<"SEND: Sending out Invites (Invite Coordinators)"<<std::endl;
         Logger.Debug <<"Tempset is "<<tempSet_.size()<<" Nodes (IC)"<<std::endl;
-        foreach( PeerNodePtr peer, m_Coordinators | boost::adaptors::map_values)
+        BOOST_FOREACH( PeerNodePtr peer, m_Coordinators | boost::adaptors::map_values)
         {
             if( peer->GetUUID() == GetUUID())
                 continue;
@@ -870,7 +851,7 @@ void GMAgent::InviteGroupNodes( const boost::system::error_code& err, PeerSet p_
         CMessage m_ = Invitation();
         Logger.Info <<"SEND: Sending out Invites (Invite Group Nodes):"<<std::endl;
         Logger.Debug <<"Tempset is "<<p_tempSet.size()<<" Nodes (IGN)"<<std::endl;
-        foreach( PeerNodePtr peer, p_tempSet | boost::adaptors::map_values)
+        BOOST_FOREACH( PeerNodePtr peer, p_tempSet | boost::adaptors::map_values)
         {
             if( peer->GetUUID() == GetUUID())
                 continue;
@@ -1014,7 +995,7 @@ GMAgent::PeerSet GMAgent::ProcessPeerList(CMessage msg, CConnectionManager& conn
     PeerSet tmp;
     ptree pt = msg.GetSubMessages();
     Logger.Debug<<"Looping Peer List"<<std::endl;
-    foreach(ptree::value_type &v, pt.get_child("any.peers"))
+    BOOST_FOREACH(ptree::value_type &v, pt.get_child("any.peers"))
     {
         Logger.Debug<<"Peer Item"<<std::endl;
         ptree sub_pt = v.second;
@@ -1248,7 +1229,7 @@ void GMAgent::HandleInvite(CMessage msg, PeerNodePtr peer)
             CMessage m_ = Invitation();
             // We will set the expire time to be the same as the source message
             m_.SetExpireTime(msg.GetExpireTime());    
-            foreach(PeerNodePtr peer, tempSet_ | boost::adaptors::map_values)
+            BOOST_FOREACH(PeerNodePtr peer, tempSet_ | boost::adaptors::map_values)
             {
                 if( peer->GetUUID() == GetUUID())
                     continue;
@@ -1483,7 +1464,7 @@ int GMAgent::Run()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
-    std::map<std::string, remotehost>::iterator mapIt_;
+    std::map<std::string, SRemoteHost>::iterator mapIt_;
 
     for( mapIt_ = GetConnectionManager().GetHostnamesBegin();
         mapIt_ != GetConnectionManager().GetHostnamesEnd(); ++mapIt_ )
@@ -1493,7 +1474,7 @@ int GMAgent::Run()
         AddPeer(const_cast<std::string&>(mapIt_->first));
     }
     Logger.Notice<<"All peers added "<<CGlobalPeerList::instance().PeerList().size()<<std::endl;
-    foreach(PeerNodePtr p_, CGlobalPeerList::instance().PeerList() | boost::adaptors::map_values)
+    BOOST_FOREACH(PeerNodePtr p_, CGlobalPeerList::instance().PeerList() | boost::adaptors::map_values)
     {
         Logger.Notice << "Pointer: "<<p_<<std::endl;
         Logger.Notice << "! " <<p_->GetUUID() << " added to peer set" <<std::endl;

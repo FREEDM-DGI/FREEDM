@@ -11,18 +11,17 @@
 #ifndef HTTP_CRequestParser_HPP
 #define HTTP_CRequestParser_HPP
 
+#include "CLogger.hpp"
 #include "CMessage.hpp"
 
 #include <algorithm>
-#include <stdexcept>
 #include <iostream>
 #include <iterator>
 #include <sstream>
+#include <stdexcept>
 
 #include <boost/logic/tribool.hpp>
 #include <boost/tuple/tuple.hpp>
-#include "CLogger.hpp"
-
 
 namespace freedm {
 namespace broker {

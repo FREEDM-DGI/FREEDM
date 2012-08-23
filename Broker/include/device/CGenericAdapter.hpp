@@ -7,37 +7,34 @@
 ///
 /// @description    Interface for a generic physical device adapter.
 ///
-/// @copyright
-///     These source code files were created at Missouri University of Science
-///     and Technology, and are intended for use in teaching or research. They
-///     may be freely copied, modified, and redistributed as long as modified
-///     versions are clearly marked as such and this notice is not removed.
-///     Neither the authors nor Missouri S&T make any warranty, express or
-///     implied, nor assume any legal responsibility for the accuracy,
-///     completeness, or usefulness of these files or any information
-///     distributed with these files. 
-///     
-///     Suggested modifications or questions about these files can be directed
-///     to Dr. Bruce McMillin, Department of Computer Science, Missouri
-///     University of Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
+/// These source code files were created at Missouri University of Science and
+/// Technology, and are intended for use in teaching or research. They may be
+/// freely copied, modified, and redistributed as long as modified versions are
+/// clearly marked as such and this notice is not removed. Neither the authors
+/// nor Missouri S&T make any warranty, express or implied, nor assume any legal
+/// responsibility for the accuracy, completeness, or usefulness of these files
+/// or any information distributed with these files.
+///
+/// Suggested modifications or questions about these files can be directed to
+/// Dr. Bruce McMillin, Department of Computer Science, Missouri University of
+/// Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
 ////////////////////////////////////////////////////////////////////////////////
 
 #ifndef CGENERICADAPTER_HPP
 #define	CGENERICADAPTER_HPP
 
+#include "IPhysicalAdapter.hpp"
+
 #include <map>
 #include <sstream>
 #include <string>
-
-#include "IPhysicalAdapter.hpp"
 
 namespace freedm {
 namespace broker {
 namespace device {
 
+/// Physical adapter device interface that stores settings in itself.
 ////////////////////////////////////////////////////////////////////////////////
-/// @brief  Physical adapter device interface that stores settings in itself.
-///
 /// @description
 ///     Physical adapter device interface that stores device settings in itself.
 ///     This class is used when no communication outside the DGI processes is

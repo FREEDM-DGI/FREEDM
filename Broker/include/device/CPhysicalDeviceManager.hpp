@@ -1,59 +1,62 @@
 ////////////////////////////////////////////////////////////////////////////////
-/// @file       CPhysicalDeviceManager.hpp
+/// @file         CPhysicalDeviceManager.hpp
 ///
-/// @author     Stephen Jackson <scj7t4@mst.edu>
-/// @author     Michael Catanzaro <michael.catanzaro@mst.edu>
+/// @author       Stephen Jackson <scj7t4@mst.edu>
+/// @author       Michael Catanzaro <michael.catanzaro@mst.edu>
 ///
-/// @project    FREEDM DGI
+/// @project      FREEDM DGI
 ///
-/// @description
-///     Bridges the gap between the DGI and the device interface.
+/// @description  Bridges the gap between the DGI and the device interface.
 ///
-/// @copyright
-///     These source code files were created at Missouri University of Science
-///     and Technology, and are intended for use in teaching or research. They
-///     may be freely copied, modified, and redistributed as long as modified
-///     versions are clearly marked as such and this notice is not removed.
-///     Neither the authors nor Missouri S&T make any warranty, express or
-///     implied, nor assume any legal responsibility for the accuracy,
-///     completeness, or usefulness of these files or any information
-///     distributed with these files.
+/// @functions
+///     CPhysicalDeviceManager::GetDevicesOfType
+///     CPhysicalDeviceManager::GetValue
+///     CPhysicalDeviceManager::GetValueVector
 ///
-///     Suggested modifications or questions about these files can be directed
-///     to Dr. Bruce McMillin, Department of Computer Science, Missouri
-///     University of Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
+/// These source code files were created at Missouri University of Science and
+/// Technology, and are intended for use in teaching or research. They may be
+/// freely copied, modified, and redistributed as long as modified versions are
+/// clearly marked as such and this notice is not removed. Neither the authors
+/// nor Missouri S&T make any warranty, express or implied, nor assume any legal
+/// responsibility for the accuracy, completeness, or usefulness of these files
+/// or any information distributed with these files.
+///
+/// Suggested modifications or questions about these files can be directed to
+/// Dr. Bruce McMillin, Department of Computer Science, Missouri University of
+/// Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
 ////////////////////////////////////////////////////////////////////////////////
 
 #ifndef PHYSICALDEVICEMANAGER_HPP
 #define PHYSICALDEVICEMANAGER_HPP
 
-#include <string>
-#include <map>
+#include "IPhysicalAdapter.hpp"
+#include "types/IDevice.hpp"
+
 #include <list>
+#include <map>
+#include <string>
 
 #include <boost/enable_shared_from_this.hpp>
 #include <boost/function.hpp>
 #include <boost/noncopyable.hpp>
 #include <boost/shared_ptr.hpp>
 
-#include "IPhysicalAdapter.hpp"
-#include "types/IDevice.hpp"
-
-#define CALL_MEMBER_FN(object,ptrToMember)  ((object).*(ptrToMember))
-
 namespace freedm {
 namespace broker {
 namespace device {
 
+/// @todo This class is not sufficiently commented. Comment it better.
+/// @todo Need to use typedefs for the function pointer types to be legible.
 /// Provides a container that manages physical device instances
 class CPhysicalDeviceManager : private boost::noncopyable
 {
+private:
+    /// A typedef for the mapping of identifier to device ptrs
+    typedef std::map<Identifier, IDevice::Pointer> PhysicalDeviceSet;
+
 public:
     /// Type of a pointer to a device manager
     typedef boost::shared_ptr<CPhysicalDeviceManager> Pointer;
-
-    /// A typedef for the mapping of identifier to device ptrs
-    typedef std::map<Identifier, IDevice::Pointer> PhysicalDeviceSet;
 
     /// A typedef providing an iterator for this object
     typedef PhysicalDeviceSet::iterator iterator;
@@ -94,19 +97,19 @@ public:
         return m_devices.end();
     };
 
-    /// Iterator to the first managed device.
+    /// Const iterator to the first managed device.
     const_iterator begin() const
     {
         return m_devices.begin();
     };
 
-    /// Iterator past the last managed device.
+    /// Const iterator past the last managed device.
     const_iterator end() const
     {
         return m_devices.end();
     };
 
-    /// @todo
+    /// Retrieves all registered devices of a particular type.
     template <class DeviceType>
     const std::vector<typename DeviceType::Pointer> GetDevicesOfType();
 
@@ -129,12 +132,13 @@ public:
     template <class DeviceType>
     std::vector<SettingValue> GetValueVector(
         SettingValue(DeviceType::*getter)( ) const) const;
-
-    /// @todo
-    unsigned int CountActiveFids() const;
+ 
+    /// Gives a count of connected FIDs.
+    size_t CountActiveFids() const;
 
     /// Retrieves all the stored devices of a specified type.
     std::vector<IDevice::Pointer> GetDevicesOfType(std::string type);
+
 private:
     /// Mapping From Identifier To Device Set
     PhysicalDeviceSet m_devices;
@@ -223,4 +227,4 @@ std::string value, BinaryOp math)
 } // namespace broker
 } // namespace freedm
 
-#endif // CONNECTIONMANAGER_HPP
+#endif // PHYSICALDEVICEMANAGER_HPP

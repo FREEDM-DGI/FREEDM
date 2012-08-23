@@ -1,50 +1,40 @@
-///////////////////////////////////////////////////////////////////////////////
-/// @file      CMessage.hpp
+////////////////////////////////////////////////////////////////////////////////
+/// @file         CMessage.hpp
 ///
-/// @author    Derek Ditch <derek.ditch@mst.edu>
+/// @author       Derek Ditch <derek.ditch@mst.edu>
 ///
-/// @compiler  C++
+/// @project      FREEDM DGI
 ///
-/// @project   FREEDM DGI
+/// @description  Declare CMessage class
 ///
-/// @description Declare CMessage class
+/// These source code files were created at Missouri University of Science and
+/// Technology, and are intended for use in teaching or research. They may be
+/// freely copied, modified, and redistributed as long as modified versions are
+/// clearly marked as such and this notice is not removed. Neither the authors
+/// nor Missouri S&T make any warranty, express or implied, nor assume any legal
+/// responsibility for the accuracy, completeness, or usefulness of these files
+/// or any information distributed with these files.
 ///
-/// @license
-/// These source code files were created at as part of the
-/// FREEDM DGI Subthrust, and are
-/// intended for use in teaching or research.  They may be
-/// freely copied, modified and redistributed as long
-/// as modified versions are clearly marked as such and
-/// this notice is not removed.
-///
-/// Neither the authors nor the FREEDM Project nor the
-/// National Science Foundation
-/// make any warranty, express or implied, nor assumes
-/// any legal responsibility for the accuracy,
-/// completeness or usefulness of these codes or any
-/// information distributed with these codes.
-///
-/// Suggested modifications or questions about these codes
-/// can be directed to Dr. Bruce McMillin, Department of
-/// Computer Science, Missour University of Science and
-/// Technology, Rolla, MO  65409 (ff@mst.edu).
-///////////////////////////////////////////////////////////////////////////////
+/// Suggested modifications or questions about these files can be directed to
+/// Dr. Bruce McMillin, Department of Computer Science, Missouri University of
+/// Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
+////////////////////////////////////////////////////////////////////////////////
 
 #ifndef CMESSAGE_HPP
 #define CMESSAGE_HPP
 
+#include "SRemoteHost.hpp"
+
+#include <set>
+#include <string>
+
 #include <boost/asio.hpp>
+#include <boost/date_time/gregorian/gregorian.hpp>
+#include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/xml_parser.hpp>
-#include <boost/date_time/posix_time/posix_time.hpp>
-#include <boost/date_time/gregorian/gregorian.hpp>
-
-#include "remotehost.hpp"
 
 using boost::property_tree::ptree;
-
-#include <string>
-#include <set>
 
 namespace freedm {
 namespace broker {
@@ -81,7 +71,7 @@ public:
     std::string GetSourceUUID() const;
 
     /// Accessor for hostname
-    remotehost GetSourceHostname() const;
+    SRemoteHost GetSourceHostname() const;
     
     /// Accessor for sequenceno
     unsigned int GetSequenceNumber() const;
@@ -99,7 +89,7 @@ public:
     void SetSourceUUID(std::string uuid);
     
     /// Setter for hostname
-    void SetSourceHostname(remotehost hostname);
+    void SetSourceHostname(SRemoteHost hostname);
 
     /// Setter for sequenceno
     void SetSequenceNumber(unsigned int sequenceno);
@@ -185,7 +175,7 @@ public:
    
 private: 
     /// Contains the source node's hostname
-    remotehost m_remotehost;
+    SRemoteHost m_remotehost;
 
     /// Contains the sequence number for the sending node
     unsigned int m_sequenceno;

@@ -1,53 +1,43 @@
-////////////////////////////////////////////////////////////////////
-/// @file      CConnection.hpp
+////////////////////////////////////////////////////////////////////////////////
+/// @file         CConnection.hpp
 ///
-/// @author    Derek Ditch <derek.ditch@mst.edu>, Stephen Jackson <scj7t4@mst.edu>
+/// @author       Derek Ditch <derek.ditch@mst.edu>
+/// @author       Stephen Jackson <scj7t4@mst.edu>
+/// 
+/// @project      FREEDM DGI
 ///
-/// @compiler  C++
+/// @description  Declare CConnection class
 ///
-/// @project   FREEDM DGI
+/// These source code files were created at Missouri University of Science and
+/// Technology, and are intended for use in teaching or research. They may be
+/// freely copied, modified, and redistributed as long as modified versions are
+/// clearly marked as such and this notice is not removed. Neither the authors
+/// nor Missouri S&T make any warranty, express or implied, nor assume any legal
+/// responsibility for the accuracy, completeness, or usefulness of these files
+/// or any information distributed with these files.
 ///
-/// @description Declare CConnection class
-///
-/// @license
-/// These source code files were created at as part of the
-/// FREEDM DGI Subthrust, and are
-/// intended for use in teaching or research.  They may be
-/// freely copied, modified and redistributed as long
-/// as modified versions are clearly marked as such and
-/// this notice is not removed.
-///
-/// Neither the authors nor the FREEDM Project nor the
-/// National Science Foundation
-/// make any warranty, express or implied, nor assumes
-/// any legal responsibility for the accuracy,
-/// completeness or usefulness of these codes or any
-/// information distributed with these codes.
-///
-/// Suggested modifications or questions about these codes
-/// can be directed to Dr. Bruce McMillin, Department of
-/// Computer Science, Missour University of Science and
-/// Technology, Rolla, MO 65409 (ff@mst.edu).
-////////////////////////////////////////////////////////////////////
+/// Suggested modifications or questions about these files can be directed to
+/// Dr. Bruce McMillin, Department of Computer Science, Missouri University of
+/// Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
+////////////////////////////////////////////////////////////////////////////////
 
 #ifndef CCONNECTION_HPP
 #define CCONNECTION_HPP
 
-#include "CMessage.hpp"
 #include "CDispatcher.hpp"
+#include "CMessage.hpp"
 #include "CReliableConnection.hpp"
+#include "SRemoteHost.hpp"
 
-#include "remotehost.hpp"
-
-#include <boost/asio.hpp>
-#include <boost/array.hpp>
-#include <boost/noncopyable.hpp>
-#include <boost/shared_ptr.hpp>
-#include <boost/enable_shared_from_this.hpp>
-
+#include <deque>
 #include <iomanip>
 #include <set>
-#include <deque>
+
+#include <boost/array.hpp>
+#include <boost/asio.hpp>
+#include <boost/enable_shared_from_this.hpp>
+#include <boost/noncopyable.hpp>
+#include <boost/shared_ptr.hpp>
 
 namespace freedm {
     namespace broker {

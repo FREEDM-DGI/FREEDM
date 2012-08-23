@@ -1,57 +1,47 @@
-////////////////////////////////////////////////////////////////////
-/// @file      CConnectionManager.hpp
+////////////////////////////////////////////////////////////////////////////////
+/// @file         CConnectionManager.hpp
 ///
-/// @author    Derek Ditch <derek.ditch@mst.edu>
-///            Stephen Jackson <scj7t4@mst.edu>
-///            Christopher M. Kohloff <chris@kohloff.com>
+/// @author       Derek Ditch <derek.ditch@mst.edu>
+/// @author       Stephen Jackson <scj7t4@mst.edu>
+/// @author       Christopher M. Kohloff <chris@kohloff.com>
 ///
-/// @compiler  C++
+/// @project      FREEDM DGI
 ///
-/// @project   FREEDM DGI
+/// @description  Connection manager, for the connections.
 ///
-/// @description Connection manager, for the connections.
+/// These source code files were created at Missouri University of Science and
+/// Technology, and are intended for use in teaching or research. They may be
+/// freely copied, modified, and redistributed as long as modified versions are
+/// clearly marked as such and this notice is not removed. Neither the authors
+/// nor Missouri S&T make any warranty, express or implied, nor assume any legal
+/// responsibility for the accuracy, completeness, or usefulness of these files
+/// or any information distributed with these files.
 ///
-/// @license
-/// These source code files were created at as part of the
-/// FREEDM DGI Subthrust, and are
-/// intended for use in teaching or research.  They may be
-/// freely copied, modified and redistributed as long
-/// as modified versions are clearly marked as such and
-/// this notice is not removed.
-///
-/// Neither the authors nor the FREEDM Project nor the
-/// National Science Foundation
-/// make any warranty, express or implied, nor assumes
-/// any legal responsibility for the accuracy,
-/// completeness or usefulness of these codes or any
-/// information distributed with these codes.
-///
-/// Suggested modifications or questions about these codes
-/// can be directed to Dr. Bruce McMillin, Department of
-/// Computer Science, Missouri University of Science and
-/// Technology, Rolla, MO 65409 (ff@mst.edu).
-///
-////////////////////////////////////////////////////////////////////
+/// Suggested modifications or questions about these files can be directed to
+/// Dr. Bruce McMillin, Department of Computer Science, Missouri University of
+/// Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
+////////////////////////////////////////////////////////////////////////////////
+
 #ifndef CONNECTIONMANAGER_HPP
 #define CONNECTIONMANAGER_HPP
 
 #include "CConnection.hpp"
+#include "CGlobalConfiguration.hpp"
 #include "CListener.hpp"
 #include "CReliableConnection.hpp"
-#include "remotehost.hpp"
-#include "CGlobalConfiguration.hpp"
-
-#include <set>
-#include <string>
-#include <map>
-#include <boost/foreach.hpp>
-#include <boost/bimap.hpp>
-#include <boost/thread/mutex.hpp>
-#include <boost/noncopyable.hpp>
-#include <boost/shared_ptr.hpp>
-#include <boost/enable_shared_from_this.hpp>
 #include "CUuid.hpp"
 #include "IHandler.hpp"
+#include "SRemoteHost.hpp"
+
+#include <boost/bimap.hpp>
+#include <boost/enable_shared_from_this.hpp>
+#include <boost/noncopyable.hpp>
+#include <boost/shared_ptr.hpp>
+#include <boost/thread/mutex.hpp>
+
+#include <map>
+#include <set>
+#include <string>
 
 namespace freedm {
 namespace broker {
@@ -67,7 +57,7 @@ public:
     typedef boost::shared_ptr<CConnection> ConnectionPtr;
     
     /// Typedef for the map which handles uuid to hostname
-    typedef std::map<std::string, remotehost> hostnamemap;
+    typedef std::map<std::string, SRemoteHost> hostnamemap;
     
     /// Typedef for the map which handles uuid to connection 
     typedef boost::bimap<std::string, ConnectionPtr> connectionmap;
@@ -85,7 +75,7 @@ public:
     void PutHostname(std::string u_, std::string host_, std::string port);
    
     /// Place a hostname and uuid into the hostname / uuid map.
-    void PutHostname(std::string u_, remotehost host_);
+    void PutHostname(std::string u_, SRemoteHost host_);
  
     /// Register a connection with the manager once it has been built.
     void PutConnection(std::string uuid, ConnectionPtr c);
@@ -103,10 +93,10 @@ public:
     std::string GetUUID() { return m_uuid; };
 
     /// Get The Hostname
-    remotehost GetHostname() { return m_hostname; };
+    SRemoteHost GetHostname() { return m_hostname; };
     
     /// Get the hostname from the UUID.
-    remotehost GetHostnameByUUID( std::string uuid ) const; 
+    SRemoteHost GetHostnameByUUID( std::string uuid ) const; 
 
     /// Fetch a connection pointer via UUID
     ConnectionPtr GetConnectionByUUID( std::string uuid_ );
@@ -134,7 +124,7 @@ private:
     /// Mapping from uuid to hostname.
     hostnamemap m_hostnames;
     /// Hostname of this node.
-    remotehost m_hostname;
+    SRemoteHost m_hostname;
     /// Forward map (UUID->Connection)
     connectionmap   m_connections;
     /// Incoming messages channel

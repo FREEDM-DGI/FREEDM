@@ -1,50 +1,40 @@
-///////////////////////////////////////////////////////////////////////////////
-/// @file      CGlobalConfiguration.hpp
+////////////////////////////////////////////////////////////////////////////////
+/// @file         CGlobalConfiguration.hpp
 ///
-/// @author    Stephen Jackson <scj7t4@mst.edu>
+/// @author       Stephen Jackson <scj7t4@mst.edu>
 ///
-/// @compiler  C++
+/// @project      FREEDM DGI
 ///
-/// @project   FREEDM DGI
+/// @description  Tracks some global configuration options that need to be
+///               referenced by various classes
 ///
-/// @description Tracks some global configuration options that need to be
-///              referenced by various classes
+/// @citations  [1] Frank Buschmann, Regine Meunier, Hans Rohnert,
+///                 Peter Sommerlad, and Michael Stal. Pattern-Oriented Softwar
+///                 Architecture Volume 1: A System of Patterns. Wiley, 1
+///                 edition, August 1996.
 ///
-/// [1] Frank Buschmann, Regine Meunier, Hans Rohnert, Peter Sommerlad,
-///    and Michael Stal. Pattern-Oriented Software Architecture Volume 1: A
-///    System of Patterns. Wiley, 1 edition, August 1996.
+///             [2] Boost.Asio Examples
+///     <http://www.boost.org/doc/libs/1_41_0/doc/html/boost_asio/examples.html>
 ///
-/// [2] Boost.Asio Examples
-///    <http://www.boost.org/doc/libs/1_41_0/doc/html/boost_asio/examples.html>
+/// These source code files were created at Missouri University of Science and
+/// Technology, and are intended for use in teaching or research. They may be
+/// freely copied, modified, and redistributed as long as modified versions are
+/// clearly marked as such and this notice is not removed. Neither the authors
+/// nor Missouri S&T make any warranty, express or implied, nor assume any legal
+/// responsibility for the accuracy, completeness, or usefulness of these files
+/// or any information distributed with these files.
 ///
-/// @license
-/// These source code files were created at as part of the
-/// FREEDM DGI Subthrust, and are
-/// intended for use in teaching or research.  They may be 
-/// freely copied, modified and redistributed as long
-/// as modified versions are clearly marked as such and
-/// this notice is not removed.
-/// 
-/// Neither the authors nor the FREEDM Project nor the
-/// National Science Foundation
-/// make any warranty, express or implied, nor assumes
-/// any legal responsibility for the accuracy,
-/// completeness or usefulness of these codes or any
-/// information distributed with these codes.
-///
-/// Suggested modifications or questions about these codes 
-/// can be directed to Dr. Bruce McMillin, Department of 
-/// Computer Science, Missour University of Science and
-/// Technology, Rolla, MO  65409 (ff@mst.edu).
-///
-///////////////////////////////////////////////////////////////////////////////
+/// Suggested modifications or questions about these files can be directed to
+/// Dr. Bruce McMillin, Department of Computer Science, Missouri University of
+/// Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
+////////////////////////////////////////////////////////////////////////////////
 
 #ifndef CGLOBALCONFIGURATION_HPP
 #define CGLOBALCONFIGURATION_HPP
 
 #include <string>
 
-#include "boost/date_time/posix_time/posix_time.hpp"
+#include <boost/date_time/posix_time/posix_time.hpp>
 
 namespace freedm {
 namespace broker {

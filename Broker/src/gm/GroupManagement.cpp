@@ -33,7 +33,6 @@
 #include "CLogger.hpp"
 #include "CMessage.hpp"
 #include "SRemoteHost.hpp"
-#include "SStopwatch.hpp"
 
 #include <algorithm>
 #include <cassert>

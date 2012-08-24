@@ -342,7 +342,7 @@ int main(int argc, char* argv[])
     }
     catch (std::exception& e)
     {
-        Logger.Error << "Exception caught in main:" << e.what() << std::endl;
+        Logger.Error << "Exception caught in main: " << e.what() << std::endl;
     }
 
     return 0;

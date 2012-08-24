@@ -30,7 +30,6 @@
 
 #include "config.hpp"
 #include "device/CDeviceFactory.hpp"
-#include "device/CGenericAdapter.hpp"
 #include "device/CPscadAdapter.hpp"
 #include "device/CRtdsAdapter.hpp"
 #include "device/types/CDeviceFid.hpp"
@@ -113,7 +112,7 @@ void CDeviceFactory::init(CPhysicalDeviceManager::Pointer manager,
     m_ios = &ios;
     m_fpgaCfgFile = fpgaCfgFile;
 #else
-    m_adapter = CGenericAdapter::Create();
+    BOOST_STATIC_ASSERT(false);
 #endif
     m_initialized = true;
 }

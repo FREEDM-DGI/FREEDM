@@ -3,7 +3,6 @@ set(
     DEVICE_FILES
     CDeviceFactory.cpp
     CDeviceKeyCoupled.cpp
-    CGenericAdapter.cpp
     CPhysicalDeviceManager.cpp
     CPscadAdapter.cpp
     CRtdsAdapter.cpp

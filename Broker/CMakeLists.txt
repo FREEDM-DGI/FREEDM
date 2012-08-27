@@ -13,7 +13,6 @@ get_git_head_revision(GIT_REFSPEC GIT_SHA1)
 #   add the option below with a help message defaulted to OFF
 #   add the option to Broker/include/config.hpp.cmake as #cmakedefine OPTION
 #   activate / deactivate the option as described in the message below
-option(BUILD_TESTS "Enable the building and running of unit tests." OFF)
 option(CUSTOMNETWORK "for network.xml support" OFF)
 option(DATAGRAM "for UDP Datagram service w/o sequencing" OFF)
 option(SHOW_MESSAGES "Enable help messages during cmake execution" ON)
@@ -92,10 +91,3 @@ target_link_libraries(
 
 # run Doxygen
 add_custom_command(TARGET PosixBroker POST_BUILD COMMAND ./builddocs.sh)
-
-if(BUILD_TESTS)
-    enable_testing()
-
-    # goto test/CMakeLists.txt
-    add_subdirectory(test)
-endif(BUILD_TESTS)

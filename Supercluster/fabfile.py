@@ -2,8 +2,10 @@ from fabric.api import *
 
 env.key_filename = ["/home/scj7t4/.ssh/id_supercluster"]
 env.warn_only = False
-env.hosts = ['r-facts3.device.mst.edu','r-facts4.device.mst.edu',
+env.hosts = ['r-facts4.device.mst.edu',
              'r-facts5.device.mst.edu','r-facts6.device.mst.edu']
+env.hosts += ['r99ff.managed.mst.edu','r12ff.managed.mst.edu',
+              'r01ff.managed.mst.edu','fil4.managed.mst.edu']
 #env.user = 'root'
 
 def host_type():

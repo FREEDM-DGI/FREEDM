@@ -159,21 +159,19 @@ void CSRConnection::Resend(const boost::system::error_code& err)
     {
         Logger.Trace<<__PRETTY_FUNCTION__<<" Checking ACK"<<std::endl;
         // Check if the front of the queue is an ACK
-        /*
         m_ackmutex.lock();
         if(m_currentack.GetStatus() == freedm::broker::CMessage::Accepted)
         {
-            if(!m_currentack.IsExpired())
-            {
+            //if(!m_currentack.IsExpired())
+            //{
                 Write(m_currentack);
                 m_timeout.cancel();
                 m_timeout.expires_from_now(boost::posix_time::milliseconds(REFIRE_TIME));
                 m_timeout.async_wait(boost::bind(&CSRConnection::Resend,this,
                     boost::asio::placeholders::error));
-            }
+            //}
         }
         m_ackmutex.unlock();
-        */
         Logger.Trace<<__PRETTY_FUNCTION__<<" Sent ACK"<<std::endl;
         while(m_window.size() > 0 && m_window.front().IsExpired())
         {
@@ -181,7 +179,7 @@ void CSRConnection::Resend(const boost::system::error_code& err)
             //First message in the window should be the only one
             //ever to have been written.
             m_sendkills = true;
-            Logger.Notice<<"Message Expired: "<<m_window.front().GetHash()
+            Logger.Debug<<"Message Expired: "<<m_window.front().GetHash()
                           <<":"<<m_window.front().GetSequenceNumber()<<std::endl;
             m_window.pop_front();
         }
@@ -242,10 +240,12 @@ void CSRConnection::RecieveACK(const CMessage &msg)
         // Assuming hash collisions are small, we will check the hash
         // of the front message. On hit, we can accept the acknowledge.
         unsigned int fseq = m_window.front().GetSequenceNumber();
+        Logger.Debug<<"Recieved ACK "<<seq<<" expecting ACK "<<fseq<<std::endl;
         if(fseq == seq && m_window.front().GetHash() == hash)
         {
             m_sendkill = fseq; 
             m_window.pop_front();
+            m_sendkills = false;
         }
     }
     if(m_window.size() > 0)
@@ -305,12 +305,13 @@ bool CSRConnection::Recieve(const CMessage &msg)
         {
             if(m_outsynctime != msg.GetSendTimestamp())
             {
+                Logger.Debug<<"Syncronizing Connection (BAD REQUEST)"<<std::endl;
                 m_outsynctime = msg.GetSendTimestamp();
                 SendSYN();
             }
             else
             {
-                Logger.Notice<<"Already synced for this time"<<std::endl;
+                Logger.Debug<<"Already synced for this time"<<std::endl;
             }
         }
         return false;
@@ -321,7 +322,7 @@ bool CSRConnection::Recieve(const CMessage &msg)
         if(msg.GetSendTimestamp() == m_insynctime)
         {
             return false;
-            Logger.Notice<<"Duplicate Sync"<<std::endl;
+            Logger.Debug<<"Duplicate Sync"<<std::endl;
         }
         Logger.Debug<<"Got Sync"<<std::endl;
         m_inseq = (msg.GetSequenceNumber()+1)%SEQUENCE_MODULO;
@@ -333,7 +334,7 @@ bool CSRConnection::Recieve(const CMessage &msg)
     }
     if(m_insync == false)
     {
-        Logger.Notice<<"Connection Needs Resync"<<std::endl;
+        Logger.Debug<<"Connection Needs Resync"<<std::endl;
         //If the connection hasn't been synchronized, we want to
         //tell them it is a bad request so they know they need to sync.
         freedm::broker::CMessage outmsg;
@@ -363,6 +364,7 @@ bool CSRConnection::Recieve(const CMessage &msg)
     //Consider the window you expect to see
     // If the killed message is the one immediately preceeding this
     // message in terms of sequence number we should accept it
+    Logger.Debug<<"Recv: "<<msg.GetSequenceNumber()<<" Expected "<<m_inseq<<" Using kill: "<<usekill<<" with "<<kill<<std::endl;
     if(msg.GetSequenceNumber() == m_inseq)
     {
         //m_insync = true;
@@ -378,7 +380,7 @@ bool CSRConnection::Recieve(const CMessage &msg)
     }
     else if(usekill == true)
     {
-        Logger.Notice<<"KILL: "<<kill<<" INSEQ "<<m_inseq<<" SEQ: "
+        Logger.Debug<<"KILL: "<<kill<<" INSEQ "<<m_inseq<<" SEQ: "
                       <<msg.GetSequenceNumber()<<std::endl;
     }
     // Justin case.
@@ -464,6 +466,7 @@ void CSRConnection::SendSYN()
     outmsg.SetSequenceNumber(seq);
     outmsg.SetSendTimestampNow();
     outmsg.SetProtocol(GetIdentifier());
+    outmsg.SetNeverExpires();
     Write(outmsg);
     m_window.push_front(outmsg);
     m_outsync = true;

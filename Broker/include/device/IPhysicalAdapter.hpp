@@ -26,6 +26,7 @@
 #define	IPHYSICALADAPTER_HPP
 
 #include <string>
+#include <utility>
 
 #include <boost/noncopyable.hpp>
 #include <boost/shared_ptr.hpp>
@@ -59,7 +60,18 @@ class IPhysicalAdapter : private boost::noncopyable
 public:
     /// Pointer to a physical adapter.
     typedef boost::shared_ptr<IPhysicalAdapter> Pointer;
-
+    
+    /// Registers a new device signal with the physical adapter.
+    void RegisterStateInfo(std::string device, std::string signal,
+            std::size_t index );
+    
+    /// Registers a new device signal with the physical adapter.
+    void RegisterCommandInfo(std::string device, std::string signal,
+            std::size_t index );
+    
+    /// Start the adapter.
+    virtual void Start() = 0;
+    
     /// Retrieves a value from a device.
     virtual SettingValue Get(const Identifier device,
             const SettingKey key) const = 0;

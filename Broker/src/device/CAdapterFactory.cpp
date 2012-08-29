@@ -29,7 +29,9 @@
 /// Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
 ////////////////////////////////////////////////////////////////////////////////
 
-#include "device/CAdapterFactory.hpp"
+#include "CAdapterFactory.hpp"
+#include "CPscadAdapter.hpp"
+#include "CRtdsAdapter.hpp"
 
 #include <set>
 #include <utility>
@@ -69,7 +71,7 @@ CAdapterFactory & CAdapterFactory::Instance()
 /// @SharedMemory A shared pointer to the physical device manager is stored.
 /// @pre The adapter factory must not have already been initialized.
 /// @pre The passed device manager must not be null.
-/// @post Sets the value of m_manager.
+/// @post Sets the value of m_manager to the passed value.
 /// @param manager The physical device manager to be used by the factory.
 ///
 /// @limitations This function must be called exactly once.
@@ -78,17 +80,17 @@ void CAdapterFactory::Initialize(CPhysicalDeviceManager::Pointer manager)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     
-    if( m_manager )
-    {
-        std::stringstream ss;
-        ss << "Adapter factory has already been initialized." << std::endl;
-        throw std::runtime_error(ss.str());
-    }
-    
     if( !manager )
     {
         std::stringstream ss;
         ss << "Received an invalid device manager pointer." << std::endl;
+        throw std::runtime_error(ss.str());
+    }
+    
+    if( m_manager )
+    {
+        std::stringstream ss;
+        ss << "Adapter factory has already been initialized." << std::endl;
         throw std::runtime_error(ss.str());
     }
     
@@ -136,10 +138,17 @@ void CAdapterFactory::CreateAdapter(const boost::property_tree::ptree & p)
         throw std::runtime_error(ss.str());
     }
     
+    Logger.Debug << "Building " << type << " adapter " << name << std::endl;
+    
+    // adapter will not be null if no exception is thrown
     adapter = CreateAdapter(name, type, subtree);
     
+    // i = 0 parses state information, i = 1 parses command information
     for( int i = 0; i < 2; i++ )
     {
+        Logger.Debug << "Reading the " << (i == 0 ? "state" : "command")
+                << " property tree specification." << std::endl;
+        
         try
         {
             subtree = (i == 0 ? p.get_child("state") : p.get_child("command"));
@@ -163,10 +172,14 @@ void CAdapterFactory::CreateAdapter(const boost::property_tree::ptree & p)
             catch( std::exception & e )
             {
                 std::stringstream ss;
-                s << "Failed to create adapter: " << e.what() << std::endl;
+                ss << "Failed to create adapter: " << e.what() << std::endl;
                 throw std::runtime_error(ss.str());
             }
             
+            Logger.Debug << "At index " << index << " for the device signal ("
+                    << name << "," << signal << ")." << std::endl;
+            
+            // create the device when first seen
             if( devices.count(name) == 0 )
             {
                 CreateDevice(name, type, adapter);
@@ -184,75 +197,23 @@ void CAdapterFactory::CreateAdapter(const boost::property_tree::ptree & p)
         }
     }
     
+    // signal construction complete
     adapter->Start();
-}
-
-////////////////////////////////////////////////////////////////////////////////
-/// Creates and stores a new adapter without configuration of its devices.
-///
-/// @ErrorHandling Throws a std::runtime_error if the name is invalid, the name
-/// is already in use, or the type is unrecognized.
-/// @pre CPscadAdapter::Create and CRtdsAdapter::Create must exist.
-/// @post Updates m_adapter to store the new adapter keyed on the passed name.
-/// @param name The unique identifier for the new adapter.
-/// @param type The type of adapter to create.
-/// @param p The property tree that contains the adapter constructor details.
-/// @return A shared pointer to the newly created adapter.
-///
-/// @limitations None.
-////////////////////////////////////////////////////////////////////////////////
-IPhysicalAdapter::Pointer CAdapterFactory::CreateAdapter(std::string name,
-        std::string type, const boost::property_tree::ptree & p)
-{
-    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    IPhysicalAdapter::Pointer adapter;
-    
-    if( name.empty() )
-    {
-        std::stringstream ss;
-        ss << "Tried to create an adapter with an empty name." << std::endl;
-        throw std::runtime_error(ss.str());
-    }
-    
-    if( m_adapter.find(name) != m_adapter.end() )
-    {
-        std::stringstream ss;
-        ss << "Multiple adapters share the name " << name << "." << std::endl;
-        throw std::runtime_error(ss.str());
-    }
-    
-    if( type == "pscad" )
-    {
-        adapter = CPscadAdapter::Create(m_service, p);
-    }
-    else if( type == "rtds" )
-    {
-        adapter = CRtdsAdapter::Create(m_service, p);
-    }
-    else
-    {
-        std::stringstream ss;
-        ss << "Tried to create adapter of type " << type << "." << std::endl;
-        throw std::runtime_error(ss.str());
-    }
-    
-    m_adapter[name] = adapter;
-    Logger.Info << "Created the " << type << " adapter " << name << std::endl;
-    
-    return adapter;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 /// Constructs an uninitialized factory.
 ///
 /// @pre None.
-/// @post Creates an adapter factory.
+/// @post Registers the recognized device classes.
 ///
 /// @limitations None.
 ////////////////////////////////////////////////////////////////////////////////
 CAdapterFactory::CAdapterFactory()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    
+    RegisterPhysicalDevices();
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -283,6 +244,61 @@ void CAdapterFactory::RegisterDeviceClass(std::string key,
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+/// Creates and stores a new adapter without configuration of its devices.
+///
+/// @ErrorHandling Throws a std::runtime_error if the name is invalid, the name
+/// is already in use, or the type is unrecognized.
+/// @pre CPscadAdapter::Create and CRtdsAdapter::Create must exist.
+/// @post Updates m_adapter to store the new adapter keyed on the passed name.
+/// @param name The unique identifier for the new adapter.
+/// @param type The type of adapter to create.
+/// @param p The property tree that contains the adapter constructor details.
+/// @return A non-null shared pointer to the newly created adapter.
+///
+/// @limitations None.
+////////////////////////////////////////////////////////////////////////////////
+IPhysicalAdapter::Pointer CAdapterFactory::CreateAdapter(std::string name,
+        std::string type, const boost::property_tree::ptree & p)
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    IPhysicalAdapter::Pointer adapter;
+    
+    if( name.empty() )
+    {
+        std::stringstream ss;
+        ss << "Tried to create an adapter with an empty name." << std::endl;
+        throw std::runtime_error(ss.str());
+    }
+    
+    if( m_adapter.count(name) > 0 )
+    {
+        std::stringstream ss;
+        ss << "Multiple adapters share the name " << name << "." << std::endl;
+        throw std::runtime_error(ss.str());
+    }
+    
+    if( type == "pscad" )
+    {
+        adapter = CPscadAdapter::Create(m_service, p);
+    }
+    else if( type == "rtds" )
+    {
+        adapter = CRtdsAdapter::Create(m_service, p);
+    }
+    else
+    {
+        std::stringstream ss;
+        ss << "Tried to create adapter of type " << type << "." << std::endl;
+        throw std::runtime_error(ss.str());
+    }
+    
+    m_adapter[name] = adapter;
+    Logger.Info << "Created the " << type << " adapter " << name << std::endl;
+    
+    return adapter;
+}
+
+////////////////////////////////////////////////////////////////////////////////
 /// Calls a registered function to create a new device of the given type.
 ///
 /// @ErrorHandling Throws a std::runtime_error if type is not registered with
@@ -300,14 +316,14 @@ void CAdapterFactory::CreateDevice(std::string name, std::string type,
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     
-    if( m_registry.find(type) == m_registry.end() )
+    if( m_registry.count(type) == 0 )
     {
         std::stringstream ss;
         ss << "Device class " << type << " is not registered." << std::endl;
         throw std::runtime_error(ss.str());
     }
     
-    (m_registry[type])(name);
+    (this->*m_registry[type])(name, adapter);
 }
 
 } // namespace device

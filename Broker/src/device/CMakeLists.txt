@@ -8,6 +8,7 @@ set(
     CRtdsAdapter.cpp
     CTableRTDS.cpp
     CTableStructure.cpp
+    IPhysicalAdapter.cpp
     IConnectionAdapter.cpp
     PhysicalDeviceTypes.cpp
    )

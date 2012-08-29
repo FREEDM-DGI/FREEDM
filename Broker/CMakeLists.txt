@@ -68,6 +68,8 @@ CONFIGURE_FILE(
 
 # include project source directories
 include_directories("${CMAKE_BINARY_DIR}/include")
+include_directories("${CMAKE_BINARY_DIR}/include/device")
+include_directories("${CMAKE_BINARY_DIR}/include/device/types")
 include_directories("${CMAKE_BINARY_DIR}/src")
 
 # goto src/CMakeLists.txt

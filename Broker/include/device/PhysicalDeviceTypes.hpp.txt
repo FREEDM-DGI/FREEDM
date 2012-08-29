@@ -30,15 +30,4 @@
 
 ##BREAK
 
-namespace freedm {
-namespace broker {
-namespace device {
-
-/// Registers the physical devices known to this file with the device factory
-void RegisterPhysicalDevices();
-
-} // namespace device
-} // namespace broker
-} // namespace freedm
-
 #endif // PHYSICAL_DEVICE_TYPES_HPP

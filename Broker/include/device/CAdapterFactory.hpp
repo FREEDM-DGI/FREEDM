@@ -113,14 +113,13 @@ private:
 };
 
 ////////////////////////////////////////////////////////////////////////////////
-/// Creates a device of DeviceType with the given name that and registers it
-/// with the factory's device manager.  The device is constructed to access
-/// the passed adapter.
+/// Creates a device of DeviceType with the given name and registers it with
+/// the factory's device manager.  The device is constructed to access the
+/// passed adapter.
 ///
 /// @ErrorHandling Throws a std::runtime_error if either the factory has not
 /// been initialized with CAdapterFactory::Initialize or a device exists with
 /// the provided name.
-/// @pre Requires a prior call to CAdapterFactory::Initialize.
 /// @pre The provided adapter must not be null.
 /// @post The new device is registered with the physical device manager.
 /// @post The provided adapter is registered with the new device.
@@ -144,7 +143,7 @@ void CAdapterFactory::CreateDevice(std::string name,
     
     if( m_manager->DeviceExists(name) )
     {
-        std:stringstream ss;
+        std::stringstream ss;
         ss << "The device '" << name << "' already exists." << std::endl;
         throw std::runtime_error(ss.str());
     }

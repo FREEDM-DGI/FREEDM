@@ -1,5 +1,5 @@
 ////////////////////////////////////////////////////////////////////////////////
-/// @file           IConnectionAdapter.hpp
+/// @file           ITcpAdapter.hpp
 ///
 /// @author         Thomas Roth <tprfh7@mst.edu>,
 ///                 Michael Catanzaro <michael.catanzaro@mst.edu>
@@ -22,8 +22,8 @@
 /// Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
 ////////////////////////////////////////////////////////////////////////////////
 
-#ifndef ICONNECTIONADAPTER_HPP
-#define	ICONNECTIONADAPTER_HPP
+#ifndef ITCPADAPTER_HPP
+#define	ITCPADAPTER_HPP
 
 #include "IPhysicalAdapter.hpp"
 
@@ -51,7 +51,7 @@ namespace device {
 ///     Build in some safety so that an error occurs if the network adapter is
 ///     used before it is connected.
 ////////////////////////////////////////////////////////////////////////////////
-class IConnectionAdapter : public IPhysicalAdapter
+class ITcpAdapter : public IPhysicalAdapter
 {
 public:
     /// Type of a pointer to a connection adapter.
@@ -60,15 +60,15 @@ public:
     /// Creates a socket connection to the given hostname and service.
     virtual void Connect(const std::string hostname, const std::string port);
 
-    /// Closes the connection.
-    virtual void Quit() = 0;
-
     /// Virtual destructor for derived classes.
-    virtual ~IConnectionAdapter() { };
+    virtual ~ITcpAdapter() { };
 
 protected:
     /// Constructor to initialize the socket.
-    IConnectionAdapter(boost::asio::io_service& service);
+    ITcpAdapter(boost::asio::io_service& service);
+
+    /// Closes the connection.
+    virtual void Quit() = 0;
 
     /// Socket to use for the connection.
     mutable boost::asio::ip::tcp::socket m_socket;
@@ -78,4 +78,4 @@ protected:
 }
 }
 
-#endif	// ICONNECTIONADAPTER_HPP
+#endif	// ITCPADAPTER_HPP

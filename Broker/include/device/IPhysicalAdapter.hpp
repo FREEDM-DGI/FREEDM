@@ -26,6 +26,7 @@
 #define	IPHYSICALADAPTER_HPP
 
 #include <string>
+#include <utility>
 
 #include <boost/noncopyable.hpp>
 #include <boost/shared_ptr.hpp>
@@ -34,25 +35,24 @@ namespace freedm {
 namespace broker {
 namespace device {
 
-/// Type of the unique device identifier
-typedef std::string Identifier;
-
-/// Type of the key for device settings
-typedef std::string SettingKey;
-
 /// Type of the value for device settings
 typedef float SettingValue;
 
+/// Type to uniquely identify a device signal
+typedef std::pair<const std::string, const std::string> DeviceSignal;
+
+/// Physical adapter device interface.
 ////////////////////////////////////////////////////////////////////////////////
-/// @brief  Physical adapter device interface.
+/// Physical adapter device interface. Each device contains a reference to an
+/// adapter that it uses to perform all operations. The adapter is responsible
+/// for implementing the behavior of "get value" and "set value" operations on
+/// devices. The adapter is, in effect, the device's "driver". Note that the
+/// same adapter can be used for all devices in the simulation if this is
+/// desirable, or each device can have its own adapter.
 ///
-/// @description
-///     Physical adapter device interface. Each device contains a reference to
-///     an adapter that it uses to perform all operations. The adapter is
-///     responsible for implementing the behavior of "get value" and "set value" 
-///     operations on devices. The adapter is, in effect, the device's "driver".
-///     Note that the same adapter can be used for all devices in the
-///     simulation if this is desirable.
+/// @limitations It is not possible to add another device to an adapter once it
+///              has started, so plug-and-play devices require dedicated
+///              adapters.
 ////////////////////////////////////////////////////////////////////////////////
 class IPhysicalAdapter : private boost::noncopyable
 {
@@ -61,12 +61,12 @@ public:
     typedef boost::shared_ptr<IPhysicalAdapter> Pointer;
 
     /// Retrieves a value from a device.
-    virtual SettingValue Get(const Identifier device,
-            const SettingKey key) const = 0;
+    virtual SettingValue Get(const std::string device,
+                             const std::string key) const = 0;
 
     /// Sets a value on a device.
-    virtual void Set(const Identifier device, const SettingKey key,
-            const SettingValue value) = 0;
+    virtual void Set(const std::string device, const std::string key,
+                     const SettingValue value) = 0;
 
     /// Virtual destructor for derived classes.
     virtual ~IPhysicalAdapter() { };

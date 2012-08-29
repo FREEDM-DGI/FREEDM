@@ -2,13 +2,10 @@
 set(
     DEVICE_FILES
     CDeviceFactory.cpp
-    CDeviceKeyCoupled.cpp
     CPhysicalDeviceManager.cpp
     CPscadAdapter.cpp
     CRtdsAdapter.cpp
-    CTableRTDS.cpp
-    CTableStructure.cpp
-    IConnectionAdapter.cpp
+    ITcpAdapter.cpp
     PhysicalDeviceTypes.cpp
    )
 

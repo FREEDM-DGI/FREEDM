@@ -25,7 +25,7 @@
 #ifndef CPSCADADAPTER_HPP
 #define CPSCADADAPTER_HPP
 
-#include "IConnectionAdapter.hpp"
+#include "ITcpAdapter.hpp"
 
 #include <iostream>
 #include <stdexcept>

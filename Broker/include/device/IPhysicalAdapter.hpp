@@ -25,6 +25,7 @@
 #ifndef I_PHYSICAL_ADAPTER_HPP
 #define	I_PHYSICAL_ADAPTER_HPP
 
+#include <map>
 #include <string>
 #include <utility>
 
@@ -73,6 +74,15 @@ public:
 
     /// Virtual destructor for derived classes.
     virtual ~IPhysicalAdapter();
+protected:
+    /// Type of the unique identifier for device values.
+    typedef std::pair<std::string, std::string> DeviceSignal;
+    
+    /// Translates a device signal into its state index.
+    std::map<DeviceSignal, std::size_t> m_StateInfo;
+    
+    /// Translates a device signal into its command index.
+    std::map<DeviceSignal, std::size_t> m_CommandInfo;
 };
 
 } // namespace device

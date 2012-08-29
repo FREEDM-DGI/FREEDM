@@ -36,6 +36,7 @@
 #include <sstream>
 #include <stdexcept>
 
+#include <boost/thread.hpp>
 #include <boost/noncopyable.hpp>
 #include <boost/asio/io_service.hpp>
 #include <boost/property_tree/ptree.hpp>
@@ -73,6 +74,9 @@ public:
     
     /// Creates a new adapter and its associated devices.
     void CreateAdapter(const boost::property_tree::ptree & p);
+    
+    /// Destructs the factory.
+    ~CAdapterFactory();
 private:
     /// Type of the functions used to create new devices.
     typedef void (CAdapterFactory::*FactoryFunction )
@@ -109,7 +113,10 @@ private:
     std::map<std::string, FactoryFunction> m_registry;
     
     /// I/O service shared by the adapters.
-    boost::asio::io_service m_service;
+    boost::asio::io_service m_ios;
+    
+    /// Thread to run the i/o service
+    boost::thread m_thread;
 };
 
 ////////////////////////////////////////////////////////////////////////////////

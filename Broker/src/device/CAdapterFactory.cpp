@@ -12,6 +12,7 @@
 ///     CAdapterFactory::Instance
 ///     CAdapterFactory::Initialize
 ///     CAdapterFactory::CreateAdapter
+///     CAdapterFactory::~CAdapterFactory
 ///     CAdapterFactory::CAdapterFactory
 ///     CAdapterFactory::RegisterDeviceClass
 ///     CAdapterFactory::CreateDevice
@@ -36,6 +37,7 @@
 #include <set>
 #include <utility>
 
+#include <boost/bind.hpp>
 #include <boost/foreach.hpp>
 
 namespace freedm {
@@ -202,10 +204,30 @@ void CAdapterFactory::CreateAdapter(const boost::property_tree::ptree & p)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+/// Stops the i/o service and waits for its thread to complete.
+///
+/// @pre None.
+/// @post m_ios is stopped and the object is destroyed.
+///
+/// @limitations None.
+////////////////////////////////////////////////////////////////////////////////
+CAdapterFactory::~CAdapterFactory()
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    
+    m_ios.stop();
+    Logger.Status << "Stopped the adapter i/o service." << std::endl;
+    
+    Logger.Notice << "Blocking until thread finishes execution." << std::endl;
+    m_thread.join();
+}
+
+////////////////////////////////////////////////////////////////////////////////
 /// Constructs an uninitialized factory.
 ///
 /// @pre None.
 /// @post Registers the recognized device classes.
+/// @post Launches an i/o service on a separate thread.
 ///
 /// @limitations None.
 ////////////////////////////////////////////////////////////////////////////////
@@ -214,6 +236,8 @@ CAdapterFactory::CAdapterFactory()
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     
     RegisterPhysicalDevices();
+    m_thread = boost::thread(boost::bind(&boost::asio::io_service::run, m_ios);
+    Logger.Status << "Started the adapter i/o service." << std::endl;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -279,11 +303,11 @@ IPhysicalAdapter::Pointer CAdapterFactory::CreateAdapter(std::string name,
     
     if( type == "pscad" )
     {
-        adapter = CPscadAdapter::Create(m_service, p);
+        adapter = CPscadAdapter::Create(m_ios, p);
     }
     else if( type == "rtds" )
     {
-        adapter = CRtdsAdapter::Create(m_service, p);
+        adapter = CRtdsAdapter::Create(m_ios, p);
     }
     else
     {

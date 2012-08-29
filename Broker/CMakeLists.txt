@@ -13,13 +13,9 @@ get_git_head_revision(GIT_REFSPEC GIT_SHA1)
 #   add the option below with a help message defaulted to OFF
 #   add the option to Broker/include/config.hpp.cmake as #cmakedefine OPTION
 #   activate / deactivate the option as described in the message below
-option(BUILD_TESTS "Enable the building and running of unit tests." OFF)
 option(CUSTOMNETWORK "for network.xml support" OFF)
 option(DATAGRAM "for UDP Datagram service w/o sequencing" OFF)
-option(SHOW_MESSAGES "Enable help messages during cmake execution" ON)
 option(SHOW_WARNINGS "warnings displayed during project compile" ON)
-option(USE_DEVICE_PSCAD "Enable the PSCAD simulation interface" OFF)
-option(USE_DEVICE_RTDS "Enable the RTDS simulation interface" OFF)
 
 # Check for a variety of conditions that should generate an error.
 if(!LINUX)
@@ -30,18 +26,10 @@ if(!Boost_FOUND)
     message(FATAL_ERROR "Boost was not found on your system.")
 endif(!Boost_FOUND)
 
-if(USE_DEVICE_PSCAD)
-    if(USE_DEVICE_RTDS)
-        message(FATAL_ERROR "Cannot compile with both PSCAD and RTDS enabled.")
-    endif(USE_DEVICE_RTDS)
-endif(USE_DEVICE_PSCAD)
-
 # Everything checks out, let's start.
-if(SHOW_MESSAGES)
-    message("This project uses custom CMake settings:"
-        "\n\tView the available settings with cmake -LH"
-        "\n\tChange a setting with -DSETTING=ON/OFF")
-endif(SHOW_MESSAGES)
+message("This project uses custom CMake settings:"
+    "\n\tView the available settings with cmake -LH"
+    "\n\tChange a setting with -DSETTING=ON/OFF")
 
 # find the required boost libraries
 find_package(Boost REQUIRED COMPONENTS system thread program_options 
@@ -68,6 +56,8 @@ CONFIGURE_FILE(
 
 # include project source directories
 include_directories("${CMAKE_BINARY_DIR}/include")
+include_directories("${CMAKE_BINARY_DIR}/include/device")
+include_directories("${CMAKE_BINARY_DIR}/include/device/types")
 include_directories("${CMAKE_BINARY_DIR}/src")
 
 # goto src/CMakeLists.txt
@@ -92,10 +82,3 @@ target_link_libraries(
 
 # run Doxygen
 add_custom_command(TARGET PosixBroker POST_BUILD COMMAND ./builddocs.sh)
-
-if(BUILD_TESTS)
-    enable_testing()
-
-    # goto test/CMakeLists.txt
-    add_subdirectory(test)
-endif(BUILD_TESTS)

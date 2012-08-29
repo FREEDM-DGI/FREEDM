@@ -5,7 +5,13 @@
 ///
 /// @project      FREEDM DGI
 ///
-/// @description  Represents a distributed energy storage device.
+/// @description  Represents a load.
+///
+/// @functions
+///     CDeviceLoad::CDeviceLoad
+///     CDeviceLoad::~CDeviceLoad
+///     CDeviceLoad::GetLoad
+///     CDeviceLoad::StepLoad
 ///
 /// These source code files were created at Missouri University of Science and
 /// Technology, and are intended for use in teaching or research. They may be
@@ -20,39 +26,41 @@
 /// Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
 ////////////////////////////////////////////////////////////////////////////////
 
+#include "CDeviceLoad.hpp"
 #include "CLogger.hpp"
-#include "device/types/CDeviceLoad.hpp"
 
 namespace freedm {
 namespace broker {
 namespace device {
 
 namespace {
-
 /// This file's logger.
 CLocalLogger Logger(__FILE__);
-
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-/// CDeviceLoad::CDeviceLoad(Identifier, IPhysicalAdapter::AdapterPtr)
+/// Constructs the load.
 ///
-/// @description Instantiates a device.
-///
-/// @param device The unique device identifier for the device.
+/// @pre None.
+/// @post Constructs a new device.
+/// @param device The unique identifier for the device.
 /// @param adapter The adapter that implements operations for this device.
+///
+/// @limitations None.
 ////////////////////////////////////////////////////////////////////////////////
-CDeviceLoad::CDeviceLoad(const Identifier device,
-        IPhysicalAdapter::Pointer adapter)
-: IDevice(device, adapter)
+CDeviceLoad::CDeviceLoad(std::string device, IPhysicalAdapter::Pointer adapter)
+    : IDevice(device, adapter)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-/// CDeviceLoad::~CDeviceLoad()
+/// Virtual destructor for derived classes.
 ///
-/// @description Virtual destructor for derived classes.
+/// @pre None.
+/// @post Destructs the object.
+///
+/// @limitations None.
 ////////////////////////////////////////////////////////////////////////////////
 CDeviceLoad::~CDeviceLoad()
 {
@@ -60,11 +68,13 @@ CDeviceLoad::~CDeviceLoad()
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-/// CDeviceLoad::GetDrain() const
+/// Determines the energy drain of the load.
 ///
-/// @description Determines the energy drain of this load.
-///
+/// @pre None.
+/// @post Calls IPhysicalAdapter::Get with the signal "drain".
 /// @return The energy drain of this load.
+///
+/// @limitations None.
 ////////////////////////////////////////////////////////////////////////////////
 SettingValue CDeviceLoad::GetLoad() const
 {
@@ -73,12 +83,14 @@ SettingValue CDeviceLoad::GetLoad() const
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-/// CDeviceLoad::StepDrain(const SettingValue)
-///
-/// @description Increases the energy drain of this load by the amount step.
+/// Increases the energy drain of this load by the passed amount.
 ///
 /// @pre None.
-/// @post The gateway has been increased by step.
+/// @post Determines the current drain with CDeviceLoad::GetLoad.
+/// @post Calls IPhysicalAdapter::Set with the signal "load".
+/// @param step The amount to add to the current drain.
+///
+/// @limitations The energy drain increase will take some time to manifest.
 ////////////////////////////////////////////////////////////////////////////////
 void CDeviceLoad::StepLoad(const SettingValue step)
 {
@@ -86,6 +98,6 @@ void CDeviceLoad::StepLoad(const SettingValue step)
     Set("drain", GetLoad() + step);
 }
 
-}
-}
-}
+} // namespace device
+} // namespace broker
+} // namespace freedm

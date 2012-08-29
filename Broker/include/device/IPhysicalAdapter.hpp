@@ -22,9 +22,10 @@
 /// Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
 ////////////////////////////////////////////////////////////////////////////////
 
-#ifndef IPHYSICALADAPTER_HPP
-#define	IPHYSICALADAPTER_HPP
+#ifndef I_PHYSICAL_ADAPTER_HPP
+#define	I_PHYSICAL_ADAPTER_HPP
 
+#include <map>
 #include <string>
 #include <utility>
 
@@ -35,46 +36,59 @@ namespace freedm {
 namespace broker {
 namespace device {
 
-/// Type of the value for device settings
+/// Type of the value for device signals.
 typedef float SettingValue;
-
-/// Type to uniquely identify a device signal
-typedef std::pair<const std::string, const std::string> DeviceSignal;
 
 /// Physical adapter device interface.
 ////////////////////////////////////////////////////////////////////////////////
-/// Physical adapter device interface. Each device contains a reference to an
-/// adapter that it uses to perform all operations. The adapter is responsible
-/// for implementing the behavior of "get value" and "set value" operations on
-/// devices. The adapter is, in effect, the device's "driver". Note that the
-/// same adapter can be used for all devices in the simulation if this is
-/// desirable, or each device can have its own adapter.
+/// Defines the interface each device uses to perform its operations.  The
+/// concrete adapter is responsible for implementation of both Get and Set
+/// functions.
 ///
-/// @limitations It is not possible to add another device to an adapter once it
-///              has started, so plug-and-play devices require dedicated
-///              adapters.
+/// @limitations None.
 ////////////////////////////////////////////////////////////////////////////////
-class IPhysicalAdapter : private boost::noncopyable
+class IPhysicalAdapter
+    : private boost::noncopyable
 {
 public:
     /// Pointer to a physical adapter.
     typedef boost::shared_ptr<IPhysicalAdapter> Pointer;
-
+    
+    /// Registers a new device signal with the physical adapter.
+    void RegisterStateInfo(std::string device, std::string signal,
+            std::size_t index );
+    
+    /// Registers a new device signal with the physical adapter.
+    void RegisterCommandInfo(std::string device, std::string signal,
+            std::size_t index );
+    
+    /// Start the adapter.
+    virtual void Start() = 0;
+    
     /// Retrieves a value from a device.
-    virtual SettingValue Get(const std::string device,
-                             const std::string key) const = 0;
+    virtual SettingValue Get(std::string device, std::string signal) const = 0;
 
     /// Sets a value on a device.
-    virtual void Set(const std::string device, const std::string key,
-                     const SettingValue value) = 0;
+    virtual void Set(std::string device, std::string signal,
+            const SettingValue value) = 0;
 
     /// Virtual destructor for derived classes.
-    virtual ~IPhysicalAdapter() { };
+    virtual ~IPhysicalAdapter();
+    
+protected:
+    /// Type of the unique identifier for device values.
+    typedef std::pair<std::string, std::string> DeviceSignal;
+    
+    /// Translates a device signal into its state index.
+    std::map<DeviceSignal, std::size_t> m_StateInfo;
+    
+    /// Translates a device signal into its command index.
+    std::map<DeviceSignal, std::size_t> m_CommandInfo;
 };
 
-}
-}
-}
+} // namespace device
+} // namespace broker
+} // namespace freedm
 
-#endif	/* IPHYSICALADAPTER_HPP */
-
+#endif // I_PHYSICAL_ADAPTER_HPP
+>>>>>>> c0b89a20fb01b46c89e2ae0e8de5ef5224fa99ec

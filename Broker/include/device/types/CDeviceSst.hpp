@@ -25,33 +25,40 @@
 #ifndef C_DEVICE_SST_HPP
 #define C_DEVICE_SST_HPP
 
-#include <boost/shared_ptr.hpp>
-
 #include "IDevice.hpp"
+
+#include <string>
+
+#include <boost/shared_ptr.hpp>
 
 namespace freedm {
 namespace broker {
 namespace device {
 
-/// Implementation of solid state transformers
+/// Device class for a solid state transformer (SST).
+////////////////////////////////////////////////////////////////////////////////
+/// Provides a device interface which recognizes a gateway signal.
+///
+/// @limitations None.
+////////////////////////////////////////////////////////////////////////////////
 class CDeviceSst
-: public virtual IDevice
+    : public virtual IDevice
 {
 public:
-    /// Convenience type for a shared pointer to self
+    /// Convenience type for a shared pointer to self.
     typedef boost::shared_ptr<CDeviceSst> Pointer;
 
-    /// Constructor which takes an identifier and internal structure
-    CDeviceSst(const Identifier device, IPhysicalAdapter::Pointer adapter);
+    /// Constructor which takes an identifier and internal structure.
+    CDeviceSst(std::string device, IPhysicalAdapter::Pointer adapter);
 
-    /// Virtual destructor for derived classes
+    /// Virtual destructor for derived classes.
     virtual ~CDeviceSst();
     
-    /// Determine the gateway value of this SST.
+    /// Determine the gateway value of the SST.
     SettingValue GetGateway() const;
     
-    /// Increases the gateway value of this SST by the specified amount.
-    void StepGateway(const SettingValue step = 1.0);
+    /// Increases the gateway value by the specified amount.
+    void StepGateway(const SettingValue step = 1);
 private:
     /// redefine base accessor as private
     using IDevice::Get;

@@ -7,6 +7,12 @@
 ///
 /// @description  Represents a distributed energy storage device.
 ///
+/// @functions
+///     DeviceDesd::CDeviceDesd
+///     DeviceDesd::~CDeviceDesd
+///     DeviceDesd::GetStorage
+///     DeviceDesd::StepStorage
+///
 /// These source code files were created at Missouri University of Science and
 /// Technology, and are intended for use in teaching or research. They may be
 /// freely copied, modified, and redistributed as long as modified versions are
@@ -20,39 +26,41 @@
 /// Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
 ////////////////////////////////////////////////////////////////////////////////
 
+#include "CDeviceDesd.hpp"
 #include "CLogger.hpp"
-#include "device/types/CDeviceDesd.hpp"
 
 namespace freedm {
 namespace broker {
 namespace device {
 
 namespace {
-
 /// This file's logger.
 CLocalLogger Logger(__FILE__);
-
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-/// CDeviceDesd::CDeviceDesd(Identifier, IPhysicalAdapter::AdapterPtr)
+/// Constructs the DESD.
 ///
-/// @description Instantiates a device.
-///
-/// @param device The unique device identifier for the device.
+/// @pre None.
+/// @post Constructs a new device.
+/// @param device The unique identifier for the device.
 /// @param adapter The adapter that implements operations for this device.
+///
+/// @limitations None.
 ////////////////////////////////////////////////////////////////////////////////
-CDeviceDesd::CDeviceDesd(const Identifier device,
-        IPhysicalAdapter::Pointer adapter)
-: IDevice(device, adapter)
+CDeviceDesd::CDeviceDesd(std::string device, IPhysicalAdapter::Pointer adapter)
+    : IDevice(device, adapter)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-/// CDeviceDesd::~CDeviceDesd()
+/// Virtual destructor for derived classes.
 ///
-/// @description Virtual destructor for derived classes.
+/// @pre None.
+/// @post Destructs the object.
+///
+/// @limitations None.
 ////////////////////////////////////////////////////////////////////////////////
 CDeviceDesd::~CDeviceDesd()
 {
@@ -60,11 +68,13 @@ CDeviceDesd::~CDeviceDesd()
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-/// CDeviceSst::GetStorage() const
+/// Determine how much energy is stored by the DESD.
 ///
-/// @description Determine how much energy is stored by this DESD.
-///
+/// @pre None.
+/// @post Calls IPhysicalAdapter::Get with the signal "storage".
 /// @return The amount of energy stored in this DESD.
+///
+/// @limitations None.
 ////////////////////////////////////////////////////////////////////////////////
 SettingValue CDeviceDesd::GetStorage() const
 {
@@ -73,12 +83,14 @@ SettingValue CDeviceDesd::GetStorage() const
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-/// CDeviceDesd::StepStorage(const SettingValue)
-///
-/// @description Increases the stored energy of this SST by the amount step.
+/// Increases the stored energy of the DESD by the passed amount.
 ///
 /// @pre None.
-/// @post The storage has been increased by step.
+/// @post Determines the current storage with CDeviceDesd::GetStorage.
+/// @post Calls IPhysicalAdapter::Set with the signal "storage".
+/// @param step The amount to add to the current storage.
+///
+/// @limitations The storage increase will take some time to manifest.
 ////////////////////////////////////////////////////////////////////////////////
 void CDeviceDesd::StepStorage(const SettingValue step)
 {
@@ -86,6 +98,6 @@ void CDeviceDesd::StepStorage(const SettingValue step)
     Set("storage", GetStorage() + step);
 }
 
-}
-}
-}
+} // namespace device
+} // namespace broker
+} // namespace freedm

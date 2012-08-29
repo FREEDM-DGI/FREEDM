@@ -112,6 +112,6 @@ IConnectionAdapter::IConnectionAdapter(boost::asio::io_service & service)
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 }
 
-} // device
-} // broker
-} // freedm
+} // namespace device
+} // namespace broker
+} // namespace freedm

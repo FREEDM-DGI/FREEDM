@@ -5,7 +5,13 @@
 ///
 /// @project      FREEDM DGI
 ///
-/// @description  Represents a distributed energy storage device.
+/// @description  Represents a solid state transformer.
+///
+/// @functions
+///     CDeviceSst::CDeviceSst
+///     CDeviceSst::~CDeviceSst
+///     CDeviceSst::GetGateway
+///     CDeviceSst::StepGateway
 ///
 /// These source code files were created at Missouri University of Science and
 /// Technology, and are intended for use in teaching or research. They may be
@@ -20,39 +26,41 @@
 /// Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
 ////////////////////////////////////////////////////////////////////////////////
 
+#include "CDeviceSst.hpp"
 #include "CLogger.hpp"
-#include "device/types/CDeviceSst.hpp"
 
 namespace freedm {
 namespace broker {
 namespace device {
 
 namespace {
-
 /// This file's logger.
 CLocalLogger Logger(__FILE__);
-
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-/// CDeviceSst::CDeviceSst(Identifier, IPhysicalAdapter::AdapterPtr)
+/// Constructs the SST.
 ///
-/// @description Instantiates a device.
-///
-/// @param device The unique device identifier for the device.
+/// @pre None.
+/// @post Constructs a new device.
+/// @param device The unique identifier for the device.
 /// @param adapter The adapter that implements operations for this device.
+///
+/// @limitations None.
 ////////////////////////////////////////////////////////////////////////////////
-CDeviceSst::CDeviceSst(const Identifier device,
-        IPhysicalAdapter::Pointer adapter)
-: IDevice(device, adapter)
+CDeviceSst::CDeviceSst(std::string device, IPhysicalAdapter::Pointer adapter)
+    : IDevice(device, adapter)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-/// CDeviceSst::~CDeviceSst()
+/// Virtual destructor for derived classes.
 ///
-/// @description Virtual destructor for derived classes.
+/// @pre None.
+/// @post Destructs the object.
+///
+/// @limitations None.
 ////////////////////////////////////////////////////////////////////////////////
 CDeviceSst::~CDeviceSst()
 {
@@ -60,11 +68,13 @@ CDeviceSst::~CDeviceSst()
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-/// CDeviceSst::GetGateway() const
+/// Retrieve the gateway value of the SST.
 ///
-/// @description Retrieve the gateway value of this SST.
-///
+/// @pre None.
+/// @post Calls IPhysicalAdapter::Get with the signal "gateway".
 /// @return The gateway of this SST.
+///
+/// @limitations None.
 ////////////////////////////////////////////////////////////////////////////////
 SettingValue CDeviceSst::GetGateway() const
 {
@@ -73,12 +83,14 @@ SettingValue CDeviceSst::GetGateway() const
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-/// CDeviceSst::StepGateway(const SettingValue)
-///
-/// @description Increases the gateway value of this SST by the amount step.
+/// Increases the gateway value of this SST by the passed amount.
 ///
 /// @pre None.
-/// @post The gateway has been increased by step.
+/// @post Determines the current gateway with CDeviceSst::GetGateway.
+/// @post Calls IPhysicalAdapter::Set with the signal "storage".
+/// @param step The amount to add to the current gateway.
+///
+/// @limitations The gateway increase will take some time to manifest.
 ////////////////////////////////////////////////////////////////////////////////
 void CDeviceSst::StepGateway(const SettingValue step)
 {
@@ -86,6 +98,6 @@ void CDeviceSst::StepGateway(const SettingValue step)
     Set("gateway", GetGateway() + step);
 }
 
-}
-}
-}
+} // namespace device
+} // namespace broker
+} // namespace freedm

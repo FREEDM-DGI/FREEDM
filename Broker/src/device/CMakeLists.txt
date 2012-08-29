@@ -1,15 +1,12 @@
 # list the device source files
 set(
     DEVICE_FILES
-    CDeviceFactory.cpp
-    CDeviceKeyCoupled.cpp
+    CAdapterFactory.cpp
     CPhysicalDeviceManager.cpp
-    CPscadAdapter.cpp
-    CRtdsAdapter.cpp
-    CTableRTDS.cpp
-    CTableStructure.cpp
     IPhysicalAdapter.cpp
     IConnectionAdapter.cpp
+    CPscadAdapter.cpp
+    CRtdsAdapter.cpp
     PhysicalDeviceTypes.cpp
    )
 
@@ -32,4 +29,3 @@ add_custom_command(
 
 # create the device library
 add_library(device ${DEVICE_FILES} ${DEVICE_TYPES})
-

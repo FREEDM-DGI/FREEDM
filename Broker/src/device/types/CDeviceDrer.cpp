@@ -5,7 +5,13 @@
 ///
 /// @project      FREEDM DGI
 ///
-/// @description  Represents a distributed energy storage device.
+/// @description  Represents a distributed renewable energy resource.
+///
+/// @functions
+///     CDeviceDrer::CDeviceDrer
+///     CDeviceDrer::~CDeviceDrer
+///     CDeviceDrer::GetGeneration
+///     CDeviceDrer::StepGeneration
 ///
 /// These source code files were created at Missouri University of Science and
 /// Technology, and are intended for use in teaching or research. They may be
@@ -20,39 +26,41 @@
 /// Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
 ////////////////////////////////////////////////////////////////////////////////
 
+#include "CDeviceDrer.hpp"
 #include "CLogger.hpp"
-#include "device/types/CDeviceDrer.hpp"
 
 namespace freedm {
 namespace broker {
 namespace device {
 
 namespace {
-
 /// This file's logger.
 CLocalLogger Logger(__FILE__);
-
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-/// CDeviceDrer::CDeviceDrer(Identifier, IPhysicalAdapter::AdapterPtr)
+/// Constructs the DRER.
 ///
-/// @description Instantiates a device.
-///
-/// @param device The unique device identifier for the device.
+/// @pre None.
+/// @post Constructs a new device.
+/// @param device The unique identifier for the device.
 /// @param adapter The adapter that implements operations for this device.
+///
+/// @limitations None.
 ////////////////////////////////////////////////////////////////////////////////
-CDeviceDrer::CDeviceDrer(const Identifier device,
-        IPhysicalAdapter::Pointer adapter)
-: IDevice(device, adapter)
+CDeviceDrer::CDeviceDrer(std::string device, IPhysicalAdapter::Pointer adapter)
+    : IDevice(device, adapter)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-/// CDeviceDrer::~CDeviceDrer()
+/// Virtual destructor for derived classes.
 ///
-/// @description Virtual destructor for derived classes.
+/// @pre None.
+/// @post Destructs the object.
+///
+/// @limitations None.
 ////////////////////////////////////////////////////////////////////////////////
 CDeviceDrer::~CDeviceDrer()
 {
@@ -60,11 +68,13 @@ CDeviceDrer::~CDeviceDrer()
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-/// CDeviceDrer::GetGeneration() const
+/// Determines the energy generation of the DRER.
 ///
-/// @description Determines the energy generation of this DRER.
-///
+/// @pre None.
+/// @post Calls IPhysicalAdapter::Get with the signal "generation".
 /// @return The energy generation of this DRER.
+///
+/// @limitations None.
 ////////////////////////////////////////////////////////////////////////////////
 SettingValue CDeviceDrer::GetGeneration() const
 {
@@ -73,12 +83,14 @@ SettingValue CDeviceDrer::GetGeneration() const
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-/// CDeviceDrer::StepGeneration(const SettingValue)
-///
-/// @description Increases the energy generation of this DRER by step.
+/// Increases the energy generation of this DRER by the passed amount.
 ///
 /// @pre None.
-/// @post The energy generation has been increased by step.
+/// @post Determines the current generation with CDeviceDrer::GetGeneration.
+/// @post Calls IPhysicalAdapter::Set with the signal "generation".
+/// @param step The amount to add to the current generation.
+///
+/// @limitations The generation increase will take some time to manifest.
 ////////////////////////////////////////////////////////////////////////////////
 void CDeviceDrer::StepGeneration(const SettingValue step)
 {
@@ -86,6 +98,6 @@ void CDeviceDrer::StepGeneration(const SettingValue step)
     Set("generation", GetGeneration() + step);
 }
 
-}
-}
-}
+} // namespace device
+} // namespace broker
+} // namespace freedm

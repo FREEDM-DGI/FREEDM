@@ -22,40 +22,32 @@
 /// Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
 ////////////////////////////////////////////////////////////////////////////////
 
-#ifndef IPHYSICALADAPTER_HPP
-#define	IPHYSICALADAPTER_HPP
+#ifndef I_PHYSICAL_ADAPTER_HPP
+#define	I_PHYSICAL_ADAPTER_HPP
 
 #include <string>
 #include <utility>
 
-#include <boost/noncopyable.hpp>
 #include <boost/shared_ptr.hpp>
+#include <boost/noncopyable.hpp>
 
 namespace freedm {
 namespace broker {
 namespace device {
 
-/// Type of the unique device identifier
-typedef std::string Identifier;
-
-/// Type of the key for device settings
-typedef std::string SettingKey;
-
-/// Type of the value for device settings
+/// Type of the value for device signals.
 typedef float SettingValue;
 
+/// Physical adapter device interface.
 ////////////////////////////////////////////////////////////////////////////////
-/// @brief  Physical adapter device interface.
+/// Defines the interface each device uses to perform its operations.  The
+/// concrete adapter is responsible for implementation of both Get and Set
+/// functions.
 ///
-/// @description
-///     Physical adapter device interface. Each device contains a reference to
-///     an adapter that it uses to perform all operations. The adapter is
-///     responsible for implementing the behavior of "get value" and "set value" 
-///     operations on devices. The adapter is, in effect, the device's "driver".
-///     Note that the same adapter can be used for all devices in the
-///     simulation if this is desirable.
+/// @limitations None.
 ////////////////////////////////////////////////////////////////////////////////
-class IPhysicalAdapter : private boost::noncopyable
+class IPhysicalAdapter
+    : private boost::noncopyable
 {
 public:
     /// Pointer to a physical adapter.
@@ -73,20 +65,18 @@ public:
     virtual void Start() = 0;
     
     /// Retrieves a value from a device.
-    virtual SettingValue Get(const Identifier device,
-            const SettingKey key) const = 0;
+    virtual SettingValue Get(std::string device, std::string signal) const = 0;
 
     /// Sets a value on a device.
-    virtual void Set(const Identifier device, const SettingKey key,
+    virtual void Set(std::string device, std::string signal,
             const SettingValue value) = 0;
 
     /// Virtual destructor for derived classes.
-    virtual ~IPhysicalAdapter() { };
+    virtual ~IPhysicalAdapter();
 };
 
-}
-}
-}
+} // namespace device
+} // namespace broker
+} // namespace freedm
 
-#endif	/* IPHYSICALADAPTER_HPP */
-
+#endif // I_PHYSICAL_ADAPTER_HPP

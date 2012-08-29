@@ -8,6 +8,15 @@
 ///
 /// @description   Client side implementation of the PSCAD line protocol.
 ///
+/// @functions
+///     CPscadAdapter::Create
+///     CPscadAdapter::Start
+///     CPscadAdapter::Set
+///     CPscadAdapter::Get
+///     CPscadAdapter::Quit
+///     CPscadAdapter::~CPscadAdapter
+///     CPscadAdapter::CPscadAdapter
+///
 /// These source code files were created at Missouri University of Science and
 /// Technology, and are intended for use in teaching or research. They may be
 /// freely copied, modified, and redistributed as long as modified versions are

@@ -25,3 +25,5 @@ configure_file(version.h.cmake ${CMAKE_BINARY_DIR}/src/version.h @ONLY)
 
 add_library(broker ${BROKER_FILES})
 
+# don't compile broker until codegen has run
+add_dependencies(broker GeneratedPhysicalDeviceTypes)

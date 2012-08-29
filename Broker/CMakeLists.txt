@@ -69,14 +69,16 @@ CONFIGURE_FILE(
 include_directories("${CMAKE_BINARY_DIR}/include")
 include_directories("${CMAKE_BINARY_DIR}/src")
 
-# goto src/CMakeLists.txt
-add_subdirectory( src )
-
 # goto src/device/CMakeLists.txt
 add_subdirectory( src/device )
 
+# goto src/CMakeLists.txt
+add_subdirectory( src )
+
 add_executable(PosixBroker src/PosixMain.cpp)
-add_dependencies(broker device)
+
+# don't compile PosixBroker until codegen has run
+add_dependencies(PosixBroker GeneratedPhysicalDeviceTypes)
 
 # link the executable to its dependencies
 target_link_libraries(

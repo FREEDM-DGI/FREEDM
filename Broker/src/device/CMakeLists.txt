@@ -25,11 +25,16 @@ set(
     ${CMAKE_BINARY_DIR}/include/device/PhysicalDeviceTypes.hpp
     ${CMAKE_CURRENT_BINARY_DIR}/PhysicalDeviceTypes.cpp
    )
+
 add_custom_command(
     OUTPUT ${GENERATOR_OUTPUT}
     COMMAND DeviceRegistrationGenerator
     DEPENDS DeviceRegistrationGenerator ${DEVICE_TYPES} )
 
+add_custom_target( GeneratedPhysicalDeviceTypes DEPENDS ${GENERATOR_OUTPUT} )
+
 # create the device library
 add_library(device ${DEVICE_FILES} ${DEVICE_TYPES})
 
+# don't compile device until codegen has run
+add_dependencies(device GeneratedPhysicalDeviceTypes)

@@ -40,7 +40,6 @@
 #include "CConnection.hpp"
 #include "CLogger.hpp"
 #include "CMessage.hpp"
-#include "device/CPhysicalDeviceManager.hpp"
 #include "gm/GroupManagement.hpp"
 #include "IPeerNode.hpp"
 

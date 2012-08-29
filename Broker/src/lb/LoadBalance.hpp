@@ -45,8 +45,8 @@
 #include "CDispatcher.hpp"
 #include "CMessage.hpp"
 #include "CUuid.hpp"
-#include "device/CPhysicalDeviceManager.hpp"
-#include "device/PhysicalDeviceTypes.hpp"
+#include "CPhysicalDeviceManager.hpp"
+#include "PhysicalDeviceTypes.hpp"
 #include "IPeerNode.hpp"
 #include "IAgent.hpp"
 

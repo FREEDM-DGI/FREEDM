@@ -99,8 +99,8 @@ void CPscadAdapter::Start()
 ///
 /// @limitations None.
 ////////////////////////////////////////////////////////////////////////////////
-void CPscadAdapter::Set(std::string device, std::string signal,
-        const SettingValue value)
+void CPscadAdapter::Set(const std::string device, const std::string signal,
+                        const SettingValue value)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
@@ -157,7 +157,8 @@ void CPscadAdapter::Set(std::string device, std::string signal,
 ///
 /// @limitations None.
 ////////////////////////////////////////////////////////////////////////////////
-SettingValue CPscadAdapter::Get(std::string device, std::string signal) const
+SettingValue CPscadAdapter::Get(const std::string device, 
+                                const std::string signal) const
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
@@ -288,22 +289,10 @@ CPscadAdapter::~CPscadAdapter()
 /// @limitations None.
 ////////////////////////////////////////////////////////////////////////////////
 CPscadAdapter::CPscadAdapter(boost::asio::io_service & service,
-        const boost::property_tree::ptree & details)
-    : IConnectionAdapter(service)
+                             const boost::property_tree::ptree & details)
+     : ITcpAdapter(service, details)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    
-    try
-    {
-        m_host = details.get<std::string>("host");
-        m_port = details.get<std::string>("port");
-    }
-    catch( std::exception & e )
-    {
-        std::stringstream ss;
-        ss << "Failed to create adapter: " << e.what() << std::endl;
-        throw std::runtime_error(ss.str());
-    }
 }
 
 } // namespace broker

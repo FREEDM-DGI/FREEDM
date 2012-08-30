@@ -11,6 +11,21 @@
 /// @description  DGI side implementation of the communication protocol to RTDS
 ///               simulation
 ///
+/// @functions    EndianSwap
+///               CRtdsBuffer::CRtdsBuffer
+///               CRtdsBuffer::operator[]
+///               CRtdsBuffer::operator&
+///               CRtdsBuffer::numBytes
+///               CRtdsBuffer::EndianSwapIfNeeded
+///               CRtdsAdapter::Create
+///               CRtdsAdapter::Set
+///               CRtdsAdapter::Get
+///               CRtdsAdapter::~CRtdsAdapter
+///               CRtdsAdapter::Run
+///               CRtdsAdapter::Start
+///               CRtdsAdapter::CRtdsAdapter
+///               CRtdsAdapter::Quit
+///
 /// These source code files were created at Missouri University of Science and
 /// Technology, and are intended for use in teaching or research. They may be
 /// freely copied, modified, and redistributed as long as modified versions are
@@ -74,10 +89,10 @@ CLocalLogger Logger(__FILE__);
 ///     none
 ///
 ////////////////////////////////////////////////////////////////////////////////
-void EndianSwap(char * data, const int num_bytes)
+void EndianSwap(char* data, const int num_bytes)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    char * tmp = new char[num_bytes];
+    char* tmp = new char[num_bytes];
 
     for (int i = 0; i < num_bytes; ++i)
         tmp[i] = data[num_bytes - 1 - i];
@@ -140,46 +155,17 @@ CRtdsAdapter::CRtdsAdapter(boost::asio::io_service & service,
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
-    // TODO - this makes one table. Separate it into state and command.
-    // (p_tag=state or command)
-    m_TableSize = xmlTree.get_child(p_tag).size();
-    BOOST_FOREACH(ptree::value_type & child, xmlTree.get_child(p_tag))
+    try
     {
-        index = child.second.get<size_t > ( "<xmlattr>.index" );
-        device = child.second.get<std::string > ( "device" );
-        key = child.second.get<std::string > ( "key" );
-        // create the data structures
-        CDeviceKeyCoupled dkey(device, key);
-        std::set<size_t> plist;
-
-        // validate the element index
-        if (index == 0 || index > m_TableSize)
-        {
-            error << p_tag << " has an entry with index " << index;
-            throw std::out_of_range(error.str());
-        }
-
-        // prevent duplicate element indexes
-        if (m_TableHeaders.by<SIndex>().count(index) > 0)
-        {
-            error << p_tag << " has multiple entries with index " << index;
-            throw std::logic_error(error.str());
-        }
-
-        // prevent duplicate device keys
-        if (m_TableHeaders.by<SDevice>().count(dkey) > 0)
-        {
-            error << p_tag << " has multiple entries with device and key combo " << dkey;
-            throw std::logic_error(error.str());
-        }
-
-        // store the table entry
-        m_TableHeaders.insert(TBimap::value_type(dkey, index - 1));
+        m_host = details.get<std::string>("host");
+        m_port = details.get<std::string>("port");
     }
-
-    //allocate memory for buffer for reading and writing to FPGA
-    m_rxBuffer = new char[m_rxBufSize];
-    m_txBuffer = new char[m_rxBufSize];
+    catch( std::exception & e )
+    {
+        std::stringstream ss;
+        ss << "Failed to create adapter: " << e.what() << std::endl;
+        throw std::runtime_error(ss.str());
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -260,94 +246,47 @@ void CRtdsAdapter::Run()
     m_GlobalTimer.async_wait(boost::bind(&CRtdsAdapter::Run, this));
 }
 
-////////////////////////////////////////////////////////////////////////////
-/// Set
+///////////////////////////////////////////////////////////////////////////////
+/// CRtdsAdapter::Start
 ///
-/// @description
-///     Search the cmdTable and then update the specified value.
+/// Starts the RtdsAdapter.
 ///
-/// @Error_Handling
-///     Throws an exception if the device/key pair does not exist in the table.
+/// @pre the adapter has not yet been started
+/// @post the adapter has now been started
 ///
-/// @pre
-///     none
+/// @ErrorHandling throws std::runtime_error if the entry indices of the
+///                adapter's devices are malformed
 ///
-/// @param
-///     device is the unique identifier of a physical device (such as SST or 
-///     Load)
-///
-///     key is the name of a feature of the device that can be maniputed
-///     (such as onOffSwitch, chargeLevel, etc.)
-///
-///     value is the desired new setting
-///
-/// @limitations
-///     RTDS uses floats. So value is type-cast into float from double.
-///     There could be minor loss of accuracy.
-///
-////////////////////////////////////////////////////////////////////////////
-void CRtdsAdapter::Set(const Identifier device, const SettingKey key,
-        const SettingValue value)
+/// @limitations All devices must be added to the adapter before Start is
+///              invoked.
+///////////////////////////////////////////////////////////////////////////////
+void CRtdsAdapter::Start()
 {
-    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-
-    try
-    {
-        m_txBuffer.SetValue(CDeviceKeyCoupled(device, key), value);
-    }
-    catch( std::runtime_error & e )
+    // this is a bit of a weird proof - but it works
+    // we know there is no value < 1 in the set, because it's unsigned and the
+    // insert code prevents insertions of 0.
+    // because sets are sorted in increasing order, we also know the last
+    // element of the set is the largest element.
+    // therefore, if the last element is equal to the size, since sets contain
+    // no duplicate values, that must mean every integer from 1 to size is
+    // stored in the set.
+    // otherwise, the numbers must be non-consecutive.
+    // the short of it: it works.
+    if( *m_StateIndex.rbegin() != m_StateIndex.size() )
     {
         std::stringstream ss;
-        ss << "RTDS attempted to set device/key pair " << device << "/"
-                << key << ", but this pair does not exist.";
+        ss << "The state indices are not consecutive integers." << std::endl;
         throw std::runtime_error(ss.str());
     }
-}
-
-////////////////////////////////////////////////////////////////////////////
-/// Get
-///
-/// @description
-///     Search the stateTable and read from it.
-///
-/// @Error_Handling
-///     Throws an exception if the device/key pair does not exist in the table.
-///
-/// @pre
-///     The socket connection has been established. Otherwise the numbers
-///     read is junk.
-///
-/// @param
-///     device is the unique identifier of a physical device (such as SST, 
-///     Load)
-///
-///     key is a power electronic reading related to the device (such
-///     as powerLevel, stateOfCharge, etc.)
-///
-/// @return
-///     value from table is retrieved
-///
-/// @limitations
-///     RTDS uses floats.  So the return value is type-cast into double from 
-///     floats. The accuracy is not as high as a real doubles.
-///
-////////////////////////////////////////////////////////////////////////////
-SettingValue CRtdsAdapter::Get(const std::string device, 
-                               const std::string key) const
-{
-    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-
-    try
-    {
-        return m_stateTable.GetValue(CDeviceKeyCoupled(device, key));
-    }
-    catch( std::runtime_error & e )
+    
+    if( *m_CommandIndex.rbegin() != m_CommandIndex.size() )
     {
         std::stringstream ss;
-        ss << "RTDS attempted to get device/key pair " << device << "/"
-                << key << ", but this pair does not exist.";
+        ss << "The command indices are not consecutive integers." << std::endl;
         throw std::runtime_error(ss.str());
     }
+
+    Run();
 }
 
 ////////////////////////////////////////////////////////////////////////////
@@ -399,127 +338,6 @@ CRtdsAdapter::~CRtdsAdapter()
 
     delete [] m_rxBuffer;
     delete [] m_txBuffer;
-}
-
-////////////////////////////////////////////////////////////////////////////////
-/// Constructs a CRtdsBuffer
-///
-/// @param ptree a valid XML property tree specification for the format of the
-///        buffer.
-///
-/// @todo document the expected format here
-////////////////////////////////////////////////////////////////////////////////
-CRtdsBuffer::CRtdsBuffer(const boost::property_tree::ptree & ptree)
-{
-     // TODO (including initializing m_buffer and setting its capacity)
-}
-
-////////////////////////////////////////////////////////////////////////////////
-/// Retrieves a SettingValue from the buffer corresponding to a given device
-/// signal (a device id/key pair). This function is synchronized, so the caller
-/// does not have to worry about locking the buffer.
-///
-/// @pre  It is not reasonable to utilize this function before CRtdsAdapter::Run
-///       is invoked.
-/// @post The SettingValue corresponding to the desired setting on a device is
-///       retrieved. This is the value most recently reported by the FPGA.
-///
-/// @param sig the device signal whose value is desired
-///
-/// @ErrorHandling throws std::runtime_error if the device signal is not known
-///                to CRtdsBuffer
-///
-/// @return the value associated with the device signal
-////////////////////////////////////////////////////////////////////////////////
-const SettingValue & CRtdsBuffer::operator[](const DeviceSignal sig) const
-{
-     return operator[](sig);
-}
-
-////////////////////////////////////////////////////////////////////////////////
-/// Retrieves a SettingValue from the buffer corresponding to a given device
-/// signal (a device id/key pair) for writing. This function is synchronized, so
-/// the caller does not have to worry about locking the buffer.
-///
-/// @pre  It is not reasonable to utilize this function before CRtdsBuffer::Run
-///       is invoked.
-/// @post The SettingValue corresponding to the desired setting on a device is
-///       retrieved. This is the value most recently reported by the FPGA.
-///
-/// @param sig the device signal whose value is desired
-///
-/// @ErrorHandling throws std::runtime_error if the device signal is not known
-///                to CRtdsBuffer
-///
-/// @return the value associated with the device signal
-////////////////////////////////////////////////////////////////////////////////
-SettingValue & CRtdsBuffer::operator[](const DeviceSignal sig)
-{
-     if( m_signalToIndex.count(sig) != 1 )
-     {
-          throw std::runtime_error("Unknown signal requested of CRtdsBuffer");
-     }
-     std::size_t index = m_signalToIndex[sig];
-     assert(index < DeviceSignal.size());
-     return m_buffer[index];
-}
-
-////////////////////////////////////////////////////////////////////////////////
-/// Access to the internal buffer. Since the internal buffer is implemented as a
-/// contiguous-memory vector, the return value of this function can safely be
-/// treated as if it were a C array.
-///
-/// @pre internal buffer is non-empty.
-///
-/// @return a pointer to the first element in the encapsulated buffer.
-///
-/// @limitations This is a segfault if the buffer is empty. The caller is
-///              responsible for making sure this doesn't happen.
-////////////////////////////////////////////////////////////////////////////////
-void* const CRtdsBuffer::operator&() const
-{
-     assert(!m_buffer.isEmpty());
-     return (void*)&m_buffer[0];
-}
-
-////////////////////////////////////////////////////////////////////////////////
-/// Determines the number of bytes in the internal buffer. If needed, the number
-/// of elements in the buffer is numBytes/sizeof(SettingValue)
-///
-/// @return the number of bytes in the internal buffer.
-////////////////////////////////////////////////////////////////////////////////
-std::size_t CRtdsBuffer::numBytes() const
-{
-     return m_buffer.size() * sizeof(SettingValue);
-}
-
-////////////////////////////////////////////////////////////////////////////////
-/// Converts all of the values in the buffer from big-endian to little-endian,
-/// or vice versa, if the DGI is running on a little-endian machine. (The FPGA
-/// expects to receive data in a big-endian format.)
-///  
-/// @pre  the data in the buffer should be meaningful little-endian or big-
-///       endian values, each of size sizeof(SettingValue)
-/// @post if the buffer held little-endian (x86) data, then it now holds big-
-///       endian data. if the buffer held big-endian (FPGA) data, then it now
-///       holds little-endian data.
-///
-/// @limitations This function is NOT synchronized. You must acquire a write
-///              lock before using this function!
-////////////////////////////////////////////////////////////////////////////////
-void CRtdsBuffer::EndianSwapIfNeeded()
-{
-#if __BYTE_ORDER == __LITTLE_ENDIAN
-    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-
-    for (int i = 0; i < m_buffer.numBytes(); i += sizeof(SettingValue))
-    {
-         EndianSwap((char*) &m_buffer[i], sizeof(SettingValue));
-    }
-#else
-    Logger.Trace << __PRETTY_FUNCTION__ << " skipped because DGI is running on"
-         " big-endian architecture." << std::endl;
-#endif
 }
 
 }//namespace broker

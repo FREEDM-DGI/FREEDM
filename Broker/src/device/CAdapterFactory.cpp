@@ -1,4 +1,4 @@
-////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
 /// @file         CAdapterFactory.cpp
 ///
 /// @author       Thomas Roth <tprfh7@mst.edu>
@@ -28,7 +28,7 @@
 /// Suggested modifications or questions about these files can be directed to
 /// Dr. Bruce McMillin, Department of Computer Science, Missouri University of
 /// Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
-////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
 
 #include "CAdapterFactory.hpp"
 #include "CPscadAdapter.hpp"
@@ -49,7 +49,7 @@ namespace {
 CLocalLogger Logger(__FILE__);
 }
 
-////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
 /// Retrieves the singleton factory instance.
 ///
 /// @pre None.
@@ -57,7 +57,7 @@ CLocalLogger Logger(__FILE__);
 /// @return The global instance of CAdapterFactory.
 ///
 /// @limitations None.
-////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
 CAdapterFactory & CAdapterFactory::Instance()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
@@ -65,7 +65,7 @@ CAdapterFactory & CAdapterFactory::Instance()
     return instance;
 }
 
-////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
 /// Initializes the adapter factory with the physical device manager.
 ///
 /// @ErrorHandling Throws a std::runtime_error if either a prior call to this
@@ -77,7 +77,7 @@ CAdapterFactory & CAdapterFactory::Instance()
 /// @param manager The physical device manager to be used by the factory.
 ///
 /// @limitations This function must be called exactly once.
-////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
 void CAdapterFactory::Initialize(CPhysicalDeviceManager::Pointer manager)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
@@ -100,7 +100,7 @@ void CAdapterFactory::Initialize(CPhysicalDeviceManager::Pointer manager)
     Logger.Notice << "Initialized the adapter factory." << std::endl;
 }
 
-////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
 /// Creates a new adapter and all of its devices.  The adapter is registered
 /// with each device, and each device is registered with the stored physical
 /// device manager.  The adapter is configured to recognize its own device
@@ -115,7 +115,7 @@ void CAdapterFactory::Initialize(CPhysicalDeviceManager::Pointer manager)
 /// @param p The property tree that specifies a single adapter.
 ///
 /// @limitations None.
-////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
 void CAdapterFactory::CreateAdapter(const boost::property_tree::ptree & p)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
@@ -203,14 +203,14 @@ void CAdapterFactory::CreateAdapter(const boost::property_tree::ptree & p)
     adapter->Start();
 }
 
-////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
 /// Stops the i/o service and waits for its thread to complete.
 ///
 /// @pre None.
 /// @post m_ios is stopped and the object is destroyed.
 ///
 /// @limitations None.
-////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
 CAdapterFactory::~CAdapterFactory()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
@@ -222,7 +222,7 @@ CAdapterFactory::~CAdapterFactory()
     m_thread.join();
 }
 
-////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
 /// Constructs an uninitialized factory.
 ///
 /// @pre None.
@@ -230,7 +230,7 @@ CAdapterFactory::~CAdapterFactory()
 /// @post Launches an i/o service on a separate thread.
 ///
 /// @limitations None.
-////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
 CAdapterFactory::CAdapterFactory()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
@@ -240,7 +240,7 @@ CAdapterFactory::CAdapterFactory()
     Logger.Status << "Started the adapter i/o service." << std::endl;
 }
 
-////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
 /// Registers a create device function with the factory for the given key.
 ///
 /// @ErrorHandling Throws a std::runtime_error if the key already exists.
@@ -250,9 +250,9 @@ CAdapterFactory::CAdapterFactory()
 /// @param function The function to register with the factory.
 ///
 /// @limitations None.
-////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
 void CAdapterFactory::RegisterDeviceClass(std::string key,
-        FactoryFunction function)
+                                          FactoryFunction function)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
@@ -267,7 +267,7 @@ void CAdapterFactory::RegisterDeviceClass(std::string key,
     Logger.Info << "Registered the device class " << key << "." << std::endl;
 }
 
-////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
 /// Creates and stores a new adapter without configuration of its devices.
 ///
 /// @ErrorHandling Throws a std::runtime_error if the name is invalid, the name
@@ -280,7 +280,7 @@ void CAdapterFactory::RegisterDeviceClass(std::string key,
 /// @return A non-null shared pointer to the newly created adapter.
 ///
 /// @limitations None.
-////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
 IPhysicalAdapter::Pointer CAdapterFactory::CreateAdapter(std::string name,
         std::string type, const boost::property_tree::ptree & p)
 {
@@ -322,7 +322,7 @@ IPhysicalAdapter::Pointer CAdapterFactory::CreateAdapter(std::string name,
     return adapter;
 }
 
-////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
 /// Calls a registered function to create a new device of the given type.
 ///
 /// @ErrorHandling Throws a std::runtime_error if type is not registered with
@@ -334,9 +334,9 @@ IPhysicalAdapter::Pointer CAdapterFactory::CreateAdapter(std::string name,
 /// @param adapter The adapter that will handle the data of the new device.
 ///
 /// @limitations The device types must be registered prior to this call.
-////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
 void CAdapterFactory::CreateDevice(std::string name, std::string type,
-        IPhysicalAdapter::Pointer adapter)
+                                   IPhysicalAdapter::Pointer adapter)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     

@@ -2,7 +2,6 @@
 /// @file           IPhysicalAdapter.hpp
 ///
 /// @author         Thomas Roth <tprfh7@mst.edu>
-/// @author         Yaxi Liu <ylztf@mst.edu>
 /// @author         Michael Catanzaro <michael.catanzaro@mst.edu>
 ///
 /// @project        FREEDM DGI
@@ -22,11 +21,9 @@
 /// Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
 ////////////////////////////////////////////////////////////////////////////////
 
-#ifndef IPHYSICALADAPTER_HPP
-#define	IPHYSICALADAPTER_HPP
+#ifndef I_PHYSICAL_ADAPTER_HPP
+#define	I_PHYSICAL_ADAPTER_HPP
 
-#include <map>
-#include <set>
 #include <string>
 #include <utility>
 
@@ -39,6 +36,9 @@ namespace device {
 
 /// Type of the value for device signals.
 typedef float SettingValue;
+
+/// Type of the unique identifier for device values.
+typedef std::pair<const std::string, const std::string> DeviceSignal;
 
 /// Physical adapter device interface.
 ////////////////////////////////////////////////////////////////////////////////
@@ -54,48 +54,23 @@ class IPhysicalAdapter
 public:
     /// Pointer to a physical adapter.
     typedef boost::shared_ptr<IPhysicalAdapter> Pointer;
-    
-    /// Registers a new device signal with the physical adapter.
-    void RegisterStateInfo(std::string device, std::string signal,
-            std::size_t index );
-    
-    /// Registers a new device signal with the physical adapter.
-    void RegisterCommandInfo(std::string device, std::string signal,
-            std::size_t index );
-    
-    /// Start the adapter.
+
     virtual void Start() = 0;
     
     /// Retrieves a value from a device.
-    virtual SettingValue Get(std::string device, std::string signal) const = 0;
+    virtual SettingValue Get(const std::string device,
+                             const std::string signal) const = 0;
 
     /// Sets a value on a device.
-    virtual void Set(std::string device, std::string signal,
-            const SettingValue value) = 0;
+    virtual void Set(const std::string device, const std::string signal,
+                     const SettingValue value) = 0;
 
     /// Virtual destructor for derived classes.
     virtual ~IPhysicalAdapter();
-    
-protected:
-    /// Type of the unique identifier for device values.
-    typedef std::pair<std::string, std::string> DeviceSignal;
-    
-    /// Translates a device signal into its state index.
-    std::map<DeviceSignal, std::size_t> m_StateInfo;
-    
-    /// Stores the registered state indices.
-    std::set<std::size_t> m_StateIndex;
-    
-    /// Translates a device signal into its command index.
-    std::map<DeviceSignal, std::size_t> m_CommandInfo;
-    
-    /// Stores the registered command indices.
-    std::set<std::size_t> m_CommandIndex;
 };
 
 } // namespace device
 } // namespace broker
 } // namespace freedm
 
-#endif // IPHYSICALADAPTER_HPP
-
+#endif // I_PHYSICAL_ADAPTER_HPP

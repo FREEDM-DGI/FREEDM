@@ -44,7 +44,7 @@ namespace device {
 /// @limitations The adapter cannot be restarted if the connection fails.
 ////////////////////////////////////////////////////////////////////////////////
 class CPscadAdapter
-    : public IConnectionAdapter
+    : public ITcpAdapter
 {
 public:
     /// The type of a shared pointer to this class.
@@ -55,10 +55,11 @@ public:
             const boost::property_tree::ptree & details);
     
     /// Starts the adapter.
-    virtual void Start();
+    void Start();
     
     /// Sets the value of some device signal at the remote host.
-    void Set(std::string device, std::string signal, const SettingValue value);
+    void Set(const std::string device, const std::string signal, 
+             const SettingValue value);
     
     /// Gets the value of some device signal from the remote host.
     SettingValue Get(std::string device, std::string signal) const;
@@ -68,16 +69,11 @@ public:
     
     /// Stops the adapter.
     ~CPscadAdapter();
+
 private:
     /// Constructs a new pscad adapter.
     CPscadAdapter(boost::asio::io_service & service,
-            const boost::property_tree::ptree & details);
-    
-    /// The hostname of the remote host.
-    std::string m_host;
-    
-    /// The port number of the remote host.
-    std::string m_port;
+                  const boost::property_tree::ptree & details);
 };
 
 } // namespace broker

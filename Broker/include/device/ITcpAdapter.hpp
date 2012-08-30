@@ -51,15 +51,16 @@ public:
     /// Type of a shared pointer to a connection adapter.
     typedef boost::shared_ptr<IConnectionAdapter> Pointer;
 
-    /// Creates a socket connection to the given hostname and port number.
-    void Connect(std::string hostname, std::string port);
-
     /// Virtual destructor for derived classes.
     virtual ~ITcpAdapter() { };
 
 protected:
     /// Constructor to initialize the socket.
-    ITcpAdapter(boost::asio::io_service& service);
+    ITcpAdapter(boost::asio::io_service & service,
+                const boost::property_tree::ptree & ptree);
+
+    /// Creates a socket connection to the given hostname and port number.
+    void Connect();
 
     /// Closes the connection.
     virtual void Quit() = 0;
@@ -69,6 +70,13 @@ protected:
 
     /// Socket to use for the TCP connection.
     mutable boost::asio::ip::tcp::socket m_socket;
+
+private:
+    /// The hostname of the remote host.
+    const std::string m_host;
+    
+    /// The port number of the remote host.
+    const std::string m_port;
 };
 
 } // namespace device

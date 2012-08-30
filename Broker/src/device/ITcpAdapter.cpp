@@ -42,22 +42,20 @@ CLocalLogger Logger(__FILE__);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-/// Creates a TCP socket connection to the given hostname and service.
+/// Creates a TCP socket connection to the adapter's target host and port.
 ///
 /// @ErrorHandling Throws a std::runtime_error for connection errors.
 /// @pre hostname and service specify a valid endpoint.
 /// @post m_socket is connected to the passed service.
-/// @param hostname The hostname of the target endpoint.
-/// @param port The port number of the target endpoint.
 ///
 /// @limitations None.
 ////////////////////////////////////////////////////////////////////////////////
-void ITcpAdapter::Connect(std::string hostname, std::string port)
+void ITcpAdapter::Connect()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     
     boost::asio::ip::tcp::resolver resolver(m_socket.get_io_service());
-    boost::asio::ip::tcp::resolver::query query(hostname, port);
+    boost::asio::ip::tcp::resolver::query query(m_host, m_port);
     boost::asio::ip::tcp::resolver::iterator it = resolver.resolve(query);
     boost::asio::ip::tcp::resolver::iterator end;
     
@@ -74,17 +72,17 @@ void ITcpAdapter::Connect(std::string hostname, std::string port)
     if( error )
     {
         std::stringstream ss;
-        ss << "Failed to connect to " << hostname << ":" << port << " because: "
-                << boost::system::system_error(error).what() << std::endl;
+        ss << "Failed to connect to " << m_host << ":" << m_port << " because: "
+           << boost::system::system_error(error).what() << std::endl;
         throw std::runtime_error(ss.str());
     }
     
-    Logger.Status << "Opened a TCP socket connection to host " << hostname
-            << ":" << port << "." << std::endl;
+    Logger.Status << "Opened a TCP socket connection to host " << m_host
+                  << ":" << m_port << "." << std::endl;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-/// Virtual destructor made available for dervied classes.
+/// Virtual destructor made available for derived classes.
 ///
 /// @pre None.
 /// @post Destructs the object.
@@ -103,13 +101,25 @@ ITcpAdapter::~ITcpAdapter()
 /// @pre The i/o service must be started outside of this class.
 /// @post m_socket will use the i/o service for its communication.
 /// @param service The i/o service to associate with the socket.
+/// @param ptree XML property tree containing host and port for the adapter
 ///
 /// @limitations None.
 ////////////////////////////////////////////////////////////////////////////////
-ITcpAdapter::ITcpAdapter(boost::asio::io_service & service)
-    : m_socket(service)
+ITcpAdapter::ITcpAdapter(boost::asio::io_service & service,
+                         const boost::property_tree::ptree ptree)
+     : m_service(service)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+
+    try
+    {
+         m_host = details.get<std::string>("host");
+         m_port = details.get<std::string>("port");
+    }
+    catch( std::exception & e )
+    {
+         throw std::runtime_error("Failed to create adapter: " + e.what());
+    }
 }
 
 } // namespace device

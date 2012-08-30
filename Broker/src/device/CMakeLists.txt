@@ -3,10 +3,10 @@ set(
     DEVICE_FILES
     CAdapterFactory.cpp
     CPhysicalDeviceManager.cpp
-    IPhysicalAdapter.cpp
-    IConnectionAdapter.cpp
     CPscadAdapter.cpp
     CRtdsAdapter.cpp
+    IBufferAdapter.cpp
+    IConnectionAdapter.cpp
     ITcpAdapter.cpp
     PhysicalDeviceTypes.cpp
    )

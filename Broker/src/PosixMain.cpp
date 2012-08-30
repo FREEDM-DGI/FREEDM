@@ -301,7 +301,7 @@ int main(int argc, char* argv[])
                 if (idx == std::string::npos)
                 { // Not found!
                     std::cerr << "Incorrectly formatted host in config file: "
-                            << s << std::endl;
+                              << s << std::endl;
                     continue;
                 }
 
@@ -331,9 +331,9 @@ int main(int argc, char* argv[])
         broker.Schedule("lb", boost::bind(&lb::LBAgent::Run, &LB), false);
         broker.Run();
     }
-    catch (std::exception& e)
+    catch (std::exception & e)
     {
-        Logger.Error << "Exception caught in main:" << e.what() << std::endl;
+         Logger.Error << "Exception caught in main:" << e.what() << std::endl;
     }
 
     return 0;

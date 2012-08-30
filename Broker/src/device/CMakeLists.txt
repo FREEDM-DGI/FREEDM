@@ -6,7 +6,6 @@ set(
     CPscadAdapter.cpp
     CRtdsAdapter.cpp
     IBufferAdapter.cpp
-    IConnectionAdapter.cpp
     ITcpAdapter.cpp
     PhysicalDeviceTypes.cpp
    )

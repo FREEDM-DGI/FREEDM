@@ -26,6 +26,7 @@
 #define	IPHYSICALADAPTER_HPP
 
 #include <map>
+#include <set>
 #include <string>
 #include <utility>
 
@@ -82,8 +83,14 @@ protected:
     /// Translates a device signal into its state index.
     std::map<DeviceSignal, std::size_t> m_StateInfo;
     
+    /// Stores the registered state indices.
+    std::set<std::size_t> m_StateIndex;
+    
     /// Translates a device signal into its command index.
     std::map<DeviceSignal, std::size_t> m_CommandInfo;
+    
+    /// Stores the registered command indices.
+    std::set<std::size_t> m_CommandIndex;
 };
 
 } // namespace device

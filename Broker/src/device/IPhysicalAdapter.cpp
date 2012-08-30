@@ -1,7 +1,8 @@
-////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
 /// @file           IPhysicalAdapter.cpp
 ///
 /// @author         Thomas Roth <tprfh7@mst.edu>
+/// @author         Michael Catanzaro <michael.catanzaro@mst.edu>
 ///
 /// @project        FREEDM DGI
 ///
@@ -22,7 +23,7 @@
 /// Suggested modifications or questions about these files can be directed to
 /// Dr. Bruce McMillin, Department of Computer Science, Missouri University of
 /// Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
-////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
 
 #include "IPhysicalAdapter.hpp"
 #include "CLogger.hpp"
@@ -39,7 +40,7 @@ namespace {
 CLocalLogger Logger(__FILE__);
 }
 
-////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
 /// Registers a new device signal as state information with the adapter.
 ///
 /// @ErrorHandling Throws a std::runtime_error if the device signal is invalid
@@ -53,7 +54,7 @@ CLocalLogger Logger(__FILE__);
 ///
 /// @limitations This function does not prevent multiple device signals from
 /// using the same index, which may be undesired behavior.
-////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
 void IPhysicalAdapter::RegisterStateInfo(std::string device,
         std::string signal, std::size_t index )
 {
@@ -80,7 +81,7 @@ void IPhysicalAdapter::RegisterStateInfo(std::string device,
             << ") as adapter state information." << std::endl;
 }
 
-////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
 /// Registers a new device signal as command information with the adapter.
 ///
 /// @ErrorHandling Throws a std::runtime_error if the device signal is invalid
@@ -94,7 +95,7 @@ void IPhysicalAdapter::RegisterStateInfo(std::string device,
 ///
 /// @limitations This function does not prevent multiple device signals from
 /// using the same index, which may be undesired behavior.
-////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
 void IPhysicalAdapter::RegisterCommandInfo(std::string device,
         std::string signal, std::size_t index )
 {

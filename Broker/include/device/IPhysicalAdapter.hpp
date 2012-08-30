@@ -22,8 +22,8 @@
 /// Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
 ////////////////////////////////////////////////////////////////////////////////
 
-#ifndef I_PHYSICAL_ADAPTER_HPP
-#define	I_PHYSICAL_ADAPTER_HPP
+#ifndef IPHYSICALADAPTER_HPP
+#define	IPHYSICALADAPTER_HPP
 
 #include <map>
 #include <string>
@@ -90,5 +90,5 @@ protected:
 } // namespace broker
 } // namespace freedm
 
-#endif // I_PHYSICAL_ADAPTER_HPP
->>>>>>> c0b89a20fb01b46c89e2ae0e8de5ef5224fa99ec
+#endif // IPHYSICALADAPTER_HPP
+

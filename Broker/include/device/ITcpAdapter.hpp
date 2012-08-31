@@ -29,6 +29,7 @@
 #include <string>
 
 #include <boost/asio.hpp>
+#include <boost/property_tree/ptree.hpp>
 #include <boost/shared_ptr.hpp>
 
 namespace freedm {
@@ -71,7 +72,6 @@ protected:
     /// Socket to use for the TCP connection.
     mutable boost::asio::ip::tcp::socket m_socket;
 
-private:
     /// The hostname of the remote host.
     const std::string m_host;
     

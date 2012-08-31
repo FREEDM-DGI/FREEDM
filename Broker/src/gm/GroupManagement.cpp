@@ -1038,6 +1038,7 @@ void GMAgent::Prehandler(SubhandleFunctor f,CMessage msg, PeerNodePtr peer)
     f(msg,peer);
 }
  
+#pragma GCC diagnostic ignored "-Wunused-parameter"
 ///////////////////////////////////////////////////////////////////////////////
 /// GMAgent::HandleAny
 /// @description This function collects all incoming messages for the purpose
@@ -1410,6 +1411,7 @@ void GMAgent::HandlePeerListQuery(CMessage msg, PeerNodePtr peer)
     std::string requester = pt.get<std::string>("gm.requester");
     peer->Send(PeerList(requester));
 }
+#pragma GCC diagnostic ignored "-Wunused-parameter"
 
 ///////////////////////////////////////////////////////////////////////////////
 /// GMAgent::AddPeer

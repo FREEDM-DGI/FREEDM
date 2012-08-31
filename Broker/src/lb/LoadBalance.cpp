@@ -536,7 +536,7 @@ void LBAgent::SendDraftRequest()
     }//end if
 }//end SendDraftRequest
 
-
+#pragma GCC diagnostic ignored "-Wunused-parameter"
 ////////////////////////////////////////////////////////////
 /// HandleRead
 /// @description: Handles the incoming messages meant for lb module and performs
@@ -558,7 +558,8 @@ void LBAgent::HandleAny(CMessage msg, PeerNodePtr peer)
     std::stringstream ss_;
     line_ = msg.GetSourceUUID();
     ptree pt = msg.GetSubMessages();
-    Logger.Debug << "Message '" <<pt.get<std::string>("lb","NOEXECPTION")<<"' received from "<< line_<<std::endl;
+    Logger.Debug << "Message '" <<pt.get<std::string>("lb","NOEXECPTION")
+                 <<"' received from "<< line_<<std::endl;
 
     if(msg.GetHandler().find("lb") == 0)
     {
@@ -568,7 +569,6 @@ void LBAgent::HandleAny(CMessage msg, PeerNodePtr peer)
         throw std::runtime_error("Unhandled Load Balancing Message");
     }
 }
-
 
 void LBAgent::HandlePeerList(CMessage msg, PeerNodePtr peer)
 {
@@ -673,6 +673,7 @@ void LBAgent::HandleSupply(CMessage msg, PeerNodePtr peer)
     InsertInPeerSet(m_LoNodes,peer);
 }
 
+#pragma GCC diagnostic ignored "-Wunused-parameter"
 void LBAgent::HandleRequest(CMessage msg, PeerNodePtr peer)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
@@ -908,6 +909,7 @@ void LBAgent::HandleComputedNormal(CMessage msg, PeerNodePtr peer)
                    << pt.get<std::string>("lb.source") << std::endl;
     LoadTable();
 }
+#pragma GCC diagnostic warning "-Wunused-parameter"
 
 ////////////////////////////////////////////////////////////
 /// Step_PStar

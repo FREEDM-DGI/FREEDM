@@ -80,7 +80,7 @@ IAdapter::Pointer CPscadAdapter::Create(boost::asio::io_service & service,
 void CPscadAdapter::Start()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    Connect(m_host, m_port);
+    Connect();
     
     Logger.Notice << "The PSCAD adapter has started its connection to "
             << m_host << ":" << m_port << "." << std::endl;
@@ -261,6 +261,7 @@ void CPscadAdapter::Quit()
             << m_port << "." << std::endl;
 }
 
+#pragma GCC diagnostic ignored "-Wunused-parameter"
 ///////////////////////////////////////////////////////////////////////////////
 /// "Registers" a new device signal with the adapter. But since the PSCAD
 /// adapter doesn't need to register its signals, this function does nothing.
@@ -300,6 +301,7 @@ void CPscadAdapter::RegisterCommandInfo(const std::string device,
 {
 // Do nothing - the PSCAD adapter requires no such registration
 }
+#pragma GCC diagnostic warning "-Wunused-parameter"
 
 ////////////////////////////////////////////////////////////////////////////////
 /// Closes the socket connection prior to destructing the object.

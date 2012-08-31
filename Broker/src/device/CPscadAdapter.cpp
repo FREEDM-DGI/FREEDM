@@ -14,6 +14,8 @@
 ///     CPscadAdapter::Set
 ///     CPscadAdapter::Get
 ///     CPscadAdapter::Quit
+///     CPscadAdapter::RegisterStateInfo
+///     CPscadAdapter::RegisterCommandInfo
 ///     CPscadAdapter::~CPscadAdapter
 ///     CPscadAdapter::CPscadAdapter
 ///
@@ -257,6 +259,46 @@ void CPscadAdapter::Quit()
     m_socket.close();
     Logger.Status << "Closed an open socket connection to " << m_host << ":"
             << m_port << "." << std::endl;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+/// "Registers" a new device signal with the adapter. But since the PSCAD
+/// adapter doesn't need to register its signals, this function does nothing.
+/// This function is called by CAdapterFactory.
+///
+/// @pre none for PSCAD, though in general, devices should be registered before
+///      starting adapters.
+/// @post CAdapterFactory thinks it has registered the device signal.
+/// @param device The unique identifier of the device to register.
+/// @param signal The signal of the device that will be registered.
+/// @param index The numeric index associated with the device signal.
+/// @todo can we change the implementation such that this is unnecessary?
+///////////////////////////////////////////////////////////////////////////////
+void CPscadAdapter::RegisterStateInfo(const std::string device,
+                                      const std::string signal,
+                                      const std::size_t index)
+{
+// Do nothing - the PSCAD adapter requires no such registration
+}
+    
+///////////////////////////////////////////////////////////////////////////////
+/// "Registers" a new device signal with the adapter. But since the PSCAD
+/// adapter doesn't need to register its signals, this function does nothing.
+/// This function is called by CAdapterFactory.
+///
+/// @pre none for PSCAD, though in general, devices should be registered before
+///      starting adapters.
+/// @post CAdapterFactory thinks it has registered the device signal.
+/// @param device The unique identifier of the device to register.
+/// @param signal The signal of the device that will be registered.
+/// @param index The numeric index associated with the device signal.
+/// @todo can we change the implementation such that this is unnecessary?
+///////////////////////////////////////////////////////////////////////////////
+void CPscadAdapter::RegisterCommandInfo(const std::string device,
+                                        const std::string signal,
+                                        const std::size_t index)
+{
+// Do nothing - the PSCAD adapter requires no such registration
 }
 
 ////////////////////////////////////////////////////////////////////////////////

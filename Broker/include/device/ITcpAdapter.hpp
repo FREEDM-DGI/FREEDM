@@ -66,7 +66,7 @@ protected:
     virtual void Quit() = 0;
     
     /// Constructor to initialize the socket.
-    ITcpAdapterAdapter(boost::asio::io_service & service);
+    ITcpAdapter(boost::asio::io_service & service);
 
     /// Socket to use for the TCP connection.
     mutable boost::asio::ip::tcp::socket m_socket;

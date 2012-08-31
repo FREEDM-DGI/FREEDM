@@ -59,11 +59,11 @@ public:
     
     /// Registers a new device signal with the physical adapter.
     void RegisterStateInfo(const std::string device, const std::string signal,
-                           const std::size_t index );
+                           const std::size_t index);
     
     /// Registers a new device signal with the physical adapter.
     void RegisterCommandInfo(const std::string device, const std::string signal,
-                             const std::size_t index );
+                             const std::size_t index);
     
     /// Virtual destructor for derived classes.
     virtual ~IBufferAdapter();

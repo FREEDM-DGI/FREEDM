@@ -63,6 +63,14 @@ public:
     
     /// Gets the value of some device signal from the remote host.
     SettingValue Get(std::string device, std::string signal) const;
+
+    /// Registers a new device signal with the adapter.
+    void RegisterStateInfo(const std::string device, const std::string signal,
+                           const std::size_t index);
+    
+    /// Registers a new device signal with the adapter.
+    void RegisterCommandInfo(const std::string device, const std::string signal,
+                             const std::size_t index);
     
     /// Sends a quit request to the remote host. 
     void Quit();

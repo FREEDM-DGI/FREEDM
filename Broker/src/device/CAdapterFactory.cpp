@@ -123,7 +123,7 @@ void CAdapterFactory::CreateAdapter(const boost::property_tree::ptree & p)
     
     std::string name, type, signal;
     std::size_t index;
-    
+
     try
     {
         name    = p.get<std::string>("<xmlattr>.name");
@@ -132,19 +132,43 @@ void CAdapterFactory::CreateAdapter(const boost::property_tree::ptree & p)
     }
     catch( std::exception & e )
     {
-        throw std::runtime_error("Failed to create adapter: " + e.what());
+        throw std::runtime_error("Failed to create adapter: "
+                                  + std::string(e.what()));
     }
     
     Logger.Debug << "Building " << type << " adapter " << name << std::endl;
+      
+    if( name.empty() )
+    {
+        throw std::runtime_error("Tried to create an adapter with empty name.");
+    }
+    else if( m_adapter.count(name) > 0 )
+    {
+        throw std::runtime_error("Multiple adapters share name " + name);
+    }
     
-    // adapter will not be null if no exception is thrown
-    adapter = CreateAdapter(name, type, subtree);
+    if( type == "pscad" )
+    {
+        adapter = CPscadAdapter::Create(m_ios, p);
+    }
+    else if( type == "rtds" )
+    {
+        adapter = CRtdsAdapter::Create(m_ios, p);
+    }
+    else
+    {
+        throw std::runtime_error("Attempted to create adapter of unrecognized "
+             "type " + type);
+    }
+    
+    m_adapter[name] = adapter;
+    Logger.Info << "Created the " << type << " adapter " << name << std::endl;
     
     // i = 0 parses state information, i = 1 parses command information
     for( int i = 0; i < 2; i++ )
     {
         Logger.Debug << "Reading the " << (i == 0 ? "state" : "command")
-                << " property tree specification." << std::endl;
+                     << " property tree specification." << std::endl;
         
         try
         {
@@ -152,7 +176,8 @@ void CAdapterFactory::CreateAdapter(const boost::property_tree::ptree & p)
         }
         catch( std::exception & e )
         {
-            throw std::runtime_error("Failed to create adapter: " + e.what());
+            throw std::runtime_error("Failed to create adapter: "
+                                     + std::string(e.what()));
         }
         
         BOOST_FOREACH(boost::property_tree::ptree::value_type & child, subtree)
@@ -167,11 +192,11 @@ void CAdapterFactory::CreateAdapter(const boost::property_tree::ptree & p)
             catch( std::exception & e )
             {
                 throw std::runtime_error("Failed to create adapter: "
-                                         + e.what());
+                                         + std::string(e.what()));
             }
             
             Logger.Debug << "At index " << index << " for the device signal ("
-                    << name << "," << signal << ")." << std::endl;
+                         << name << "," << signal << ")." << std::endl;
             
             // create the device when first seen
             if( devices.count(name) == 0 )
@@ -257,56 +282,6 @@ void CAdapterFactory::RegisterDeviceClass(std::string key,
 
     m_registry.insert(std::make_pair(key, function));
     Logger.Info << "Registered the device class " << key << "." << std::endl;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-/// Creates and stores a new adapter without configuration of its devices.
-///
-/// @ErrorHandling Throws a std::runtime_error if the name is invalid, the name
-/// is already in use, or the type is unrecognized.
-/// @pre CPscadAdapter::Create and CRtdsAdapter::Create must exist.
-/// @post Updates m_adapter to store the new adapter keyed on the passed name.
-/// @param name The unique identifier for the new adapter.
-/// @param type The type of adapter to create.
-/// @param p The property tree that contains the adapter constructor details.
-/// @return A non-null shared pointer to the newly created adapter.
-///
-/// @limitations None.
-///////////////////////////////////////////////////////////////////////////////
-IAdapter::Pointer CAdapterFactory::CreateAdapter(std::string name,
-        std::string type, const boost::property_tree::ptree & p)
-{
-    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    IAdapter::Pointer adapter;
-    
-    if( name.empty() )
-    {
-        throw std::runtime_error("Tried to create an adapter with empty name.");
-    }
-    
-    if( m_adapter.count(name) > 0 )
-    {
-        throw std::runtime_error("Multiple adapters share name " + name);
-    }
-    
-    if( type == "pscad" )
-    {
-        adapter = CPscadAdapter::Create(m_ios, p);
-    }
-    else if( type == "rtds" )
-    {
-        adapter = CRtdsAdapter::Create(m_ios, p);
-    }
-    else
-    {
-        throw std::runtime_error("Attempted to create adapter of unrecognized "
-             "type " + type);
-    }
-    
-    m_adapter[name] = adapter;
-    Logger.Info << "Created the " << type << " adapter " << name << std::endl;
-    
-    return adapter;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

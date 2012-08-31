@@ -51,7 +51,7 @@ public:
     typedef boost::shared_ptr<CPscadAdapter> Pointer;
     
     /// Creates a shared pointer to a new pscad adapter.
-    static Pointer Create(boost::asio::io_service & service,
+    static IAdapter::Pointer Create(boost::asio::io_service & service,
             const boost::property_tree::ptree & details);
     
     /// Starts the adapter.

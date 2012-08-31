@@ -125,7 +125,7 @@ void EndianSwap(char* data, const int num_bytes)
 ///
 /// @limitations client must call Connect before the CRtdsAdapter can be used
 ////////////////////////////////////////////////////////////////////////////////
-CRtdsAdapter::Pointer CRtdsAdapter::Create(boost::asio::io_service & service,
+IAdapter::Pointer CRtdsAdapter::Create(boost::asio::io_service & service,
         const boost::property_tree::ptree & ptree)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;

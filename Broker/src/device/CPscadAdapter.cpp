@@ -62,7 +62,7 @@ CLocalLogger Logger(__FILE__);
 ///
 /// @limitations None.
 ////////////////////////////////////////////////////////////////////////////////
-CPscadAdapter::Pointer CPscadAdapter::Create(boost::asio::io_service & service,
+IAdapter::Pointer CPscadAdapter::Create(boost::asio::io_service & service,
         const boost::property_tree::ptree & details)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;

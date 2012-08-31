@@ -65,8 +65,8 @@ public:
     typedef boost::shared_ptr<CRtdsAdapter> Pointer;
 
     /// create a CRtdsAdapter object and returns a pointer to it
-    static Pointer Create(boost::asio::io_service & service,
-                          const boost::property_tree::ptree & ptree);
+    static IAdapter::Pointer Create(boost::asio::io_service & service,
+                                    const boost::property_tree::ptree & ptree);
 
     /// destructor
     ~CRtdsAdapter();

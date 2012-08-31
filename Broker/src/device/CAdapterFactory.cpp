@@ -40,6 +40,7 @@
 
 #include <boost/bind.hpp>
 #include <boost/foreach.hpp>
+#include <boost/thread.hpp>
 
 namespace freedm {
 namespace broker {
@@ -253,7 +254,8 @@ CAdapterFactory::CAdapterFactory()
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     
     RegisterDevices();
-    m_thread = boost::thread(boost::bind(&boost::asio::io_service::run, m_ios);
+    m_thread = boost::thread(boost::bind(
+                                  &boost::asio::io_service::run, &m_ios));
     Logger.Status << "Started the adapter i/o service." << std::endl;
 }
 
@@ -304,7 +306,8 @@ void CAdapterFactory::CreateDevice(std::string name, std::string type,
     
     if( m_registry.count(type) == 0 )
     {
-        throw std::runtime_error("Device class " + type " is not registered.");
+        throw std::runtime_error("Device class " + type 
+                                 + " is not registered.");
     }
     
     (this->*m_registry[type])(name, adapter);

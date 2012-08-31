@@ -1,3 +1,2 @@
-freedm.cfg
-logger.cfg
-network.xml
+*.cfg
+*.xml

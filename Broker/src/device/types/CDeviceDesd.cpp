@@ -48,7 +48,7 @@ CLocalLogger Logger(__FILE__);
 ///
 /// @limitations None.
 ////////////////////////////////////////////////////////////////////////////////
-CDeviceDesd::CDeviceDesd(std::string device, IPhysicalAdapter::Pointer adapter)
+CDeviceDesd::CDeviceDesd(std::string device, PhysicalAdapter::Pointer adapter)
     : IDevice(device, adapter)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
@@ -71,7 +71,7 @@ CDeviceDesd::~CDeviceDesd()
 /// Determine how much energy is stored by the DESD.
 ///
 /// @pre None.
-/// @post Calls IPhysicalAdapter::Get with the signal "storage".
+/// @post Calls PhysicalAdapter::Get with the signal "storage".
 /// @return The amount of energy stored in this DESD.
 ///
 /// @limitations None.
@@ -87,7 +87,7 @@ SettingValue CDeviceDesd::GetStorage() const
 ///
 /// @pre None.
 /// @post Determines the current storage with CDeviceDesd::GetStorage.
-/// @post Calls IPhysicalAdapter::Set with the signal "storage".
+/// @post Calls PhysicalAdapter::Set with the signal "storage".
 /// @param step The amount to add to the current storage.
 ///
 /// @limitations The storage increase will take some time to manifest.

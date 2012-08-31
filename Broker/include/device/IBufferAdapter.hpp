@@ -44,7 +44,7 @@ namespace device {
 /// @limitations None.
 ///////////////////////////////////////////////////////////////////////////////
 class IBufferAdapter
-    : public IPhysicalAdapter
+    : public IAdapter
 {
 public:
     /// Pointer to a physical adapter.

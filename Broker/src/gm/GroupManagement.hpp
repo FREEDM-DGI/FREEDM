@@ -30,7 +30,7 @@
 #include "CGlobalPeerList.hpp"
 #include "CMessage.hpp"
 #include "CUuid.hpp"
-#include "CPhysicalDeviceManager.hpp"
+#include "CDeviceManager.hpp"
 #include "PhysicalDeviceTypes.hpp"
 #include "IAgent.hpp"
 #include "IHandler.hpp"
@@ -66,7 +66,7 @@ class GMAgent
     /// Module states    
     enum { NORMAL,DOWN,RECOVERY,REORGANIZATION,ELECTION };
     /// Constructor for using this object as a module.
-    GMAgent(std::string uuid_, CBroker &broker, device::CPhysicalDeviceManager::Pointer devmanager);
+    GMAgent(std::string uuid_, CBroker &broker, device::CDeviceManager::Pointer devmanager);
     /// Module destructor
     ~GMAgent();
     
@@ -239,7 +239,7 @@ class GMAgent
     CBroker& m_broker;
 
     ///The device manager!
-    device::CPhysicalDeviceManager::Pointer m_phyDevManager;
+    device::CDeviceManager::Pointer m_phyDevManager;
 
     /// Number of groups formed
     int m_groupsformed ;

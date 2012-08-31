@@ -25,7 +25,7 @@
 #ifndef I_DEVICE_HPP
 #define I_DEVICE_HPP
 
-#include "../IPhysicalAdapter.hpp"
+#include "../IAdapter.hpp"
 
 #include <boost/noncopyable.hpp>
 #include <boost/shared_ptr.hpp>
@@ -45,7 +45,7 @@ namespace device {
 template <class TargetType, class ObjectType>
 boost::shared_ptr<TargetType> device_cast(ObjectType object)
 {
-    return boost::dynamic_pointer_cast<TargetType > ( object );
+    return boost::dynamic_pointer_cast<TargetType>( object );
 }
 
 /// Physical device with implementation delegated to private member
@@ -76,16 +76,17 @@ public:
     /// Sets the value of some key in the structure
     void Set(const SettingKey key, const SettingValue value);
 protected:
-    friend class CPhysicalDeviceManager; // Temporary?
+    /// @todo
+    friend class CDeviceManager; // Temporary?
     
     /// Constructor which takes an identifier and device adapter
-    IDevice(const Identifier device, IPhysicalAdapter::Pointer adapter);
+    IDevice(const Identifier device, IAdapter::Pointer adapter);
 
     /// Unique identifier for the device
     Identifier m_identifier;
 
     /// "Driver" that handles the device data
-    IPhysicalAdapter::Pointer m_adapter;
+    IAdapter::Pointer m_adapter;
     
     /// Mutex to protect the device from other threads
     boost::mutex m_mutex;

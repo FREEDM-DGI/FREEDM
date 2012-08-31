@@ -2,7 +2,7 @@
 set(
     DEVICE_FILES
     CAdapterFactory.cpp
-    CPhysicalDeviceManager.cpp
+    CDeviceManager.cpp
     CPscadAdapter.cpp
     CRtdsAdapter.cpp
     IBufferAdapter.cpp

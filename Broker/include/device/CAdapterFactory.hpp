@@ -27,8 +27,8 @@
 #ifndef C_ADAPTER_FACTORY_HPP
 #define C_ADAPTER_FACTORY_HPP
 
-#include "CPhysicalDeviceManager.hpp"
-#include "IPhysicalAdapter.hpp"
+#include "CDeviceManager.hpp"
+#include "IAdapter.hpp"
 #include "CLogger.hpp"
 
 #include <map>
@@ -70,7 +70,7 @@ public:
     static CAdapterFactory & Instance();
     
     /// Gives the factory access to the device manager.
-    void Initialize(CPhysicalDeviceManager::Pointer manager);
+    void Initialize(CDeviceManager::Pointer manager);
     
     /// Creates a new adapter and its associated devices.
     void CreateAdapter(const boost::property_tree::ptree & p);
@@ -79,35 +79,35 @@ public:
     ~CAdapterFactory();
 private:
     /// Type of the functions used to create new devices.
-    typedef void (CAdapterFactory::*FactoryFunction )
-            (std::string, IPhysicalAdapter::Pointer adapter);
-    
+    typedef void
+    (CAdapterFactory::*FactoryFunction)(std::string, IAdapter::Pointer adapter);
+     
     /// Constructs the factory.
     CAdapterFactory();
     
     /// Registers compiled device classes with the factory.
-    void RegisterPhysicalDevices();
+    void RegisterDevices();
     
     /// Registers a device class with the factory.
     void RegisterDeviceClass(std::string key, FactoryFunction function);
     
     /// Constructs an adapter without any devices.
-    IPhysicalAdapter::Pointer CreateAdapter(std::string name, std::string type,
-            const boost::property_tree::ptree & p);
+    IAdapter::Pointer CreateAdapter(std::string name, std::string type,
+                                    const boost::property_tree::ptree & p);
     
     /// Creates a device and registers it with the system.
-    void CreateDevice(std::string name, std::string type,
-            IPhysicalAdapter::Pointer adapter);
+    void CreateDevice(std::string name, std::string type, 
+                      IAdapter::Pointer adapter);
     
     /// Creates a device and registers it with the system.
     template <class DeviceType>
-    void CreateDevice(std::string name, IPhysicalAdapter::Pointer adapter);
+    void CreateDevice(std::string name, IAdapter::Pointer adapter);
     
     /// Device manager used to register new devices.
-    CPhysicalDeviceManager::Pointer m_manager;
+    CDeviceManager::Pointer m_manager;
     
     /// Set of adapters created by the factory.
-    std::map<std::string, IPhysicalAdapter::Pointer> m_adapter;
+    std::map<std::string, IAdapter::Pointer> m_adapter;
 
     /// Set of device classes registered by the factory.
     std::map<std::string, FactoryFunction> m_registry;
@@ -128,7 +128,7 @@ private:
 /// been initialized with CAdapterFactory::Initialize or a device exists with
 /// the provided name.
 /// @pre The provided adapter must not be null.
-/// @post The new device is registered with the physical device manager.
+/// @post The new device is registered with the device manager.
 /// @post The provided adapter is registered with the new device.
 /// @param name The unique identifier for the device to be created.
 /// @param adapter The adapter the new device should access its data through.
@@ -136,23 +136,18 @@ private:
 /// @limitations CAdapterFactory::Initialize must be called before this func.
 ////////////////////////////////////////////////////////////////////////////////
 template <class DeviceType>
-void CAdapterFactory::CreateDevice(std::string name,
-        IPhysicalAdapter::Pointer adapter)
+void CAdapterFactory::CreateDevice(std::string name, IAdapter::Pointer adapter)
 {
     AdapterFactoryLogger.Trace << __PRETTY_FUNCTION__ << std::endl;
     
     if( !m_manager )
     {
-        std::stringstream ss;
-        ss << "Adapter factory has not been initialized." << std::endl;
-        throw std::runtime_error(ss.str());
+        throw std::runtime_error("Adapter factory has not been initialized.");
     }
     
     if( m_manager->DeviceExists(name) )
     {
-        std::stringstream ss;
-        ss << "The device '" << name << "' already exists." << std::endl;
-        throw std::runtime_error(ss.str());
+        throw std::runtime_error("The device " + name + " already exists.");
     }
     
     IDevice::Pointer device(new DeviceType(name, adapter));

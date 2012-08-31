@@ -85,7 +85,7 @@ CLocalLogger Logger(__FILE__);
 /// @param p_conManager: The connection manager to use in this class.
 ///////////////////////////////////////////////////////////////////////////////
 GMAgent::GMAgent(std::string p_uuid, CBroker &broker,
-        device::CPhysicalDeviceManager::Pointer devmanager)
+        device::CDeviceManager::Pointer devmanager)
     : IPeerNode(p_uuid,broker.GetConnectionManager()),
     CHECK_TIMEOUT(boost::posix_time::seconds(3)),
     TIMEOUT_TIMEOUT(boost::posix_time::seconds(3)),

@@ -95,10 +95,8 @@ CLocalLogger Logger(__FILE__);
 /// @param m_phyManager: The physical device manager used in this class
 /// @limitations: None
 ///////////////////////////////////////////////////////////////////////////////
-LBAgent::LBAgent(std::string uuid_,
-                 CBroker &broker,
-                 device::CPhysicalDeviceManager::Pointer
-                    m_phyManager):
+LBAgent::LBAgent(std::string uuid_, CBroker &broker,
+                 device::CDeviceManager::Pointer m_phyManager):
     IPeerNode(uuid_, broker.GetConnectionManager()),
     m_phyDevManager(m_phyManager),
     m_broker(broker)

@@ -111,7 +111,7 @@ CLocalLogger Logger(__FILE__);
 ///////////////////////////////////////////////////////////////////////////////
 
 SCAgent::SCAgent(std::string uuid, CBroker &broker,
-                 device::CPhysicalDeviceManager::Pointer m_phyManager):
+                 device::CDeviceManager::Pointer m_phyManager):
         IPeerNode(uuid, broker.GetConnectionManager()),
         m_countstate(0),
         m_NotifyToSave(false),

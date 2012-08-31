@@ -14,6 +14,7 @@
 ///     CAdapterFactory::CreateAdapter
 ///     CAdapterFactory::~CAdapterFactory
 ///     CAdapterFactory::CAdapterFactory
+///     CAdapterFactory::RegisterDevices
 ///     CAdapterFactory::RegisterDeviceClass
 ///     CAdapterFactory::CreateDevice
 ///
@@ -66,34 +67,30 @@ CAdapterFactory & CAdapterFactory::Instance()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// Initializes the adapter factory with the physical device manager.
+/// Initializes the adapter factory with the device manager.
 ///
 /// @ErrorHandling Throws a std::runtime_error if either a prior call to this
 /// function has been made or the passed device manager is null.
-/// @SharedMemory A shared pointer to the physical device manager is stored.
+/// @SharedMemory A shared pointer to the device manager is stored.
 /// @pre The adapter factory must not have already been initialized.
 /// @pre The passed device manager must not be null.
 /// @post Sets the value of m_manager to the passed value.
-/// @param manager The physical device manager to be used by the factory.
+/// @param manager The device manager to be used by the factory.
 ///
 /// @limitations This function must be called exactly once.
 ///////////////////////////////////////////////////////////////////////////////
-void CAdapterFactory::Initialize(CPhysicalDeviceManager::Pointer manager)
+void CAdapterFactory::Initialize(CDeviceManager::Pointer manager)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     
     if( !manager )
     {
-        std::stringstream ss;
-        ss << "Received an invalid device manager pointer." << std::endl;
-        throw std::runtime_error(ss.str());
+        throw std::runtime_error("Received an invalid device manager pointer.");
     }
     
     if( m_manager )
     {
-        std::stringstream ss;
-        ss << "Adapter factory has already been initialized." << std::endl;
-        throw std::runtime_error(ss.str());
+        throw std::runtime_error("Adapter factory already initialized!");
     }
     
     m_manager = manager;
@@ -102,16 +99,16 @@ void CAdapterFactory::Initialize(CPhysicalDeviceManager::Pointer manager)
 
 ///////////////////////////////////////////////////////////////////////////////
 /// Creates a new adapter and all of its devices.  The adapter is registered
-/// with each device, and each device is registered with the stored physical
-/// device manager.  The adapter is configured to recognize its own device
-/// signals, and started when the configuration is complete.
+/// with each device, and each device is registered with the stored device
+/// manager.  The adapter is configured to recognize its own device signals,
+/// and started when the configuration is complete.
 ///
 /// @ErrorHandling Throws a std::runtime_error if the property tree is bad.
-/// @pre The adapter must not begin work until IPhysicalAdapter::Start.
+/// @pre The adapter must not begin work until IAdapter::Start.
 /// @pre The adapter's devices must not be specified in other adapters.
 /// @post Calls CAdapterFactory::CreateAdapter to create the adapter.
 /// @post Calls CAdapterFactory::CreateDevice to create each device.
-/// @post Starts the adapter through IPhysicalAdapter::Start.
+/// @post Starts the adapter through IAdapter::Start.
 /// @param p The property tree that specifies a single adapter.
 ///
 /// @limitations None.
@@ -121,7 +118,7 @@ void CAdapterFactory::CreateAdapter(const boost::property_tree::ptree & p)
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     
     boost::property_tree::ptree subtree;
-    IPhysicalAdapter::Pointer adapter;
+    IAdapter::Pointer adapter;
     std::set<std::string> devices;
     
     std::string name, type, signal;
@@ -135,9 +132,7 @@ void CAdapterFactory::CreateAdapter(const boost::property_tree::ptree & p)
     }
     catch( std::exception & e )
     {
-        std::stringstream ss;
-        ss << "Failed to create adapter: " << e.what() << std::endl;
-        throw std::runtime_error(ss.str());
+        throw std::runtime_error("Failed to create adapter: " + e.what());
     }
     
     Logger.Debug << "Building " << type << " adapter " << name << std::endl;
@@ -157,9 +152,7 @@ void CAdapterFactory::CreateAdapter(const boost::property_tree::ptree & p)
         }
         catch( std::exception & e )
         {
-            std::stringstream ss;
-            ss << "Failed to create adapter: " << e.what() << std::endl;
-            throw std::runtime_error(ss.str());
+            throw std::runtime_error("Failed to create adapter: " + e.what());
         }
         
         BOOST_FOREACH(boost::property_tree::ptree::value_type & child, subtree)
@@ -173,9 +166,8 @@ void CAdapterFactory::CreateAdapter(const boost::property_tree::ptree & p)
             }
             catch( std::exception & e )
             {
-                std::stringstream ss;
-                ss << "Failed to create adapter: " << e.what() << std::endl;
-                throw std::runtime_error(ss.str());
+                throw std::runtime_error("Failed to create adapter: "
+                                         + e.what());
             }
             
             Logger.Debug << "At index " << index << " for the device signal ("
@@ -235,7 +227,7 @@ CAdapterFactory::CAdapterFactory()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     
-    RegisterPhysicalDevices();
+    RegisterDevices();
     m_thread = boost::thread(boost::bind(&boost::asio::io_service::run, m_ios);
     Logger.Status << "Started the adapter i/o service." << std::endl;
 }
@@ -281,24 +273,20 @@ void CAdapterFactory::RegisterDeviceClass(std::string key,
 ///
 /// @limitations None.
 ///////////////////////////////////////////////////////////////////////////////
-IPhysicalAdapter::Pointer CAdapterFactory::CreateAdapter(std::string name,
+IAdapter::Pointer CAdapterFactory::CreateAdapter(std::string name,
         std::string type, const boost::property_tree::ptree & p)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    IPhysicalAdapter::Pointer adapter;
+    IAdapter::Pointer adapter;
     
     if( name.empty() )
     {
-        std::stringstream ss;
-        ss << "Tried to create an adapter with an empty name." << std::endl;
-        throw std::runtime_error(ss.str());
+        throw std::runtime_error("Tried to create an adapter with empty name.");
     }
     
     if( m_adapter.count(name) > 0 )
     {
-        std::stringstream ss;
-        ss << "Multiple adapters share the name " << name << "." << std::endl;
-        throw std::runtime_error(ss.str());
+        throw std::runtime_error("Multiple adapters share name " + name);
     }
     
     if( type == "pscad" )
@@ -311,9 +299,8 @@ IPhysicalAdapter::Pointer CAdapterFactory::CreateAdapter(std::string name,
     }
     else
     {
-        std::stringstream ss;
-        ss << "Tried to create adapter of type " << type << "." << std::endl;
-        throw std::runtime_error(ss.str());
+        throw std::runtime_error("Attempted to create adapter of unrecognized "
+             "type " + type);
     }
     
     m_adapter[name] = adapter;
@@ -336,15 +323,13 @@ IPhysicalAdapter::Pointer CAdapterFactory::CreateAdapter(std::string name,
 /// @limitations The device types must be registered prior to this call.
 ///////////////////////////////////////////////////////////////////////////////
 void CAdapterFactory::CreateDevice(std::string name, std::string type,
-                                   IPhysicalAdapter::Pointer adapter)
+                                   IAdapter::Pointer adapter)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     
     if( m_registry.count(type) == 0 )
     {
-        std::stringstream ss;
-        ss << "Device class " << type << " is not registered." << std::endl;
-        throw std::runtime_error(ss.str());
+        throw std::runtime_error("Device class " + type " is not registered.");
     }
     
     (this->*m_registry[type])(name, adapter);

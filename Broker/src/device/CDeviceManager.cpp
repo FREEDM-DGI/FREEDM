@@ -1,5 +1,5 @@
 ////////////////////////////////////////////////////////////////////////////////
-/// @file         CPhysicalDeviceManager.cpp
+/// @file         CDeviceManager.cpp
 ///
 /// @author       Stephen Jackson <scj7t4@mst.edu>
 /// @author       Michael Catanzaro <michael.catanzaro@mst.edu>
@@ -22,7 +22,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 #include "CLogger.hpp"
-#include "device/CPhysicalDeviceManager.hpp"
+#include "device/CDeviceManager.hpp"
 #include "device/types/CDeviceFid.hpp"
 
 #include <boost/bind.hpp>
@@ -44,7 +44,7 @@ CLocalLogger Logger(__FILE__);
 /// @pre None
 /// @post PhysicalDeviceManager is ready to accept & distribute devices.
 ///////////////////////////////////////////////////////////////////////////////
-CPhysicalDeviceManager::CPhysicalDeviceManager()
+CDeviceManager::CDeviceManager()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 }
@@ -58,7 +58,7 @@ CPhysicalDeviceManager::CPhysicalDeviceManager()
 ///
 /// @param resource a IPhysicalDevice::DevicePtr to the device.
 ///////////////////////////////////////////////////////////////////////////////
-void CPhysicalDeviceManager::AddDevice(IDevice::Pointer resource)
+void CDeviceManager::AddDevice(IDevice::Pointer resource)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     m_devices[resource->GetID()] = resource;
@@ -72,7 +72,7 @@ void CPhysicalDeviceManager::AddDevice(IDevice::Pointer resource)
 ///
 /// @param devid The identifier which will be used to specify the device removed
 ///////////////////////////////////////////////////////////////////////////////
-void CPhysicalDeviceManager::RemoveDevice(Identifier devid)
+void CDeviceManager::RemoveDevice(Identifier devid)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     m_devices.erase(devid);
@@ -86,7 +86,7 @@ void CPhysicalDeviceManager::RemoveDevice(Identifier devid)
 ///
 /// @return A DevicePtr to the device, or NULL if the device wasn't found.
 ///////////////////////////////////////////////////////////////////////////////
-const IDevice::Pointer CPhysicalDeviceManager::GetDevice(Identifier devid)
+const IDevice::Pointer CDeviceManager::GetDevice(Identifier devid)
 const
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
@@ -111,7 +111,7 @@ const
 ///
 /// @return A DevicePtr to the device, or NULL if the device wasn't found.
 ///////////////////////////////////////////////////////////////////////////////
-IDevice::Pointer CPhysicalDeviceManager::GetDevice(Identifier devid)
+IDevice::Pointer CDeviceManager::GetDevice(Identifier devid)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     return GetDevice(devid);
@@ -127,7 +127,7 @@ IDevice::Pointer CPhysicalDeviceManager::GetDevice(Identifier devid)
 ///
 /// @return True if the device is in the device table, false otherwise
 ///////////////////////////////////////////////////////////////////////////////
-bool CPhysicalDeviceManager::DeviceExists(device::Identifier devid) const
+bool CDeviceManager::DeviceExists(device::Identifier devid) const
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     return m_devices.count(devid);
@@ -141,7 +141,7 @@ bool CPhysicalDeviceManager::DeviceExists(device::Identifier devid) const
 ///
 /// @return The number of devices currently being tracked.
 ///////////////////////////////////////////////////////////////////////////////
-size_t CPhysicalDeviceManager::DeviceCount() const
+size_t CDeviceManager::DeviceCount() const
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     return m_devices.size();
@@ -155,7 +155,7 @@ size_t CPhysicalDeviceManager::DeviceCount() const
 ///
 /// @return The number of FIDs currently being tracked.
 ////////////////////////////////////////////////////////////////////////////////
-size_t CPhysicalDeviceManager::CountActiveFids() const
+size_t CDeviceManager::CountActiveFids() const
 {
     size_t result = 0;
     CDeviceFid::Pointer next_device;
@@ -176,7 +176,7 @@ size_t CPhysicalDeviceManager::CountActiveFids() const
 }
 
 /// @todo
-std::vector<SettingValue> CPhysicalDeviceManager::GetValueVector(
+std::vector<SettingValue> CDeviceManager::GetValueVector(
     std::string devtype, std::string value)
 {
     std::vector<SettingValue> results;

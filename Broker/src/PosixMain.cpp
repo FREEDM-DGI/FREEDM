@@ -31,7 +31,7 @@
 #include "config.hpp"
 #include "CUuid.hpp"
 #include "CAdapterFactory.hpp"
-#include "CPhysicalDeviceManager.hpp"
+#include "CDeviceManager.hpp"
 #include "PhysicalDeviceTypes.hpp"
 #include "gm/GroupManagement.hpp"
 #include "lb/LoadBalance.hpp"
@@ -227,8 +227,8 @@ int main(int argc, char* argv[])
                 boost::posix_time::milliseconds(0));
         //constructors for initial mapping
         CConnectionManager conManager;
-        device::CPhysicalDeviceManager::Pointer 
-            phyManager(new broker::device::CPhysicalDeviceManager());
+        device::CDeviceManager::Pointer 
+            phyManager(new broker::device::CDeviceManager());
         ConnectionPtr newConnection;
         boost::asio::io_service ios;
 

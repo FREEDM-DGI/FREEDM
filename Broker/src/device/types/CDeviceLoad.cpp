@@ -48,7 +48,7 @@ CLocalLogger Logger(__FILE__);
 ///
 /// @limitations None.
 ////////////////////////////////////////////////////////////////////////////////
-CDeviceLoad::CDeviceLoad(std::string device, IPhysicalAdapter::Pointer adapter)
+CDeviceLoad::CDeviceLoad(std::string device, PhysicalAdapter::Pointer adapter)
     : IDevice(device, adapter)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
@@ -71,7 +71,7 @@ CDeviceLoad::~CDeviceLoad()
 /// Determines the energy drain of the load.
 ///
 /// @pre None.
-/// @post Calls IPhysicalAdapter::Get with the signal "drain".
+/// @post Calls PhysicalAdapter::Get with the signal "drain".
 /// @return The energy drain of this load.
 ///
 /// @limitations None.
@@ -87,7 +87,7 @@ SettingValue CDeviceLoad::GetLoad() const
 ///
 /// @pre None.
 /// @post Determines the current drain with CDeviceLoad::GetLoad.
-/// @post Calls IPhysicalAdapter::Set with the signal "load".
+/// @post Calls PhysicalAdapter::Set with the signal "load".
 /// @param step The amount to add to the current drain.
 ///
 /// @limitations The energy drain increase will take some time to manifest.

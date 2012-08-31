@@ -24,7 +24,7 @@
 #ifndef ITCPADAPTER_HPP
 #define	ITCPADAPTER_HPP
 
-#include "IPhysicalAdapter.hpp"
+#include "IAdapter.hpp"
 
 #include <string>
 
@@ -45,7 +45,7 @@ namespace device {
 /// sufficient.
 ////////////////////////////////////////////////////////////////////////////////
 class ITcpAdapter
-    : public IPhysicalAdapter
+    : public IAdapter
 {
 public:
     /// Type of a shared pointer to a connection adapter.

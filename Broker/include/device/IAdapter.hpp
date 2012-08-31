@@ -1,5 +1,5 @@
 ////////////////////////////////////////////////////////////////////////////////
-/// @file           IPhysicalAdapter.hpp
+/// @file           IAdapter.hpp
 ///
 /// @author         Thomas Roth <tprfh7@mst.edu>
 /// @author         Michael Catanzaro <michael.catanzaro@mst.edu>
@@ -21,8 +21,8 @@
 /// Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
 ////////////////////////////////////////////////////////////////////////////////
 
-#ifndef I_PHYSICAL_ADAPTER_HPP
-#define	I_PHYSICAL_ADAPTER_HPP
+#ifndef I_ADAPTER_HPP
+#define	I_ADAPTER_HPP
 
 #include <string>
 #include <utility>
@@ -48,12 +48,12 @@ typedef std::pair<const std::string, const std::string> DeviceSignal;
 ///
 /// @limitations None.
 ////////////////////////////////////////////////////////////////////////////////
-class IPhysicalAdapter
+class IAdapter
     : private boost::noncopyable
 {
 public:
     /// Pointer to a physical adapter.
-    typedef boost::shared_ptr<IPhysicalAdapter> Pointer;
+    typedef boost::shared_ptr<IAdapter> Pointer;
 
     virtual void Start() = 0;
     
@@ -66,11 +66,11 @@ public:
                      const SettingValue value) = 0;
 
     /// Virtual destructor for derived classes.
-    virtual ~IPhysicalAdapter();
+    virtual ~IAdapter();
 };
 
 } // namespace device
 } // namespace broker
 } // namespace freedm
 
-#endif // I_PHYSICAL_ADAPTER_HPP
+#endif // I_ADAPTER_HPP

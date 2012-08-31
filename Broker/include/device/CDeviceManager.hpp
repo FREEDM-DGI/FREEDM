@@ -1,5 +1,5 @@
 ////////////////////////////////////////////////////////////////////////////////
-/// @file         CPhysicalDeviceManager.hpp
+/// @file         CDeviceManager.hpp
 ///
 /// @author       Stephen Jackson <scj7t4@mst.edu>
 /// @author       Michael Catanzaro <michael.catanzaro@mst.edu>
@@ -9,9 +9,9 @@
 /// @description  Bridges the gap between the DGI and the device interface.
 ///
 /// @functions
-///     CPhysicalDeviceManager::GetDevicesOfType
-///     CPhysicalDeviceManager::GetValue
-///     CPhysicalDeviceManager::GetValueVector
+///     CDeviceManager::GetDevicesOfType
+///     CDeviceManager::GetValue
+///     CDeviceManager::GetValueVector
 ///
 /// These source code files were created at Missouri University of Science and
 /// Technology, and are intended for use in teaching or research. They may be
@@ -29,7 +29,7 @@
 #ifndef PHYSICALDEVICEMANAGER_HPP
 #define PHYSICALDEVICEMANAGER_HPP
 
-#include "IPhysicalAdapter.hpp"
+#include "IAdapter.hpp"
 #include "types/IDevice.hpp"
 
 #include <list>
@@ -48,7 +48,7 @@ namespace device {
 /// @todo This class is not sufficiently commented. Comment it better.
 /// @todo Need to use typedefs for the function pointer types to be legible.
 /// Provides a container that manages physical device instances
-class CPhysicalDeviceManager : private boost::noncopyable
+class CDeviceManager : private boost::noncopyable
 {
 private:
     /// A typedef for the mapping of identifier to device ptrs
@@ -56,7 +56,7 @@ private:
 
 public:
     /// Type of a pointer to a device manager
-    typedef boost::shared_ptr<CPhysicalDeviceManager> Pointer;
+    typedef boost::shared_ptr<CDeviceManager> Pointer;
 
     /// A typedef providing an iterator for this object
     typedef PhysicalDeviceSet::iterator iterator;
@@ -65,7 +65,7 @@ public:
     typedef PhysicalDeviceSet::const_iterator const_iterator;
 
     /// Initialize the physical device manger
-    CPhysicalDeviceManager();
+    CDeviceManager();
 
     /// Add the specified device to the manager.
     void AddDevice(IDevice::Pointer resource);
@@ -147,7 +147,7 @@ private:
 /// Selects all the devices of a given type
 template <class DeviceType>
 const std::vector<typename DeviceType::Pointer>
-CPhysicalDeviceManager::GetDevicesOfType()
+CDeviceManager::GetDevicesOfType()
 {
     std::vector<typename DeviceType::Pointer> result;
     typename DeviceType::Pointer next_device;
@@ -166,7 +166,7 @@ CPhysicalDeviceManager::GetDevicesOfType()
 
 // @todo
 template <class DeviceType, class BinaryOp>
-SettingValue CPhysicalDeviceManager::GetValue(
+SettingValue CDeviceManager::GetValue(
         SettingValue(DeviceType::*getter)( ) const,
         BinaryOp math) const
 {
@@ -187,7 +187,7 @@ SettingValue CPhysicalDeviceManager::GetValue(
 
 /// @todo
 template <class DeviceType>
-std::vector<SettingValue> CPhysicalDeviceManager::GetValueVector(
+std::vector<SettingValue> CDeviceManager::GetValueVector(
 SettingValue(DeviceType::*getter)( ) const) const
 {
     std::vector<SettingValue> results;
@@ -207,7 +207,7 @@ SettingValue(DeviceType::*getter)( ) const) const
 
 /// @todo
 template <class BinaryOp>
-SettingValue CPhysicalDeviceManager::GetValue(std::string devtype,
+SettingValue CDeviceManager::GetValue(std::string devtype,
 std::string value, BinaryOp math)
 {
     SettingValue result = 0;

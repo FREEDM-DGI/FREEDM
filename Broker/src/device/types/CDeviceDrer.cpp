@@ -48,7 +48,7 @@ CLocalLogger Logger(__FILE__);
 ///
 /// @limitations None.
 ////////////////////////////////////////////////////////////////////////////////
-CDeviceDrer::CDeviceDrer(std::string device, IPhysicalAdapter::Pointer adapter)
+CDeviceDrer::CDeviceDrer(std::string device, PhysicalAdapter::Pointer adapter)
     : IDevice(device, adapter)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
@@ -71,7 +71,7 @@ CDeviceDrer::~CDeviceDrer()
 /// Determines the energy generation of the DRER.
 ///
 /// @pre None.
-/// @post Calls IPhysicalAdapter::Get with the signal "generation".
+/// @post Calls PhysicalAdapter::Get with the signal "generation".
 /// @return The energy generation of this DRER.
 ///
 /// @limitations None.
@@ -87,7 +87,7 @@ SettingValue CDeviceDrer::GetGeneration() const
 ///
 /// @pre None.
 /// @post Determines the current generation with CDeviceDrer::GetGeneration.
-/// @post Calls IPhysicalAdapter::Set with the signal "generation".
+/// @post Calls PhysicalAdapter::Set with the signal "generation".
 /// @param step The amount to add to the current generation.
 ///
 /// @limitations The generation increase will take some time to manifest.

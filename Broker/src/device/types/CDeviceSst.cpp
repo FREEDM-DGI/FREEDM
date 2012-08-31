@@ -48,7 +48,7 @@ CLocalLogger Logger(__FILE__);
 ///
 /// @limitations None.
 ////////////////////////////////////////////////////////////////////////////////
-CDeviceSst::CDeviceSst(std::string device, IPhysicalAdapter::Pointer adapter)
+CDeviceSst::CDeviceSst(std::string device, PhysicalAdapter::Pointer adapter)
     : IDevice(device, adapter)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
@@ -71,7 +71,7 @@ CDeviceSst::~CDeviceSst()
 /// Retrieve the gateway value of the SST.
 ///
 /// @pre None.
-/// @post Calls IPhysicalAdapter::Get with the signal "gateway".
+/// @post Calls PhysicalAdapter::Get with the signal "gateway".
 /// @return The gateway of this SST.
 ///
 /// @limitations None.
@@ -87,7 +87,7 @@ SettingValue CDeviceSst::GetGateway() const
 ///
 /// @pre None.
 /// @post Determines the current gateway with CDeviceSst::GetGateway.
-/// @post Calls IPhysicalAdapter::Set with the signal "storage".
+/// @post Calls PhysicalAdapter::Set with the signal "storage".
 /// @param step The amount to add to the current gateway.
 ///
 /// @limitations The gateway increase will take some time to manifest.

@@ -10,7 +10,7 @@
 ///
 /// @functions
 ///     CAdapterFactory::RegisterPhysicalDevices
-///     CPhysicalDeviceManager::GetDevicesOfType
+///     CDeviceManager::GetDevicesOfType
 ///
 /// These source code files were created at Missouri University of Science and
 /// Technology, and are intended for use in teaching or research. They may be
@@ -30,7 +30,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 #include "PhysicalDeviceTypes.hpp"
-#include "CPhysicalDeviceManager.hpp"
+#include "CDeviceManager.hpp"
 #include "CAdapterFactory.hpp"
 
 namespace freedm {
@@ -61,8 +61,7 @@ void CAdapterFactory::RegisterPhysicalDevices()
 ///
 /// @limitations None.
 ////////////////////////////////////////////////////////////////////////////////
-std::vector<IDevice::Pointer> CPhysicalDeviceManager::GetDevicesOfType(
-        std::string type)
+std::vector<IDevice::Pointer> CDeviceManager::GetDevicesOfType(std::string type)
 {
     std::vector<IDevice::Pointer> result;
     

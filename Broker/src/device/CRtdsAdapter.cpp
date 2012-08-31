@@ -151,7 +151,7 @@ CRtdsAdapter::Pointer CRtdsAdapter::Create(boost::asio::io_service & service,
 ////////////////////////////////////////////////////////////////////////////////
 CRtdsAdapter::CRtdsAdapter(boost::asio::io_service & service,
                            const boost::property_tree::ptree & ptree)
-: IConnectionAdapter(service), m_GlobalTimer(service)
+: ITcpAdapter(service), m_GlobalTimer(service)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 

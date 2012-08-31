@@ -282,7 +282,7 @@ CPscadAdapter::~CPscadAdapter()
 /// Constructs a pscad adapter based on the property tree specification.
 ///
 /// @ErrorHandling Throws a std::runtime_error if the property tree is bad.
-/// @SharedMemory Passes the i/o service to IConnectionAdapter.
+/// @SharedMemory Passes the i/o service to ITcpAdapter.
 /// @pre The property tree must specify the target hostname and port number.
 /// @post Constructs a new adapter instance.
 ///

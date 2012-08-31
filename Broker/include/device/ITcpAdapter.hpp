@@ -49,7 +49,7 @@ class ITcpAdapter
 {
 public:
     /// Type of a shared pointer to a connection adapter.
-    typedef boost::shared_ptr<IConnectionAdapter> Pointer;
+    typedef boost::shared_ptr<ITcpAdapter> Pointer;
 
     /// Virtual destructor for derived classes.
     virtual ~ITcpAdapter() { };

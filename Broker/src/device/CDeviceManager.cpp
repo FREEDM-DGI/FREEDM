@@ -127,7 +127,7 @@ IDevice::Pointer CDeviceManager::GetDevice(std::string devid)
 ///
 /// @return True if the device is in the device table, false otherwise
 ///////////////////////////////////////////////////////////////////////////////
-bool CDeviceManager::DeviceExists(device::std::string devid) const
+bool CDeviceManager::DeviceExists(std::string devid) const
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     return m_devices.count(devid);

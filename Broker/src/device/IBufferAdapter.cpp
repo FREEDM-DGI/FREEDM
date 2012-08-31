@@ -63,7 +63,7 @@ CLocalLogger Logger(__FILE__);
 ///     There could be minor loss of accuracy.
 ///
 ////////////////////////////////////////////////////////////////////////////
-void IBufferAdapter::Set(const Identifier device, const SettingKey key,
+void IBufferAdapter::Set(const std::string device, const std::string key,
                          const SettingValue value)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;

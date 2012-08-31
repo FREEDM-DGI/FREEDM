@@ -59,7 +59,7 @@ public:
     virtual ~IDevice();
 
     /// Gets the device identifier
-    Identifier GetID() const;
+    std::string GetID() const;
 
     /// Acquires the mutex
     void Lock();
@@ -71,19 +71,20 @@ public:
     bool TryLock();
 
     /// Gets the setting of some key from the structure
-    SettingValue Get(const SettingKey key) const;
+    SettingValue Get(const std::string key) const;
 
     /// Sets the value of some key in the structure
-    void Set(const SettingKey key, const SettingValue value);
+    void Set(const std::string key, const SettingValue value);
+
 protected:
     /// @todo
     friend class CDeviceManager; // Temporary?
     
     /// Constructor which takes an identifier and device adapter
-    IDevice(const Identifier device, IAdapter::Pointer adapter);
+    IDevice(const std::string device, IAdapter::Pointer adapter);
 
     /// Unique identifier for the device
-    Identifier m_identifier;
+    std::string m_identifier;
 
     /// "Driver" that handles the device data
     IAdapter::Pointer m_adapter;

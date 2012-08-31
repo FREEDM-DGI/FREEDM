@@ -52,7 +52,7 @@ class CDeviceManager : private boost::noncopyable
 {
 private:
     /// A typedef for the mapping of identifier to device ptrs
-    typedef std::map<Identifier, IDevice::Pointer> PhysicalDeviceSet;
+    typedef std::map<std::string, IDevice::Pointer> PhysicalDeviceSet;
 
 public:
     /// Type of a pointer to a device manager
@@ -71,16 +71,16 @@ public:
     void AddDevice(IDevice::Pointer resource);
 
     /// Remove a device by its identifier
-    void RemoveDevice(Identifier devid);
+    void RemoveDevice(std::string devid);
 
     /// Gets a device by its identifier
-    IDevice::Pointer GetDevice(Identifier devid);
+    IDevice::Pointer GetDevice(std::string devid);
 
     /// Gets a device by its identifier
-    const IDevice::Pointer GetDevice(Identifier devid) const;
+    const IDevice::Pointer GetDevice(std::string devid) const;
 
     /// Tests to see if a device exists
-    bool DeviceExists(Identifier devid) const;
+    bool DeviceExists(std::string devid) const;
 
     /// Gives a count of connected devices
     size_t DeviceCount() const;
@@ -140,7 +140,7 @@ public:
     std::vector<IDevice::Pointer> GetDevicesOfType(std::string type);
 
 private:
-    /// Mapping From Identifier To Device Set
+    /// Mapping from device identifiers to device set
     PhysicalDeviceSet m_devices;
 };
 

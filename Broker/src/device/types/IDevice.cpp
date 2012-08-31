@@ -35,7 +35,7 @@ CLocalLogger Logger(__FILE__);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-/// IDevice::IDevice(Identifier, PhysicalAdapter::AdapterPtr)
+/// IDevice::IDevice(std::string, PhysicalAdapter::AdapterPtr)
 ///
 /// @description Called by subclass constructors to initialize the device
 /// @pre none
@@ -43,7 +43,7 @@ CLocalLogger Logger(__FILE__);
 /// @param device The unique device identifier for the device
 /// @param adapter The implementation scheme of the device
 ////////////////////////////////////////////////////////////////////////////////
-IDevice::IDevice(Identifier device, PhysicalAdapter::Pointer adapter)
+IDevice::IDevice(std::string device, PhysicalAdapter::Pointer adapter)
 : m_identifier(device), m_adapter(adapter), m_mutex()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
@@ -60,28 +60,28 @@ IDevice::~IDevice()
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-/// IDevice::Get(const SettingKey) const
+/// IDevice::Get(const std::string) const
 /// @description Gets a device setting value from the internal structure
 /// @pre m_structure must contain an entry for the passed key
 /// @post m_structure is queried for the value of the key
 /// @param key The key of the device setting to retrieve
 /// @return SettingValue associated with the passed key
 ////////////////////////////////////////////////////////////////////////////////
-SettingValue IDevice::Get(const SettingKey key) const
+SettingValue IDevice::Get(const std::string key) const
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     return m_adapter->Get(m_identifier, key);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-/// IDevice::Set(const SettingKey, const SettingValue)
+/// IDevice::Set(const std::string, const SettingValue)
 /// @description Sets a device setting value in the internal structure
 /// @pre m_structure must contain an entry for the passed key
 /// @post m_structure is queried to set the key to the passed value
 /// @param key The key of the device setting to update
 /// @param value The value to set for the setting key
 ////////////////////////////////////////////////////////////////////////////////
-void IDevice::Set(const SettingKey key, const SettingValue value)
+void IDevice::Set(const std::string key, const SettingValue value)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     m_adapter->Set(m_identifier, key, value);
@@ -131,7 +131,7 @@ bool IDevice::TryLock()
 /// @post none
 /// @return this device's identifier
 ////////////////////////////////////////////////////////////////////////////////
-Identifier IDevice::GetID() const
+std::string IDevice::GetID() const
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     return m_identifier;

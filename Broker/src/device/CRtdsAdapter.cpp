@@ -11,12 +11,7 @@
 /// @description  DGI side implementation of the communication protocol to RTDS
 ///               simulation
 ///
-/// @functions    EndianSwap
-///               CRtdsBuffer::CRtdsBuffer
-///               CRtdsBuffer::operator[]
-///               CRtdsBuffer::operator&
-///               CRtdsBuffer::numBytes
-///               CRtdsBuffer::EndianSwapIfNeeded
+/// @functions    EndianSwapIfNeeded
 ///               CRtdsAdapter::Create
 ///               CRtdsAdapter::Set
 ///               CRtdsAdapter::Get
@@ -44,68 +39,66 @@
 
 #include <cassert>
 
-#include "sys/param.h"
+#include <sys/param.h>
 
-/// check endianess at compile time.  Middle-Endian not allowed
-/// The parameters __BYTE_ORDER, __LITTLE_ENDIAN, __BIG_ENDIAN should
-/// automatically be defined and determined in sys/param.h, which exists
-/// in most Unix systems.
-#if __BYTE_ORDER == __LITTLE_ENDIAN
-#elif __BYTE_ORDER == __BIG_ENDIAN
-#else
-#error "unsupported endianness or __BYTE_ORDER not defined"
-#endif
-
-// FPGA is expecting 4-byte floats.
-BOOST_STATIC_ASSERT(sizeof(SettingValue) == 4);
+#include <boost/thread/shared_mutex.hpp>
 
 namespace freedm {
 namespace broker {
 namespace device {
+
+// FPGA is expecting 4-byte floats.
+BOOST_STATIC_ASSERT(sizeof(SettingValue) == 4);
 
 namespace {
 
 /// This file's logger.
 CLocalLogger Logger(__FILE__);
 
-////////////////////////////////////////////////////////////////////////////////
-/// EndianSwap
+///////////////////////////////////////////////////////////////////////////////
+/// Converts the SettingValues in the passed vector from big-endian to
+/// little-endian, or vice-versa, iff the DGI is running on a little-endian
+/// system.
 ///
-/// @description
-///     A utility function for converting byte order from big endian to little
-///     endian and vise versa. Used by CRtdsBuffer::EndianSwap
-///  
-///     Loop Precondition:  the buffer 'data' is filled with numbers
-///     Loop Postcondition: the buffer 'data' is filled with numbers 
-///                         in the reverse sequence.
-///     Invariant: At each iteration of the loop
-///                the total count of copied number 
-///                +
-///                the total count of uncopied numbers
-///                = 
-///                num_bytes
-///
-/// @limitations
-///     none
-///
-////////////////////////////////////////////////////////////////////////////////
-void EndianSwap(char* data, const int num_bytes)
+/// @pre none
+/// @post the elements of data are converted in endianness if the DGI is
+///  running on a little-endian system. Otherwise, nothing happens.
+/// @param v the vector of SettingValues to be endian-swapped
+///////////////////////////////////////////////////////////////////////////////
+inline void EndianSwapIfNeeded(std::vector<SettingValue> v)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    char* tmp = new char[num_bytes];
+// check endianess at compile time.  Middle-Endian not allowed
+// The parameters __BYTE_ORDER, __LITTLE_ENDIAN, __BIG_ENDIAN should
+// automatically be defined and determined in sys/param.h, which exists
+// in most Unix systems.
+#if __BYTE_ORDER == __LITTLE_ENDIAN
+    for( size_t i = 0; i < v.size(); i += sizeof(SettingValue) )
+    {
+        SettingValue* tmp = new SettingValue[sizeof(SettingValue)];
 
-    for (int i = 0; i < num_bytes; ++i)
-        tmp[i] = data[num_bytes - 1 - i];
+        for( unsigned int j = 0; j < sizeof(SettingValue); j++ )
+        {
+            tmp[j] = v[sizeof(SettingValue) - 1 - j];
+        }
 
-    for (int i = 0; i < num_bytes; ++i)
-        data[i] = tmp[i];
+        for( unsigned int j = 0; j < sizeof(SettingValue); j++ )
+        {
+            v[j] = tmp[j];
+        }
 
-    delete [] tmp;
+        delete [] tmp;
+    }
+#elif __BYTE_ORDER == __BIG_ENDIAN
+    Logger.Debug << "Endian swap skipped: host is big-endian." << std::endl;
+#else
+#error "unsupported endianness or __BYTE_ORDER not defined"
+#endif
 }
 
 } //unnamed namespace
 
-////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
 /// CRtdsAdapter::Create
 ///
 /// @description Creates a RTDS client on the given io_service. This is the 
@@ -124,7 +117,7 @@ void EndianSwap(char* data, const int num_bytes)
 /// @return shared pointer to the new CRtdsAdapter object
 ///
 /// @limitations client must call Connect before the CRtdsAdapter can be used
-////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
 IAdapter::Pointer CRtdsAdapter::Create(boost::asio::io_service & service,
         const boost::property_tree::ptree & ptree)
 {
@@ -157,8 +150,8 @@ CRtdsAdapter::CRtdsAdapter(boost::asio::io_service & service,
 
     try
     {
-        m_host = details.get<std::string>("host");
-        m_port = details.get<std::string>("port");
+        m_host = ptree.get<std::string>("host");
+        m_port = ptree.get<std::string>("port");
     }
     catch( std::exception & e )
     {
@@ -202,44 +195,50 @@ void CRtdsAdapter::Run()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
+    
+
     // Always send data to FPGA first
+    if( !m_txBuffer.empty() )
     {
-        boost::unique_lock<boost::shared_mutex> writeLock(m_cmdTable.m_mutex);
+        boost::unique_lock<boost::shared_mutex> writeLock(m_txMutex);
         Logger.Debug << "Obtained txBuffer mutex" << std::endl;
-        m_txBuffer.EndianSwapIfNeeded();
+        EndianSwapIfNeeded(m_txBuffer);
         try
         {
             boost::asio::write(m_socket,
-                               boost::asio::buffer(m_txBuffer,
-                                                   m_txBuffer.numBytes());
+                    boost::asio::buffer(m_txBuffer, 
+                            m_txBuffer.size() * sizeof(SettingValue)));
         }
         catch (std::exception& e)
         {
-            throw std::runtime_error("Send to FPGA failed: " + e.what());
+            throw std::runtime_error("Send to FPGA failed: "
+                                     + std::string(e.what()));
         }
-        m_txBuffer.EndianSwapIfNeeded();
+        EndianSwapIfNeeded(m_txBuffer);
         Logger.Debug << "Releasing txBuffer mutex" << std::endl;
-    } // release lock
+    }
 
     // Receive data from FPGA next
+    if( !m_rxBuffer.empty() )
     {
         // must be a unique_lock for endian swaps
-        boost::unique_lock<boost::shared_mutex> writeLock(m_stateTable.m_mutex);
+        boost::unique_lock<boost::shared_mutex> writeLock(m_rxMutex);
         Logger.Debug << "Obtained rxBuffer mutex" << std::endl;
-        m_rxBuffer.EndianSwapIfNeeded();
+        EndianSwapIfNeeded(m_rxBuffer);
         try
         {
             boost::asio::read(m_socket,
-                              boost::asio::buffer(m_rxBuffer,
-                                                  m_rxBuffer.numBytes()));
+                    boost::asio::buffer(m_rxBuffer,
+                            m_rxBuffer.size() * sizeof(SettingValue)));
         }
         catch (std::exception & e)
         {
-            throw std::runtime_error("Receive from FPGA failed: " + e.what());
+            throw std::runtime_error("Receive from FPGA failed: " 
+                                     + std::string(e.what()));
         }
-        m_rxBuffer.EndianSwapIfNeeded();
+        EndianSwapIfNeeded(m_rxBuffer);
         Logger.Debug << "Releasing rxBuffer mutex" << std::endl;
-    } //release lock
+    }
 
     //Start the timer; on timeout, this function is called again
     m_GlobalTimer.expires_from_now(boost::posix_time::microseconds(TIMESTEP));
@@ -336,8 +335,6 @@ CRtdsAdapter::~CRtdsAdapter()
         Quit();
     }
 
-    delete [] m_rxBuffer;
-    delete [] m_txBuffer;
 }
 
 }//namespace broker

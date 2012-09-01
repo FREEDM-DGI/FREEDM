@@ -65,16 +65,6 @@ public:
     virtual void Set(const std::string device, const std::string signal,
                      const SettingValue value) = 0;
 
-    /// Registers a new device signal with the adapter.
-    virtual void RegisterStateInfo(const std::string device,
-                                   const std::string signal,
-                                   const std::size_t index) = 0;
-    
-    /// Registers a new device signal with the adapter.
-    virtual void RegisterCommandInfo(const std::string device,
-                                     const std::string signal,
-                                     const std::size_t index) = 0;
-
     /// Virtual destructor for derived classes.
     virtual ~IAdapter();
 };

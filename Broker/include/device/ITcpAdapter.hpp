@@ -21,8 +21,8 @@
 /// Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
 ////////////////////////////////////////////////////////////////////////////////
 
-#ifndef ITCPADAPTER_HPP
-#define	ITCPADAPTER_HPP
+#ifndef I_TCP_ADAPTER_HPP
+#define	I_TCP_ADAPTER_HPP
 
 #include "IAdapter.hpp"
 
@@ -46,7 +46,7 @@ namespace device {
 /// sufficient.
 ////////////////////////////////////////////////////////////////////////////////
 class ITcpAdapter
-    : public IAdapter
+    : public virtual IAdapter
 {
 public:
     /// Type of a shared pointer to a connection adapter.
@@ -73,14 +73,14 @@ protected:
     mutable boost::asio::ip::tcp::socket m_socket;
 
     /// The hostname of the remote host.
-    const std::string m_host;
+    std::string m_host;
     
     /// The port number of the remote host.
-    const std::string m_port;
+    std::string m_port;
 };
 
 } // namespace device
 } // namespace broker
 } // namespace freedm
 
-#endif	// ITCPADAPTER_HPP
+#endif	// I_TCP_ADAPTER_HPP

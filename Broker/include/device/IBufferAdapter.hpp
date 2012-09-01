@@ -25,12 +25,15 @@
 #ifndef I_BUFFER_ADAPTER_HPP
 #define	I_BUFFER_ADAPTER_HPP
 
+#include "IAdapter.hpp"
+
 #include <map>
 #include <string>
 #include <vector>
 
 #include <boost/noncopyable.hpp>
 #include <boost/shared_ptr.hpp>
+#include <boost/thread/shared_mutex.hpp>
 
 namespace freedm {
 namespace broker {
@@ -44,7 +47,7 @@ namespace device {
 /// @limitations None.
 ///////////////////////////////////////////////////////////////////////////////
 class IBufferAdapter
-    : public IAdapter
+    : public virtual IAdapter
 {
 public:
     /// Pointer to a physical adapter.
@@ -80,6 +83,12 @@ protected:
 
     /// The "command table" buffer sent to the external host
     std::vector<SettingValue> m_txBuffer;
+
+    /// Provides synchronization for m_rxBuffer
+    boost::shared_mutex m_rxMutex;
+
+    /// Provides synchronization for m_txBuffer
+    boost::shared_mutex m_txMutex;
 };
 
 } // namespace device

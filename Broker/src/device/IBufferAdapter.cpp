@@ -67,6 +67,8 @@ void IBufferAdapter::Set(const std::string device, const std::string key,
                          const SettingValue value)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+ 
+    boost::unique_lock<boost::shared_mutex> writeLock(m_txMutex);
 
     try
     {
@@ -112,7 +114,9 @@ void IBufferAdapter::Set(const std::string device, const std::string key,
 SettingValue IBufferAdapter::Get(const std::string device, 
                                  const std::string key) const
 {
-    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl
+
+    boost::shared_lock<boost::shared_mutex> readLock(m_txMutex);
 
     try  
     {

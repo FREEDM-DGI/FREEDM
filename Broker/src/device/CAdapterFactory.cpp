@@ -158,8 +158,9 @@ void CAdapterFactory::CreateAdapter(const boost::property_tree::ptree & p)
     }
     else
     {
-        throw std::runtime_error("Attempted to create adapter of unrecognized "
-             "type " + type);
+         throw std::runtime_error(
+              std::string("Attempted to create adapter of unrecognized type ")
+              + type);
     }
     
     m_adapter[name] = adapter;
@@ -205,14 +206,26 @@ void CAdapterFactory::CreateAdapter(const boost::property_tree::ptree & p)
                 CreateDevice(name, type, adapter);
                 devices.insert(name);
             }
-            
-            if( i == 0 )
+           
+            try
             {
-                adapter->RegisterStateInfo(name, signal, index);
+                 IBufferAdapter & bAdapter = 
+                      dynamic_cast<IBufferAdapter &>(*adapter);
+                 if( i == 0 )
+                 {
+                      Logger.Debug << "Registering state info." << std::endl;
+                      bAdapter.RegisterStateInfo(name, signal, index);
+                 }
+                 else
+                 {
+                      Logger.Debug << "Registering command info." << std::endl;
+                      bAdapter.RegisterCommandInfo(name, signal, index);
+                 }
             }
-            else
+            catch( std::bad_cast & e )
             {
-                adapter->RegisterCommandInfo(name, signal, index);
+                 Logger.Debug << "Adapter is not an IBufferAdapter, so not " 
+                      "registering state or command info." << std::endl;
             }
         }
     }

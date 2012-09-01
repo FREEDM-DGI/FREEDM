@@ -40,9 +40,6 @@ namespace freedm {
 namespace broker {
 namespace device {
 
-/// Switches the endianness of an n-byte word in memory
-void EndianSwap(char * data, const int num_bytes);
-
 /// Provides an interface for communicating with a RTDS simulation model
 ////////////////////////////////////////////////////////////////////////////////
 /// This class handles communications to and from the RTDS simulation model via

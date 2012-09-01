@@ -67,6 +67,9 @@ public:
     /// Registers a new device signal with the physical adapter.
     void RegisterCommandInfo(const std::string device, const std::string signal,
                              const std::size_t index);
+
+    /// Starts the adapter
+    void Start();
     
     /// Virtual destructor for derived classes.
     virtual ~IBufferAdapter();
@@ -89,6 +92,10 @@ protected:
 
     /// Provides synchronization for m_txBuffer
     boost::shared_mutex m_txMutex;
+
+private:
+    /// Called by Start to run the adapter
+    virtual void Run() = 0;
 };
 
 } // namespace device

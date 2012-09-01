@@ -69,9 +69,6 @@ public:
     /// destructor
     ~CRtdsAdapter();
 
-    /// starts the adapter
-    void Start();
-
 private:
     /// microseconds, see documentation for Run()
     static const unsigned int TIMESTEP = 1;

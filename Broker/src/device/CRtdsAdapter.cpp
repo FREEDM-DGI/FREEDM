@@ -245,49 +245,6 @@ void CRtdsAdapter::Run()
     m_GlobalTimer.async_wait(boost::bind(&CRtdsAdapter::Run, this));
 }
 
-///////////////////////////////////////////////////////////////////////////////
-/// CRtdsAdapter::Start
-///
-/// Starts the RtdsAdapter.
-///
-/// @pre the adapter has not yet been started
-/// @post the adapter has now been started
-///
-/// @ErrorHandling throws std::runtime_error if the entry indices of the
-///                adapter's devices are malformed
-///
-/// @limitations All devices must be added to the adapter before Start is
-///              invoked.
-///////////////////////////////////////////////////////////////////////////////
-void CRtdsAdapter::Start()
-{
-    // this is a bit of a weird proof - but it works
-    // we know there is no value < 1 in the set, because it's unsigned and the
-    // insert code prevents insertions of 0.
-    // because sets are sorted in increasing order, we also know the last
-    // element of the set is the largest element.
-    // therefore, if the last element is equal to the size, since sets contain
-    // no duplicate values, that must mean every integer from 1 to size is
-    // stored in the set.
-    // otherwise, the numbers must be non-consecutive.
-    // the short of it: it works.
-    if( *m_StateIndex.rbegin() != m_StateIndex.size() )
-    {
-        std::stringstream ss;
-        ss << "The state indices are not consecutive integers." << std::endl;
-        throw std::runtime_error(ss.str());
-    }
-    
-    if( *m_CommandIndex.rbegin() != m_CommandIndex.size() )
-    {
-        std::stringstream ss;
-        ss << "The command indices are not consecutive integers." << std::endl;
-        throw std::runtime_error(ss.str());
-    }
-
-    Run();
-}
-
 ////////////////////////////////////////////////////////////////////////////
 /// Quit
 ///

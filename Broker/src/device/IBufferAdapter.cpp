@@ -25,8 +25,12 @@
 
 #include "CLogger.hpp"
 
+#include <set>
 #include <sstream>
 #include <stdexcept>
+
+#include <boost/foreach.hpp>
+#include <boost/range/adaptor/map.hpp>
 
 namespace freedm {
 namespace broker {
@@ -35,6 +39,64 @@ namespace device {
 namespace {
 /// This file's logger.
 CLocalLogger Logger(__FILE__);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+/// Starts the adapter. Performs error-checking on the device specification,
+/// then call Run.
+///
+/// @pre  the adapter has not yet been started
+/// @post the adapter has now been started
+///
+/// @ErrorHandling throws std::runtime_error if the entry indices of the
+///                adapter's devices are malformed
+///
+/// @limitations All devices must be added to the adapter before Start is
+///              invoked.
+///////////////////////////////////////////////////////////////////////////////
+void IBufferAdapter::Start()
+{
+    // Perform error checking on the adapter specification, then call Run
+    std::set<size_t> stateIndices;
+    std::set<size_t> commandIndices;
+
+    // There's probably a nicer way to construct these sets.
+    // I do not know what it is.
+    BOOST_FOREACH(size_t i, m_stateInfo | boost::adaptors::map_values)
+    {
+        stateIndices.insert(i);
+    }
+    
+    BOOST_FOREACH(size_t i, m_commandInfo | boost::adaptors::map_values)
+    {
+        commandIndices.insert(i);
+    }
+
+    // this is a bit of a weird proof - but it works
+    // we know there is no value < 1 in the set, because it's unsigned and the
+    // insert code prevents insertions of 0.
+    // because sets are sorted in increasing order, we also know the last
+    // element of the set is the largest element.
+    // therefore, if the last element is equal to the size, since sets contain
+    // no duplicate values, that must mean every integer from 1 to size is
+    // stored in the set.
+    // otherwise, the numbers must be non-consecutive.
+    // the short of it: it works.
+    if( *(stateIndices.rbegin()) != stateIndices.size() )
+    {
+        std::stringstream ss;
+        ss << "The state indices are not consecutive integers." << std::endl;
+        throw std::runtime_error(ss.str());
+    }
+    
+    if( *(commandIndices.rbegin()) != commandIndices.size() )
+    {
+        std::stringstream ss;
+        ss << "The command indices are not consecutive integers." << std::endl;
+        throw std::runtime_error(ss.str());
+    }
+
+    IAdapter::Run();
 }
 
 ////////////////////////////////////////////////////////////////////////////

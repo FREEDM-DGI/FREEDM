@@ -81,7 +81,7 @@ public:
 private:
     /// Constructs a new pscad adapter.
     CPscadAdapter(boost::asio::io_service & service,
-                  const boost::property_tree::ptree & details);
+                  const boost::property_tree::ptree & ptree);
 };
 
 } // namespace broker

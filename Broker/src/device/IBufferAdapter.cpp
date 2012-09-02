@@ -8,6 +8,13 @@
 ///
 /// @description    Interface for a physical device adapter.
 ///
+/// @functions      IBufferAdapter::Start
+///                 IBufferAdapter::Set
+///                 IBufferAdapter::Get
+///                 IBufferAdapter::RegisterStateInfo
+///                 IBufferAdapter::RegisterCommandInfo
+///                 IBufferAdapter::~IBufferAdapter
+///
 /// These source code files were created at Missouri University of Science and
 /// Technology, and are intended for use in teaching or research. They may be
 /// freely copied, modified, and redistributed as long as modified versions are
@@ -310,6 +317,19 @@ void IBufferAdapter::RegisterCommandInfo(const std::string device,
     m_commandInfo.insert(std::pair<DeviceSignal, std::size_t>(devsig, index));
     Logger.Info << "Registered the device (" << device << "," << signal
                 << ") as adapter command information." << std::endl;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/// Virtual destructor made available for derived classes.
+///
+/// @pre None.
+/// @post Destructs the object.
+///
+/// @limitations None.
+////////////////////////////////////////////////////////////////////////////////
+IBufferAdapter::~IBufferAdapter()
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 }
 
 } // namespace device

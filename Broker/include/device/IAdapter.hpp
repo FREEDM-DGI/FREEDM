@@ -66,7 +66,7 @@ public:
                      const SettingValue value) = 0;
 
     /// Virtual destructor for derived classes.
-    virtual ~IAdapter();
+    virtual ~IAdapter() { };
 };
 
 } // namespace device

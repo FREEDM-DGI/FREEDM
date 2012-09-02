@@ -28,18 +28,18 @@
 #define C_ADAPTER_FACTORY_HPP
 
 #include "CDeviceManager.hpp"
-#include "IAdapter.hpp"
 #include "CLogger.hpp"
+#include "IAdapter.hpp"
 
 #include <map>
 #include <string>
 #include <sstream>
 #include <stdexcept>
 
-#include <boost/thread.hpp>
-#include <boost/noncopyable.hpp>
 #include <boost/asio/io_service.hpp>
+#include <boost/noncopyable.hpp>
 #include <boost/property_tree/ptree.hpp>
+#include <boost/thread.hpp>
 
 namespace freedm {
 namespace broker {

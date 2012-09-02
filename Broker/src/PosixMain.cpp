@@ -187,8 +187,8 @@ int main(int argc, char* argv[])
         {
             std::cout << basename(argv[0]) << " (FREEDM DGI Revision "
                     << BROKER_VERSION << ")" << std::endl;
-            std::cout << "Copyright (C) " << COPYRIGHT_YEAR << " Missouri S&T. "
-                    << "All rights reserved." << std::endl;
+            std::cout << "Copyright (C) " << COPYRIGHT_YEAR
+                      << " NSF FREEDM Systems Center" << std::endl;
             return 0;
         }
 

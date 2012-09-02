@@ -333,8 +333,8 @@ CPscadAdapter::~CPscadAdapter()
 /// @limitations None.
 ////////////////////////////////////////////////////////////////////////////////
 CPscadAdapter::CPscadAdapter(boost::asio::io_service & service,
-                             const boost::property_tree::ptree & details)
-     : ITcpAdapter(service, details)
+                             const boost::property_tree::ptree & ptree)
+     : ITcpAdapter(service, ptree)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 }

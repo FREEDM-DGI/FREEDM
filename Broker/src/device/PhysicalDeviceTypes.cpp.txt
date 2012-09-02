@@ -46,7 +46,7 @@ namespace device {
 /// @limitations The devices must have a header file in include/device/types/
 /// to be registered through this function call.
 ////////////////////////////////////////////////////////////////////////////////
-void CAdapterFactory::RegisterPhysicalDevices()
+void CAdapterFactory::RegisterDevices()
 {
     ##BREAK
 }

@@ -144,21 +144,9 @@ IAdapter::Pointer CRtdsAdapter::Create(boost::asio::io_service & service,
 ////////////////////////////////////////////////////////////////////////////////
 CRtdsAdapter::CRtdsAdapter(boost::asio::io_service & service,
                            const boost::property_tree::ptree & ptree)
-: ITcpAdapter(service), m_GlobalTimer(service)
+  : ITcpAdapter(service, ptree), m_GlobalTimer(service)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-
-    try
-    {
-        m_host = ptree.get<std::string>("host");
-        m_port = ptree.get<std::string>("port");
-    }
-    catch( std::exception & e )
-    {
-        std::stringstream ss;
-        ss << "Failed to create adapter: " << e.what() << std::endl;
-        throw std::runtime_error(ss.str());
-    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////

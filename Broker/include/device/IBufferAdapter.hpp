@@ -88,10 +88,10 @@ protected:
     std::vector<SettingValue> m_txBuffer;
 
     /// Provides synchronization for m_rxBuffer
-    boost::shared_mutex m_rxMutex;
+    mutable boost::shared_mutex m_rxMutex;
 
     /// Provides synchronization for m_txBuffer
-    boost::shared_mutex m_txMutex;
+    mutable boost::shared_mutex m_txMutex;
 
 private:
     /// Called by Start to run the adapter

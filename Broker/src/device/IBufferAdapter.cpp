@@ -30,7 +30,9 @@
 #include <stdexcept>
 
 #include <boost/foreach.hpp>
+#include <boost/lexical_cast.hpp>
 #include <boost/range/adaptor/map.hpp>
+#include <boost/thread/locks.hpp>
 
 namespace freedm {
 namespace broker {
@@ -57,17 +59,17 @@ CLocalLogger Logger(__FILE__);
 void IBufferAdapter::Start()
 {
     // Perform error checking on the adapter specification, then call Run
-    std::set<size_t> stateIndices;
-    std::set<size_t> commandIndices;
+    std::set<std::size_t> stateIndices;
+    std::set<std::size_t> commandIndices;
 
     // There's probably a nicer way to construct these sets.
     // I do not know what it is.
-    BOOST_FOREACH(size_t i, m_stateInfo | boost::adaptors::map_values)
+    BOOST_FOREACH( std::size_t i, m_stateInfo | boost::adaptors::map_values )
     {
         stateIndices.insert(i);
     }
     
-    BOOST_FOREACH(size_t i, m_commandInfo | boost::adaptors::map_values)
+    BOOST_FOREACH( std::size_t i, m_commandInfo | boost::adaptors::map_values )
     {
         commandIndices.insert(i);
     }
@@ -96,7 +98,7 @@ void IBufferAdapter::Start()
         throw std::runtime_error(ss.str());
     }
 
-    IAdapter::Run();
+    Run();
 }
 
 ////////////////////////////////////////////////////////////////////////////
@@ -134,7 +136,7 @@ void IBufferAdapter::Set(const std::string device, const std::string key,
 
     try
     {
-         m_txBuffer[m_commandInfo[DeviceSignal(device, key)] = value;
+        m_txBuffer[m_commandInfo[DeviceSignal(device, key)]] = value;
     }
     catch( std::runtime_error & e )
     {
@@ -176,13 +178,14 @@ void IBufferAdapter::Set(const std::string device, const std::string key,
 SettingValue IBufferAdapter::Get(const std::string device, 
                                  const std::string key) const
 {
-    Logger.Trace << __PRETTY_FUNCTION__ << std::endl
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
     boost::shared_lock<boost::shared_mutex> readLock(m_txMutex);
 
-    try  
+    try
     {
-        return m_txBuffer[m_commandInfo[DeviceSignal(device, key)];
+        std::size_t idx = m_commandInfo.find(DeviceSignal(device, key))->second;
+        return m_rxBuffer[idx];
     }
     catch( std::runtime_error & e )
     {
@@ -193,7 +196,7 @@ SettingValue IBufferAdapter::Get(const std::string device,
     }
 }
 
-////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
 /// Registers a new device signal as state information with the adapter.
 ///
 /// @ErrorHandling Throws a std::runtime_error if the device signal is invalid
@@ -201,13 +204,13 @@ SettingValue IBufferAdapter::Get(const std::string device,
 /// @pre The parameters must not be empty.
 /// @pre The device signal must not already be registered.
 /// @pre The index must not be registered with another signal.
-/// @post m_StateInfo is updated to store the new device signal.
+/// @post m_stateInfo is updated to store the new device signal.
 /// @param device The unique identifier of the device to register.
 /// @param signal The signal of the device that will be registered.
 /// @param index The numeric index associated with the device signal.
 ///
 /// @limitations None.
-////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
 void IBufferAdapter::RegisterStateInfo(const std::string device,
                                        const std::string signal,
                                        const std::size_t index )
@@ -222,7 +225,7 @@ void IBufferAdapter::RegisterStateInfo(const std::string device,
         throw std::runtime_error(ss.str());
     }
     
-    if( m_StateInfo.count(devsig) > 0 )
+    if( m_stateInfo.count(devsig) > 0 )
     {
         std::stringstream ss;
         ss << "The device signal (" << device << "," << signal << ") is "
@@ -237,15 +240,16 @@ void IBufferAdapter::RegisterStateInfo(const std::string device,
         throw std::runtime_error(ss.str());
     }
     
-    if( m_StateIndex.count(index) > 0 )
+    BOOST_FOREACH( std::size_t i, m_stateInfo | boost::adaptors::map_values )
     {
-        std::stringstream ss;
-        ss << "The state index " << index << " is a duplicate." << std::endl;
-        throw std::runtime_error(ss.str());
+        if( index == i )
+        {
+            throw std::runtime_error("Detected duplicate state index " 
+                                     + boost::lexical_cast<std::string>(index));
+        }
     }
     
-    m_StateInfo.insert(index);
-    m_StateInfo.insert(std::pair<DeviceSignal, std::size_t>(devsig, index));
+    m_stateInfo.insert(std::pair<DeviceSignal, std::size_t>(devsig, index));
     Logger.Info << "Registered the device signal (" << device << "," << signal
                 << ") as adapter state information." << std::endl;
 }
@@ -258,13 +262,13 @@ void IBufferAdapter::RegisterStateInfo(const std::string device,
 /// @pre The parameters must not be empty.
 /// @pre The device signal must not already be registered.
 /// @pre The index must not be registered with another signal.
-/// @post m_CommandInfo is updated to store the new device signal.
+/// @post m_commandInfo is updated to store the new device signal.
 /// @param device The unique identifier of the device to register.
 /// @param signal The signal of the device that will be registered.
 /// @param index The numeric index associated with the device signal.
 ///
 /// @limitations None.
-////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
 void IBufferAdapter::RegisterCommandInfo(const std::string device,
                                          const std::string signal,
                                          const std::size_t index )
@@ -279,7 +283,7 @@ void IBufferAdapter::RegisterCommandInfo(const std::string device,
         throw std::runtime_error(ss.str());
     }
     
-    if( m_CommandInfo.count(devsig) > 0 )
+    if( m_commandInfo.count(devsig) > 0 )
     {
         std::stringstream ss;
         ss << "The device signal (" << device << "," << signal << ") is "
@@ -293,17 +297,18 @@ void IBufferAdapter::RegisterCommandInfo(const std::string device,
         ss << "The command index must be greater than 0." << std::endl;
         throw std::runtime_error(ss.str());
     }
-    
-    if( m_CommandIndex.count(index) > 0 )
+
+    BOOST_FOREACH( std::size_t i, m_commandInfo | boost::adaptors::map_values )
     {
-        std::stringstream ss;
-        ss << "The command index " << index << " is a duplicate." << std::endl;
-        throw std::runtime_error(ss.str());
+        if( index == i )
+        {
+            throw std::runtime_error("Detected duplicate command index " 
+                                     + boost::lexical_cast<std::string>(index));
+        }
     }
-    
-    m_CommandIndex.insert(index);
-    m_CommandInfo.insert(std::pair<DeviceSignal, std::size_t>(devsig, index));
-    Logger.Info << "Registered the device signal (" << device << "," << signal
+
+    m_commandInfo.insert(std::pair<DeviceSignal, std::size_t>(devsig, index));
+    Logger.Info << "Registered the device (" << device << "," << signal
                 << ") as adapter command information." << std::endl;
 }
 

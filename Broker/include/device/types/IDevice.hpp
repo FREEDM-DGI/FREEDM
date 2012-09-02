@@ -61,15 +61,6 @@ public:
     /// Gets the device identifier
     std::string GetID() const;
 
-    /// Acquires the mutex
-    void Lock();
-
-    /// Releases a mutex lock
-    void Unlock();
-
-    /// Tries to acquire the mutex
-    bool TryLock();
-
     /// Gets the setting of some key from the structure
     SettingValue Get(const std::string key) const;
 
@@ -88,9 +79,6 @@ protected:
 
     /// "Driver" that handles the device data
     IAdapter::Pointer m_adapter;
-    
-    /// Mutex to protect the device from other threads
-    boost::mutex m_mutex;
 };
 
 } // namespace device

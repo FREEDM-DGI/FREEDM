@@ -88,43 +88,6 @@ void IDevice::Set(const std::string key, const SettingValue value)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-/// IDevice::Lock()
-/// @description Obtains a lock over the device mutex
-/// @pre none
-/// @post blocks until m_mutex is locked by the calling thread
-////////////////////////////////////////////////////////////////////////////////
-void IDevice::Lock()
-{
-    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    m_mutex.lock();
-}
-
-////////////////////////////////////////////////////////////////////////////////
-/// IDevice::Unlock()
-/// @description Releases an obtained lock over the device mutex
-/// @pre calling thread must have the mutex locked
-/// @post releases the lock on m_mutex
-////////////////////////////////////////////////////////////////////////////////
-void IDevice::Unlock()
-{
-    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    m_mutex.unlock();
-}
-
-////////////////////////////////////////////////////////////////////////////////
-/// IDevice::TryLock()
-/// @description Tries to obtain a lock over the device mutex
-/// @pre none
-/// @post locks m_mutex if the function returns true
-/// @return true if m_mutex lock acquired, false otherwise
-////////////////////////////////////////////////////////////////////////////////
-bool IDevice::TryLock()
-{
-    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    return m_mutex.try_lock();
-}
-
-////////////////////////////////////////////////////////////////////////////////
 /// IDevice::GetID() const
 /// @description Accessor for the unique device identifier
 /// @pre none

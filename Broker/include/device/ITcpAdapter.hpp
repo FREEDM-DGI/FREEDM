@@ -53,7 +53,7 @@ public:
     typedef boost::shared_ptr<ITcpAdapter> Pointer;
 
     /// Virtual destructor for derived classes.
-    virtual ~ITcpAdapter() { };
+    virtual ~ITcpAdapter();
 
 protected:
     /// Constructor to initialize the socket.

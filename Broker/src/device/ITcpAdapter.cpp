@@ -106,19 +106,20 @@ ITcpAdapter::~ITcpAdapter()
 /// @limitations None.
 ////////////////////////////////////////////////////////////////////////////////
 ITcpAdapter::ITcpAdapter(boost::asio::io_service & service,
-                         const boost::property_tree::ptree ptree)
-     : m_service(service)
+                         const boost::property_tree::ptree & ptree)
+     : m_socket(service)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
     try
     {
-         m_host = details.get<std::string>("host");
-         m_port = details.get<std::string>("port");
+         m_host = ptree.get<std::string>("host");
+         m_port = ptree.get<std::string>("port");
     }
     catch( std::exception & e )
     {
-         throw std::runtime_error("Failed to create adapter: " + e.what());
+        throw std::runtime_error("Failed to create adapter: "
+                                 + std::string(e.what()));
     }
 }
 

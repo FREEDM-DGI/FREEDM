@@ -236,17 +236,17 @@ int main(int argc, char* argv[])
         device::CAdapterFactory::Instance().Initialize(phyManager);
         if( vm.count("adapter-config") > 0 )
         {
-            Logger.Notice << "Reading the file " << adaperCfgFile
-                    << " to initialize the adapter factory." << std::endl;
+            Logger.Notice << "Reading the file " << adapterCfgFile
+                          << " to initialize the adapter factory." << std::endl;
             try
             {
                 boost::property_tree::ptree adapterList;
                 boost::property_tree::read_xml(adapterCfgFile, adapterList);
                 
-                BOOST_FOREACH(boost::property_tree::ptree::value_type & adapter,
+                BOOST_FOREACH(boost::property_tree::ptree::value_type & t,
                         adapterList.get_child("root"))
                 {
-                    device::CAdapterFactory::Instance().CreateAdapter(adapter);
+                    device::CAdapterFactory::Instance().CreateAdapter(t.second);
                 }
             }
             catch( std::exception & e )

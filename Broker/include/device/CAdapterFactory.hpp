@@ -74,6 +74,9 @@ public:
     
     /// Creates a new adapter and its associated devices.
     void CreateAdapter(const boost::property_tree::ptree & p);
+
+    /// @todo should this be public?
+    void RegisterPhysicalDevices();
     
     /// Destructs the factory.
     ~CAdapterFactory();

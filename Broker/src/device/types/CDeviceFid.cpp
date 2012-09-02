@@ -47,7 +47,7 @@ CLocalLogger Logger(__FILE__);
 ///
 /// @limitations None.
 ////////////////////////////////////////////////////////////////////////////////
-CDeviceFid::CDeviceFid(std::string device, PhysicalAdapter::Pointer adapter)
+CDeviceFid::CDeviceFid(std::string device, IAdapter::Pointer adapter)
     : IDevice(device, adapter)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
@@ -70,7 +70,7 @@ CDeviceFid::~CDeviceFid()
 /// Determines if the FID is active.
 ///
 /// @pre None.
-/// @post Calls PhysicalAdapter::Get with the signal "state".
+/// @post Calls IAdapter::Get with the signal "state".
 /// @return True if this FID is active (good), or false otherwise (bad). 
 ///
 /// @limitations None.

@@ -35,7 +35,7 @@ CLocalLogger Logger(__FILE__);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-/// IDevice::IDevice(std::string, PhysicalAdapter::AdapterPtr)
+/// IDevice::IDevice(std::string, IAdapter::AdapterPtr)
 ///
 /// @description Called by subclass constructors to initialize the device
 /// @pre none
@@ -43,8 +43,8 @@ CLocalLogger Logger(__FILE__);
 /// @param device The unique device identifier for the device
 /// @param adapter The implementation scheme of the device
 ////////////////////////////////////////////////////////////////////////////////
-IDevice::IDevice(std::string device, PhysicalAdapter::Pointer adapter)
-: m_identifier(device), m_adapter(adapter), m_mutex()
+IDevice::IDevice(std::string device, IAdapter::Pointer adapter)
+: m_identifier(device), m_adapter(adapter)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 }

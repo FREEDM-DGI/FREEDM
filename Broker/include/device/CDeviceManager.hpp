@@ -35,6 +35,7 @@
 #include <list>
 #include <map>
 #include <string>
+#include <vector>
 
 #include <boost/enable_shared_from_this.hpp>
 #include <boost/function.hpp>
@@ -115,23 +116,23 @@ public:
 
     /// @todo takes a bit of effort to make this const
     template <class BinaryOp>
-    SettingValue GetValue(std::string devtype,
+    SignalValue GetValue(std::string devtype,
                           std::string value,
                           BinaryOp math);
 
     /// @todo takes a bit of effort to make this const
-    std::vector<SettingValue> GetValueVector(std::string devtype,
+    std::vector<SignalValue> GetValueVector(std::string devtype,
         std::string value);
 
     /// @todo
     template <class DeviceType, class BinaryOp>
-    SettingValue GetValue(SettingValue(DeviceType::*getter)( ) const,
+    SignalValue GetValue(SignalValue(DeviceType::*getter)( ) const,
     BinaryOp math) const;
 
     /// @todo
     template <class DeviceType>
-    std::vector<SettingValue> GetValueVector(
-        SettingValue(DeviceType::*getter)( ) const) const;
+    std::vector<SignalValue> GetValueVector(
+        SignalValue(DeviceType::*getter)( ) const) const;
  
     /// Gives a count of connected FIDs.
     size_t CountActiveFids() const;
@@ -166,11 +167,11 @@ CDeviceManager::GetDevicesOfType()
 
 // @todo
 template <class DeviceType, class BinaryOp>
-SettingValue CDeviceManager::GetValue(
-        SettingValue(DeviceType::*getter)( ) const,
+SignalValue CDeviceManager::GetValue(
+        SignalValue(DeviceType::*getter)( ) const,
         BinaryOp math) const
 {
-    SettingValue result = 0;
+    SignalValue result = 0;
     typename DeviceType::Pointer next_device;
 
     for (const_iterator it = m_devices.begin(); it != m_devices.end(); it++)
@@ -187,10 +188,10 @@ SettingValue CDeviceManager::GetValue(
 
 /// @todo
 template <class DeviceType>
-std::vector<SettingValue> CDeviceManager::GetValueVector(
-SettingValue(DeviceType::*getter)( ) const) const
+std::vector<SignalValue> CDeviceManager::GetValueVector(
+SignalValue(DeviceType::*getter)( ) const) const
 {
-    std::vector<SettingValue> results;
+    std::vector<SignalValue> results;
     typename DeviceType::Pointer next_device;
 
     for (const_iterator it = m_devices.begin(); it != m_devices.end(); it++)
@@ -207,10 +208,10 @@ SettingValue(DeviceType::*getter)( ) const) const
 
 /// @todo
 template <class BinaryOp>
-SettingValue CDeviceManager::GetValue(std::string devtype,
+SignalValue CDeviceManager::GetValue(std::string devtype,
 std::string value, BinaryOp math)
 {
-    SettingValue result = 0;
+    SignalValue result = 0;
 
     std::vector<IDevice::Pointer> devices = GetDevicesOfType(devtype);
     std::vector<IDevice::Pointer>::iterator it, end;

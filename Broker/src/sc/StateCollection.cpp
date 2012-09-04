@@ -355,9 +355,9 @@ void SCAgent::StateResponse()
 void SCAgent::TakeSnapshot(std::string deviceType, std::string valueType)
 {
     Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
-    device::SettingValue PowerValue;
+    device::SignalValue PowerValue;
     //Logger.Status << "&&&&&&&&&&&&&&&&&&&&&& call NetValue funciton &&&&&&&&&&&&&&" << std::endl;
-    PowerValue = m_phyDevManager->GetValue(deviceType, valueType, std::plus<device::SettingValue>());
+    PowerValue = m_phyDevManager->GetValue(deviceType, valueType, std::plus<device::SignalValue>());
     Logger.Status << "&&&&&&&&&&&&&&&         " << PowerValue << "       &&&&&&&&&&&&" << std::endl;
     //save state
     m_curstate.put("sc.type", valueType);

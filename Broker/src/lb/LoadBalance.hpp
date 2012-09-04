@@ -184,7 +184,7 @@ class LBAgent
         /// 'Power migration' by stepping up/down P* by a constant value
         void Step_PStar();
         /// 'Power migration' by stepping up/down P* basing on the demand cost
-        void PStar(device::SettingValue DemandValue);
+        void PStar(device::SignalValue DemandValue);
         /// 'Power migration' through controlling DESD devices
         void Desd_PStar();   
         

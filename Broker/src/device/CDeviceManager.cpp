@@ -176,10 +176,10 @@ size_t CDeviceManager::CountActiveFids() const
 }
 
 /// @todo
-std::vector<SettingValue> CDeviceManager::GetValueVector(
+std::vector<SignalValue> CDeviceManager::GetValueVector(
     std::string devtype, std::string value)
 {
-    std::vector<SettingValue> results;
+    std::vector<SignalValue> results;
 
     std::vector<IDevice::Pointer> devices = GetDevicesOfType(devtype);
     std::vector<IDevice::Pointer>::iterator it, end;

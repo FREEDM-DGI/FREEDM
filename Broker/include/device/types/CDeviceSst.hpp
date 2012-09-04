@@ -55,10 +55,10 @@ public:
     virtual ~CDeviceSst();
     
     /// Determine the gateway value of the SST.
-    SettingValue GetGateway() const;
+    SignalValue GetGateway() const;
     
     /// Increases the gateway value by the specified amount.
-    void StepGateway(const SettingValue step = 1);
+    void StepGateway(const SignalValue step = 1);
 private:
     /// redefine base accessor as private
     using IDevice::Get;

@@ -30,7 +30,7 @@
 
 #include <boost/shared_ptr.hpp>
 #include <boost/asio/io_service.hpp>
-#include <boost/property_tree/ptree.hpp>
+#include <boost/property_tree/ptree_fwd.hpp>
 
 namespace freedm {
 namespace broker {
@@ -59,29 +59,20 @@ public:
     
     /// Sets the value of some device signal at the remote host.
     void Set(const std::string device, const std::string signal, 
-             const SettingValue value);
+            const SignalValue value);
     
     /// Gets the value of some device signal from the remote host.
-    SettingValue Get(std::string device, std::string signal) const;
-
-    /// Registers a new device signal with the adapter.
-    void RegisterStateInfo(const std::string device, const std::string signal,
-                           const std::size_t index);
-    
-    /// Registers a new device signal with the adapter.
-    void RegisterCommandInfo(const std::string device, const std::string signal,
-                             const std::size_t index);
+    SignalValue Get(std::string device, std::string signal) const;
     
     /// Sends a quit request to the remote host. 
     void Quit();
     
     /// Stops the adapter.
     ~CPscadAdapter();
-
 private:
     /// Constructs a new pscad adapter.
     CPscadAdapter(boost::asio::io_service & service,
-                  const boost::property_tree::ptree & ptree);
+            const boost::property_tree::ptree & ptree);
 };
 
 } // namespace broker

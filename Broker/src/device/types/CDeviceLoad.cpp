@@ -2,6 +2,7 @@
 /// @file         CDeviceLoad.cpp
 ///
 /// @author       Michael Catanzaro <michael.catanzaro@mst.edu>
+/// @author       Thomas Roth <tprfh7@mst.edu>
 ///
 /// @project      FREEDM DGI
 ///
@@ -76,7 +77,7 @@ CDeviceLoad::~CDeviceLoad()
 ///
 /// @limitations None.
 ////////////////////////////////////////////////////////////////////////////////
-SettingValue CDeviceLoad::GetLoad() const
+SignalValue CDeviceLoad::GetLoad() const
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     return Get("drain");
@@ -92,7 +93,7 @@ SettingValue CDeviceLoad::GetLoad() const
 ///
 /// @limitations The energy drain increase will take some time to manifest.
 ////////////////////////////////////////////////////////////////////////////////
-void CDeviceLoad::StepLoad(const SettingValue step)
+void CDeviceLoad::StepLoad(const SignalValue step)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     Set("drain", GetLoad() + step);

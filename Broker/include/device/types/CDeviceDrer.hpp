@@ -55,10 +55,10 @@ public:
     virtual ~CDeviceDrer();
     
     /// Determine the energy generation of the DRER.
-    SettingValue GetGeneration() const;
+    SignalValue GetGeneration() const;
     
     /// Increases the energy generation by the specified amount.
-    void StepGeneration(const SettingValue step = 1);
+    void StepGeneration(const SignalValue step = 1);
 private:
     /// redefine base accessor as private
     using IDevice::Get;

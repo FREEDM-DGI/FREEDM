@@ -2,6 +2,7 @@
 /// @file         CDeviceDesd.cpp
 ///
 /// @author       Michael Catanzaro <michael.catanzaro@mst.edu>
+/// @author       Thomas Roth <tprfh7@mst.edu>
 ///
 /// @project      FREEDM DGI
 ///
@@ -76,7 +77,7 @@ CDeviceDesd::~CDeviceDesd()
 ///
 /// @limitations None.
 ////////////////////////////////////////////////////////////////////////////////
-SettingValue CDeviceDesd::GetStorage() const
+SignalValue CDeviceDesd::GetStorage() const
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     return Get("storage");
@@ -92,7 +93,7 @@ SettingValue CDeviceDesd::GetStorage() const
 ///
 /// @limitations The storage increase will take some time to manifest.
 ////////////////////////////////////////////////////////////////////////////////
-void CDeviceDesd::StepStorage(const SettingValue step)
+void CDeviceDesd::StepStorage(const SignalValue step)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     Set("storage", GetStorage() + step);

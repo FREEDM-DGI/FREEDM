@@ -13,8 +13,6 @@
 ///
 /// @functions    EndianSwapIfNeeded
 ///               CRtdsAdapter::Create
-///               CRtdsAdapter::Set
-///               CRtdsAdapter::Get
 ///               CRtdsAdapter::~CRtdsAdapter
 ///               CRtdsAdapter::Run
 ///               CRtdsAdapter::Start
@@ -34,21 +32,23 @@
 /// Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
 ////////////////////////////////////////////////////////////////////////////////
 
+#include "CRtdsAdapter.hpp"
 #include "CLogger.hpp"
-#include "device/CRtdsAdapter.hpp"
-
-#include <cassert>
 
 #include <sys/param.h>
 
+#include <boost/asio.hpp>
+#include <boost/thread/mutex.hpp>
+#include <boost/static_assert.hpp>
 #include <boost/thread/shared_mutex.hpp>
+#include <boost/property_tree/ptree.hpp>
 
 namespace freedm {
 namespace broker {
 namespace device {
 
 // FPGA is expecting 4-byte floats.
-BOOST_STATIC_ASSERT(sizeof(SettingValue) == 4);
+BOOST_STATIC_ASSERT(sizeof(SignalValue) == 4);
 
 namespace {
 
@@ -56,16 +56,16 @@ namespace {
 CLocalLogger Logger(__FILE__);
 
 ///////////////////////////////////////////////////////////////////////////////
-/// Converts the SettingValues in the passed vector from big-endian to
+/// Converts the SignalValues in the passed vector from big-endian to
 /// little-endian, or vice-versa, iff the DGI is running on a little-endian
 /// system.
 ///
 /// @pre none
 /// @post the elements of data are converted in endianness if the DGI is
 ///  running on a little-endian system. Otherwise, nothing happens.
-/// @param v the vector of SettingValues to be endian-swapped
+/// @param v the vector of SignalValues to be endian-swapped
 ///////////////////////////////////////////////////////////////////////////////
-inline void EndianSwapIfNeeded(std::vector<SettingValue> v)
+inline void EndianSwapIfNeeded(std::vector<SignalValue> v)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 // check endianess at compile time.  Middle-Endian not allowed
@@ -73,16 +73,16 @@ inline void EndianSwapIfNeeded(std::vector<SettingValue> v)
 // automatically be defined and determined in sys/param.h, which exists
 // in most Unix systems.
 #if __BYTE_ORDER == __LITTLE_ENDIAN
-    for( size_t i = 0; i < v.size(); i += sizeof(SettingValue) )
+    for( size_t i = 0; i < v.size(); i += sizeof(SignalValue) )
     {
-        SettingValue* tmp = new SettingValue[sizeof(SettingValue)];
+        SignalValue* tmp = new SignalValue[sizeof(SignalValue)];
 
-        for( unsigned int j = 0; j < sizeof(SettingValue); j++ )
+        for( unsigned int j = 0; j < sizeof(SignalValue); j++ )
         {
-            tmp[j] = v[sizeof(SettingValue) - 1 - j];
+            tmp[j] = v[sizeof(SignalValue) - 1 - j];
         }
 
-        for( unsigned int j = 0; j < sizeof(SettingValue); j++ )
+        for( unsigned int j = 0; j < sizeof(SignalValue); j++ )
         {
             v[j] = tmp[j];
         }
@@ -195,7 +195,7 @@ void CRtdsAdapter::Run()
         {
             boost::asio::write(m_socket,
                     boost::asio::buffer(m_txBuffer, 
-                            m_txBuffer.size() * sizeof(SettingValue)));
+                            m_txBuffer.size() * sizeof(SignalValue)));
         }
         catch (std::exception& e)
         {
@@ -217,7 +217,7 @@ void CRtdsAdapter::Run()
         {
             boost::asio::read(m_socket,
                     boost::asio::buffer(m_rxBuffer,
-                            m_rxBuffer.size() * sizeof(SettingValue)));
+                            m_rxBuffer.size() * sizeof(SignalValue)));
         }
         catch (std::exception & e)
         {

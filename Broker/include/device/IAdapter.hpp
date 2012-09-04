@@ -35,7 +35,7 @@ namespace broker {
 namespace device {
 
 /// Type of the value for device signals.
-typedef float SettingValue;
+typedef float SignalValue;
 
 /// Type of the unique identifier for device values.
 typedef std::pair<const std::string, const std::string> DeviceSignal;
@@ -58,12 +58,12 @@ public:
     virtual void Start() = 0;
     
     /// Retrieves a value from a device.
-    virtual SettingValue Get(const std::string device,
+    virtual SignalValue Get(const std::string device,
                              const std::string signal) const = 0;
 
     /// Sets a value on a device.
     virtual void Set(const std::string device, const std::string signal,
-                     const SettingValue value) = 0;
+                     const SignalValue value) = 0;
 
     /// Virtual destructor for derived classes.
     virtual ~IAdapter() { };

@@ -406,13 +406,13 @@ void LBAgent::LoadTable()
     int numSSTs = m_phyDevManager->GetDevicesOfType<SST>().size();
 
     m_Gen = m_phyDevManager->GetValue<DRER>(&DRER::GetGeneration,
-            std::plus<device::SettingValue>());
+            std::plus<device::SignalValue>());
     m_Storage = m_phyDevManager->GetValue<DESD>(&DESD::GetStorage,
-            std::plus<device::SettingValue>());
+            std::plus<device::SignalValue>());
     m_Load = m_phyDevManager->GetValue<LOAD>(&LOAD::GetLoad,
-            std::plus<device::SettingValue>());
+            std::plus<device::SignalValue>());
     m_Gateway = m_phyDevManager->GetValue<SST>(&SST::GetGateway,
-            std::plus<device::SettingValue>());
+            std::plus<device::SignalValue>());
     if (numSSTs >= 1)
     {
     m_CalcGateway = m_Gateway;
@@ -834,7 +834,7 @@ void LBAgent::HandleAccept(CMessage msg, PeerNodePtr peer)
     // --------------------------------------------------------------
     // The Demand node you agreed to supply power to, is awaiting migration
     // --------------------------------------------------------------
-    device::SettingValue DemValue;
+    device::SignalValue DemValue;
     std::stringstream ss_;
     ptree pt = msg.GetSubMessages();
     ss_ << pt.get<std::string>("lb.value");
@@ -958,7 +958,7 @@ void LBAgent::Step_PStar()
 /// @limitations It could be revised based on requirements. Might not be
 ///		 necessary after adding the code to handle intransit messages
 /////////////////////////////////////////////////////////
-void LBAgent::PStar(device::SettingValue DemandValue)
+void LBAgent::PStar(device::SignalValue DemandValue)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     typedef device::CDeviceSst SST;

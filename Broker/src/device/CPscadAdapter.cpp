@@ -14,8 +14,6 @@
 ///     CPscadAdapter::Set
 ///     CPscadAdapter::Get
 ///     CPscadAdapter::Quit
-///     CPscadAdapter::RegisterStateInfo
-///     CPscadAdapter::RegisterCommandInfo
 ///     CPscadAdapter::~CPscadAdapter
 ///     CPscadAdapter::CPscadAdapter
 ///
@@ -35,12 +33,12 @@
 #include "CPscadAdapter.hpp"
 #include "CLogger.hpp"
 
-#include <sstream>
 #include <iostream>
 #include <stdexcept>
 
 #include <boost/asio.hpp>
 #include <boost/lexical_cast.hpp>
+#include <boost/property_tree/ptree.hpp>
 
 namespace freedm {
 namespace broker {
@@ -102,7 +100,7 @@ void CPscadAdapter::Start()
 /// @limitations None.
 ////////////////////////////////////////////////////////////////////////////////
 void CPscadAdapter::Set(const std::string device, const std::string signal,
-                        const SettingValue value)
+        const SignalValue value)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
@@ -116,33 +114,27 @@ void CPscadAdapter::Set(const std::string device, const std::string signal,
     // check for a valid connection
     if( !m_socket.is_open() )
     {
-        std::stringstream ss;
-        ss << "Failed to handle request: socket not open." << std::endl;
-        throw std::runtime_error(ss.str());
+        throw std::runtime_error("Failed to handle request: socket not open.");
     }
     
     // format and send the request stream
     request_stream << "SET " << device <<' '<< signal <<' '<< value << "\r\n";
     Logger.Notice << "Sending data through a blocking write." << std::endl;
-    //Logger.Debug << "Data has the value: " << request.data() << std::endl;
     boost::asio::write(m_socket, request);
 
     // receive and split the response stream
     Logger.Notice << "Receiving data through a blocking read." << std::endl;
     boost::asio::read_until(m_socket, response, "\r\n");
-    //Logger.Debug << "Received the value: " << response.data() << std::endl;
     response_stream >> response_code >> response_message;
 
     // handle bad responses
     if( response_code != "200" )
     {
-        std::stringstream ss;
-        ss << "Failed to set (" << device << "," << signal << ") to "
-                << value << " because: " << response_message << std::endl;
-        throw std::runtime_error(ss.str());
+        throw std::runtime_error("Failed to set (" + device + "," + signal
+                + ") because: " + response_message);
     }
     Logger.Info << "Set the value of (" << device << "," << signal << ") to "
-                << value << "." << std::endl;
+            << value << "." << std::endl;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -159,8 +151,8 @@ void CPscadAdapter::Set(const std::string device, const std::string signal,
 ///
 /// @limitations None.
 ////////////////////////////////////////////////////////////////////////////////
-SettingValue CPscadAdapter::Get(const std::string device, 
-                                const std::string signal) const
+SignalValue CPscadAdapter::Get(const std::string device, 
+        const std::string signal) const
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
@@ -173,36 +165,30 @@ SettingValue CPscadAdapter::Get(const std::string device,
     
     // check for a valid connection
     if( !m_socket.is_open() )
-    {
-        std::stringstream ss;
-        ss << "Failed to handle request: socket not open." << std::endl;        
-        throw std::runtime_error(ss.str());
+    {  
+        throw std::runtime_error("Failed to handle request: socket not open.");
     }
     
     // format and send the request stream
     request_stream << "GET " << device << ' ' << signal << "\r\n";
     Logger.Notice << "Sending data through a blocking write." << std::endl;
-//    Logger.Debug << "Data has the value: " << request.data() << std::endl;
     boost::asio::write(m_socket, request);
 
     // receive and split the response stream
     Logger.Notice << "Receiving data through a blocking read." << std::endl;
     boost::asio::read_until(m_socket, response, "\r\n");
-//    Logger.Debug << "Received the value: " << response.data() << std::endl;
     response_stream >> response_code >> response_message >> value;
 
     // handle bad responses
     if( response_code != "200" )
     {
-        std::stringstream ss;
-        ss << "Failed to get (" << device << "," << signal << ") because: "
-                << response_message << std::endl;
-        throw std::runtime_error(ss.str());
+        throw std::runtime_error("Failed to get (" + device + "," + signal
+                + ") because: " + response_message);
     }
     
     Logger.Info << "Received the value of (" << device << "," << signal
             << ") as " << value << "." << std::endl;
-    return boost::lexical_cast<SettingValue>(value);
+    return boost::lexical_cast<SignalValue>(value);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -230,29 +216,24 @@ void CPscadAdapter::Quit()
     // check for a valid connection
     if( !m_socket.is_open() )
     {
-        std::stringstream ss;
-        ss << "Failed to handle request: socket not open." << std::endl;
-        throw std::runtime_error(ss.str());
+        throw std::runtime_error("Failed to handle request: socket not open.");
     }
     
     // format and send the request stream
     request_stream << "QUIT\r\n";
     Logger.Notice << "Sending data through a blocking write." << std::endl;
-    //Logger.Debug << "Data has the value: " << request.data() << std::endl;
     boost::asio::write(m_socket, request);
 
     // receive and split the response stream
     Logger.Notice << "Receiving data through a blocking read." << std::endl;
     boost::asio::read_until(m_socket, response, "\r\n");
-    //Logger.Debug << "Received the value: " << response.data() << std::endl;
     response_stream >> response_code >> response_message;
 
     // handle bad responses
     if (response_code != "200")
     {
-        std::stringstream ss;
-        ss << "Failed to end a connection: " << response_message << std::endl;
-        throw std::runtime_error(ss.str());
+        throw std::runtime_error("Failed to end a connection: "
+                + response_message);
     }
     
     // close connection
@@ -260,48 +241,6 @@ void CPscadAdapter::Quit()
     Logger.Status << "Closed an open socket connection to " << m_host << ":"
             << m_port << "." << std::endl;
 }
-
-#pragma GCC diagnostic ignored "-Wunused-parameter"
-///////////////////////////////////////////////////////////////////////////////
-/// "Registers" a new device signal with the adapter. But since the PSCAD
-/// adapter doesn't need to register its signals, this function does nothing.
-/// This function is called by CAdapterFactory.
-///
-/// @pre none for PSCAD, though in general, devices should be registered before
-///      starting adapters.
-/// @post CAdapterFactory thinks it has registered the device signal.
-/// @param device The unique identifier of the device to register.
-/// @param signal The signal of the device that will be registered.
-/// @param index The numeric index associated with the device signal.
-/// @todo can we change the implementation such that this is unnecessary?
-///////////////////////////////////////////////////////////////////////////////
-void CPscadAdapter::RegisterStateInfo(const std::string device,
-                                      const std::string signal,
-                                      const std::size_t index)
-{
-// Do nothing - the PSCAD adapter requires no such registration
-}
-    
-///////////////////////////////////////////////////////////////////////////////
-/// "Registers" a new device signal with the adapter. But since the PSCAD
-/// adapter doesn't need to register its signals, this function does nothing.
-/// This function is called by CAdapterFactory.
-///
-/// @pre none for PSCAD, though in general, devices should be registered before
-///      starting adapters.
-/// @post CAdapterFactory thinks it has registered the device signal.
-/// @param device The unique identifier of the device to register.
-/// @param signal The signal of the device that will be registered.
-/// @param index The numeric index associated with the device signal.
-/// @todo can we change the implementation such that this is unnecessary?
-///////////////////////////////////////////////////////////////////////////////
-void CPscadAdapter::RegisterCommandInfo(const std::string device,
-                                        const std::string signal,
-                                        const std::size_t index)
-{
-// Do nothing - the PSCAD adapter requires no such registration
-}
-#pragma GCC diagnostic warning "-Wunused-parameter"
 
 ////////////////////////////////////////////////////////////////////////////////
 /// Closes the socket connection prior to destructing the object.
@@ -314,8 +253,7 @@ void CPscadAdapter::RegisterCommandInfo(const std::string device,
 CPscadAdapter::~CPscadAdapter()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-
-    //  perform teardown
+    
     if( m_socket.is_open() )
     {
         Quit();
@@ -333,7 +271,7 @@ CPscadAdapter::~CPscadAdapter()
 /// @limitations None.
 ////////////////////////////////////////////////////////////////////////////////
 CPscadAdapter::CPscadAdapter(boost::asio::io_service & service,
-                             const boost::property_tree::ptree & ptree)
+        const boost::property_tree::ptree & ptree)
      : ITcpAdapter(service, ptree)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;

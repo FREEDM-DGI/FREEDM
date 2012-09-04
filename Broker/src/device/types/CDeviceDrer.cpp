@@ -2,6 +2,7 @@
 /// @file         CDeviceDrer.cpp
 ///
 /// @author       Michael Catanzaro <michael.catanzaro@mst.edu>
+/// @author       Thomas Roth <tprfh7@mst.edu>
 ///
 /// @project      FREEDM DGI
 ///
@@ -76,7 +77,7 @@ CDeviceDrer::~CDeviceDrer()
 ///
 /// @limitations None.
 ////////////////////////////////////////////////////////////////////////////////
-SettingValue CDeviceDrer::GetGeneration() const
+SignalValue CDeviceDrer::GetGeneration() const
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     return Get("generation");
@@ -92,7 +93,7 @@ SettingValue CDeviceDrer::GetGeneration() const
 ///
 /// @limitations The generation increase will take some time to manifest.
 ////////////////////////////////////////////////////////////////////////////////
-void CDeviceDrer::StepGeneration(const SettingValue step)
+void CDeviceDrer::StepGeneration(const SignalValue step)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     Set("generation", GetGeneration() + step);

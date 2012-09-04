@@ -2,6 +2,7 @@
 /// @file         CDeviceSst.cpp
 ///
 /// @author       Michael Catanzaro <michael.catanzaro@mst.edu>
+/// @author       Thomas Roth <tprfh7@mst.edu>
 ///
 /// @project      FREEDM DGI
 ///
@@ -76,7 +77,7 @@ CDeviceSst::~CDeviceSst()
 ///
 /// @limitations None.
 ////////////////////////////////////////////////////////////////////////////////
-SettingValue CDeviceSst::GetGateway() const
+SignalValue CDeviceSst::GetGateway() const
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     return Get("gateway");
@@ -92,7 +93,7 @@ SettingValue CDeviceSst::GetGateway() const
 ///
 /// @limitations The gateway increase will take some time to manifest.
 ////////////////////////////////////////////////////////////////////////////////
-void CDeviceSst::StepGateway(const SettingValue step)
+void CDeviceSst::StepGateway(const SignalValue step)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     Set("gateway", GetGateway() + step);

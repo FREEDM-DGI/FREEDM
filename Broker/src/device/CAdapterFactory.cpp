@@ -9,13 +9,13 @@
 /// @description  Handles the creation of device adapters.
 ///
 /// @functions
+///     CAdapterFactory::CAdapterFactory
+///     CAdapterFactory::~CAdapterFactory
 ///     CAdapterFactory::Instance
 ///     CAdapterFactory::Initialize
 ///     CAdapterFactory::CreateAdapter
-///     CAdapterFactory::~CAdapterFactory
-///     CAdapterFactory::CAdapterFactory
-///     CAdapterFactory::RegisterDevices
 ///     CAdapterFactory::RegisterDeviceClass
+///     CAdapterFactory::InitializeBuffer
 ///     CAdapterFactory::CreateDevice
 ///
 /// These source code files were created at Missouri University of Science and
@@ -32,6 +32,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 
 #include "CAdapterFactory.hpp"
+
 #include "CPscadAdapter.hpp"
 #include "CRtdsAdapter.hpp"
 
@@ -40,7 +41,7 @@
 
 #include <boost/bind.hpp>
 #include <boost/foreach.hpp>
-#include <boost/thread.hpp>
+#include <boost/property_tree/ptree.hpp>
 
 namespace freedm {
 namespace broker {
@@ -49,6 +50,44 @@ namespace device {
 namespace {
 /// This file's logger.
 CLocalLogger Logger(__FILE__);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+/// Constructs an uninitialized factory.
+///
+/// @pre None.
+/// @post Registers the recognized device classes.
+/// @post Launches an i/o service on a separate thread.
+///
+/// @limitations None.
+///////////////////////////////////////////////////////////////////////////////
+CAdapterFactory::CAdapterFactory()
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    
+    RegisterDevices();
+    m_thread = boost::thread(boost::bind(
+            &boost::asio::io_service::run, &m_ios));
+    Logger.Status << "Started the adapter i/o service." << std::endl;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+/// Stops the i/o service and waits for its thread to complete.
+///
+/// @pre None.
+/// @post m_ios is stopped and the object is destroyed.
+///
+/// @limitations None.
+///////////////////////////////////////////////////////////////////////////////
+CAdapterFactory::~CAdapterFactory()
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    
+    m_ios.stop();
+    Logger.Status << "Stopped the adapter i/o service." << std::endl;
+    
+    Logger.Notice << "Blocking until thread finishes execution." << std::endl;
+    m_thread.join();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -107,7 +146,6 @@ void CAdapterFactory::Initialize(CDeviceManager::Pointer manager)
 /// @ErrorHandling Throws a std::runtime_error if the property tree is bad.
 /// @pre The adapter must not begin work until IAdapter::Start.
 /// @pre The adapter's devices must not be specified in other adapters.
-/// @post Calls CAdapterFactory::CreateAdapter to create the adapter.
 /// @post Calls CAdapterFactory::CreateDevice to create each device.
 /// @post Starts the adapter through IAdapter::Start.
 /// @param p The property tree that specifies a single adapter.
@@ -120,11 +158,10 @@ void CAdapterFactory::CreateAdapter(const boost::property_tree::ptree & p)
     
     boost::property_tree::ptree subtree;
     IAdapter::Pointer adapter;
-    std::set<std::string> devices;
+    IBufferAdapter::Pointer buffer;
+    std::string name, type;
     
-    std::string name, type, signal;
-    std::size_t index;
-
+    // extract the properties
     try
     {
         name    = p.get<std::string>("<xmlattr>.name");
@@ -134,142 +171,49 @@ void CAdapterFactory::CreateAdapter(const boost::property_tree::ptree & p)
     catch( std::exception & e )
     {
         throw std::runtime_error("Failed to create adapter: "
-                                  + std::string(e.what()));
+                + std::string(e.what()));
     }
     
     Logger.Debug << "Building " << type << " adapter " << name << std::endl;
-      
+    
+    // range check the properties
     if( name.empty() )
     {
-        throw std::runtime_error("Tried to create an adapter with empty name.");
+        throw std::runtime_error("Tried to create an adapter without a name.");
     }
     else if( m_adapter.count(name) > 0 )
     {
         throw std::runtime_error("Multiple adapters share name " + name);
     }
     
+    // create the adapter
     if( type == "pscad" )
     {
-        adapter = CPscadAdapter::Create(m_ios, p);
+        adapter = CPscadAdapter::Create(m_ios, subtree);
     }
     else if( type == "rtds" )
     {
-        adapter = CRtdsAdapter::Create(m_ios, p);
+        adapter = CRtdsAdapter::Create(m_ios, subtree);
     }
     else
     {
-         throw std::runtime_error(
-              std::string("Attempted to create adapter of unrecognized type ")
-              + type);
+         throw std::runtime_error("Attempted to create adapter of an "
+            + std::string("unrecognized type: ") + type);
     }
     
+    // initialize the adapter
+    buffer = boost::dynamic_pointer_cast<IBufferAdapter>(adapter);
+    if( buffer )
+    {
+        InitializeBuffer(buffer, p);
+    }
+    
+    // store the adapter
     m_adapter[name] = adapter;
     Logger.Info << "Created the " << type << " adapter " << name << std::endl;
     
-    // i = 0 parses state information, i = 1 parses command information
-    for( int i = 0; i < 2; i++ )
-    {
-        Logger.Debug << "Reading the " << (i == 0 ? "state" : "command")
-                     << " property tree specification." << std::endl;
-        
-        try
-        {
-            subtree = (i == 0 ? p.get_child("state") : p.get_child("command"));
-        }
-        catch( std::exception & e )
-        {
-            throw std::runtime_error("Failed to create adapter: "
-                                     + std::string(e.what()));
-        }
-        
-        BOOST_FOREACH(boost::property_tree::ptree::value_type & child, subtree)
-        {
-            try
-            {
-                type    = child.second.get<std::string>("type");
-                name    = child.second.get<std::string>("device");
-                signal  = child.second.get<std::string>("signal");
-                index   = child.second.get<std::size_t>("<xmlattr>.index");
-            }
-            catch( std::exception & e )
-            {
-                throw std::runtime_error("Failed to create adapter: "
-                                         + std::string(e.what()));
-            }
-            
-            Logger.Debug << "At index " << index << " for the device signal ("
-                         << name << "," << signal << ")." << std::endl;
-            
-            // create the device when first seen
-            if( devices.count(name) == 0 )
-            {
-                CreateDevice(name, type, adapter);
-                devices.insert(name);
-            }
-           
-            try
-            {
-                 IBufferAdapter & bAdapter = 
-                      dynamic_cast<IBufferAdapter &>(*adapter);
-                 if( i == 0 )
-                 {
-                      Logger.Debug << "Registering state info." << std::endl;
-                      bAdapter.RegisterStateInfo(name, signal, index);
-                 }
-                 else
-                 {
-                      Logger.Debug << "Registering command info." << std::endl;
-                      bAdapter.RegisterCommandInfo(name, signal, index);
-                 }
-            }
-            catch( std::bad_cast & e )
-            {
-                 Logger.Debug << "Adapter is not an IBufferAdapter, so not " 
-                      "registering state or command info." << std::endl;
-            }
-        }
-    }
-    
     // signal construction complete
     adapter->Start();
-}
-
-///////////////////////////////////////////////////////////////////////////////
-/// Stops the i/o service and waits for its thread to complete.
-///
-/// @pre None.
-/// @post m_ios is stopped and the object is destroyed.
-///
-/// @limitations None.
-///////////////////////////////////////////////////////////////////////////////
-CAdapterFactory::~CAdapterFactory()
-{
-    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    
-    m_ios.stop();
-    Logger.Status << "Stopped the adapter i/o service." << std::endl;
-    
-    Logger.Notice << "Blocking until thread finishes execution." << std::endl;
-    m_thread.join();
-}
-
-///////////////////////////////////////////////////////////////////////////////
-/// Constructs an uninitialized factory.
-///
-/// @pre None.
-/// @post Registers the recognized device classes.
-/// @post Launches an i/o service on a separate thread.
-///
-/// @limitations None.
-///////////////////////////////////////////////////////////////////////////////
-CAdapterFactory::CAdapterFactory()
-{
-    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    
-    RegisterDevices();
-    m_thread = boost::thread(boost::bind(
-                                  &boost::asio::io_service::run, &m_ios));
-    Logger.Status << "Started the adapter i/o service." << std::endl;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -284,19 +228,102 @@ CAdapterFactory::CAdapterFactory()
 /// @limitations None.
 ///////////////////////////////////////////////////////////////////////////////
 void CAdapterFactory::RegisterDeviceClass(std::string key,
-                                          FactoryFunction function)
+        FactoryFunction function)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
     if( m_registry.count(key) > 0 )
     {
-        std::stringstream ss;
-        ss << "Device class " << key << " already registered." << std::endl;
-        throw std::runtime_error(ss.str());
+        throw std::runtime_error("Device type " + key + " already registered.");
     }
 
     m_registry.insert(std::make_pair(key, function));
     Logger.Info << "Registered the device class " << key << "." << std::endl;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+/// Initializes a buffer to contain a set of device signals.
+///
+/// @ErrorHandling Throws a std::runtime_error if the buffer is empty or the
+/// property tree has a bad specification format.
+/// @pre The property tree must contain a buffer specification.
+/// @post Associates a set of device signals with the passed buffer.
+/// @param buffer The buffer to initialize.
+/// @param p The property tree that contains the buffer data.
+///
+/// @limitations None.
+///////////////////////////////////////////////////////////////////////////////
+void CAdapterFactory::InitializeBuffer(IBufferAdapter::Pointer buffer,
+        const boost::property_tree::ptree & p)
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    
+    boost::property_tree::ptree subtree;
+    std::set<std::string> devices;
+    
+    std::string type, name, signal;
+    std::size_t index;
+    
+    if( !buffer )
+    {
+        throw std::runtime_error("Received an empty IBufferAdapter::Pointer.");
+    }
+    
+    // i = 0 parses state information
+    // i = 1 parses command information
+    for( int i = 0; i < 2; i++ )
+    {
+        Logger.Debug << "Reading the " << (i == 0 ? "state" : "command")
+                << " property tree specification." << std::endl;
+        
+        try
+        {
+            subtree = (i == 0 ? p.get_child("state") : p.get_child("command"));
+        }
+        catch( std::exception & e )
+        {
+            throw std::runtime_error("Failed to create adapter: "
+                    + std::string(e.what()));
+        }
+        
+        BOOST_FOREACH(boost::property_tree::ptree::value_type & child, subtree)
+        {
+            try
+            {
+                type    = child.second.get<std::string>("type");
+                name    = child.second.get<std::string>("device");
+                signal  = child.second.get<std::string>("signal");
+                index   = child.second.get<std::size_t>("<xmlattr>.index");
+            }
+            catch( std::exception & e )
+            {
+                throw std::runtime_error("Failed to create adapter: "
+                        + std::string(e.what()));
+            }
+            
+            Logger.Debug << "At index " << index << " for the device signal ("
+                    << name << "," << signal << ")." << std::endl;
+            
+            // create the device when first seen
+            if( devices.count(name) == 0 )
+            {
+                CreateDevice(name, type, buffer);
+                devices.insert(name);
+            }
+
+            if( i == 0 )
+            {
+                Logger.Debug << "Registering state info." << std::endl;
+                buffer->RegisterStateInfo(name, signal, index);
+            }
+            else
+            {
+                Logger.Debug << "Registering command info." << std::endl;
+                buffer->RegisterCommandInfo(name, signal, index);
+            }
+        }
+    }
+    Logger.Debug << "Initialized the device buffer." << std::endl;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -313,14 +340,13 @@ void CAdapterFactory::RegisterDeviceClass(std::string key,
 /// @limitations The device types must be registered prior to this call.
 ///////////////////////////////////////////////////////////////////////////////
 void CAdapterFactory::CreateDevice(std::string name, std::string type,
-                                   IAdapter::Pointer adapter)
+        IAdapter::Pointer adapter)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     
     if( m_registry.count(type) == 0 )
     {
-        throw std::runtime_error("Device class " + type 
-                                 + " is not registered.");
+        throw std::runtime_error("Device type " + type + " is not registered.");
     }
     
     (this->*m_registry[type])(name, adapter);

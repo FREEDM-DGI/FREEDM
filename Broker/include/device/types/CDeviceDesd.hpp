@@ -55,10 +55,10 @@ public:
     virtual ~CDeviceDesd();
 
     /// Determine the energy storage of the DESD.
-    SettingValue GetStorage() const;
+    SignalValue GetStorage() const;
 
     /// Increases the storage by the specified amount.
-    void StepStorage(const SettingValue step = 1);
+    void StepStorage(const SignalValue step = 1);
 private:
     /// redefine base accessor as private
     using IDevice::Get;

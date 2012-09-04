@@ -135,7 +135,7 @@ void IBufferAdapter::Start()
 ///
 ////////////////////////////////////////////////////////////////////////////
 void IBufferAdapter::Set(const std::string device, const std::string key,
-                         const SettingValue value)
+                         const SignalValue value)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
  
@@ -182,7 +182,7 @@ void IBufferAdapter::Set(const std::string device, const std::string key,
 ///     floats. The accuracy is not as high as a real doubles.
 ///
 ////////////////////////////////////////////////////////////////////////////
-SettingValue IBufferAdapter::Get(const std::string device, 
+SignalValue IBufferAdapter::Get(const std::string device, 
                                  const std::string key) const
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;

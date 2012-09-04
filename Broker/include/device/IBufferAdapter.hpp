@@ -55,10 +55,10 @@ public:
 
     /// updates txBuffer
     void Set(const std::string device, const std::string key,
-             const SettingValue value);
+             const SignalValue value);
 
     /// retrieve data from rxBuffer
-    SettingValue Get(const std::string device, const std::string key) const;
+    SignalValue Get(const std::string device, const std::string key) const;
     
     /// Registers a new device signal with the physical adapter.
     void RegisterStateInfo(const std::string device, const std::string signal,
@@ -82,10 +82,10 @@ protected:
     std::map<const DeviceSignal, const std::size_t> m_commandInfo;
 
     /// The "state table" buffer received from the external host
-    std::vector<SettingValue> m_rxBuffer;
+    std::vector<SignalValue> m_rxBuffer;
 
     /// The "command table" buffer sent to the external host
-    std::vector<SettingValue> m_txBuffer;
+    std::vector<SignalValue> m_txBuffer;
 
     /// Provides synchronization for m_rxBuffer
     mutable boost::shared_mutex m_rxMutex;

@@ -55,10 +55,10 @@ public:
     virtual ~CDeviceLoad();
 
     /// Determine the energy drain of this load.
-    SettingValue GetLoad() const;
+    SignalValue GetLoad() const;
 
     /// Increases the energy drain by the specified amount.
-    void StepLoad(const SettingValue step = 1);
+    void StepLoad(const SignalValue step = 1);
 private:
     /// redefine base accessor as private
     using IDevice::Get;

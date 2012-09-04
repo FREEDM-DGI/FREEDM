@@ -6,7 +6,7 @@
 ///
 /// @project        FREEDM DGI
 ///
-/// @description    Template used to generate code at compile time
+/// @description    Template used to generate code at compile time.
 ///
 /// These source code files were created at Missouri University of Science and
 /// Technology, and are intended for use in teaching or research. They may be

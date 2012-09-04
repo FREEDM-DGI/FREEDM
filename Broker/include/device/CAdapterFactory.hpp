@@ -27,19 +27,19 @@
 #ifndef C_ADAPTER_FACTORY_HPP
 #define C_ADAPTER_FACTORY_HPP
 
-#include "CDeviceManager.hpp"
 #include "CLogger.hpp"
 #include "IAdapter.hpp"
+#include "IBufferAdapter.hpp"
+#include "CDeviceManager.hpp"
 
 #include <map>
 #include <string>
-#include <sstream>
 #include <stdexcept>
 
-#include <boost/asio/io_service.hpp>
-#include <boost/noncopyable.hpp>
-#include <boost/property_tree/ptree.hpp>
 #include <boost/thread.hpp>
+#include <boost/noncopyable.hpp>
+#include <boost/asio/io_service.hpp>
+#include <boost/property_tree/ptree_fwd.hpp>
 
 namespace freedm {
 namespace broker {
@@ -74,16 +74,13 @@ public:
     
     /// Creates a new adapter and its associated devices.
     void CreateAdapter(const boost::property_tree::ptree & p);
-
-    /// @todo should this be public?
-    void RegisterPhysicalDevices();
     
     /// Destructs the factory.
     ~CAdapterFactory();
 private:
     /// Type of the functions used to create new devices.
-    typedef void
-    (CAdapterFactory::*FactoryFunction)(std::string, IAdapter::Pointer adapter);
+    typedef void (CAdapterFactory::*FactoryFunction)
+            (std::string, IAdapter::Pointer adapter);
      
     /// Constructs the factory.
     CAdapterFactory();
@@ -91,16 +88,16 @@ private:
     /// Registers compiled device classes with the factory.
     void RegisterDevices();
     
-    /// Registers a device class with the factory.
+    /// Registers a single device class with the factory.
     void RegisterDeviceClass(std::string key, FactoryFunction function);
     
-    /// Constructs an adapter without any devices.
-    IAdapter::Pointer CreateAdapter(std::string name, std::string type,
-                                    const boost::property_tree::ptree & p);
+    /// Initializes adapters that are implemented as buffers.
+    void InitializeBuffer(IBufferAdapter::Pointer buffer,
+            const boost::property_tree::ptree & p);
     
     /// Creates a device and registers it with the system.
     void CreateDevice(std::string name, std::string type, 
-                      IAdapter::Pointer adapter);
+            IAdapter::Pointer adapter);
     
     /// Creates a device and registers it with the system.
     template <class DeviceType>

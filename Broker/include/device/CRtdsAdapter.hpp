@@ -31,10 +31,10 @@
 
 #include <string>
 
-#include <boost/asio.hpp>
-#include <boost/property_tree/ptree.hpp>
 #include <boost/shared_ptr.hpp>
-#include <boost/thread/mutex.hpp>
+#include <boost/asio/io_service.hpp>
+#include <boost/asio/deadline_timer.hpp>
+#include <boost/property_tree/ptree_fwd.hpp>
 
 namespace freedm {
 namespace broker {
@@ -59,31 +59,30 @@ class CRtdsAdapter
      , public IBufferAdapter
 {
 public:
-    /// pointer to an CRtdsAdapter object
+    /// Pointer to an CRtdsAdapter object.
     typedef boost::shared_ptr<CRtdsAdapter> Pointer;
 
-    /// create a CRtdsAdapter object and returns a pointer to it
+    /// Create a CRtdsAdapter object and returns a pointer to it.
     static IAdapter::Pointer Create(boost::asio::io_service & service,
-                                    const boost::property_tree::ptree & ptree);
+            const boost::property_tree::ptree & ptree);
 
-    /// destructor
+    /// Destructor.
     ~CRtdsAdapter();
-
 private:
-    /// microseconds, see documentation for Run()
+    /// Microseconds between updates, see documentation for Run().
     static const unsigned int TIMESTEP = 1;
 
-    /// constructor
+    /// Constructor.
     CRtdsAdapter(boost::asio::io_service & service,
-                 const boost::property_tree::ptree & ptree);
+            const boost::property_tree::ptree & ptree);
 
-    /// continuous loop for sending and receiving to/from RTDS
+    /// Continuous loop for sending and receiving to/from RTDS.
     void Run();
 
-    /// shut down communication to FPGA
+    /// Shut down communication to FPGA.
     void Quit();
 
-    /// timer object to set communication cycle pace
+    /// Timer object to set communication cycle pace.
     boost::asio::deadline_timer m_GlobalTimer;
 };
 

@@ -51,7 +51,7 @@ CLocalLogger AdapterFactoryLogger(__FILE__);
 }
 
 /// Converts a string identifier into a templated function call.
-#define REGISTER_DEVICE_CLASS(SUFFIX) CAdapterFactory::Instance().\
+#define REGISTER_DEVICE_CLASS(SUFFIX) \
 RegisterDeviceClass(#SUFFIX, &CAdapterFactory::CreateDevice<CDevice##SUFFIX>)
 
 /// Handles the creation of adapters and their associated devices.

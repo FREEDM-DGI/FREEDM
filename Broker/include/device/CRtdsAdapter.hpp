@@ -63,7 +63,10 @@ public:
     /// Create a CRtdsAdapter object and returns a pointer to it.
     static IAdapter::Pointer Create(boost::asio::io_service & service,
             const boost::property_tree::ptree & ptree);
-
+    
+    /// Starts the adapter.
+    void Start();
+    
     /// Destructor.
     ~CRtdsAdapter();
 private:

@@ -6,7 +6,7 @@
 ///
 /// @project        FREEDM DGI
 ///
-/// @description    Interface for a physical device adapter.
+/// @description    Adapter that uses buffers for sending and receiving data.
 ///
 /// @functions      IBufferAdapter::Start
 ///                 IBufferAdapter::Set
@@ -29,17 +29,15 @@
 ///////////////////////////////////////////////////////////////////////////////
 
 #include "IBufferAdapter.hpp"
-
 #include "CLogger.hpp"
 
 #include <set>
-#include <sstream>
 #include <stdexcept>
 
 #include <boost/foreach.hpp>
 #include <boost/lexical_cast.hpp>
-#include <boost/range/adaptor/map.hpp>
 #include <boost/thread/locks.hpp>
+#include <boost/range/adaptor/map.hpp>
 
 namespace freedm {
 namespace broker {
@@ -51,26 +49,24 @@ CLocalLogger Logger(__FILE__);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// Starts the adapter. Performs error-checking on the device specification,
-/// then call Run.
+/// Starts the adapter.  Performs error-checking on the device specification.
 ///
-/// @pre  the adapter has not yet been started
-/// @post the adapter has now been started
+/// @pre  The adapter has not yet been started.
+/// @post The adapter has now been started.
 ///
-/// @ErrorHandling throws std::runtime_error if the entry indices of the
-///                adapter's devices are malformed
+/// @ErrorHandling Throws std::runtime_error if the entry indices of the
+///                adapter's devices are malformed.
 ///
 /// @limitations All devices must be added to the adapter before Start is
 ///              invoked.
 ///////////////////////////////////////////////////////////////////////////////
 void IBufferAdapter::Start()
 {
-    // Perform error checking on the adapter specification, then call Run
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    
     std::set<std::size_t> stateIndices;
     std::set<std::size_t> commandIndices;
-
-    // There's probably a nicer way to construct these sets.
-    // I do not know what it is.
+    
     BOOST_FOREACH( std::size_t i, m_stateInfo | boost::adaptors::map_values )
     {
         stateIndices.insert(i);
@@ -80,127 +76,105 @@ void IBufferAdapter::Start()
     {
         commandIndices.insert(i);
     }
-
-    // this is a bit of a weird proof - but it works
-    // we know there is no value < 1 in the set, because it's unsigned and the
-    // insert code prevents insertions of 0.
-    // because sets are sorted in increasing order, we also know the last
-    // element of the set is the largest element.
-    // therefore, if the last element is equal to the size, since sets contain
-    // no duplicate values, that must mean every integer from 1 to size is
-    // stored in the set.
-    // otherwise, the numbers must be non-consecutive.
-    // the short of it: it works.
+    
+    // Tom Roth <tprfh7@mst.edu>:
+    // The following code will ensure the the sets contain consecutive integers
+    // with the values [1,2,...,size].
+    // Assumption: the set does not contain 0 (enforced by RegisterStateInfo).
+    // 1. A set is stored in ascending order, so the last value is the largest.
+    // 2. The set stores unsigned integers, so all values must be >= 0.
+    // 3. A set cannot contain duplicate values, so no value is repeated twice.
+    //
+    // Lemma 1:
+    // If the last element of the set is equal to the size of the set, which is
+    // the english translation of the if statements below, then the set must
+    // contain values <= size by (1).
+    //
+    // Lemma 2:
+    // If the assumption holds, then the set cannot store the value zero.  Then
+    // by (2) the set must contain values > 0.
+    //
+    // Proof:
+    // By Lemma 1 and Lemma 2, the set must store values in the range [1,size].
+    // The cardinality of this range |[1,size]| = size.  By definition, the set
+    // must contain size number of elements.  Because of (3), the set must not
+    // contain the same value twice.  Therefore, the relationship is both onto
+    // and 1-to-1.  This guarantees the set contains all of the values in the
+    // range [1,size] are stored exactly once.  Q.E.D.
     if( *(stateIndices.rbegin()) != stateIndices.size() )
     {
-        std::stringstream ss;
-        ss << "The state indices are not consecutive integers." << std::endl;
-        throw std::runtime_error(ss.str());
+        throw std::runtime_error("The state indices are not consecutive.");
     }
     
     if( *(commandIndices.rbegin()) != commandIndices.size() )
     {
-        std::stringstream ss;
-        ss << "The command indices are not consecutive integers." << std::endl;
-        throw std::runtime_error(ss.str());
+        throw std::runtime_error("The command indices are not consecutive.");
     }
-
-    Run();
 }
 
 ////////////////////////////////////////////////////////////////////////////
-/// Set
-///
-/// @description
-///     Search the cmdTable and then update the specified value.
+/// Update the specified value in the txBuffer.
 ///
 /// @Error_Handling
-///     Throws an exception if the device/key pair does not exist in the table.
+///     Throws std::exception if the value cannot be found.
 ///
-/// @pre
-///     none
+/// @pre The passed signal must be recognized by the adapter.
+/// @post Updates the value of the signal in m_txBuffer.
 ///
-/// @param
-///     device is the unique identifier of a physical device (such as SST or 
-///     Load)
+/// @param device The unique identifier of a physical device.
+/// @param signal A power electronic reading related to the device.
+/// @param value The desired new value for the device signal.
 ///
-///     key is the name of a feature of the device that can be maniputed
-///     (such as onOffSwitch, chargeLevel, etc.)
-///
-///     value is the desired new setting
-///
-/// @limitations
-///     RTDS uses floats. So value is type-cast into float from double.
-///     There could be minor loss of accuracy.
-///
+/// @limitations None.
 ////////////////////////////////////////////////////////////////////////////
-void IBufferAdapter::Set(const std::string device, const std::string key,
-                         const SignalValue value)
+void IBufferAdapter::Set(const std::string device, const std::string signal,
+        const SignalValue value)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
- 
+    
+    const DeviceSignal devsig(device, signal);
     boost::unique_lock<boost::shared_mutex> writeLock(m_txMutex);
-
-    try
+    
+    if( m_commandInfo.count(devsig) != 1 )
     {
-        m_txBuffer[m_commandInfo[DeviceSignal(device, key)]] = value;
+        throw std::runtime_error("Attempted to set a device signal (" + device
+                + "," + signal + ") that does not exist.");
     }
-    catch( std::runtime_error & e )
-    {
-        std::stringstream ss;
-        ss << "RTDS attempted to set device/key pair " << device << "/"
-           << key << ", but this pair does not exist.";
-        throw std::runtime_error(ss.str());
-    }
+    
+    m_txBuffer.at(m_commandInfo[devsig]) = value;
 }
 
 ////////////////////////////////////////////////////////////////////////////
-/// Get
-///
-/// @description
-///     Search the stateTable and read from it.
+/// Read the specified value from the rxBuffer.
 ///
 /// @Error_Handling
-///     Throws an exception if the device/key pair does not exist in the table.
+///     Throws std::exception if the value cannot be found.
 ///
-/// @pre
-///     The socket connection has been established. Otherwise the numbers
-///     read is junk.
+/// @pre The passed signal must be recognized by the adapter.
+/// @post Returns the value of the signal stored in m_rxBuffer.
+
+/// @param device The unique identifier of a physical device.
+/// @param signal A power electronic reading related to the device.
 ///
-/// @param
-///     device is the unique identifier of a physical device (such as SST, 
-///     Load)
+/// @return SignalValue from the rxBuffer.
 ///
-///     key is a power electronic reading related to the device (such
-///     as powerLevel, stateOfCharge, etc.)
-///
-/// @return
-///     value from table is retrieved
-///
-/// @limitations
-///     RTDS uses floats.  So the return value is type-cast into double from 
-///     floats. The accuracy is not as high as a real doubles.
-///
+/// @limitations None.
 ////////////////////////////////////////////////////////////////////////////
 SignalValue IBufferAdapter::Get(const std::string device, 
-                                 const std::string key) const
+        const std::string signal) const
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
-    boost::shared_lock<boost::shared_mutex> readLock(m_txMutex);
-
-    try
+    const DeviceSignal devsig(device, signal);
+    boost::shared_lock<boost::shared_mutex> readLock(m_rxMutex);
+    
+    if( m_stateInfo.count(devsig) != 1 )
     {
-        std::size_t idx = m_commandInfo.find(DeviceSignal(device, key))->second;
-        return m_rxBuffer[idx];
+        throw std::runtime_error("Attempted to get a device signal (" + device
+                + "," + signal + ") that does not exist.");
     }
-    catch( std::runtime_error & e )
-    {
-        std::stringstream ss;
-        ss << "RTDS attempted to get device/key pair " << device << "/"
-           << key << ", but this pair does not exist.";
-        throw std::runtime_error(ss.str());
-    }
+    
+    return m_rxBuffer.at(m_stateInfo.find(devsig)->second);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -219,32 +193,25 @@ SignalValue IBufferAdapter::Get(const std::string device,
 /// @limitations None.
 ///////////////////////////////////////////////////////////////////////////////
 void IBufferAdapter::RegisterStateInfo(const std::string device,
-                                       const std::string signal,
-                                       const std::size_t index )
+        const std::string signal, const std::size_t index )
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     DeviceSignal devsig(device, signal);
     
     if( device.empty() || signal.empty() )
     {
-        std::stringstream ss;
-        ss << "Received an invalid device signal." << std::endl;
-        throw std::runtime_error(ss.str());
+        throw std::runtime_error("Received an invalid device signal.");
     }
     
     if( m_stateInfo.count(devsig) > 0 )
     {
-        std::stringstream ss;
-        ss << "The device signal (" << device << "," << signal << ") is "
-           << "already registered as state information." << std::endl;
-        throw std::runtime_error(ss.str());
+        throw std::runtime_error("The device signal (" + device + "," + signal
+                + ") is already registered as state information.");
     }
     
     if( index == 0 )
     {
-        std::stringstream ss;
-        ss << "The state index must be greater than 0." << std::endl;
-        throw std::runtime_error(ss.str());
+        throw std::runtime_error("The state index must be greater than 0.");
     }
     
     BOOST_FOREACH( std::size_t i, m_stateInfo | boost::adaptors::map_values )
@@ -252,13 +219,13 @@ void IBufferAdapter::RegisterStateInfo(const std::string device,
         if( index == i )
         {
             throw std::runtime_error("Detected duplicate state index " 
-                                     + boost::lexical_cast<std::string>(index));
+                    + boost::lexical_cast<std::string>(index));
         }
     }
     
     m_stateInfo.insert(std::pair<DeviceSignal, std::size_t>(devsig, index));
     Logger.Info << "Registered the device signal (" << device << "," << signal
-                << ") as adapter state information." << std::endl;
+            << ") as adapter state information." << std::endl;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -277,32 +244,25 @@ void IBufferAdapter::RegisterStateInfo(const std::string device,
 /// @limitations None.
 ///////////////////////////////////////////////////////////////////////////////
 void IBufferAdapter::RegisterCommandInfo(const std::string device,
-                                         const std::string signal,
-                                         const std::size_t index )
+        const std::string signal, const std::size_t index )
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     DeviceSignal devsig(device, signal);
     
     if( device.empty() || signal.empty() )
     {
-        std::stringstream ss;
-        ss << "Received an invalid device signal." << std::endl;
-        throw std::runtime_error(ss.str());
+        throw std::runtime_error("Received an invalid device signal.");
     }
     
     if( m_commandInfo.count(devsig) > 0 )
     {
-        std::stringstream ss;
-        ss << "The device signal (" << device << "," << signal << ") is "
-           << "already registered as command information." << std::endl;
-        throw std::runtime_error(ss.str());
+        throw std::runtime_error("The device signal (" +device + "," + signal
+                + ") is already registered as command information.");
     }
     
     if( index == 0 )
     {
-        std::stringstream ss;
-        ss << "The command index must be greater than 0." << std::endl;
-        throw std::runtime_error(ss.str());
+        throw std::runtime_error("The command index must be greater than 0.");
     }
 
     BOOST_FOREACH( std::size_t i, m_commandInfo | boost::adaptors::map_values )
@@ -310,13 +270,13 @@ void IBufferAdapter::RegisterCommandInfo(const std::string device,
         if( index == i )
         {
             throw std::runtime_error("Detected duplicate command index " 
-                                     + boost::lexical_cast<std::string>(index));
+                    + boost::lexical_cast<std::string>(index));
         }
     }
 
     m_commandInfo.insert(std::pair<DeviceSignal, std::size_t>(devsig, index));
     Logger.Info << "Registered the device (" << device << "," << signal
-                << ") as adapter command information." << std::endl;
+            << ") as adapter command information." << std::endl;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

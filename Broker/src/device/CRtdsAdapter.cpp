@@ -12,6 +12,7 @@
 ///
 /// @functions    EndianSwapIfNeeded
 ///               CRtdsAdapter::Create
+///               CRtdsAdapter::Start
 ///               CRtdsAdapter::~CRtdsAdapter
 ///               CRtdsAdapter::Run
 ///               CRtdsAdapter::Start
@@ -135,6 +136,22 @@ CRtdsAdapter::CRtdsAdapter(boost::asio::io_service & service,
     , m_GlobalTimer(service)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/// Starts sending and receiving data with the adapter.
+///
+/// @pre The adapter has not yet been started.
+/// @post CRtdsAdapter::Run is called to start the adapter.
+///
+/// @limitations All devices must be added to the adapter before this call.
+////////////////////////////////////////////////////////////////////////////////
+void CRtdsAdapter::Start()
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    
+    IBufferAdapter::Start();
+    Run();
 }
 
 ////////////////////////////////////////////////////////////////////////////////

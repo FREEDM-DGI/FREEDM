@@ -27,8 +27,8 @@
 #include <string>
 #include <utility>
 
-#include <boost/noncopyable.hpp>
 #include <boost/shared_ptr.hpp>
+#include <boost/noncopyable.hpp>
 
 namespace freedm {
 namespace broker {
@@ -59,11 +59,11 @@ public:
     
     /// Retrieves a value from a device.
     virtual SignalValue Get(const std::string device,
-                             const std::string signal) const = 0;
+            const std::string signal) const = 0;
 
     /// Sets a value on a device.
     virtual void Set(const std::string device, const std::string signal,
-                     const SignalValue value) = 0;
+            const SignalValue value) = 0;
 
     /// Virtual destructor for derived classes.
     virtual ~IAdapter() { };

@@ -6,8 +6,7 @@
 ///
 /// @project        FREEDM DGI
 ///
-/// @description    Interface for an adapter that uses two buffers for sending
-//                  and receiving data.
+/// @description    Adapter that uses buffers for sending and receiving data.
 ///
 /// These source code files were created at Missouri University of Science and
 /// Technology, and are intended for use in teaching or research. They may be
@@ -31,7 +30,6 @@
 #include <string>
 #include <vector>
 
-#include <boost/noncopyable.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/thread/shared_mutex.hpp>
 
@@ -53,27 +51,26 @@ public:
     /// Pointer to a physical adapter.
     typedef boost::shared_ptr<IBufferAdapter> Pointer;
 
-    /// updates txBuffer
-    void Set(const std::string device, const std::string key,
-             const SignalValue value);
+    /// Set data in txBuffer.
+    void Set(const std::string device, const std::string signal,
+            const SignalValue value);
 
-    /// retrieve data from rxBuffer
-    SignalValue Get(const std::string device, const std::string key) const;
+    /// Retrieve data from rxBuffer.
+    SignalValue Get(const std::string device, const std::string signal) const;
     
     /// Registers a new device signal with the physical adapter.
     void RegisterStateInfo(const std::string device, const std::string signal,
-                           const std::size_t index);
+            const std::size_t index);
     
     /// Registers a new device signal with the physical adapter.
     void RegisterCommandInfo(const std::string device, const std::string signal,
-                             const std::size_t index);
+            const std::size_t index);
 
     /// Starts the adapter
     void Start();
     
     /// Virtual destructor for derived classes.
     virtual ~IBufferAdapter();
-    
 protected:    
     /// Translates a device signal into its state index.
     std::map<const DeviceSignal, const std::size_t> m_stateInfo;
@@ -81,21 +78,17 @@ protected:
     /// Translates a device signal into its command index.
     std::map<const DeviceSignal, const std::size_t> m_commandInfo;
 
-    /// The "state table" buffer received from the external host
+    /// The "state table" buffer received from the external host.
     std::vector<SignalValue> m_rxBuffer;
 
-    /// The "command table" buffer sent to the external host
+    /// The "command table" buffer sent to the external host.
     std::vector<SignalValue> m_txBuffer;
 
-    /// Provides synchronization for m_rxBuffer
+    /// Provides synchronization for m_rxBuffer.
     mutable boost::shared_mutex m_rxMutex;
 
-    /// Provides synchronization for m_txBuffer
+    /// Provides synchronization for m_txBuffer.
     mutable boost::shared_mutex m_txMutex;
-
-private:
-    /// Called by Start to run the adapter
-    virtual void Run() = 0;
 };
 
 } // namespace device

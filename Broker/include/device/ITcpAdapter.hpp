@@ -29,8 +29,8 @@
 #include <string>
 
 #include <boost/asio.hpp>
-#include <boost/property_tree/ptree.hpp>
 #include <boost/shared_ptr.hpp>
+#include <boost/property_tree/ptree_fwd.hpp>
 
 namespace freedm {
 namespace broker {
@@ -54,11 +54,10 @@ public:
 
     /// Virtual destructor for derived classes.
     virtual ~ITcpAdapter();
-
 protected:
     /// Constructor to initialize the socket.
     ITcpAdapter(boost::asio::io_service & service,
-                const boost::property_tree::ptree & ptree);
+            const boost::property_tree::ptree & ptree);
 
     /// Creates a socket connection to the given hostname and port number.
     void Connect();

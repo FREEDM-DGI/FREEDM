@@ -8,6 +8,10 @@
 ///
 /// @description    Called at compile time to generate device registration code.
 ///
+/// @functions
+///     GenerateFile
+///     main
+///
 /// These source code files were created at Missouri University of Science and
 /// Technology, and are intended for use in teaching or research. They may be
 /// freely copied, modified, and redistributed as long as modified versions are
@@ -40,6 +44,7 @@ using namespace boost::xpressive;
 
 ////////////////////////////////////////////////////////////////////////////////
 /// Generates code from a template and a list of token replacements.
+///
 /// @ErrorHandling Terminates if the output file cannot be generated due to i/o
 /// errors or an incorrect format for the template file.
 /// @pre The input file must contain at least as many ##BREAK statements as the
@@ -49,6 +54,7 @@ using namespace boost::xpressive;
 /// @param inputFilename The name and path of the template input file.
 /// @param outputFilename The name and path for the generated code output.
 /// @param replacements The vector of strings to replace the ##BREAK tokens.
+///
 /// @limitations Each ##BREAK statement in the template file must be on its own
 /// line.  Whitespace before or after the ##BREAK statement is ignored.  If the
 /// template has more ##BREAK statements than the number of replacements, there
@@ -70,7 +76,7 @@ void GenerateFile(std::string inputFilename, std::string outputFilename,
         std::exit(1);
     }
     std::string content( (std::istreambuf_iterator<char>(fin)),
-                         (std::istreambuf_iterator<char>()) );
+            (std::istreambuf_iterator<char>()) );
     fin.close();
     
     std::ofstream fout(outputFilename.c_str());
@@ -91,7 +97,7 @@ void GenerateFile(std::string inputFilename, std::string outputFilename,
         if( it == end )
         {
             std::cerr << inputFilename << " does not have the expected number "
-                      << "of replacement tokens (" << n << ")" << std::endl;
+                    << "of replacement tokens (" << n << ")" << std::endl;
             std::exit(1);
         }
         fout << *it << replacements[i];
@@ -106,9 +112,7 @@ void GenerateFile(std::string inputFilename, std::string outputFilename,
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-/// @function main()
-///
-/// @description Entry point and sole function of the DeviceTypesGenerator
+/// Entry point and sole function of the DeviceTypesGenerator
 ///  program. Searches the device types folder for all instantiable device
 ///  classes, then erases and recreates PhysicalDeviceTypes.hpp and
 ///  PhysicalDeviceTypes.cpp accordingly. In particular, includes all detected

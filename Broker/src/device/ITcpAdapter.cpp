@@ -29,8 +29,9 @@
 #include "ITcpAdapter.hpp"
 #include "CLogger.hpp"
 
-#include <sstream>
 #include <stdexcept>
+
+#include <boost/property_tree/ptree.hpp>
 
 namespace freedm {
 namespace broker {
@@ -71,14 +72,13 @@ void ITcpAdapter::Connect()
 
     if( error )
     {
-        std::stringstream ss;
-        ss << "Failed to connect to " << m_host << ":" << m_port << " because: "
-           << boost::system::system_error(error).what() << std::endl;
-        throw std::runtime_error(ss.str());
+        throw std::runtime_error("Failed to connect to " + m_host + ":"
+                + m_port + " because: "
+                + std::string(boost::system::system_error(error).what()));
     }
     
     Logger.Status << "Opened a TCP socket connection to host " << m_host
-                  << ":" << m_port << "." << std::endl;
+            << ":" << m_port << "." << std::endl;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -106,7 +106,7 @@ ITcpAdapter::~ITcpAdapter()
 /// @limitations None.
 ////////////////////////////////////////////////////////////////////////////////
 ITcpAdapter::ITcpAdapter(boost::asio::io_service & service,
-                         const boost::property_tree::ptree & ptree)
+        const boost::property_tree::ptree & ptree)
      : m_socket(service)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
@@ -119,7 +119,7 @@ ITcpAdapter::ITcpAdapter(boost::asio::io_service & service,
     catch( std::exception & e )
     {
         throw std::runtime_error("Failed to create adapter: "
-                                 + std::string(e.what()));
+                + std::string(e.what()));
     }
 }
 

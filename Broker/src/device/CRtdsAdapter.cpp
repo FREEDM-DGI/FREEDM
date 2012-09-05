@@ -8,8 +8,7 @@
 ///
 /// @project      FREEDM DGI
 ///
-/// @description  DGI side implementation of the communication protocol to RTDS
-///               simulation
+/// @description  DGI implementation of the FPGA communication protocol.
 ///
 /// @functions    EndianSwapIfNeeded
 ///               CRtdsAdapter::Create
@@ -37,10 +36,15 @@
 
 #include <sys/param.h>
 
+#include <vector>
+#include <cstring>
+#include <stdexcept>
+#include <algorithm>
+
 #include <boost/asio.hpp>
 #include <boost/thread/mutex.hpp>
+#include <boost/thread/locks.hpp>
 #include <boost/static_assert.hpp>
-#include <boost/thread/shared_mutex.hpp>
 #include <boost/property_tree/ptree.hpp>
 
 namespace freedm {
@@ -57,38 +61,30 @@ CLocalLogger Logger(__FILE__);
 
 ///////////////////////////////////////////////////////////////////////////////
 /// Converts the SignalValues in the passed vector from big-endian to
-/// little-endian, or vice-versa, iff the DGI is running on a little-endian
+/// little-endian, or vice-versa, if the DGI is running on a little-endian
 /// system.
 ///
-/// @pre none
-/// @post the elements of data are converted in endianness if the DGI is
-///  running on a little-endian system. Otherwise, nothing happens.
-/// @param v the vector of SignalValues to be endian-swapped
+/// @pre None.
+/// @post The elements of data are converted in endianness if the DGI is
+///  running on a little-endian system.  Otherwise, nothing happens.
+/// @param v The vector of SignalValues to be endian-swapped.
+///
+/// @limitations Assumes the existence of UNIX byte order macros.
 ///////////////////////////////////////////////////////////////////////////////
-inline void EndianSwapIfNeeded(std::vector<SignalValue> v)
+inline void EndianSwapIfNeeded(std::vector<SignalValue> & v)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    
 // check endianess at compile time.  Middle-Endian not allowed
 // The parameters __BYTE_ORDER, __LITTLE_ENDIAN, __BIG_ENDIAN should
 // automatically be defined and determined in sys/param.h, which exists
 // in most Unix systems.
 #if __BYTE_ORDER == __LITTLE_ENDIAN
-    for( size_t i = 0; i < v.size(); i += sizeof(SignalValue) )
-    {
-        SignalValue* tmp = new SignalValue[sizeof(SignalValue)];
-
-        for( unsigned int j = 0; j < sizeof(SignalValue); j++ )
-        {
-            tmp[j] = v[sizeof(SignalValue) - 1 - j];
-        }
-
-        for( unsigned int j = 0; j < sizeof(SignalValue); j++ )
-        {
-            v[j] = tmp[j];
-        }
-
-        delete [] tmp;
-    }
+    std::vector<char> temp(v.size() * sizeof(SignalValue));
+    
+    memcpy(&temp[0], &v[0], v.size() * sizeof(SignalValue));
+    std::reverse(temp.begin(), temp.end());
+    memcpy(&v[0], &temp[0], v.size() * sizeof(SignalValue));
 #elif __BYTE_ORDER == __BIG_ENDIAN
     Logger.Debug << "Endian swap skipped: host is big-endian." << std::endl;
 #else
@@ -96,27 +92,22 @@ inline void EndianSwapIfNeeded(std::vector<SignalValue> v)
 #endif
 }
 
-} //unnamed namespace
+} // unnamed namespace
 
 ///////////////////////////////////////////////////////////////////////////////
-/// CRtdsAdapter::Create
-///
-/// @description Creates a RTDS client on the given io_service. This is the 
-///              connection point with FPGA.
+/// Creates an RTDS client on the given io_service.
 ///
 /// @Shared_Memory Uses the passed io_service
 ///
-/// @pre service has not been connected and the ptree conforms to the documented
-///      requirements (see FREEDM Wiki)
-/// @post CRtdsAdapter object is returned for use
+/// @pre None.
+/// @post CRtdsAdapter object is returned for use.
 ///
-/// @param service the io_service to be used to communicate with the FPGA
-/// @param ptree the XML property tree specifying this adapter's state and
-///              command tables
+/// @param service The io_service to be used to communicate with the FPGA.
+/// @param ptree The property tree specifying this adapter's device signals.
 ///
-/// @return shared pointer to the new CRtdsAdapter object
+/// @return Shared pointer to the new CRtdsAdapter object.
 ///
-/// @limitations client must call Connect before the CRtdsAdapter can be used
+/// @limitations Client must call Connect before the CRtdsAdapter can be used.
 ///////////////////////////////////////////////////////////////////////////////
 IAdapter::Pointer CRtdsAdapter::Create(boost::asio::io_service & service,
         const boost::property_tree::ptree & ptree)
@@ -126,84 +117,74 @@ IAdapter::Pointer CRtdsAdapter::Create(boost::asio::io_service & service,
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-/// CRtdsAdapter::CRtdsAdapter
+/// Constructs an RTDS client.
 ///
-/// @description Constructs a RTDS client
+/// @Shared_Memory Uses the passed io_service.
 ///
-/// @Shared_Memory Uses the passed io_service
+/// @pre None.
+/// @post CRtdsAdapter created.
 ///
-/// @pre service has not been connected and the ptree conforms to the documented
-///      requirements (see FREEDM Wiki)
-/// @post CRtdsAdapter created
+/// @param service The io_service to be used to communicate with the FPGA.
+/// @param ptree The property tree specifying this adapter's device signals.
 ///
-/// @param service the io_service to be used to communicate with the FPGA
-/// @param ptree the XML property tree specifying this adapter's state and
-///              command tables
-///
-/// @limitations client must call Connect before the CRtdsAdapter can be used
+/// @limitations Client must call Connect before the CRtdsAdapter can be used.
 ////////////////////////////////////////////////////////////////////////////////
 CRtdsAdapter::CRtdsAdapter(boost::asio::io_service & service,
-                           const boost::property_tree::ptree & ptree)
-  : ITcpAdapter(service, ptree), m_GlobalTimer(service)
+        const boost::property_tree::ptree & ptree)
+    : ITcpAdapter(service, ptree)
+    , m_GlobalTimer(service)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-/// CRtdsAdapter::Run
-///
-/// @description
-///     This is the main communication engine.
+/// This is the main communication engine.
 ///
 /// @I/O
 ///     At every timestep, a message is sent to the FPGA via TCP socket
 ///     connection, then a message is retrieved from FPGA via the same
-///     connection. On the FPGA side, it's the reverse order -- receive and then
-///     send. Both DGI and FPGA sides' receive functions will block until a
+///     connection.  On the FPGA side, it's the reverse order -- receive and
+///     then send.  Both DGI and FPGA receive functions will block until a
 ///     message arrives, creating a synchronous, lock-step communication between
 ///     DGI and the FPGA. We keep the timestep (a static member of CRtdsAdapter)
 ///     very small so that how frequently send and receive get executed is
 ///     dependent on how fast the FPGA runs.
 ///
 /// @Error_Handling
-///     Throws an exception if reading from or writing to the socket fails
+///     Throws std::runtime_error if reading from or writing to socket fails.
 ///
-/// @pre
-///     Connection with FPGA is established.
+/// @pre Connection with FPGA is established.
 ///
-/// @post
-///     All values in the cmdTable is written to a buffer and sent to FPGA.
-///     All values in the stateTable is rewritten with value received
-///     from FPGA.
+/// @post All values in the receive buffer are sent to the FPGA.  All values in
+/// the send buffer are updated with data from the FPGA.
 ///
-/// @limitations
-///     Synchronous commnunication
+/// @limitations This function uses synchronous communication.
 ////////////////////////////////////////////////////////////////////////////////
 void CRtdsAdapter::Run()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-
     
-
     // Always send data to FPGA first
     if( !m_txBuffer.empty() )
     {
         boost::unique_lock<boost::shared_mutex> writeLock(m_txMutex);
-        Logger.Debug << "Obtained txBuffer mutex" << std::endl;
+        Logger.Debug << "Obtained the txBuffer mutex." << std::endl;
+        
         EndianSwapIfNeeded(m_txBuffer);
         try
         {
-            boost::asio::write(m_socket,
-                    boost::asio::buffer(m_txBuffer, 
-                            m_txBuffer.size() * sizeof(SignalValue)));
+            Logger.Notice << "Blocking for a socket write call." << std::endl;
+            boost::asio::write(m_socket, boost::asio::buffer(m_txBuffer, 
+                    m_txBuffer.size() * sizeof(SignalValue)));
         }
-        catch (std::exception& e)
+        catch(std::exception & e)
         {
             throw std::runtime_error("Send to FPGA failed: "
-                                     + std::string(e.what()));
+                    + std::string(e.what()));
         }
         EndianSwapIfNeeded(m_txBuffer);
-        Logger.Debug << "Releasing txBuffer mutex" << std::endl;
+        
+        Logger.Debug << "Releasing the txBuffer mutex." << std::endl;
     }
 
     // Receive data from FPGA next
@@ -211,43 +192,37 @@ void CRtdsAdapter::Run()
     {
         // must be a unique_lock for endian swaps
         boost::unique_lock<boost::shared_mutex> writeLock(m_rxMutex);
-        Logger.Debug << "Obtained rxBuffer mutex" << std::endl;
+        Logger.Debug << "Obtained the rxBuffer mutex." << std::endl;
+        
         EndianSwapIfNeeded(m_rxBuffer);
         try
         {
-            boost::asio::read(m_socket,
-                    boost::asio::buffer(m_rxBuffer,
-                            m_rxBuffer.size() * sizeof(SignalValue)));
+            Logger.Notice << "Blocking for a socket read call." << std::endl;
+            boost::asio::read(m_socket, boost::asio::buffer(m_rxBuffer,
+                    m_rxBuffer.size() * sizeof(SignalValue)));
         }
         catch (std::exception & e)
         {
             throw std::runtime_error("Receive from FPGA failed: " 
-                                     + std::string(e.what()));
+                    + std::string(e.what()));
         }
         EndianSwapIfNeeded(m_rxBuffer);
-        Logger.Debug << "Releasing rxBuffer mutex" << std::endl;
+        
+        Logger.Debug << "Releasing the rxBuffer mutex." << std::endl;
     }
 
-    //Start the timer; on timeout, this function is called again
+    // Start the timer; on timeout, this function is called again
     m_GlobalTimer.expires_from_now(boost::posix_time::microseconds(TIMESTEP));
     m_GlobalTimer.async_wait(boost::bind(&CRtdsAdapter::Run, this));
 }
 
 ////////////////////////////////////////////////////////////////////////////
-/// Quit
+/// Closes the socket connection to the FPGA.
 ///
-/// @description
-///     closes the socket.
+/// @pre None.
+/// @post Closes m_socket.
 ///
-/// @pre
-///     The socket connection has been established
-///
-/// @post
-///     Closes m_socket
-///
-/// @limitations
-///     None
-///
+/// @limitations None.
 ////////////////////////////////////////////////////////////////////////////
 void CRtdsAdapter::Quit()
 {
@@ -256,26 +231,18 @@ void CRtdsAdapter::Quit()
 }
 
 ////////////////////////////////////////////////////////////////////////////
-/// ~CRtdsAdapter
+/// Closes the socket before destroying an object instance.
 ///
-/// @description
-///     Closes the socket before destroying an object instance.
+/// @pre None.
+/// @post Closes m_socket.
 ///
-/// @pre
-///     none
-///
-/// @post
-///     m_socket is closed
-///
-/// @limitations
-///     none
-///
+/// @limitations None.
 ////////////////////////////////////////////////////////////////////////////
 CRtdsAdapter::~CRtdsAdapter()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     
-    if (m_socket.is_open())
+    if( m_socket.is_open() )
     {
         Quit();
     }

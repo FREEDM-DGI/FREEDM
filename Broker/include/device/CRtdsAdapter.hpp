@@ -8,7 +8,7 @@
 ///
 /// @project      FREEDM DGI
 ///
-/// @description  DGI implementation of the FPGA communication protocol
+/// @description  DGI implementation of the FPGA communication protocol.
 ///
 /// These source code files were created at Missouri University of Science and
 /// Technology, and are intended for use in teaching or research. They may be
@@ -26,10 +26,8 @@
 #ifndef C_RTDS_ADAPTER_HPP
 #define C_RTDS_ADAPTER_HPP
 
-#include "IBufferAdapter.hpp"
 #include "ITcpAdapter.hpp"
-
-#include <string>
+#include "IBufferAdapter.hpp"
 
 #include <boost/shared_ptr.hpp>
 #include <boost/asio/io_service.hpp>

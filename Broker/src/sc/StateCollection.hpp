@@ -29,7 +29,6 @@
 #include "CDispatcher.hpp"
 #include "CMessage.hpp"
 #include "CUuid.hpp"
-#include "CDeviceManager.hpp"
 #include "PhysicalDeviceTypes.hpp"
 #include "IAgent.hpp"
 #include "IHandler.hpp"
@@ -74,7 +73,7 @@ class SCAgent : public IReadHandler, public IPeerNode,
 {
     public:
         ///Constructor
-        SCAgent(std::string uuid, CBroker &broker, device::CDeviceManager::Pointer m_phyManager);
+        SCAgent(std::string uuid, CBroker &broker);
         ///Destructor
         ~SCAgent();
         //Handler
@@ -145,8 +144,6 @@ class SCAgent : public IReadHandler, public IPeerNode,
         ///current state
         ptree               m_curstate;
         
-        ///physical device manager
-        device::CDeviceManager::Pointer m_phyDevManager;
         ///all known peers
         PeerSet m_AllPeers;
         

@@ -31,7 +31,6 @@
 #include "config.hpp"
 #include "CUuid.hpp"
 #include "CAdapterFactory.hpp"
-#include "CDeviceManager.hpp"
 #include "PhysicalDeviceTypes.hpp"
 #include "gm/GroupManagement.hpp"
 #include "lb/LoadBalance.hpp"
@@ -227,13 +226,10 @@ int main(int argc, char* argv[])
                 boost::posix_time::milliseconds(0));
         //constructors for initial mapping
         CConnectionManager conManager;
-        device::CDeviceManager::Pointer 
-            phyManager(new broker::device::CDeviceManager());
         ConnectionPtr newConnection;
         boost::asio::io_service ios;
 
         // configure the adapter factory
-        device::CAdapterFactory::Instance().Initialize(phyManager);
         if( vm.count("adapter-config") > 0 )
         {
             Logger.Notice << "Reading the file " << adapterCfgFile
@@ -274,15 +270,15 @@ int main(int argc, char* argv[])
         ss << uuid;
         ss >> uuidstr;
         // Instantiate and register the group management module
-        gm::GMAgent GM(uuidstr, broker, phyManager);
+        gm::GMAgent GM(uuidstr, broker);
         broker.RegisterModule("gm",boost::posix_time::milliseconds(200));
         dispatch.RegisterReadHandler("gm", "any", &GM);
         // Instantiate and register the state collection module
-        sc::SCAgent SC(uuidstr, broker, phyManager);
+        sc::SCAgent SC(uuidstr, broker);
         broker.RegisterModule("sc",boost::posix_time::milliseconds(400));
         dispatch.RegisterReadHandler("sc", "any", &SC);
         // Instantiate and register the power management module
-        lb::LBAgent LB(uuidstr, broker, phyManager);
+        lb::LBAgent LB(uuidstr, broker);
         broker.RegisterModule("lb",boost::posix_time::milliseconds(400));
         dispatch.RegisterReadHandler("lb", "lb", &LB);
 

@@ -58,19 +58,14 @@ RegisterDeviceClass(#SUFFIX, &CAdapterFactory::CreateDevice<CDevice##SUFFIX>)
 ////////////////////////////////////////////////////////////////////////////////
 /// Singleton factory that creates, stores, and runs new device adapters.
 ///
-/// @limitations The factory must be initialized by CAdapterFactory::Initialize
-/// before new adapters can be created.  Otherwise, the factory will throw a
-/// std::runtime_error exception.  This class is not thread safe.
+/// @limitations This class is not thread safe.
 ////////////////////////////////////////////////////////////////////////////////
 class CAdapterFactory
     : private boost::noncopyable
 {
 public:
-   /// Gets the static instance of the factory.
+    /// Gets the static instance of the factory.
     static CAdapterFactory & Instance();
-    
-    /// Gives the factory access to the device manager.
-    void Initialize(CDeviceManager::Pointer manager);
     
     /// Creates a new adapter and its associated devices.
     void CreateAdapter(const boost::property_tree::ptree & p);
@@ -103,9 +98,6 @@ private:
     template <class DeviceType>
     void CreateDevice(std::string name, IAdapter::Pointer adapter);
     
-    /// Device manager used to register new devices.
-    CDeviceManager::Pointer m_manager;
-    
     /// Set of adapters created by the factory.
     std::map<std::string, IAdapter::Pointer> m_adapter;
 
@@ -124,34 +116,27 @@ private:
 /// the factory's device manager.  The device is constructed to access the
 /// passed adapter.
 ///
-/// @ErrorHandling Throws a std::runtime_error if either the factory has not
-/// been initialized with CAdapterFactory::Initialize or a device exists with
-/// the provided name.
+/// @ErrorHandling Throws a std::runtime_error if a device has the given name.
 /// @pre The provided adapter must not be null.
 /// @post The new device is registered with the device manager.
 /// @post The provided adapter is registered with the new device.
 /// @param name The unique identifier for the device to be created.
 /// @param adapter The adapter the new device should access its data through.
 ///
-/// @limitations CAdapterFactory::Initialize must be called before this func.
+/// @limitations None.
 ////////////////////////////////////////////////////////////////////////////////
 template <class DeviceType>
 void CAdapterFactory::CreateDevice(std::string name, IAdapter::Pointer adapter)
 {
     AdapterFactoryLogger.Trace << __PRETTY_FUNCTION__ << std::endl;
     
-    if( !m_manager )
-    {
-        throw std::runtime_error("Adapter factory has not been initialized.");
-    }
-    
-    if( m_manager->DeviceExists(name) )
+    if( CDeviceManager::Instance().DeviceExists(name) )
     {
         throw std::runtime_error("The device " + name + " already exists.");
     }
     
     IDevice::Pointer device(new DeviceType(name, adapter));
-    m_manager->AddDevice(device);
+    CDeviceManager::Instance().AddDevice(device);
     
     AdapterFactoryLogger.Info << "Created new device: " << name << std::endl;
 }

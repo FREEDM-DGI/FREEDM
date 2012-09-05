@@ -33,6 +33,8 @@
 #include "CLogger.hpp"
 #include "CMessage.hpp"
 #include "SRemoteHost.hpp"
+#include "CDeviceManager.hpp"
+#include "CDeviceFid.hpp"
 
 #include <algorithm>
 #include <cassert>
@@ -43,6 +45,7 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <functional>
 
 #include <boost/asio.hpp>
 #include <boost/assign/list_of.hpp>
@@ -84,8 +87,7 @@ CLocalLogger Logger(__FILE__);
 /// @param p_dispatch: The dispatcher used by this module
 /// @param p_conManager: The connection manager to use in this class.
 ///////////////////////////////////////////////////////////////////////////////
-GMAgent::GMAgent(std::string p_uuid, CBroker &broker,
-        device::CDeviceManager::Pointer devmanager)
+GMAgent::GMAgent(std::string p_uuid, CBroker &broker)
     : IPeerNode(p_uuid,broker.GetConnectionManager()),
     CHECK_TIMEOUT(boost::posix_time::seconds(3)),
     TIMEOUT_TIMEOUT(boost::posix_time::seconds(3)),
@@ -93,8 +95,7 @@ GMAgent::GMAgent(std::string p_uuid, CBroker &broker,
     FID_TIMEOUT(boost::posix_time::milliseconds(8)),
     SKEW_TIMEOUT(boost::posix_time::seconds(2)),
     RESPONSE_TIMEOUT(boost::posix_time::milliseconds(75)),
-    m_broker(broker),
-    m_phyDevManager(devmanager)
+    m_broker(broker)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     AddPeer(GetUUID());
@@ -405,7 +406,8 @@ void GMAgent::SystemState()
             nodestatus<<"Unknown"<<std::endl;
         }
     } 
-    nodestatus<<"FID state: "<< m_phyDevManager->CountActiveFids();
+    nodestatus<<"FID state: "<<device::CDeviceManager::Instance().
+            GetValue("Fid", "state", std::plus<device::SignalValue>());
     Logger.Status<<nodestatus.str()<<std::endl;
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -486,8 +488,10 @@ void GMAgent::FIDCheck( const boost::system::error_code& err)
 {
     if(!err)
     {
-        int attachedFIDs = m_phyDevManager->GetDevicesOfType<device::CDeviceFid>().size();
-        unsigned int FIDState = m_phyDevManager->CountActiveFids();
+        int attachedFIDs = device::CDeviceManager::Instance().
+                GetDevicesOfType<device::CDeviceFid>().size();
+        unsigned int FIDState = device::CDeviceManager::Instance().
+                GetValue("Fid", "state", std::plus<device::SignalValue>());
         if(m_fidsclosed == true && attachedFIDs  > 0 && FIDState == 0)
         {
             Logger.Status<<"All FIDs offline. Entering Recovery State"<<std::endl;

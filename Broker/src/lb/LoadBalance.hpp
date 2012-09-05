@@ -45,8 +45,8 @@
 #include "CDispatcher.hpp"
 #include "CMessage.hpp"
 #include "CUuid.hpp"
-#include "CDeviceManager.hpp"
 #include "PhysicalDeviceTypes.hpp"
+
 #include "IPeerNode.hpp"
 #include "IAgent.hpp"
 
@@ -88,9 +88,7 @@ class LBAgent
         /// Default constructor
         LBAgent();
         /// Constructor for using this object as a module
-        LBAgent(std::string uuid_,
-                CBroker &broker,
-                device::CDeviceManager::Pointer m_phyManager);
+        LBAgent(std::string uuid_, CBroker &broker);
         /// Destructor for the module  
         ~LBAgent();
 
@@ -176,10 +174,7 @@ class LBAgent
         PeerSet     m_LoNodes;
         /// Set of all the known peers 
         PeerSet     m_AllPeers;
-
-        // Instance of physical device manager
-        device::CDeviceManager::Pointer m_phyDevManager;
-
+        
         // Power migration functions 
         /// 'Power migration' by stepping up/down P* by a constant value
         void Step_PStar();

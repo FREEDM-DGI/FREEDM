@@ -42,6 +42,7 @@
 #include "CMessage.hpp"
 #include "gm/GroupManagement.hpp"
 #include "IPeerNode.hpp"
+#include "CDeviceManager.hpp"
 
 #include <algorithm>
 #include <cassert>
@@ -106,17 +107,14 @@ CLocalLogger Logger(__FILE__);
 /// @param ios: the io service this node will use to share memory
 /// @param p_dispatch: The dispatcher used by this module
 /// @param m_conManager: The connection manager to use in this class
-/// @param m_phyManager: The device manager to use in this class
 /// @limitations: None
 ///////////////////////////////////////////////////////////////////////////////
 
-SCAgent::SCAgent(std::string uuid, CBroker &broker,
-                 device::CDeviceManager::Pointer m_phyManager):
+SCAgent::SCAgent(std::string uuid, CBroker &broker):
         IPeerNode(uuid, broker.GetConnectionManager()),
         m_countstate(0),
         m_NotifyToSave(false),
         m_curversion("default", 0),
-        m_phyDevManager(m_phyManager),
         m_broker(broker)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
@@ -357,7 +355,8 @@ void SCAgent::TakeSnapshot(std::string deviceType, std::string valueType)
     Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     device::SignalValue PowerValue;
     //Logger.Status << "&&&&&&&&&&&&&&&&&&&&&& call NetValue funciton &&&&&&&&&&&&&&" << std::endl;
-    PowerValue = m_phyDevManager->GetValue(deviceType, valueType, std::plus<device::SignalValue>());
+    PowerValue = device::CDeviceManager::Instance().GetValue(deviceType,
+            valueType, std::plus<device::SignalValue>());
     Logger.Status << "&&&&&&&&&&&&&&&         " << PowerValue << "       &&&&&&&&&&&&" << std::endl;
     //save state
     m_curstate.put("sc.type", valueType);
@@ -488,7 +487,7 @@ void SCAgent::SaveForward(StateVersion latest, CMessage msg)
     m_countmarker = 1;
     Logger.Info << "Marker is " << m_curversion.first << " " << m_curversion.second << std::endl;
     //physical device information
-    Logger.Debug << "SC module identified "<< m_phyDevManager->DeviceCount()
+    Logger.Debug << "SC module identified "<< device::CDeviceManager::Instance().DeviceCount()
     << " physical devices on this node" << std::endl;
     //collect local state
     TakeSnapshot(m_deviceType, m_valueType);

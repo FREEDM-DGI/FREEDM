@@ -3,6 +3,7 @@
 ///
 /// @author       Stephen Jackson <scj7t4@mst.edu>
 /// @author       Michael Catanzaro <michael.catanzaro@mst.edu>
+/// @author       Thomas Roth <tprfh7@mst.edu>
 ///
 /// @project      FREEDM DGI
 ///
@@ -10,8 +11,8 @@
 ///
 /// @functions
 ///     CDeviceManager::GetDevicesOfType
-///     CDeviceManager::GetValue
 ///     CDeviceManager::GetValueVector
+///     CDeviceManager::GetValue
 ///
 /// These source code files were created at Missouri University of Science and
 /// Technology, and are intended for use in teaching or research. They may be
@@ -26,137 +27,125 @@
 /// Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
 ////////////////////////////////////////////////////////////////////////////////
 
-#ifndef PHYSICALDEVICEMANAGER_HPP
-#define PHYSICALDEVICEMANAGER_HPP
+#ifndef C_DEVICE_MANAGER_HPP
+#define C_DEVICE_MANAGER_HPP
 
-#include "IAdapter.hpp"
-#include "types/IDevice.hpp"
+#include "IDevice.hpp"
+#include "CLogger.hpp"
 
-#include <list>
 #include <map>
 #include <string>
 #include <vector>
 
-#include <boost/enable_shared_from_this.hpp>
 #include <boost/function.hpp>
-#include <boost/noncopyable.hpp>
 #include <boost/shared_ptr.hpp>
+#include <boost/noncopyable.hpp>
 
 namespace freedm {
 namespace broker {
 namespace device {
 
-/// @todo This class is not sufficiently commented. Comment it better.
-/// @todo Need to use typedefs for the function pointer types to be legible.
-/// Provides a container that manages physical device instances
-class CDeviceManager : private boost::noncopyable
+namespace {
+/// This file's logger.
+CLocalLogger DeviceManagerLogger(__FILE__);
+}
+
+class CDeviceManager
+    : private boost::noncopyable
 {
 private:
-    /// A typedef for the mapping of identifier to device ptrs
+    /// A typedef for the mapping of identifier to device pointers.
     typedef std::map<std::string, IDevice::Pointer> PhysicalDeviceSet;
-
 public:
-    /// Type of a pointer to a device manager
-    typedef boost::shared_ptr<CDeviceManager> Pointer;
-
-    /// A typedef providing an iterator for this object
+    /// A typedef providing an iterator for this object.
     typedef PhysicalDeviceSet::iterator iterator;
 
-    /// A typedef providing a const iterator for this object
+    /// A typedef providing a const iterator for this object.
     typedef PhysicalDeviceSet::const_iterator const_iterator;
-
-    /// Initialize the physical device manger
-    CDeviceManager();
-
-    /// Add the specified device to the manager.
-    void AddDevice(IDevice::Pointer resource);
-
-    /// Remove a device by its identifier
-    void RemoveDevice(std::string devid);
-
-    /// Gets a device by its identifier
-    IDevice::Pointer GetDevice(std::string devid);
-
-    /// Gets a device by its identifier
-    const IDevice::Pointer GetDevice(std::string devid) const;
-
-    /// Tests to see if a device exists
-    bool DeviceExists(std::string devid) const;
-
-    /// Gives a count of connected devices
-    size_t DeviceCount() const;
-
+    
+    /// Gets the instance of the device manager.
+    static CDeviceManager & Instance();
+    
     /// Iterator to the first managed device.
-    iterator begin()
-    {
-        return m_devices.begin();
-    };
-
-    /// Iterator past the last managed device.
-    iterator end()
-    {
-        return m_devices.end();
-    };
+    iterator begin();
 
     /// Const iterator to the first managed device.
-    const_iterator begin() const
-    {
-        return m_devices.begin();
-    };
-
+    const_iterator begin() const;
+    
+    /// Iterator past the last managed device.
+    iterator end();
+    
     /// Const iterator past the last managed device.
-    const_iterator end() const
-    {
-        return m_devices.end();
-    };
+    const_iterator end() const;
+    
+    /// Add the specified device to the manager.
+    void AddDevice(IDevice::Pointer device);
 
-    /// Retrieves all registered devices of a particular type.
-    template <class DeviceType>
-    const std::vector<typename DeviceType::Pointer> GetDevicesOfType();
+    /// Remove a device by its identifier.
+    bool RemoveDevice(std::string devid);
 
-    /// @todo takes a bit of effort to make this const
-    template <class BinaryOp>
-    SignalValue GetValue(std::string devtype,
-                          std::string value,
-                          BinaryOp math);
-
-    /// @todo takes a bit of effort to make this const
-    std::vector<SignalValue> GetValueVector(std::string devtype,
-        std::string value);
-
-    /// @todo
-    template <class DeviceType, class BinaryOp>
-    SignalValue GetValue(SignalValue(DeviceType::*getter)( ) const,
-    BinaryOp math) const;
-
-    /// @todo
-    template <class DeviceType>
-    std::vector<SignalValue> GetValueVector(
-        SignalValue(DeviceType::*getter)( ) const) const;
- 
-    /// Gives a count of connected FIDs.
-    size_t CountActiveFids() const;
-
+    /// Tests to see if a device exists.
+    bool DeviceExists(std::string devid) const;
+    
+    /// Gets a device by its identifier.
+    IDevice::Pointer GetDevice(std::string devid);
+    
+    /// Counts the number of managed devices.
+    std::size_t DeviceCount() const;
+    
     /// Retrieves all the stored devices of a specified type.
     std::vector<IDevice::Pointer> GetDevicesOfType(std::string type);
+    
+    /// Retrieves a vector of stored values for the given device signal.
+    std::vector<SignalValue> GetValueVector(std::string type,
+            std::string signal);
+    
+    /// Retrieves all the stored devices of a specified type.
+    template <class DeviceType>
+    std::vector<typename DeviceType::Pointer> GetDevicesOfType();
 
+    /// Retrieves a vector of stored values from the given device class.
+    template <class DeviceType>
+    std::vector<SignalValue> GetValueVector(
+            SignalValue(DeviceType::*getter)() const) const;
+    
+    /// Returns the result of a binary operation on a set of device signals.
+    template <class BinaryOp>
+    SignalValue GetValue(std::string type, std::string signal, BinaryOp math);
+    
+    /// Returns the result of a binary operation on a set of device signals.
+    template <class DeviceType, class BinaryOp>
+    SignalValue GetValue(SignalValue(DeviceType::*getter)( ) const,
+            BinaryOp math) const;
 private:
-    /// Mapping from device identifiers to device set
+    /// Private constructor.
+    CDeviceManager();
+    
+    /// Mapping from identifiers to device pointers.
     PhysicalDeviceSet m_devices;
 };
 
-/// Selects all the devices of a given type
+///////////////////////////////////////////////////////////////////////////////
+/// Creates a vector that contains the devices of the templated type.
+///
+/// @pre DeviceType must have a typedef for DeviceType::Pointer.
+/// @post Constructs the vector through dynamic pointer casts.
+/// @return A vector that contains the matching subset of m_devices.
+///
+/// @limitations None.
+///////////////////////////////////////////////////////////////////////////////
 template <class DeviceType>
-const std::vector<typename DeviceType::Pointer>
-CDeviceManager::GetDevicesOfType()
+std::vector<typename DeviceType::Pointer> CDeviceManager::GetDevicesOfType()
 {
+    DeviceManagerLogger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    
     std::vector<typename DeviceType::Pointer> result;
     typename DeviceType::Pointer next_device;
 
-    for (iterator it = m_devices.begin(); it != m_devices.end(); it++)
+    for( iterator it = m_devices.begin(); it != m_devices.end(); it++ )
     {
         // attempt to convert each managed device to DeviceType
-        if (( next_device = device_cast<DeviceType > ( it->second ) ))
+        if( (next_device = device_cast<DeviceType>(it->second)) )
         {
             result.push_back(next_device);
         }
@@ -165,60 +154,96 @@ CDeviceManager::GetDevicesOfType()
     return result;
 }
 
-// @todo
-template <class DeviceType, class BinaryOp>
-SignalValue CDeviceManager::GetValue(
-        SignalValue(DeviceType::*getter)( ) const,
-        BinaryOp math) const
+///////////////////////////////////////////////////////////////////////////////
+/// Creates a vector that contains values from devices of the templated type.
+///
+/// @pre DeviceType must hav ea typedef for IDevice::Pointer.
+/// @post Calls the function pointer on each device of templated type.
+/// @param getter The function to call on each device of the matching type.
+/// @return A vector that contains the results of the function pointer calls.
+///
+/// @limitations None.
+///////////////////////////////////////////////////////////////////////////////
+template <class DeviceType>
+std::vector<SignalValue> CDeviceManager::GetValueVector(
+        SignalValue(DeviceType::*getter)( ) const) const
 {
-    SignalValue result = 0;
+    DeviceManagerLogger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    
+    std::vector<SignalValue> result;
     typename DeviceType::Pointer next_device;
 
-    for (const_iterator it = m_devices.begin(); it != m_devices.end(); it++)
+    for( const_iterator it = m_devices.begin(); it != m_devices.end(); it++ )
     {
         // attempt to convert each managed device to DeviceType
-        if (( next_device = device_cast<DeviceType > ( it->second ) ))
+        if( (next_device = device_cast<DeviceType>(it->second)) )
         {
-            result = math(result, ( ( *next_device ).*( getter ) )( ) );
+            result.push_back(( (*next_device).*(getter) )( ));
         }
     }
 
     return result;
 }
 
-/// @todo
-template <class DeviceType>
-std::vector<SignalValue> CDeviceManager::GetValueVector(
-SignalValue(DeviceType::*getter)( ) const) const
-{
-    std::vector<SignalValue> results;
-    typename DeviceType::Pointer next_device;
-
-    for (const_iterator it = m_devices.begin(); it != m_devices.end(); it++)
-    {
-        // attempt to convert each managed device to DeviceType
-        if (( next_device = device_cast<DeviceType > ( it->second ) ))
-        {
-            results.push_back(( ( *next_device ).*( getter ) )( ));
-        }
-    }
-
-    return results;
-}
-
-/// @todo
+///////////////////////////////////////////////////////////////////////////////
+/// Aggregates a set of device signals using the given binary operation.
+///
+/// @pre DeviceType must hav ea typedef for IDevice::Pointer.
+/// @pre The devices of the specified type must recognize the given signal.
+/// @post Performs a binary mathematical operation on a subset of m_devices.
+/// @param type The device type that should perform the operation.
+/// @param signal The signal of the device to aggregate.
+/// @param math The operation to perform on the device signal.
+/// @return The aggregate value obtained by applying the binary operation.
+///
+/// @limitations None.
+///////////////////////////////////////////////////////////////////////////////
 template <class BinaryOp>
-SignalValue CDeviceManager::GetValue(std::string devtype,
-std::string value, BinaryOp math)
+SignalValue CDeviceManager::GetValue(std::string type, std::string signal,
+        BinaryOp math)
 {
+    DeviceManagerLogger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    
     SignalValue result = 0;
 
-    std::vector<IDevice::Pointer> devices = GetDevicesOfType(devtype);
+    std::vector<IDevice::Pointer> devices = GetDevicesOfType(type);
     std::vector<IDevice::Pointer>::iterator it, end;
 
     for( it = devices.begin(), end = devices.end(); it != end; it++ )
     {
-        result = math(result, (*it)->Get(value));
+        result = math(result, (*it)->Get(signal));
+    }
+
+    return result;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+/// Aggregates a set of device signals using the given binary operation.
+///
+/// @pre DeviceType must hav ea typedef for IDevice::Pointer.
+/// @post Performs a binary mathematical operation on a subset of m_devices.
+/// @param getter The function to call on each device to get the signal.
+/// @param math The operation to perform on the device signal.
+/// @return The aggregate value obtained by applying the binary operation.
+///
+/// @limitations None.
+///////////////////////////////////////////////////////////////////////////////
+template <class DeviceType, class BinaryOp>
+SignalValue CDeviceManager::GetValue(SignalValue(DeviceType::*getter)( ) const,
+        BinaryOp math) const
+{
+    DeviceManagerLogger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    
+    SignalValue result = 0;
+    typename DeviceType::Pointer next_device;
+
+    for( const_iterator it = m_devices.begin(); it != m_devices.end(); it++ )
+    {
+        // attempt to convert each managed device to DeviceType
+        if( (next_device = device_cast<DeviceType>(it->second)) )
+        {
+            result = math(result, (( *next_device ).*( getter ))( ));
+        }
     }
 
     return result;
@@ -228,4 +253,4 @@ std::string value, BinaryOp math)
 } // namespace broker
 } // namespace freedm
 
-#endif // PHYSICALDEVICEMANAGER_HPP
+#endif // C_DEVICE_MANAGER_HPP

@@ -12,7 +12,6 @@
 ///     CAdapterFactory::CAdapterFactory
 ///     CAdapterFactory::~CAdapterFactory
 ///     CAdapterFactory::Instance
-///     CAdapterFactory::Initialize
 ///     CAdapterFactory::CreateAdapter
 ///     CAdapterFactory::RegisterDeviceClass
 ///     CAdapterFactory::InitializeBuffer
@@ -104,37 +103,6 @@ CAdapterFactory & CAdapterFactory::Instance()
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     static CAdapterFactory instance;
     return instance;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-/// Initializes the adapter factory with the device manager.
-///
-/// @ErrorHandling Throws a std::runtime_error if either a prior call to this
-/// function has been made or the passed device manager is null.
-/// @SharedMemory A shared pointer to the device manager is stored.
-/// @pre The adapter factory must not have already been initialized.
-/// @pre The passed device manager must not be null.
-/// @post Sets the value of m_manager to the passed value.
-/// @param manager The device manager to be used by the factory.
-///
-/// @limitations This function must be called exactly once.
-///////////////////////////////////////////////////////////////////////////////
-void CAdapterFactory::Initialize(CDeviceManager::Pointer manager)
-{
-    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    
-    if( !manager )
-    {
-        throw std::runtime_error("Received an invalid device manager pointer.");
-    }
-    
-    if( m_manager )
-    {
-        throw std::runtime_error("Adapter factory already initialized!");
-    }
-    
-    m_manager = manager;
-    Logger.Notice << "Initialized the adapter factory." << std::endl;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

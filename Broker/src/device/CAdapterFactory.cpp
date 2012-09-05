@@ -31,7 +31,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 
 #include "CAdapterFactory.hpp"
-
+#include "IBufferAdapter.hpp"
 #include "CPscadAdapter.hpp"
 #include "CRtdsAdapter.hpp"
 
@@ -126,7 +126,6 @@ void CAdapterFactory::CreateAdapter(const boost::property_tree::ptree & p)
     
     boost::property_tree::ptree subtree;
     IAdapter::Pointer adapter;
-    IBufferAdapter::Pointer buffer;
     std::string name, type;
     
     // extract the properties
@@ -169,14 +168,8 @@ void CAdapterFactory::CreateAdapter(const boost::property_tree::ptree & p)
             + std::string("unrecognized type: ") + type);
     }
     
-    // initialize the adapter
-    buffer = boost::dynamic_pointer_cast<IBufferAdapter>(adapter);
-    if( buffer )
-    {
-        InitializeBuffer(buffer, p);
-    }
-    
     // store the adapter
+    InitializeAdapter(adapter, p);
     m_adapter[name] = adapter;
     Logger.Info << "Created the " << type << " adapter " << name << std::endl;
     
@@ -210,32 +203,35 @@ void CAdapterFactory::RegisterDeviceClass(std::string key,
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// Initializes a buffer to contain a set of device signals.
+/// Initializes an adapter to contain a set of device signals.
 ///
-/// @ErrorHandling Throws a std::runtime_error if the buffer is empty or the
+/// @ErrorHandling Throws a std::runtime_error if the adapter is empty or the
 /// property tree has a bad specification format.
-/// @pre The property tree must contain a buffer specification.
-/// @post Associates a set of device signals with the passed buffer.
-/// @param buffer The buffer to initialize.
+/// @pre The property tree must contain an adapter specification.
+/// @post Associates a set of device signals with the passed adapter.
+/// @param adapter The adapter to initialize.
 /// @param p The property tree that contains the buffer data.
 ///
 /// @limitations None.
 ///////////////////////////////////////////////////////////////////////////////
-void CAdapterFactory::InitializeBuffer(IBufferAdapter::Pointer buffer,
+void CAdapterFactory::InitializeAdapter(IAdapter::Pointer adapter,
         const boost::property_tree::ptree & p)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     
     boost::property_tree::ptree subtree;
+    IBufferAdapter::Pointer buffer;
     std::set<std::string> devices;
     
     std::string type, name, signal;
     std::size_t index;
     
-    if( !buffer )
+    if( !adapter )
     {
-        throw std::runtime_error("Received an empty IBufferAdapter::Pointer.");
+        throw std::runtime_error("Received an empty IAdapter::Pointer.");
     }
+
+    buffer = boost::dynamic_pointer_cast<IBufferAdapter>(adapter);
     
     // i = 0 parses state information
     // i = 1 parses command information
@@ -275,23 +271,23 @@ void CAdapterFactory::InitializeBuffer(IBufferAdapter::Pointer buffer,
             // create the device when first seen
             if( devices.count(name) == 0 )
             {
-                CreateDevice(name, type, buffer);
+                CreateDevice(name, type, adapter);
                 devices.insert(name);
             }
 
-            if( i == 0 )
+            if( buffer && i == 0 )
             {
                 Logger.Debug << "Registering state info." << std::endl;
                 buffer->RegisterStateInfo(name, signal, index);
             }
-            else
+            else if( buffer && i == 1 )
             {
                 Logger.Debug << "Registering command info." << std::endl;
                 buffer->RegisterCommandInfo(name, signal, index);
             }
         }
     }
-    Logger.Debug << "Initialized the device buffer." << std::endl;
+    Logger.Debug << "Initialized the device adapter." << std::endl;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

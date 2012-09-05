@@ -29,7 +29,6 @@
 
 #include "CLogger.hpp"
 #include "IAdapter.hpp"
-#include "IBufferAdapter.hpp"
 #include "CDeviceManager.hpp"
 
 #include <map>
@@ -86,8 +85,8 @@ private:
     /// Registers a single device class with the factory.
     void RegisterDeviceClass(std::string key, FactoryFunction function);
     
-    /// Initializes adapters that are implemented as buffers.
-    void InitializeBuffer(IBufferAdapter::Pointer buffer,
+    /// Initializes the devices stored on an adapter.
+    void InitializeAdapter(IAdapter::Pointer adapter,
             const boost::property_tree::ptree & p);
     
     /// Creates a device and registers it with the system.

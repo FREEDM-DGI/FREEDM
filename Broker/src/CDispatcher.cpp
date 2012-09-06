@@ -63,8 +63,8 @@ void CDispatcher::HandleRequest(CBroker &broker, CMessage msg)
     ptree sub_;
     ptree::const_iterator it_;
     std::map< std::string, IReadHandler *>::const_iterator mapIt_;
-    std::string key_;
     ptree p_mesg = static_cast<ptree>(msg);
+    bool processed = false;
 
     try
     {
@@ -77,79 +77,59 @@ void CDispatcher::HandleRequest(CBroker &broker, CMessage msg)
              mapIt_ != m_readHandlers.upper_bound( "any" );
              ++mapIt_ )
         {
-            try
+            CBroker::BoundScheduleable x = boost::bind(&CDispatcher::ReadHandlerCallback,
+                this, mapIt_->second, msg);
+            broker.Schedule(m_handlerToModule[mapIt_->second],x);
+            processed = true;
+        }
+	        
+	    // Loop through all submessages of this message to call its
+        // handler
+        std::string handler = msg.GetHandler();
+        
+        Logger.Debug << "Processing " << handler << std::endl;
+
+        // Special keyword any which gives the submessage to all modules.
+        if(handler.find("any") == 0)
+        {
+            for( mapIt_ =  m_readHandlers.begin(); 
+                 mapIt_ != m_readHandlers.end();
+                 ++mapIt_)
             {
+                if(mapIt_->first == "any")
+                {
+                    //Prevents modules with any flags from processing some messages twice
+                    continue;
+                }
                 CBroker::BoundScheduleable x = boost::bind(&CDispatcher::ReadHandlerCallback,
                     this, mapIt_->second, msg);
                 broker.Schedule(m_handlerToModule[mapIt_->second],x);
-            }
-            catch( boost::property_tree::ptree_bad_path &e )
-            {
-                Logger.Warn<<"Module failed to read message"<<std::endl;
+                processed = true;
             }
         }
-	        
-	      // Loop through all submessages of this message to call its
-        // handler
-        ptree sub_ = p_mesg.get_child("message.submessages");
-        for( it_ = sub_.begin(); it_ != sub_.end(); ++it_ )
+        else
         {
-            Logger.Debug << "Processing " << it_->first
-                    << std::endl;
-
-            // Retrieve current key and iterate through all matching
-            // handlers of that key. If the key doesn't exist in the
-            // map, lower_bound(key) == upper_bound(key).
-            key_ = it_->first;
-            // Special keyword any which gives the submessage to all modules.
-            if( key_ == "any")
+            for( mapIt_ = m_readHandlers.begin();
+                mapIt_ != m_readHandlers.end(); ++mapIt_ )
             {
-                for( mapIt_ =  m_readHandlers.begin(); 
-                     mapIt_ != m_readHandlers.end();
-                     ++mapIt_)
-                {
-                    if(mapIt_->first == "any")
-                    {
-                        //Prevents modules with any flags from processing some messages twice
-                        continue;
-                    }
-                    try
-                    {
-                        CBroker::BoundScheduleable x = boost::bind(&CDispatcher::ReadHandlerCallback,
-                            this, mapIt_->second, msg);
-                        broker.Schedule(m_handlerToModule[mapIt_->second],x);
-                    }
-                    catch( boost::property_tree::ptree_bad_path &e )
-                    {
-                        Logger.Warn<<"Module failed to read message (any field)"<<std::endl;
-                    }
-                }
-            }
-            else
-            {
-                for( mapIt_ = m_readHandlers.lower_bound( key_ );
-                        mapIt_ != m_readHandlers.upper_bound(key_);
-                        ++mapIt_ )
+                if(handler.find(mapIt_->first) == 0)
                 {
                     CBroker::BoundScheduleable x = boost::bind(&CDispatcher::ReadHandlerCallback,
                         this, mapIt_->second, msg);
                     broker.Schedule(m_handlerToModule[mapIt_->second],x);
-                }
-
-                if( m_readHandlers.lower_bound( key_ ) == 
-                    m_readHandlers.upper_bound( key_)     )
-                {
-                    // Just log this for now
-                    Logger.Debug << "Submessage '" << key_ << "' had no read handlers.";
+                    processed = true;
                 }
             }
         }
-        // XXX Should anything be done if the message didn't
-        // have any submessages? 
+        // XXX Should anything be done if the message didn't have any submessages? 
         if( sub_.begin() == sub_.end() )
         {
             // Just log this for now
             Logger.Debug << "Message had no submessages.";
+        }
+        if( processed == false)
+        {
+            Logger.Warn << "Message was not processed by any module" << std::endl;
         }
     }
     catch( boost::property_tree::ptree_bad_path &e )

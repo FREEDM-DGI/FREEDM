@@ -10,7 +10,8 @@
 ///
 /// @description  DGI implementation of the FPGA communication protocol.
 ///
-/// @functions    EndianSwapIfNeeded
+/// @functions    EndianSwap
+///               EndianSwapIfNeeded
 ///               CRtdsAdapter::Create
 ///               CRtdsAdapter::Start
 ///               CRtdsAdapter::~CRtdsAdapter
@@ -60,6 +61,30 @@ namespace {
 /// This file's logger.
 CLocalLogger Logger(__FILE__);
 
+////////////////////////////////////////////////////////////////////////////////
+/// A utility function for converting byte order from big endian to little
+/// endian and vise versa.
+///  
+/// @pre  None
+/// @post The endianness of data is now reversed
+/// @param data the data to be endian-swapped
+/// @param numBytes the number of bytes per word in data
+////////////////////////////////////////////////////////////////////////////////
+void EndianSwap(char * data, const int numBytes)
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+
+    char * tmp = new char[num_bytes];
+
+    for (int i = 0; i < num_bytes; ++i)
+        tmp[i] = data[num_bytes - 1 - i];
+
+    for (int i = 0; i < num_bytes; ++i)
+        data[i] = tmp[i];
+
+    delete[] tmp;
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 /// Converts the SignalValues in the passed vector from big-endian to
 /// little-endian, or vice-versa, if the DGI is running on a little-endian
@@ -81,11 +106,11 @@ inline void EndianSwapIfNeeded(std::vector<SignalValue> & v)
 // automatically be defined and determined in sys/param.h, which exists
 // in most Unix systems.
 #if __BYTE_ORDER == __LITTLE_ENDIAN
-    std::vector<char> temp(v.size() * sizeof(SignalValue));
+    for( std::size_t i = 0; i < v.size(); i++ )
+    {
+        EndianSwap(&v[0], sizeof(SignalValue));
+    }
     
-    memcpy(&temp[0], &v[0], v.size() * sizeof(SignalValue));
-    std::reverse(temp.begin(), temp.end());
-    memcpy(&v[0], &temp[0], v.size() * sizeof(SignalValue));
 #elif __BYTE_ORDER == __BIG_ENDIAN
     Logger.Debug << "Endian swap skipped: host is big-endian." << std::endl;
 #else
@@ -211,7 +236,6 @@ void CRtdsAdapter::Run()
         boost::unique_lock<boost::shared_mutex> writeLock(m_rxMutex);
         Logger.Debug << "Obtained the rxBuffer mutex." << std::endl;
         
-        EndianSwapIfNeeded(m_rxBuffer);
         try
         {
             Logger.Notice << "Blocking for a socket read call." << std::endl;

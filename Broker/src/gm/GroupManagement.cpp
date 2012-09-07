@@ -41,11 +41,12 @@
 #include <cstdlib>
 #include <exception>
 #include <fstream>
+#include <functional>
 #include <iomanip>
 #include <iostream>
 #include <string>
 #include <vector>
-#include <functional>
+#include <stack>
 
 #include <boost/asio.hpp>
 #include <boost/assign/list_of.hpp>
@@ -93,7 +94,7 @@ GMAgent::GMAgent(std::string p_uuid, CBroker &broker)
     TIMEOUT_TIMEOUT(boost::posix_time::seconds(3)),
     GLOBAL_TIMEOUT(boost::posix_time::seconds(1)),
     FID_TIMEOUT(boost::posix_time::milliseconds(8)),
-    SKEW_TIMEOUT(boost::posix_time::seconds(2)),
+    SKEW_TIMEOUT(boost::posix_time::seconds(3)),
     RESPONSE_TIMEOUT(boost::posix_time::milliseconds(75)),
     m_broker(broker)
 {
@@ -295,11 +296,15 @@ CMessage GMAgent::ClockRequest()
 CMessage GMAgent::ClockSkew(boost::posix_time::time_duration t)
 {
     CMessage m_;
+    long secs = t.total_seconds();
+    long fracs = t.fractional_seconds();
     m_.SetHandler("gm.ClockSkew");
     m_.m_submessages.put("gm.source", GetUUID());
     m_.m_submessages.put("gm.groupid",m_GroupID);
     m_.m_submessages.put("gm.groupleader",m_GroupLeader);
-    m_.m_submessages.put("gm.clockskew",t.total_microseconds());
+    m_.m_submessages.put("gm.clockskew.seconds",secs);
+    m_.m_submessages.put("gm.clockskew.fractions",fracs);
+    m_.m_submessages.put("gm.clockskew.resolution",boost::posix_time::time_duration::num_fractional_digits());
     return m_;
 }
 
@@ -408,6 +413,7 @@ void GMAgent::SystemState()
     } 
     nodestatus<<"FID state: "<<device::CDeviceManager::Instance().
             GetValue("Fid", "state", std::plus<device::SignalValue>());
+    nodestatus<<std::endl<<"Current Skew: "<<CGlobalConfiguration::instance().GetClockSkew();
     Logger.Status<<nodestatus.str()<<std::endl;
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -529,14 +535,15 @@ void GMAgent::ComputeSkew( const boost::system::error_code& err)
         ClockRepliesMap::iterator it;
         boost::posix_time::ptime true_clock = m_clocks[GetUUID()];
         boost::posix_time::time_duration tmp, sum;
+        std::stack<std::string> removeset;
         int good_clocks = 1;
-        Logger.Debug<<"Computing Skew from "<<m_clocks.size()<<" responses"<<std::endl;
+        Logger.Status<<"Computing Skew from "<<m_clocks.size()<<" responses"<<std::endl;
         /// First find the sum of the skew from me.
         for(it = m_clocks.begin(); it != m_clocks.end(); it++)
         {
             if((*it).first == GetUUID())
                 continue;
-            tmp = true_clock - (*it).second;
+            tmp = (*it).second-true_clock;
             if(-MAX_SKEW < tmp.total_milliseconds() && tmp.total_milliseconds() < MAX_SKEW)
             {
                 sum += tmp;
@@ -545,7 +552,7 @@ void GMAgent::ComputeSkew( const boost::system::error_code& err)
         }
         // Find the average skew off of true;
         sum /= good_clocks;
-        Logger.Debug<<"Computed an average skew off of me of: "<<sum<<std::endl;
+        Logger.Status<<"Computed an average skew off of me of: "<<sum<<" ("<<good_clocks<<" Good Clocks)"<<std::endl;
         for(it = m_clocks.begin(); it != m_clocks.end(); it++)
         {
             if((*it).first == GetUUID())
@@ -559,14 +566,17 @@ void GMAgent::ComputeSkew( const boost::system::error_code& err)
                 SendToPeer(GetPeer((*it).first),m);
             }
         }
+        m_clocks.clear();
         // Set my skew
-        CGlobalConfiguration::instance().SetClockSkew(sum);
+        tmp = CGlobalConfiguration::instance().GetClockSkew();
+        Logger.Status<<"Setting my skew to "<<tmp+sum<<std::endl;
+        CGlobalConfiguration::instance().SetClockSkew(tmp+sum);
         m = ClockRequest();
         /// Initiate a new round of clocks
-        tmp = CGlobalConfiguration::instance().GetClockSkew();
         Logger.Debug<<"Starting New Skew Computation"<<std::endl;
         m_clocks.clear();
         /// Report my clock with our computed skew
+        tmp = CGlobalConfiguration::instance().GetClockSkew();
         m_clocks[GetUUID()] = boost::posix_time::microsec_clock::universal_time()+tmp;
         /// Send to all up nodes
         BOOST_FOREACH( PeerNodePtr peer, CGlobalPeerList::instance().PeerList() | boost::adaptors::map_values)
@@ -1371,7 +1381,7 @@ void GMAgent::HandleClock(CMessage msg, PeerNodePtr peer)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     ptree pt = msg.GetSubMessages();
-    Logger.Info<<"Clock Reading From "<<peer->GetUUID()<<std::endl;
+    Logger.Status<<"Clock Reading From "<<peer->GetUUID()<<std::endl;
     m_clocks[peer->GetUUID()] = pt.get<boost::posix_time::ptime>("gm.value");
 }    
 
@@ -1390,12 +1400,39 @@ void GMAgent::HandleClockSkew(CMessage msg, PeerNodePtr peer)
     Logger.Info<<"Clock Skew From "<<peer->GetUUID()<<std::endl;
     if(peer->GetUUID() == Coordinator())
     {
-        Logger.Debug<<"Raw Skew Value "<<pt.get<std::string>("gm.clockskew")<<std::endl;
-        boost::posix_time::time_duration t = boost::posix_time::microseconds(pt.get<long>("gm.clockskew"));
+        Logger.Debug<<"Raw Skew Value "<<pt.get<std::string>("gm.clockskew.seconds")
+                    <<","<<pt.get<std::string>("gm.clockskew.fractions")<<std::endl;
+        boost::posix_time::time_duration t = boost::posix_time::seconds(pt.get<long>("gm.clockskew.seconds"));
+        boost::posix_time::time_duration t2; 
+        switch(pt.get<unsigned short>("gm.clockskew.resolution"))
+        {
+            /*
+            case 3:
+                Logger.Warn<<"Recieved a clock value constructed at low resolution."<<std::endl;
+                t2 = boost::posix_time::milliseconds(pt.get<long>("gm.clockskew.fractions"));
+                break;
+            */
+            case 6:
+                t2 = boost::posix_time::microseconds(pt.get<long>("gm.clockskew.fractions"));
+                break;
+            /*
+            case 9:
+                t += boost::posix_time::nanoseconds(pt.get<long>("gm.clockskew.fractions"));
+                break;
+            */
+            default:
+                Logger.Error<<"Recieved resolution is an unexpected value"<<std::endl;
+                throw std::runtime_error("Unexpected skew resolution");
+                break;
+        }
+        if(t.is_negative())
+            t -= t2;
+        else
+            t += t2;
         // We are actually making adjustments on the skew with each iteration
         Logger.Debug<<"Loaded time duration from Ptree"<<std::endl;
         t = t + CGlobalConfiguration::instance().GetClockSkew();
-        Logger.Notice<<"Adjusting My Skew To "<<t<<std::endl;
+        Logger.Status<<"Adjusting My Skew To "<<t<<std::endl;
         CGlobalConfiguration::instance().SetClockSkew(t);
     }
     Logger.Debug<<"Finished Adjusting Clock"<<std::endl;

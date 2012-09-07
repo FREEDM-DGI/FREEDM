@@ -63,7 +63,6 @@ public:
         NotImplemented = 501,
         BadGateway = 502,
         ServiceUnavailable = 503,
-        ReadClock = 800,
         ClockReading = 801
     };
 

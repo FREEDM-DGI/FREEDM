@@ -32,9 +32,15 @@
 
 #include "CBroker.hpp"
 #include "CLogger.hpp"
+#include "CGlobalPeerList.hpp"
+#include "IPeerNode.hpp"
 
 #include <boost/asio/io_service.hpp>
 #include <boost/bind.hpp>
+#include <boost/range/adaptor/map.hpp>
+#include <boost/foreach.hpp>
+
+#include <map>
 
 /// General FREEDM Namespace
 namespace freedm {
@@ -91,6 +97,8 @@ CBroker::CBroker(const std::string& p_address, const std::string& p_port,
     now += CGlobalConfiguration::instance().GetClockSkew();
     now -= boost::posix_time::milliseconds(2*ALIGNMENT_DURATION);
     m_last_alignment = now;
+
+    m_kvalue[GetConnectionManager().GetUUID()] = 0;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -307,6 +315,17 @@ void CBroker::ChangePhase(const boost::system::error_code &err)
     // Get the time without millisec and with millisec then see how many millsec we
     // are into this second.
     boost::posix_time::ptime now = boost::posix_time::microsec_clock::universal_time();
+    // Generate a clock beacon
+    std::string uuid = GetConnectionManager().GetUUID();
+    CMessage msg;
+    msg.SetStatus(CMessage::ClockReading);
+    msg.GetSubMessages().put("clock.k",m_kvalue[uuid]);
+    // Loop all known peers & send the message to them:
+    BOOST_FOREACH(boost::shared_ptr<IPeerNode> peer, CGlobalPeerList::instance().PeerList() | boost::adaptors::map_values)
+    {
+        peer->Send(msg);
+    }
+    UpdateOffsets(uuid,now.time_of_day(),m_kvalue[uuid]+1);
     now += CGlobalConfiguration::instance().GetClockSkew();
     boost::posix_time::time_duration time = now.time_of_day();
     if(m_phase >= m_modules.size())
@@ -439,6 +458,118 @@ void CBroker::Worker()
     m_schmutex.unlock();
 }
 
+void CBroker::HandleClockReading(CMessage msg)
+{
+    //Extract the UUID, timestamp and the k value from the message then update the offsets.
+    Logger.Error<<"Got Clock Sync Beacon From "<<msg.GetSourceUUID()<<std::endl;
+    UpdateOffsets(msg.GetSourceUUID(),msg.GetSendTimestamp().time_of_day(),msg.GetSubMessages().get<unsigned int>("clock.k"));
+}
+
+void CBroker::UpdateOffsets(std::string uuid, boost::posix_time::time_duration stamp, unsigned int newk)
+{
+    bool firstk = (m_kvalue.find(uuid) == m_kvalue.end());
+    double newz;
+    const double constT = 2; // Resolution of the clock
+    const double p2 = 0.0420; // Weight of clock variance
+    const double p1 = 0.0048; // Weight of the distance between clock readings
+    const double p0 = 0.1898; // Weight of previous measurement 
+
+    if(firstk || newk != m_kvalue[uuid]+1)
+    {
+        //We have lost a k value. remove the entry that was in the k-1 table
+        //and update the k table.
+        if(!firstk)
+        {
+            Logger.Warn<<"Missed a timestamp broadcast from "<<uuid<<std::endl;
+        }
+        else
+        {
+            Logger.Warn<<"First beacon from "<<uuid<<std::endl;
+            m_offsets[uuid] = boost::posix_time::milliseconds(0);
+        }
+        m_kvalue[uuid] = newk;
+        m_laststamp2.erase(uuid);
+        m_laststamp[uuid] = stamp;
+    }
+    else
+    {
+        //We have recieved 2 stamps in a row, which is sufficent to compute new offsets:
+        if(m_zfactor.find(uuid) == m_zfactor.end())
+        {
+            //We haven't computed a z before: use 0 for a starting case:
+            m_zfactor[uuid] = 0;
+        }
+        newz = m_zfactor[uuid];
+        newz += constT * (-p0 * (m_zfactor[uuid]));
+        double partial = 0.0;
+        std::map< std::string, boost::posix_time::time_duration >::iterator it;
+        double sign = 1.0;
+        for(it = m_offsets.begin(); it != m_offsets.end(); it++)
+        {
+            if(it->first == uuid)
+                continue;
+            if(m_laststamp[it->first] < m_laststamp[uuid])
+                sign = -1.0;
+            else
+                sign = 1.0;
+            //Add the full seconds
+            partial += ((m_laststamp[it->first].total_seconds()*1.0)+(m_offsets[it->first].total_seconds()*1.0));
+            partial -= ((m_laststamp[uuid].total_seconds()*1.0)+(m_offsets[uuid].total_seconds()*1.0));
+            //then the partials.
+            partial += sign*((m_laststamp[it->first].fractional_seconds()*1.0)+(m_offsets[it->first].fractional_seconds()*1.0))*(1.0/1000000);
+            partial -= sign*((m_laststamp[uuid].fractional_seconds()*1.0)+(m_offsets[uuid].fractional_seconds()*1.0))*(1.0/1000000);
+        }
+        partial *= p1;
+        newz += constT * partial;
+        partial = 0.0;
+        for(it = m_offsets.begin(); it != m_offsets.end(); it++)
+        {
+            if(it->first == uuid)
+                continue;
+            if(m_laststamp2.find(it->first) == m_laststamp2.end() ||
+                m_laststamp.find(it->first) == m_laststamp.end())
+            {
+                // There aren't 2 sequential steps for this node to use.
+                continue;
+            }
+            double numer = (m_laststamp[it->first].total_seconds()-m_laststamp2[it->first].total_seconds());
+            if(numer < 0)
+                sign = -1.0;
+            else
+                sign = 1.0;
+            numer += sign*((m_laststamp[it->first].fractional_seconds()-m_laststamp2[it->first].fractional_seconds())*(1.0/1000000));
+            double denom = (m_laststamp[uuid].total_seconds()-m_laststamp2[uuid].total_seconds());
+            if(denom < 0)
+                sign = -1.0;
+            else
+                sign = 1.0;
+            denom += sign*((m_laststamp[uuid].fractional_seconds()-m_laststamp2[uuid].fractional_seconds())*(1.0/1000000));
+            partial += (numer/denom)-1;
+        }
+        partial *= p2;
+        newz += constT * partial;
+        Logger.Error<<"Computed a z("<<uuid<<") of "<<newz<<" seconds?"<<std::endl;
+        m_zfactor[uuid] = newz;
+        newz *= constT;
+        double seconds, fractional, temp, temp2;
+        temp = modf(newz,&seconds);
+        temp *= 1.0/constT;
+        fractional = modf(temp,&temp2);
+        if(m_offsets.find(uuid) == m_offsets.end())
+        {
+            m_offsets[uuid] = boost::posix_time::milliseconds(0);
+        }
+        m_offsets[uuid] = m_offsets[uuid]+boost::posix_time::seconds(seconds)+boost::posix_time::microseconds(fractional);
+        if(uuid == GetConnectionManager().GetUUID())
+        {
+            CGlobalConfiguration::instance().SetClockSkew(m_offsets[uuid]);
+            Logger.Error<<"Set my clock offset to "<<m_offsets[uuid]<<std::endl;
+        }
+        m_kvalue[uuid] = newk;
+        m_laststamp2[uuid] = m_laststamp[uuid];
+        m_laststamp[uuid] = stamp;
+    }
+}
 
     } // namespace broker
 } // namespace freedm

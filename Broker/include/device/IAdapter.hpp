@@ -55,6 +55,7 @@ public:
     /// Pointer to a physical adapter.
     typedef boost::shared_ptr<IAdapter> Pointer;
 
+    /// Starts the adapter.
     virtual void Start() = 0;
     
     /// Retrieves a value from a device.

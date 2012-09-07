@@ -16,7 +16,6 @@
 ///               CRtdsAdapter::Start
 ///               CRtdsAdapter::~CRtdsAdapter
 ///               CRtdsAdapter::Run
-///               CRtdsAdapter::Start
 ///               CRtdsAdapter::CRtdsAdapter
 ///               CRtdsAdapter::Quit
 ///
@@ -133,7 +132,7 @@ inline void EndianSwapIfNeeded(std::vector<SignalValue> & v)
 ///
 /// @return Shared pointer to the new CRtdsAdapter object.
 ///
-/// @limitations Client must call Connect before the CRtdsAdapter can be used.
+/// @limitations None
 ///////////////////////////////////////////////////////////////////////////////
 IAdapter::Pointer CRtdsAdapter::Create(boost::asio::io_service & service,
         const boost::property_tree::ptree & ptree)
@@ -153,7 +152,7 @@ IAdapter::Pointer CRtdsAdapter::Create(boost::asio::io_service & service,
 /// @param service The io_service to be used to communicate with the FPGA.
 /// @param ptree The property tree specifying this adapter's device signals.
 ///
-/// @limitations Client must call Connect before the CRtdsAdapter can be used.
+/// @limitations None
 ////////////////////////////////////////////////////////////////////////////////
 CRtdsAdapter::CRtdsAdapter(boost::asio::io_service & service,
         const boost::property_tree::ptree & ptree)
@@ -176,6 +175,7 @@ void CRtdsAdapter::Start()
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     
     IBufferAdapter::Start();
+    ITcpAdapter::Connect();
     Run();
 }
 

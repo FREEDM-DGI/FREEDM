@@ -74,12 +74,12 @@ void EndianSwap(char * data, const int numBytes)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
-    char * tmp = new char[num_bytes];
+    char * tmp = new char[numBytes];
 
-    for (int i = 0; i < num_bytes; ++i)
-        tmp[i] = data[num_bytes - 1 - i];
+    for (int i = 0; i < numBytes; ++i)
+        tmp[i] = data[numBytes - 1 - i];
 
-    for (int i = 0; i < num_bytes; ++i)
+    for (int i = 0; i < numBytes; ++i)
         data[i] = tmp[i];
 
     delete[] tmp;
@@ -108,7 +108,7 @@ inline void EndianSwapIfNeeded(std::vector<SignalValue> & v)
 #if __BYTE_ORDER == __LITTLE_ENDIAN
     for( std::size_t i = 0; i < v.size(); i++ )
     {
-        EndianSwap(&v[0], sizeof(SignalValue));
+        EndianSwap((char*)&v[0], sizeof(SignalValue));
     }
     
 #elif __BYTE_ORDER == __BIG_ENDIAN

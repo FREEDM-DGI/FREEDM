@@ -304,28 +304,41 @@ void CBroker::Schedule(ModuleIdent m, BoundScheduleable x, bool start_worker)
 void CBroker::ChangePhase(const boost::system::error_code &err)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    bool static firstever = true;
     if(m_modules.size() == 0)
     {
         m_phase=0;
         return;
     }
-    // Past this point assume there is at least one module.
-    m_schmutex.lock();
-    m_phase++;
-    // Get the time without millisec and with millisec then see how many millsec we
-    // are into this second.
     boost::posix_time::ptime now = boost::posix_time::microsec_clock::universal_time();
-    // Generate a clock beacon
     std::string uuid = GetConnectionManager().GetUUID();
     CMessage msg;
     msg.SetStatus(CMessage::ClockReading);
     msg.GetSubMessages().put("clock.k",m_kvalue[uuid]);
     // Loop all known peers & send the message to them:
-    BOOST_FOREACH(boost::shared_ptr<IPeerNode> peer, CGlobalPeerList::instance().PeerList() | boost::adaptors::map_values)
+    if(firstever == false)
     {
-        peer->Send(msg);
+        Logger.Error<<"Sending Beacon"<<std::endl;
+        BOOST_FOREACH(boost::shared_ptr<IPeerNode> peer, CGlobalPeerList::instance().PeerList() | boost::adaptors::map_values)
+        {
+            if(peer->GetUUID() == uuid)
+                continue;
+            peer->Send(msg);
+        }
+        Logger.Error<<"Computing offsets"<<std::endl;
+        UpdateOffsets(uuid,now.time_of_day(),m_kvalue[uuid]+1);
     }
-    UpdateOffsets(uuid,now.time_of_day(),m_kvalue[uuid]+1);
+    else
+    {
+        firstever = false;
+    }
+
+    // Past this point assume there is at least one module.
+    m_schmutex.lock();
+    m_phase++;
+    // Get the time without millisec and with millisec then see how many millsec we
+    // are into this second.
+    // Generate a clock beacon
     now += CGlobalConfiguration::instance().GetClockSkew();
     boost::posix_time::time_duration time = now.time_of_day();
     if(m_phase >= m_modules.size())
@@ -460,6 +473,7 @@ void CBroker::Worker()
 
 void CBroker::HandleClockReading(CMessage msg)
 {
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     //Extract the UUID, timestamp and the k value from the message then update the offsets.
     Logger.Error<<"Got Clock Sync Beacon From "<<msg.GetSourceUUID()<<std::endl;
     UpdateOffsets(msg.GetSourceUUID(),msg.GetSendTimestamp().time_of_day(),msg.GetSubMessages().get<unsigned int>("clock.k"));
@@ -467,6 +481,7 @@ void CBroker::HandleClockReading(CMessage msg)
 
 void CBroker::UpdateOffsets(std::string uuid, boost::posix_time::time_duration stamp, unsigned int newk)
 {
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     bool firstk = (m_kvalue.find(uuid) == m_kvalue.end());
     double newz;
     const double constT = 2; // Resolution of the clock

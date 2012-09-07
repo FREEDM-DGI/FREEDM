@@ -112,7 +112,7 @@ CGlobalPeerList::PeerNodePtr CGlobalPeerList::Create(std::string uuid, ConnManag
 /// @description Returns a copy of the peerlist for iterating an stuff
 /// @return A copy of the internal peer list
 /////////////////////////////////////////////////////
-CGlobalPeerList::PeerSet CGlobalPeerList::PeerList()
+CGlobalPeerList::PeerSet& CGlobalPeerList::PeerList()
 {
     return m_peerlist;
 }

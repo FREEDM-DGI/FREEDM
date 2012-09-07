@@ -68,7 +68,7 @@ class CGlobalPeerList : public boost::noncopyable
         /// Iterator to the end of the peerset
         PeerSetIterator end();
         /// Returns a copy of the peer map
-        PeerSet PeerList();
+        PeerSet& PeerList();
     protected:
         /// Construct a peer from uuid and connection manager.
         PeerNodePtr Create(std::string uuid, ConnManagerPtr connmgr);

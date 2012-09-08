@@ -553,12 +553,12 @@ void CBroker::UpdateOffsets(std::string uuid, boost::posix_time::time_duration s
         newz += constT * partial;
         Logger.Error<<"Computed a z("<<uuid<<") of "<<newz<<std::endl;
         m_zfactor[uuid] = newz;
-        newz *= constT;
+        //newz *= constT;
         if(m_offsets.find(uuid) == m_offsets.end())
         {
             m_offsets[uuid] = boost::posix_time::milliseconds(0);
         }
-        m_offsets[uuid] += DoubleToTD(newz);
+        m_offsets[uuid] = DoubleToTD(newz);
         if(uuid == GetConnectionManager().GetUUID())
         {
             CGlobalConfiguration::instance().SetClockSkew(m_offsets[uuid]);

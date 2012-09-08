@@ -474,6 +474,15 @@ void CBroker::Worker()
     m_schmutex.unlock();
 }
 
+///////////////////////////////////////////////////////////////////////////////
+/// @fn CBroker::HandleClockReading
+/// @description On the reciept of a beacon from a node, enters into the clock
+///     tables and thenupdates the counted offset for the time that node is
+///     providing. Neat!
+/// @param msg A CMessage containing a beacon timestamp.
+/// @pre None
+/// @post A clock reading has been accepted
+///////////////////////////////////////////////////////////////////////////////
 void CBroker::HandleClockReading(CMessage msg)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
@@ -482,6 +491,20 @@ void CBroker::HandleClockReading(CMessage msg)
     UpdateOffsets(msg.GetSourceUUID(),msg.GetSendTimestamp().time_of_day(),msg.GetSubMessages().get<unsigned int>("clock.k"));
 }
 
+///////////////////////////////////////////////////////////////////////////////
+/// @fn CBroker::UpdateOffsets
+/// @citation Master-less time synchronization for wireless sensor networks with generic topology
+/// @description Given a beacon sender, the timestamp of the beacon and the k of that beacon,
+///     do an awful lot of fancy stuff, based on the citation. Basically, what this does is
+///     a discrete differential equation to synchronize a bunch of clocks without using a
+///     master. It is pretty awesome. However, it doesn't detect bad clocks, but we aren't
+///     worried about most threats and this works pretty awesome so far.
+/// @param uuid the node that originated the "beacon"
+/// @param stamp the timestamp associated with the "beacon" beacons are generated
+///     by nodes a pre-specified interval (when we synchronize phases) ITS SO PERFECT.
+/// @param newk The k value for the clock, you need to have 2 beacons to compute an
+///     offset correctly.
+///////////////////////////////////////////////////////////////////////////////
 void CBroker::UpdateOffsets(std::string uuid, boost::posix_time::time_duration stamp, unsigned int newk)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
@@ -576,14 +599,26 @@ void CBroker::UpdateOffsets(std::string uuid, boost::posix_time::time_duration s
     }
 }
 
-///Turn a time duration into a double
+///////////////////////////////////////////////////////////////////////////////
+/// @fn CBroker::TDToDouble
+/// @description give a time duration td, convert it to a double which represents
+///     the number of seconds the time duration represents
+/// @param td the time duration to convert
+/// @return a double of the time duration, in seconds.
+///////////////////////////////////////////////////////////////////////////////
 double CBroker::TDToDouble(boost::posix_time::time_duration td)
 {
     double x = td.total_seconds() + (td.fractional_seconds()*1.0)/1000000;
     return x;
 }
 
-///Turn a double into a time duration
+///////////////////////////////////////////////////////////////////////////////
+/// @fn CBroker::DoubleToTD
+/// @description given a double td, convert it to a boost time_duration of
+///     roughly the same value (some losses for the accuracy of posix_time
+/// @param td the time duration (in seconds) to convert
+/// @return a time duration that is roughly the same as td.
+///////////////////////////////////////////////////////////////////////////////
 boost::posix_time::time_duration CBroker::DoubleToTD(double td)
 {
     double seconds, tmp, fractional;

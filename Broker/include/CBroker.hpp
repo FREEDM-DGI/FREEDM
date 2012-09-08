@@ -190,6 +190,11 @@ private:
     ///Map that stores the clock offset o
     std::map< std::string, boost::posix_time::time_duration > m_offsets;
 
+    ///Turn a time duration into a double
+    double TDToDouble(boost::posix_time::time_duration td);
+
+    ///Turn a double into a time duration
+    boost::posix_time::time_duration DoubleToTD(double td);
     
 };
 

@@ -518,21 +518,16 @@ void CBroker::UpdateOffsets(std::string uuid, boost::posix_time::time_duration s
         newz += constT * (-p0 * (m_zfactor[uuid]));
         double partial = 0.0;
         std::map< std::string, boost::posix_time::time_duration >::iterator it;
-        double sign = 1.0;
         for(it = m_offsets.begin(); it != m_offsets.end(); it++)
         {
             if(it->first == uuid)
                 continue;
-            if(m_laststamp[it->first] < m_laststamp[uuid])
-                sign = -1.0;
-            else
-                sign = 1.0;
-            //Add the full seconds
-            partial += ((m_laststamp[it->first].total_seconds()*1.0)+(m_offsets[it->first].total_seconds()*1.0));
-            partial -= ((m_laststamp[uuid].total_seconds()*1.0)+(m_offsets[uuid].total_seconds()*1.0));
-            //then the partials.
-            partial += sign*((m_laststamp[it->first].fractional_seconds()*1.0)+(m_offsets[it->first].fractional_seconds()*1.0))*(1.0/1000000);
-            partial -= sign*((m_laststamp[uuid].fractional_seconds()*1.0)+(m_offsets[uuid].fractional_seconds()*1.0))*(1.0/1000000);
+            double current_ls = TDToDouble(m_laststamp[it->first]);
+            double current_os = TDToDouble(m_offsets[it->first]);
+            double uuid_ls = TDToDouble(m_laststamp[uuid]);
+            double uuid_os = TDToDouble(m_offsets[uuid]);
+            partial += (current_ls+current_os);
+            partial -= (uuid_ls+uuid_os);
         }
         partial *= p1;
         newz += constT * partial;
@@ -547,34 +542,20 @@ void CBroker::UpdateOffsets(std::string uuid, boost::posix_time::time_duration s
                 // There aren't 2 sequential steps for this node to use.
                 continue;
             }
-            double numer = (m_laststamp[it->first].total_seconds()-m_laststamp2[it->first].total_seconds());
-            if(numer < 0)
-                sign = -1.0;
-            else
-                sign = 1.0;
-            numer += sign*((m_laststamp[it->first].fractional_seconds()-m_laststamp2[it->first].fractional_seconds())*(1.0/1000000));
-            double denom = (m_laststamp[uuid].total_seconds()-m_laststamp2[uuid].total_seconds());
-            if(denom < 0)
-                sign = -1.0;
-            else
-                sign = 1.0;
-            denom += sign*((m_laststamp[uuid].fractional_seconds()-m_laststamp2[uuid].fractional_seconds())*(1.0/1000000));
+            double numer = TDToDouble(m_laststamp[it->first])-TDToDouble(m_laststamp2[it->first]); 
+            double denom = TDToDouble(stamp)-TDToDouble(m_laststamp[uuid]);
             partial += (numer/denom)-1;
         }
         partial *= p2;
         newz += constT * partial;
-        Logger.Error<<"Computed a z("<<uuid<<") of "<<newz<<" seconds?"<<std::endl;
+        Logger.Error<<"Computed a z("<<uuid<<") of "<<newz<<std::endl;
         m_zfactor[uuid] = newz;
         newz *= constT;
-        double seconds, fractional, temp, temp2;
-        temp = modf(newz,&seconds);
-        temp *= 1.0/constT;
-        fractional = modf(temp,&temp2);
         if(m_offsets.find(uuid) == m_offsets.end())
         {
             m_offsets[uuid] = boost::posix_time::milliseconds(0);
         }
-        m_offsets[uuid] = m_offsets[uuid]+boost::posix_time::seconds(seconds)+boost::posix_time::microseconds(fractional);
+        m_offsets[uuid] += DoubleToTD(newz);
         if(uuid == GetConnectionManager().GetUUID())
         {
             CGlobalConfiguration::instance().SetClockSkew(m_offsets[uuid]);
@@ -584,6 +565,23 @@ void CBroker::UpdateOffsets(std::string uuid, boost::posix_time::time_duration s
         m_laststamp2[uuid] = m_laststamp[uuid];
         m_laststamp[uuid] = stamp;
     }
+}
+
+///Turn a time duration into a double
+double CBroker::TDToDouble(boost::posix_time::time_duration td)
+{
+    double x = td.total_seconds() + (td.fractional_seconds()*1.0)/1000000;
+    return x;
+}
+
+///Turn a double into a time duration
+boost::posix_time::time_duration CBroker::DoubleToTD(double td)
+{
+    double seconds, tmp, fractional;
+    tmp = modf(td, &seconds);
+    tmp *= 1000000; // Shift out to the microseconds
+    modf(tmp, &fractional);
+    return boost::posix_time::seconds(seconds) + boost::posix_time::microseconds(fractional);    
 }
 
     } // namespace broker

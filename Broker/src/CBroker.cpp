@@ -524,7 +524,7 @@ void CBroker::UpdateOffsets(std::string uuid, boost::posix_time::time_duration s
                 continue;
             double current_ls = TDToDouble(m_laststamp[it->first]);
             double current_os = TDToDouble(m_offsets[it->first]);
-            double uuid_ls = TDToDouble(m_laststamp[uuid]);
+            double uuid_ls = TDToDouble(stamp);
             double uuid_os = TDToDouble(m_offsets[uuid]);
             partial += (current_ls+current_os);
             partial -= (uuid_ls+uuid_os);

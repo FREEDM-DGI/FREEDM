@@ -363,14 +363,14 @@ void CBroker::ChangePhase(const boost::system::error_code &err)
         // Loop all known peers & send the message to them:
         if(firstever == false)
         {
-            Logger.Error<<"Sending Beacon"<<std::endl;
+            Logger.Info<<"Sending Beacon"<<std::endl;
             BOOST_FOREACH(boost::shared_ptr<IPeerNode> peer, CGlobalPeerList::instance().PeerList() | boost::adaptors::map_values)
             {
                 if(peer->GetUUID() == uuid)
                     continue;
                 peer->Send(msg);
             }
-            Logger.Error<<"Computing offsets"<<std::endl;
+            Logger.Info<<"Computing offsets"<<std::endl;
             UpdateOffsets(uuid,ts.time_of_day(),m_kvalue[uuid]+1);
         }
         else
@@ -478,7 +478,7 @@ void CBroker::HandleClockReading(CMessage msg)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     //Extract the UUID, timestamp and the k value from the message then update the offsets.
-    Logger.Error<<"Got Clock Sync Beacon From "<<msg.GetSourceUUID()<<std::endl;
+    Logger.Info<<"Got Clock Sync Beacon From "<<msg.GetSourceUUID()<<std::endl;
     UpdateOffsets(msg.GetSourceUUID(),msg.GetSendTimestamp().time_of_day(),msg.GetSubMessages().get<unsigned int>("clock.k"));
 }
 
@@ -498,11 +498,11 @@ void CBroker::UpdateOffsets(std::string uuid, boost::posix_time::time_duration s
         //and update the k table.
         if(!firstk)
         {
-            Logger.Warn<<"Missed a timestamp broadcast from "<<uuid<<std::endl;
+            Logger.Status<<"Missed a timestamp broadcast from "<<uuid<<std::endl;
         }
         else
         {
-            Logger.Warn<<"First beacon from "<<uuid<<std::endl;
+            Logger.Status<<"First beacon from "<<uuid<<std::endl;
             m_offsets[uuid] = boost::posix_time::milliseconds(0);
         }
         m_kvalue[uuid] = newk;
@@ -557,7 +557,7 @@ void CBroker::UpdateOffsets(std::string uuid, boost::posix_time::time_duration s
         }
         partial *= p2;
         newz += constT * partial;
-        Logger.Error<<"Computed a z("<<uuid<<") of "<<newz<<std::endl;
+        Logger.Info<<"Computed a z("<<uuid<<") of "<<newz<<std::endl;
         m_zfactor[uuid] = newz;
         //newz *= constT;
         if(m_offsets.find(uuid) == m_offsets.end())
@@ -568,7 +568,7 @@ void CBroker::UpdateOffsets(std::string uuid, boost::posix_time::time_duration s
         if(uuid == GetConnectionManager().GetUUID())
         {
             CGlobalConfiguration::instance().SetClockSkew(m_offsets[uuid]);
-            Logger.Error<<"Set my clock offset to "<<m_offsets[uuid]<<std::endl;
+            Logger.Info<<"Set my clock offset to "<<m_offsets[uuid]<<std::endl;
         }
         m_kvalue[uuid] = newk;
         m_laststamp2[uuid] = m_laststamp[uuid];

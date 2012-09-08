@@ -310,28 +310,6 @@ void CBroker::ChangePhase(const boost::system::error_code &err)
         m_phase=0;
         return;
     }
-    boost::posix_time::ptime now = boost::posix_time::microsec_clock::universal_time();
-    std::string uuid = GetConnectionManager().GetUUID();
-    CMessage msg;
-    msg.SetStatus(CMessage::ClockReading);
-    msg.GetSubMessages().put("clock.k",m_kvalue[uuid]);
-    // Loop all known peers & send the message to them:
-    if(firstever == false)
-    {
-        Logger.Error<<"Sending Beacon"<<std::endl;
-        BOOST_FOREACH(boost::shared_ptr<IPeerNode> peer, CGlobalPeerList::instance().PeerList() | boost::adaptors::map_values)
-        {
-            if(peer->GetUUID() == uuid)
-                continue;
-            peer->Send(msg);
-        }
-        Logger.Error<<"Computing offsets"<<std::endl;
-        UpdateOffsets(uuid,now.time_of_day(),m_kvalue[uuid]+1);
-    }
-    else
-    {
-        firstever = false;
-    }
 
     // Past this point assume there is at least one module.
     m_schmutex.lock();
@@ -339,6 +317,7 @@ void CBroker::ChangePhase(const boost::system::error_code &err)
     // Get the time without millisec and with millisec then see how many millsec we
     // are into this second.
     // Generate a clock beacon
+    boost::posix_time::ptime now = boost::posix_time::microsec_clock::universal_time();
     now += CGlobalConfiguration::instance().GetClockSkew();
     boost::posix_time::time_duration time = now.time_of_day();
     if(m_phase >= m_modules.size())
@@ -375,6 +354,30 @@ void CBroker::ChangePhase(const boost::system::error_code &err)
     {
         Logger.Notice<<"Aligned phase to "<<cphase<<" (was "<<m_phase<<") for "
                    <<remaining<<" ms"<<std::endl;
+
+        boost::posix_time::ptime ts = boost::posix_time::microsec_clock::universal_time();
+        std::string uuid = GetConnectionManager().GetUUID();
+        CMessage msg;
+        msg.SetStatus(CMessage::ClockReading);
+        msg.GetSubMessages().put("clock.k",m_kvalue[uuid]);
+        // Loop all known peers & send the message to them:
+        if(firstever == false)
+        {
+            Logger.Error<<"Sending Beacon"<<std::endl;
+            BOOST_FOREACH(boost::shared_ptr<IPeerNode> peer, CGlobalPeerList::instance().PeerList() | boost::adaptors::map_values)
+            {
+                if(peer->GetUUID() == uuid)
+                    continue;
+                peer->Send(msg);
+            }
+            Logger.Error<<"Computing offsets"<<std::endl;
+            UpdateOffsets(uuid,ts.time_of_day(),m_kvalue[uuid]+1);
+        }
+        else
+        {
+            firstever = false;
+        }
+        
         m_phase = cphase;
         m_last_alignment = now;
         sched_duration = remaining;

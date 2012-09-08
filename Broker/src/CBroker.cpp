@@ -525,6 +525,12 @@ void CBroker::UpdateOffsets(std::string uuid, boost::posix_time::time_duration s
         {
             if(it->first == uuid)
                 continue;
+            if(m_laststamp2.find(it->first) == m_laststamp2.end() ||
+                m_laststamp.find(it->first) == m_laststamp.end())
+            {
+                // There aren't 2 sequential steps for this node to use.
+                continue;
+            }
             double current_ls = TDToDouble(m_laststamp[it->first]);
             double current_os = TDToDouble(m_offsets[it->first]);
             double uuid_ls = TDToDouble(stamp);

@@ -488,9 +488,9 @@ void CBroker::UpdateOffsets(std::string uuid, boost::posix_time::time_duration s
     bool firstk = (m_kvalue.find(uuid) == m_kvalue.end());
     double newz;
     const double constT = 2; // Resolution of the clock
-    const double p2 = 0.0420; // Weight of clock variance
-    const double p1 = 0.0048; // Weight of the distance between clock readings
-    const double p0 = 0.1898; // Weight of previous measurement 
+    const double p2 = 0.011035; // Weight of clock variance
+    const double p1 = 0.0053127; // Weight of the distance between clock readings
+    const double p0 = 0.86813; // Weight of previous measurement 
 
     if(firstk || newk != m_kvalue[uuid]+1)
     {

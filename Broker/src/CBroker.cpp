@@ -363,14 +363,14 @@ void CBroker::ChangePhase(const boost::system::error_code &err)
         // Loop all known peers & send the message to them:
         if(firstever == false)
         {
-            Logger.Info<<"Sending Beacon"<<std::endl;
+            Logger.Error<<"Sending Beacon"<<std::endl;
             BOOST_FOREACH(boost::shared_ptr<IPeerNode> peer, CGlobalPeerList::instance().PeerList() | boost::adaptors::map_values)
             {
                 if(peer->GetUUID() == uuid)
                     continue;
                 peer->Send(msg);
             }
-            Logger.Info<<"Computing offsets"<<std::endl;
+            Logger.Error<<"Computing offsets"<<std::endl;
             UpdateOffsets(uuid,ts.time_of_day(),m_kvalue[uuid]+1);
         }
         else
@@ -521,11 +521,11 @@ void CBroker::UpdateOffsets(std::string uuid, boost::posix_time::time_duration s
         //and update the k table.
         if(!firstk)
         {
-            Logger.Status<<"Missed a timestamp broadcast from "<<uuid<<std::endl;
+            Logger.Warn<<"Missed a timestamp broadcast from "<<uuid<<std::endl;
         }
         else
         {
-            Logger.Status<<"First beacon from "<<uuid<<std::endl;
+            Logger.Warn<<"First beacon from "<<uuid<<std::endl;
             m_offsets[uuid] = boost::posix_time::milliseconds(0);
         }
         m_kvalue[uuid] = newk;

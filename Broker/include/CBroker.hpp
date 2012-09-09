@@ -51,7 +51,7 @@ namespace freedm {
 class CDispatcher;
 
 /// How long we should wait before aligning the modules again
-const unsigned int ALIGNMENT_DURATION = 2000;
+const unsigned int ALIGNMENT_DURATION = 250;
 
 /// Central monolith of the Broker Architecture.
 class CBroker : private boost::noncopyable

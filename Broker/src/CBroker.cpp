@@ -510,10 +510,10 @@ void CBroker::UpdateOffsets(std::string uuid, boost::posix_time::time_duration s
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     bool firstk = (m_kvalue.find(uuid) == m_kvalue.end());
     double newz;
-    const double constT = 2; // Resolution of the clock
-    const double p2 = 0.020450; // Weight of clock variance
-    const double p1 = 0.0031128; // Weight of the distance between clock readings
-    const double p0 = 0.44591; // Weight of previous measurement 
+    const double constT = .250; // Resolution of the clock
+    const double p2 = 0.34387; // Weight of clock variance
+    const double p1 = 0.0099281; // Weight of the distance between clock readings
+    const double p0 = 0.590083; // Weight of previous measurement 
 
     if(firstk || newk != m_kvalue[uuid]+1)
     {

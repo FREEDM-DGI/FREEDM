@@ -384,7 +384,7 @@ void CBroker::ChangePhase(const boost::system::error_code &err)
     }
     if(m_modules.size() > 0)
     {
-        Logger.Debug<<"Phase: "<<m_modules[m_phase].first<<std::endl;
+        Logger.Error<<"Phase: "<<m_modules[m_phase].first<<" for "<<sched_duration<<"ms "<<"offset "<<CGlobalConfiguration::instance().GetClockSkew()<<std::endl;
     }
     //If the worker isn't going, start him again when you change phases.
     if(!m_busy)

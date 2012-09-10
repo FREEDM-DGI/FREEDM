@@ -318,8 +318,9 @@ void CBroker::ChangePhase(const boost::system::error_code &err)
     // are into this second.
     // Generate a clock beacon
     boost::posix_time::ptime now = boost::posix_time::microsec_clock::universal_time();
-    now += CGlobalConfiguration::instance().GetClockSkew();
     boost::posix_time::time_duration time = now.time_of_day();
+    time += CGlobalConfiguration::instance().GetClockSkew();
+
     if(m_phase >= m_modules.size())
     {
         m_phase = 0;

@@ -364,7 +364,7 @@ void CBroker::ChangePhase(const boost::system::error_code &err)
     }
     if(m_modules.size() > 0)
     {
-        Logger.Error<<"Phase: "<<m_modules[m_phase].first<<" for "<<sched_duration<<"ms "<<"offset "<<CGlobalConfiguration::instance().GetClockSkew()<<std::endl;
+        Logger.Notice<<"Phase: "<<m_modules[m_phase].first<<" for "<<sched_duration<<"ms "<<"offset "<<CGlobalConfiguration::instance().GetClockSkew()<<std::endl;
     }
     //If the worker isn't going, start him again when you change phases.
     if(!m_busy)
@@ -639,14 +639,14 @@ void CBroker::BroadcastBeacon(const boost::system::error_code &err)
             msg.SetStatus(CMessage::ClockReading);
             msg.GetSubMessages().put("clock.k",m_kvalue[uuid]);
             // Loop all known peers & send the message to them:
-            Logger.Error<<"Sending Beacon"<<std::endl;
+            Logger.Notice<<"Sending Beacon"<<std::endl;
             BOOST_FOREACH(boost::shared_ptr<IPeerNode> peer, CGlobalPeerList::instance().PeerList() | boost::adaptors::map_values)
             {
                 if(peer->GetUUID() == uuid)
                     continue;
                 peer->Send(msg);
             }
-            Logger.Error<<"Computing offsets"<<std::endl;
+            Logger.Info<<"Computing offsets"<<std::endl;
             UpdateOffsets(uuid,ts.time_of_day(),m_kvalue[uuid]+1);
             for(it = m_tickssinceupdate.begin(); it != m_tickssinceupdate.end(); it++)
             {

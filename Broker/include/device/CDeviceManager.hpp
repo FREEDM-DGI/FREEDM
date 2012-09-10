@@ -56,6 +56,7 @@ class CDeviceManager
 private:
     /// A typedef for the mapping of identifier to device pointers.
     typedef std::map<std::string, IDevice::Pointer> PhysicalDeviceSet;
+
 public:
     /// A typedef providing an iterator for this object.
     typedef PhysicalDeviceSet::iterator iterator;
@@ -69,15 +70,9 @@ public:
     /// Iterator to the first managed device.
     iterator begin();
 
-    /// Const iterator to the first managed device.
-    const_iterator begin() const;
-    
     /// Iterator past the last managed device.
     iterator end();
-    
-    /// Const iterator past the last managed device.
-    const_iterator end() const;
-    
+
     /// Add the specified device to the manager.
     void AddDevice(IDevice::Pointer device);
 
@@ -107,7 +102,7 @@ public:
     /// Retrieves a vector of stored values from the given device class.
     template <class DeviceType>
     std::vector<SignalValue> GetValueVector(
-            SignalValue(DeviceType::*getter)() const) const;
+            SignalValue (DeviceType::*getter)() const) const;
     
     /// Returns the result of a binary operation on a set of device signals.
     template <class BinaryOp>
@@ -115,8 +110,9 @@ public:
     
     /// Returns the result of a binary operation on a set of device signals.
     template <class DeviceType, class BinaryOp>
-    SignalValue GetValue(SignalValue(DeviceType::*getter)( ) const,
+    SignalValue GetValue(SignalValue (DeviceType::*getter)() const,
             BinaryOp math) const;
+
 private:
     /// Private constructor.
     CDeviceManager();

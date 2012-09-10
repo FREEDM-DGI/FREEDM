@@ -63,7 +63,7 @@ CDeviceManager & CDeviceManager::Instance()
     return instance;
 }
 
-////////////////////////////////////////////////////.//////////////////////////
+///////////////////////////////////////////////////////////////////////////////
 /// Constructor for the device manager
 ///
 /// @pre None
@@ -92,21 +92,6 @@ CDeviceManager::iterator CDeviceManager::begin()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// Gets an iterator to the beginning of the managed devices.
-///
-/// @pre None.
-/// @post Returns an iterator to a managed device.
-/// @return An iterator to the first managed device.
-///
-/// @limitations The iterator will be null if no devices exist.
-///////////////////////////////////////////////////////////////////////////////
-CDeviceManager::const_iterator CDeviceManager::begin() const
-{
-    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    return m_devices.begin();
-}
-
-///////////////////////////////////////////////////////////////////////////////
 /// Gets an iterator past the end of the managed devices.
 ///
 /// @pre None.
@@ -116,21 +101,6 @@ CDeviceManager::const_iterator CDeviceManager::begin() const
 /// @limitations None.
 ///////////////////////////////////////////////////////////////////////////////
 CDeviceManager::iterator CDeviceManager::end()
-{
-    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    return m_devices.end();
-}
-
-///////////////////////////////////////////////////////////////////////////////
-/// Gets an iterator past the end of the managed devices.
-///
-/// @pre None.
-/// @post Returns an iterator past the end of the managed devices.
-/// @return An iterator past the last managed device.
-///
-/// @limitations None.
-///////////////////////////////////////////////////////////////////////////////
-CDeviceManager::const_iterator CDeviceManager::end() const
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     return m_devices.end();

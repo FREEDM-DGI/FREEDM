@@ -494,6 +494,7 @@ void CBroker::UpdateOffsets(std::string uuid, boost::posix_time::time_duration s
     const double p2 = 0.34387; // Weight of clock variance
     const double p1 = 0.0099281; // Weight of the distance between clock readings
     const double p0 = 0.590083; // Weight of previous measurement 
+    std::map< std::string, unsigned int >::iterator it2;
 
     if(firstk || newk != m_kvalue[uuid]+1)
     {
@@ -534,6 +535,9 @@ void CBroker::UpdateOffsets(std::string uuid, boost::posix_time::time_duration s
                 // There aren't 2 sequential steps for this node to use.
                 continue;
             }
+            it2 = m_tickssinceupdate.find(it->first);
+            if(it2 != m_tickssinceupdate.end() && it2->second >= 2)
+                continue;
             double current_ls = TDToDouble(m_laststamp[it->first]);
             double current_os = TDToDouble(m_offsets[it->first]);
             double uuid_ls = TDToDouble(stamp);
@@ -554,6 +558,9 @@ void CBroker::UpdateOffsets(std::string uuid, boost::posix_time::time_duration s
                 // There aren't 2 sequential steps for this node to use.
                 continue;
             }
+            it2 = m_tickssinceupdate.find(it->first);
+            if(it2 != m_tickssinceupdate.end() && it2->second >= 2)
+                continue;
             double numer = TDToDouble(m_laststamp[it->first])-TDToDouble(m_laststamp2[it->first]); 
             double denom = TDToDouble(stamp)-TDToDouble(m_laststamp[uuid]);
             partial += (numer/denom)-1;
@@ -572,6 +579,10 @@ void CBroker::UpdateOffsets(std::string uuid, boost::posix_time::time_duration s
         {
             CGlobalConfiguration::instance().SetClockSkew(m_offsets[uuid]);
             Logger.Info<<"Set my clock offset to "<<m_offsets[uuid]<<std::endl;
+        }
+        else
+        {
+            m_tickssinceupdate[uuid] = 0;
         }
         m_kvalue[uuid] = newk;
         m_laststamp2[uuid] = m_laststamp[uuid];
@@ -617,6 +628,7 @@ void CBroker::BroadcastBeacon(const boost::system::error_code &err)
         {
             std::string uuid = GetConnectionManager().GetUUID();
             boost::posix_time::ptime ts = boost::posix_time::microsec_clock::universal_time();
+            std::map< std::string, unsigned int >::iterator it;
             CMessage msg;
             msg.SetStatus(CMessage::ClockReading);
             msg.GetSubMessages().put("clock.k",m_kvalue[uuid]);
@@ -630,6 +642,10 @@ void CBroker::BroadcastBeacon(const boost::system::error_code &err)
             }
             Logger.Error<<"Computing offsets"<<std::endl;
             UpdateOffsets(uuid,ts.time_of_day(),m_kvalue[uuid]+1);
+            for(it = m_tickssinceupdate.begin(); it != m_tickssinceupdate.end(); it++)
+            {
+                it->second++;
+            }
         }
         else
         {

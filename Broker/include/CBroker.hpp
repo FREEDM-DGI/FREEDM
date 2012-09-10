@@ -179,6 +179,9 @@ private:
     ///Lock for the scheduler.
     boost::shared_mutex m_schmutex;
 
+    // Keep track of how long it has been since the last update
+    std::map< std::string, unsigned int> m_tickssinceupdate;
+
     ///Map that stores the last time stamp (k) recieved by a node:
     std::map< std::string, boost::posix_time::time_duration> m_laststamp;
    

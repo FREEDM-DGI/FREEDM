@@ -52,7 +52,7 @@ class CDispatcher;
 
 /// How long we should wait before aligning the modules again
 const unsigned int ALIGNMENT_DURATION = 250;
-const unsigned int BEACON_FREQUENCY = 250;
+const unsigned int BEACON_FREQUENCY = 2000;
 
 /// Central monolith of the Broker Architecture.
 class CBroker : private boost::noncopyable
@@ -118,7 +118,7 @@ public:
     void HandleClockReading(CMessage msg);
 
     /// Update the tables based on a UUID and new clock readying
-    void UpdateOffsets(std::string uuid, boost::posix_time::time_duration stamp, unsigned int newk);
+    void UpdateOffsets();
 
 private:
 
@@ -182,6 +182,9 @@ private:
     // Keep track of how long it has been since the last update
     std::map< std::string, unsigned int> m_tickssinceupdate;
 
+    ///Last time a stamp was recieved
+    std::map< std::string, boost::posix_time::ptime> m_lastrecieved;
+
     ///Map that stores the last time stamp (k) recieved by a node:
     std::map< std::string, boost::posix_time::time_duration> m_laststamp;
    
@@ -194,6 +197,9 @@ private:
     ///Map the stores the adjustment factor z
     std::map< std::string, double > m_zfactor;
 
+    ///Map the stores the previous adjustment factor z
+    std::map< std::string, boost::posix_time::time_duration > m_prevoffsets;
+    
     ///Map that stores the clock offset o
     std::map< std::string, boost::posix_time::time_duration > m_offsets;
 

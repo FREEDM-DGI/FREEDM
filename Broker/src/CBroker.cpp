@@ -491,9 +491,9 @@ void CBroker::UpdateOffsets(std::string uuid, boost::posix_time::time_duration s
     bool firstk = (m_kvalue.find(uuid) == m_kvalue.end());
     double newz;
     const double constT = .250; // Resolution of the clock
-    const double p2 = 0.1059941; // Weight of clock variance
-    const double p1 = 0.00509908; // Weight of the distance between clock readings
-    const double p0 = 0.782607; // Weight of previous measurement 
+    const double p2 = 0.1359818; // Weight of clock variance
+    const double p1 = 0.005524322; // Weight of the distance between clock readings
+    const double p0 = 0.9338323; // Weight of previous measurement 
     std::map< std::string, unsigned int >::iterator it2;
 
     if(firstk || newk != m_kvalue[uuid]+1)
@@ -619,6 +619,12 @@ boost::posix_time::time_duration CBroker::DoubleToTD(double td)
     return boost::posix_time::seconds(seconds) + boost::posix_time::microseconds(fractional);    
 }
 
+///////////////////////////////////////////////////////////////////////////////
+/// @fn CBroker::BroadcastBeacon
+/// @description Sends the pulse with the current timestamp every so often
+/// @citation Master-less time synchronization for wireless sensor networks with generic topology
+/// @param err if the timer was canceled or what have you
+///////////////////////////////////////////////////////////////////////////////
 void CBroker::BroadcastBeacon(const boost::system::error_code &err)
 {
     static bool firstever = true;

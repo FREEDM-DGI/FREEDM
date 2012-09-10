@@ -78,7 +78,8 @@ CBroker::CBroker(const std::string& p_address, const std::string& p_port,
       m_connManager(m_conMan),
       m_dispatch(p_dispatch),
       m_newConnection(new CListener(m_ioService, m_connManager, *this, m_conMan.GetUUID())),
-      m_phasetimer(m_ios)
+      m_phasetimer(m_ios),
+      m_beacontimer(m_ios)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     // Open the acceptor with the option to reuse the address (i.e. SO_REUSEADDR).
@@ -215,6 +216,7 @@ void CBroker::RegisterModule(CBroker::ModuleIdent m, boost::posix_time::time_dur
         {
             m_schmutex.unlock();
             ChangePhase(err);
+            BroadcastBeacon(err);
             m_schmutex.lock();
         }
     }
@@ -304,7 +306,6 @@ void CBroker::Schedule(ModuleIdent m, BoundScheduleable x, bool start_worker)
 void CBroker::ChangePhase(const boost::system::error_code &err)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    bool static firstever = true;
     if(m_modules.size() == 0)
     {
         m_phase=0;
@@ -356,28 +357,6 @@ void CBroker::ChangePhase(const boost::system::error_code &err)
         Logger.Notice<<"Aligned phase to "<<cphase<<" (was "<<m_phase<<") for "
                    <<remaining<<" ms"<<std::endl;
 
-        boost::posix_time::ptime ts = boost::posix_time::microsec_clock::universal_time();
-        std::string uuid = GetConnectionManager().GetUUID();
-        CMessage msg;
-        msg.SetStatus(CMessage::ClockReading);
-        msg.GetSubMessages().put("clock.k",m_kvalue[uuid]);
-        // Loop all known peers & send the message to them:
-        if(firstever == false)
-        {
-            Logger.Error<<"Sending Beacon"<<std::endl;
-            BOOST_FOREACH(boost::shared_ptr<IPeerNode> peer, CGlobalPeerList::instance().PeerList() | boost::adaptors::map_values)
-            {
-                if(peer->GetUUID() == uuid)
-                    continue;
-                peer->Send(msg);
-            }
-            Logger.Error<<"Computing offsets"<<std::endl;
-            UpdateOffsets(uuid,ts.time_of_day(),m_kvalue[uuid]+1);
-        }
-        else
-        {
-            firstever = false;
-        }
         
         m_phase = cphase;
         m_last_alignment = now;
@@ -627,6 +606,39 @@ boost::posix_time::time_duration CBroker::DoubleToTD(double td)
     tmp *= 1000000; // Shift out to the microseconds
     modf(tmp, &fractional);
     return boost::posix_time::seconds(seconds) + boost::posix_time::microseconds(fractional);    
+}
+
+void CBroker::BroadcastBeacon(const boost::system::error_code &err)
+{
+    static bool firstever = true;
+    if(!err)
+    {
+        if(firstever == false)
+        {
+            std::string uuid = GetConnectionManager().GetUUID();
+            boost::posix_time::ptime ts = boost::posix_time::microsec_clock::universal_time();
+            CMessage msg;
+            msg.SetStatus(CMessage::ClockReading);
+            msg.GetSubMessages().put("clock.k",m_kvalue[uuid]);
+            // Loop all known peers & send the message to them:
+            Logger.Error<<"Sending Beacon"<<std::endl;
+            BOOST_FOREACH(boost::shared_ptr<IPeerNode> peer, CGlobalPeerList::instance().PeerList() | boost::adaptors::map_values)
+            {
+                if(peer->GetUUID() == uuid)
+                    continue;
+                peer->Send(msg);
+            }
+            Logger.Error<<"Computing offsets"<<std::endl;
+            UpdateOffsets(uuid,ts.time_of_day(),m_kvalue[uuid]+1);
+        }
+        else
+        {
+            firstever = false;
+        }
+        m_beacontimer.expires_from_now(boost::posix_time::milliseconds(BEACON_FREQUENCY));
+        m_beacontimer.async_wait(boost::bind(&CBroker::BroadcastBeacon,this,
+            boost::asio::placeholders::error));
+    }
 }
 
     } // namespace broker

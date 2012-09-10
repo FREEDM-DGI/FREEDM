@@ -52,6 +52,7 @@ class CDispatcher;
 
 /// How long we should wait before aligning the modules again
 const unsigned int ALIGNMENT_DURATION = 250;
+const unsigned int BEACON_FREQUENCY = 250;
 
 /// Central monolith of the Broker Architecture.
 class CBroker : private boost::noncopyable
@@ -160,6 +161,9 @@ private:
     ///Time for the phases
     boost::asio::deadline_timer m_phasetimer;
 
+    ///Time for the beacon
+    boost::asio::deadline_timer m_beacontimer;
+    
     ///The current counter for the time handlers
     TimerHandle m_handlercounter;
 
@@ -196,6 +200,7 @@ private:
     ///Turn a double into a time duration
     boost::posix_time::time_duration DoubleToTD(double td);
     
+    void BroadcastBeacon(const boost::system::error_code &err);
 };
 
     } // namespace broker

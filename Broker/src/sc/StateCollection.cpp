@@ -1,4 +1,4 @@
-////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
 /// @file         StateCollection.cpp
 ///
 /// @author       Li Feng <lfqt5@mail.mst.edu>
@@ -49,7 +49,6 @@
 #include <cstdlib>
 #include <exception>
 #include <fstream>
-#include <functional>
 #include <iomanip>
 #include <iostream>
 #include <map>
@@ -355,8 +354,8 @@ void SCAgent::TakeSnapshot(std::string deviceType, std::string valueType)
     Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     device::SignalValue PowerValue;
     //Logger.Status << "&&&&&&&&&&&&&&&&&&&&&& call NetValue funciton &&&&&&&&&&&&&&" << std::endl;
-    PowerValue = device::CDeviceManager::Instance().GetValue(deviceType,
-            valueType, std::plus<device::SignalValue>());
+    PowerValue = device::CDeviceManager::Instance().GetNetValue(deviceType,
+            valueType);
     Logger.Status << "&&&&&&&&&&&&&&&         " << PowerValue << "       &&&&&&&&&&&&" << std::endl;
     //save state
     m_curstate.put("sc.type", valueType);

@@ -105,13 +105,11 @@ public:
             SignalValue (DeviceType::*getter)() const) const;
     
     /// Returns the result of a binary operation on a set of device signals.
-    template <class BinaryOp>
-    SignalValue GetValue(std::string type, std::string signal, BinaryOp math);
+    SignalValue GetNetValue(std::string type, std::string signal);
     
     /// Returns the result of a binary operation on a set of device signals.
-    template <class DeviceType, class BinaryOp>
-    SignalValue GetValue(SignalValue (DeviceType::*getter)() const,
-            BinaryOp math) const;
+    template <class DeviceType>
+    SignalValue GetNetValue(SignalValue (DeviceType::*getter)() const) const;
 
 private:
     /// Private constructor.
@@ -153,7 +151,7 @@ std::vector<typename DeviceType::Pointer> CDeviceManager::GetDevicesOfType()
 ///////////////////////////////////////////////////////////////////////////////
 /// Creates a vector that contains values from devices of the templated type.
 ///
-/// @pre DeviceType must hav ea typedef for IDevice::Pointer.
+/// @pre DeviceType must have a typedef for IDevice::Pointer.
 /// @post Calls the function pointer on each device of templated type.
 /// @param getter The function to call on each device of the matching type.
 /// @return A vector that contains the results of the function pointer calls.
@@ -162,7 +160,7 @@ std::vector<typename DeviceType::Pointer> CDeviceManager::GetDevicesOfType()
 ///////////////////////////////////////////////////////////////////////////////
 template <class DeviceType>
 std::vector<SignalValue> CDeviceManager::GetValueVector(
-        SignalValue(DeviceType::*getter)( ) const) const
+        SignalValue(DeviceType::*getter)() const) const
 {
     DeviceManagerLogger.Trace << __PRETTY_FUNCTION__ << std::endl;
     
@@ -174,7 +172,7 @@ std::vector<SignalValue> CDeviceManager::GetValueVector(
         // attempt to convert each managed device to DeviceType
         if( (next_device = device_cast<DeviceType>(it->second)) )
         {
-            result.push_back(( (*next_device).*(getter) )( ));
+            result.push_back(( (*next_device).*(getter) )());
         }
     }
 
@@ -184,39 +182,7 @@ std::vector<SignalValue> CDeviceManager::GetValueVector(
 ///////////////////////////////////////////////////////////////////////////////
 /// Aggregates a set of device signals using the given binary operation.
 ///
-/// @pre DeviceType must hav ea typedef for IDevice::Pointer.
-/// @pre The devices of the specified type must recognize the given signal.
-/// @post Performs a binary mathematical operation on a subset of m_devices.
-/// @param type The device type that should perform the operation.
-/// @param signal The signal of the device to aggregate.
-/// @param math The operation to perform on the device signal.
-/// @return The aggregate value obtained by applying the binary operation.
-///
-/// @limitations None.
-///////////////////////////////////////////////////////////////////////////////
-template <class BinaryOp>
-SignalValue CDeviceManager::GetValue(std::string type, std::string signal,
-        BinaryOp math)
-{
-    DeviceManagerLogger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    
-    SignalValue result = 0;
-
-    std::vector<IDevice::Pointer> devices = GetDevicesOfType(type);
-    std::vector<IDevice::Pointer>::iterator it, end;
-
-    for( it = devices.begin(), end = devices.end(); it != end; it++ )
-    {
-        result = math(result, (*it)->Get(signal));
-    }
-
-    return result;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-/// Aggregates a set of device signals using the given binary operation.
-///
-/// @pre DeviceType must hav ea typedef for IDevice::Pointer.
+/// @pre DeviceType must have a typedef for IDevice::Pointer.
 /// @post Performs a binary mathematical operation on a subset of m_devices.
 /// @param getter The function to call on each device to get the signal.
 /// @param math The operation to perform on the device signal.
@@ -224,9 +190,9 @@ SignalValue CDeviceManager::GetValue(std::string type, std::string signal,
 ///
 /// @limitations None.
 ///////////////////////////////////////////////////////////////////////////////
-template <class DeviceType, class BinaryOp>
-SignalValue CDeviceManager::GetValue(SignalValue(DeviceType::*getter)( ) const,
-        BinaryOp math) const
+template <class DeviceType>
+SignalValue CDeviceManager::GetNetValue(
+    SignalValue (DeviceType::*getter)() const) const
 {
     DeviceManagerLogger.Trace << __PRETTY_FUNCTION__ << std::endl;
     
@@ -238,7 +204,7 @@ SignalValue CDeviceManager::GetValue(SignalValue(DeviceType::*getter)( ) const,
         // attempt to convert each managed device to DeviceType
         if( (next_device = device_cast<DeviceType>(it->second)) )
         {
-            result = math(result, (( *next_device ).*( getter ))( ));
+            result = result + ( (*next_device).*(getter) )();
         }
     }
 

@@ -238,11 +238,40 @@ std::vector<SignalValue> CDeviceManager::GetValueVector(std::string type,
     std::vector<SignalValue> result;
 
     std::vector<IDevice::Pointer> devices = GetDevicesOfType(type);
+
+    BOOST_FOREACH (IDevice::Pointer device, devices)
+    {
+        result.push_back(device->Get(signal));
+    }
+
+    return result;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+/// Aggregates a set of device signals using the given binary operation.
+///
+/// @pre DeviceType must have a typedef for IDevice::Pointer.
+/// @pre The devices of the specified type must recognize the given signal.
+/// @post Performs a binary mathematical operation on a subset of m_devices.
+/// @param type The device type that should perform the operation.
+/// @param signal The signal of the device to aggregate.
+/// @param math The operation to perform on the device signal.
+/// @return The aggregate value obtained by applying the binary operation.
+///
+/// @limitations None.
+///////////////////////////////////////////////////////////////////////////////
+SignalValue CDeviceManager::GetNetValue(std::string type, std::string signal)
+{
+    DeviceManagerLogger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    
+    SignalValue result = 0;
+
+    std::vector<IDevice::Pointer> devices = GetDevicesOfType(type);
     std::vector<IDevice::Pointer>::iterator it, end;
 
     for( it = devices.begin(), end = devices.end(); it != end; it++ )
     {
-        result.push_back((*it)->Get(signal));
+        result = result + (*it)->Get(signal);
     }
 
     return result;

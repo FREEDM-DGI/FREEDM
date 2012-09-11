@@ -41,7 +41,6 @@
 #include <cstdlib>
 #include <exception>
 #include <fstream>
-#include <functional>
 #include <iomanip>
 #include <iostream>
 #include <string>
@@ -412,7 +411,7 @@ void GMAgent::SystemState()
         }
     } 
     nodestatus<<"FID state: "<<device::CDeviceManager::Instance().
-            GetValue("Fid", "state", std::plus<device::SignalValue>());
+            GetNetValue("Fid", "state");
     nodestatus<<std::endl<<"Current Skew: "<<CGlobalConfiguration::instance().GetClockSkew();
     Logger.Status<<nodestatus.str()<<std::endl;
 }
@@ -497,7 +496,7 @@ void GMAgent::FIDCheck( const boost::system::error_code& err)
         int attachedFIDs = device::CDeviceManager::Instance().
                 GetDevicesOfType<device::CDeviceFid>().size();
         unsigned int FIDState = device::CDeviceManager::Instance().
-                GetValue("Fid", "state", std::plus<device::SignalValue>());
+                GetNetValue("Fid", "state");
         if(m_fidsclosed == true && attachedFIDs  > 0 && FIDState == 0)
         {
             Logger.Status<<"All FIDs offline. Entering Recovery State"<<std::endl;

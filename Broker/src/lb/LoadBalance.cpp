@@ -53,7 +53,6 @@
 #include <cstdlib>
 #include <exception>
 #include <fstream>
-#include <functional>
 #include <iomanip>
 #include <string>
 #include <vector>
@@ -405,14 +404,10 @@ void LBAgent::LoadTable()
     int numLOADs = CDeviceManager::Instance().GetDevicesOfType<LOAD>().size();
     int numSSTs = CDeviceManager::Instance().GetDevicesOfType<SST>().size();
 
-    m_Gen = CDeviceManager::Instance().GetValue<DRER>(&DRER::GetGeneration,
-            std::plus<SignalValue>());
-    m_Storage = CDeviceManager::Instance().GetValue<DESD>(&DESD::GetStorage,
-            std::plus<SignalValue>());
-    m_Load = CDeviceManager::Instance().GetValue<LOAD>(&LOAD::GetLoad,
-            std::plus<SignalValue>());
-    m_Gateway = CDeviceManager::Instance().GetValue<SST>(&SST::GetGateway,
-            std::plus<SignalValue>());
+    m_Gen = CDeviceManager::Instance().GetNetValue<DRER>(&DRER::GetGeneration);
+    m_Storage = CDeviceManager::Instance().GetNetValue<DESD>(&DESD::GetStorage);
+    m_Load = CDeviceManager::Instance().GetNetValue<LOAD>(&LOAD::GetLoad);
+    m_Gateway = CDeviceManager::Instance().GetNetValue<SST>(&SST::GetGateway);
     if (numSSTs >= 1)
     {
     m_CalcGateway = m_Gateway;

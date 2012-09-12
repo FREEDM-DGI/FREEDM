@@ -162,20 +162,12 @@ void CListener::HandleRead(const boost::system::error_code& e,
                             <<m_message.GetSequenceNumber()<<std::endl;
             conn->RecieveACK(m_message);
         }
-        else if(m_message.GetStatus() == freedm::broker::CMessage::ReadClock)
+        else if(m_message.GetStatus() == freedm::broker::CMessage::ClockReading)
         {
             if(conn->Recieve(m_message))
             {
-                Logger.Debug<<"Recieved Clock Request"<<std::endl;
-                // Generate a clock reading and reply immediately:
-                CMessage reply;
-                // Determine the requesting module:
-                std::string req = m_message.GetSubMessages().get<std::string>("req");
-                boost::posix_time::time_duration skew = CGlobalConfiguration::instance().GetClockSkew();
-                // Generate a message that is addressed to the requesting module
-                reply.SetHandler(req+".Clock");
-                reply.m_submessages.put(req+".value",boost::posix_time::microsec_clock::universal_time()+skew);
-                conn->Send(reply);
+                //Take the message and pass it to the brokers HandleClockReading() method.
+                GetBroker().HandleClockReading(m_message);     
             }
         }
         else if(conn->Recieve(m_message))

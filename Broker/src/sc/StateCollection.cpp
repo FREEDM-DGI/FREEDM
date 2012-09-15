@@ -13,7 +13,8 @@
 ///               HandleRead()
 ///               TakeSnapshot()
 ///               StateResponse()
-///               StateSendBack()
+///               SendStateBack()
+///               SaveForward()
 ///               GetPeer()
 ///               AddPeer()
 ///
@@ -101,12 +102,10 @@ CLocalLogger Logger(__FILE__);
 ///////////////////////////////////////////////////////////////////////////////
 /// SCAgent
 /// @description: Constructor for the state collection module.
-/// @pre: PoxisMain prepares parameters and invokes module.
-/// @post: Object initialized and ready to enter run state.
+/// @pre PoxisMain prepares parameters and invokes module.
+/// @post Object initialized and ready to enter run state.
 /// @param uuid: This object's uuid.
-/// @param ios: the io service this node will use to share memory
-/// @param p_dispatch: The dispatcher used by this module
-/// @param m_conManager: The connection manager to use in this class
+/// @param broker
 /// @param m_phyManager: The device manager to use in this class
 /// @limitations: None
 ///////////////////////////////////////////////////////////////////////////////
@@ -132,9 +131,9 @@ SCAgent::SCAgent(std::string uuid, CBroker &broker,
 
 ///////////////////////////////////////////////////////////////////////////////
 /// ~SCAgent
-/// @description: Class desctructor
-/// @pre: None
-/// @post: The object is ready to be destroyed.
+/// @description Class desctructor
+/// @pre None
+/// @post The object is ready to be destroyed.
 ///////////////////////////////////////////////////////////////////////////////
 SCAgent::~SCAgent()
 {
@@ -143,11 +142,11 @@ SCAgent::~SCAgent()
 
 ///////////////////////////////////////////////////////////////////////////////
 /// Marker
-/// @description: create a marker message
-/// @pre: The node is the initiator and wants to collect state.
-/// @post: No changes
-/// @peers: SC modules in all peer list
-/// @return: A CMessage with the contents of marker (UUID + Int) and its source UUID
+/// @description create a marker message
+/// @pre The node is the initiator and wants to collect state.
+/// @post No changes
+/// @peers SC modules in all peer list
+/// @return A CMessage with the contents of marker (UUID + Int) and its source UUID
 ///////////////////////////////////////////////////////////////////////////////
 
 CMessage SCAgent::marker()
@@ -163,12 +162,12 @@ CMessage SCAgent::marker()
 
 ///////////////////////////////////////////////////////////////////////////////
 /// SendDoneBack()
-/// @description: It is used to send back "done" message to peer called SCAgent::Initiate().
-/// @pre: The peer node finished sending states to peer called SCAgent::Initiate().
-/// @post: Send "done" message to peer called SCAgent::Initiate().
-/// @peers: SC modules in all peer list except peer called SCAgent::Initiate().
-/// @parameter:
-/// @return: Send "done" message to peer called SCAgent::Initiate().
+/// @description It is used to send back "done" message to peer called SCAgent::Initiate().
+/// @pre The peer node finished sending states to peer called SCAgent::Initiate().
+/// @post Send "done" message to peer called SCAgent::Initiate().
+/// @peers SC modules in all peer list except peer called SCAgent::Initiate().
+/// @param marker
+/// @return Send "done" message to peer called SCAgent::Initiate().
 ///////////////////////////////////////////////////////////////////////////////
 
 void SCAgent::SendDoneBack(StateVersion marker)
@@ -199,13 +198,13 @@ void SCAgent::SendDoneBack(StateVersion marker)
 
 ///////////////////////////////////////////////////////////////////
 /// Initiate
-/// @description: Initiator redcords its local state and broadcasts marker.
-/// @pre: Receiving state collection request from other module.
-/// @post: The node (initiator) starts collecting state by saving its own states and
+/// @description Initiator redcords its local state and broadcasts marker.
+/// @pre Receiving state collection request from other module.
+/// @post The node (initiator) starts collecting state by saving its own states and
 ///        broadcasting a marker out.
-/// @I/O: TakeSnapshot()
-/// @return: Send a marker out to all known peers
-/// @citation: Distributed Snapshots: Determining Global States of Distributed Systems,
+/// @IO TakeSnapshot()
+/// @return Send a marker out to all known peers
+/// @citation Distributed Snapshots: Determining Global States of Distributed Systems,
 ///            ACM Transactions on Computer Systems, Vol. 3, No. 1, 1985, pp. 63-75
 //////////////////////////////////////////////////////////////////
 void SCAgent::Initiate()
@@ -259,12 +258,12 @@ void SCAgent::Initiate()
 
 ///////////////////////////////////////////////////////////////////////////////
 /// StateResponse
-/// @description: This function deals with the collectstate and prepare states sending back.
-/// @pre: The initiator has collected all states.
-/// @post: Collected states are sent back to the request module.
-/// @peers: other SC processes
-/// @return: Send message which contains gateway values and channel transit messages
-/// @limitation: Currently, only gateway values and channel transit messages are collected and sent back.
+/// @description This function deals with the collectstate and prepare states sending back.
+/// @pre The initiator has collected all states.
+/// @post Collected states are sent back to the request module.
+/// @peers other SC processes
+/// @return Send message which contains gateway values and channel transit messages
+/// @limitation Currently, only gateway values and channel transit messages are collected and sent back.
 ///////////////////////////////////////////////////////////////////////////////
 
 void SCAgent::StateResponse()
@@ -347,10 +346,10 @@ void SCAgent::StateResponse()
 
 ///////////////////////////////////////////////////////////////////
 /// TakeSnapshot
-/// @description: TakeSnapshot is used to collect local states.
-/// @pre: The initiator starts state collection or the peer receives marker at first time.
-/// @post: Save local state in container m_curstate
-/// @limitation: Currently, it is used to collect only the gateway values for LB module
+/// @description TakeSnapshot is used to collect local states.
+/// @pre The initiator starts state collection or the peer receives marker at first time.
+/// @post Save local state in container m_curstate
+/// @limitation Currently, it is used to collect only the gateway values for LB module
 ///
 //////////////////////////////////////////////////////////////////
 void SCAgent::TakeSnapshot(std::string deviceType, std::string valueType)
@@ -370,10 +369,10 @@ void SCAgent::TakeSnapshot(std::string deviceType, std::string valueType)
 
 ///////////////////////////////////////////////////////////////////
 /// SendStateBack
-/// @description: SendStateBack is used by the peer to send collect states back to initiator.
-/// @pre: Peer has completed its collecting states in local side.
-/// @post: Peer sends its states back to the initiator.
-/// @limitation: Currently, only sending back gateway value and channel transit messages.
+/// @description SendStateBack is used by the peer to send collect states back to initiator.
+/// @pre Peer has completed its collecting states in local side.
+/// @post Peer sends its states back to the initiator.
+/// @limitation Currently, only sending back gateway value and channel transit messages.
 //////////////////////////////////////////////////////////////////
 void SCAgent::SendStateBack()
 {
@@ -474,10 +473,11 @@ void SCAgent::SendStateBack()
 
 ///////////////////////////////////////////////////////////////////
 /// SaveForward
-/// @description: SaveForward is used by the node to save its local state and send marker out.
-/// @pre: Marker message is received.
-/// @post: The node saves its local state and sends marker out.
-/// @parameter: latest (marker version), msg
+/// @description SaveForward is used by the node to save its local state and send marker out.
+/// @pre Marker message is received.
+/// @post The node saves its local state and sends marker out.
+/// @param latest the current marker's version
+/// @param msg the message tp semd
 //////////////////////////////////////////////////////////////////
 void SCAgent::SaveForward(StateVersion latest, CMessage msg)
 {
@@ -544,13 +544,14 @@ void SCAgent::SaveForward(StateVersion latest, CMessage msg)
 
 ///////////////////////////////////////////////////////////////////
 /// SCAgent::HandleAny
-/// @description: This function will be called by any incoming messages
+/// @description This function will be called by any incoming messages
 ///               which might be in-transit messages in the channel in
 ///               one state collection cycle.
-/// @pre: Messages are obtained.
-/// @post: parsing messages, save if its in-transit message
-/// @peers: Invoked by dispatcher, other SC
-/// @param: msg, peer
+/// @pre Messages are obtained.
+/// @post parsing messages, save if its in-transit message
+/// @peers Invoked by dispatcher, other SC
+/// @param msg the received message
+/// @param peer the node 
 //////////////////////////////////////////////////////////////////
 
 void SCAgent::HandleAny(CMessage msg, PeerNodePtr peer)
@@ -578,7 +579,7 @@ void SCAgent::HandleAny(CMessage msg, PeerNodePtr peer)
 
     if (m_NotifyToSave == true)
     {
-        //Logger.Status << "Receiving message which is in transit......:" << msg.GetHandler() << std::endl;
+        Logger.Status << "Receiving message which is in transit......:" << msg.GetHandler() << std::endl;
         m_curstate.put("sc.type", "Message");
         m_curstate.put("sc.transit.value", intransit);
         //m_curstate.put("sc.transit.source", pt.get<std::string>("sc.source"));
@@ -591,12 +592,13 @@ void SCAgent::HandleAny(CMessage msg, PeerNodePtr peer)
 
 ///////////////////////////////////////////////////////////////////
 /// SCAgent::HandlePeerList
-/// @description: This function will be called to handle PeerList message.
-/// @key: any.PeerList
-/// @pre: Messages are obtained.
-/// @post: parsing messages, reset to default state if receiving PeerList from different leader.
-/// @peers: Invoked by dispatcher, other SC
-/// @param: msg, peer
+/// @description This function will be called to handle PeerList message.
+/// @key any.PeerList
+/// @pre Messages are obtained.
+/// @post parsing messages, reset to default state if receiving PeerList from different leader.
+/// @peers Invoked by dispatcher, other SC
+/// @param msg the received message
+/// @param peer the node 
 //////////////////////////////////////////////////////////////////
 void SCAgent::HandlePeerList(CMessage msg, PeerNodePtr peer)
 {
@@ -644,11 +646,11 @@ void SCAgent::HandlePeerList(CMessage msg, PeerNodePtr peer)
 
 ///////////////////////////////////////////////////////////////////
 /// SCAgent::HandleRequest
-/// @description: This function will be called to handle state collect request message.
-/// @key: sc.request
-/// @pre: Messages are obtained.
-/// @post: start state collection by calling Initiate().
-/// @param: msg, peer
+/// @description This function will be called to handle state collect request message.
+/// @key sc.request
+/// @pre Messages are obtained.
+/// @post start state collection by calling Initiate().
+/// @param msg, peer
 //////////////////////////////////////////////////////////////////
 void SCAgent::HandleRequest(CMessage msg, PeerNodePtr peer)
 {
@@ -671,12 +673,13 @@ void SCAgent::HandleRequest(CMessage msg, PeerNodePtr peer)
 
 ///////////////////////////////////////////////////////////////////
 /// SCAgent::HandleMarker
-/// @description: This function will be called to handle marker message.
-/// @key: sc.marker
-/// @pre: Messages are obtained.
-/// @post: parsing marker messages based on different conditions.
-/// @peers: Invoked by dispatcher, other SC
-/// @param: msg, peer
+/// @description This function will be called to handle marker message.
+/// @key sc.marker
+/// @pre Messages are obtained.
+/// @post parsing marker messages based on different conditions.
+/// @peers Invoked by dispatcher, other SC
+/// @param msg the received message
+/// @param peer the node 
 //////////////////////////////////////////////////////////////////
 void SCAgent::HandleMarker(CMessage msg, PeerNodePtr peer)
 {
@@ -734,8 +737,8 @@ void SCAgent::HandleMarker(CMessage msg, PeerNodePtr peer)
     {
         //Logger.Status << "===================================================" << std::endl;
         Logger.Status << "-----Receive a new marker different from current one.-------" << std::endl;
-        //Logger.Status << "Current version is " << m_curversion.first << " + " << m_curversion.second << std::endl;
-        //Logger.Status << "Incoming version is " << incomingVer_.first << " + " << incomingVer_.second << std::endl;
+        Logger.Status << "Current version is " << m_curversion.first << " + " << m_curversion.second << std::endl;
+        Logger.Status << "Incoming version is " << incomingVer_.first << " + " << incomingVer_.second << std::endl;
 
         //assign incoming version to current version if the incoming is newer
         if (m_curversion.first == incomingVer_.first && incomingVer_.second > m_curversion.second)
@@ -744,14 +747,14 @@ void SCAgent::HandleMarker(CMessage msg, PeerNodePtr peer)
             SaveForward(incomingVer_, msg);
         }
         //assign incoming version to current version if the incoming is from leader
-        else if (GetUUID() != m_scleader && incomingVer_.first == m_scleader)
+        else if (GetUUID() != m_scleader && incomingVer_.first == m_scleader && incomingVer_.second >  m_curversion.second)
         {
-            Logger.Status << "Incoming marker is from leader, follow the leader" << std::endl;
+            Logger.Status << "Incoming marker is from leader and newer, follow the leader" << std::endl;
             SaveForward(incomingVer_, msg);
         }
         else
         {
-            Logger.Status << "Incoming marker is from another peer, not leader, ignore" << std::endl;
+            Logger.Status << "Incoming marker is from another peer, or index is smaller, ignore" << std::endl;
         }
     }
  }
@@ -759,12 +762,13 @@ void SCAgent::HandleMarker(CMessage msg, PeerNodePtr peer)
 
 ///////////////////////////////////////////////////////////////////
 /// SCAgent::HandleState
-/// @description: This function will be called to handle state message.
-/// @key: sc.state
-/// @pre: Messages are obtained.
-/// @post: parsing messages based on state or in-transit channel message.
-/// @peers: Invoked by dispatcher, other SC
-/// @param: msg, peer
+/// @description This function will be called to handle state message.
+/// @key sc.state
+/// @pre Messages are obtained.
+/// @post parsing messages based on state or in-transit channel message.
+/// @peers Invoked by dispatcher, other SC
+/// @param msg the received message
+/// @param peer the node 
 //////////////////////////////////////////////////////////////////
 void SCAgent::HandleState(CMessage msg, PeerNodePtr peer)
 {
@@ -814,12 +818,13 @@ void SCAgent::HandleState(CMessage msg, PeerNodePtr peer)
 
 ///////////////////////////////////////////////////////////////////
 /// SCAgent::HandleDone
-/// @description: This function will be called to handle done message.
-/// @key: sc.done
-/// @pre: Messages are obtained.
-/// @post: If "done" is received from all peers, StateResponse() will be called.
-/// @peers: Invoked by dispatcher, other SC
-/// @param: msg, peer
+/// @description This function will be called to handle done message.
+/// @key sc.done
+/// @pre Messages are obtained.
+/// @post If "done" is received from all peers, StateResponse() will be called.
+/// @peers Invoked by dispatcher, other SC
+/// @param msg the received message
+/// @param peer the node 
 //////////////////////////////////////////////////////////////////
 void SCAgent::HandleDone(CMessage msg, PeerNodePtr peer)
 {
@@ -844,12 +849,12 @@ void SCAgent::HandleDone(CMessage msg, PeerNodePtr peer)
 
 ////////////////////////////////////////////////////////////
 /// AddPeer
-/// @description: Add a peer to peer set m_AllPeers from UUID.
+/// @description Add a peer to peer set m_AllPeers from UUID.
 ///               m_AllPeers is a specific peer set for SC module.
-/// @pre: m_AllPeers
-/// @post: Add a peer to m_AllPeers
-/// @param: uuid string
-/// @return: a pointer to a peer node
+/// @pre m_AllPeers
+/// @post Add a peer to m_AllPeers
+/// @param uuid string
+/// @return a pointer to a peer node
 /////////////////////////////////////////////////////////
 SCAgent::PeerNodePtr SCAgent::AddPeer(std::string uuid)
 {
@@ -862,12 +867,12 @@ SCAgent::PeerNodePtr SCAgent::AddPeer(std::string uuid)
 
 ////////////////////////////////////////////////////////////
 /// AddPeer
-/// @description: Add a peer to peer set from a pointer to a peer node object
+/// @description Add a peer to peer set from a pointer to a peer node object
 ///               m_AllPeers is a specific peer set for SC module.
-/// @pre: m_AllPeers
-/// @post: Add a peer to m_AllPeers
-/// @param: a pointer to a peer node
-/// @return: a pointer to a peer node
+/// @pre m_AllPeers
+/// @post Add a peer to m_AllPeers
+/// @param peer 
+/// @return a pointer to a peer node
 /////////////////////////////////////////////////////////
 SCAgent::PeerNodePtr SCAgent::AddPeer(PeerNodePtr peer)
 {
@@ -878,12 +883,12 @@ SCAgent::PeerNodePtr SCAgent::AddPeer(PeerNodePtr peer)
 
 ////////////////////////////////////////////////////////////
 /// GetPeer
-/// @description: Get a pointer to a peer from UUID.
+/// @description Get a pointer to a peer from UUID.
 ///               m_AllPeers is a specific peer set for SC module.
-/// @pre: m_AllPeers
-/// @post: Add a peer to m_AllPeers
-/// @param: uuid string
-/// @return: a pointer to the peer
+/// @pre m_AllPeers
+/// @post Add a peer to m_AllPeers
+/// @param uuid string
+/// @return a pointer to the peer
 /////////////////////////////////////////////////////////
 SCAgent::PeerNodePtr SCAgent::GetPeer(std::string uuid)
 {

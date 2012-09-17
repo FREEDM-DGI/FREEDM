@@ -50,6 +50,14 @@ namespace {
 CLocalLogger DeviceManagerLogger(__FILE__);
 }
 
+/// The interface between broker modules and the device architecture.
+///////////////////////////////////////////////////////////////////////////////
+/// CDeviceManager is a singleton class used by broker modules to interface
+/// with the device architecture. This class is used to access devices attached
+/// to the DGI and add/remove devices.
+///
+/// @limitations none(?)
+///////////////////////////////////////////////////////////////////////////////
 class CDeviceManager
     : private boost::noncopyable
 {

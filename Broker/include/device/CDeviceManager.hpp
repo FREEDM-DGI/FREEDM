@@ -55,9 +55,11 @@ CLocalLogger DeviceManagerLogger(__FILE__);
 ///////////////////////////////////////////////////////////////////////////////
 /// CDeviceManager is a singleton class used by broker modules to interface
 /// with the device architecture. This class is used to access devices attached
-/// to the DGI and add/remove devices.
+/// to the DGI.
 ///
-/// @limitations none(?)
+/// Devices are "stored" here after they are constructed by CAdapterFactory.
+///
+/// @limitations It's a singleton... you can only access it with Instance()
 ///////////////////////////////////////////////////////////////////////////////
 class CDeviceManager
     : private boost::noncopyable
@@ -81,12 +83,6 @@ public:
 
     /// Iterator past the last managed device.
     iterator end();
-
-    /// Add the specified device to the manager.
-    void AddDevice(IDevice::Pointer device);
-
-    /// Remove a device by its identifier.
-    bool RemoveDevice(std::string devid);
 
     /// Tests to see if a device exists.
     bool DeviceExists(std::string devid) const;
@@ -121,8 +117,17 @@ public:
     SignalValue GetNetValue(SignalValue (DeviceType::*getter)() const) const;
 
 private:
+    /// CAdapterFactory can add/remove devices.
+    friend class CAdapterFactory;
+
     /// Private constructor.
     CDeviceManager();
+
+    /// Add the specified device to the manager.
+    void AddDevice(IDevice::Pointer device);
+
+    /// Remove a device by its identifier.
+    bool RemoveDevice(std::string devid);
     
     /// Mapping from identifiers to device pointers.
     PhysicalDeviceSet m_devices;

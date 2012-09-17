@@ -54,8 +54,8 @@
 #include <exception>
 #include <fstream>
 #include <iomanip>
+#include <set>
 #include <string>
-#include <vector>
 
 #include <boost/asio.hpp>
 #include <boost/bind.hpp>
@@ -918,8 +918,8 @@ void LBAgent::Step_PStar()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     typedef device::CDeviceSst SST;
-    std::vector<SST::Pointer> SSTContainer;
-    std::vector<SST::Pointer>::iterator it, end;
+    std::multiset<SST::Pointer> SSTContainer;
+    std::multiset<SST::Pointer>::iterator it, end;
     SSTContainer = device::CDeviceManager::Instance().GetDevicesOfType<SST>();
 
     for( it = SSTContainer.begin(), end = SSTContainer.end(); it != end; it++ )
@@ -957,8 +957,8 @@ void LBAgent::PStar(device::SignalValue DemandValue)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     typedef device::CDeviceSst SST;
-    std::vector<SST::Pointer> SSTContainer;
-    std::vector<SST::Pointer>::iterator it, end;
+    std::multiset<SST::Pointer> SSTContainer;
+    std::multiset<SST::Pointer>::iterator it, end;
     SSTContainer = device::CDeviceManager::Instance().GetDevicesOfType<SST>();
 
     for( it = SSTContainer.begin(), end = SSTContainer.end(); it != end; it++ )
@@ -1000,8 +1000,8 @@ void LBAgent::Desd_PStar()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     typedef device::CDeviceDesd DESD;
-    std::vector<DESD::Pointer> DESDContainer;
-    std::vector<DESD::Pointer>::iterator it, end;
+    std::multiset<DESD::Pointer> DESDContainer;
+    std::multiset<DESD::Pointer>::iterator it, end;
     DESDContainer = device::CDeviceManager::Instance().GetDevicesOfType<DESD>();
 
     for( it = DESDContainer.begin(), end = DESDContainer.end(); it != end; it++ )

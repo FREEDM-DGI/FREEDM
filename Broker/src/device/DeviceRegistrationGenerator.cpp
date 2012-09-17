@@ -31,9 +31,9 @@
 #include <cstdlib>
 #include <fstream>
 #include <iostream>
+#include <set>
 #include <sstream>
 #include <string>
-#include <vector>
 
 #include <dirent.h>  // POSIX
 
@@ -206,7 +206,7 @@ int main()
         ss << "        if( type == \"" << type.substr(7) << "\" && "
            << "device_cast<" << type << ">(it->second) )\n";
         ss << "        {\n";
-        ss << "            result.push_back(it->second);\n";
+        ss << "            result.insert(it->second);\n";
         ss << "        }\n";
     }
     replace.push_back(ss.str());

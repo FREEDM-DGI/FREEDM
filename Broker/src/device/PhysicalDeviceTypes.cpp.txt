@@ -61,9 +61,10 @@ void CAdapterFactory::RegisterDevices()
 ///
 /// @limitations None.
 ////////////////////////////////////////////////////////////////////////////////
-std::vector<IDevice::Pointer> CDeviceManager::GetDevicesOfType(std::string type)
+std::multiset<IDevice::Pointer> CDeviceManager::GetDevicesOfType(
+        std::string type)
 {
-    std::vector<IDevice::Pointer> result;
+    std::multiset<IDevice::Pointer> result;
     
     for( iterator it = m_devices.begin(); it != m_devices.end(); it++ )
     {

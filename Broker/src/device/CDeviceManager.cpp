@@ -19,7 +19,7 @@
 ///     CDeviceManager::DeviceExists
 ///     CDeviceManager::GetDevice
 ///     CDeviceManager::DeviceCount
-///     CDeviceManager::GetValueVector
+///     CDeviceManager::GetValues
 ///
 /// These source code files were created at Missouri University of Science and
 /// Technology, and are intended for use in teaching or research. They may be
@@ -220,28 +220,28 @@ std::size_t CDeviceManager::DeviceCount() const
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// Retrieves a vector of values for the specified device signal.
+/// Retrieves a multiset of values for the specified device signal.
 ///
 /// @pre The signal must be recognized by the specified device.
 /// @post Iterates through the devices collecting device signals.
 /// @param type The type of the device to collect signals from.
 /// @param signal The signal of the device to collect.
-/// @return A vector of values that contains each matching device signal.
+/// @return A multiset of values that contains each matching device signal.
 ///
 /// @limitations None.
 ///////////////////////////////////////////////////////////////////////////////
-std::vector<SignalValue> CDeviceManager::GetValueVector(std::string type,
+std::multiset<SignalValue> CDeviceManager::GetValues(std::string type,
         std::string signal)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     
-    std::vector<SignalValue> result;
+    std::multiset<SignalValue> result;
 
-    std::vector<IDevice::Pointer> devices = GetDevicesOfType(type);
+    std::multiset<IDevice::Pointer> devices = GetDevicesOfType(type);
 
     BOOST_FOREACH (IDevice::Pointer device, devices)
     {
-        result.push_back(device->Get(signal));
+        result.insert(device->Get(signal));
     }
 
     return result;
@@ -266,8 +266,8 @@ SignalValue CDeviceManager::GetNetValue(std::string type, std::string signal)
     
     SignalValue result = 0;
 
-    std::vector<IDevice::Pointer> devices = GetDevicesOfType(type);
-    std::vector<IDevice::Pointer>::iterator it, end;
+    std::multiset<IDevice::Pointer> devices = GetDevicesOfType(type);
+    std::multiset<IDevice::Pointer>::iterator it, end;
 
     for( it = devices.begin(), end = devices.end(); it != end; it++ )
     {

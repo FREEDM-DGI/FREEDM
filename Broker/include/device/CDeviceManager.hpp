@@ -11,7 +11,7 @@
 ///
 /// @functions
 ///     CDeviceManager::GetDevicesOfType
-///     CDeviceManager::GetValueVector
+///     CDeviceManager::GetValues
 ///     CDeviceManager::GetValue
 ///
 /// These source code files were created at Missouri University of Science and
@@ -34,8 +34,8 @@
 #include "CLogger.hpp"
 
 #include <map>
+#include <set>
 #include <string>
-#include <vector>
 
 #include <boost/foreach.hpp>
 #include <boost/function.hpp>
@@ -94,19 +94,19 @@ public:
     std::size_t DeviceCount() const;
     
     /// Retrieves all the stored devices of a specified type.
-    std::vector<IDevice::Pointer> GetDevicesOfType(std::string type);
+    std::multiset<IDevice::Pointer> GetDevicesOfType(std::string type);
     
-    /// Retrieves a vector of stored values for the given device signal.
-    std::vector<SignalValue> GetValueVector(std::string type,
+    /// Retrieves a multiset of stored values for the given device signal.
+    std::multiset<SignalValue> GetValues(std::string type,
             std::string signal);
     
     /// Retrieves all the stored devices of a specified type.
     template <class DeviceType>
-    std::vector<typename DeviceType::Pointer> GetDevicesOfType();
+    std::multiset<typename DeviceType::Pointer> GetDevicesOfType();
 
-    /// Retrieves a vector of stored values from the given device class.
+    /// Retrieves a multiset of stored values from the given device class.
     template <class DeviceType>
-    std::vector<SignalValue> GetValueVector(
+    std::multiset<SignalValue> GetValues(
             SignalValue (DeviceType::*getter)() const) const;
     
     /// Returns the result of a binary operation on a set of device signals.
@@ -134,20 +134,20 @@ private:
 };
 
 ///////////////////////////////////////////////////////////////////////////////
-/// Creates a vector that contains the devices of the templated type.
+/// Creates a multiset that contains the devices of the templated type.
 ///
 /// @pre DeviceType must have a typedef for DeviceType::Pointer.
-/// @post Constructs the vector through dynamic pointer casts.
-/// @return A vector that contains the matching subset of m_devices.
+/// @post Constructs the multiset through dynamic pointer casts.
+/// @return A multiset that contains the matching subset of m_devices.
 ///
 /// @limitations None.
 ///////////////////////////////////////////////////////////////////////////////
 template <class DeviceType>
-std::vector<typename DeviceType::Pointer> CDeviceManager::GetDevicesOfType()
+std::multiset<typename DeviceType::Pointer> CDeviceManager::GetDevicesOfType()
 {
     DeviceManagerLogger.Trace << __PRETTY_FUNCTION__ << std::endl;
     
-    std::vector<typename DeviceType::Pointer> result;
+    std::multiset<typename DeviceType::Pointer> result;
     typename DeviceType::Pointer next_device;
 
     for( iterator it = m_devices.begin(); it != m_devices.end(); it++ )
@@ -155,7 +155,7 @@ std::vector<typename DeviceType::Pointer> CDeviceManager::GetDevicesOfType()
         // attempt to convert each managed device to DeviceType
         if( (next_device = device_cast<DeviceType>(it->second)) )
         {
-            result.push_back(next_device);
+            result.insert(next_device);
         }
     }
 
@@ -163,22 +163,22 @@ std::vector<typename DeviceType::Pointer> CDeviceManager::GetDevicesOfType()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// Creates a vector that contains values from devices of the templated type.
+/// Creates a multiset that contains values from devices of the templated type.
 ///
 /// @pre DeviceType must have a typedef for IDevice::Pointer.
 /// @post Calls the function pointer on each device of templated type.
 /// @param getter The function to call on each device of the matching type.
-/// @return A vector that contains the results of the function pointer calls.
+/// @return A multiset that contains the results of the function pointer calls.
 ///
 /// @limitations None.
 ///////////////////////////////////////////////////////////////////////////////
 template <class DeviceType>
-std::vector<SignalValue> CDeviceManager::GetValueVector(
+std::multiset<SignalValue> CDeviceManager::GetValues(
         SignalValue(DeviceType::*getter)() const) const
 {
     DeviceManagerLogger.Trace << __PRETTY_FUNCTION__ << std::endl;
     
-    std::vector<SignalValue> result;
+    std::multiset<SignalValue> result;
     typename DeviceType::Pointer next_device;
 
     for( const_iterator it = m_devices.begin(); it != m_devices.end(); it++ )
@@ -186,7 +186,7 @@ std::vector<SignalValue> CDeviceManager::GetValueVector(
         // attempt to convert each managed device to DeviceType
         if( (next_device = device_cast<DeviceType>(it->second)) )
         {
-            result.push_back(( (*next_device).*(getter) )());
+            result.insert(( (*next_device).*(getter) )());
         }
     }
 

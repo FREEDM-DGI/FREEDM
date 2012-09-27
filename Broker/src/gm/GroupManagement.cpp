@@ -931,6 +931,7 @@ void GMAgent::Prehandler(SubhandleFunctor f,CMessage msg, PeerNodePtr peer)
 /// @description This function collects all incoming messages for the purpose
 ///     of determining peer status.
 ///////////////////////////////////////////////////////////////////////////////
+#pragma GCC diagnostic ignored "-Wunused-parameter"
 void GMAgent::HandleAny(CMessage msg, PeerNodePtr peer)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
@@ -943,6 +944,7 @@ void GMAgent::HandleAny(CMessage msg, PeerNodePtr peer)
         throw std::runtime_error("Unhandled Group Management Message");
     }
 }
+#pragma GCC diagnostic warning "-Wunused-parameter"
 
 ///////////////////////////////////////////////////////////////////////////////
 /// GMAgent::HandlePeerList

@@ -120,6 +120,9 @@ public:
     /// Update the tables based on a UUID and new clock readying
     void UpdateOffsets();
 
+    /// Returns how much time the current module has left in its round
+    boost::posix_time::time_duration TimeRemaining();
+
 private:
 
     /// Handle completion of an asynchronous accept operation.
@@ -157,6 +160,9 @@ private:
     
     ///Whose turn is it for round robin.
     PhaseMarker m_phase;
+
+    ///Computed ptime for when the current phase ends
+    boost::posix_time::ptime m_phaseends;
 
     ///Time for the phases
     boost::asio::deadline_timer m_phasetimer;

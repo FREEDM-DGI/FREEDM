@@ -81,9 +81,8 @@ CLocalLogger Logger(__FILE__);
 /// @pre None
 /// @post Object initialized and ready to enter run state.
 /// @param p_uuid: This object's uuid.
-/// @param p_ios: the io service this node will use to share memory
-/// @param p_dispatch: The dispatcher used by this module
-/// @param p_conManager: The connection manager to use in this class.
+/// @param p_broker: The dispatcher used by this module
+/// @param devmanager: The device manager to use in this class.
 ///////////////////////////////////////////////////////////////////////////////
 GMAgent::GMAgent(std::string p_uuid, CBroker &broker,
         device::CPhysicalDeviceManager::Pointer devmanager)
@@ -210,8 +209,9 @@ CMessage GMAgent::Ready()
 /// @description Creates a response message (Yes/No) message from this node
 /// @pre This node has a UUID.
 /// @post No change.
-/// @param payload: Response message (typically yes or no)
-/// @param type: What this message is in response to.
+/// @param payload Response message (typically yes or no)
+/// @param type What this message is in response to.
+/// @param exp When the response should expire
 /// @return A CMessage with the contents of a Response message
 ///////////////////////////////////////////////////////////////////////////////
 CMessage GMAgent::Response(std::string payload,std::string type,
@@ -369,6 +369,7 @@ void GMAgent::SystemState()
     } 
     nodestatus<<"FID state: "<< m_phyDevManager->CountActiveFids();
     nodestatus<<std::endl<<"Current Skew: "<<CGlobalConfiguration::instance().GetClockSkew();
+    nodestatus<<std::endl<<"Time left in phase: "<<m_broker.TimeRemaining()<<std::endl;
     Logger.Status<<nodestatus.str()<<std::endl;
 }
 ///////////////////////////////////////////////////////////////////////////////

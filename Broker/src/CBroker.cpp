@@ -374,12 +374,29 @@ void CBroker::ChangePhase(const boost::system::error_code &err)
         Worker();
         m_schmutex.lock();
     }
-    m_phasetimer.expires_from_now(boost::posix_time::milliseconds(sched_duration));
+    boost::posix_time::time_duration r = boost::posix_time::milliseconds(sched_duration);
+    m_phaseends = now + r;
+    m_phasetimer.expires_from_now(r);
     m_phasetimer.async_wait(boost::bind(&CBroker::ChangePhase,this,
         boost::asio::placeholders::error));
     m_schmutex.unlock();
 }
 #pragma GCC diagnostic warning "-Wunused-parameter"
+
+///////////////////////////////////////////////////////////////////////////////
+/// @fn CBroker::TimeRemaining
+/// @description Shows how much time is remaining in the current pgase
+/// @pre The Change Phase function has been called at least once. This should
+///     have occured by the time the first module is ready to look at the 
+///     remaining time.
+/// @post no change
+/// @return A time_duration describing the amount of time remaining in the
+///     phase.
+///////////////////////////////////////////////////////////////////////////////
+boost::posix_time::time_duration CBroker::TimeRemaining()
+{
+    return m_phaseends - boost::posix_time::microsec_clock::universal_time();
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 /// @fn CBroker::ScheduledTask
@@ -507,11 +524,6 @@ void CBroker::HandleClockReading(CMessage msg)
 ///     a discrete differential equation to synchronize a bunch of clocks without using a
 ///     master. It is pretty awesome. However, it doesn't detect bad clocks, but we aren't
 ///     worried about most threats and this works pretty awesome so far.
-/// @param uuid the node that originated the "beacon"
-/// @param stamp the timestamp associated with the "beacon" beacons are generated
-///     by nodes a pre-specified interval (when we synchronize phases) ITS SO PERFECT.
-/// @param newk The k value for the clock, you need to have 2 beacons to compute an
-///     offset correctly.
 ///////////////////////////////////////////////////////////////////////////////
 void CBroker::UpdateOffsets()
 {

@@ -52,8 +52,6 @@ CLocalLogger Logger(__FILE__);
 ///   and sending functions to the agent in a very clean manner.
 /// @param uuid The uuid of the node
 /// @param connmgr The module managing the connections
-/// @param ios The related ioservice used for scheduling
-/// @param dispatch The dispatcher used to deliver messages
 /////////////////////////////////////////////////////////////
 IPeerNode::IPeerNode(std::string uuid, ConnManagerPtr connmgr)
     : m_uuid(uuid),

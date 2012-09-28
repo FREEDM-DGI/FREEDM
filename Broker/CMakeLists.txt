@@ -19,6 +19,7 @@ option(SHOW_MESSAGES "Enable help messages during cmake execution" ON)
 option(SHOW_WARNINGS "warnings displayed during project compile" ON)
 option(USE_DEVICE_PSCAD "Enable the PSCAD simulation interface" OFF)
 option(USE_DEVICE_RTDS "Enable the RTDS simulation interface" OFF)
+option(RUN_DOXYGEN "run Doxygen after project compile" ON)
 
 # Check for a variety of conditions that should generate an error.
 if(!LINUX)
@@ -93,4 +94,6 @@ target_link_libraries(
 )
 
 # run Doxygen
-add_custom_command(TARGET PosixBroker POST_BUILD COMMAND ./builddocs.sh)
+if(RUN_DOXYGEN)
+    add_custom_command(TARGET PosixBroker POST_BUILD COMMAND ./builddocs.sh)
+endif(RUN_DOXYGEN)

@@ -16,6 +16,7 @@ get_git_head_revision(GIT_REFSPEC GIT_SHA1)
 option(CUSTOMNETWORK "for network.xml support" OFF)
 option(DATAGRAM "for UDP Datagram service w/o sequencing" OFF)
 option(SHOW_WARNINGS "warnings displayed during project compile" ON)
+option(RUN_DOXYGEN "run Doxygen after project compile" ON)
 
 # Check for a variety of conditions that should generate an error.
 if(!LINUX)
@@ -84,4 +85,6 @@ target_link_libraries(
 )
 
 # run Doxygen
-add_custom_command(TARGET PosixBroker POST_BUILD COMMAND ./builddocs.sh)
+if(RUN_DOXYGEN)
+    add_custom_command(TARGET PosixBroker POST_BUILD COMMAND ./builddocs.sh)
+endif(RUN_DOXYGEN)

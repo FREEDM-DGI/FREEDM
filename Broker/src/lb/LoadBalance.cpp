@@ -74,7 +74,7 @@ namespace broker {
 
 namespace lb {
 
-const unsigned int P_Migrate = 1;
+const int P_Migrate = 1;
 
 namespace {
 
@@ -320,6 +320,11 @@ void LBAgent::CollectState()
 void LBAgent::LoadManage()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+
+    //Start the timer; on timeout, this function is called again
+    m_broker.Schedule(m_GlobalTimer, boost::posix_time::milliseconds(LOAD_TIMEOUT),
+        boost::bind(&LBAgent::LoadManage, this,boost::asio::placeholders::error));
+
     //Remember previous load before computing current load
     m_prevStatus = m_Status;
     //Call LoadTable to update load state of the system as observed by this node
@@ -345,10 +350,6 @@ void LBAgent::LoadManage()
         //initiate draft request
         SendDraftRequest();
     }
-
-    //Start the timer; on timeout, this function is called again
-    m_broker.Schedule(m_GlobalTimer, boost::posix_time::milliseconds(LOAD_TIMEOUT),
-        boost::bind(&LBAgent::LoadManage, this,boost::asio::placeholders::error));
 }//end LoadManage
 
 ////////////////////////////////////////////////////////////

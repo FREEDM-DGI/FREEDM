@@ -73,8 +73,6 @@ namespace status_strings {
         "502 Bad Gateway\r\n";
     const std::string service_unavailable =
         "503 Service Unavailable\r\n";
-    const std::string clock_request =
-        "800 Clock Reading Request\r\n";
     const std::string clock_reading =
         "801 Clock Reading\r\n";
 
@@ -114,8 +112,6 @@ namespace status_strings {
                 return bad_gateway;
             case CMessage::ServiceUnavailable:
                 return service_unavailable;
-            case CMessage::ReadClock:
-                return clock_request;
             case CMessage::ClockReading:
                 return clock_reading;
             default:

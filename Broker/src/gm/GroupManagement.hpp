@@ -174,8 +174,6 @@ class GMAgent
     std::string Coordinator() const { return m_GroupLeader; }
     /// Checks the status of the FIDs
     void FIDCheck(const boost::system::error_code& err);
-    /// Checks the skew on the clock
-    void ComputeSkew(const boost::system::error_code& err);
     
     /// Nodes In My Group
     PeerSet	m_UpNodes;
@@ -207,15 +205,7 @@ class GMAgent
     CBroker::TimerHandle m_timer;
     /// Timer for checking FIDs.
     CBroker::TimerHandle m_fidtimer;
-    /// Timer for checking clock shew
-    CBroker::TimerHandle m_skewtimer;
     
-    /// Type for replies map
-    typedef std::map<std::string,boost::posix_time::ptime> ClockRepliesMap;
-   
-    /// Respondants to clock requests 
-    ClockRepliesMap m_clocks;
-
     // Timeouts
     /// How long between AYC checks
     boost::posix_time::time_duration CHECK_TIMEOUT;
@@ -225,8 +215,6 @@ class GMAgent
     boost::posix_time::time_duration GLOBAL_TIMEOUT;
     /// How long to wait before checking attached FIDs
     boost::posix_time::time_duration FID_TIMEOUT;
-    /// How long to wait before computing skew again
-    boost::posix_time::time_duration SKEW_TIMEOUT;
     /// How long to wait for responses from other nodes.
     boost::posix_time::time_duration RESPONSE_TIMEOUT;
 

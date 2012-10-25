@@ -83,7 +83,6 @@ class SCAgent : public IReadHandler, public IPeerNode,
         void HandleRequest(CMessage msg, PeerNodePtr peer);
         void HandleMarker(CMessage msg, PeerNodePtr peer);
         void HandleState(CMessage msg, PeerNodePtr peer);
-        void HandleDone(CMessage msg, PeerNodePtr peer);
         
     private:
         //Marker structure
@@ -96,8 +95,6 @@ class SCAgent : public IReadHandler, public IPeerNode,
         void    TakeSnapshot(std::string deviceType, std::string valueType);
         ///Peer sends collected states back to the initiator
         void    SendStateBack();
-        ///Peer sends "Done" message to the initiator to indicate finishing sending states back
-        void    SendDoneBack(StateVersion marker);
         ///Initiator sends collected states back to the request module
         void    StateResponse();
         ///Peer save local state and forward maker
@@ -161,4 +158,5 @@ class SCAgent : public IReadHandler, public IPeerNode,
 } // namespace freedm
 
 #endif
+
 

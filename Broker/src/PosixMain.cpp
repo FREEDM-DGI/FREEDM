@@ -82,6 +82,8 @@ std::string basename( const std::string &s )
 
 int main (int argc, char* argv[])
 {
+    IProtocol::m_writes = 0;
+    IPeerNode::m_sendcalls = 0;
     Logger::Log::setLevel( 3 );
     Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
     // Variable Declaration

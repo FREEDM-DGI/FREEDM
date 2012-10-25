@@ -74,6 +74,7 @@ class IProtocol
         virtual std::string GetIdentifier() = 0;
         /// Returns a pointer to the underlying connection.
         CConnection* GetConnection() { return m_conn; };
+        static unsigned int m_writes;
     protected:
         /// Callback for when a write completes.
 #pragma GCC diagnostic ignored "-Wunused-parameter"
@@ -88,7 +89,9 @@ class IProtocol
         CConnection * m_conn;
 };
 
+
     }
 }
+
 
 #endif

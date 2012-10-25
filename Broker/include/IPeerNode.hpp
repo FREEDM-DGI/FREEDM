@@ -120,6 +120,7 @@ class IPeerNode
         bool Send(freedm::broker::CMessage msg);
         ///Depreciated.
         void AsyncSend(freedm::broker::CMessage msg);
+        static unsigned int m_sendcalls;
     protected:
         friend class CAgent;
     private:

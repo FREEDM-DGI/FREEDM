@@ -72,6 +72,7 @@ IPeerNode::IPeerNode(std::string uuid, ConnManagerPtr connmgr,
       m_dispatch(dispatch)
 {
     Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
+    m_sendcalls = 0;
 }
 
 
@@ -119,6 +120,7 @@ broker::ConnectionPtr IPeerNode::GetConnection()
 /////////////////////////////////////////////////////////////
 bool IPeerNode::Send(freedm::broker::CMessage msg)
 {
+    IPeerNode::m_sendcalls++;
     try
     {
         broker::ConnectionPtr c = GetConnection();

@@ -43,6 +43,7 @@
 #include "Utility.hpp"
 #include "CMessage.hpp"
 #include "types/remotehost.hpp"
+#include "IProtocol.hpp"
 
 #include <algorithm>
 #include <cassert>
@@ -1170,7 +1171,9 @@ void GMAgent::Stop()
              <<m_groupsjoined<<'\t'<<m_groupsbroken;
     actionlog<<'\t'<<m_electiontimer.TotalElapsed()
              <<'\t'<<m_ingrouptimer.TotalElapsed();
-    actionlog<<'\t'<<m_membership<<'\t'<<m_membershipchecks<<std::endl;
+    actionlog<<'\t'<<m_membership<<'\t'<<m_membershipchecks
+             <<'\t'<<IPeerNode::m_sendcalls<<'\t'<<broker::IProtocol::m_writes
+             <<std::endl;
     actionlog.close();
 }
 

@@ -39,6 +39,7 @@ namespace freedm {
 
 void IProtocol::Write(CMessage msg)
 {
+    IProtocol::m_writes++;
     Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
     boost::tribool result_;
     boost::array<char, 8192>::iterator it_;

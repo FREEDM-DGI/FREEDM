@@ -53,7 +53,7 @@ CREATE_EXTERN_STD_LOGS()
 
 namespace freedm {
 
-
+unsigned int IPeerNode::m_sendcalls = 0;
 /////////////////////////////////////////////////////////////
 /// @fn IPeerNode::IPeerNode
 /// @description Prepares a peer node. Takes in a connection

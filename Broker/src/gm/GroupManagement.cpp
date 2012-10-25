@@ -91,7 +91,7 @@ GMAgent::GMAgent(std::string p_uuid, CBroker &broker,
     CHECK_TIMEOUT(boost::posix_time::seconds(3)),
     TIMEOUT_TIMEOUT(boost::posix_time::seconds(3)),
     GLOBAL_TIMEOUT(boost::posix_time::seconds(1)),
-    FID_TIMEOUT(boost::posix_time::milliseconds(8)),
+    FID_TIMEOUT(boost::posix_time::milliseconds(450)),
     RESPONSE_TIMEOUT(boost::posix_time::milliseconds(75)),
     m_broker(broker),
     m_phyDevManager(devmanager)

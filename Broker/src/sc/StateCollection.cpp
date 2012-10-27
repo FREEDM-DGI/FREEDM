@@ -238,7 +238,7 @@ void SCAgent::StateResponse()
 
     if (m_countmarker == m_AllPeers.size() && m_NotifyToSave == false)
     {
-        Logger.Status << "*******************************************" << std::endl;
+        Logger.Status << "****************CollectedStates***************************" << std::endl;
         //prepare collect states
         Logger.Info << "Sending requested state back to " << m_module << " module" << std::endl;
         m_.SetHandler(m_module+".CollectedState");
@@ -249,13 +249,13 @@ void SCAgent::StateResponse()
             {
                 if ((*it).second.get<std::string>("sc.type")== m_valueType)
                 {
-                    Logger.Status << (*it).first.first << "+++" << (*it).first.second << "    "
+                    Logger.Status << "Marker: "<<(*it).first.first << " + " << (*it).first.second << "  Value:"
                                   << (*it).second.get<std::string>("sc.value") << std::endl;
                     m_.m_submessages.add("CollectedState.state.value", (*it).second.get<std::string>("sc.value"));
                 }
                 else if ((*it).second.get<std::string>("sc.type")== "Message")
                 {
-                    Logger.Status << (*it).second.get<std::string>("sc.transit.value") << std::endl;
+                    Logger.Status << "Transit message: " <<(*it).second.get<std::string>("sc.transit.value") << std::endl;
                     m_.m_submessages.add("CollectedState.intransit.value", (*it).second.get<std::string>("sc.transit.value"));
                 }
             }
@@ -320,9 +320,9 @@ void SCAgent::TakeSnapshot(std::string deviceType, std::string valueType)
 {
     Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     device::SettingValue PowerValue;
-    //Logger.Status << "&&&&&&&&&&&&&&&&&&&&&& call NetValue funciton &&&&&&&&&&&&&&" << std::endl;
     PowerValue = m_phyDevManager->GetValue(deviceType, valueType, std::plus<device::SettingValue>());
-    Logger.Status << "&&&&&&&&&&&&&&&         " << PowerValue << "       &&&&&&&&&&&&" << std::endl;
+    Logger.Status << "DeviceType: " << deviceType << "  ValueType: " << valueType 
+                  << "  PowerValue: " << PowerValue << std::endl;
     //save state
     m_curstate.put("sc.type", valueType);
     m_curstate.put("sc.value", PowerValue);

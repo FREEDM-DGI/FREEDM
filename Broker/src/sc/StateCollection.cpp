@@ -618,13 +618,13 @@ void SCAgent::HandleMarker(CMessage msg, PeerNodePtr peer)
     if (m_curversion.first == "default")
         //peer receives first marker
     {
-        Logger.Status << "---------------------------first maker with default state ---------------------" << std::endl;
+        Logger.Status << "------------------------first maker with default state ----------------" << std::endl;
         SaveForward(incomingVer_, msg);
     }//first receive marker
     else if (m_curversion == incomingVer_ && m_curversion.first == GetUUID())
         //initiator receives his marker before
     {
-        Logger.Status << "----------------------------Initiator receives his marker----------------------" << std::endl;
+        Logger.Status << "------------------------Initiator receives his marker------------------" << std::endl;
         //number of marker is increased by 1
         m_countmarker++;
 
@@ -637,7 +637,7 @@ void SCAgent::HandleMarker(CMessage msg, PeerNodePtr peer)
     else if (m_curversion == incomingVer_ && m_curversion.first != GetUUID())
         //peer receives this marker before
     {
-        Logger.Status << "----------------------------Peer receives marker before-------------------------" << std::endl;
+        Logger.Status << "------------------------Peer receives marker before--------------------" << std::endl;
         //number of marker is increased by 1
         m_countmarker++;
 

@@ -75,6 +75,8 @@ class IProtocol
         /// Returns a pointer to the underlying connection.
         CConnection* GetConnection() { return m_conn; };
         static unsigned int m_writes;
+        static unsigned int m_recieves;
+        static unsigned int m_accepts;
     protected:
         /// Callback for when a write completes.
 #pragma GCC diagnostic ignored "-Wunused-parameter"

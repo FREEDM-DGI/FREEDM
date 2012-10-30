@@ -1173,6 +1173,8 @@ void GMAgent::Stop()
              <<'\t'<<m_ingrouptimer.TotalElapsed();
     actionlog<<'\t'<<m_membership<<'\t'<<m_membershipchecks
              <<'\t'<<IPeerNode::m_sendcalls<<'\t'<<broker::IProtocol::m_writes
+             <<'\t'<<broker::IProtocol::m_recieves
+             <<'\t'<<broker::IProtocol::m_accepts
              <<std::endl;
     actionlog.close();
 }

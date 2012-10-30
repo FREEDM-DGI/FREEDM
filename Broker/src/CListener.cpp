@@ -35,6 +35,7 @@
 
 #include "CDispatcher.hpp"
 #include "CListener.hpp"
+#include "IProtocol.hpp"
 #include "CConnectionManager.hpp"
 #include "CMessage.hpp"
 #include "RequestParser.hpp"
@@ -119,6 +120,7 @@ void CListener::HandleRead(const boost::system::error_code& e,
     Logger::Debug << __PRETTY_FUNCTION__ << std::endl;       
     if (!e)
     {
+        IProtocol::m_recieves++;
         boost::tribool result_;
         boost::tie(result_, boost::tuples::ignore) = Parse(
             m_message, m_buffer.data(),
@@ -151,6 +153,7 @@ void CListener::HandleRead(const boost::system::error_code& e,
             }
             else if(conn->Recieve(m_message))
             {
+                IProtocol::m_accepts++;
                 Logger::Debug<<"Accepted message "<<m_message.GetHash()<<":"
                               <<m_message.GetSequenceNumber()<<std::endl;
                 GetDispatcher().HandleRequest(m_message);

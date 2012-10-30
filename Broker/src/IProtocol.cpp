@@ -38,6 +38,9 @@ namespace freedm {
     namespace broker {
 
 unsigned int IProtocol::m_writes = 0;
+unsigned int IProtocol::m_recieves = 0;
+unsigned int IProtocol::m_accepts = 0;
+
 void IProtocol::Write(CMessage msg)
 {
     IProtocol::m_writes++;

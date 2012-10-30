@@ -284,8 +284,8 @@ int main(int argc, char* argv[])
         ss >> uuidstr;
         // Instantiate and register the group management module
         gm::GMAgent GM(uuidstr, broker, phyManager);
-        broker.RegisterModule("gm",boost::posix_time::milliseconds(200));
-        dispatch.RegisterReadHandler("gm", "any", &GM);
+        broker.RegisterModule("gm",boost::posix_time::milliseconds(400));
+        dispatch.RegisterReadHandler("gm", "gm", &GM);
         // Instantiate and register the state collection module
         sc::SCAgent SC(uuidstr, broker, phyManager);
         broker.RegisterModule("sc",boost::posix_time::milliseconds(400));

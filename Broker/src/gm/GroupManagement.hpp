@@ -133,7 +133,7 @@ class GMAgent
     CMessage Ready();
     /// Creates A Response message
     CMessage Response(std::string payload,std::string type,
-        const boost::posix_time::ptime& exp);
+        const boost::posix_time::ptime& exp, int seq);
     /// Creates an Accept Message
     CMessage Accept();
     /// Creates a AYT, used for Timeout
@@ -219,6 +219,8 @@ class GMAgent
     boost::posix_time::time_duration FID_TIMEOUT;
     /// How long to wait for responses from other nodes.
     boost::posix_time::time_duration RESPONSE_TIMEOUT;
+    /// How long to wait for responses from other nodes.
+    boost::posix_time::time_duration AYT_RESPONSE_TIMEOUT;
 
     ///Maximum clock skew in milliseconds;
     static const int MAX_SKEW = 100;

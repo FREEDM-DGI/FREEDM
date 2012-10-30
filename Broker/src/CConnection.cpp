@@ -30,6 +30,7 @@
 #include "config.hpp"
 #include "CSRConnection.hpp"
 #include "CSUConnection.hpp"
+#include "CSRSWConnection.hpp"
 #include "RequestParser.hpp"
 
 #include <vector>
@@ -71,7 +72,9 @@ CConnection::CConnection(boost::asio::io_service& p_ioService,
         ProtocolPtr(new CSUConnection(this))));
     m_protocols.insert(ProtocolMap::value_type(CSRConnection::Identifier(),
         ProtocolPtr(new CSRConnection(this))));
-    m_defaultprotocol = CSRConnection::Identifier();
+    m_protocols.insert(ProtocolMap::value_type(CSRSWConnection::Identifier(),
+        ProtocolPtr(new CSRSWConnection(this))));
+    m_defaultprotocol = CSRSWConnection::Identifier();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -105,6 +108,24 @@ void CConnection::Stop()
     }   
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     GetSocket().close();
+}
+
+///////////////////////////////////////////////////////////////////////////////
+/// @fn CConnection::ChangePhase
+/// @description An event that gets called when the broker changes the current
+///   phase.
+/// @pre None
+/// @post The sliding window protocol if it exists is stopped.
+/// @param newround If true, the phase change is also the start of an entirely
+///     new round.
+///////////////////////////////////////////////////////////////////////////////
+void CConnection::ChangePhase(bool newround)
+{
+    ProtocolMap::iterator it;
+    for(it = m_protocols.begin(); it != m_protocols.end(); it++)
+    {
+        it->second->ChangePhase(newround);
+    }
 }
  
 ///////////////////////////////////////////////////////////////////////////////

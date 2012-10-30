@@ -60,6 +60,8 @@ class IProtocol
         virtual void SendACK(const CMessage &msg) = 0;
         /// Handles Stopping the timers etc
         virtual void Stop() = 0;
+        /// Handles the change phase even
+        virtual void ChangePhase(bool newround) { };
         /// Handles checking to see if the connection is stopped
         bool GetStopped() { return m_stopped; };
         /// Handles setting the stopped variable

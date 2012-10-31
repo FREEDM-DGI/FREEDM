@@ -16,10 +16,10 @@ get_git_head_revision(GIT_REFSPEC GIT_SHA1)
 option(CUSTOMNETWORK "for network.xml support" OFF)
 option(DATAGRAM "for UDP Datagram service w/o sequencing" OFF)
 option(SHOW_MESSAGES "Enable help messages during cmake execution" ON)
-option(SHOW_WARNINGS "warnings displayed during project compile" ON)
+option(SHOW_WARNINGS "warnings displayed during project compile" OFF)
 option(USE_DEVICE_PSCAD "Enable the PSCAD simulation interface" OFF)
 option(USE_DEVICE_RTDS "Enable the RTDS simulation interface" OFF)
-option(RUN_DOXYGEN "run Doxygen after project compile" ON)
+option(RUN_DOXYGEN "run Doxygen after project compile" OFF)
 
 # Check for a variety of conditions that should generate an error.
 if(!LINUX)
@@ -52,6 +52,7 @@ include_directories(SYSTEM ${Boost_INCLUDE_DIRS})
 link_directories(${Boost_LIBRARY_DIRS})
 
 # set C++ compiler flags
+set(WARNING_FLAGS "-w")
 if(SHOW_WARNINGS)
     set(WARNING_FLAGS "-Wall -Wextra")
 endif(SHOW_WARNINGS)

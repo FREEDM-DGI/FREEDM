@@ -4,9 +4,10 @@ project(Broker)
 
 set(ALT_BUILD_VERSION "Unversioned")
 # Build Versioning
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/")
-include(GetGitRevisionDescription)
-get_git_head_revision(GIT_REFSPEC GIT_SHA1)
+#list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/")
+#include(GetGitRevisionDescription)
+#get_git_head_revision(GIT_REFSPEC GIT_SHA1)
+set(GIT_SHA1 1.2.0)
 
 # configurable project options
 # TUTORIAL on how to add a new option:

@@ -57,9 +57,8 @@ if(SHOW_WARNINGS)
 endif(SHOW_WARNINGS)
 
 # Run -DCMAKE_BUILD_TYPE=DEBUG if you need debugging -g
-# Run -DCMAKE_BUILD_TYPE=RELEASE for optimization -O2
-set(CMAKE_CXX_FLAGS "-pedantic -std=c++98 ${WARNING_FLAGS}")
-set(CMAKE_EXE_LINKER_FLAGS "-lpthread")
+# Don't use -DCMAKE_BUILD_TYPE=RELEASE - it makes things not work =/
+set(CMAKE_CXX_FLAGS "-pedantic -std=c++98 -pthread ${WARNING_FLAGS}")
 
 # generate the configuration file
 CONFIGURE_FILE(

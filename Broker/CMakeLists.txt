@@ -2,11 +2,11 @@
 cmake_minimum_required(VERSION 2.6)
 project(Broker)
 
-set(ALT_BUILD_VERSION "Unversioned")
+#set(ALT_BUILD_VERSION 1.2.0)
 # Build Versioning
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/")
-include(GetGitRevisionDescription)
-get_git_head_revision(GIT_REFSPEC GIT_SHA1)
+#list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/")
+#include(GetGitRevisionDescription)
+#get_git_head_revision(GIT_REFSPEC GIT_SHA1)
 
 # configurable project options
 # TUTORIAL on how to add a new option:
@@ -16,10 +16,10 @@ get_git_head_revision(GIT_REFSPEC GIT_SHA1)
 option(CUSTOMNETWORK "for network.xml support" OFF)
 option(DATAGRAM "for UDP Datagram service w/o sequencing" OFF)
 option(SHOW_MESSAGES "Enable help messages during cmake execution" ON)
-option(SHOW_WARNINGS "warnings displayed during project compile" OFF)
+option(SHOW_WARNINGS "warnings displayed during project compile" ON)
 option(USE_DEVICE_PSCAD "Enable the PSCAD simulation interface" OFF)
 option(USE_DEVICE_RTDS "Enable the RTDS simulation interface" OFF)
-option(RUN_DOXYGEN "run Doxygen after project compile" OFF)
+option(RUN_DOXYGEN "run Doxygen after project compile" ON)
 
 # Check for a variety of conditions that should generate an error.
 if(!LINUX)

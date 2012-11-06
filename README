@@ -18,25 +18,16 @@ Science and Technology, Rolla, MO 65409 <ff@mst.edu>
 
 Building This Project
 
-1. Begin by installing Boost. You may be able to use your system's provided
-Boost package, or you may need to begin by downloading Boost from 
-http://www.boost.org/users/history/. The only supported version is Boost 1.46.1.
+1. Begin by installing Boost. We recommend installing the version of Boost
+provided by your system's package manager. Very old systems may require you
+manually build a newer version of Boost, since we do make use of relatively new
+Boost features. We currently test FREEDM on Boost 1.50. See the Boost website
+for assistance if you think you will need to build this version yourself.
 
-2. If you are using a Boost package, skip to step 4.
+2. Navigate to the `Broker` directory within the source you cloned from GitHub
+and invoke `cmake .` This will prepare the makefile.
 
-If you aren't using a package of boost, build it by extracting the source
-tarball you downloaded to your home directory, navigating to it, and
-invoking `sh bootstrap.sh` and then `bjam`. This will build Boost.
+3. Call `make` and wait for the FREEDM project to build.
 
-3. Next, define the BOOST_ROOT environment variable in your `.bashrc` by setting
-it to the directory you built Boost in. 
-
-For example: `export BOOST_ROOT='~/boost/'`
-
-4. Navigate to the `Broker` directory within the source you cloned from GitHub
-and invoke `cmake .` This will prepare all the makefiles.
-
-5. Lastly, call `make` and wait for the FREEDM project to build.
-
-6. Refer to the FREEDM Wiki at https://github.com/scj7t4/FREEDM/wiki for
+4. Refer to the FREEDM Wiki at https://github.com/scj7t4/FREEDM/wiki for
 information on configuration.

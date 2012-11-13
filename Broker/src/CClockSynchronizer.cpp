@@ -37,7 +37,7 @@ namespace {
 CLocalLogger Logger(__FILE__);
 const int MAX_REGRESSION_ENTRIES = 200;
 const double SYNCHRONIZER_LAMBDA = .99999;
-const int QUERY_INTERVAL = 2000;
+const int QUERY_INTERVAL = 10000;
 
 }
 
@@ -168,7 +168,6 @@ void CClockSynchronizer::HandleExchangeResponse(CMessage msg, PeerNodePtr peer)
     {
         rlist.pop_front();
         rlist.pop_front();
-    
     }
     m_responses[ij] = rlist;
     // Now we can compute a linear regression on the contents
@@ -206,7 +205,7 @@ void CClockSynchronizer::HandleExchangeResponse(CMessage msg, PeerNodePtr peer)
         }
     }
     double lag = (TDToDouble(sumlag))/rlist.size();
-    Logger.Warn<<"Computed lag : "<<lag<<std::endl;
+    Logger.Warn<<"Computed lag ("<<sender<<"): "<<lag<<std::endl;
     double dxbar = TDToDouble(sumx)/rlist.size();
     double dybar = TDToDouble(sumy)/rlist.size();
     boost::posix_time::time_duration xbar = DoubleToTD(dxbar);
@@ -244,13 +243,12 @@ void CClockSynchronizer::HandleExchangeResponse(CMessage msg, PeerNodePtr peer)
     Logger.Debug<<std::endl; 
     BOOST_FOREACH(ptree::value_type &v, pt.get_child("clk.table"))
     {
-        break;
         ptree sub_pt = v.second;
         std::string neighbor = sub_pt.get<std::string>("uuid");
         if(neighbor == peer->GetUUID() || neighbor == m_uuid)
             continue;
         boost::posix_time::time_duration cjl = boost::posix_time::seconds(sub_pt.get<long>("offset.secs"))+boost::posix_time::microseconds(sub_pt.get<long>("offset.fracs"));
-        double wjl = sub_pt.get<double>("weight");
+        double wjl = sub_pt.get<double>("weight")-.1; // Abritrarily remove some trust to account for lag.
         double fjl = sub_pt.get<double>("skew");
         MapIndex il(m_uuid,neighbor);
         if(m_offsets.find(il) == m_offsets.end())
@@ -282,10 +280,23 @@ void CClockSynchronizer::Exchange(const boost::system::error_code& err)
     if(err)
         return;
     // Loop through the peers and send them beacons
+    std::deque< boost::shared_ptr<IPeerNode> > tmplist;
+    std::deque< boost::shared_ptr<IPeerNode> > tmplist2;
+    bool flop = false; 
     BOOST_FOREACH(boost::shared_ptr<IPeerNode> peer, CGlobalPeerList::instance().PeerList() | boost::adaptors::map_values)
     {
         if(peer->GetUUID() == m_uuid)
-            continue;
+           flop = true;
+        else if(flop == false)
+            tmplist2.push_back(peer); // put elements before me into list b
+        else
+            tmplist.push_back(peer); // put elements after me into list a
+    }
+    // put elements from list b into list a
+    tmplist.insert(tmplist.end(),tmplist2.begin(),tmplist2.end());
+    // This should do a circular shift of the queries, which SHOULD help with traffic if I have postulated correctly.
+    BOOST_FOREACH(boost::shared_ptr<IPeerNode> peer, tmplist)
+    {
         peer->Send(ExchangeMessage(m_kcounter));
         MapIndex ij(m_uuid,peer->GetUUID());
         m_queries[ij] = QueryRecord(m_kcounter, boost::posix_time::microsec_clock::universal_time());

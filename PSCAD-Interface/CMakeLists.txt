@@ -23,7 +23,7 @@ include_directories("${CMAKE_SOURCE_DIR}/include")
 include_directories("${CMAKE_SOURCE_DIR}/src")
 
 # specify the C++ compiler flags
-set(CMAKE_CXX_FLAGS "-std=c++98 -W -Wall -pedantic")
+set(CMAKE_CXX_FLAGS "-std=c++98 -Wextra -Wall -pedantic -pthread")
 
 # list the source files for the project
 set(

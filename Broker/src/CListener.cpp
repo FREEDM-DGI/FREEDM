@@ -28,6 +28,7 @@
 #include "CLogger.hpp"
 #include "CMessage.hpp"
 #include "config.hpp"
+#include "CClockSynchronizer.hpp"
 
 #include <vector>
 
@@ -162,13 +163,10 @@ void CListener::HandleRead(const boost::system::error_code& e,
                             <<m_message.GetSequenceNumber()<<std::endl;
             conn->RecieveACK(m_message);
         }
-        else if(m_message.GetStatus() == freedm::broker::CMessage::ClockReading)
+        else if(m_message.GetStatus() == freedm::broker::CMessage::ClockReading && conn->Recieve(m_message))
         {
-            if(conn->Recieve(m_message))
-            {
-                //Take the message and pass it to the brokers HandleClockReading() method.
-                GetBroker().HandleClockReading(m_message);     
-            }
+            Logger.Debug<<"Got A clock message"<<std::endl;
+            GetBroker().GetClockSynchronizer().HandleRead(m_message);
         }
         else if(conn->Recieve(m_message))
         {

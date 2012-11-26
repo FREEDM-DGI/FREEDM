@@ -271,6 +271,22 @@ ConnectionPtr CConnectionManager::GetConnectionByUUID(std::string uuid_)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+/// @fn CConnectionManager::ChangePhase
+/// @description called when the broker changes phases in the realtime scheduler
+/// @pre None
+/// @post Connection's Change phase events are called.
+/// @param newround True if the phase change corresponds to a new round.
+///////////////////////////////////////////////////////////////////////////////
+void CConnectionManager::ChangePhase(bool newround)
+{
+    connectionmap::left_iterator it;
+    for(it = m_connections.left.begin(); it != m_connections.left.end(); it++)
+    {
+        it->second->ChangePhase(newround);
+    }    
+}
+
+///////////////////////////////////////////////////////////////////////////////
 /// @fn CConnectionManager::LoadNetworkConfig
 /// @description Accesses the network.xml file and parses it, setting the
 ///   network reliability for all specified interfaces. Only enabled with the

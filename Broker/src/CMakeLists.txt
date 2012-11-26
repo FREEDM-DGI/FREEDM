@@ -12,9 +12,11 @@ set(
     CReliableConnection.cpp
     CSRConnection.cpp
     CSUConnection.cpp
+    CSRSWConnection.cpp
     IPeerNode.cpp
     IProtocol.cpp
     IHandler.cpp
+    CClockSynchronizer.cpp
     gm/GroupManagement.cpp
     lb/LoadBalance.cpp
     sc/StateCollection.cpp

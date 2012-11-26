@@ -87,21 +87,14 @@ void IReadHandler::HandleRead(freedm::broker::CMessage msg)
     //Try to find the key in the map, unless its type is any:
     BOOST_FOREACH(SubhandleContainer::value_type f, m_handlers)
     {
-        try
+        if(f.first == "any" || msg.GetHandler() == f.first)
         {
-            if(f.first == "any" || msg.GetHandler() == f.first)
-            {
-                f.second(msg,peer);
-                Logger.Debug<<"Found key "<<f.first<<" in message"<<std::endl;
-                return;
-            }
-        }
-        catch(boost::property_tree::ptree_bad_path &e)
-        {
-            continue;
+            f.second(msg,peer);
+            Logger.Debug<<"Found key "<<f.first<<" in message"<<std::endl;
+            return;
         }
     }
-    Logger.Warn<<"No handlers found for message."<<std::endl;
+    Logger.Warn<<"No handlers found for message. ("<<msg.GetHandler()<<")"<<std::endl;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

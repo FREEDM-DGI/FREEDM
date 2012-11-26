@@ -1,12 +1,12 @@
 ////////////////////////////////////////////////////////////////////////////////
-/// @file         CSRConnection.hpp
+/// @file         CSRSWConnection.hpp
 ///
 /// @author       Derek Ditch <derek.ditch@mst.edu>
 /// @author       Stephen Jackson <scj7t4@mst.edu>
 ///
 /// @project      FREEDM DGI
 ///
-/// @description  Declare CSRConnection class
+/// @description  Declare CSRSWConnection class
 ///
 /// These source code files were created at Missouri University of Science and
 /// Technology, and are intended for use in teaching or research. They may be
@@ -21,8 +21,8 @@
 /// Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
 ////////////////////////////////////////////////////////////////////////////////
 
-#ifndef CSRCONNECTION_HPP
-#define CSRCONNECTION_HPP
+#ifndef CSRSWCONNECTION_HPP
+#define CSRSWCONNECTION_HPP
 
 #include "CConnection.hpp"
 #include "CMessage.hpp"
@@ -43,14 +43,14 @@ namespace freedm {
 
 
 /// A reliable connection protocol with sweet as expirations.
-class CSRConnection : public IProtocol
-    , public boost::enable_shared_from_this<CSRConnection>
+class CSRSWConnection : public IProtocol
+    , public boost::enable_shared_from_this<CSRSWConnection>
 {
     public:
         /// Initializes the protocol with the underlying connection
-        CSRConnection(CConnection * conn);
+        CSRSWConnection(CConnection * conn);
         /// Destructor
-        virtual ~CSRConnection() { };
+        virtual ~CSRSWConnection() { };
         /// Public facing send function that sends a message
         void Send(CMessage msg);
         /// Public facing function that handles marking down ACKs for sent messages
@@ -66,7 +66,9 @@ class CSRConnection : public IProtocol
         /// Returns the identifier
         std::string GetIdentifier() { return Identifier(); };
         /// Returns the identifier for this protocol.
-        static std::string Identifier() { return "SRC"; };
+        static std::string Identifier() { return "SRSW"; };
+        /// Handles Phase Changes
+        void ChangePhase(bool newround);
     private:
         /// Resend outstanding messages
         void Resend(const boost::system::error_code& err);
@@ -88,16 +90,16 @@ class CSRConnection : public IProtocol
         bool m_outsync;
         /// Keeps track of the last resync that we've seen
         boost::posix_time::ptime m_outsynctime;
-        /// Marks if we should send the kill hash.
-        bool m_sendkills;
-        /// The hash to... MURDER.
-        unsigned int  m_sendkill;
         /// The window
         std::deque<CMessage> m_window;
+        /// The outstanding window
+        std::deque<CMessage> m_outstandingwindow;
         /// Sequence modulo
         static const unsigned int SEQUENCE_MODULO = 1024;
         /// Refire time in MS
-        static const unsigned int REFIRE_TIME = 10;
+        static const unsigned int REFIRE_TIME = 5;
+        /// Outstanding window size
+        static const unsigned int OUTSTANDING_WINDOW = 16;
         /// Mutex for the current ack
         boost::shared_mutex m_ackmutex;
 };

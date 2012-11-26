@@ -120,7 +120,6 @@ void CListener::HandleRead(const boost::system::error_code& e,
     Logger::Debug << __PRETTY_FUNCTION__ << std::endl;       
     if (!e)
     {
-        IProtocol::m_recieves++;
         boost::tribool result_;
         boost::tie(result_, boost::tuples::ignore) = Parse(
             m_message, m_buffer.data(),
@@ -144,6 +143,7 @@ void CListener::HandleRead(const boost::system::error_code& e,
                 goto listen;
             }
 #endif
+            IProtocol::m_recieves++;
             if(m_message.GetStatus() == freedm::broker::CMessage::Accepted)
             {
                 ptree pp = m_message.GetProtocolProperties();

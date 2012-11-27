@@ -2,11 +2,13 @@ from fabric.api import *
 
 env.key_filename = ["/home/scj7t4/.ssh/id_supercluster"]
 env.warn_only = False
-env.hosts = ['r-facts4.device.mst.edu',
-             'r-facts5.device.mst.edu','r-facts6.device.mst.edu']
-env.hosts += ['r99ff.managed.mst.edu','r12ff.managed.mst.edu',
-              'r01ff.managed.mst.edu','fil4.managed.mst.edu']
+#env.hosts = ['r-facts4.device.mst.edu',
+#             'r-facts5.device.mst.edu','r-facts6.device.mst.edu']
+#env.hosts += ['r99ff.managed.mst.edu','r12ff.managed.mst.edu',
+#              'r01ff.managed.mst.edu','fil4.managed.mst.edu']
 #env.user = 'root'
+
+env.hosts = ['r02scj7t4.device.mst.edu:%d' % x for x in range(2022,2028)]
 
 def host_type():
     run('uname -s')
@@ -16,7 +18,7 @@ def change_and_check():
         run('pwd')
 
 def create_user(username):
-    sudo('useradd -G lp,wheel,video,audio,optical,storage,power,users -m %s' % username)
+    sudo('useradd -G wheel,power,users -m %s' % username)
     sudo('passwd %s' % username)
     sudo('usermod -L %s' % username)
     sudo('chage -d 0 %s' % username)

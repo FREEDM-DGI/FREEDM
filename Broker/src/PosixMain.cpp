@@ -36,7 +36,6 @@
 #include <sstream>
 #include <boost/asio.hpp>
 #include <boost/foreach.hpp>
-#define foreach         BOOST_FOREACH
 #include <boost/assign/list_of.hpp>
 
 #include <boost/asio/ip/host_name.hpp> //for ip::host_name()
@@ -268,7 +267,7 @@ int main (int argc, char* argv[])
         {
             std::vector< std::string > device_list =
                 vm_["add-device"].as< std::vector<std::string> >();
-            foreach(std::string &devid, device_list )
+            BOOST_FOREACH(std::string &devid, device_list )
             {
                 int idx_ = devid.find(':');
                 
@@ -350,7 +349,7 @@ int main (int argc, char* argv[])
         {
             std::vector< std::string > arglist_ =
                 vm_["add-host"].as< std::vector<std::string> >();
-            foreach(std::string &s_, arglist_ )
+            BOOST_FOREACH(std::string &s_, arglist_ )
             {
                 int idx_ = s_.find(':');
                 

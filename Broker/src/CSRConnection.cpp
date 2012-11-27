@@ -110,7 +110,7 @@ void CSRConnection::Send(CMessage msg)
     if(!msg.HasExpireTime())
     {
         Logger.Debug<<"Set Expire time"<<std::endl;
-        msg.SetExpireTimeFromNow(boost::posix_time::milliseconds(20));
+        msg.SetExpireTimeFromNow(boost::posix_time::milliseconds(3000));
     }
     
     if(m_window.size() == 0)

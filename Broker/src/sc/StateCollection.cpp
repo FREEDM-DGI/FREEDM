@@ -611,6 +611,8 @@ void SCAgent::HandleMarker(CMessage msg, PeerNodePtr peer)
     // read the incoming version from marker
     incomingVer_.first = pt.get<std::string>("sc.source");
     incomingVer_.second = pt.get<unsigned int>("sc.id");
+    m_deviceType = pt.get<std::string>("sc.deviceType");
+    m_valueType = pt.get<std::string>("sc.valueType");
 
     if (m_curversion.first == "default")
         //peer receives first marker
@@ -707,7 +709,7 @@ void SCAgent::HandleState(CMessage msg, PeerNodePtr peer)
         BOOST_FOREACH(ptree::value_type &v, pt.get_child("sc.types"))
         {
             ptree sub_pt1 = v.second;
-            Logger.Debug << "type: " << sub_pt1.get<std::string>("valueType") <<
+            Logger.Status << "type: " << sub_pt1.get<std::string>("valueType") <<
                             "       value: " << sub_pt1.get<std::string>("value") << std::endl;
             if (sub_pt1.get<std::string>("valueType") == "Message")
             {

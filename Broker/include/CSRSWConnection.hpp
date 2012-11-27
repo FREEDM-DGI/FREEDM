@@ -95,11 +95,11 @@ class CSRSWConnection : public IProtocol
         /// The outstanding window
         std::deque<CMessage> m_outstandingwindow;
         /// Sequence modulo
-        static const unsigned int SEQUENCE_MODULO = 1024;
+        static const unsigned int SEQUENCE_MODULO = 65536;
         /// Refire time in MS
         static const unsigned int REFIRE_TIME = 5;
         /// Outstanding window size
-        static const unsigned int OUTSTANDING_WINDOW = 16;
+        static const unsigned int OUTSTANDING_WINDOW = 1024;
         /// Mutex for the current ack
         boost::shared_mutex m_ackmutex;
 };

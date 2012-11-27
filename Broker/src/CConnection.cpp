@@ -74,7 +74,7 @@ CConnection::CConnection(boost::asio::io_service& p_ioService,
         ProtocolPtr(new CSRConnection(this))));
     m_protocols.insert(ProtocolMap::value_type(CSRSWConnection::Identifier(),
         ProtocolPtr(new CSRSWConnection(this))));
-    m_defaultprotocol = CSRSWConnection::Identifier();
+    m_defaultprotocol = CSRConnection::Identifier();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

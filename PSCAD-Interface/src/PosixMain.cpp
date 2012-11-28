@@ -155,5 +155,4 @@ int main( int argc, char * argv[] )
                 &IServer::Run, *it));
     }
     while(true);
-    return 0;
 }

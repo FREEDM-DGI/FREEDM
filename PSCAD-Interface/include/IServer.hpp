@@ -26,16 +26,6 @@
 #include <boost/asio.hpp>
 #include <boost/noncopyable.hpp>
 
-// forward declaration
-namespace boost
-{
-    namespace system
-    {
-        class error_code;
-    }
-}
-
-
 namespace freedm {
 namespace simulation {
 

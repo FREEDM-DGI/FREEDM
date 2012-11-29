@@ -1337,7 +1337,7 @@ int GMAgent::Run()
         mapIt_ != GetConnectionManager().GetHostnamesEnd(); ++mapIt_ )
     {
         std::string host_ = mapIt_->first;
-        Logger.Notice<<"Registering Peer"<<mapIt_->first<<std::endl;
+        Logger.Notice<<"Registering peer "<<mapIt_->first<<std::endl;
         AddPeer(const_cast<std::string&>(mapIt_->first));
     }
     Logger.Notice<<"All peers added "<<CGlobalPeerList::instance().PeerList().size()<<std::endl;

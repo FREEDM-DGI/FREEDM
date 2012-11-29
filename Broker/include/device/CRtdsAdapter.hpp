@@ -69,6 +69,7 @@ public:
     
     /// Destructor.
     ~CRtdsAdapter();
+    
 private:
     /// Microseconds between updates, see documentation for Run().
     static const long TIMESTEP = 50000;
@@ -82,6 +83,12 @@ private:
 
     /// Shut down communication to FPGA.
     void Quit();
+
+    /// Reverses all of the bytes in a buffer.    
+    void ReverseBytes( char * buffer, const int numBytes );
+    
+    /// Swaps the endianness of all SignalValues in a vector.
+    void EndianSwapIfNeeded(std::vector<SignalValue> & v);
 
     /// Timer object to set communication cycle pace.
     boost::asio::deadline_timer m_GlobalTimer;

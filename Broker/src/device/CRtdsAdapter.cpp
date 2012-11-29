@@ -60,63 +60,6 @@ namespace {
 /// This file's logger.
 CLocalLogger Logger(__FILE__);
 
-////////////////////////////////////////////////////////////////////////////////
-/// A utility function for converting byte order from big endian to little
-/// endian and vise versa.
-///  
-/// @pre  None
-/// @post The endianness of data is now reversed
-/// @param data the data to be endian-swapped
-/// @param numBytes the number of bytes per word in data
-////////////////////////////////////////////////////////////////////////////////
-void EndianSwap(char * data, const int numBytes)
-{
-    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-
-    char * tmp = new char[numBytes];
-
-    for (int i = 0; i < numBytes; ++i)
-        tmp[i] = data[numBytes - 1 - i];
-
-    for (int i = 0; i < numBytes; ++i)
-        data[i] = tmp[i];
-
-    delete[] tmp;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-/// Converts the SignalValues in the passed vector from big-endian to
-/// little-endian, or vice-versa, if the DGI is running on a little-endian
-/// system.
-///
-/// @pre None.
-/// @post The elements of data are converted in endianness if the DGI is
-///  running on a little-endian system.  Otherwise, nothing happens.
-/// @param v The vector of SignalValues to be endian-swapped.
-///
-/// @limitations Assumes the existence of UNIX byte order macros.
-///////////////////////////////////////////////////////////////////////////////
-inline void EndianSwapIfNeeded(std::vector<SignalValue> & v)
-{
-    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    
-// check endianess at compile time.  Middle-Endian not allowed
-// The parameters __BYTE_ORDER, __LITTLE_ENDIAN, __BIG_ENDIAN should
-// automatically be defined and determined in sys/param.h, which exists
-// in most Unix systems.
-#if __BYTE_ORDER == __LITTLE_ENDIAN
-    for( std::size_t i = 0; i < v.size(); i++ )
-    {
-        EndianSwap((char*)&v[0], sizeof(SignalValue));
-    }
-    
-#elif __BYTE_ORDER == __BIG_ENDIAN
-    Logger.Debug << "Endian swap skipped: host is big-endian." << std::endl;
-#else
-#error "unsupported endianness or __BYTE_ORDER not defined"
-#endif
-}
-
 } // unnamed namespace
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -288,6 +231,61 @@ CRtdsAdapter::~CRtdsAdapter()
         Quit();
     }
 
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/// A utility function for converting byte order from big endian to little
+/// endian and vice versa. This needs to be called on a SINGLE WORD of the data
+/// since it actually just reverses the bytes.
+///
+/// @pre None
+/// @post The bytes in the buffer are now reversed
+/// @param buffer the data to be reversed
+/// @param size the number of bytes in the buffer
+////////////////////////////////////////////////////////////////////////////////
+void CRtdsAdapter::ReverseBytes( char * buffer, const int numBytes )
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    
+    for( std::size_t i = 0, j = numBytes-1; i < j; i++, j-- )
+    {
+        char temp = buffer[i];
+        buffer[i] = buffer[j];
+        buffer[j] = temp;
+    }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+/// Converts the SignalValues in the passed vector from big-endian to
+/// little-endian, or vice-versa, if the DGI is running on a little-endian
+/// system.
+///
+/// @pre None.
+/// @post The elements of data are converted in endianness if the DGI is
+///  running on a little-endian system.  Otherwise, nothing happens.
+/// @param v The vector of SignalValues to be endian-swapped.
+///
+/// @limitations Assumes the existence of UNIX byte order macros.
+///////////////////////////////////////////////////////////////////////////////
+void CRtdsAdapter::EndianSwapIfNeeded(std::vector<SignalValue> & v)
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    
+// check endianess at compile time.  Middle-Endian not allowed
+// The parameters __BYTE_ORDER, __LITTLE_ENDIAN, __BIG_ENDIAN should
+// automatically be defined and determined in sys/param.h, which exists
+// in most Unix systems.
+#if __BYTE_ORDER == __LITTLE_ENDIAN
+    for( std::size_t i = 0; i < v.size(); i++ )
+    {
+        ReverseBytes((char*)&v[0], sizeof(SignalValue));
+    }
+    
+#elif __BYTE_ORDER == __BIG_ENDIAN
+    Logger.Debug << "Endian swap skipped: host is big-endian." << std::endl;
+#else
+#error "unsupported endianness or __BYTE_ORDER not defined"
+#endif
 }
 
 }//namespace broker

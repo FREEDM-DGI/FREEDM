@@ -49,10 +49,12 @@ CLocalLogger Logger(__FILE__);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// Starts the adapter.  Performs error-checking on the device specification.
+/// Called when "starting" the adapter, after all devices have been added.
+/// Allocates send and receive buffers and performs error-checking on the
+/// device specification.
 ///
-/// @pre  The adapter has not yet been started.
-/// @post The adapter has now been started.
+/// @pre  The adapter has not yet been started, and buffers have no size.
+/// @post The adapter has now been started, and buffers have been allocated.
 ///
 /// @ErrorHandling Throws std::runtime_error if the entry indices of the
 ///                adapter's devices are malformed.
@@ -70,11 +72,13 @@ void IBufferAdapter::Start()
     BOOST_FOREACH( std::size_t i, m_stateInfo | boost::adaptors::map_values )
     {
         stateIndices.insert(i);
+        m_rxBuffer.push_back(0.0f);
     }
     
     BOOST_FOREACH( std::size_t i, m_commandInfo | boost::adaptors::map_values )
     {
         commandIndices.insert(i);
+        m_txBuffer.push_back(0.0f);
     }
     
     // Tom Roth <tprfh7@mst.edu>:
@@ -152,7 +156,7 @@ void IBufferAdapter::Set(const std::string device, const std::string signal,
 ///
 /// @pre The passed signal must be recognized by the adapter.
 /// @post Returns the value of the signal stored in m_rxBuffer.
-
+///
 /// @param device The unique identifier of a physical device.
 /// @param signal A power electronic reading related to the device.
 ///
@@ -173,6 +177,9 @@ SignalValue IBufferAdapter::Get(const std::string device,
         throw std::runtime_error("Attempted to get a device signal (" + device
                 + "," + signal + ") that does not exist.");
     }
+
+    Logger.Debug << "Signal " << signal << " found for device " << device 
+                 << " in m_stateInfo" << std::endl;
     
     return m_rxBuffer.at(m_stateInfo.find(devsig)->second);
 }

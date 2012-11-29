@@ -94,6 +94,9 @@ class GMAgent
     /// Returns true if this node considers itself a coordinator
     bool IsCoordinator() const { return (Coordinator() == GetUUID()); };
 
+    /// Records the markov state
+    void MarkovState();
+
     // Handlers
     /// Handles receiving incoming messages.
     virtual void HandleRead(broker::CMessage msg );
@@ -207,6 +210,7 @@ class GMAgent
     Stopwatch m_electiontimer;
     Stopwatch m_ingrouptimer;
 
+    std::ofstream m_markovlog;
     // Timeouts
     boost::posix_time::time_duration CHECK_TIMEOUT;
     boost::posix_time::time_duration TIMEOUT_TIMEOUT;

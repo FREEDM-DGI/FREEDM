@@ -178,9 +178,6 @@ SignalValue IBufferAdapter::Get(const std::string device,
                 + "," + signal + ") that does not exist.");
     }
 
-    Logger.Debug << "Signal " << signal << " found for device " << device 
-                 << " in m_stateInfo" << std::endl;
-    
     return m_rxBuffer.at(m_stateInfo.find(devsig)->second);
 }
 

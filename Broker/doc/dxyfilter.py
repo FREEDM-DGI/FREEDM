@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 ###############################################################################
 # @file             dxyfilter.py
 #
@@ -89,3 +89,4 @@ for line in fileinput.input():
         # We could lose documentation because we abuse these tags. Hide them.
         if '@function' not in line and '@fn' not in line:
             sys.stdout.write(line)
+

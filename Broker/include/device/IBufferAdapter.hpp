@@ -72,10 +72,10 @@ public:
     /// Virtual destructor for derived classes.
     virtual ~IBufferAdapter();
 protected:    
-    /// Translates a device signal into its state index.
+    /// Translates a device signal into its rxBuffer (state) index
     std::map<const DeviceSignal, const std::size_t> m_stateInfo;
     
-    /// Translates a device signal into its command index.
+    /// Translates a device signal into its txBuffer (command) index
     std::map<const DeviceSignal, const std::size_t> m_commandInfo;
 
     /// The "state table" buffer received from the external host.

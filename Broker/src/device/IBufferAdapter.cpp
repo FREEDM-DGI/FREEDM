@@ -145,7 +145,8 @@ void IBufferAdapter::Set(const std::string device, const std::string signal,
                 + "," + signal + ") that does not exist.");
     }
     
-    m_txBuffer.at(m_commandInfo[devsig]) = value;
+    // The buffer index is one less than the configured index.
+    m_txBuffer.at(m_commandInfo[devsig] - 1) = value;
 }
 
 ////////////////////////////////////////////////////////////////////////////
@@ -178,7 +179,8 @@ SignalValue IBufferAdapter::Get(const std::string device,
                 + "," + signal + ") that does not exist.");
     }
 
-    return m_rxBuffer.at(m_stateInfo.find(devsig)->second);
+    // The buffer index is one less than the configured index.
+    return m_rxBuffer.at(m_stateInfo.find(devsig)->second - 1);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -227,7 +229,7 @@ void IBufferAdapter::RegisterStateInfo(const std::string device,
         }
     }
     
-    m_stateInfo.insert(std::pair<DeviceSignal, std::size_t>(devsig, index-1));
+    m_stateInfo.insert(std::pair<DeviceSignal, std::size_t>(devsig, index));
     Logger.Info << "Registered the device signal (" << device << "," << signal
             << ") as adapter state information." << std::endl;
 }

@@ -1,5 +1,5 @@
 ///////////////////////////////////////////////////////////////////////////////
-/// @file         CAdapterRtds.hpp
+/// @file         CRtdsAdapter.hpp
 ///
 /// @author       Thomas Roth <tprfh7@mst.edu>
 ///
@@ -46,13 +46,13 @@ typedef float TSignalValue;
 /// from the client, it will be blocked until more data is sent or the client
 /// closes the connection.
 ///////////////////////////////////////////////////////////////////////////////
-class CAdapterRtds
+class CRtdsAdapter
     : public IServer
     , public CAdapter
 {
 public:
     /// constructs a DGI-RTDS adapter instance
-    CAdapterRtds( unsigned short port,
+    CRtdsAdapter( unsigned short port,
             const boost::property_tree::ptree & tree );
 private:
     /// handles the accepted socket connection

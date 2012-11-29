@@ -22,9 +22,9 @@
 
 #include "CLogger.hpp"
 #include "IServer.hpp"
-#include "CAdapterRtds.hpp"
-#include "CAdapterPscad.hpp"
-#include "CAdapterSimulation.hpp"
+#include "CRtdsAdapter.hpp"
+#include "CPscadAdapter.hpp"
+#include "CSimulationAdapter.hpp"
 
 #include <set>
 #include <list>
@@ -67,15 +67,15 @@ void ReadXML( std::string xml, std::list< boost::shared_ptr<IServer> > & list )
         
         if( type == "rtds" )
         {
-            adapter.reset( new adapter::CAdapterRtds(port,child.second) );
+            adapter.reset( new adapter::CRtdsAdapter(port,child.second) );
         }
         else if( type == "pscad" )
         {
-            adapter.reset( new adapter::CAdapterPscad(port,child.second) );
+            adapter.reset( new adapter::CPscadAdapter(port,child.second) );
         }
         else if( type == "simulation" )
         {
-            adapter.reset( new adapter::CAdapterSimulation(port,child.second) );
+            adapter.reset( new adapter::CSimulationAdapter(port,child.second) );
         }
         else
         {

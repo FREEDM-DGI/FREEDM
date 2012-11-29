@@ -1,11 +1,11 @@
 ///////////////////////////////////////////////////////////////////////////////
-/// @file         CAdapterPscad.hpp
+/// @file         CSimulationAdapter.hpp
 ///
 /// @author       Thomas Roth <tprfh7@mst.edu>
 ///
 /// @project      FREEDM DGI
 ///
-/// @description  Adapter for the DGI-PSCAD interface
+/// @description  Adapter for the PSCAD power simulation
 ///
 /// These source code files were created at Missouri University of Science and
 /// Technology, and are intended for use in teaching or research. They may be
@@ -20,13 +20,11 @@
 /// Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
 ///////////////////////////////////////////////////////////////////////////////
 
-#ifndef C_ADAPTER_PSCAD_HPP
-#define C_ADAPTER_PSCAD_HPP
+#ifndef C_ADAPTER_SIMULATION_HPP
+#define C_ADAPTER_SIMULATION_HPP
 
 #include "IServer.hpp"
 #include "CAdapter.hpp"
-
-#include <string>
 
 #include <boost/property_tree/ptree_fwd.hpp>
 
@@ -34,42 +32,41 @@ namespace freedm {
 namespace simulation {
 namespace adapter {
 
-/// dgi adapter for the pscad client that handles string message requests
+/// power simulation adapter that handles packets with simple headers
 ///////////////////////////////////////////////////////////////////////////////
-/// The PSCAD adapter is a line server that will read data until it reaches the
-/// first instance of a \r\n.  It will treat the entire data stream as a string
-/// and extract the first word of the string to use as a header.  Based on the
-/// header value, the remaining string content will be passed to an appropriate
-/// message handler to be processed.  A single message will be returned to the
-/// client that contains an error code, a one-word description, and an optional
-/// return value.  This message will likewise be terminated by \r\n.  The error
-/// codes are a subset of the standard HTML status codes.
+/// The simulation adapter expects a packet with a simple string header and a
+/// byte stream payload.  A SET header will cause the adapter to update the
+/// state table using the packet payload.  A GET header will be responded to
+/// with the content of the command table.  A RST header will update both the
+/// state table and the command table using the packet payload.  If a header
+/// is not recognized, the payload will be discarded.
 /// 
-/// @limitations If the adapter does not receive a message that terminates with
-/// \r\n from the client, it will be blocked until the sequence is sent or the
-/// client closes the connection.
+/// @limitations If the payload does not contain the expected amount of bytes,
+/// the adapter will be blocked until the client sends more data or closes the
+/// connection.  The bytes expected is derived from the XML specification.
 ///////////////////////////////////////////////////////////////////////////////
-class CAdapterPscad
+class CSimulationAdapter
     : public IServer
     , public CAdapter
 {
 public:
-    /// constructs a DGI-PSCAD adapter instance
-    CAdapterPscad( unsigned short port,
+    /// constructs a simulation adapter instance
+    CSimulationAdapter( unsigned short port,
             const boost::property_tree::ptree & tree );
 private:
     /// handles the accepted socket connection
     virtual void HandleConnection();
-    /// extracts the header and calls the associated handler
-    bool HandleMessage( std::string type, std::string content );
-    /// set handler that updates a single command table entry
-    std::string SetExternalCommand( std::string content );
-    /// get handler that retrieves a single state variable
-    std::string GetSimulationState( std::string content );
+    /// updates the state table with data read from the socket
+    void SetSimulationState();
+    /// writes the command table data to the socket
+    void GetExternalCommand();
+    
+    /// header size in bytes of the simulation packet
+    static const unsigned int HEADER_SIZE = 5;
 };
 
 } // namespace adapter
 } // namespace simulation
 } // namespace freedm
 
-#endif // C_ADAPTER_PSCAD_HPP
+#endif // C_ADAPTER_SIMULATION_HPP

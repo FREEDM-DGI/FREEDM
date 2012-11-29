@@ -1,5 +1,5 @@
 ///////////////////////////////////////////////////////////////////////////////
-/// @file         CAdapterSimulation.cpp
+/// @file         CSimulationAdapter.cpp
 ///
 /// @author       Thomas Roth <tprfh7@mst.edu>
 ///
@@ -20,7 +20,7 @@
 /// Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
 ///////////////////////////////////////////////////////////////////////////////
 
-#include "CAdapterSimulation.hpp"
+#include "CSimulationAdapter.hpp"
 #include "CTableManager.hpp"
 #include "DeviceTable.hpp"
 
@@ -48,7 +48,7 @@ namespace // unnamed
 /// @param tree The property tree specification of the adapter.
 /// @limitations None.
 ///////////////////////////////////////////////////////////////////////////////
-CAdapterSimulation::CAdapterSimulation( unsigned short port,
+CSimulationAdapter::CSimulationAdapter( unsigned short port,
         const boost::property_tree::ptree & tree )
     : IServer(port)
     , CAdapter(tree)
@@ -66,7 +66,7 @@ CAdapterSimulation::CAdapterSimulation( unsigned short port,
 /// @post A private message handler is called based on the header.
 /// @limitations None.
 ///////////////////////////////////////////////////////////////////////////////
-void CAdapterSimulation::HandleConnection()
+void CSimulationAdapter::HandleConnection()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     char header[HEADER_SIZE];
@@ -103,7 +103,7 @@ void CAdapterSimulation::HandleConnection()
 /// @post The state table is updated according to the XML specification.
 /// @limitations None.
 ///////////////////////////////////////////////////////////////////////////////
-void CAdapterSimulation::SetSimulationState()
+void CSimulationAdapter::SetSimulationState()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     std::vector<TSignalValue> state(m_StateDetails.size());
@@ -129,7 +129,7 @@ void CAdapterSimulation::SetSimulationState()
 /// @post Writes to the socket the information specified in the XML file.
 /// @limitations None.
 ///////////////////////////////////////////////////////////////////////////////
-void CAdapterSimulation::GetExternalCommand()
+void CSimulationAdapter::GetExternalCommand()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     std::vector<TSignalValue> command(m_CommandDetails.size());

@@ -1,5 +1,5 @@
 ///////////////////////////////////////////////////////////////////////////////
-/// @file         CAdapterPscad.cpp
+/// @file         CPscadAdapter.cpp
 ///
 /// @author       Thomas Roth <tprfh7@mst.edu>
 ///
@@ -20,7 +20,7 @@
 /// Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
 ///////////////////////////////////////////////////////////////////////////////
 
-#include "CAdapterPscad.hpp"
+#include "CPscadAdapter.hpp"
 #include "CTableManager.hpp"
 #include "DeviceTable.hpp"
 
@@ -50,7 +50,7 @@ namespace // unnamed
 /// @param tree The property tree specification of the adapter.
 /// @limitations None.
 ///////////////////////////////////////////////////////////////////////////////
-CAdapterPscad::CAdapterPscad( unsigned short port,
+CPscadAdapter::CPscadAdapter( unsigned short port,
         const boost::property_tree::ptree & tree )
     : IServer(port)
     , CAdapter(tree)
@@ -62,10 +62,10 @@ CAdapterPscad::CAdapterPscad( unsigned short port,
 /// Handles requests from the client until a quit message is received.
 /// @Peers Communicates through socket communication with the IServer client.
 /// @pre Requests must start with a one-word header and end with \r\n.
-/// @post Sends requests to CAdapterPscad::HandleMessage() until it returns F.
+/// @post Sends requests to CPscadAdapter::HandleMessage() until it returns F.
 /// @limitations None.
 ///////////////////////////////////////////////////////////////////////////////
-void CAdapterPscad::HandleConnection()
+void CPscadAdapter::HandleConnection()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     boost::asio::streambuf request;    
@@ -109,7 +109,7 @@ void CAdapterPscad::HandleConnection()
 /// @return True if the client intends to send more requests, false otherwise.
 /// @limitations None.
 ///////////////////////////////////////////////////////////////////////////////
-bool CAdapterPscad::HandleMessage( std::string type, std::string content )
+bool CPscadAdapter::HandleMessage( std::string type, std::string content )
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     boost::asio::streambuf response;
@@ -152,7 +152,7 @@ bool CAdapterPscad::HandleMessage( std::string type, std::string content )
 /// @return A status message to be sent back to the client.
 /// @limitations None.
 ///////////////////////////////////////////////////////////////////////////////
-std::string CAdapterPscad::SetExternalCommand( std::string content )
+std::string CPscadAdapter::SetExternalCommand( std::string content )
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     typedef float TSignalValue;
@@ -193,7 +193,7 @@ std::string CAdapterPscad::SetExternalCommand( std::string content )
 /// @return A reponse message to be sent back to the client.
 /// @limitations None.
 ///////////////////////////////////////////////////////////////////////////////
-std::string CAdapterPscad::GetSimulationState( std::string content )
+std::string CPscadAdapter::GetSimulationState( std::string content )
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     typedef float TSignalValue;

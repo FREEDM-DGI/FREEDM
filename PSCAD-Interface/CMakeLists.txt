@@ -35,9 +35,9 @@ set(
     src/CTableManager.cpp
     src/IServer.cpp
     src/CAdapter.cpp
-    src/CAdapterSimulation.cpp
-    src/CAdapterPscad.cpp
-    src/CAdapterRtds.cpp
+    src/CSimulationAdapter.cpp
+    src/CPscadAdapter.cpp
+    src/CRtdsAdapter.cpp
 )
 add_library(simserv ${PROJECT_FILES})
 

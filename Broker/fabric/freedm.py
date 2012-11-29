@@ -79,7 +79,7 @@ if __name__ == "__main__":
     """
     exp.bus_edges([(options.hostnames[0],options.hostnames[1]),
                    (options.hostnames[0],options.hostnames[2]),
-                   (options.hostnames[1],options.hostnames[2]))
+                   (options.hostnames[1],options.hostnames[2])])
     f = open(options.outputfile,'w',0)
     f.write(exp.tsv_head()+"\n")
     hs = ",".join(options.hostnames)

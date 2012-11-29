@@ -5,8 +5,8 @@ env.key_filename = ["/home/scj7t4/.ssh/id_rsa"]
 env.warn_only = True
 
 BOOST_ROOT = '~/boost'
-BROKER_DIR = '/home/scj7t4/FREEDM/Broker'
-SRC_DIR = '/home/scj7t4/FREEDM/Broker/src'
+BROKER_DIR = '/home/scj7t4/FREEDM-LONG/Broker'
+SRC_DIR = '/home/scj7t4/FREEDM-LONG/Broker/src'
 
 env.key_filename = ["/home/scj7t4/.ssh/id_supercluster"]
 
@@ -68,7 +68,7 @@ def get_uuid():
         result = run("./PosixBroker -u")
     return str(result).strip()
 
-def mark_set(step)
+def mark_set(step):
     string = "### Stage %s" % step
     run("echo \"%s\" >> %s" % (string,os.path.join(SRC_DIR,'grouplog.dat')))
     run("echo \"%s\" >> %s" % (string,os.path.join(SRC_DIR,'markovlog.dat')))

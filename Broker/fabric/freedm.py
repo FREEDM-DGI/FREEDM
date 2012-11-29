@@ -79,18 +79,19 @@ if __name__ == "__main__":
     """
     exp.bus_edges([(options.hostnames[0],options.hostnames[1]),
                    (options.hostnames[0],options.hostnames[2]),
-                   (options.hostnames[1],options.hostnames[2])])
+                   (options.hostnames[0],options.hostnames[2])])
     f = open(options.outputfile,'w',0)
     f.write(exp.tsv_head()+"\n")
     hs = ",".join(options.hostnames)
     step_counter = 1
     while 1:
+        hostlist = exp.generate_files()
         for (host,fd) in hostlist.iteritems():
             with settings(host_string=host):
                 fabfile.mark_set(step_counter)
         step_counter += 1
         #Repeat the test 40 times
-        for xxxxxxxx in range(40):
+        for xxxxxxxx in range(6):
             print exp.expcounter
             f.write(exp.tsv_entry()+"\n")
             hostlist = exp.generate_files()

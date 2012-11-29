@@ -78,6 +78,9 @@ private:
      
     /// Constructs the factory.
     CAdapterFactory();
+
+    /// Runs the factory I/O service
+    void RunService();
     
     /// Registers compiled device classes with the factory.
     void RegisterDevices();

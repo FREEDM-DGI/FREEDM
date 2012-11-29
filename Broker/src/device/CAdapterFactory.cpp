@@ -11,6 +11,7 @@
 /// @functions
 ///     CAdapterFactory::CAdapterFactory
 ///     CAdapterFactory::~CAdapterFactory
+///     CAdapterFactory::RunService
 ///     CAdapterFactory::Instance
 ///     CAdapterFactory::CreateAdapter
 ///     CAdapterFactory::RegisterDeviceClass
@@ -65,9 +66,7 @@ CAdapterFactory::CAdapterFactory()
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     
     RegisterDevices();
-    m_thread = boost::thread(boost::bind(
-            &boost::asio::io_service::run, &m_ios));
-    Logger.Status << "Started the adapter i/o service." << std::endl;
+    m_thread = boost::thread(boost::bind(&CAdapterFactory::RunService, this));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -87,6 +86,24 @@ CAdapterFactory::~CAdapterFactory()
     
     Logger.Notice << "Blocking until thread finishes execution." << std::endl;
     m_thread.join();
+}
+
+///////////////////////////////////////////////////////////////////////////////
+/// Runs the i/o service with an infinite workload.
+///
+/// @pre None.
+/// @post Runs m_ios and blocks the calling thread.
+///
+/// @limitations None.
+///////////////////////////////////////////////////////////////////////////////
+void CAdapterFactory::RunService()
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+
+    boost::asio::io_service::work runner(m_ios);
+    m_ios.run();
+
+    Logger.Status << "Started the adapter i/o service." << std::endl;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

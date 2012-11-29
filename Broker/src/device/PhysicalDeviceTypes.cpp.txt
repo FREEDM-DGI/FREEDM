@@ -48,7 +48,7 @@ namespace device {
 ////////////////////////////////////////////////////////////////////////////////
 void CAdapterFactory::RegisterDevices()
 {
-    ##BREAK
+    ##REGISTRATIONS
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -68,7 +68,7 @@ std::multiset<IDevice::Pointer> CDeviceManager::GetDevicesOfType(
     
     for( iterator it = m_devices.begin(); it != m_devices.end(); it++ )
     {
-        ##BREAK
+        ##INSERTIONS
     }
     return result;
 }

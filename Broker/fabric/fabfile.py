@@ -71,6 +71,7 @@ def get_uuid():
 def mark_set(step)
     string = "### Stage %s" % step
     run("echo \"%s\" >> %s" % (string,os.path.join(SRC_DIR,'grouplog.dat')))
+    run("echo \"%s\" >> %s" % (string,os.path.join(SRC_DIR,'markovlog.dat')))
     print "Marked set"
 
 def setup_sim(expconfig):

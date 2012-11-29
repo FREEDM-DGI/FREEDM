@@ -71,7 +71,7 @@ public:
     ~CRtdsAdapter();
 private:
     /// Microseconds between updates, see documentation for Run().
-    static const unsigned int TIMESTEP = 1;
+    static const long TIMESTEP = 50;
 
     /// Constructor.
     CRtdsAdapter(boost::asio::io_service & service,

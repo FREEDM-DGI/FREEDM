@@ -32,6 +32,9 @@ namespace freedm {
 namespace simulation {
 namespace adapter {
 
+/// type of a device signal value
+typedef float TSignalValue;
+
 /// dgi adapter for the rtds client that handles byte streams
 ///////////////////////////////////////////////////////////////////////////////
 /// The RTDS adapter waits for a byte stream of data from its client.  It uses
@@ -54,8 +57,10 @@ public:
 private:
     /// handles the accepted socket connection
     virtual void HandleConnection();
-    /// changes the endian of a given buffer
-    void ChangeEndian( char * buffer, std::size_t size );
+    /// reverses the bytes in a buffer
+    void ReverseBytes( char * buffer, const int numBytes );
+    /// swap byte order of floats in a buffer if system is little-endian
+    void EndianSwapIfNeeded( char * buffer, std::size_t numBytes );
 };
 
 } // namespace adapter

@@ -52,6 +52,13 @@ def install_package(pkgname):
     else:
         run(cmd)
 
+def pip(pkgname):
+    cmd = "pip2 install %s" % pkgname
+    if env.user != "root":
+        sudo(cmd)
+    else:
+        run(cmd)
+
 def put_file(local,remote):
     put(local,remote)
 

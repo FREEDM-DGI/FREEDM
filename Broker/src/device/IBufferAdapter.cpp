@@ -227,7 +227,7 @@ void IBufferAdapter::RegisterStateInfo(const std::string device,
         }
     }
     
-    m_stateInfo.insert(std::pair<DeviceSignal, std::size_t>(devsig, index));
+    m_stateInfo.insert(std::pair<DeviceSignal, std::size_t>(devsig, index-1));
     Logger.Info << "Registered the device signal (" << device << "," << signal
             << ") as adapter state information." << std::endl;
 }

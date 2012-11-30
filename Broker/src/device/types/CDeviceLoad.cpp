@@ -53,6 +53,9 @@ CDeviceLoad::CDeviceLoad(std::string device, IAdapter::Pointer adapter)
     : IDevice(device, adapter)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+
+    m_commands.insert("drain");
+    m_states.insert("drain");
 }
 
 ////////////////////////////////////////////////////////////////////////////////

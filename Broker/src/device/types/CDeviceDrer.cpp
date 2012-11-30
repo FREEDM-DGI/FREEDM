@@ -53,6 +53,9 @@ CDeviceDrer::CDeviceDrer(std::string device, IAdapter::Pointer adapter)
     : IDevice(device, adapter)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+
+    m_commands.insert("generation");
+    m_states.insert("generation");    
 }
 
 ////////////////////////////////////////////////////////////////////////////////

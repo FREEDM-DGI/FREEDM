@@ -30,6 +30,8 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/noncopyable.hpp>
 
+#include <set>
+
 namespace freedm {
 namespace broker {
 namespace device {
@@ -77,6 +79,12 @@ public:
 
     /// Sets the value of some signal in the adapter.
     void Set(const std::string signal, const SignalValue value);
+
+    bool HasCommandSignal(const std::string signal) const;
+    bool HasStateSignal(const std::string signal) const;
+
+    std::set<std::string> GetCommandSignals() const;
+    std::set<std::string> GetStateSignals() const;
 protected:
     /// Constructor which takes an identifier and device adapter.
     IDevice(const std::string device, IAdapter::Pointer adapter);
@@ -86,6 +94,9 @@ protected:
 
     /// Handles the get and set requests.
     IAdapter::Pointer m_adapter;
+
+    std::set<std::string> m_commands;
+    std::set<std::string> m_states;
 };
 
 } // namespace device

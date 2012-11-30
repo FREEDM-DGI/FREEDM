@@ -29,6 +29,7 @@
 
 #include "CLogger.hpp"
 #include "IAdapter.hpp"
+#include "CTcpServer.hpp"
 #include "CDeviceManager.hpp"
 
 #include <map>
@@ -81,6 +82,9 @@ private:
 
     /// Runs the factory I/O service
     void RunService();
+
+    /// Session layer protocol for plug-and-play devices.
+    void SessionProtocol();
     
     /// Registers compiled device classes with the factory.
     void RegisterDevices();
@@ -105,7 +109,10 @@ private:
 
     /// Set of device classes registered by the factory.
     std::map<std::string, FactoryFunction> m_registry;
-    
+
+    /// TCP server to accept plug-and-play devices.
+    CTcpServer::Pointer m_server;    
+
     /// I/O service shared by the adapters.
     boost::asio::io_service m_ios;
     

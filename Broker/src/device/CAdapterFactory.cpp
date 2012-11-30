@@ -35,6 +35,7 @@
 #include "IBufferAdapter.hpp"
 #include "CPscadAdapter.hpp"
 #include "CRtdsAdapter.hpp"
+#include "CGlobalConfiguration.hpp"
 
 #include <set>
 #include <utility>
@@ -64,7 +65,14 @@ CLocalLogger Logger(__FILE__);
 CAdapterFactory::CAdapterFactory()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    
+
+    CTcpServer::ConnectionHandler handler;
+    unsigned short port = CGlobalConfiguration::instance().GetFactoryPort();
+    m_server = CTcpServer::Create(m_ios, port);
+
+    handler = boost::bind(&CAdapterFactory::SessionProtocol, this);
+    m_server->RegisterHandler(handler);
+
     RegisterDevices();
     m_thread = boost::thread(boost::bind(&CAdapterFactory::RunService, this));
 }
@@ -120,6 +128,12 @@ CAdapterFactory & CAdapterFactory::Instance()
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     static CAdapterFactory instance;
     return instance;
+}
+
+void CAdapterFactory::SessionProtocol()
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    std::cout << "A wild client appears!" << std::endl;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -290,6 +304,16 @@ void CAdapterFactory::InitializeAdapter(IAdapter::Pointer adapter,
             {
                 CreateDevice(name, type, adapter);
                 devices.insert(name);
+            }
+            
+            // check if the device recognizes the associated signal
+            IDevice::Pointer dev = CDeviceManager::Instance().GetDevice(name);
+            if( (i == 0 && !dev->HasStateSignal(signal)) ||
+                (i == 1 && !dev->HasCommandSignal(signal)) )
+            {
+                throw std::runtime_error("Failed to create adapter: The "
+                        + type + " device, " + name
+                        + ", does not recognize the signal: " + signal);
             }
 
             if( buffer && i == 0 )

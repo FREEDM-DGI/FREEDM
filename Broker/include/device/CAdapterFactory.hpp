@@ -54,6 +54,9 @@ CLocalLogger AdapterFactoryLogger(__FILE__);
 #define REGISTER_DEVICE_CLASS(SUFFIX) \
 RegisterDeviceClass(#SUFFIX, &CAdapterFactory::CreateDevice<CDevice##SUFFIX>)
 
+#define REGISTER_DEVICE_PROTOTYPE(SUFFIX) \
+RegisterDevicePrototype<CDevice##SUFFIX>(#SUFFIX)
+
 /// Handles the creation of adapters and their associated devices.
 ////////////////////////////////////////////////////////////////////////////////
 /// Singleton factory that creates, stores, and runs new device adapters.
@@ -91,6 +94,9 @@ private:
     
     /// Registers a single device class with the factory.
     void RegisterDeviceClass(std::string key, FactoryFunction function);
+
+    template <class DeviceType>
+    void RegisterDevicePrototype(std::string key);
     
     /// Initializes the devices stored on an adapter.
     void InitializeAdapter(IAdapter::Pointer adapter,
@@ -109,6 +115,8 @@ private:
 
     /// Set of device classes registered by the factory.
     std::map<std::string, FactoryFunction> m_registry;
+
+    std::map<std::string, IDevice::Pointer> m_prototype;
 
     /// TCP server to accept plug-and-play devices.
     CTcpServer::Pointer m_server;    
@@ -148,6 +156,23 @@ void CAdapterFactory::CreateDevice(std::string name, IAdapter::Pointer adapter)
     CDeviceManager::Instance().AddDevice(device);
     
     AdapterFactoryLogger.Info << "Created new device: " << name << std::endl;
+}
+
+template <class DeviceType>
+void CAdapterFactory::RegisterDevicePrototype(std::string key)
+{
+    AdapterFactoryLogger.Trace << __PRETTY_FUNCTION__ << std::endl;
+
+    if( m_prototype.count(key) > 0 )
+    {
+        throw std::runtime_error("Device type " + key + " already registered.");
+    }
+
+    IAdapter::Pointer null;
+    IDevice::Pointer ptr = IDevice::Pointer(new DeviceType("prototype", null));
+    m_prototype.insert(std::make_pair(key, ptr));
+
+    AdapterFactoryLogger.Info << "Stored prototype for " << key << std::endl;
 }
 
 } // namespace device

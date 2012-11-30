@@ -83,6 +83,7 @@ int main(int argc, char* argv[])
     std::string cfgFile, loggerCfgFile, adapterCfgFile;
     std::string listenIP, port, uuidString, hostname, uuidgenerator;
     unsigned int globalVerbosity;
+    unsigned short fport;
     CUuid uuid;
 
     // Load Config Files
@@ -112,6 +113,8 @@ int main(int argc, char* argv[])
                 ( "port,p",
                 po::value<std::string > ( &port )->default_value("1870"),
                 "TCP port to listen on" )
+                ( "factory-port", po::value<unsigned short>(&fport),
+                "port number to accept plug-and-play devices on" )
                 ( "adapter-config", po::value<std::string>( &adapterCfgFile ),
                 "filename of the adapter specification for physical devices" )
                 ( "list-loggers", "Print all the available loggers and exit" )
@@ -224,6 +227,7 @@ int main(int argc, char* argv[])
         CGlobalConfiguration::instance().SetListenAddress(listenIP);
         CGlobalConfiguration::instance().SetClockSkew(
                 boost::posix_time::milliseconds(0));
+        CGlobalConfiguration::instance().SetFactoryPort(fport);
         //constructors for initial mapping
         CConnectionManager conManager;
         ConnectionPtr newConnection;

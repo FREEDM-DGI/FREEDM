@@ -17,7 +17,7 @@ option(CUSTOMNETWORK "for network.xml support" OFF)
 option(DATAGRAM "for UDP Datagram service w/o sequencing" OFF)
 option(SHOW_MESSAGES "Enable help messages during cmake execution" ON)
 option(SHOW_WARNINGS "warnings displayed during project compile" ON)
-option(USE_DEVICE_PSCAD "Enable the PSCAD simulation interface" OFF)
+option(USE_DEVICE_PSCAD "Enable the PSCAD simulation interface" ON)
 option(USE_DEVICE_RTDS "Enable the RTDS simulation interface" OFF)
 option(RUN_DOXYGEN "run Doxygen after project compile" ON)
 

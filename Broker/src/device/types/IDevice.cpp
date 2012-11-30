@@ -13,6 +13,8 @@
 ///     IDevice::GetID
 ///     IDevice::Get
 ///     IDevice::Set
+///     IDevice::HasSignal
+///     IDevice::GetSignalSet
 ///
 /// These source code files were created at Missouri University of Science and
 /// Technology, and are intended for use in teaching or research. They may be
@@ -114,6 +116,26 @@ void IDevice::Set(const std::string signal, const SignalValue value)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     m_adapter->Set(m_identifier, signal, value);
+}
+
+bool IDevice::HasCommandSignal(const std::string signal) const
+{
+    return m_commands.count(signal) > 0;
+}
+
+bool IDevice::HasStateSignal(const std::string signal) const
+{
+    return m_states.count(signal) > 0;
+}
+
+std::set<std::string> IDevice::GetCommandSignals() const
+{
+    return m_commands;
+}
+
+std::set<std::string> IDevice::GetStateSignals() const
+{
+    return m_states;
 }
 
 } // namespace device

@@ -305,6 +305,16 @@ void CAdapterFactory::InitializeAdapter(IAdapter::Pointer adapter,
                 CreateDevice(name, type, adapter);
                 devices.insert(name);
             }
+            
+            // check if the device recognizes the associated signal
+            IDevice::Pointer dev = CDeviceManager::Instance().GetDevice(name);
+            if( (i == 0 && !dev->HasStateSignal(signal)) ||
+                (i == 1 && !dev->HasCommandSignal(signal)) )
+            {
+                throw std::runtime_error("Failed to create adapter: The "
+                        + type + " device, " + name
+                        + ", does not recognize the signal: " + signal);
+            }
 
             if( buffer && i == 0 )
             {

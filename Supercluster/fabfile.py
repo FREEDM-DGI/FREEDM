@@ -87,3 +87,5 @@ def build(options=""):
     with cd('~/FREEDM/Broker/src'):
         run("make")
 
+def eject():
+    sudo("eject")

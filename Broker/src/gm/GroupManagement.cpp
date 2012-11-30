@@ -409,11 +409,11 @@ void GMAgent::Recovery()
     Logger::Notice << "Stopping election timer "<<__LINE__<<std::endl;
     m_electiontimer.Stop();
     SetStatus(GMPeerNode::ELECTION);
-    MarkovState();
     Logger::Notice << "+ State Change ELECTION : "<<__LINE__<<std::endl;
     m_GrpCounter++;
     m_GroupID = m_GrpCounter;
     m_GroupLeader = GetUUID();
+    MarkovState();
     foreach( PeerNodePtr peer_, m_AllPeers | boost::adaptors::map_values)
     {
         if( peer_->GetUUID() == GetUUID())
@@ -669,7 +669,6 @@ void GMAgent::Merge( const boost::system::error_code& err )
         std::stringstream ss_;
         // This proc forms a new group by inviting Coordinators in CoordinatorSet
         SetStatus(GMPeerNode::ELECTION);
-        MarkovState();
         Logger::Notice << "+ State Change ELECTION : "<<__LINE__<<std::endl;
         Logger::Notice << "Starting election timer "<<__LINE__<<std::endl;
         m_electiontimer.Start();
@@ -679,6 +678,7 @@ void GMAgent::Merge( const boost::system::error_code& err )
         m_GrpCounter++;
         m_GroupID = m_GrpCounter;
         m_GroupLeader = GetUUID();
+        MarkovState();
         Logger::Notice << "Changed group: " << m_GroupID << " (" << m_GroupLeader << ")" << std::endl;
         // m_UpNodes are the members of my group.
         PeerSet tempSet_ = m_UpNodes;
@@ -918,7 +918,6 @@ void GMAgent::HandleRead(broker::CMessage msg)
             if(msg_source == m_GroupLeader && GetStatus() == GMPeerNode::REORGANIZATION)
             {
                 SetStatus(GMPeerNode::NORMAL);
-                MarkovState();
                 Logger::Notice << "+ State change: NORMAL: " << __LINE__ << std::endl;
                 m_groupsjoined++;
                 Logger::Notice << "Starting in group timer "<<__LINE__<<std::endl;
@@ -947,6 +946,7 @@ void GMAgent::HandleRead(broker::CMessage msg)
             m_membership += m_UpNodes.size()+1;
             m_membershipchecks++;
             Logger::Notice<<"Updated Peer Set."<<std::endl;
+            MarkovState();
         }
     }
     catch(boost::property_tree::ptree_bad_path &e)
@@ -1031,7 +1031,6 @@ void GMAgent::HandleRead(broker::CMessage msg)
             coord_ = Coordinator();
             tempSet_ = m_UpNodes;
             SetStatus(GMPeerNode::ELECTION);
-            MarkovState();
             Logger::Notice << "+ State Change ELECTION : "<<__LINE__<<std::endl;
             Logger::Notice << "Stopping group timer "<<__LINE__<<std::endl;
             m_ingrouptimer.Stop();
@@ -1039,6 +1038,7 @@ void GMAgent::HandleRead(broker::CMessage msg)
             m_electiontimer.Start();
             m_GroupID = pt.get<unsigned int>("gm.groupid");
             m_GroupLeader = pt.get<std::string>("gm.groupleader");
+            MarkovState();
             Logger::Notice << "Changed group: " << m_GroupID << " (" << m_GroupLeader << ") " << std::endl;
             
             if(coord_ == GetUUID())

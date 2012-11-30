@@ -22,7 +22,7 @@ set(
 
 add_custom_command(
     OUTPUT ${GENERATOR_OUTPUT}
-    COMMAND DeviceRegistrationGenerator.py
+    COMMAND ./DeviceRegistrationGenerator.py
     DEPENDS ${DEVICE_TYPES} )
 
 add_custom_target( GeneratedPhysicalDeviceTypes DEPENDS ${GENERATOR_OUTPUT} )

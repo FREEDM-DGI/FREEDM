@@ -133,7 +133,7 @@ CAdapterFactory & CAdapterFactory::Instance()
 void CAdapterFactory::SessionProtocol()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    std::cout << "A client was accepted!" << std::endl;
+    std::cout << "A wild client appears!" << std::endl;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -113,8 +113,8 @@ int main(int argc, char* argv[])
                 ( "port,p",
                 po::value<std::string > ( &port )->default_value("1870"),
                 "TCP port to listen on" )
-                ( "factory-port", po::value<unsigned short>(&fport),
-                "port number to accept plug-and-play devices on" )
+                ( "factory-port", po::value<unsigned short>(&fport)->
+                default_value(1610), "port for plug-and-play devices" )
                 ( "adapter-config", po::value<std::string>( &adapterCfgFile ),
                 "filename of the adapter specification for physical devices" )
                 ( "list-loggers", "Print all the available loggers and exit" )
@@ -260,6 +260,9 @@ int main(int argc, char* argv[])
         else
         {
             Logger.Notice << "No adapters specified." << std::endl;
+
+            // still need to create the factory for plug-and-play
+            device::CAdapterFactory::Instance();
         }
 
         // Instantiate Dispatcher for message delivery

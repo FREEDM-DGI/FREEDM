@@ -20,9 +20,9 @@ private:
     void StartAccept();
     void HandleAccept( const boost::system::error_code & error );
 
-    unsigned short m_id;
-    boost::asio::ip::tcp::socket m_socket;
     boost::asio::ip::tcp::acceptor m_acceptor;
+    boost::asio::ip::tcp::socket m_socket;
+    unsigned short m_id;
 };
 
 } // namespace device

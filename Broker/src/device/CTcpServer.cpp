@@ -67,7 +67,7 @@ void CTcpServer::StartAccept()
         m_socket.close();
     }
     m_acceptor.async_accept(m_socket, boost::bind(&CTcpServer::HandleAccept,
-        this, boost::asio::plaecholders::error));
+        this, boost::asio::placeholders::error));
 }
 
 void CTcpServer::HandleAccept( const boost::system::error_code & error )

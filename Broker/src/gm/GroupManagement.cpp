@@ -1227,6 +1227,7 @@ void GMAgent::Stop()
 {
     m_electiontimer.Stop();
     m_ingrouptimer.Stop();
+    MarkovState();
     //m_localservice.stop();
     std::ofstream actionlog;
     actionlog.open("grouplog.dat",std::fstream::app);

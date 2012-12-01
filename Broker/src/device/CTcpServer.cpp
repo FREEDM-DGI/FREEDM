@@ -57,6 +57,27 @@ CTcpServer::~CTcpServer()
     }
 }
 
+std::string CTcpServer::ReceiveData()
+{
+    boost::asio::streambuf packet;
+    std::istream packet_stream(&packet);
+    std::stringstream sstream;
+
+    boost::asio::read_until(m_socket, packet, "\r\n");
+
+    sstream << packet_stream.rdbuf();
+    return sstream.str();
+}
+
+void CTcpServer::SendData(const std::string str)
+{
+    boost::asio::streambuf packet;
+    std::ostream packet_stream(&packet);
+    
+    packet_stream << str << "\r\n";
+    boost::asio::write(m_socket, packet);
+}
+
 void CTcpServer::StartAccept()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
@@ -70,6 +91,11 @@ void CTcpServer::StartAccept()
         this, boost::asio::placeholders::error));
 }
 
+std::string CTcpServer::GetHostname() const
+{
+    return m_socket.remote_endpoint().address().to_string();
+}
+
 void CTcpServer::HandleAccept( const boost::system::error_code & error )
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
@@ -77,7 +103,7 @@ void CTcpServer::HandleAccept( const boost::system::error_code & error )
     if( !error )
     {
         Logger.Info << "Accepted a new client connection." << std::endl;
-        m_handler();
+        m_handler(shared_from_this());
     }
     else
     {

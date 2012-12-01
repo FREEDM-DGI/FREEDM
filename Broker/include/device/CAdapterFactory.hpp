@@ -86,8 +86,10 @@ private:
     /// Runs the factory I/O service
     void RunService();
 
+    std::string GetPortNumber() const;
+
     /// Session layer protocol for plug-and-play devices.
-    void SessionProtocol();
+    void SessionProtocol(IServer::Pointer connection);
     
     /// Registers compiled device classes with the factory.
     void RegisterDevices();

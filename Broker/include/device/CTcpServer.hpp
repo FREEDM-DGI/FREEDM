@@ -1,3 +1,6 @@
+#ifndef C_TCP_SERVER_HPP
+#define C_TCP_SERVER_HPP
+
 #include "IServer.hpp"
 #include <boost/asio.hpp>
 
@@ -12,6 +15,10 @@ public:
     typedef boost::shared_ptr<CTcpServer> Pointer;
 
     static Pointer Create( boost::asio::io_service & ios, unsigned short port );
+
+    std::string ReceiveData();
+    void SendData(const std::string str);
+    std::string GetHostname() const;
 
     virtual ~CTcpServer();
 private:
@@ -28,4 +35,6 @@ private:
 } // namespace device
 } // namespace broker
 } // namespace freedm
+
+#endif // C_TCP_SERVER_HPP
 

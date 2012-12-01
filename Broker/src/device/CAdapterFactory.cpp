@@ -38,6 +38,7 @@
 #include "CGlobalConfiguration.hpp"
 
 #include <set>
+#include <sstream>
 #include <utility>
 
 #include <boost/bind.hpp>
@@ -70,7 +71,7 @@ CAdapterFactory::CAdapterFactory()
     unsigned short port = CGlobalConfiguration::instance().GetFactoryPort();
     m_server = CTcpServer::Create(m_ios, port);
 
-    handler = boost::bind(&CAdapterFactory::SessionProtocol, this);
+    handler = boost::bind(&CAdapterFactory::SessionProtocol, this, _1);
     m_server->RegisterHandler(handler);
 
     RegisterDevices();
@@ -130,9 +131,73 @@ CAdapterFactory & CAdapterFactory::Instance()
     return instance;
 }
 
-void CAdapterFactory::SessionProtocol()
+std::string CAdapterFactory::GetPortNumber() const
+{
+    return "1610";
+}
+
+// TODO: some of this stuff is TCP specific
+void CAdapterFactory::SessionProtocol(IServer::Pointer connection)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+
+    using boost::property_tree::ptree;
+
+    std::stringstream packet;
+    std::string port, hostname, clientport, device;
+    ptree adapter;
+    int index;
+
+    // receive hello
+    packet << connection->ReceiveData();
+
+    port = GetPortNumber();
+    packet >> clientport;
+    hostname = m_server->GetHostname();
+    
+    adapter.put("<xmlattr>.name", port);
+    adapter.put("<xmlattr>.type", "arm");
+    adapter.put("info.listenport", port);
+    adapter.put("info.clienthost", hostname);
+    adapter.put("info.clientport", clientport);
+
+    for( int i = 0; packet >> device; i++ )
+    {
+        std::string name = "DEV" + boost::lexical_cast<std::string>(i);
+
+        if( m_prototype.count(device) == 0 )
+        {
+            throw std::runtime_error("bad");
+        }
+
+        index = 1;
+        BOOST_FOREACH(std::string signal, m_prototype[device]->GetStateSignals())
+        {
+            adapter.put("state." + name + signal + ".type", device);
+            adapter.put("state." + name + signal + ".device", name);
+            adapter.put("state." + name + signal + ".signal", signal);
+            adapter.put("state." + name + signal + ".<xmlattr>.index", index);
+
+            index++;
+        }
+
+        index = 1;
+        BOOST_FOREACH(std::string signal, m_prototype[device]->GetCommandSignals())
+        {
+            adapter.put("command." + name + signal + ".type", device);
+            adapter.put("command." + name + signal + ".device", name);
+            adapter.put("command." + name + signal + ".signal", signal);
+            adapter.put("command." + name + signal + ".<xmlattr>.index", index);
+
+            index++;
+        }
+    }
+
+    CreateAdapter(adapter);
+
+    // send start
+    connection->SendData(port);
+
     Logger.Notice << "A wild client appears!" << std::endl;
 }
 

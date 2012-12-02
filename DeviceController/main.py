@@ -48,16 +48,18 @@ initiationSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 initiationSocket.connect((dgiHostname, int(dgiPort)))
 
 # ARM sends a packet with the format: server-port deviceA deviceB deviceC...
-initiationSocket.send(listenPort + ' ' + ' '.join(devices))
+initiationSocket.send(listenPort + ' ' + ' '.join(devices) + '\r\n')
 initiationSocket.close()
 
 # ARM receives a packet with the format: DGI_Adapter_Port
-adapterPort = listenSocket.recv(8)
-lisenSocket.close() # for now, all this socket does is get that port number
+client, address = listenSocket.accept()
+adapterPort = client.recv(8)
+client.close()
+listenSocket.close() # for now, all this socket does is get that port number
 
 # ARM connects to dgi-hostname:DGI_Adapter_Port every second (but sends no data)
-adapterSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 while True:
+    adapterSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     adapterSocket.connect((dgiHostname, int(adapterPort)))
     time.sleep(0.5)
     adapterSocket.close()

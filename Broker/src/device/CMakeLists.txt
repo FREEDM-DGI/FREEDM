@@ -9,6 +9,7 @@ set(
     ITcpAdapter.cpp
     IServer.cpp
     CTcpServer.cpp
+    CArmAdapter.cpp
     PhysicalDeviceTypes.cpp
    )
 

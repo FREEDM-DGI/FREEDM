@@ -35,6 +35,7 @@
 #include "IBufferAdapter.hpp"
 #include "CPscadAdapter.hpp"
 #include "CRtdsAdapter.hpp"
+#include "CArmAdapter.hpp"
 #include "CGlobalConfiguration.hpp"
 
 #include <set>
@@ -158,8 +159,8 @@ void CAdapterFactory::SessionProtocol(IServer::Pointer connection)
     adapter.put("<xmlattr>.name", port);
     adapter.put("<xmlattr>.type", "arm");
     adapter.put("info.listenport", port);
-    adapter.put("info.clienthost", hostname);
-    adapter.put("info.clientport", clientport);
+    adapter.put("info.host", hostname);
+    adapter.put("info.port", clientport);
 
     for( int i = 0; packet >> device; i++ )
     {
@@ -258,6 +259,10 @@ void CAdapterFactory::CreateAdapter(const boost::property_tree::ptree & p)
     {
         adapter = CRtdsAdapter::Create(m_ios, subtree);
     }
+    else if( type == "arm" )
+    {
+        adapter = CArmAdapter::Create(m_ios, subtree);
+    }
     else
     {
          throw std::runtime_error("Attempted to create adapter of an "
@@ -271,6 +276,14 @@ void CAdapterFactory::CreateAdapter(const boost::property_tree::ptree & p)
     
     // signal construction complete
     adapter->Start();
+}
+
+void CAdapterFactory::RemoveAdapter(std::string key)
+{
+    if( !m_adapter.erase(key) > 0 )
+    {
+        // bad
+    }
 }
 
 ///////////////////////////////////////////////////////////////////////////////

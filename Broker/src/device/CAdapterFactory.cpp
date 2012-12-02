@@ -134,7 +134,7 @@ CAdapterFactory & CAdapterFactory::Instance()
 
 std::string CAdapterFactory::GetPortNumber() const
 {
-    return "1610";
+    return "14444";
 }
 
 // TODO: some of this stuff is TCP specific
@@ -147,7 +147,7 @@ void CAdapterFactory::SessionProtocol(IServer::Pointer connection)
     std::stringstream packet;
     std::string port, hostname, clientport, device;
     ptree adapter;
-    int index;
+    int si, ci;
 
     // receive hello
     packet << connection->ReceiveData();
@@ -162,6 +162,8 @@ void CAdapterFactory::SessionProtocol(IServer::Pointer connection)
     adapter.put("info.host", hostname);
     adapter.put("info.port", clientport);
 
+    si = 1;
+    ci = 1;
     for( int i = 0; packet >> device; i++ )
     {
         std::string name = "DEV" + boost::lexical_cast<std::string>(i);
@@ -171,26 +173,26 @@ void CAdapterFactory::SessionProtocol(IServer::Pointer connection)
             throw std::runtime_error("bad");
         }
 
-        index = 1;
         BOOST_FOREACH(std::string signal, m_prototype[device]->GetStateSignals())
         {
+            Logger.Debug << device << " " << signal << " " << si << std::endl;
             adapter.put("state." + name + signal + ".type", device);
             adapter.put("state." + name + signal + ".device", name);
             adapter.put("state." + name + signal + ".signal", signal);
-            adapter.put("state." + name + signal + ".<xmlattr>.index", index);
+            adapter.put("state." + name + signal + ".<xmlattr>.index", si);
 
-            index++;
+            si++;
         }
 
-        index = 1;
         BOOST_FOREACH(std::string signal, m_prototype[device]->GetCommandSignals())
         {
+            Logger.Debug << device << " " << signal << " " << ci << std::endl;
             adapter.put("command." + name + signal + ".type", device);
             adapter.put("command." + name + signal + ".device", name);
             adapter.put("command." + name + signal + ".signal", signal);
-            adapter.put("command." + name + signal + ".<xmlattr>.index", index);
+            adapter.put("command." + name + signal + ".<xmlattr>.index", ci);
 
-            index++;
+            ci++;
         }
     }
 
@@ -280,11 +282,17 @@ void CAdapterFactory::CreateAdapter(const boost::property_tree::ptree & p)
 
 void CAdapterFactory::RemoveAdapter(std::string key)
 {
+    Logger.Debug << m_adapter[key].use_count() << std::endl;
     if( !m_adapter.erase(key) > 0 )
     {
-        // bad
+        Logger.Warn << "no workie" << std::endl;
     }
+    else
+        Logger.Notice << "it workie!!" << std::endl;
+
+    Logger.Info << m_adapter.count(key) << std::endl;
 }
+
 
 ///////////////////////////////////////////////////////////////////////////////
 /// Registers a create device function with the factory for the given key.

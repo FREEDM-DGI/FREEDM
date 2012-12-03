@@ -282,15 +282,15 @@ void CAdapterFactory::CreateAdapter(const boost::property_tree::ptree & p)
 
 void CAdapterFactory::RemoveAdapter(std::string key)
 {
-    Logger.Debug << m_adapter[key].use_count() << std::endl;
-    if( !m_adapter.erase(key) > 0 )
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    std::set<std::string> devices = m_adapter[key]->GetDevices();
+    m_adapter.erase(key);
+    
+    BOOST_FOREACH(std::string device, devices)
     {
-        Logger.Warn << "no workie" << std::endl;
+        Logger.Error << device << std::endl;
+        CDeviceManager::Instance().RemoveDevice(device);
     }
-    else
-        Logger.Notice << "it workie!!" << std::endl;
-
-    Logger.Info << m_adapter.count(key) << std::endl;
 }
 
 
@@ -390,6 +390,7 @@ void CAdapterFactory::InitializeAdapter(IAdapter::Pointer adapter,
             {
                 CreateDevice(name, type, adapter);
                 devices.insert(name);
+                adapter->RegisterDevice(name);
             }
             
             // check if the device recognizes the associated signal

@@ -43,6 +43,7 @@ CTcpServer::CTcpServer( boost::asio::io_service & ios, unsigned short port )
 CTcpServer::~CTcpServer()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Warn << __PRETTY_FUNCTION__ << std::endl;
     
     if( m_acceptor.is_open() )
     {
@@ -109,7 +110,8 @@ void CTcpServer::HandleAccept( const boost::system::error_code & error )
     {
         Logger.Warn << "Failed to accept a client connection." << std::endl;
     }
-    StartAccept();
+    if( m_acceptor.is_open() )
+        StartAccept();
 }
 
 } // namespace device

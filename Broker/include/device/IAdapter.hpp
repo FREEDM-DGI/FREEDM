@@ -24,6 +24,7 @@
 #ifndef I_ADAPTER_HPP
 #define	I_ADAPTER_HPP
 
+#include <set>
 #include <string>
 #include <utility>
 
@@ -68,6 +69,11 @@ public:
 
     /// Virtual destructor for derived classes.
     virtual ~IAdapter() { };
+
+    void RegisterDevice(const std::string devid) { m_devices.insert(devid); }
+    std::set<std::string> GetDevices() const { return m_devices; }
+private:
+    std::set<std::string> m_devices;
 };
 
 } // namespace device

@@ -147,6 +147,8 @@ void CDeviceManager::AddDevice(IDevice::Pointer device)
 bool CDeviceManager::RemoveDevice(std::string devid)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Debug << "HI THERE" << std::endl;
+    IDevice::Pointer device = m_devices[devid];
     
     if( m_devices.erase(devid) != 1 )
     {
@@ -154,7 +156,7 @@ bool CDeviceManager::RemoveDevice(std::string devid)
                 << " device manager: no such device exists." << std::endl;
         return false;
     }
-    
+    Logger.Warn << device.use_count() << std::endl;
     return true;
 }
 

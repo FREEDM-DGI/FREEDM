@@ -19,7 +19,6 @@ sleep 5
 disable SST1
 reconnect
 sleep 10
-device4
 disable FID1
 reconnect
 sleep 15

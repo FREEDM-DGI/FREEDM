@@ -66,7 +66,7 @@ def reinitialize(dgiHostname, dgiPort, listenPort, devices):
     
     @return string containing the port at which to send heartbeats
     """
-    # Prepare to receive a response from DGI
+# Prepare to receive a response from DGI
     acceptorSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     acceptorSocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     acceptorSocket.bind(('', int(listenPort)))
@@ -84,11 +84,15 @@ def reinitialize(dgiHostname, dgiPort, listenPort, devices):
     devicePacket += '\r\n'
     initiationSocket.send(devicePacket)
     initiationSocket.close()
-    
+
+    print 'Sent packet:'
+    print devicePacket
+
 # ARM receives a packet with the format: DGI_Adapter_Port
     clientSocket, address = acceptorSocket.accept()
     acceptorSocket.close()
     adapterPort = clientSocket.recv(8)
+    print 'Received packet: ' + adapterPort
     clientSocket.close()
 
     return adapterPort
@@ -104,7 +108,7 @@ def heartbeat(dgiHostname, hbPort):
     @param hbPort the port to send the heartbeat request to
     """
     hbSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    hbSocket.connect(dgiHostname, hbPort)
+    hbSocket.connect((dgiHostname, hbPort))
     time.sleep(0.5)
     hbSocket.close()
     time.sleep(0.5)
@@ -126,8 +130,10 @@ with open('dsp-script.txt') as script:
     hbPort = -1
     for command in script:
         if command[0] is '#':
-            pass
-        elif 'enable' in command:
+            continue # do not send heartbeat!
+        else:
+            print 'Processing command ' + command[:-1] # don't print \n
+        if 'enable' in command:
             enableDevice(devices, command)
         elif 'disable' in command:
             disableDevice(devices, command)
@@ -136,6 +142,8 @@ with open('dsp-script.txt') as script:
         elif 'sleep' in command:
             for i in range(command.split()[2]):
                 if hbPort > 0:
+                    print 'Sleep ' + i
                     heartbeat(dgiHostname, hbPort)
         if hbPort > 0:
+            print 'Sending heartbeat'
             heartbeat(dgiHostname, hbPort)

@@ -147,7 +147,7 @@ void CAdapterFactory::SessionProtocol(IServer::Pointer connection)
     std::stringstream packet;
     std::string port, hostname, clientport, devType, devName;
     ptree adapter;
-    int si, ci;
+    int si, ci; // state index, command index
 
     // receive hello
     packet << connection->ReceiveData();

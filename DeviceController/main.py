@@ -107,8 +107,9 @@ def heartbeat(dgiHostname, hbPort):
     @param dgiHostname the host to send the heartbeat request to
     @param hbPort the port to send the heartbeat request to
     """
+    print 'Sending heartbeat to ' + dgiHostname + ' ' + hbPort
     hbSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    hbSocket.connect((dgiHostname, hbPort))
+    hbSocket.connect((dgiHostname, int(hbPort)))
     time.sleep(0.5)
     hbSocket.close()
     time.sleep(0.5)
@@ -138,12 +139,12 @@ with open('dsp-script.txt') as script:
         elif 'disable' in command:
             disableDevice(devices, command)
         elif 'reconnect' in command:
+            time.sleep(6) # give DGI a bit of time to kill its adapter
             hbPort = reinitialize(dgiHostname, dgiPort, listenPort, devices)
         elif 'sleep' in command:
-            for i in range(command.split()[2]):
+            for i in range(int(command.split()[1])):
                 if hbPort > 0:
-                    print 'Sleep ' + i
+                    print 'Sleep ' + str(i)
                     heartbeat(dgiHostname, hbPort)
         if hbPort > 0:
-            print 'Sending heartbeat'
             heartbeat(dgiHostname, hbPort)

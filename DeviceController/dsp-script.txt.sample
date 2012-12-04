@@ -12,16 +12,23 @@
 # or naming a device "disable", etc. You'll confuse it.
 #
 enable Sst SST1
+enable Sst SST2
+enable Sst SST3
+enable Sst SST4
+enable Sst SST5
+enable Sst SST6
 enable Fid FID1
 enable Fid FID2
 reconnect
 sleep 5
-disable SST1
+disable Sst SST1
+disable Sst SST2
+disable Sst SST3
 reconnect
 sleep 10
-disable FID1
+disable Fid FID1
 reconnect
 sleep 15
-enable SST1
+enable Sst SST1
 reconnect
 sleep 15

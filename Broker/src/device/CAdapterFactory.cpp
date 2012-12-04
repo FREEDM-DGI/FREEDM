@@ -145,7 +145,7 @@ void CAdapterFactory::SessionProtocol(IServer::Pointer connection)
     using boost::property_tree::ptree;
 
     std::stringstream packet;
-    std::string port, hostname, clientport, device;
+    std::string port, hostname, clientport, devType, devName;
     ptree adapter;
     int si, ci;
 
@@ -164,33 +164,31 @@ void CAdapterFactory::SessionProtocol(IServer::Pointer connection)
 
     si = 1;
     ci = 1;
-    for( int i = 0; packet >> device; i++ )
+    for( int i = 0; packet >> devType, packet >> devName; i++ )
     {
-        std::string name = "DEV" + boost::lexical_cast<std::string>(i);
-
-        if( m_prototype.count(device) == 0 )
+        if( m_prototype.count(devType) == 0 )
         {
             throw std::runtime_error("bad");
         }
 
-        BOOST_FOREACH(std::string signal, m_prototype[device]->GetStateSignals())
+        BOOST_FOREACH(std::string signal, m_prototype[devType]->GetStateSignals())
         {
-            Logger.Debug << device << " " << signal << " " << si << std::endl;
-            adapter.put("state." + name + signal + ".type", device);
-            adapter.put("state." + name + signal + ".device", name);
-            adapter.put("state." + name + signal + ".signal", signal);
-            adapter.put("state." + name + signal + ".<xmlattr>.index", si);
+            Logger.Debug << devType << " " << signal << " " << si << std::endl;
+            adapter.put("state." + devName + signal + ".type", devType);
+            adapter.put("state." + devName + signal + ".device", devName);
+            adapter.put("state." + devName + signal + ".signal", signal);
+            adapter.put("state." + devName + signal + ".<xmlattr>.index", si);
 
             si++;
         }
 
-        BOOST_FOREACH(std::string signal, m_prototype[device]->GetCommandSignals())
+        BOOST_FOREACH(std::string signal, m_prototype[devType]->GetCommandSignals())
         {
-            Logger.Debug << device << " " << signal << " " << ci << std::endl;
-            adapter.put("command." + name + signal + ".type", device);
-            adapter.put("command." + name + signal + ".device", name);
-            adapter.put("command." + name + signal + ".signal", signal);
-            adapter.put("command." + name + signal + ".<xmlattr>.index", ci);
+            Logger.Debug << devType << " " << signal << " " << ci << std::endl;
+            adapter.put("command." + devName + signal + ".type", devType);
+            adapter.put("command." + devName + signal + ".device", devName);
+            adapter.put("command." + devName + signal + ".signal", signal);
+            adapter.put("command." + devName + signal + ".<xmlattr>.index", ci);
 
             ci++;
         }

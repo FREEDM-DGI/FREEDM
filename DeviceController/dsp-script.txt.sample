@@ -1,0 +1,28 @@
+# valid commands are:
+#
+# enable devicetype devicename
+#
+# reconnect <- the first time you use this is your first connect
+#
+# sleep n
+#
+# Don't put any blank lines in this file, the parser is really dumb. :-(
+#
+# And don't do stupid stuff like sleeping before your first connection,
+# or naming a device "disable", etc. You'll confuse it.
+#
+enable Sst SST1
+enable Fid FID1
+enable Fid FID2
+reconnect
+sleep 5
+disable SST1
+reconnect
+sleep 10
+device4
+disable FID1
+reconnect
+sleep 15
+enable SST1
+reconnect
+sleep 15

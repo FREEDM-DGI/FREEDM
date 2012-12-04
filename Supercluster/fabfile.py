@@ -6,7 +6,7 @@ env.warn_only = False
 #             'r-facts5.device.mst.edu','r-facts6.device.mst.edu']
 #env.hosts += ['r99ff.managed.mst.edu','r12ff.managed.mst.edu',
 #              'r01ff.managed.mst.edu','fil4.managed.mst.edu']
-#env.user = 'root'
+env.user = 'root'
 
 env.hosts = ['r02scj7t4.device.mst.edu:%d' % x for x in range(2022,2028)]
 

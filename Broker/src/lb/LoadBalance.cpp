@@ -46,16 +46,16 @@
 #include "CLogger.hpp"
 #include "CMessage.hpp"
 #include "gm/GroupManagement.hpp"
+#include "CDeviceManager.hpp"
 
 #include <algorithm>
 #include <cassert>
 #include <cstdlib>
 #include <exception>
 #include <fstream>
-#include <functional>
 #include <iomanip>
+#include <set>
 #include <string>
-#include <vector>
 
 #include <boost/asio.hpp>
 #include <boost/bind.hpp>
@@ -92,15 +92,10 @@ CLocalLogger Logger(__FILE__);
 /// @param ios: The io service this node will use to share memory
 /// @param p_dispatch: The dispatcher used by this module to send/recive messages
 /// @param m_conManager: The connection manager instance used in this class
-/// @param m_phyManager: The physical device manager used in this class
 /// @limitations: None
 ///////////////////////////////////////////////////////////////////////////////
-LBAgent::LBAgent(std::string uuid_,
-                 CBroker &broker,
-                 device::CPhysicalDeviceManager::Pointer
-                    m_phyManager):
+LBAgent::LBAgent(std::string uuid_, CBroker &broker):
     IPeerNode(uuid_, broker.GetConnectionManager()),
-    m_phyDevManager(m_phyManager),
     m_broker(broker)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
@@ -397,25 +392,23 @@ void LBAgent::LoadTable()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
+    using namespace device;
+    
     // device typedef for convenience
-    typedef device::CDeviceDrer DRER;
-    typedef device::CDeviceDesd DESD;
-    typedef device::CDeviceLoad LOAD;
-    typedef device::CDeviceSst SST;
+    typedef CDeviceDrer DRER;
+    typedef CDeviceDesd DESD;
+    typedef CDeviceLoad LOAD;
+    typedef CDeviceSst SST;
 
-    int numDRERs = m_phyDevManager->GetDevicesOfType<DRER>().size();
-    int numDESDs = m_phyDevManager->GetDevicesOfType<DESD>().size();
-    int numLOADs = m_phyDevManager->GetDevicesOfType<LOAD>().size();
-    int numSSTs = m_phyDevManager->GetDevicesOfType<SST>().size();
+    int numDRERs = CDeviceManager::Instance().GetDevicesOfType<DRER>().size();
+    int numDESDs = CDeviceManager::Instance().GetDevicesOfType<DESD>().size();
+    int numLOADs = CDeviceManager::Instance().GetDevicesOfType<LOAD>().size();
+    int numSSTs = CDeviceManager::Instance().GetDevicesOfType<SST>().size();
 
-    m_Gen = m_phyDevManager->GetValue<DRER>(&DRER::GetGeneration,
-            std::plus<device::SettingValue>());
-    m_Storage = m_phyDevManager->GetValue<DESD>(&DESD::GetStorage,
-            std::plus<device::SettingValue>());
-    m_Load = m_phyDevManager->GetValue<LOAD>(&LOAD::GetLoad,
-            std::plus<device::SettingValue>());
-    m_Gateway = m_phyDevManager->GetValue<SST>(&SST::GetGateway,
-            std::plus<device::SettingValue>());
+    m_Gen = CDeviceManager::Instance().GetNetValue<DRER>(&DRER::GetGeneration);
+    m_Storage = CDeviceManager::Instance().GetNetValue<DESD>(&DESD::GetStorage);
+    m_Load = CDeviceManager::Instance().GetNetValue<LOAD>(&LOAD::GetLoad);
+    m_Gateway = CDeviceManager::Instance().GetNetValue<SST>(&SST::GetGateway);
     if (numSSTs >= 1)
     {
     m_CalcGateway = m_Gateway;
@@ -539,7 +532,7 @@ void LBAgent::SendDraftRequest()
     }//end if
 }//end SendDraftRequest
 
-
+#pragma GCC diagnostic ignored "-Wunused-parameter"
 ////////////////////////////////////////////////////////////
 /// HandleRead
 /// @description: Handles the incoming messages meant for lb module and performs
@@ -561,7 +554,8 @@ void LBAgent::HandleAny(CMessage msg, PeerNodePtr peer)
     std::stringstream ss_;
     line_ = msg.GetSourceUUID();
     ptree pt = msg.GetSubMessages();
-    Logger.Debug << "Message '" <<pt.get<std::string>("lb","NOEXECPTION")<<"' received from "<< line_<<std::endl;
+    Logger.Debug << "Message '" <<pt.get<std::string>("lb","NOEXECPTION")
+                 <<"' received from "<< line_<<std::endl;
 
     if(msg.GetHandler().find("lb") == 0)
     {
@@ -571,7 +565,6 @@ void LBAgent::HandleAny(CMessage msg, PeerNodePtr peer)
         throw std::runtime_error("Unhandled Load Balancing Message");
     }
 }
-
 
 void LBAgent::HandlePeerList(CMessage msg, PeerNodePtr peer)
 {
@@ -676,6 +669,7 @@ void LBAgent::HandleSupply(CMessage msg, PeerNodePtr peer)
     InsertInPeerSet(m_LoNodes,peer);
 }
 
+#pragma GCC diagnostic ignored "-Wunused-parameter"
 void LBAgent::HandleRequest(CMessage msg, PeerNodePtr peer)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
@@ -836,7 +830,7 @@ void LBAgent::HandleAccept(CMessage msg, PeerNodePtr peer)
     // --------------------------------------------------------------
     // The Demand node you agreed to supply power to, is awaiting migration
     // --------------------------------------------------------------
-    device::SettingValue DemValue;
+    device::SignalValue DemValue;
     std::stringstream ss_;
     ptree pt = msg.GetSubMessages();
     ss_ << pt.get<std::string>("lb.value");
@@ -911,6 +905,7 @@ void LBAgent::HandleComputedNormal(CMessage msg, PeerNodePtr peer)
                    << pt.get<std::string>("lb.source") << std::endl;
     LoadTable();
 }
+#pragma GCC diagnostic warning "-Wunused-parameter"
 
 ////////////////////////////////////////////////////////////
 /// Step_PStar
@@ -924,9 +919,9 @@ void LBAgent::Step_PStar()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     typedef device::CDeviceSst SST;
-    std::vector<SST::Pointer> SSTContainer;
-    std::vector<SST::Pointer>::iterator it, end;
-    SSTContainer = m_phyDevManager->GetDevicesOfType<SST>();
+    std::multiset<SST::Pointer> SSTContainer;
+    std::multiset<SST::Pointer>::iterator it, end;
+    SSTContainer = device::CDeviceManager::Instance().GetDevicesOfType<SST>();
 
     for( it = SSTContainer.begin(), end = SSTContainer.end(); it != end; it++ )
     {
@@ -959,13 +954,13 @@ void LBAgent::Step_PStar()
 /// @limitations It could be revised based on requirements. Might not be
 ///		 necessary after adding the code to handle intransit messages
 /////////////////////////////////////////////////////////
-void LBAgent::PStar(device::SettingValue DemandValue)
+void LBAgent::PStar(device::SignalValue DemandValue)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     typedef device::CDeviceSst SST;
-    std::vector<SST::Pointer> SSTContainer;
-    std::vector<SST::Pointer>::iterator it, end;
-    SSTContainer = m_phyDevManager->GetDevicesOfType<SST>();
+    std::multiset<SST::Pointer> SSTContainer;
+    std::multiset<SST::Pointer>::iterator it, end;
+    SSTContainer = device::CDeviceManager::Instance().GetDevicesOfType<SST>();
 
     for( it = SSTContainer.begin(), end = SSTContainer.end(); it != end; it++ )
     {
@@ -1006,9 +1001,9 @@ void LBAgent::Desd_PStar()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     typedef device::CDeviceDesd DESD;
-    std::vector<DESD::Pointer> DESDContainer;
-    std::vector<DESD::Pointer>::iterator it, end;
-    DESDContainer = m_phyDevManager->GetDevicesOfType<DESD>();
+    std::multiset<DESD::Pointer> DESDContainer;
+    std::multiset<DESD::Pointer>::iterator it, end;
+    DESDContainer = device::CDeviceManager::Instance().GetDevicesOfType<DESD>();
 
     for( it = DESDContainer.begin(), end = DESDContainer.end(); it != end; it++ )
     {

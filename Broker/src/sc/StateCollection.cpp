@@ -1,4 +1,4 @@
-////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
 /// @file         StateCollection.cpp
 ///
 /// @author       Li Feng <lfqt5@mail.mst.edu>
@@ -41,16 +41,15 @@
 #include "CConnection.hpp"
 #include "CLogger.hpp"
 #include "CMessage.hpp"
-#include "device/CPhysicalDeviceManager.hpp"
 #include "gm/GroupManagement.hpp"
 #include "IPeerNode.hpp"
+#include "CDeviceManager.hpp"
 
 #include <algorithm>
 #include <cassert>
 #include <cstdlib>
 #include <exception>
 #include <fstream>
-#include <functional>
 #include <iomanip>
 #include <iostream>
 #include <map>
@@ -105,18 +104,15 @@ CLocalLogger Logger(__FILE__);
 /// @pre PoxisMain prepares parameters and invokes module.
 /// @post Object initialized and ready to enter run state.
 /// @param uuid: This object's uuid.
-/// @param broker
-/// @param m_phyManager: The device manager to use in this class
+/// @param broker the broker object
 /// @limitations: None
 ///////////////////////////////////////////////////////////////////////////////
 
-SCAgent::SCAgent(std::string uuid, CBroker &broker,
-                 device::CPhysicalDeviceManager::Pointer m_phyManager):
+SCAgent::SCAgent(std::string uuid, CBroker &broker):
         IPeerNode(uuid, broker.GetConnectionManager()),
         m_countstate(0),
         m_NotifyToSave(false),
         m_curversion("default", 0),
-        m_phyDevManager(m_phyManager),
         m_broker(broker)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
@@ -319,8 +315,9 @@ void SCAgent::StateResponse()
 void SCAgent::TakeSnapshot(std::string deviceType, std::string valueType)
 {
     Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
-    device::SettingValue PowerValue;
-    PowerValue = m_phyDevManager->GetValue(deviceType, valueType, std::plus<device::SettingValue>());
+    device::SignalValue PowerValue;
+    PowerValue = device::CDeviceManager::Instance().GetNetValue(deviceType,
+            valueType);
     Logger.Status << "DeviceType: " << deviceType << "  ValueType: " << valueType 
                   << "  PowerValue: " << PowerValue << std::endl;
     //save state
@@ -410,7 +407,7 @@ void SCAgent::SaveForward(StateVersion latest, CMessage msg)
     m_countmarker = 1;
     Logger.Info << "Marker is " << m_curversion.first << " " << m_curversion.second << std::endl;
     //physical device information
-    Logger.Debug << "SC module identified "<< m_phyDevManager->DeviceCount()
+    Logger.Debug << "SC module identified "<< device::CDeviceManager::Instance().DeviceCount()
     << " physical devices on this node" << std::endl;
     //collect local state
     TakeSnapshot(m_deviceType, m_valueType);

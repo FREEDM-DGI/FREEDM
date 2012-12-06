@@ -1,5 +1,5 @@
 ///////////////////////////////////////////////////////////////////////////////
-/// @file         CAdapterRtds.hpp
+/// @file         CRtdsAdapter.cpp
 ///
 /// @author       Thomas Roth <tprfh7@mst.edu>
 ///
@@ -7,22 +7,20 @@
 ///
 /// @description  Adapter for the DGI-RTDS interface
 ///
-/// @copyright
-/// These source code files were created at the Missouri University of Science
-/// and Technology, and are intended for use in teaching or research. They may
-/// be freely copied, modified and redistributed as long as modified versions
-/// are clearly marked as such and this notice is not removed.
-///
-/// Neither the authors nor Missouri S&T make any warranty, express or implied,
-/// nor assume any legal responsibility for the accuracy, completeness or
-/// usefulness of these files or any information distributed with these files.
+/// These source code files were created at Missouri University of Science and
+/// Technology, and are intended for use in teaching or research. They may be
+/// freely copied, modified, and redistributed as long as modified versions are
+/// clearly marked as such and this notice is not removed. Neither the authors
+/// nor Missouri S&T make any warranty, express or implied, nor assume any legal
+/// responsibility for the accuracy, completeness, or usefulness of these files
+/// or any information distributed with these files.
 ///
 /// Suggested modifications or questions about these files can be directed to
 /// Dr. Bruce McMillin, Department of Computer Science, Missouri University of
 /// Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
 ///////////////////////////////////////////////////////////////////////////////
 
-#include "CAdapterRtds.hpp"
+#include "CRtdsAdapter.hpp"
 #include "CTableManager.hpp"
 #include "DeviceTable.hpp"
 
@@ -54,7 +52,7 @@ BOOST_STATIC_ASSERT( sizeof( TSignalValue ) == 4 );
 /// @param tree The property tree specification of the adapter.
 /// @limitations None.
 ///////////////////////////////////////////////////////////////////////////////
-CAdapterRtds::CAdapterRtds( unsigned short port,
+CRtdsAdapter::CRtdsAdapter( unsigned short port,
         const boost::property_tree::ptree & tree )
     : IServer(port)
     , CAdapter(tree)
@@ -68,7 +66,7 @@ CAdapterRtds::CAdapterRtds( unsigned short port,
 /// @post Allocates dynamic memory for a send and receive buffer.
 /// @limitations None.
 ///////////////////////////////////////////////////////////////////////////////
-void CAdapterRtds::HandleConnection()
+void CRtdsAdapter::HandleConnection()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     TSignalValue * recvBuffer = new TSignalValue[m_CommandDetails.size()];
@@ -129,7 +127,7 @@ void CAdapterRtds::HandleConnection()
 /// @param buffer the data to be reversed
 /// @param size the number of bytes in the buffer
 ////////////////////////////////////////////////////////////////////////////////
-void CAdapterRtds::ReverseBytes( char * buffer, const int numBytes )
+void CRtdsAdapter::ReverseBytes( char * buffer, const int numBytes )
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     
@@ -153,7 +151,7 @@ void CAdapterRtds::ReverseBytes( char * buffer, const int numBytes )
 ///
 /// @limitations Assumes the existence of UNIX byte order macros.
 ///////////////////////////////////////////////////////////////////////////////
-void CAdapterRtds::EndianSwapIfNeeded( char * buffer, std::size_t numBytes )
+void CRtdsAdapter::EndianSwapIfNeeded( char * buffer, std::size_t numBytes )
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     

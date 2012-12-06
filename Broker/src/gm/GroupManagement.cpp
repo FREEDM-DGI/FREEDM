@@ -33,6 +33,8 @@
 #include "CLogger.hpp"
 #include "CMessage.hpp"
 #include "SRemoteHost.hpp"
+#include "CDeviceManager.hpp"
+#include "CDeviceFid.hpp"
 
 #include <algorithm>
 #include <cassert>
@@ -85,8 +87,7 @@ CLocalLogger Logger(__FILE__);
 /// @param p_dispatch: The dispatcher used by this module
 /// @param p_conManager: The connection manager to use in this class.
 ///////////////////////////////////////////////////////////////////////////////
-GMAgent::GMAgent(std::string p_uuid, CBroker &broker,
-        device::CPhysicalDeviceManager::Pointer devmanager)
+GMAgent::GMAgent(std::string p_uuid, CBroker &broker)
     : IPeerNode(p_uuid,broker.GetConnectionManager()),
     CHECK_TIMEOUT(boost::posix_time::milliseconds(450)),
     TIMEOUT_TIMEOUT(boost::posix_time::milliseconds(450)),
@@ -94,8 +95,7 @@ GMAgent::GMAgent(std::string p_uuid, CBroker &broker,
     FID_TIMEOUT(boost::posix_time::milliseconds(450)),
     RESPONSE_TIMEOUT(boost::posix_time::milliseconds(150)),
     AYT_RESPONSE_TIMEOUT(boost::posix_time::milliseconds(300)),
-    m_broker(broker),
-    m_phyDevManager(devmanager)
+    m_broker(broker)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     AddPeer(GetUUID());
@@ -377,7 +377,8 @@ void GMAgent::SystemState()
             nodestatus<<"Unknown"<<std::endl;
         }
     } 
-    nodestatus<<"FID state: "<< m_phyDevManager->CountActiveFids();
+    nodestatus<<"FID state: "<<device::CDeviceManager::Instance().
+            GetNetValue("Fid", "state");
     nodestatus<<std::endl<<"Current Skew: "<<CGlobalConfiguration::instance().GetClockSkew();
     Logger.Status<<nodestatus.str()<<std::endl;
 }
@@ -455,8 +456,10 @@ void GMAgent::FIDCheck( const boost::system::error_code& err)
 {
     if(!err)
     {
-        int attachedFIDs = m_phyDevManager->GetDevicesOfType<device::CDeviceFid>().size();
-        unsigned int FIDState = m_phyDevManager->CountActiveFids();
+        int attachedFIDs = device::CDeviceManager::Instance().
+                GetDevicesOfType<device::CDeviceFid>().size();
+        unsigned int FIDState = device::CDeviceManager::Instance().
+                GetNetValue("Fid", "state");
         if(m_fidsclosed == true && attachedFIDs  > 0 && FIDState == 0)
         {
             Logger.Status<<"All FIDs offline. Entering Recovery State"<<std::endl;
@@ -937,6 +940,7 @@ void GMAgent::Prehandler(SubhandleFunctor f,CMessage msg, PeerNodePtr peer)
     f(msg,peer);
 }
  
+#pragma GCC diagnostic ignored "-Wunused-parameter"
 ///////////////////////////////////////////////////////////////////////////////
 /// GMAgent::HandleAny
 /// @description This function collects all incoming messages for the purpose
@@ -1273,6 +1277,7 @@ void GMAgent::HandlePeerListQuery(CMessage msg, PeerNodePtr peer)
     std::string requester = pt.get<std::string>("gm.requester");
     peer->Send(PeerList(requester));
 }
+#pragma GCC diagnostic ignored "-Wunused-parameter"
 
 ///////////////////////////////////////////////////////////////////////////////
 /// GMAgent::AddPeer
@@ -1332,7 +1337,7 @@ int GMAgent::Run()
         mapIt_ != GetConnectionManager().GetHostnamesEnd(); ++mapIt_ )
     {
         std::string host_ = mapIt_->first;
-        Logger.Notice<<"Registering Peer"<<mapIt_->first<<std::endl;
+        Logger.Notice<<"Registering peer "<<mapIt_->first<<std::endl;
         AddPeer(const_cast<std::string&>(mapIt_->first));
     }
     Logger.Notice<<"All peers added "<<CGlobalPeerList::instance().PeerList().size()<<std::endl;

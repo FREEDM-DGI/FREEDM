@@ -7,7 +7,7 @@
 ///
 /// @project      FREEDM DGI
 ///
-/// @description  Represents an FID.
+/// @description  Represents a fault interruption device.
 ///
 /// These source code files were created at Missouri University of Science and
 /// Technology, and are intended for use in teaching or research. They may be
@@ -25,29 +25,36 @@
 #ifndef C_DEVICE_FID_HPP
 #define C_DEVICE_FID_HPP
 
-#include <boost/shared_ptr.hpp>
-
 #include "IDevice.hpp"
+
+#include <string>
+
+#include <boost/shared_ptr.hpp>
 
 namespace freedm {
 namespace broker {
 namespace device {
 
-/// Implementation of physical loads
+/// Device class for a fault interruption device (FID).
+////////////////////////////////////////////////////////////////////////////////
+/// Provides a device interface which recognizes a boolean state signal.
+///
+/// @limitations None.
+////////////////////////////////////////////////////////////////////////////////
 class CDeviceFid
-: public virtual IDevice
+    : public virtual IDevice
 {
 public:
-    /// Convenience type for a shared pointer to self
+    /// Convenience type for a shared pointer to self.
     typedef boost::shared_ptr<CDeviceFid> Pointer;
 
-    /// Constructor which takes an identifier and internal structure
-    CDeviceFid(const Identifier device, IPhysicalAdapter::Pointer adapter);
+    /// Constructor which takes an identifier and internal structure.
+    CDeviceFid(std::string device, IAdapter::Pointer adapter);
 
-    /// Virtual destructor for derived classes
+    /// Virtual destructor for derived classes.
     virtual ~CDeviceFid();
 
-    /// Determine whether or not this FID is active.
+    /// Determine if the FID is active.
     bool IsActive() const;
 private:
     /// redefine base accessor as private

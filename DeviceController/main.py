@@ -190,14 +190,17 @@ with open('dsp-script.txt') as script:
             enableDevice(devices, command)
             if dgiStatePort >= 0:
                 politeQuit(dgiStatePort, listenPort)
+            dgiStatePort, hbPort = reconnect(dgiHostname, dgiPort, listenPort,
+                                          devices)
         elif 'disable' in command:
             disableDevice(devices, command)
             if dgiStatePort >= 0:
                 politeQuit(dgiStatePort, listenPort)
-        elif 'reconnect' in command:
-            time.sleep(6) # give DGI a bit of time to kill its adapter
             dgiStatePort, hbPort = reconnect(dgiHostname, dgiPort, listenPort,
                                           devices)
+        elif 'dieHorribly' in command:
+            dgiStatePort, hbPort = reconnect(dgiHostname, dgiPort, listenPort,
+                                             devices)
         elif 'sleep' in command:
             for i in range(int(command.split()[1])):
                 if hbPort >= 0:

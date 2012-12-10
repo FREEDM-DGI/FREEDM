@@ -1,10 +1,14 @@
 # valid commands are:
 #
 # enable devicetype devicename
-#
-# reconnect <- the first time you use this is your first connect
-#
+# disable devicetype devicename
 # sleep n
+# dieHorribly
+#
+# Whenever you enable or disable a device, the controller will send a quit
+# request to DGI, and will reinitiate connection with the new device attached
+# once that succeeds. If the controller dies horribly, it will do that without
+# sending a quit request.
 #
 # Don't put any blank lines in this file, the parser is really dumb. :-(
 #
@@ -19,16 +23,12 @@ enable Sst SST5
 enable Sst SST6
 enable Fid FID1
 enable Fid FID2
-reconnect
 sleep 5
 disable Sst SST1
 disable Sst SST2
 disable Sst SST3
-reconnect
-sleep 10
+dieHorribly
 disable Fid FID1
-reconnect
 sleep 15
 enable Sst SST1
-reconnect
 sleep 15

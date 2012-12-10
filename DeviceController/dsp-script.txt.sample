@@ -14,8 +14,7 @@
 #
 # sleep is used to pass n seconds without enabling/disabling devices or dying.
 #
-# And don't do stupid stuff like sleeping before your first connection,
-# or naming a device "disable", etc. You'll confuse it.
+# *The parser accepts comments only if they start on the first column!*
 
 enable Sst SST1
 enable Sst SST2

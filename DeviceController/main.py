@@ -178,7 +178,7 @@ with open('dsp-script.txt') as script:
         elif hbPort < -1 or hbPort > 65535:
             raise ValueError('HeartbeatPort ' + str(hbPort) + 'not sensible')
 
-        if command[0] is '#':
+        if command[0] is '#' or command.isspace():
             continue # do not send heartbeat!
         else:
             print 'Processing command ' + command[:-1] # don't print \n
@@ -207,7 +207,7 @@ with open('dsp-script.txt') as script:
                                              devices)
         elif 'sleep' in command:
             duration = int(command.split()[1])
-            if duration < 0:
+            if duration <= 0:
                 raise ValueError('Nonsense to sleep for ' + duration + 's')
             for i in range(duration):
                 if hbPort >= 0:

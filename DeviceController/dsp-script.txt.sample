@@ -14,11 +14,9 @@
 #
 # sleep is used to pass n seconds without enabling/disabling devices or dying.
 #
-# Don't put any blank lines in this file, the parser is really dumb. :-(
-#
 # And don't do stupid stuff like sleeping before your first connection,
 # or naming a device "disable", etc. You'll confuse it.
-#
+
 enable Sst SST1
 enable Sst SST2
 enable Sst SST3
@@ -27,12 +25,19 @@ enable Sst SST5
 enable Sst SST6
 enable Fid FID1
 enable Fid FID2
+
 sleep 5
+
 disable Sst SST1
 disable Sst SST2
 disable Sst SST3
+
 dieHorribly
+
 disable Fid FID1
+
 sleep 15
+
 enable Sst SST1
+
 sleep 15

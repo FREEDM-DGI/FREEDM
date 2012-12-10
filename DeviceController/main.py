@@ -186,26 +186,26 @@ with open('dsp-script.txt') as script:
         # TODO - check if these are the first words in the command
         #  That way we can do smart things like naming devices "disable"
         #  without breaking the script
-        if 'enable' in command:
+        if command.find('enable') is 0:
             enableDevice(devices, command)
             if dgiStatePort >= 0:
                 politeQuit(dgiStatePort, listenPort)
             dgiStatePort, hbPort = reconnect(dgiHostname, dgiPort, listenPort,
                                           devices)
-        elif 'disable' in command:
+        elif command.find('disable') is 0:
             disableDevice(devices, command)
             if dgiStatePort >= 0:
                 politeQuit(dgiStatePort, listenPort)
             dgiStatePort, hbPort = reconnect(dgiHostname, dgiPort, listenPort,
                                           devices)
-        elif 'dieHorribly' in command:
+        elif command.find('dieHorribly') is 0:
             duration = int(command.split()[1])
             if duration < 0:
                 raise ValueError("It's nonsense to die for " + duration + "s")
             time.sleep(duration)
             dgiStatePort, hbPort = reconnect(dgiHostname, dgiPort, listenPort,
                                              devices)
-        elif 'sleep' in command:
+        elif command.find('sleep') is 0:
             duration = int(command.split()[1])
             if duration <= 0:
                 raise ValueError('Nonsense to sleep for ' + duration + 's')
@@ -218,6 +218,8 @@ with open('dsp-script.txt') as script:
                         print 'Timeout from DGI, sending a new Hello...'
                         dgiStatePort, hbPort = reconnect(dgiHostname, dgiPort,
                                                       listenPort, devices)
+        else:
+            raise ValueError('Found weird command ' + command)
 
         if hbPort >= 0:
             try:

@@ -3,12 +3,16 @@
 # enable devicetype devicename
 # disable devicetype devicename
 # sleep n
-# dieHorribly
+# dieHorribly n
 #
 # Whenever you enable or disable a device, the controller will send a quit
 # request to DGI, and will reinitiate connection with the new device attached
-# once that succeeds. If the controller dies horribly, it will do that without
-# sending a quit request.
+# once that succeeds.
+# 
+# If the controller dies horribly, it will do that without sending a quit
+# request. It will wait n seconds (0 is valid) before reconnecting.
+#
+# sleep is used to pass n seconds without enabling/disabling devices or dying.
 #
 # Don't put any blank lines in this file, the parser is really dumb. :-(
 #

@@ -199,6 +199,10 @@ with open('dsp-script.txt') as script:
             dgiStatePort, hbPort = reconnect(dgiHostname, dgiPort, listenPort,
                                           devices)
         elif 'dieHorribly' in command:
+            duration = int(command.split()[1])
+            if duration < 0:
+                raise ValueError("It's nonsense to die for " + duration + "s")
+            time.sleep(duration)
             dgiStatePort, hbPort = reconnect(dgiHostname, dgiPort, listenPort,
                                              devices)
         elif 'sleep' in command:

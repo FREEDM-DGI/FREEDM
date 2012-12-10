@@ -206,7 +206,10 @@ with open('dsp-script.txt') as script:
             dgiStatePort, hbPort = reconnect(dgiHostname, dgiPort, listenPort,
                                              devices)
         elif 'sleep' in command:
-            for i in range(int(command.split()[1])):
+            duration = int(command.split()[1])
+            if duration < 0:
+                raise ValueError('Nonsense to sleep for ' + duration + 's')
+            for i in range(duration):
                 if hbPort >= 0:
                     print 'Sleep ' + str(i)
                     try:

@@ -183,9 +183,6 @@ with open('dsp-script.txt') as script:
         else:
             print 'Processing command ' + command[:-1] # don't print \n
 
-        # TODO - check if these are the first words in the command
-        #  That way we can do smart things like naming devices "disable"
-        #  without breaking the script
         if command.find('enable') is 0:
             enableDevice(devices, command)
             if dgiStatePort >= 0:

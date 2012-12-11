@@ -67,45 +67,49 @@ def reconnect(dgiHostname, dgiPort, listenPort, devices):
     @param listenPort the port on which to listen for a response from the DGI
     @param devices the list of device (type, name) pairs to send to DGI
     
-    @return the Start message received from DGI
+    @return StatePort and HeartbeatPort
     """
-# Prepare to receive a response from DGI
+    # Prepare to receive a response from DGI
     acceptorSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     acceptorSocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     acceptorSocket.bind(('', int(listenPort)))
     acceptorSocket.listen(1)
 
-# ARM connects to dgi-hostname:dgi-port as soon as it parses the configuration
+    # Connect to DGI on preconfigured port
     initiationSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     initiationSocket.connect((dgiHostname, int(dgiPort)))
-    
-# ARM tells DGI which devices it will have
+
+    # Construct the Hello message
     devicePacket = listenPort + '\r\n'
     for devicePair in devices:
         deviceType, deviceName = devicePair
         devicePacket += deviceType + ' ' + deviceName + '\r\n'
     devicePacket += '\r\n'
-    initiationSocket.send(devicePacket)
-    initiationSocket.close()
-    print 'Sent Hello message:\n' + devicePacket
- 
-    # Receive the Start message from DGI
-    clientSocket, address = acceptorSocket.accept()
-    acceptorSocket.close()
+    
+    # Send Hello to DGI, as many times as necessary until response received
+    startMsg = ''
     while True:
+        initiationSocket.send(devicePacket)
+        print 'Sent Hello message:\n' + devicePacket    
+        # Receive the Start message from DGI
         try:
-            msg = clientSocket.recv(64)
+            clientSocket, address = acceptorSocket.accept()
+            acceptorSocket.close()
+            startMsg = clientSocket.recv(64)
+            print 'Received Start message:\n' + msg
+            initiationSocket.close()
+            clientSocket.close()
             break
         except socket.timeout:
-            print 'Timeout out awaiting Start from DGI, resending'
-    print 'Received Start message:\n' + msg
-    clientSocket.close()
+            print 'Timeout awaiting Start from DGI, resending Hello'
 
-    if not 'StatePort' in msg or not 'HeartbeatPort' in msg:
-        raise ValueError('Received malformed start message from DGI:\n' + msg)
-    msg = msg.split()
-    print 'Received StatePort=' + msg[1] + ', HeartbeatPort=' + msg[3]
-    return (msg[1], msg[3], acceptorSocket)
+    # Return (StatePort, HeartbeatPort) as specified by DGI
+    if not 'StatePort' in startMsg or not 'HeartbeatPort' in startMsg:
+        raise ValueError('Received malformed start message from DGI:\n'
+                         + startMsg)
+    startMsg = startMsg.split()
+    print 'Received StatePort=%s, HeartbeatPort=%s' % startMsg[1], startMsg[3]
+    return (startMsg[1], startMsg[3])
 
 
 def politeQuit(statePort, listenPort):

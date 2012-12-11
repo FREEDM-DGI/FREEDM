@@ -158,22 +158,22 @@ def heartbeat(dgiHostname, hbPort):
     time.sleep(0.5)
 
 
+if __name__ == '__main__':
+    # read connection settings from the config file
+    with open('controller.cfg', 'r') as f:
+        config = ConfigParser.SafeConfigParser()
+        config.readfp(f)
+        
+    # the hostname and port of the DGI this controller must connect to
+    dgiHostname = config.get('connection', 'dgi-hostname')
+    dgiPort = config.get('connection', 'dgi-port')
 
-# read connection settings from the config file
-with open('controller.cfg', 'r') as f:
-    config = ConfigParser.SafeConfigParser()
-    config.readfp(f)
+    # the port on which this controller will receive from the DGI
+    listenPort = config.get('connection', 'listen-port')
 
-# the hostname and port of the DGI this controller must connect to
-dgiHostname = config.get('connection', 'dgi-hostname')
-dgiPort = config.get('connection', 'dgi-port')
-
-# the port on which this controller will receive from the DGI
-listenPort = config.get('connection', 'listen-port')
-
-# run the dsp-script
-devices = []
-with open('dsp-script.txt') as script:
+    # run the dsp-script
+    script = open('dsp-script.txt', 'r')
+    devices = []
     dgiStatePort = -1
     hbPort = -1
 
@@ -183,31 +183,31 @@ with open('dsp-script.txt') as script:
         elif hbPort < -1 or hbPort > 65535:
             raise ValueError('HeartbeatPort ' + str(hbPort) + 'not sensible')
 
-        if command[0] is '#' or command.isspace():
+        if command[0] == '#' or command.isspace():
             continue # do not send heartbeat!
         else:
             print 'Processing command ' + command[:-1] # don't print \n
 
-        if command.find('enable') is 0:
+        if command.find('enable') == 0:
             enableDevice(devices, command)
             if dgiStatePort >= 0:
                 politeQuit(dgiStatePort, listenPort)
             dgiStatePort, hbPort = reconnect(dgiHostname, dgiPort, listenPort,
                                           devices)
-        elif command.find('disable') is 0:
+        elif command.find('disable') == 0:
             disableDevice(devices, command)
             if dgiStatePort >= 0:
                 politeQuit(dgiStatePort, listenPort)
             dgiStatePort, hbPort = reconnect(dgiHostname, dgiPort, listenPort,
                                           devices)
-        elif command.find('dieHorribly') is 0:
+        elif command.find('dieHorribly') == 0:
             duration = int(command.split()[1])
             if duration < 0:
                 raise ValueError("It's nonsense to die for " + duration + "s")
             time.sleep(duration)
             dgiStatePort, hbPort = reconnect(dgiHostname, dgiPort, listenPort,
                                              devices)
-        elif command.find('sleep') is 0:
+        elif command.find('sleep') == 0:
             duration = int(command.split()[1])
             if duration <= 0:
                 raise ValueError('Nonsense to sleep for ' + duration + 's')
@@ -230,3 +230,5 @@ with open('dsp-script.txt') as script:
                 print 'Timeout from DGI, sending a new Hello...'
                 dgiStatePort, hbPort = reconnect(dgiHostname, dgiPort,
                                                  listenPort, devices)
+
+    close(script)

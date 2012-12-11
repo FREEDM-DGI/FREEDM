@@ -80,7 +80,7 @@ def reconnect(dgiHostname, dgiPort, listenPort, devices):
     initiationSocket.connect((dgiHostname, int(dgiPort)))
 
     # Construct the Hello message
-    devicePacket = listenPort + '\r\n'
+    devicePacket = 'SessionPort: ' + listenPort + '\r\n'
     for devicePair in devices:
         deviceType, deviceName = devicePair
         devicePacket += deviceType + ' ' + deviceName + '\r\n'

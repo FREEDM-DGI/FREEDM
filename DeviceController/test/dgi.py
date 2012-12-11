@@ -66,7 +66,7 @@ if __name__ == '__main__':
         print 'Received Hello message:\n' + helloMsg
         clientSocket.close()
         
-        if helloMsg.find(SessionPort) != 0 or len(helloMsg.split()) % 2 != 0:
+        if helloMsg.find('SessionPort') != 0 or len(helloMsg.split()) % 2 != 0:
             raise ValueError('Received malformed Hello:\n' + helloMsg)
         helloMsg = helloMsg.split()
         sessionPort = helloMsg[1]

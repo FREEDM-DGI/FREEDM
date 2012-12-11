@@ -92,7 +92,12 @@ def reconnect(dgiHostname, dgiPort, listenPort, devices):
     # Receive the Start message from DGI
     clientSocket, address = acceptorSocket.accept()
     acceptorSocket.close()
-    msg = clientSocket.recv(64)
+    while True:
+        try:
+            msg = clientSocket.recv(64)
+            break
+        except socket.timeout:
+            print 'Timeout out awaiting Start from DGI, resending'
     print 'Received Start message:\n' + msg
     clientSocket.close()
 

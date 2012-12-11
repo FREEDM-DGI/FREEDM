@@ -73,7 +73,7 @@ def reconnect(dgiHostname, dgiPort, listenPort, devices):
     acceptorSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     acceptorSocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     acceptorSocket.bind(('', int(listenPort)))
-    acceptorSocket.listen(1)
+    acceptorSocket.listen(0)
 
     # Connect to DGI on preconfigured port
     initiationSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -126,7 +126,7 @@ def politeQuit(statePort, listenPort):
         acceptorSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         acceptorSocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         acceptorSocket.bind(('', int(listenPort)))
-        acceptorSocket.listen(1)
+        acceptorSocket.listen(0)
         
         print 'Sending PoliteDisconnect request to DGI'
         dgiStatePort.send('PoliteDisconnect\r\n\r\n')

@@ -38,7 +38,7 @@ def heartbeat(hbPort, queue):
     acceptorSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     acceptorSocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     acceptorSocket.bind(('', hbPort))
-    acceptorSocket.listen(1)
+    acceptorSocket.listen(0)
     while True:
         try:
             hbSocket, address = acceptorSocket.accept()
@@ -57,7 +57,7 @@ if __name__ == '__main__':
     acceptorSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     acceptorSocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     acceptorSocket.bind(('', LISTEN_PORT))
-    acceptorSocket.listen(1)
+    acceptorSocket.listen(0)
     
     while True:
         print 'Waiting for the controller to send a Hello'
@@ -79,7 +79,7 @@ if __name__ == '__main__':
                 raise ValueError('Device ' + name + ' already exists in map')
             devices[helloMsg[0]] = helloMsg[1]
             helloMsg = helloMsg[2:]
-            print 'Constructed device map:\n' + devices
+            print 'Constructed device map:\n' + str(devices)
             
             # Set up the state connection
             stateAcceptorSocket = socket.socket(socket.AF_INET,
@@ -87,7 +87,7 @@ if __name__ == '__main__':
             stateAcceptorSocket.setsockopt(socket.SOL_SOCKET,
                                            socket.SO_REUSEADDR, 1)
             stateAcceptorSocket.bind(('', STATE_PORT))
-            stateAcceptorSocket.listen(1)
+            stateAcceptorSocket.listen(0)
             
             # Now send a Start message back
             startMsg = 'StatePort: ' + str(STATE_PORT) + '\r\n'

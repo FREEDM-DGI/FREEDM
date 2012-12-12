@@ -108,7 +108,7 @@ def reconnect(dgiHostname, dgiPort, listenPort, devices):
         except socket.timeout:
             print 'Timeout awaiting start from DGI, resending Hello'
         except socket.error:
-            print 'Fail, probably in connecting to DGI, resending Hello'
+            print 'Fail connecting to DGI, resending Hello'
             time.sleep(1)
         finally:
             initiationSocket.close()

@@ -173,7 +173,7 @@ def heartbeat(dgiHostname, hbPort):
 
     @return True on success, False if we lost connection to DGI
     """
-    print 'Sending heartbeat to' + dgiHostname + ' ' + hbPort
+    print 'Sending heartbeat to ' + dgiHostname + ' ' + hbPort
     hbSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     hbSocket.settimeout(2)
     try:

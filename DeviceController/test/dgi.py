@@ -48,6 +48,7 @@ def heartbeat(hbPort, queue):
         except socket.error:
             print 'Aw man, the controller timed out :-('
             queue.put('timeout')
+            break
 
 
 if __name__ == '__main__':
@@ -94,7 +95,8 @@ if __name__ == '__main__':
         startMsg += 'HeartbeatPort: ' + str(HEARTBEAT_PORT) + '\r\n\r\n'
             
         sessionSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        sessionSocket.connect((address, sessionPort))
+        controllerHostname, dontcarePort = address
+        sessionSocket.connect((controllerHostname, sessionPort))
         sessionSocket.settimeout(4)
         try:
             sessionSocket.send(startMsg)
@@ -117,6 +119,7 @@ if __name__ == '__main__':
                 break
 
             # wait for a response from the controller
+            msg = ''
             while True:
                 try:
                     queue.get()
@@ -162,4 +165,4 @@ if __name__ == '__main__':
             elif msg.find('SessionPort') == 0:
                 print 'Ignoring a Hello from a previously-dead controller'
             else:
-                raise ValueError('Got nonsense from DGI:\n' + msg)
+                raise ValueError('Got nonsense from controller:\n' + msg)

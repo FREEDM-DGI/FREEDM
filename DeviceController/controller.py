@@ -74,7 +74,7 @@ def reconnect(dgiHostname, dgiPort, listenPort, devices):
     acceptorSocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     acceptorSocket.bind(('', int(listenPort)))
     acceptorSocket.listen(0)
-    acceptorSocket.settimeout(5)
+    acceptorSocket.settimeout(3)
 
     # Construct the Hello message
     devicePacket = 'SessionPort: ' + listenPort + '\r\n'
@@ -82,34 +82,41 @@ def reconnect(dgiHostname, dgiPort, listenPort, devices):
         deviceType, deviceName = devicePair
         devicePacket += deviceType + ' ' + deviceName + '\r\n'
     devicePacket += '\r\n'
+
+    initiationSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    initiationSocket.settimeout(3)
     
     # Send Hello to DGI, as many times as necessary until acknowledged
     startMsg = ''
     while True:
         try:
             # Connect to DGI on preconfigured port
-            initiationSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            initiationSocket.settimeout(5)
             initiationSocket.connect((dgiHostname, int(dgiPort)))
             initiationSocket.send(devicePacket)
             print 'Sent Hello message:\n' + devicePacket    
             # Receive the Start message from DGI
             clientSocket, address = acceptorSocket.accept()
-            startMsg = clientSocket.recv(64)
-            print 'Received Start message:\n' + msg
-            acceptorSocket.close()
-            initiationSocket.close()
-            clientSocket.close()
-            break
+            try:
+                startMsg = clientSocket.recv(64)
+                print 'Received Start message:\n' + startMsg
+                acceptorSocket.close()
+                break
+            except socket.error:
+                raise
+            finally:
+                clientSocket.close()
         except socket.error:
+            # FIXME - can't figure out why, but this infinite loops...
             print 'Timeout awaiting Start from DGI, resending Hello'
+        finally:
+            initiationSocket.close()
 
     # Return (StatePort, HeartbeatPort) as specified by DGI
     if not 'StatePort' in startMsg or not 'HeartbeatPort' in startMsg:
         raise ValueError('Received malformed start message from DGI:\n'
                          + startMsg)
     startMsg = startMsg.split()
-    print 'Received StatePort=%s, HeartbeatPort=%s' % startMsg[1], startMsg[3]
+    print 'Received StatePort =', startMsg[1], 'HeartbeatPort =', startMsg[3]
     return (startMsg[1], startMsg[3])
 
 

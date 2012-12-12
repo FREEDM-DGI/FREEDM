@@ -76,11 +76,6 @@ def reconnect(dgiHostname, dgiPort, listenPort, devices):
     acceptorSocket.listen(0)
     acceptorSocket.settimeout(5)
 
-    # Connect to DGI on preconfigured port
-    initiationSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    initiationSocket.settimeout(5)
-    initiationSocket.connect((dgiHostname, int(dgiPort)))
-
     # Construct the Hello message
     devicePacket = 'SessionPort: ' + listenPort + '\r\n'
     for devicePair in devices:
@@ -91,18 +86,22 @@ def reconnect(dgiHostname, dgiPort, listenPort, devices):
     # Send Hello to DGI, as many times as necessary until acknowledged
     startMsg = ''
     while True:
-        initiationSocket.send(devicePacket)
-        print 'Sent Hello message:\n' + devicePacket    
-        # Receive the Start message from DGI
         try:
+            # Connect to DGI on preconfigured port
+            initiationSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            initiationSocket.settimeout(5)
+            initiationSocket.connect((dgiHostname, int(dgiPort)))
+            initiationSocket.send(devicePacket)
+            print 'Sent Hello message:\n' + devicePacket    
+            # Receive the Start message from DGI
             clientSocket, address = acceptorSocket.accept()
-            acceptorSocket.close()
             startMsg = clientSocket.recv(64)
             print 'Received Start message:\n' + msg
+            acceptorSocket.close()
             initiationSocket.close()
             clientSocket.close()
             break
-        except socket.timeout:
+        except socket.error:
             print 'Timeout awaiting Start from DGI, resending Hello'
 
     # Return (StatePort, HeartbeatPort) as specified by DGI
@@ -150,7 +149,7 @@ def politeQuit(dgiHostname, statePort, listenPort):
             else:
                 raise ValueError('Received malformed response to disconnect'
                                  ' request:\n' + msg)
-        except socket.timeout:
+        except socket.error:
             print 'DGI timed out, sending a new Hello'
 
 
@@ -173,7 +172,7 @@ def heartbeat(dgiHostname, hbPort):
         hbSocket.close()
         time.sleep(1)
         return True
-    except socket.timeout:
+    except socket.error:
         print 'The DGI has timed out, controller is sad'
         return False
 

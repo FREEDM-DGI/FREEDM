@@ -45,7 +45,7 @@ def heartbeat(hbPort, queue):
             hbSocket, address = acceptorSocket.accept()
             print "Heart's beating, all's good"
             hbSocket.close()
-        except socket.timeout:
+        except socket.error:
             print 'Aw man, the controller timed out :-('
             queue.put('timeout')
 
@@ -99,7 +99,7 @@ if __name__ == '__main__':
         try:
             sessionSocket.send(startMsg)
             print 'Sent startMsg to the controller:\n' + startMsg
-        except socket.timeout:
+        except socket.error:
             print 'Timeout sending startMsg, awaiting another Hello'
             continue
 
@@ -135,9 +135,9 @@ if __name__ == '__main__':
                     stateSocket.settimeout(4)
                     msg = stateSocket.recv(2048)
                     break
-                except socket.timeout:
+                except socket.timeout: # not expecting socket.error
                     print "'Timed out' awaiting states from controller."
-                    print "Not actually a problem, I'll just keep waiting."
+                    print "This is normal operation, I'll just keep waiting."
 
             # Entertain a disconnect request in an entirelly fair manner.
             if msg.find('PoliteDisconnect') == 0:
@@ -152,7 +152,7 @@ if __name__ == '__main__':
                         sessionSocket.send(response)
                         print 'Accepted disconnect, awaiting another Hello'
                         break
-                except socket.timeout:
+                except socket.error:
                     # do nothing, logic in below comment applies here
                     print 'Controller timeout, sad DGI'
             # If the controller died horribly, we'll get a Hello instead

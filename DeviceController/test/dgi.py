@@ -50,7 +50,9 @@ def heartbeat(hbPort, queue):
             queue.put('timeout')
             break
 
-
+# Perhaps the fake DGI should have the capacity to fail on purpose, in order
+# to test the fake controller's ability to respond to failures. To this, I
+# say, Ctrl+C.
 if __name__ == '__main__':
     LISTEN_PORT = 3010
     STATE_PORT = 3011
@@ -162,7 +164,7 @@ if __name__ == '__main__':
                 except socket.error:
                     # do nothing, logic in below comment applies here
                     print 'Controller timeout, sad DGI'
-            # If the controller died horribly, we'll get a Hello instead
+            # If the controller died horribly, we'll get a Hello instead.
             # We can just ignore this, since we'll get a hb timeout soon
             # enough. Once we do, we'll start listening for Hellos again,
             # and the controller will keep sending in the meantime.

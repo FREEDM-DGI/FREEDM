@@ -1,6 +1,6 @@
 #!/usr/bin/env python2
 ##############################################################################
-# @file main.py
+# @file controller.py
 #
 # @author Michael Catanzaro <michael.catanzaro@mst.edu>
 #

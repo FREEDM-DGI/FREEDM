@@ -39,6 +39,7 @@ def heartbeat(hbPort, queue):
     acceptorSocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     acceptorSocket.bind(('', hbPort))
     acceptorSocket.listen(0)
+    acceptorSocket.settimeout(2)
     while True:
         try:
             hbSocket, address = acceptorSocket.accept()
@@ -69,9 +70,9 @@ if __name__ == '__main__':
         if helloMsg.find('SessionPort') != 0 or len(helloMsg.split()) % 2 != 0:
             raise ValueError('Received malformed Hello:\n' + helloMsg)
         helloMsg = helloMsg.split()
-        sessionPort = helloMsg[1]
-        print 'Received SessionPort=' + sessionPort
-        
+        sessionPort = int(helloMsg[1])
+        print 'Received SessionPort=%d' % sessionPort
+
         devices = {} # device name -> type
         helloMsg = helloMsg[2:]
         while len(helloMsg) != 0:
@@ -79,62 +80,69 @@ if __name__ == '__main__':
                 raise ValueError('Device ' + name + ' already exists in map')
             devices[helloMsg[0]] = helloMsg[1]
             helloMsg = helloMsg[2:]
-            print 'Constructed device map:\n' + str(devices)
+        print 'Constructed device map:\n' + str(devices)
             
-            # Set up the state connection
-            stateAcceptorSocket = socket.socket(socket.AF_INET,
-                                                socket.SOCK_STREAM)
-            stateAcceptorSocket.setsockopt(socket.SOL_SOCKET,
-                                           socket.SO_REUSEADDR, 1)
-            stateAcceptorSocket.bind(('', STATE_PORT))
-            stateAcceptorSocket.listen(0)
+        # Set up the state connection
+        stateAcceptorSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        stateAcceptorSocket.setsockopt(socket.SOL_SOCKET,socket.SO_REUSEADDR,1)
+        stateAcceptorSocket.bind(('', STATE_PORT))
+        stateAcceptorSocket.listen(0)
+        stateAcceptorSocket.settimeout(1)
             
-            # Now send a Start message back
-            startMsg = 'StatePort: ' + str(STATE_PORT) + '\r\n'
-            startMsg += 'HeartbeatPort: ' + str(HEARTBEAT_PORT) + '\r\n\r\n'
+        # Now send a Start message back
+        startMsg = 'StatePort: ' + str(STATE_PORT) + '\r\n'
+        startMsg += 'HeartbeatPort: ' + str(HEARTBEAT_PORT) + '\r\n\r\n'
             
-            sessionSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            sessionSocket.connect((address, sessionPort))
+        sessionSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sessionSocket.connect((address, sessionPort))
+        sessionSocket.settimeout(4)
+        try:
             sessionSocket.send(startMsg)
             print 'Sent startMsg to the controller:\n' + startMsg
-            
-            # Handle heartbeats in a separate process
-            queue = multiprocessing.Queue()
-            p = multiprocessing.Process(target=heartbeat,
-                                        args=(HEARTBEAT_PORT, queue))
-            p.start()
-            print 'Spawned another process to receive heartbeats'
-            
-            timeout = False
+        except socket.timeout:
+            print 'Timeout sending startMsg, awaiting another Hello'
+            continue
+
+        # Handle heartbeats in a separate process
+        queue = multiprocessing.Queue()
+        p = multiprocessing.Process(target=heartbeat,
+                                    args=(HEARTBEAT_PORT, queue))
+        p.start()
+        print 'Spawned another process to receive heartbeats'
+        
+        timeout = False
+        while True:
+            if timeout == True:
+                print 'Controller is gone, awaiting another Hello'
+                break
+
+            # wait for a response from the controller
             while True:
-                if timeout == True:
-                    print 'Controller is gone, awaiting another Hello'
+                try:
+                    queue.get()
+                    print 'Oh no, main has detected the controller is gone'
+                    timeout = True
                     break
+                except Queue.Empty:
+                    print 'Main DGI process has detected no timeouts'
 
-                # wait for a response from the controller
-                while True:
-                    # but first, make sure the heartbeats haven't timed out
-                    # FIXME - this will probably detect a timeout *WAY LATE*
-                    try:
-                        queue.get()
-                        print 'Oh no, main has detected the controller is gone'
-                        timeout = True
-                        break
-                    except Queue.Empty:
-                        print 'Main DGI process has detected no timeouts'
+                # now actually get the controller's response
+                try:
+                    # this will timeout after 1s, as it must if we're to
+                    # notice a disconnect from the hb process
+                    stateSocket, address = stateAcceptorSocket.accept()
+                    # be leinent, it's unlikely this will fail
+                    stateSocket.settimeout(4)
+                    msg = stateSocket.recv(2048)
+                    break
+                except socket.timeout:
+                    print "'Timed out' awaiting states from controller."
+                    print "Not actually a problem, I'll just keep waiting."
 
-                    # now actually get the controller's response
-                    try:
-                        stateSocket, address = stateAcceptorSocket.accept()
-                        msg = stateSocket.recv(2048)
-                        break
-                    except socket.timeout:
-                        print "Timed out awaiting states from controller."
-                        print "Not actually a problem, I'll just keep waiting."
-
-                # Entertain a disconnect request in an entirelly fair manner.
-                if msg.find('PoliteDisconnect') == 0:
-                    response = 'PoliteDisconnect: '
+            # Entertain a disconnect request in an entirelly fair manner.
+            if msg.find('PoliteDisconnect') == 0:
+                response = 'PoliteDisconnect: '
+                try:
                     if random.randint(0, 1) == 0:
                         response += 'Rejected\r\n\r\n'
                         sessionSocket.send(response)
@@ -144,12 +152,14 @@ if __name__ == '__main__':
                         sessionSocket.send(response)
                         print 'Accepted disconnect, awaiting another Hello'
                         break
-                # If the controller died horribly, we'll get a Hello instead
-                # We can just ignore this, since we'll get a timeout soon
-                # enough. Once we do, we'll start listening for Hellos again,
-                # and the controller will keep sending in the meantime.
-                elif msg.find('SessionPort') == 0:
-                    print 'Ignoring a Hello from a dead controller'
-                else:
-                    raise ValueError('Got nonsense from DGI:\n' + msg)
-
+                except socket.timeout:
+                    # do nothing, logic in below comment applies here
+                    print 'Controller timeout, sad DGI'
+            # If the controller died horribly, we'll get a Hello instead
+            # We can just ignore this, since we'll get a hb timeout soon
+            # enough. Once we do, we'll start listening for Hellos again,
+            # and the controller will keep sending in the meantime.
+            elif msg.find('SessionPort') == 0:
+                print 'Ignoring a Hello from a previously-dead controller'
+            else:
+                raise ValueError('Got nonsense from DGI:\n' + msg)

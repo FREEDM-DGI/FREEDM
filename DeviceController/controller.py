@@ -74,9 +74,11 @@ def reconnect(dgiHostname, dgiPort, listenPort, devices):
     acceptorSocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     acceptorSocket.bind(('', int(listenPort)))
     acceptorSocket.listen(0)
+    acceptorSocket.settimeout(5)
 
     # Connect to DGI on preconfigured port
     initiationSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    initiationSocket.settimeout(5)
     initiationSocket.connect((dgiHostname, int(dgiPort)))
 
     # Construct the Hello message
@@ -86,7 +88,7 @@ def reconnect(dgiHostname, dgiPort, listenPort, devices):
         devicePacket += deviceType + ' ' + deviceName + '\r\n'
     devicePacket += '\r\n'
     
-    # Send Hello to DGI, as many times as necessary until response received
+    # Send Hello to DGI, as many times as necessary until acknowledged
     startMsg = ''
     while True:
         initiationSocket.send(devicePacket)
@@ -112,7 +114,7 @@ def reconnect(dgiHostname, dgiPort, listenPort, devices):
     return (startMsg[1], startMsg[3])
 
 
-def politeQuit(statePort, listenPort):
+def politeQuit(dgiHostname, statePort, listenPort):
     """
     Sends a quit request to DGI and returns once the request has been approved.
     If the request is not initially approved, continues to send device states
@@ -122,44 +124,58 @@ def politeQuit(statePort, listenPort):
 
     while not accepted:
         # TODO - we don't actually have device states yet, yo.
-        # So just keep trying to quit until it works.
+        # So just keep trying to quit until it works. Or DGI times out.
         acceptorSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         acceptorSocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         acceptorSocket.bind(('', int(listenPort)))
         acceptorSocket.listen(0)
+        acceptorSocket.settimeout(5)
+
+        try:
+            print 'Sending PoliteDisconnect request to DGI'
+            stateSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            stateSocket.settimeout(5)
+            stateSocket.connect((dgiHostname, int(statePort)))
+            stateSocket.send('PoliteDisconnect\r\n\r\n')
+            
+            responseSocket, address = acceptorSocket.accept()
+            acceptorSocket.close()
+            msg = responseSocket.recv(32)
         
-        print 'Sending PoliteDisconnect request to DGI'
-        dgiStatePort.send('PoliteDisconnect\r\n\r\n')
-        
-        responseSocket, address = acceptorSocket.accept()
-        acceptorSocket.close()
-        msg = responseSocket.recv(32)
-        
-        if 'Accepted' in msg:
-            accepted = True
-            print 'Disconnect request accepted, yay!'
-        elif 'Rejected' in msg:
-            print 'Disconnect request rejected, booo'
-        else:
-            raise ValueError('Disconnect request response malformed:\n' + msg)
+            if 'Accepted' in msg:
+                accepted = True
+                print 'Disconnect request accepted, yay!'
+            elif 'Rejected' in msg:
+                print 'Disconnect request rejected, booo'
+            else:
+                raise ValueError('Received malformed response to disconnect'
+                                 ' request:\n' + msg)
+        except socket.timeout:
+            print 'DGI timed out, sending a new Hello'
 
 
 def heartbeat(dgiHostname, hbPort):
     """
     A heartbeat must be sent to DGI each second. Right now this is done by
-    initiating a new TCP connection. Definitely not an appropriate long-term
-    solution. Calling this function causes a second of sleep, but will probably
-    take more than one second due to network delays.
+    initiating a new TCP connection. Calling this function causes a second of
+    sleep, but will probably take more than one second due to network delays.
 
     @param dgiHostname the host to send the heartbeat request to
     @param hbPort the port to send the heartbeat request to
+
+    @return True on success, False if we lost connection to DGI
     """
     print 'Sending heartbeat to' + dgiHostname + ' ' + hbPort
     hbSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    hbSocket.connect((dgiHostname, int(hbPort)))
-    time.sleep(0.5)
-    hbSocket.close()
-    time.sleep(0.5)
+    hbSocket.settimeout(2)
+    try:
+        hbSocket.connect((dgiHostname, int(hbPort)))
+        hbSocket.close()
+        time.sleep(1)
+        return True
+    except socket.timeout:
+        print 'The DGI has timed out, controller is sad'
+        return False
 
 
 if __name__ == '__main__':
@@ -195,13 +211,13 @@ if __name__ == '__main__':
         if command.find('enable') == 0:
             enableDevice(devices, command)
             if dgiStatePort >= 0:
-                politeQuit(dgiStatePort, listenPort)
+                politeQuit(dgiHostname, dgiStatePort, listenPort)
             dgiStatePort, hbPort = reconnect(dgiHostname, dgiPort, listenPort,
                                           devices)
         elif command.find('disable') == 0:
             disableDevice(devices, command)
             if dgiStatePort >= 0:
-                politeQuit(dgiStatePort, listenPort)
+                politeQuit(dgiHostname, dgiStatePort, listenPort)
             dgiStatePort, hbPort = reconnect(dgiHostname, dgiPort, listenPort,
                                           devices)
         elif command.find('dieHorribly') == 0:
@@ -218,21 +234,15 @@ if __name__ == '__main__':
             for i in range(duration):
                 if hbPort >= 0:
                     print 'Sleep ' + str(i)
-                    try:
-                        heartbeat(dgiHostname, hbPort)
-                    except socket.timeout:
-                        print 'Timeout from DGI, sending a new Hello...'
+                    if not heartbeat(dgiHostname, hbPort):
                         dgiStatePort, hbPort = reconnect(dgiHostname, dgiPort,
-                                                      listenPort, devices)
+                                                         listenPort, devices)
         else:
-            raise ValueError('Found weird command ' + command)
+            raise ValueError('Script has weird command ' + command)
 
         if hbPort >= 0:
-            try:
-                heartbeat(dgiHostname, hbPort)
-            except socket.timeout:
-                print 'Timeout from DGI, sending a new Hello...'
-                dgiStatePort, hbPort = reconnect(dgiHostname, dgiPort,
-                                                 listenPort, devices)
+                if not heartbeat(dgiHostname, hbPort):
+                    dgiStatePort, hbPort = reconnect(dgiHostname, dgiPort,
+                                                     listenPort, devices)
 
     close(script)

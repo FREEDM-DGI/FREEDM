@@ -96,8 +96,12 @@ if __name__ == '__main__':
             
         sessionSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         controllerHostname, dontcarePort = address
-        sessionSocket.connect((controllerHostname, sessionPort))
-        sessionSocket.settimeout(4)
+        sessionSocket.settimeout(2)
+        try:
+            sessionSocket.connect((controllerHostname, sessionPort))
+        except socket.error:
+            print "Can't connect to controller, awaiting another Hello"
+            sleep(1)
         try:
             sessionSocket.send(startMsg)
             print 'Sent startMsg to the controller:\n' + startMsg

@@ -74,7 +74,7 @@ def reconnect(dgiHostname, dgiPort, listenPort, devices):
     acceptorSocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     acceptorSocket.bind(('', int(listenPort)))
     acceptorSocket.listen(0)
-    acceptorSocket.settimeout(3)
+    acceptorSocket.settimeout(2)
 
     # Construct the Hello message
     devicePacket = 'SessionPort: ' + listenPort + '\r\n'
@@ -84,7 +84,7 @@ def reconnect(dgiHostname, dgiPort, listenPort, devices):
     devicePacket += '\r\n'
 
     initiationSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    initiationSocket.settimeout(3)
+    initiationSocket.settimeout(2)
     
     # Send Hello to DGI, as many times as necessary until acknowledged
     startMsg = ''
@@ -105,9 +105,11 @@ def reconnect(dgiHostname, dgiPort, listenPort, devices):
                 raise
             finally:
                 clientSocket.close()
+        except socket.timeout:
+            print 'Timeout awaiting start from DGI, resending Hello'
         except socket.error:
-            # FIXME - can't figure out why, but this infinite loops...
-            print 'Timeout awaiting Start from DGI, resending Hello'
+            print 'Fail, probably in connecting to DGI, resending Hello'
+            time.sleep(1)
         finally:
             initiationSocket.close()
 
@@ -135,12 +137,12 @@ def politeQuit(dgiHostname, statePort, listenPort):
         acceptorSocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         acceptorSocket.bind(('', int(listenPort)))
         acceptorSocket.listen(0)
-        acceptorSocket.settimeout(5)
+        acceptorSocket.settimeout(2)
 
         try:
             print 'Sending PoliteDisconnect request to DGI'
             stateSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            stateSocket.settimeout(5)
+            stateSocket.settimeout(2)
             stateSocket.connect((dgiHostname, int(statePort)))
             stateSocket.send('PoliteDisconnect\r\n\r\n')
             
@@ -180,7 +182,7 @@ def heartbeat(dgiHostname, hbPort):
         time.sleep(1)
         return True
     except socket.error:
-        print 'The DGI has timed out, controller is sad'
+        print 'The DGI has timed out, and the controller is sad'
         return False
 
 

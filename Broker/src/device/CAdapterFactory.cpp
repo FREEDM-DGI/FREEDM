@@ -170,7 +170,7 @@ void CAdapterFactory::CreateAdapter(const boost::property_tree::ptree & p)
     }
     catch( std::exception & e )
     {
-        throw std::runtime_error("Failed to create adapter: " + e.what());
+        throw std::runtime_error("Failed to create adapter: " + std::string(e.what()));
     }
     
     Logger.Debug << "Building " << type << " adapter " << name << std::endl;
@@ -352,7 +352,7 @@ void CAdapterFactory::InitializeAdapter(IAdapter::Pointer adapter,
         }
         catch( std::exception & e )
         {
-            throw std::runtime_error("Failed to create adapter: " + e.what());
+            throw std::runtime_error("Failed to create adapter: " + std::string(e.what()));
         }
         
         BOOST_FOREACH(boost::property_tree::ptree::value_type & child, subtree)
@@ -367,7 +367,7 @@ void CAdapterFactory::InitializeAdapter(IAdapter::Pointer adapter,
             catch( std::exception & e )
             {
                 throw std::runtime_error("Failed to create adapter: "
-                        + e.what());
+                        + std::string(e.what()));
             }
             
             Logger.Debug << "At index " << index << " for the device signal ("
@@ -427,7 +427,7 @@ unsigned short CAdapterFactory::GetPortNumber()
     
     if( it == m_ports.end() )
     {
-        std::runtime_exception("The adapter factory does not have enough "
+        std::runtime_error("The adapter factory does not have enough "
                 + std::string("available port numbers."));
     }
     
@@ -464,7 +464,7 @@ void CAdapterFactory::SessionProtocol(IServer::Pointer connection)
     }
     else
     {
-        throw std::runtime_exception("Received a null client connection.");
+        throw std::runtime_error("Received a null client connection.");
     }
     
     // check for duplicate session
@@ -492,7 +492,7 @@ void CAdapterFactory::SessionProtocol(IServer::Pointer connection)
         }
         else
         {
-            throw std::runtime_exception("Received a null client connection.");
+            throw std::runtime_error("Received a null client connection.");
         }
     }
     else
@@ -511,7 +511,7 @@ void CAdapterFactory::SessionProtocol(IServer::Pointer connection)
             adapter.put("<xmlattr>.type", "arm");
             adapter.put("info.stateport", statePort);
             adapter.put("info.heartport", heartbeatPort);
-            adapter.put("info.host", m_server->GetHostname);
+            adapter.put("info.host", m_server->GetHostname());
             adapter.put("info.port", identifier);
             
             response << "StatePort: " << statePort << "\r\n";
@@ -520,7 +520,7 @@ void CAdapterFactory::SessionProtocol(IServer::Pointer connection)
         }
         else
         {
-            throw std::runtime_exception("Received a null client connection.");
+            throw std::runtime_error("Received a null client connection.");
         }
 
         // create the devices

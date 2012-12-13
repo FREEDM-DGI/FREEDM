@@ -104,7 +104,7 @@ protected:
     std::string m_identifier;
     
     /// Adapter that implements the get and set functions.
-    IADapter::Pointer m_adapter;
+    IAdapter::Pointer m_adapter;
     
     /// Set of state signals.
     std::set<std::string> m_StateSet;

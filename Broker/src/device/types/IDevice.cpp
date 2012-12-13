@@ -70,7 +70,7 @@ IDevice::IDevice(const std::string identifier, IAdapter::Pointer adapter)
 ///
 /// @limitations None.
 ////////////////////////////////////////////////////////////////////////////////
-virtual IDevice::~IDevice()
+IDevice::~IDevice()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 }

@@ -116,7 +116,7 @@ int main(int argc, char* argv[])
                 ( "factory-port", po::value<unsigned short>(&fport)->
                 default_value(1610), "port for plug-and-play devices" )
                 ( "factory-tcp-port",
-                po::value<std::vector<std::string> >()->composing,
+                po::value<std::vector<std::string> >()->composing(),
                 "range of port numbers [start:end] for plug-and-play devices" )
                 ( "adapter-config", po::value<std::string>( &adapterCfgFile ),
                 "filename of the adapter specification for physical devices" )
@@ -237,7 +237,7 @@ int main(int argc, char* argv[])
 
         // configure the adapter factory
         device::CAdapterFactory::Instance();
-        CGlobalConfiguration::instance().SetFactoryPort(fport);
+        CGlobalConfiguration::instance().SetFactorySessionPort(fport);
         
         if( vm.count("factory-tcp-port") > 0 )
         {

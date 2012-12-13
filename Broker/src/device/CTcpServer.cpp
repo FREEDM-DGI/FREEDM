@@ -66,11 +66,12 @@ CTcpServer::CTcpServer(boost::asio::io_service & ios, unsigned short port)
     , m_port(port)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    
-    boost::asio::ip::tcp::endpoint endpoint(tcp::v4(), port);
+   
+    using boost::asio::ip::tcp; 
+    tcp::endpoint endpoint(tcp::v4(), port);
 
     m_acceptor.open(endpoint.protocol());
-    m_acceptor.set_option(boost::asio::ip::tcp::acceptor::reuse_address(true));
+    m_acceptor.set_option(tcp::acceptor::reuse_address(true));
     m_acceptor.bind(endpoint);
     m_acceptor.listen();
 
@@ -183,7 +184,7 @@ void CTcpServer::SendData(const std::string data)
         throw std::runtime_error("The server tried to send a corrupt packet.");
     }
     
-    packet_stream << str;
+    packet_stream << data;
     
     Logger.Info << "Blocking to send data on port " << m_port << std::endl;
     boost::asio::write(m_socket, packet);

@@ -61,7 +61,7 @@ class CGlobalConfiguration : public boost::noncopyable
         void SetClockSkew(boost::posix_time::time_duration t) 
                 { m_clockskew = t; };
         /// Set the plug-and-play port number
-        void SetFactoryPort(unsigned short port) { m_factory_port = port; }
+        void SetFactorySessionPort(unsigned short port) { m_factory_port = port; }
         /// Get the hostname
         std::string GetHostname() const { return m_hostname; };
         /// Get the port
@@ -71,7 +71,7 @@ class CGlobalConfiguration : public boost::noncopyable
         /// Get the address
         std::string GetListenAddress() const { return m_address; };
         /// Get the plug-and-play port number
-        unsigned short GetFactoryPort() const { return m_factory_port; }        
+        unsigned short GetFactorySessionPort() const { return m_factory_port; }        
         /// Get the Skew of the local clock
         boost::posix_time::time_duration GetClockSkew() const 
                 { return m_clockskew; };

@@ -42,7 +42,7 @@ class CDeviceFid
 {
 public:
     /// Convenience type for a shared pointer to self.
-    typedef boost::Shared_ptr<CDeviceFid> Poitner;
+    typedef boost::shared_ptr<CDeviceFid> Pointer;
     
     /// Constructor which takes an identifier and device adapter.
     CDeviceFid(const std::string identifier, IAdapter::Pointer adapter);

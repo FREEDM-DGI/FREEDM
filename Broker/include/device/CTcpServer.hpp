@@ -57,7 +57,7 @@ public:
     void SendData(const std::string data);
     
     /// Gets the listen port of the TCP server.
-    std::string GetPort() const;
+    unsigned short GetPort() const;
     
     /// Gets the hostname of the connected client.
     std::string GetHostname() const;

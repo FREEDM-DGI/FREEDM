@@ -100,6 +100,18 @@ void CArmAdapter::Heartbeat()
     }
 }
 
+unsigned short CArmAdapter::GetStatePort() const
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    return m_StatePort;
+}
+
+unsigned short CArmAdapter::GetHeartbeatPort() const
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    return m_HeartbeatPort;
+}
+
 } // namespace device
 } // namespace broker
 } // namespace freedm

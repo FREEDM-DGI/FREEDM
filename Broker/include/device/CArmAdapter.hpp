@@ -5,7 +5,7 @@
 #include "ITcpAdapter.hpp"
 #include "CTcpServer.hpp"
 
-#include <boost/asio>
+#include <boost/asio.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/property_tree/ptree_fwd.hpp>
 

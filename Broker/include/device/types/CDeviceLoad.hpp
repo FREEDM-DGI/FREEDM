@@ -1,13 +1,13 @@
 ////////////////////////////////////////////////////////////////////////////////
-/// @file         CDeviceLoad.hpp
+/// @file           CDeviceLoad.hpp
 ///
-/// @author       Yaxi Liu <ylztf@mst.edu>
-/// @author       Thomas Roth <tprfh7@mst.edu>
-/// @author       Michael Catanzaro <michael.catanzaro@mst.edu>
+/// @author         Yaxi Liu <ylztf@mst.edu>
+/// @author         Thomas Roth <tprfh7@mst.edu>
+/// @author         Michael Catanzaro <michael.catanzaro@mst.edu>
 ///
-/// @project      FREEDM DGI
+/// @project        FREEDM DGI
 ///
-/// @description  Represents a load.
+/// @description    Represents a load.
 ///
 /// These source code files were created at Missouri University of Science and
 /// Technology, and are intended for use in teaching or research. They may be
@@ -27,17 +27,13 @@
 
 #include "IDevice.hpp"
 
-#include <string>
-
-#include <boost/shared_ptr.hpp>
-
 namespace freedm {
 namespace broker {
 namespace device {
 
 /// Device class for a load.
 ////////////////////////////////////////////////////////////////////////////////
-/// Provides a device interface which recognizes a load signal.
+/// Provides a device interface which recognizes a drain signal.
 ///
 /// @limitations None.
 ////////////////////////////////////////////////////////////////////////////////
@@ -46,23 +42,28 @@ class CDeviceLoad
 {
 public:
     /// Convenience type for a shared pointer to self.
-    typedef boost::shared_ptr<CDeviceLoad> Pointer;
-
-    /// Constructor which takes an identifier and internal structure.
-    CDeviceLoad(std::string device, IAdapter::Pointer adapter);
-
+    typedef boost::Shared_ptr<CDeviceLoad> Poitner;
+    
+    /// Constructor which takes an identifier and device adapter.
+    CDeviceLoad(const std::string identifier, IAdapter::Pointer adapter);
+    
     /// Virtual destructor for derived classes.
     virtual ~CDeviceLoad();
-
+    
+    /// Virtual constructor for another device of the same type.
+    IDevice::Pointer Create(const std::string identifier,
+            IAdapter::Pointer adapter) const;
+    
     /// Determine the energy drain of this load.
     SignalValue GetLoad() const;
 
     /// Increases the energy drain by the specified amount.
     void StepLoad(const SignalValue step = 1);
 private:
-    /// redefine base accessor as private
+    /// Redefine the base accessor as private.
     using IDevice::Get;
-    /// redefine base mutator as private
+    
+    /// Redefine the base mutator as private.
     using IDevice::Set;
 };
 

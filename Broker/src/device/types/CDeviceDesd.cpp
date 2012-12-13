@@ -1,18 +1,19 @@
 ////////////////////////////////////////////////////////////////////////////////
-/// @file         CDeviceDesd.cpp
+/// @file           CDeviceDesd.cpp
 ///
-/// @author       Michael Catanzaro <michael.catanzaro@mst.edu>
-/// @author       Thomas Roth <tprfh7@mst.edu>
+/// @author         Michael Catanzaro <michael.catanzaro@mst.edu>
+/// @author         Thomas Roth <tprfh7@mst.edu>
 ///
-/// @project      FREEDM DGI
+/// @project        FREEDM DGI
 ///
-/// @description  Represents a distributed energy storage device.
+/// @description    Represents a distributed energy storage device.
 ///
 /// @functions
-///     DeviceDesd::CDeviceDesd
-///     DeviceDesd::~CDeviceDesd
-///     DeviceDesd::GetStorage
-///     DeviceDesd::StepStorage
+///     CDeviceDesd::CDeviceDesd
+///     CDeviceDesd::~CDeviceDesd
+///     CDeviceDesd::Create
+///     CDeviceDesd::GetStorage
+///     CDeviceDesd::StepStorage
 ///
 /// These source code files were created at Missouri University of Science and
 /// Technology, and are intended for use in teaching or research. They may be
@@ -44,18 +45,19 @@ CLocalLogger Logger(__FILE__);
 ///
 /// @pre None.
 /// @post Constructs a new device.
-/// @param device The unique identifier for the device.
+/// @param identifier The unique identifier for the device.
 /// @param adapter The adapter that implements operations for this device.
 ///
 /// @limitations None.
 ////////////////////////////////////////////////////////////////////////////////
-CDeviceDesd::CDeviceDesd(std::string device, IAdapter::Pointer adapter)
-    : IDevice(device, adapter)
+CDeviceDesd::CDeviceDesd(const std::string identifier,
+        IAdapter::Pointer adapter)
+    : IDevice(identifier, adapter)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
-    m_commands.insert("storage");
-    m_states.insert("storage");
+    m_StateSet.insert("storage");
+    m_CommandSet.insert("storage");
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -69,6 +71,24 @@ CDeviceDesd::CDeviceDesd(std::string device, IAdapter::Pointer adapter)
 CDeviceDesd::~CDeviceDesd()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/// Constructs another DESD.
+///
+/// @pre None.
+/// @post Constructs a new device.
+/// @param identifier The unique identifier for the device.
+/// @param adapter The adapter that implements operations for the device.
+/// @return shared pointer to the new device.
+///
+/// @limitations None.
+////////////////////////////////////////////////////////////////////////////////
+IDevice::Pointer CDeviceDesd::Create(const std::string identifier,
+        IAdapter::Pointer adapter) const
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    return IDevice::Pointer(new CDeviceDesd(identifier, adapter));
 }
 
 ////////////////////////////////////////////////////////////////////////////////

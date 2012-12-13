@@ -1,16 +1,17 @@
 ////////////////////////////////////////////////////////////////////////////////
-/// @file         CDeviceLoad.cpp
+/// @file           CDeviceLoad.cpp
 ///
-/// @author       Michael Catanzaro <michael.catanzaro@mst.edu>
-/// @author       Thomas Roth <tprfh7@mst.edu>
+/// @author         Michael Catanzaro <michael.catanzaro@mst.edu>
+/// @author         Thomas Roth <tprfh7@mst.edu>
 ///
-/// @project      FREEDM DGI
+/// @project        FREEDM DGI
 ///
-/// @description  Represents a load.
+/// @description    Represents a load.
 ///
 /// @functions
 ///     CDeviceLoad::CDeviceLoad
 ///     CDeviceLoad::~CDeviceLoad
+///     CDeviceLoad::Create
 ///     CDeviceLoad::GetLoad
 ///     CDeviceLoad::StepLoad
 ///
@@ -44,18 +45,19 @@ CLocalLogger Logger(__FILE__);
 ///
 /// @pre None.
 /// @post Constructs a new device.
-/// @param device The unique identifier for the device.
+/// @param identifier The unique identifier for the device.
 /// @param adapter The adapter that implements operations for this device.
 ///
 /// @limitations None.
 ////////////////////////////////////////////////////////////////////////////////
-CDeviceLoad::CDeviceLoad(std::string device, IAdapter::Pointer adapter)
-    : IDevice(device, adapter)
+CDeviceLoad::CDeviceLoad(const std::string identifier,
+        IAdapter::Pointer adapter)
+    : IDevice(identifier, adapter)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
-    m_commands.insert("drain");
-    m_states.insert("drain");
+    m_StateSet.insert("drain");
+    m_CommandSet.insert("drain");
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -69,6 +71,24 @@ CDeviceLoad::CDeviceLoad(std::string device, IAdapter::Pointer adapter)
 CDeviceLoad::~CDeviceLoad()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/// Constructs another load.
+///
+/// @pre None.
+/// @post Constructs a new device.
+/// @param identifier The unique identifier for the device.
+/// @param adapter The adapter that implements operations for the device.
+/// @return shared pointer to the new device.
+///
+/// @limitations None.
+////////////////////////////////////////////////////////////////////////////////
+IDevice::Pointer CDeviceLoad::Create(const std::string identifier,
+        IAdapter::Pointer adapter) const
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    return IDevice::Pointer(new CDeviceLoad(identifier, adapter));
 }
 
 ////////////////////////////////////////////////////////////////////////////////

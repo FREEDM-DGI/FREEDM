@@ -5,8 +5,9 @@
 #include "ITcpAdapter.hpp"
 #include "CTcpServer.hpp"
 
+#include <boost/asio>
 #include <boost/shared_ptr.hpp>
-#include <boost/property_tree/ptree.hpp>
+#include <boost/property_tree/ptree_fwd.hpp>
 
 namespace freedm {
 namespace broker {
@@ -17,11 +18,15 @@ class CArmAdapter
     , public ITcpAdapter
 {
 public:
+    /// Convenience type for a shared pointer to self.
     typedef boost::shared_ptr<CArmAdapter> Pointer;
 
     static IAdapter::Pointer Create(boost::asio::io_service & service,
-        boost::property_tree::ptree & p);
+            boost::property_tree::ptree & p);
 
+    unsigned short GetStatePort() const;
+    unsigned short GetHeartbeatPort() const;
+    void Heartbeat();
     void Start();
     void Quit();
     void Timeout(const boost::system::error_code & e);
@@ -29,13 +34,17 @@ public:
     ~CArmAdapter();
 private:
     CArmAdapter(boost::asio::io_service & service,
-        boost::property_tree::ptree & p);
+            boost::property_tree::ptree & p);
 
-    void HandleConnection(IServer::Pointer connection);
+    void HandleHeartbeat(IServer::Pointer connection);
+    void HandleState(IServer::Pointer connection);
 
     boost::asio::deadline_timer m_timer;
-    CTcpServer::Pointer m_server;
-    unsigned short m_port;
+    CTcpServer::Pointer m_HeartbeatServer;
+    CTcpServer::Pointer m_StateServer;
+    unsigned short m_HeartbeatPort;
+    unsigned short m_StatePort;
+    std::string m_identifier;
 };
 
 } // namespace device

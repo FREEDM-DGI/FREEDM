@@ -115,6 +115,9 @@ int main(int argc, char* argv[])
                 "TCP port to listen on" )
                 ( "factory-port", po::value<unsigned short>(&fport)->
                 default_value(1610), "port for plug-and-play devices" )
+                ( "factory-tcp-port",
+                po::value<std::vector<std::string> >()->composing,
+                "range of port numbers [start:end] for plug-and-play devices" )
                 ( "adapter-config", po::value<std::string>( &adapterCfgFile ),
                 "filename of the adapter specification for physical devices" )
                 ( "list-loggers", "Print all the available loggers and exit" )
@@ -227,17 +230,64 @@ int main(int argc, char* argv[])
         CGlobalConfiguration::instance().SetListenAddress(listenIP);
         CGlobalConfiguration::instance().SetClockSkew(
                 boost::posix_time::milliseconds(0));
-        CGlobalConfiguration::instance().SetFactoryPort(fport);
         //constructors for initial mapping
         CConnectionManager conManager;
         ConnectionPtr newConnection;
         boost::asio::io_service ios;
 
         // configure the adapter factory
+        device::CAdapterFactory::Instance();
+        CGlobalConfiguration::instance().SetFactoryPort(fport);
+        
+        if( vm.count("factory-tcp-port") > 0 )
+        {
+            std::vector<std::string> v;
+            
+            v = vm["factory-tcp-port"].as<std::vector<std::string> >();
+            
+            BOOST_FOREACH(std::string str, v)
+            {
+                std::string start, end;
+                std::size_t delim;
+                int i, n;
+                
+                delim = str.find(":");
+                start = str.substr(0, delim);
+                
+                if( delim != std::string::npos )
+                {
+                    end = str.substr(delim);
+                }
+                else
+                {
+                    end = start;
+                }
+                
+                try
+                {
+                    i = boost::lexical_cast<unsigned short>(start);
+                    n = boost::lexical_cast<unsigned short>(end);
+                }
+                catch(std::exception & e)
+                {
+                    throw std::runtime_error("Bad port specification: " + str);
+                }
+                
+                for( /* skip */; i <= n; i++ )
+                {
+                    device::CAdapterFactory::Instance().AddPortNumber(i);
+                }
+            }
+        }
+        else
+        {
+            Logger.Warn << "No ports specified for the factory." << std::endl;
+        }
+        
         if( vm.count("adapter-config") > 0 )
         {
             Logger.Notice << "Reading the file " << adapterCfgFile
-                          << " to initialize the adapter factory." << std::endl;
+                    << " to initialize the adapter factory." << std::endl;
             try
             {
                 boost::property_tree::ptree adapterList;
@@ -259,10 +309,7 @@ int main(int argc, char* argv[])
         }
         else
         {
-            Logger.Notice << "No adapters specified." << std::endl;
-
-            // still need to create the factory for plug-and-play
-            device::CAdapterFactory::Instance();
+            Logger.Notice << "No device adapters specified." << std::endl;
         }
 
         // Instantiate Dispatcher for message delivery

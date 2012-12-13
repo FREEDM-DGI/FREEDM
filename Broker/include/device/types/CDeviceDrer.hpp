@@ -1,13 +1,13 @@
 ////////////////////////////////////////////////////////////////////////////////
-/// @file         CDeviceDrer.hpp
+/// @file           CDeviceDrer.hpp
 ///
-/// @author       Yaxi Liu <ylztf@mst.edu>
-/// @author       Thomas Roth <tprfh7@mst.edu>
-/// @author       Michael Catanzaro <michael.catanzaro@mst.edu>
+/// @author         Yaxi Liu <ylztf@mst.edu>
+/// @author         Thomas Roth <tprfh7@mst.edu>
+/// @author         Michael Catanzaro <michael.catanzaro@mst.edu>
 ///
-/// @project      FREEDM DGI
+/// @project        FREEDM DGI
 ///
-/// @description  Represents a distributed renewable energy resource.
+/// @description    Represents a distributed renewable energy resource.
 ///
 /// These source code files were created at Missouri University of Science and
 /// Technology, and are intended for use in teaching or research. They may be
@@ -27,10 +27,6 @@
 
 #include "IDevice.hpp"
 
-#include <string>
-
-#include <boost/shared_ptr.hpp>
-
 namespace freedm {
 namespace broker {
 namespace device {
@@ -46,13 +42,17 @@ class CDeviceDrer
 {
 public:
     /// Convenience type for a shared pointer to self.
-    typedef boost::shared_ptr<CDeviceDrer> Pointer;
-
-    /// Constructor which takes an identifier and internal structure.
-    CDeviceDrer(std::string device, IAdapter::Pointer adapter);
-
+    typedef boost::Shared_ptr<CDeviceDrer> Poitner;
+    
+    /// Constructor which takes an identifier and device adapter.
+    CDeviceDrer(const std::string identifier, IAdapter::Pointer adapter);
+    
     /// Virtual destructor for derived classes.
     virtual ~CDeviceDrer();
+    
+    /// Virtual constructor for another device of the same type.
+    IDevice::Pointer Create(const std::string identifier,
+            IAdapter::Pointer adapter) const;
     
     /// Determine the energy generation of the DRER.
     SignalValue GetGeneration() const;
@@ -60,9 +60,10 @@ public:
     /// Increases the energy generation by the specified amount.
     void StepGeneration(const SignalValue step = 1);
 private:
-    /// redefine base accessor as private
+    /// Redefine the base accessor as private.
     using IDevice::Get;
-    /// redefine base mutator as private
+    
+    /// Redefine the base mutator as private.
     using IDevice::Set;
 };
 

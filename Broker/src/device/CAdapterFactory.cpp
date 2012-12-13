@@ -1,22 +1,25 @@
-///////////////////////////////////////////////////////////////////////////////
-/// @file         CAdapterFactory.cpp
+////////////////////////////////////////////////////////////////////////////////
+/// @file           CAdapterFactory.cpp
 ///
-/// @author       Thomas Roth <tprfh7@mst.edu>
-/// @author       Michael Catanzaro <michael.catanzaro@mst.edu>
+/// @author         Thomas Roth <tprfh7@mst.edu>
+/// @author         Michael Catanzaro <michael.catanzaro@mst.edu>
 ///
-/// @project      FREEDM DGI
+/// @project        FREEDM DGI
 ///
-/// @description  Handles the creation of device adapters.
+/// @description    Handles the creation of device adapters.
 ///
 /// @functions
 ///     CAdapterFactory::CAdapterFactory
 ///     CAdapterFactory::~CAdapterFactory
-///     CAdapterFactory::RunService
 ///     CAdapterFactory::Instance
+///     CAdapterFactory::RunService
 ///     CAdapterFactory::CreateAdapter
-///     CAdapterFactory::RegisterDeviceClass
-///     CAdapterFactory::InitializeBuffer
+///     CAdapterFactory::RemoveAdapter
+///     CAdapterFactory::AddPortNumber
 ///     CAdapterFactory::CreateDevice
+///     CAdapterFactory::InitializeAdapter
+///     CAdapterFactory::GetPortNumber
+///     CAdapterFactory::SessionProtocol
 ///
 /// These source code files were created at Missouri University of Science and
 /// Technology, and are intended for use in teaching or research. They may be
@@ -29,7 +32,7 @@
 /// Suggested modifications or questions about these files can be directed to
 /// Dr. Bruce McMillin, Department of Computer Science, Missouri University of
 /// Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 
 #include "CAdapterFactory.hpp"
 #include "IBufferAdapter.hpp"
@@ -38,7 +41,6 @@
 #include "CArmAdapter.hpp"
 #include "CGlobalConfiguration.hpp"
 
-#include <set>
 #include <sstream>
 #include <utility>
 
@@ -55,38 +57,42 @@ namespace {
 CLocalLogger Logger(__FILE__);
 }
 
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 /// Constructs an uninitialized factory.
 ///
 /// @pre None.
 /// @post Registers the recognized device classes.
 /// @post Launches an i/o service on a separate thread.
+/// @post Initializes the TCP server for the session protocol.
 ///
 /// @limitations None.
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 CAdapterFactory::CAdapterFactory()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
     CTcpServer::ConnectionHandler handler;
-    unsigned short port = CGlobalConfiguration::instance().GetFactoryPort();
-    m_server = CTcpServer::Create(m_ios, port);
-
-    handler = boost::bind(&CAdapterFactory::SessionProtocol, this, _1);
+    unsigned short port;
+    
+    RegisterDevices();
+    
+    // initialize the TCP variant of the session layer protocol
+    port        = CGlobalConfiguration::instance().GetFactorySessionPort();
+    handler     = boost::bind(&CAdapterFactory::SessionProtocol, this, _1);
+    m_server    = CTcpServer::Create(m_ios, port);
     m_server->RegisterHandler(handler);
 
-    RegisterDevices();
     m_thread = boost::thread(boost::bind(&CAdapterFactory::RunService, this));
 }
 
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 /// Stops the i/o service and waits for its thread to complete.
 ///
 /// @pre None.
 /// @post m_ios is stopped and the object is destroyed.
 ///
 /// @limitations None.
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 CAdapterFactory::~CAdapterFactory()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
@@ -98,14 +104,30 @@ CAdapterFactory::~CAdapterFactory()
     m_thread.join();
 }
 
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+/// Retrieves the singleton factory instance.
+///
+/// @pre None.
+/// @post Creates a new factory on the first call.
+/// @return The global instance of CAdapterFactory.
+///
+/// @limitations None.
+////////////////////////////////////////////////////////////////////////////////
+CAdapterFactory & CAdapterFactory::Instance()
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    static CAdapterFactory instance;
+    return instance;
+}
+
+////////////////////////////////////////////////////////////////////////////////
 /// Runs the i/o service with an infinite workload.
 ///
 /// @pre None.
 /// @post Runs m_ios and blocks the calling thread.
 ///
 /// @limitations None.
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 void CAdapterFactory::RunService()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
@@ -116,93 +138,7 @@ void CAdapterFactory::RunService()
     Logger.Status << "Started the adapter i/o service." << std::endl;
 }
 
-///////////////////////////////////////////////////////////////////////////////
-/// Retrieves the singleton factory instance.
-///
-/// @pre None.
-/// @post Creates a new factory on the first call.
-/// @return The global instance of CAdapterFactory.
-///
-/// @limitations None.
-///////////////////////////////////////////////////////////////////////////////
-CAdapterFactory & CAdapterFactory::Instance()
-{
-    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    static CAdapterFactory instance;
-    return instance;
-}
-
-std::string CAdapterFactory::GetPortNumber() const
-{
-    return "14444";
-}
-
-// TODO: some of this stuff is TCP specific
-void CAdapterFactory::SessionProtocol(IServer::Pointer connection)
-{
-    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-
-    using boost::property_tree::ptree;
-
-    std::stringstream packet;
-    std::string port, hostname, clientport, devType, devName;
-    ptree adapter;
-    int si, ci; // state index, command index
-
-    // receive hello
-    packet << connection->ReceiveData();
-
-    port = GetPortNumber();
-    packet >> clientport;
-    hostname = m_server->GetHostname();
-    
-    adapter.put("<xmlattr>.name", port);
-    adapter.put("<xmlattr>.type", "arm");
-    adapter.put("info.listenport", port);
-    adapter.put("info.host", hostname);
-    adapter.put("info.port", clientport);
-
-    si = 1;
-    ci = 1;
-    for( int i = 0; packet >> devType, packet >> devName; i++ )
-    {
-        if( m_prototype.count(devType) == 0 )
-        {
-            throw std::runtime_error("bad");
-        }
-
-        BOOST_FOREACH(std::string signal, m_prototype[devType]->GetStateSignals())
-        {
-            Logger.Debug << devType << " " << signal << " " << si << std::endl;
-            adapter.put("state." + devName + signal + ".type", devType);
-            adapter.put("state." + devName + signal + ".device", devName);
-            adapter.put("state." + devName + signal + ".signal", signal);
-            adapter.put("state." + devName + signal + ".<xmlattr>.index", si);
-
-            si++;
-        }
-
-        BOOST_FOREACH(std::string signal, m_prototype[devType]->GetCommandSignals())
-        {
-            Logger.Debug << devType << " " << signal << " " << ci << std::endl;
-            adapter.put("command." + devName + signal + ".type", devType);
-            adapter.put("command." + devName + signal + ".device", devName);
-            adapter.put("command." + devName + signal + ".signal", signal);
-            adapter.put("command." + devName + signal + ".<xmlattr>.index", ci);
-
-            ci++;
-        }
-    }
-
-    CreateAdapter(adapter);
-
-    // send start
-    connection->SendData(port);
-
-    Logger.Notice << "A wild client appears!" << std::endl;
-}
-
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 /// Creates a new adapter and all of its devices.  The adapter is registered
 /// with each device, and each device is registered with the stored device
 /// manager.  The adapter is configured to recognize its own device signals,
@@ -211,12 +147,12 @@ void CAdapterFactory::SessionProtocol(IServer::Pointer connection)
 /// @ErrorHandling Throws a std::runtime_error if the property tree is bad.
 /// @pre The adapter must not begin work until IAdapter::Start.
 /// @pre The adapter's devices must not be specified in other adapters.
-/// @post Calls CAdapterFactory::CreateDevice to create each device.
+/// @post Calls CAdapterFactory::InitializeAdapter to create devices.
 /// @post Starts the adapter through IAdapter::Start.
 /// @param p The property tree that specifies a single adapter.
 ///
 /// @limitations None.
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 void CAdapterFactory::CreateAdapter(const boost::property_tree::ptree & p)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
@@ -234,8 +170,7 @@ void CAdapterFactory::CreateAdapter(const boost::property_tree::ptree & p)
     }
     catch( std::exception & e )
     {
-        throw std::runtime_error("Failed to create adapter: "
-                + std::string(e.what()));
+        throw std::runtime_error("Failed to create adapter: " + e.what());
     }
     
     Logger.Debug << "Building " << type << " adapter " << name << std::endl;
@@ -247,7 +182,7 @@ void CAdapterFactory::CreateAdapter(const boost::property_tree::ptree & p)
     }
     else if( m_adapter.count(name) > 0 )
     {
-        throw std::runtime_error("Multiple adapters share name " + name);
+        throw std::runtime_error("Multiple adapters share the name " + name);
     }
     
     // create the adapter
@@ -278,46 +213,102 @@ void CAdapterFactory::CreateAdapter(const boost::property_tree::ptree & p)
     adapter->Start();
 }
 
-void CAdapterFactory::RemoveAdapter(std::string key)
+////////////////////////////////////////////////////////////////////////////////
+/// Removes an adapter and all of its associated devices.
+///
+/// @ErrorHandling Throws a std::runtime_error if no such adapter exists.
+/// @pre An adapter must exist with the provided identifier.
+/// @post Removes the specified adapter from m_adapter.
+/// @post Removes the adapter's devices from the device manager.
+/// @param identifier The identifier of the adapter to remove.
+///
+/// @limitations None.
+////////////////////////////////////////////////////////////////////////////////
+void CAdapterFactory::RemoveAdapter(const std::string identifier)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    std::set<std::string> devices = m_adapter[key]->GetDevices();
-    m_adapter.erase(key);
+    
+    std::set<std::string> devices;
+    CArmAdapter::Pointer arm;
+    
+    if( m_adapter.count(identifier) == 0 )
+    {
+        throw std::runtime_error("Attempted to remove an adapter that does "
+                + std::string("not exist: ") + identifier);
+    }
+    
+    devices = m_adapter[identifier]->GetDevices();   
+    arm = boost::dynamic_pointer_cast<CArmAdapter>(m_adapter[identifier]);
+    if( arm )
+    {
+        Logger.Debug << "Making old port numbers available." << std::endl;
+        m_ports.insert(arm->GetStatePort());
+        m_ports.insert(arm->GetHeartbeatPort());
+    }
+    m_adapter.erase(identifier);
     
     BOOST_FOREACH(std::string device, devices)
     {
-        Logger.Error << device << std::endl;
         CDeviceManager::Instance().RemoveDevice(device);
     }
 }
 
-
-///////////////////////////////////////////////////////////////////////////////
-/// Registers a create device function with the factory for the given key.
+////////////////////////////////////////////////////////////////////////////////
+/// Adds a port number to the list of available TCP ports.
 ///
-/// @ErrorHandling Throws a std::runtime_error if the key already exists.
-/// @pre The key should not already be registered with the factory.
-/// @post Stores the function in m_registry for internal use.
-/// @param key The unique identifier associated with the function.
-/// @param function The function to register with the factory.
+/// @pre None.
+/// @post Adds the port number to m_ports.
+/// @param port The port number to add to the available port set.
 ///
 /// @limitations None.
-///////////////////////////////////////////////////////////////////////////////
-void CAdapterFactory::RegisterDeviceClass(std::string key,
-        FactoryFunction function)
+////////////////////////////////////////////////////////////////////////////////
+void CAdapterFactory::AddPortNumber(const unsigned short port)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-
-    if( m_registry.count(key) > 0 )
-    {
-        throw std::runtime_error("Device type " + key + " already registered.");
-    }
-
-    m_registry.insert(std::make_pair(key, function));
-    Logger.Info << "Registered the device class " << key << "." << std::endl;
+    m_ports.insert(port);
 }
 
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+/// Creates a new device and registers it with the device manager.
+///
+/// @ErrorHandling Throws a std::runtime_error if the name is already in use,
+/// the type is not recognized, or the adapter is null.
+/// @pre Type must be registered with CAdapterFactory::RegisterDevicePrototype.
+/// @post Creates a new device using m_prototype[type].
+/// @post Adds the new device to the device manager.
+/// @param name The unique identifier for the device to be created.
+/// @param type The string identifier for the type of device to create.
+/// @param adapter The adapter that will handle the data of the new device.
+///
+/// @limitations The device types must be registered prior to this call.
+////////////////////////////////////////////////////////////////////////////////
+void CAdapterFactory::CreateDevice(const std::string name,
+        const std::string type, IAdapter::Pointer adapter)
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    
+    if( CDeviceManager::Instance().DeviceExists(name) )
+    {
+        throw std::runtime_error("The device " + name + " already exists.");
+    }
+    
+    if( m_prototype.count(type) == 0 )
+    {
+        throw std::runtime_error("Device type " + type + " is not registered.");
+    }
+    
+    if( !adapter)
+    {
+        throw std::runtime_error("Attempted to create device with no adapter");
+    }
+    
+    IDevice::Pointer device = m_prototype[type]->Create(name, adapter);
+    CDeviceManager::Instance().AddDevice(device);
+    
+    Logger.Info << "Created new device: " << name << std::endl;
+}
+
+////////////////////////////////////////////////////////////////////////////////
 /// Initializes an adapter to contain a set of device signals.
 ///
 /// @ErrorHandling Throws a std::runtime_error if the adapter is empty or the
@@ -328,7 +319,7 @@ void CAdapterFactory::RegisterDeviceClass(std::string key,
 /// @param p The property tree that contains the buffer data.
 ///
 /// @limitations None.
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 void CAdapterFactory::InitializeAdapter(IAdapter::Pointer adapter,
         const boost::property_tree::ptree & p)
 {
@@ -361,8 +352,7 @@ void CAdapterFactory::InitializeAdapter(IAdapter::Pointer adapter,
         }
         catch( std::exception & e )
         {
-            throw std::runtime_error("Failed to create adapter: "
-                    + std::string(e.what()));
+            throw std::runtime_error("Failed to create adapter: " + e.what());
         }
         
         BOOST_FOREACH(boost::property_tree::ptree::value_type & child, subtree)
@@ -377,7 +367,7 @@ void CAdapterFactory::InitializeAdapter(IAdapter::Pointer adapter,
             catch( std::exception & e )
             {
                 throw std::runtime_error("Failed to create adapter: "
-                        + std::string(e.what()));
+                        + e.what());
             }
             
             Logger.Debug << "At index " << index << " for the device signal ("
@@ -387,8 +377,8 @@ void CAdapterFactory::InitializeAdapter(IAdapter::Pointer adapter,
             if( devices.count(name) == 0 )
             {
                 CreateDevice(name, type, adapter);
-                devices.insert(name);
                 adapter->RegisterDevice(name);
+                devices.insert(name);
             }
             
             // check if the device recognizes the associated signal
@@ -416,30 +406,165 @@ void CAdapterFactory::InitializeAdapter(IAdapter::Pointer adapter,
     Logger.Debug << "Initialized the device adapter." << std::endl;
 }
 
-///////////////////////////////////////////////////////////////////////////////
-/// Calls a registered function to create a new device of the given type.
+////////////////////////////////////////////////////////////////////////////////
+/// Retrieves and consumes the next available TCP port number.
 ///
-/// @ErrorHandling Throws a std::runtime_error if type is not registered with
-/// the factory.
-/// @pre The type must be registered with CAdapterFactory::RegisterDeviceClass.
-/// @post Redirects the call to the templated CAdapterFactory::CreateDevice.
-/// @param name The unique identifier for the device to be created.
-/// @param type The type of device to create.
-/// @param adapter The adapter that will handle the data of the new device.
+/// @ErrorHandling Throws a std::runtime_exception if there are no available
+/// port numbers in m_ports.
+/// @pre m_ports must contain at least one unassigned element.
+/// @post Removes and returns the first port number in m_ports.
+/// @return The next available port number for a TCP server.
 ///
-/// @limitations The device types must be registered prior to this call.
-///////////////////////////////////////////////////////////////////////////////
-void CAdapterFactory::CreateDevice(std::string name, std::string type,
-        IAdapter::Pointer adapter)
+/// @limitations None.
+////////////////////////////////////////////////////////////////////////////////
+unsigned short CAdapterFactory::GetPortNumber()
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    std::set<unsigned short>::iterator it;
+    unsigned short port;
+    
+    it = m_ports.begin();
+    
+    if( it == m_ports.end() )
+    {
+        std::runtime_exception("The adapter factory does not have enough "
+                + std::string("available port numbers."));
+    }
+    
+    port = *it;
+    m_ports.erase(it);
+    Logger.Debug << "Consumed the port number: " << port << std::endl;
+    
+    return port;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/// I HAVE BEEN COMMENTING ALL DAY - GIVE ME A BREAK.
+////////////////////////////////////////////////////////////////////////////////
+void CAdapterFactory::SessionProtocol(IServer::Pointer connection)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     
-    if( m_registry.count(type) == 0 )
+    boost::property_tree::ptree adapter;
+    std::set<std::string> states, commands;
+    std::stringstream packet, response;
+    std::string identifier, deviceType, deviceName, entry;
+    unsigned short statePort, heartbeatPort;
+    int stateIndex = 0, commandIndex = 0;
+    
+    Logger.Notice << "A wild client appears!" << std::endl;
+    
+    // receive hello
+    packet << connection->ReceiveData();
+    
+    // get session information
+    if( connection == m_server )
     {
-        throw std::runtime_error("Device type " + type + " is not registered.");
+        packet >> identifier >> identifier;
+    }
+    else
+    {
+        throw std::runtime_exception("Received a null client connection.");
     }
     
-    (this->*m_registry[type])(name, adapter);
+    // check for duplicate session
+    if( m_adapter.count(identifier) > 0 )
+    {
+        // is it possible for the adapter to be destroyed before between these?
+        IAdapter::Pointer adapter = m_adapter[identifier];
+        
+        if( connection == m_server )
+        {
+            CArmAdapter::Pointer arm;
+            
+            arm = boost::dynamic_pointer_cast<CArmAdapter>(adapter);
+            
+            if( !arm )
+            {
+                throw std::runtime_error("Well this is embarassing.");
+            }
+            
+            arm->Heartbeat();
+            
+            response << "StatePort: " << arm->GetStatePort() << "\r\n";
+            response << "HeartbeatPort: " << arm->GetHeartbeatPort() << "\r\n";
+            response << "\r\n";
+        }
+        else
+        {
+            throw std::runtime_exception("Received a null client connection.");
+        }
+    }
+    else
+    {
+        if( connection == m_server )
+        {
+            if( m_ports.size() < 2 )
+            {
+                throw std::runtime_error("Insufficient ports for new adapter.");
+            }
+            
+            statePort = GetPortNumber();
+            heartbeatPort = GetPortNumber();
+            
+            adapter.put("<xmlattr>.name", identifier);
+            adapter.put("<xmlattr>.type", "arm");
+            adapter.put("info.stateport", statePort);
+            adapter.put("info.heartport", heartbeatPort);
+            adapter.put("info.host", m_server->GetHostname);
+            adapter.put("info.port", identifier);
+            
+            response << "StatePort: " << statePort << "\r\n";
+            response << "HeartbeatPort: " << heartbeatPort << "\r\n";
+            response << "\r\n";
+        }
+        else
+        {
+            throw std::runtime_exception("Received a null client connection.");
+        }
+
+        // create the devices
+        for( int i = 0; packet >> deviceType >> deviceName; i++ )
+        {
+            if( m_prototype.count(deviceType) == 0 )
+            {
+                throw std::runtime_error("Unrecognized type: " + deviceType);
+            }
+            
+            deviceName = identifier + ":" + deviceName;
+            states = m_prototype[deviceType]->GetStateSet();
+            commands = m_prototype[deviceType]->GetCommandSet();
+
+            BOOST_FOREACH(std::string signal, states)
+            {
+                entry = deviceName + signal;
+                
+                adapter.put("state." + entry + ".type", deviceType);
+                adapter.put("state." + entry + ".device", deviceName);
+                adapter.put("state." + entry + ".signal", signal);
+                adapter.put("state." + entry + ".<xmlattr>.index", stateIndex);
+
+                stateIndex++;
+            }
+
+            BOOST_FOREACH(std::string signal, commands)
+            {
+                entry = deviceName + signal;
+                
+                adapter.put("command." + entry + ".type", deviceType);
+                adapter.put("command." + entry + ".device", deviceName);
+                adapter.put("command." + entry + ".signal", signal);
+                adapter.put("command." + entry + ".<xmlattr>.index", commandIndex);
+
+                commandIndex++;
+            }
+        }
+        
+        CreateAdapter(adapter);
+    }
+    
+    // send start
+    connection->SendData(response.str());
 }
 
 } // namespace device

@@ -236,13 +236,13 @@ int main(int argc, char* argv[])
         boost::asio::io_service ios;
 
         // configure the adapter factory
-        device::CAdapterFactory::Instance();
         CGlobalConfiguration::instance().SetFactorySessionPort(fport);
+        device::CAdapterFactory::Instance();
         
         if( vm.count("factory-tcp-port") > 0 )
         {
             std::vector<std::string> v;
-            
+    
             v = vm["factory-tcp-port"].as<std::vector<std::string> >();
             
             BOOST_FOREACH(std::string str, v)
@@ -256,13 +256,13 @@ int main(int argc, char* argv[])
                 
                 if( delim != std::string::npos )
                 {
-                    end = str.substr(delim);
+                    end = str.substr(delim+1);
                 }
                 else
                 {
                     end = start;
                 }
-                
+
                 try
                 {
                     i = boost::lexical_cast<unsigned short>(start);

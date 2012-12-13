@@ -450,7 +450,7 @@ void CAdapterFactory::SessionProtocol(IServer::Pointer connection)
     std::stringstream packet, response;
     std::string identifier, deviceType, deviceName, entry;
     unsigned short statePort, heartbeatPort;
-    int stateIndex = 0, commandIndex = 0;
+    int stateIndex = 1, commandIndex = 1;
     
     Logger.Notice << "A wild client appears!" << std::endl;
     
@@ -562,9 +562,18 @@ void CAdapterFactory::SessionProtocol(IServer::Pointer connection)
         
         CreateAdapter(adapter);
     }
-    
+
     // send start
-    connection->SendData(response.str());
+    if( connection == m_server )
+    {
+        CArmAdapter::Pointer arm;
+        arm = boost::dynamic_pointer_cast<CArmAdapter>(m_adapter[identifier]);
+        arm->Send(response.str());
+    }
+    else
+    {
+        throw std::runtime_error("tired of doing this");
+    }
 }
 
 } // namespace device

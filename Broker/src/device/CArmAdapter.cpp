@@ -48,6 +48,19 @@ void CArmAdapter::Start()
     m_timer.async_wait(boost::bind(&CArmAdapter::Timeout, this, _1));
 }
 
+void CArmAdapter::Send(const std::string data)
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+
+    boost::asio::streambuf packet;
+    std::ostream packet_stream(&packet);
+    packet_stream << data;
+
+    Connect();
+    boost::asio::write(m_socket, packet);
+    Quit();    
+}
+
 void CArmAdapter::Timeout(const boost::system::error_code & e)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
@@ -88,8 +101,8 @@ void CArmAdapter::HandleState(IServer::Pointer connection)
     {
         throw std::runtime_error("wat");
     }
-    
-    connection->SendData(response.str());
+
+    Send(response.str());
 }
 
 void CArmAdapter::Heartbeat()

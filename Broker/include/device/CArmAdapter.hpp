@@ -29,6 +29,7 @@ public:
     void Heartbeat();
     void Start();
     void Quit();
+    void Send(const std::string data);
     void Timeout(const boost::system::error_code & e);
 
     ~CArmAdapter();

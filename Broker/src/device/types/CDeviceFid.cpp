@@ -2,10 +2,16 @@
 /// @file         CDeviceFid.cpp
 ///
 /// @author       Michael Catanzaro <michael.catanzaro@mst.edu>
+/// @author       Thomas Roth <tprfh7@mst.edu>
 ///
 /// @project      FREEDM DGI
 ///
-/// @description  Represents an FID.
+/// @description  Represents a fault interruption device.
+///
+/// @functions
+///     CDeviceFid::CDeviceFid
+///     CDeviceFid::~CDeviceFid
+///     CDeviceFid::IsActive
 ///
 /// These source code files were created at Missouri University of Science and
 /// Technology, and are intended for use in teaching or research. They may be
@@ -20,39 +26,41 @@
 /// Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
 ////////////////////////////////////////////////////////////////////////////////
 
+#include "CDeviceFid.hpp"
 #include "CLogger.hpp"
-#include "device/types/CDeviceFid.hpp"
 
 namespace freedm {
 namespace broker {
 namespace device {
 
 namespace {
-
 /// This file's logger.
 CLocalLogger Logger(__FILE__);
-
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-/// CDeviceFid::CDeviceFid(Identifier, IPhysicalAdapter::AdapterPtr)
+/// Constructs the FID.
 ///
-/// @description Instantiates a device.
-///
-/// @param device The unique device identifier for the device.
+/// @pre None.
+/// @post Constructs a new device.
+/// @param device The unique identifier for the device.
 /// @param adapter The adapter that implements operations for this device.
+///
+/// @limitations None.
 ////////////////////////////////////////////////////////////////////////////////
-CDeviceFid::CDeviceFid(const Identifier device,
-        IPhysicalAdapter::Pointer adapter)
-: IDevice(device, adapter)
+CDeviceFid::CDeviceFid(std::string device, IAdapter::Pointer adapter)
+    : IDevice(device, adapter)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-/// CDeviceFid::~CDeviceFid()
+/// Virtual destructor for derived classes.
 ///
-/// @description Virtual destructor for derived classes.
+/// @pre None.
+/// @post Destructs the object.
+///
+/// @limitations None.
 ////////////////////////////////////////////////////////////////////////////////
 CDeviceFid::~CDeviceFid()
 {
@@ -60,11 +68,13 @@ CDeviceFid::~CDeviceFid()
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-/// CDeviceFid::IsActive() const
+/// Determines if the FID is active.
 ///
-/// @description Determines if this FID is active.
-///
+/// @pre None.
+/// @post Calls IAdapter::Get with the signal "state".
 /// @return True if this FID is active (good), or false otherwise (bad). 
+///
+/// @limitations None.
 ////////////////////////////////////////////////////////////////////////////////
 bool CDeviceFid::IsActive() const
 {
@@ -72,6 +82,6 @@ bool CDeviceFid::IsActive() const
     return Get("state") == 1.0;  // if not exactly 1, then something is wrong.
 }
 
-}
-}
-}
+} // namespace device
+} // namespace broker
+} // namespace freedm

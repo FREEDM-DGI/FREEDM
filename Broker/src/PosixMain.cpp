@@ -30,9 +30,8 @@
 #include "CLogger.hpp"
 #include "config.hpp"
 #include "CUuid.hpp"
-#include "device/CDeviceFactory.hpp"
-#include "device/CPhysicalDeviceManager.hpp"
-#include "device/PhysicalDeviceTypes.hpp"
+#include "CAdapterFactory.hpp"
+#include "PhysicalDeviceTypes.hpp"
 #include "gm/GroupManagement.hpp"
 #include "lb/LoadBalance.hpp"
 #include "sc/StateCollection.hpp"
@@ -43,6 +42,7 @@
 #include <sstream>
 #include <string>
 #include <vector>
+#include <stdexcept>
 
 #include <boost/asio.hpp>
 #include <boost/asio/ip/host_name.hpp> //for ip::host_name()
@@ -51,6 +51,8 @@
 #include <boost/foreach.hpp>
 #include <boost/program_options.hpp>
 #include <boost/thread.hpp>
+#include <boost/property_tree/ptree.hpp>
+#include <boost/property_tree/xml_parser.hpp>
 
 namespace po = boost::program_options;
 
@@ -70,16 +72,6 @@ const unsigned int COPYRIGHT_YEAR = 2012;
 /// Broker entry point
 int main(int argc, char* argv[])
 {
-#ifdef USE_DEVICE_PSCAD
-#ifdef USE_DEVICE_RTDS
-    std::cerr << "Looks like you have both PSCAD and RTDS device drivers turned"
-            " on. This is probably not what you want. Please run cmake . "
-            "-DSETTING=Off where SETTING is either USE_DEVICE_PSCAD or "
-            "USE_DEVICE_RTDS to turn one off." << std::endl;
-    return 1;
-#endif
-#endif
-
     CGlobalLogger::instance().SetGlobalLevel(3);
     // Variable Declaration
     po::options_description genOpts("General Options"),
@@ -88,11 +80,8 @@ int main(int argc, char* argv[])
     po::positional_options_description posOpts;
     po::variables_map vm;
     std::ifstream ifs;
-    std::string cfgFile, loggerCfgFile, fpgaCfgFile;
+    std::string cfgFile, loggerCfgFile, adapterCfgFile;
     std::string listenIP, port, uuidString, hostname, uuidgenerator;
-    // Line/RTDS Client options
-    std::string interHost;
-    std::string interPort;
     unsigned int globalVerbosity;
     CUuid uuid;
 
@@ -123,19 +112,8 @@ int main(int argc, char* argv[])
                 ( "port,p",
                 po::value<std::string > ( &port )->default_value("1870"),
                 "TCP port to listen on" )
-                ( "add-device,d",
-                po::value<std::vector<std::string> >( )->composing(),
-                "physical device name:type pair" )
-                ( "client-host,l",
-                po::value<std::string > ( &interHost )->default_value(""),
-                "Hostname to use for the lineclient/RTDSclient to connect." )
-                ( "client-port,q",
-                po::value<std::string > ( &interPort )->default_value("4001"),
-                "The port to use for the lineclient/RTDSclient to connect." )
-                ( "fpga-message",
-                po::value<std::string > ( &fpgaCfgFile )->
-                default_value("./config/FPGA.xml"),
-                "filename of the FPGA message specification" )
+                ( "adapter-config", po::value<std::string>( &adapterCfgFile ),
+                "filename of the adapter specification for physical devices" )
                 ( "list-loggers", "Print all the available loggers and exit" )
                 ( "logger-config",
                 po::value<std::string > ( &loggerCfgFile )->
@@ -208,8 +186,8 @@ int main(int argc, char* argv[])
         {
             std::cout << basename(argv[0]) << " (FREEDM DGI Revision "
                     << BROKER_VERSION << ")" << std::endl;
-            std::cout << "Copyright (C) " << COPYRIGHT_YEAR << " Missouri S&T. "
-                    << "All rights reserved." << std::endl;
+            std::cout << "Copyright (C) " << COPYRIGHT_YEAR
+                      << " NSF FREEDM Systems Center" << std::endl;
             return 0;
         }
 
@@ -248,27 +226,36 @@ int main(int argc, char* argv[])
                 boost::posix_time::milliseconds(0));
         //constructors for initial mapping
         CConnectionManager conManager;
-        device::CPhysicalDeviceManager::Pointer 
-            phyManager(new broker::device::CPhysicalDeviceManager());
         ConnectionPtr newConnection;
         boost::asio::io_service ios;
 
-        // configure the device factory
-        // interHost is the hostname of the machine that runs the simulation
-        // interPort is the port number this DGI and simulation communicate in
-        device::CDeviceFactory::instance().init(
-                phyManager, ios, fpgaCfgFile, interHost, interPort);
-
-        // Create Devices
-        if (vm.count("add-device") > 0)
+        // configure the adapter factory
+        if( vm.count("adapter-config") > 0 )
         {
-            device::RegisterPhysicalDevices();
-            device::CDeviceFactory::instance().CreateDevices(
-                    vm["add-device"].as< std::vector<std::string> >( ));
+            Logger.Notice << "Reading the file " << adapterCfgFile
+                          << " to initialize the adapter factory." << std::endl;
+            try
+            {
+                boost::property_tree::ptree adapterList;
+                boost::property_tree::read_xml(adapterCfgFile, adapterList);
+                
+                BOOST_FOREACH(boost::property_tree::ptree::value_type & t,
+                        adapterList.get_child("root"))
+                {
+                    device::CAdapterFactory::Instance().CreateAdapter(t.second);
+                }
+            }
+            catch( std::exception & e )
+            {
+                std::stringstream ss;
+                ss << "Failed to configure the adapter factory: " << e.what();
+                throw std::runtime_error(ss.str());
+            }
+            Logger.Notice << "Initialized the adapter factory." << std::endl;
         }
         else
         {
-            Logger.Notice << "No physical devices specified." << std::endl;
+            Logger.Notice << "No adapters specified." << std::endl;
         }
 
         // Instantiate Dispatcher for message delivery
@@ -283,15 +270,15 @@ int main(int argc, char* argv[])
         ss << uuid;
         ss >> uuidstr;
         // Instantiate and register the group management module
-        gm::GMAgent GM(uuidstr, broker, phyManager);
+        gm::GMAgent GM(uuidstr, broker);
         broker.RegisterModule("gm",boost::posix_time::milliseconds(400));
-        dispatch.RegisterReadHandler("gm", "gm", &GM);
+        dispatch.RegisterReadHandler("gm", "any", &GM);
         // Instantiate and register the state collection module
-        sc::SCAgent SC(uuidstr, broker, phyManager);
+        sc::SCAgent SC(uuidstr, broker);
         broker.RegisterModule("sc",boost::posix_time::milliseconds(400));
         dispatch.RegisterReadHandler("sc", "any", &SC);
         // Instantiate and register the power management module
-        lb::LBAgent LB(uuidstr, broker, phyManager);
+        lb::LBAgent LB(uuidstr, broker);
         broker.RegisterModule("lb",boost::posix_time::milliseconds(400));
         dispatch.RegisterReadHandler("lb", "lb", &LB);
 
@@ -310,7 +297,7 @@ int main(int argc, char* argv[])
                 if (idx == std::string::npos)
                 { // Not found!
                     std::cerr << "Incorrectly formatted host in config file: "
-                            << s << std::endl;
+                              << s << std::endl;
                     continue;
                 }
 
@@ -340,7 +327,7 @@ int main(int argc, char* argv[])
         broker.Schedule("lb", boost::bind(&lb::LBAgent::Run, &LB), false);
         broker.Run();
     }
-    catch (std::exception& e)
+    catch (std::exception & e)
     {
         Logger.Error << "Exception caught in main: " << e.what() << std::endl;
     }

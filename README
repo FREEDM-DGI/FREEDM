@@ -19,10 +19,10 @@ Science and Technology, Rolla, MO 65409 <ff@mst.edu>
 Building This Project
 
 1. Begin by installing Boost. We recommend installing the version of Boost
-provided by your system's package manager. Very old systems may require you
-manually build a newer version of Boost, since we do make use of relatively new
-Boost features. We currently test FREEDM on Boost 1.50. See the Boost website
-for assistance if you think you will need to build this version yourself.
+provided by your system's package manager. Old systems may require you to
+manually build a newer version, since we may make use of relatively new Boost
+features. We currently test FREEDM on Boost 1.50. See the Boost website for
+assistance if you think you will need to build this version yourself.
 
 2. Navigate to the `Broker` directory within the source you cloned from GitHub
 and invoke `cmake .` This will prepare the makefile.

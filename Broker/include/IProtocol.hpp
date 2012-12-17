@@ -45,6 +45,7 @@ namespace freedm {
 class IProtocol
     : public boost::noncopyable
 {
+#pragma GCC diagnostic ignored "-Wunused-parameter"
     public:
         /// Initializes the protocol with the underlying connection
         IProtocol(CConnection * conn) : m_conn(conn), m_stopped(false) { };
@@ -72,9 +73,7 @@ class IProtocol
         CConnection* GetConnection() { return m_conn; };
     protected:
         /// Callback for when a write completes.
-#pragma GCC diagnostic ignored "-Wunused-parameter"
         virtual void WriteCallback(const boost::system::error_code& e) { }
-#pragma GCC diagnostic warning "-Wunused-parameter"
         /// Handles writing the message to the underlying connection
         virtual void Write(CMessage msg);
     private:
@@ -84,9 +83,11 @@ class IProtocol
         CConnection * m_conn;
         /// Tracker for the stoppedness of the connection
         bool m_stopped;
+#pragma GCC diagnostic warning "-Wunused-parameter"
 };
 
     }
 }
 
 #endif
+

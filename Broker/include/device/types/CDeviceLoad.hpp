@@ -25,33 +25,40 @@
 #ifndef C_DEVICE_LOAD_HPP
 #define C_DEVICE_LOAD_HPP
 
-#include <boost/shared_ptr.hpp>
-
 #include "IDevice.hpp"
+
+#include <string>
+
+#include <boost/shared_ptr.hpp>
 
 namespace freedm {
 namespace broker {
 namespace device {
 
-/// Implementation of physical loads
+/// Device class for a load.
+////////////////////////////////////////////////////////////////////////////////
+/// Provides a device interface which recognizes a load signal.
+///
+/// @limitations None.
+////////////////////////////////////////////////////////////////////////////////
 class CDeviceLoad
-: public virtual IDevice
+    : public virtual IDevice
 {
 public:
-    /// Convenience type for a shared pointer to self
+    /// Convenience type for a shared pointer to self.
     typedef boost::shared_ptr<CDeviceLoad> Pointer;
 
-    /// Constructor which takes an identifier and internal structure
-    CDeviceLoad(const Identifier device, IPhysicalAdapter::Pointer adapter);
+    /// Constructor which takes an identifier and internal structure.
+    CDeviceLoad(std::string device, IAdapter::Pointer adapter);
 
-    /// Virtual destructor for derived classes
+    /// Virtual destructor for derived classes.
     virtual ~CDeviceLoad();
 
     /// Determine the energy drain of this load.
-    SettingValue GetLoad() const;
+    SignalValue GetLoad() const;
 
-    /// Increases the energy drain of this load by the specified amount.
-    void StepLoad(const SettingValue step = 1.0);
+    /// Increases the energy drain by the specified amount.
+    void StepLoad(const SignalValue step = 1);
 private:
     /// redefine base accessor as private
     using IDevice::Get;

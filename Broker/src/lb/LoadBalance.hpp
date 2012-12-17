@@ -70,8 +70,6 @@ namespace broker {
 namespace lb {
 
 const double NORMAL_TOLERANCE = 0.5;
-const unsigned int LOAD_TIMEOUT = 200; //milliseconds
-const unsigned int STATE_TIMEOUT = 600; //milliseconds
 
 //////////////////////////////////////////////////////////
 /// class LBAgent

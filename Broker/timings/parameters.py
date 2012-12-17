@@ -34,5 +34,5 @@ PARAMETERS = {
     # The number of rounds between clock synchronizations.
     'rounds_per_sync': 10,
     # The number of load balancings that can be attempted per round
-    'lb_per_phase': 2
+    'lb_per_phase': 10
 }    

@@ -47,6 +47,7 @@
 #include "CMessage.hpp"
 #include "gm/GroupManagement.hpp"
 #include "CDeviceManager.hpp"
+#include "CTimings.hpp"
 
 #include <algorithm>
 #include <cassert>
@@ -143,7 +144,7 @@ int LBAgent::Run()
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     // This initializes the algorithm
     LoadManage();
-    StartStateTimer( STATE_TIMEOUT );
+    StartStateTimer( CTimings::LB_STATE_TIMER );
     return 0;
 }
 
@@ -317,7 +318,7 @@ void LBAgent::LoadManage()
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
     //Start the timer; on timeout, this function is called again
-    m_broker.Schedule(m_GlobalTimer, boost::posix_time::milliseconds(LOAD_TIMEOUT),
+    m_broker.Schedule(m_GlobalTimer, boost::posix_time::milliseconds(CTimings::LB_GLOBAL_TIMER),
         boost::bind(&LBAgent::LoadManage, this,boost::asio::placeholders::error));
 
     //Remember previous load before computing current load
@@ -1062,7 +1063,7 @@ void LBAgent::HandleStateTimer( const boost::system::error_code & error )
     }
 
     m_active = false;
-    StartStateTimer( STATE_TIMEOUT );
+    StartStateTimer( CTimings::LB_STATE_TIMER );
 }
 
 } // namespace lb

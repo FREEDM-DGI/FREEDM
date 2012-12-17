@@ -52,11 +52,15 @@ def cpp_file(output,generated):
     t_base = load_template('templates/cpp_base.tpl')
     t_parameter = load_template('templates/cpp_parameter.tpl')
     t_parameter2 = load_template('templates/cpp_parameter2.tpl')
+    t_parameter3 = load_template('templates/cpp_parameter3.tpl')
     f = open(output,'w')
     p_block = ""
     p_block2 = ""
+    p_block3 = ""
     for (parameter,value) in generated.iteritems():
         p_block += t_parameter.substitute({'parameter':parameter,'value':value})
         p_block2 += t_parameter2.substitute({'parameter':parameter,'value':value})
-    f.write(t_base.substitute({'parameter_block':p_block,'parameter_block2':p_block2}))
+        p_block3 += t_parameter3.substitute({'parameter':parameter,'value':value})
+    f.write(t_base.substitute({'parameter_block':p_block,'parameter_block2':p_block2,
+            'parameter_block3':p_block3}))
     f.close()

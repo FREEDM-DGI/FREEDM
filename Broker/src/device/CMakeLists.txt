@@ -1,23 +1,17 @@
 # list the device source files
 set(
     DEVICE_FILES
-    CDeviceFactory.cpp
-    CDeviceKeyCoupled.cpp
-    CGenericAdapter.cpp
-    CPhysicalDeviceManager.cpp
+    CAdapterFactory.cpp
+    CDeviceManager.cpp
     CPscadAdapter.cpp
     CRtdsAdapter.cpp
-    CTableRTDS.cpp
-    CTableStructure.cpp
-    IConnectionAdapter.cpp
+    IBufferAdapter.cpp
+    ITcpAdapter.cpp
     PhysicalDeviceTypes.cpp
    )
 
-# generate the device type source files
+# compile the device type source files
 aux_source_directory(${CMAKE_CURRENT_BINARY_DIR}/types DEVICE_TYPES)
-
-# create the automatic code generation driver
-add_executable(DeviceRegistrationGenerator ${CMAKE_CURRENT_BINARY_DIR}/DeviceRegistrationGenerator.cpp)
 
 # generate PhysicalDeviceTypes using the generator
 set(
@@ -28,8 +22,8 @@ set(
 
 add_custom_command(
     OUTPUT ${GENERATOR_OUTPUT}
-    COMMAND DeviceRegistrationGenerator
-    DEPENDS DeviceRegistrationGenerator ${DEVICE_TYPES} )
+    COMMAND ./DeviceRegistrationGenerator.py
+    DEPENDS ${DEVICE_TYPES} )
 
 add_custom_target( GeneratedPhysicalDeviceTypes DEPENDS ${GENERATOR_OUTPUT} )
 

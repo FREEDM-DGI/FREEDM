@@ -89,3 +89,4 @@ for line in fileinput.input():
         # We could lose documentation because we abuse these tags. Hide them.
         if '@function' not in line and '@fn' not in line:
             sys.stdout.write(line)
+

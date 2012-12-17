@@ -1,5 +1,5 @@
 ///////////////////////////////////////////////////////////////////////////////
-/// @file         CAdapterSimulation.hpp
+/// @file         CSimulationAdapter.hpp
 ///
 /// @author       Thomas Roth <tprfh7@mst.edu>
 ///
@@ -7,15 +7,13 @@
 ///
 /// @description  Adapter for the PSCAD power simulation
 ///
-/// @copyright
-/// These source code files were created at the Missouri University of Science
-/// and Technology, and are intended for use in teaching or research. They may
-/// be freely copied, modified and redistributed as long as modified versions
-/// are clearly marked as such and this notice is not removed.
-///
-/// Neither the authors nor Missouri S&T make any warranty, express or implied,
-/// nor assume any legal responsibility for the accuracy, completeness or
-/// usefulness of these files or any information distributed with these files.
+/// These source code files were created at Missouri University of Science and
+/// Technology, and are intended for use in teaching or research. They may be
+/// freely copied, modified, and redistributed as long as modified versions are
+/// clearly marked as such and this notice is not removed. Neither the authors
+/// nor Missouri S&T make any warranty, express or implied, nor assume any legal
+/// responsibility for the accuracy, completeness, or usefulness of these files
+/// or any information distributed with these files.
 ///
 /// Suggested modifications or questions about these files can be directed to
 /// Dr. Bruce McMillin, Department of Computer Science, Missouri University of
@@ -47,13 +45,13 @@ namespace adapter {
 /// the adapter will be blocked until the client sends more data or closes the
 /// connection.  The bytes expected is derived from the XML specification.
 ///////////////////////////////////////////////////////////////////////////////
-class CAdapterSimulation
+class CSimulationAdapter
     : public IServer
     , public CAdapter
 {
 public:
     /// constructs a simulation adapter instance
-    CAdapterSimulation( unsigned short port,
+    CSimulationAdapter( unsigned short port,
             const boost::property_tree::ptree & tree );
 private:
     /// handles the accepted socket connection

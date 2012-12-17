@@ -27,31 +27,38 @@
 
 #include "IDevice.hpp"
 
+#include <string>
+
 #include <boost/shared_ptr.hpp>
 
 namespace freedm {
 namespace broker {
 namespace device {
 
-/// Implementation of distributed energy storage devices
+/// Device class for a distributed energy storage device (DESD).
+////////////////////////////////////////////////////////////////////////////////
+/// Provides a device interface which recognizes a storage signal.
+///
+/// @limitations None.
+////////////////////////////////////////////////////////////////////////////////
 class CDeviceDesd
-: public virtual IDevice
+    : public virtual IDevice
 {
 public:
-    /// Convenience type for a shared pointer to self
+    /// Convenience type for a shared pointer to self.
     typedef boost::shared_ptr<CDeviceDesd> Pointer;
 
-    /// Constructor which takes an identifier and internal structure
-    CDeviceDesd(const Identifier device, IPhysicalAdapter::Pointer adapter);
+    /// Constructor which takes an identifier and internal structure.
+    CDeviceDesd(std::string device, IAdapter::Pointer adapter);
 
-    /// Virtual destructor for derived classes
+    /// Virtual destructor for derived classes.
     virtual ~CDeviceDesd();
 
-    /// Determine the energy storage of this DESD.
-    SettingValue GetStorage() const;
+    /// Determine the energy storage of the DESD.
+    SignalValue GetStorage() const;
 
-    /// Increases the storage of this DESD by the specified amount.
-    void StepStorage(const SettingValue step = 1.0);
+    /// Increases the storage by the specified amount.
+    void StepStorage(const SignalValue step = 1);
 private:
     /// redefine base accessor as private
     using IDevice::Get;

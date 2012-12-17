@@ -6,7 +6,7 @@
 ///
 /// @project        FREEDM DGI
 ///
-/// @description    Template used to generate code at compile time
+/// @description    Template used to generate code at compile time.
 ///
 /// These source code files were created at Missouri University of Science and
 /// Technology, and are intended for use in teaching or research. They may be
@@ -28,17 +28,6 @@
 #ifndef PHYSICAL_DEVICE_TYPES_HPP
 #define PHYSICAL_DEVICE_TYPES_HPP
 
-##BREAK
-
-namespace freedm {
-namespace broker {
-namespace device {
-
-/// Registers the physical devices known to this file with the device factory
-void RegisterPhysicalDevices();
-
-} // namespace device
-} // namespace broker
-} // namespace freedm
+##INCLUDES
 
 #endif // PHYSICAL_DEVICE_TYPES_HPP

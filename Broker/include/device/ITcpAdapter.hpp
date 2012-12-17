@@ -1,13 +1,12 @@
 ////////////////////////////////////////////////////////////////////////////////
-/// @file           IConnectionAdapter.hpp
+/// @file           ITcpAdapter.hpp
 ///
 /// @author         Thomas Roth <tprfh7@mst.edu>,
 ///                 Michael Catanzaro <michael.catanzaro@mst.edu>
 ///
 /// @project        FREEDM DGI
 ///
-/// @description    Interface for a physical device adapter that communicates
-///                 operations over a network.
+/// @description    Device adapter that communicates operations over a network.
 ///
 /// These source code files were created at Missouri University of Science and
 /// Technology, and are intended for use in teaching or research. They may be
@@ -22,14 +21,16 @@
 /// Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
 ////////////////////////////////////////////////////////////////////////////////
 
-#ifndef ICONNECTIONADAPTER_HPP
-#define	ICONNECTIONADAPTER_HPP
+#ifndef I_TCP_ADAPTER_HPP
+#define	I_TCP_ADAPTER_HPP
 
-#include "IPhysicalAdapter.hpp"
-
-#include <boost/asio.hpp>
+#include "IAdapter.hpp"
 
 #include <string>
+
+#include <boost/asio.hpp>
+#include <boost/shared_ptr.hpp>
+#include <boost/property_tree/ptree_fwd.hpp>
 
 namespace freedm {
 namespace broker {
@@ -37,45 +38,48 @@ namespace device {
 
 /// Physical adapter interface for network communication applications.
 ////////////////////////////////////////////////////////////////////////////////
-/// @description
-///     Physical adapter device interface for network communication 
-///     applications. Implementing classes pass Get and Set information to some
-///     external source over this interface's socket.
+/// Physical device adapter for TCP network communications.  This base class
+/// contains a socket that can be used to implement a communication protocol.
 ///
-/// @limitations    
-///     This adapter is designed for connections that require only a single
-///     remote peer. If, in the future, a device requires multiple peers, this
-///     interface will not be sufficient.
-///
-/// @todo 
-///     Build in some safety so that an error occurs if the network adapter is
-///     used before it is connected.
+/// @limitations The adapter can communicate with at most one remote peer.  If
+/// a device needs to communicate with multiple peers, then this class is not
+/// sufficient.
 ////////////////////////////////////////////////////////////////////////////////
-class IConnectionAdapter : public IPhysicalAdapter
+class ITcpAdapter
+    : public virtual IAdapter
 {
 public:
-    /// Type of a pointer to a connection adapter.
-    typedef boost::shared_ptr<IConnectionAdapter> Pointer;
+    /// Type of a shared pointer to a connection adapter.
+    typedef boost::shared_ptr<ITcpAdapter> Pointer;
 
-    /// Creates a socket connection to the given hostname and service.
-    virtual void Connect(const std::string hostname, const std::string port);
+    /// Virtual destructor for derived classes.
+    virtual ~ITcpAdapter();
+protected:
+    /// Constructor to initialize the socket.
+    ITcpAdapter(boost::asio::io_service & service,
+            const boost::property_tree::ptree & ptree);
+
+    /// Creates a socket connection to the given hostname and port number.
+    void Connect();
 
     /// Closes the connection.
     virtual void Quit() = 0;
-
-    /// Virtual destructor for derived classes.
-    virtual ~IConnectionAdapter() { };
-
-protected:
+    
     /// Constructor to initialize the socket.
-    IConnectionAdapter(boost::asio::io_service& service);
+    ITcpAdapter(boost::asio::io_service & service);
 
-    /// Socket to use for the connection.
+    /// Socket to use for the TCP connection.
     mutable boost::asio::ip::tcp::socket m_socket;
+
+    /// The hostname of the remote host.
+    std::string m_host;
+    
+    /// The port number of the remote host.
+    std::string m_port;
 };
 
-}
-}
-}
+} // namespace device
+} // namespace broker
+} // namespace freedm
 
-#endif	// ICONNECTIONADAPTER_HPP
+#endif	// I_TCP_ADAPTER_HPP

@@ -1,8 +1,30 @@
+///////////////////////////////////////////////////////////////////////////////
+/// @file         PosixMain.cpp
+///
+/// @author       Thomas Roth <tprfh7@mst.edu>
+///
+/// @project      FREEDM Simulation Server
+///
+/// @description  Runs the FREEDM Simulation Server
+///
+/// These source code files were created at Missouri University of Science and
+/// Technology, and are intended for use in teaching or research. They may be
+/// freely copied, modified, and redistributed as long as modified versions are
+/// clearly marked as such and this notice is not removed. Neither the authors
+/// nor Missouri S&T make any warranty, express or implied, nor assume any legal
+/// responsibility for the accuracy, completeness, or usefulness of these files
+/// or any information distributed with these files.
+///
+/// Suggested modifications or questions about these files can be directed to
+/// Dr. Bruce McMillin, Department of Computer Science, Missouri University of
+/// Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
+///////////////////////////////////////////////////////////////////////////////
+
 #include "CLogger.hpp"
 #include "IServer.hpp"
-#include "CAdapterRtds.hpp"
-#include "CAdapterPscad.hpp"
-#include "CAdapterSimulation.hpp"
+#include "CRtdsAdapter.hpp"
+#include "CPscadAdapter.hpp"
+#include "CSimulationAdapter.hpp"
 
 #include <set>
 #include <list>
@@ -45,15 +67,15 @@ void ReadXML( std::string xml, std::list< boost::shared_ptr<IServer> > & list )
         
         if( type == "rtds" )
         {
-            adapter.reset( new adapter::CAdapterRtds(port,child.second) );
+            adapter.reset( new adapter::CRtdsAdapter(port,child.second) );
         }
         else if( type == "pscad" )
         {
-            adapter.reset( new adapter::CAdapterPscad(port,child.second) );
+            adapter.reset( new adapter::CPscadAdapter(port,child.second) );
         }
         else if( type == "simulation" )
         {
-            adapter.reset( new adapter::CAdapterSimulation(port,child.second) );
+            adapter.reset( new adapter::CSimulationAdapter(port,child.second) );
         }
         else
         {
@@ -133,5 +155,4 @@ int main( int argc, char * argv[] )
                 &IServer::Run, *it));
     }
     while(true);
-    return 0;
 }

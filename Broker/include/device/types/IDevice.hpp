@@ -25,70 +25,67 @@
 #ifndef I_DEVICE_HPP
 #define I_DEVICE_HPP
 
-#include "../IPhysicalAdapter.hpp"
+#include "IAdapter.hpp"
 
-#include <boost/noncopyable.hpp>
 #include <boost/shared_ptr.hpp>
-#include <boost/thread.hpp>
+#include <boost/noncopyable.hpp>
 
 namespace freedm {
 namespace broker {
 namespace device {
 
 ////////////////////////////////////////////////////////////////////////////////
-/// device_cast<TargetType>( ObjectType )
+/// Attempts to convert a device pointer into the specified device type.
+///
+/// @pre TargetType must be the type of some device class.
 /// @pre ObjectType must be a boost::shared_ptr<T> for some T
 /// @param object The boost::shared_ptr<T> to convert to TargetType
-/// @return boost::shared_ptr<TargetType> to object if conversion possible
-/// @return empty boost::shared_ptr<TargetType> if conversion impossible
+/// @return boost::shared_ptr<TargetType> to object if conversion is possible,
+/// and an empty boost::shared_ptr<TargetType> if conversion is impossible.
+///
+/// @limitations None.
 ////////////////////////////////////////////////////////////////////////////////
 template <class TargetType, class ObjectType>
 boost::shared_ptr<TargetType> device_cast(ObjectType object)
 {
-    return boost::dynamic_pointer_cast<TargetType > ( object );
+    return boost::dynamic_pointer_cast<TargetType>( object );
 }
 
-/// Physical device with implementation delegated to private member
-class IDevice : private boost::noncopyable
+/// Physical device with implementation delegated to private member.
+////////////////////////////////////////////////////////////////////////////////
+/// The IDevice class provides the public interface used for all devices.  It
+/// it has an associated set of device signals, defined by derived classes,
+/// that can be accessed through the public IDevice::Get and IDevice::Set.
+///
+/// @limitations Thread safety must be handled by the adapter member.
+////////////////////////////////////////////////////////////////////////////////
+class IDevice
+    : private boost::noncopyable
 {
 public:
-    /// Convenience type for a shared pointer to self
+    /// Convenience type for a shared pointer to self.
     typedef boost::shared_ptr<IDevice> Pointer;
 
-    /// Virtual destructor for derived classes
+    /// Virtual destructor for derived classes.
     virtual ~IDevice();
 
-    /// Gets the device identifier
-    Identifier GetID() const;
+    /// Gets the unique device identifier.
+    std::string GetID() const;
 
-    /// Acquires the mutex
-    void Lock();
+    /// Gets the value of some signal from the adapter.
+    SignalValue Get(const std::string signal) const;
 
-    /// Releases a mutex lock
-    void Unlock();
-
-    /// Tries to acquire the mutex
-    bool TryLock();
-
-    /// Gets the setting of some key from the structure
-    SettingValue Get(const SettingKey key) const;
-
-    /// Sets the value of some key in the structure
-    void Set(const SettingKey key, const SettingValue value);
+    /// Sets the value of some signal in the adapter.
+    void Set(const std::string signal, const SignalValue value);
 protected:
-    friend class CPhysicalDeviceManager; // Temporary?
-    
-    /// Constructor which takes an identifier and device adapter
-    IDevice(const Identifier device, IPhysicalAdapter::Pointer adapter);
+    /// Constructor which takes an identifier and device adapter.
+    IDevice(const std::string device, IAdapter::Pointer adapter);
 
-    /// Unique identifier for the device
-    Identifier m_identifier;
+    /// Unique identifier for the device.
+    std::string m_identifier;
 
-    /// "Driver" that handles the device data
-    IPhysicalAdapter::Pointer m_adapter;
-    
-    /// Mutex to protect the device from other threads
-    boost::mutex m_mutex;
+    /// Handles the get and set requests.
+    IAdapter::Pointer m_adapter;
 };
 
 } // namespace device

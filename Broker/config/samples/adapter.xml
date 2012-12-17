@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="us-ascii" ?>
+<root>
+    <adapter name = "PSCADSimulation" type = "pscad">
+        <info>
+            <host>r-facts3.device.mst.edu</host>
+            <port>5001</port>
+        </info>
+        <state>
+            <entry index = "1">
+                <type>Drer</type>
+                <device>DRER1</device>
+                <signal>generation</signal>
+            </entry>
+            <entry index = "2">
+                <type>Load</type>
+                <device>LOAD1</device>
+                <signal>drain</signal>
+            </entry>
+            <entry index = "3">
+                <type>Fid</type>
+                <device>FID1</device>
+                <signal>state</signal>
+            </entry>
+        </state>
+        <command>
+            <entry index = "1">
+                <type>Desd</type>
+                <device>DESD1</device>
+                <signal>storage</signal>
+            </entry>
+        </command>
+    </adapter>
+</root>

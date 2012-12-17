@@ -25,33 +25,40 @@
 #ifndef C_DEVICE_DRER_HPP
 #define C_DEVICE_DRER_HPP
 
-#include <boost/shared_ptr.hpp>
-
 #include "IDevice.hpp"
+
+#include <string>
+
+#include <boost/shared_ptr.hpp>
 
 namespace freedm {
 namespace broker {
 namespace device {
 
-/// Implementation of distributed renewable energy resources
+/// Device class for a distributed renewable energy resource (DRER).
+////////////////////////////////////////////////////////////////////////////////
+/// Provides a device interface which recognizes a generation signal.
+///
+/// @limitations None.
+////////////////////////////////////////////////////////////////////////////////
 class CDeviceDrer
-: public virtual IDevice
+    : public virtual IDevice
 {
 public:
-    /// Convenience type for a shared pointer to self
+    /// Convenience type for a shared pointer to self.
     typedef boost::shared_ptr<CDeviceDrer> Pointer;
 
-    /// Constructor which takes an identifier and internal structure
-    CDeviceDrer(const Identifier device, IPhysicalAdapter::Pointer adapter);
+    /// Constructor which takes an identifier and internal structure.
+    CDeviceDrer(std::string device, IAdapter::Pointer adapter);
 
-    /// Virtual destructor for derived classes
+    /// Virtual destructor for derived classes.
     virtual ~CDeviceDrer();
     
-    /// Determine the energy generation of this DRER.
-    SettingValue GetGeneration() const;
+    /// Determine the energy generation of the DRER.
+    SignalValue GetGeneration() const;
     
-    /// Increases the energy generation of this DRER by step.
-    void StepGeneration(const SettingValue step = 1.0);
+    /// Increases the energy generation by the specified amount.
+    void StepGeneration(const SignalValue step = 1);
 private:
     /// redefine base accessor as private
     using IDevice::Get;

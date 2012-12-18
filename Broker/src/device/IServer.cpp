@@ -69,13 +69,13 @@ void IServer::RegisterHandler( ConnectionHandler h )
     if( !m_handler.empty() )
     {
         throw std::runtime_error(
-            "Attempted to override an IServer connection handler.");
+                "IServer attempted to override its connection handler.");
     }
 
     if( h.empty() )
     {
         throw std::runtime_error(
-            "IServer received an empty connection handler.");
+                "IServer received an empty connection handler.");
     }
 
     m_handler = h;

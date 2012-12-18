@@ -31,9 +31,10 @@ namespace freedm {
 namespace broker {
 namespace device {
 
-/// Server interface with variable implementation of the connection handler.
+/// TCP server that handles a single client connection.
 ////////////////////////////////////////////////////////////////////////////////
-/// Base class for a server with functions for sending and receiving data.
+/// A TCP server that redirects clients to the registered connection handler
+/// and handles packets that are delimited with the sequence \r\n\r\n.
 ///
 /// @limitations None.
 ////////////////////////////////////////////////////////////////////////////////
@@ -51,10 +52,10 @@ public:
     virtual ~CTcpServer();
     
     /// Receives a packet from the connected client.
-    std::string ReceiveData();
+    std::string ReceiveData() const;
     
     /// Sends a packet of data to the connected client.
-    void SendData(const std::string data);
+    void SendData(const std::string pkt) const;
     
     /// Gets the listen port of the TCP server.
     unsigned short GetPort() const;
@@ -75,7 +76,7 @@ private:
     boost::asio::ip::tcp::acceptor m_acceptor;
     
     /// Socket for the current client.
-    boost::asio::ip::tcp::socket m_socket;
+    mutable boost::asio::ip::tcp::socket m_socket;
     
     /// Port number of the server.
     unsigned short m_port;

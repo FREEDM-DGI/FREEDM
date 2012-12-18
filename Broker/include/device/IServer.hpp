@@ -28,7 +28,7 @@
 #include <boost/function.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/noncopyable.hpp>
-#include <boost/enable_shared_from_this.hpp>
+#include <boost/enable_shared_from_this>
 
 namespace freedm {
 namespace broker {
@@ -42,7 +42,7 @@ namespace device {
 ////////////////////////////////////////////////////////////////////////////////
 class IServer
     : private boost::noncopyable
-    , public boost::enable_shared_from_this<IServer>
+    , public boost::enable_shared_from_this
 {
 public:
     /// Convenience type for a shared pointer to self.
@@ -58,10 +58,10 @@ public:
     void RegisterHandler( ConnectionHandler h );
     
     /// Receives a packet of data from the server.
-    virtual std::string ReceiveData() = 0;
+    virtual std::string ReceiveData() const = 0;
     
     /// Sends a packet of data to the connected client.
-    virtual void SendData(const std::string str) = 0;
+    virtual void SendData(const std::string pkt) const = 0;
 protected:
     /// Callback function to handle clients.
     ConnectionHandler m_handler;

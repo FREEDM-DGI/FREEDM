@@ -135,7 +135,7 @@ CTcpServer::Pointer CTcpServer::Create(boost::asio::io_service & ios,
 ///
 /// @limitations None.
 ////////////////////////////////////////////////////////////////////////////////
-std::string CTcpServer::ReceiveData()
+std::string CTcpServer::ReceiveData() const
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     
@@ -163,11 +163,11 @@ std::string CTcpServer::ReceiveData()
 /// the packet does not have the correct \r\n\r\n delimiter.
 /// @pre The socket must be open, and data must end with \r\n\r\n.
 /// @post Sends the passed data over m_socket.
-/// @param data The packet of data to send.
+/// @param pkt The packet of data to send.
 ///
 /// @limitations None.
 ////////////////////////////////////////////////////////////////////////////////
-void CTcpServer::SendData(const std::string data)
+void CTcpServer::SendData(const std::string pkt) const
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     
@@ -179,12 +179,12 @@ void CTcpServer::SendData(const std::string data)
         throw std::runtime_error("The server has no open client connection.");
     }
 
-    if( data.size() < 4 || (data.substr(data.size()-4) != "\r\n\r\n") )
+    if( pkt.size() < 4 || (pkt.substr(pkt.size()-4) != "\r\n\r\n") )
     {
         throw std::runtime_error("The server tried to send a corrupt packet.");
     }
     
-    packet_stream << data;
+    packet_stream << pkt;
     
     Logger.Info << "Blocking to send data on port " << m_port << std::endl;
     boost::asio::write(m_socket, packet);
@@ -274,16 +274,13 @@ void CTcpServer::HandleAccept(const boost::system::error_code & error)
                     + std::string("connection handler."));
         }
         
-        m_handler(shared_from_this());
+        m_handler(boost::enable_shared_from_this());
     }
     else
     {
         Logger.Warn << "Failed to accept a client connection." << std::endl;
     }
-    if( m_acceptor.is_open() )
-    {
-        StartAccept();
-    }
+    StartAccept();
 }
 
 } // namespace device

@@ -170,7 +170,8 @@ void CAdapterFactory::CreateAdapter(const boost::property_tree::ptree & p)
     }
     catch( std::exception & e )
     {
-        throw std::runtime_error("Failed to create adapter: " + std::string(e.what()));
+        throw std::runtime_error("Failed to create adapter: "
+                + std::string(e.what()));
     }
     
     Logger.Debug << "Building " << type << " adapter " << name << std::endl;
@@ -200,8 +201,8 @@ void CAdapterFactory::CreateAdapter(const boost::property_tree::ptree & p)
     }
     else
     {
-         throw std::runtime_error("Attempted to create adapter of an "
-            + std::string("unrecognized type: ") + type);
+        throw std::runtime_error("Attempted to create adapter of an "
+                + std::string("unrecognized type: ") + type);
     }
     
     // store the adapter
@@ -237,13 +238,14 @@ void CAdapterFactory::RemoveAdapter(const std::string identifier)
                 + std::string("not exist: ") + identifier);
     }
     
-    devices = m_adapter[identifier]->GetDevices();   
     arm = boost::dynamic_pointer_cast<CArmAdapter>(m_adapter[identifier]);
+    
+    devices = m_adapter[identifier]->GetDevices();
+    
     if( arm )
     {
         Logger.Debug << "Making old port numbers available." << std::endl;
-        m_ports.insert(arm->GetStatePort());
-        m_ports.insert(arm->GetHeartbeatPort());
+        m_ports.insert(arm->GetPortNumber());
     }
     m_adapter.erase(identifier);
     
@@ -352,7 +354,8 @@ void CAdapterFactory::InitializeAdapter(IAdapter::Pointer adapter,
         }
         catch( std::exception & e )
         {
-            throw std::runtime_error("Failed to create adapter: " + std::string(e.what()));
+            throw std::runtime_error("Failed to create adapter: "
+                    + std::string(e.what()));
         }
         
         BOOST_FOREACH(boost::property_tree::ptree::value_type & child, subtree)
@@ -383,6 +386,11 @@ void CAdapterFactory::InitializeAdapter(IAdapter::Pointer adapter,
             
             // check if the device recognizes the associated signal
             IDevice::Pointer dev = CDeviceManager::Instance().GetDevice(name);
+            if( !dev )
+            {
+                throw std::runtime_error("Something bad happened.");
+            }
+            
             if( (i == 0 && !dev->HasStateSignal(signal)) ||
                 (i == 1 && !dev->HasCommandSignal(signal)) )
             {
@@ -439,141 +447,106 @@ unsigned short CAdapterFactory::GetPortNumber()
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-/// I HAVE BEEN COMMENTING ALL DAY - GIVE ME A BREAK.
+///
 ////////////////////////////////////////////////////////////////////////////////
 void CAdapterFactory::SessionProtocol(IServer::Pointer connection)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     
-    boost::property_tree::ptree adapter;
-    std::set<std::string> states, commands;
+    boost::property_tree::ptree config;
+    
     std::stringstream packet, response;
-    std::string identifier, deviceType, deviceName, entry;
-    unsigned short statePort, heartbeatPort;
-    int stateIndex = 1, commandIndex = 1;
+    std::set<std::string> states, commands;
+    std::string header, devtype, devid, devname, entry;
+    
+    unsigned short identifier, port;
+    int stateIndex = 1, cmdIndex = 1;
     
     Logger.Notice << "A wild client appears!" << std::endl;
     
     // receive hello
-    packet << connection->ReceiveData();
+    packet << connection->ReceiveData;
     
-    // get session information
     if( connection == m_server )
     {
-        packet >> identifier >> identifier;
+        identifier = m_server->GetHostname();
     }
     else
     {
-        throw std::runtime_error("Received a null client connection.");
+        throw std::runtime_error("i don't even");
     }
     
-    // check for duplicate session
-    if( m_adapter.count(identifier) > 0 )
+    packet >> header;
+    
+    if( header != "Hello" )
     {
-        // is it possible for the adapter to be destroyed before between these?
-        IAdapter::Pointer adapter = m_adapter[identifier];
-        
-        if( connection == m_server )
-        {
-            CArmAdapter::Pointer arm;
-            
-            arm = boost::dynamic_pointer_cast<CArmAdapter>(adapter);
-            
-            if( !arm )
-            {
-                throw std::runtime_error("Well this is embarassing.");
-            }
-            
-            arm->Heartbeat();
-            
-            response << "StatePort: " << arm->GetStatePort() << "\r\n";
-            response << "HeartbeatPort: " << arm->GetHeartbeatPort() << "\r\n";
-            response << "\r\n";
-        }
-        else
-        {
-            throw std::runtime_error("Received a null client connection.");
-        }
+        response << "BadMessage\r\n\r\n";
+    }
+    else if( m_adapter.count(identifier) > 0 )
+    {
+        response << "DuplicateSession\r\n\r\n";
     }
     else
     {
+        // create new adapter based on connection
         if( connection == m_server )
         {
-            if( m_ports.size() < 2 )
-            {
-                throw std::runtime_error("Insufficient ports for new adapter.");
-            }
+            port = GetPortNumber();
             
-            statePort = GetPortNumber();
-            heartbeatPort = GetPortNumber();
+            config.put("<xmlattr>.name", identifier);
+            config.put("<xmlattr>.type", "arm");
+            config.put("info.identifier", identifier);
+            config.put("info.stateport", port);
             
-            adapter.put("<xmlattr>.name", identifier);
-            adapter.put("<xmlattr>.type", "arm");
-            adapter.put("info.stateport", statePort);
-            adapter.put("info.heartport", heartbeatPort);
-            adapter.put("info.host", m_server->GetHostname());
-            adapter.put("info.port", identifier);
-            
-            response << "StatePort: " << statePort << "\r\n";
-            response << "HeartbeatPort: " << heartbeatPort << "\r\n";
-            response << "\r\n";
+            response << "StatePort: " << port << "\r\n\r\n";
         }
         else
         {
-            throw std::runtime_error("Received a null client connection.");
+            throw std::runtime_error("Unrecognized connection type.");
         }
-
-        // create the devices
-        for( int i = 0; packet >> deviceType >> deviceName; i++ )
+        
+        // create the associated devices
+        for( int i = 0; packet >> devtype >> devid; i++ )
         {
-            if( m_prototype.count(deviceType) == 0 )
+            if( m_prototype.count(devtype) == 0 )
             {
-                throw std::runtime_error("Unrecognized type: " + deviceType);
+                throw std::runtime_error("Unrecognized type: " + devtype);
             }
             
-            deviceName = identifier + ":" + deviceName;
-            states = m_prototype[deviceType]->GetStateSet();
-            commands = m_prototype[deviceType]->GetCommandSet();
-
+            devname = identifier + ":" + devid;
+            states = m_prototype[devtype]->GetStateSet();
+            commands = m_prototype[devtype]->GetCommandSet();
+            
             BOOST_FOREACH(std::string signal, states)
             {
-                entry = deviceName + signal;
+                entry = devname + signal;
                 
-                adapter.put("state." + entry + ".type", deviceType);
-                adapter.put("state." + entry + ".device", deviceName);
-                adapter.put("state." + entry + ".signal", signal);
-                adapter.put("state." + entry + ".<xmlattr>.index", stateIndex);
+                config.put("state." + entry + ".type", devtype);
+                config.put("state." + entry + ".device", devname);
+                config.put("state." + entry + ".signal", signal);
+                config.put("state." + entry + ".<xmlattr>.index", stateIndex);
 
                 stateIndex++;
             }
 
             BOOST_FOREACH(std::string signal, commands)
             {
-                entry = deviceName + signal;
+                entry = devname + signal;
                 
-                adapter.put("command." + entry + ".type", deviceType);
-                adapter.put("command." + entry + ".device", deviceName);
-                adapter.put("command." + entry + ".signal", signal);
-                adapter.put("command." + entry + ".<xmlattr>.index", commandIndex);
+                config.put("command." + entry + ".type", devtype);
+                config.put("command." + entry + ".device", devname);
+                config.put("command." + entry + ".signal", signal);
+                config.put("command." + entry + ".<xmlattr>.index", cmdIndex);
 
-                commandIndex++;
+                cmdIndex++;
             }
         }
         
-        CreateAdapter(adapter);
+        CreateAdapter(config);
     }
-
+    
     // send start
-    if( connection == m_server )
-    {
-        CArmAdapter::Pointer arm;
-        arm = boost::dynamic_pointer_cast<CArmAdapter>(m_adapter[identifier]);
-        arm->Send(response.str());
-    }
-    else
-    {
-        throw std::runtime_error("tired of doing this");
-    }
+    connection->SendData(response.str());
 }
 
 } // namespace device

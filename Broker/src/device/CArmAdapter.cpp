@@ -2,6 +2,8 @@
 #include "CAdapterFactory.hpp"
 #include "CLogger.hpp"
 
+#include <boost/thread/mutex.hpp>
+#include <boost/thread/locks.hpp>
 #include <boost/property_tree/ptree.hpp>
 
 namespace freedm {
@@ -15,26 +17,25 @@ CLocalLogger Logger(__FILE__);
 IAdapter::Pointer CArmAdapter::Create(boost::asio::io_service & service,
         boost::property_tree::ptree & p)
 {
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     return CArmAdapter::Pointer(new CArmAdapter(service, p));
 }
 
 CArmAdapter::CArmAdapter(boost::asio::io_service & service,
         boost::property_tree::ptree & p)
-    : ITcpAdapter(service, p)
-    , m_timer(service)
+    : m_heartbeat(service)
+    , m_command(service)
+    , m_initialized(0)
 {
-    m_HeartbeatPort = p.get<unsigned short>("heartport");
-    m_StatePort = p.get<unsigned short>("stateport");
-    m_identifier = p.get<std::string>("port");
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     
-    m_HeartbeatServer = CTcpServer::Create(service, m_HeartbeatPort);
-    m_StateServer = CTcpServer::Create(service, m_StatePort);
+    m_identifier = p.get<std::string>("identifier");
+    m_port = p.get<unsigned short>("stateport");
     
     IServer::ConnectionHandler handler;
-    handler = boost::bind(&CArmAdapter::HandleHeartbeat, this, _1);
-    m_HeartbeatServer->RegisterHandler(handler);
-    handler = boost::bind(&CArmAdapter::HandleState, this, _1);
-    m_StateServer->RegisterHandler(handler);
+    handler = boost::bind(&CArmAdapter::HandleMessage, this, _1);
+    m_server = CTcpServer::Create(service, m_port);
+    m_server->RegisterHandler(handler);
 }
 
 CArmAdapter::~CArmAdapter()
@@ -44,21 +45,26 @@ CArmAdapter::~CArmAdapter()
 
 void CArmAdapter::Start()
 {
-    m_timer.expires_from_now(boost::posix_time::seconds(5));
-    m_timer.async_wait(boost::bind(&CArmAdapter::Timeout, this, _1));
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    
+    m_heartbeat.expires_from_now(boost::posix_time::seconds(5));
+    m_heartbeat.async_wait(boost::bind(&CArmAdapter::Timeout, this, _1));
 }
 
-void CArmAdapter::Send(const std::string data)
+void CArmAdapter::Heartbeat()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    
+    if( m_heartbeat.expires_from_now(boost::posix_time::seconds(5)) != 0 )
+    {
+        m_heartbeat.async_wait(boost::bind(&CArmAdapter::Timeout, this, _1));
+    }
+}
 
-    boost::asio::streambuf packet;
-    std::ostream packet_stream(&packet);
-    packet_stream << data;
-
-    Connect();
-    boost::asio::write(m_socket, packet);
-    Quit();    
+unsigned short CArmAdapter::GetStatePort() const
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    return m_port;
 }
 
 void CArmAdapter::Timeout(const boost::system::error_code & e)
@@ -71,58 +77,110 @@ void CArmAdapter::Timeout(const boost::system::error_code & e)
     }
 }
 
-void CArmAdapter::Quit()
-{
-    m_socket.close();
-}
-
-void CArmAdapter::HandleHeartbeat(IServer::Pointer connection)
-{
-    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    
-    Heartbeat();
-}
-
-void CArmAdapter::HandleState(IServer::Pointer connection)
+void CArmAdapter::HandleMessage(IServer::Pointer connection)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     
     std::stringstream packet, response;
-    std::string header;
+    std::string header, devname, signal, value;
+    std::size_t index;
     
-    packet << connection->ReceiveData();
-    packet >> header;
+    try
+    {
+        packet << connection->ReceiveData();
+        Heartbeat();
+    }
+    catch(std::exception & e)
+    {
+        return;
+    }
     
-    if( header == "PoliteDisconnect" )
+    packet >> header
+    
+    if( header == "DeviceStates" )
+    {
+        boost::unique_lock<boost::shared_mutex> lock(m_rxMutex);
+        
+        while( packet >> devname >> signal >> value )
+        {
+            devname = m_identifier + ":" + devname;
+            
+            if( m_stateInfo.count(devname) == 0 )
+            {
+                throw std::runtime_error("oops");
+            }
+            
+            index = m_stateInfo[devname];
+            m_rxBuffer[index] = boost::lexical_cast<DeviceSignal>(value);
+        }
+        
+        if( !m_initialized )
+        {
+            m_initialized = true;
+            m_command.expires_from_now(boost::posix_time::seconds(2));
+            m_command.async_wait(boost::bind(&CArmAdapter::SendCommandPacket, this, _1));
+        }
+    }
+    else if( header == "PoliteDisconnect" )
     {
         response << "PoliteDisconnect: Accepted\r\n\r\n";
     }
     else
     {
-        throw std::runtime_error("wat");
+        throw std::runtime_error("bad");
     }
-
-    Send(response.str());
-}
-
-void CArmAdapter::Heartbeat()
-{
-    if( m_timer.expires_from_now(boost::posix_time::seconds(5)) != 0 )
+    
+    try
     {
-        m_timer.async_wait(boost::bind(&CArmAdapter::Timeout, this, _1));
+        connection->SendData(response.str());
+        Heartbeat();
+    }
+    catch(std::exception & e)
+    {
+        return;
     }
 }
 
-unsigned short CArmAdapter::GetStatePort() const
+void CArmAdapter::SendCommandPacket()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    return m_StatePort;
-}
-
-unsigned short CArmAdapter::GetHeartbeatPort() const
-{
-    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    return m_HeartbeatPort;
+    
+    std::map<const DeviceSignal, const std::size_t>::iterator it, end;
+    std::stringstream packet;
+    std::string devname, signal;
+    SignalValue value;
+    std::size_t index;
+    
+    boost::unique_lock<boost::mutex> lock(m_txMutex);
+    
+    end = m_commandInfo.end();
+    for( it = m_commandInfo.begin(); it != end; it++ )
+    {
+        devname = it->first.first;
+        signal = it->first.second;
+        
+        // remove the hostname identifier
+        index = devname.find_last_of(":");
+        devname = devname.substr(index+1);
+        
+        value = m_txBuffer[it->second];
+        
+        packet << devname << " " << signal << " " << value << "\r\n";
+    }
+    packet << "\r\n";
+    
+    try
+    {
+        connection->SendData(packet.str());
+        Heartbeat();
+    }
+    catch(std::exception & e)
+    {
+        // skip
+    }
+    
+    m_command.expires_from_now(boost::posix_time::seconds(2));
+    m_command.async_wait(boost::bind(&CArmAdapter::SendCommandPacket, this, _1));
 }
 
 } // namespace device

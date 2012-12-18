@@ -585,7 +585,10 @@ void SCAgent::HandleRequest(CMessage msg, PeerNodePtr peer)
     //call initiate to start state collection
     Logger.Notice << "Receiving state collect request from " << m_module << " ( " << pt.get<std::string>("sc.source")
                   << " )" << std::endl;
-    Initiate();
+    
+    //Put the initiate call into the back of queue
+    m_broker.Schedule("sc",boost::bind(&SCAgent::Initiate, this),true);
+    //Initiate();
 }
 
 

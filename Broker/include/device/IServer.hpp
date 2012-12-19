@@ -28,7 +28,7 @@
 #include <boost/function.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/noncopyable.hpp>
-#include <boost/enable_shared_from_this>
+#include <boost/enable_shared_from_this.hpp>
 
 namespace freedm {
 namespace broker {
@@ -41,8 +41,8 @@ namespace device {
 /// @limitations None.
 ////////////////////////////////////////////////////////////////////////////////
 class IServer
-    : private boost::noncopyable
-    , public boost::enable_shared_from_this
+    : public boost::enable_shared_from_this<IServer>
+    , private boost::noncopyable
 {
 public:
     /// Convenience type for a shared pointer to self.

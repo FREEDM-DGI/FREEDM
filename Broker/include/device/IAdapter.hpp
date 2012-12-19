@@ -68,11 +68,15 @@ public:
             const SignalValue value) = 0;
 
     /// Virtual destructor for derived classes.
-    virtual ~IAdapter() { };
+    virtual ~IAdapter();
 
-    void RegisterDevice(const std::string devid) { m_devices.insert(devid); }
-    std::set<std::string> GetDevices() const { return m_devices; }
+    /// Register a device name with the adapter.
+    void RegisterDevice(const std::string devid);
+    
+    /// Get the list of registered device names.
+    std::set<std::string> GetDevices() const;
 private:
+    /// Set of registered device names.
     std::set<std::string> m_devices;
 };
 

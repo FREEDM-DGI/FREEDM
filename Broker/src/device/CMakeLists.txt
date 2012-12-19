@@ -7,7 +7,7 @@ set(
     CRtdsAdapter.cpp
     IBufferAdapter.cpp
     ITcpAdapter.cpp
-    IServer.cpp
+    IAdapter.cpp
     CTcpServer.cpp
     CArmAdapter.cpp
     PhysicalDeviceTypes.cpp

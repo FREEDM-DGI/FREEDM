@@ -31,15 +31,14 @@
 #include "IDevice.hpp"
 #include "IAdapter.hpp"
 #include "CTcpServer.hpp"
-#include "CDeviceManager.hpp"
 
 #include <map>
 #include <set>
 #include <string>
 #include <stdexcept>
 
-#include <boost/thread.hpp>
 #include <boost/noncopyable.hpp>
+#include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/io_service.hpp>
 #include <boost/property_tree/ptree_fwd.hpp>
 
@@ -69,9 +68,6 @@ public:
     /// Gets the static instance of the factory.
     static CAdapterFactory & Instance();
     
-    /// Destructs the factory.
-    ~CAdapterFactory();
-    
     /// Creates a new adapter and its associated devices.
     void CreateAdapter(const boost::property_tree::ptree & p);
 
@@ -91,9 +87,6 @@ private:
     template <class DeviceType>
     void RegisterDevicePrototype(const std::string identifier);
     
-    /// Runs the factory I/O service.
-    void RunService();
-    
     /// Clones a device prototype and registers it with the system.
     void CreateDevice(const std::string name, const std::string type, 
             IAdapter::Pointer adapter);
@@ -106,19 +99,16 @@ private:
     unsigned short GetPortNumber();
 
     /// Session layer protocol for plug-and-play devices.
-    void SessionProtocol(IServer::Pointer connection);
+    void SessionProtocol(boost::asio::ip::tcp::socket & client);
     
     /// Set of device prototypes managed by the factory.
     std::map<std::string, IDevice::Pointer> m_prototype;
     
-    /// Set of adapters managed by the factory.
+    /// Set of device adapters managed by the factory.
     std::map<std::string, IAdapter::Pointer> m_adapter;
     
     /// I/O service shared by the adapters.
-    boost::asio::io_service m_ios;
-    
-    /// Thread to run the i/o service
-    boost::thread m_thread;
+    boost::asio::io_service & m_ios;
     
     /// TCP server to accept plug-and-play devices.
     CTcpServer::Pointer m_server;
@@ -149,15 +139,13 @@ void CAdapterFactory::RegisterDevicePrototype(const std::string identifier)
     
     if( m_prototype.count(identifier) > 0 )
     {
-        throw std::runtime_error("The string identifier " + identifier
-                + " has already been registered with the adapter factory.");
+        throw std::runtime_error("Duplicate factory prototype: " + identifier);
     }
 
     dev = IDevice::Pointer(new DeviceType("prototype-" + identifier, null));
     m_prototype.insert(std::make_pair(identifier, dev));
 
-    AdapterFactoryLogger.Info << "Created a new device prototype with the "
-            << "string identifier: " << identifier << "." << std::endl;
+    AdapterFactoryLogger.Info << "Added prototype " << identifier << std::endl;
 }
 
 } // namespace device

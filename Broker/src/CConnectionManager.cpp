@@ -258,7 +258,29 @@ ConnectionPtr CConnectionManager::GetConnectionByUUID(std::string uuid_)
     Logger.Debug<<"Computing remote endpoint"<<std::endl;
     boost::asio::ip::udp::resolver resolver(m_inchannel->GetIOService());
     boost::asio::ip::udp::resolver::query query( s_, port);
-    boost::asio::ip::udp::endpoint endpoint = *resolver.resolve( query );
+    boost::asio::ip::udp::resolver::iterator rit = resolver.resolve( query );
+    boost::asio::ip::udp::resolver::iterator end;
+    boost::asio::ip::udp::endpoint endpoint;
+    boost::asio::ip::udp::endpoint etmp;
+    bool first=true, resolved=false;
+    while(rit != end)
+    {
+        if(first == true)
+        {
+            endpoint = *rit;
+            first = false;
+        }
+        etmp = *rit;
+        Logger.Info<<"Resolved: "<<etmp<<std::endl;
+        resolved = true;
+        rit++;
+    }
+    if(resolved == false)
+    {
+        std::stringstream ss;
+        ss<<"Could not resolve the endpoint "<<s_<<":"<<port<<" ("<<uuid_<<")"<<std::endl;
+        throw std::runtime_error(ss.str());
+    }
     c_->GetSocket().connect( endpoint ); 
 
     //Once the connection is built, connection manager gets a call back to register it.    

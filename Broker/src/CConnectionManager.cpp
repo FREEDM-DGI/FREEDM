@@ -258,8 +258,14 @@ ConnectionPtr CConnectionManager::GetConnectionByUUID(std::string uuid_)
     Logger.Debug<<"Computing remote endpoint"<<std::endl;
     boost::asio::ip::udp::resolver resolver(m_inchannel->GetIOService());
     boost::asio::ip::udp::resolver::query query( s_, port);
-    boost::asio::ip::udp::resolver::iterator rit = resolver.resolve( query );
+    boost::system::error_code e;
+    boost::asio::ip::udp::resolver::iterator rit;
     boost::asio::ip::udp::resolver::iterator end;
+    rit = resolver.resolve( query, e );
+    if(e)
+    {
+        rit = end;
+    }
     boost::asio::ip::udp::endpoint endpoint;
     boost::asio::ip::udp::endpoint etmp;
     bool first=true, resolved=false;
@@ -267,6 +273,7 @@ ConnectionPtr CConnectionManager::GetConnectionByUUID(std::string uuid_)
     {
         if(first == true)
         {
+        Logger.Debug<<__LINE__<<std::endl;
             endpoint = *rit;
             first = false;
         }
@@ -278,7 +285,8 @@ ConnectionPtr CConnectionManager::GetConnectionByUUID(std::string uuid_)
     if(resolved == false)
     {
         std::stringstream ss;
-        ss<<"Could not resolve the endpoint "<<s_<<":"<<port<<" ("<<uuid_<<")"<<std::endl;
+        ss<<"Could not resolve the endpoint "<<s_<<":"<<port<<" ("<<uuid_<<")"
+          <<" Are your hostnames configured correctly?"<<std::endl;
         throw std::runtime_error(ss.str());
     }
     c_->GetSocket().connect( endpoint ); 

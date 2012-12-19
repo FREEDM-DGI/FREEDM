@@ -136,7 +136,14 @@ void CBroker::Run()
     // asynchronous operation outstanding: the asynchronous accept call waiting
     // for new incoming connections.
     m_synchronizer.Run();
-    m_ioService.run();
+    try
+    {
+        m_ioService.run();
+    }
+    catch(std::exception &e)
+    {
+        Logger.Error<<"Broker Exception: "<<e.what()<<std::endl;
+    }
 }
 
 ///////////////////////////////////////////////////////////////////////////////

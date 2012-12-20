@@ -100,7 +100,7 @@ IAdapter::Pointer CRtdsAdapter::Create(boost::asio::io_service & service,
 CRtdsAdapter::CRtdsAdapter(boost::asio::io_service & service,
         const boost::property_tree::ptree & ptree)
     : ITcpAdapter(service, ptree)
-    , m_GlobalTimer(service)
+    , m_runTimer(service)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 }
@@ -196,8 +196,8 @@ void CRtdsAdapter::Run()
     }
 
     // Start the timer; on timeout, this function is called again
-    m_GlobalTimer.expires_from_now(boost::posix_time::microseconds(TIMESTEP));
-    m_GlobalTimer.async_wait(boost::bind(&CRtdsAdapter::Run, this));
+    m_runTimer.expires_from_now(boost::posix_time::microseconds(TIMESTEP));
+    m_runTimer.async_wait(boost::bind(&CRtdsAdapter::Run, this));
 }
 
 ////////////////////////////////////////////////////////////////////////////

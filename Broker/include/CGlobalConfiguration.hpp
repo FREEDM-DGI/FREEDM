@@ -35,6 +35,7 @@
 #include <string>
 
 #include <boost/date_time/posix_time/posix_time.hpp>
+#include <boost/asio/io_service.hpp>
 
 namespace freedm {
 namespace broker {
@@ -61,7 +62,9 @@ class CGlobalConfiguration : public boost::noncopyable
         void SetClockSkew(boost::posix_time::time_duration t) 
                 { m_clockskew = t; };
         /// Set the plug-and-play port number
-        void SetFactorySessionPort(unsigned short port) { m_factory_port = port; }
+        void SetFactoryPort(unsigned short port) { m_factory_port = port; }
+        /// Set the shared i/o service
+        void SetService(boost::asio::io_service & ios) { m_ios = ios; }
         /// Get the hostname
         std::string GetHostname() const { return m_hostname; };
         /// Get the port
@@ -70,18 +73,21 @@ class CGlobalConfiguration : public boost::noncopyable
         std::string GetUUID() const { return m_uuid; };
         /// Get the address
         std::string GetListenAddress() const { return m_address; };
-        /// Get the plug-and-play port number
-        unsigned short GetFactorySessionPort() const { return m_factory_port; }        
         /// Get the Skew of the local clock
         boost::posix_time::time_duration GetClockSkew() const 
                 { return m_clockskew; };
+        /// Get the plug-and-play port number
+        unsigned short GetFactoryPort() const { return m_factory_port; }        
+        /// Get the shared i/o service
+        boost::asio::io_service & GetService() const { return m_ios; }
     private:
         std::string m_hostname; /// Node hostname
         std::string m_port; /// Port number
         std::string m_uuid; /// The node uuid
         std::string m_address; /// The listening address.
-        unsigned short m_factory_port; /// Port number for adapter factory.
         boost::posix_time::time_duration m_clockskew; /// The skew of the clock
+        unsigned short m_factory_port; /// Port number for adapter factory
+        boost::asio::io_service & m_ios; /// Shared i/o service
 };
 
 } // namespace broker

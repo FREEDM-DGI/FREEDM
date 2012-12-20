@@ -5,7 +5,7 @@
 ///
 /// @project        FREEDM DGI
 ///
-/// @description    TCP server that accepts a single connection at a time.
+/// @description    TCP server that accepts a single client connection.
 ///
 /// These source code files were created at Missouri University of Science and
 /// Technology, and are intended for use in teaching or research. They may be
@@ -23,9 +23,10 @@
 #ifndef C_TCP_SERVER_HPP
 #define C_TCP_SERVER_HPP
 
-#include "IServer.hpp"
-
 #include <boost/asio.hpp>
+#include <boost/function.hpp>
+#include <boost/shared_ptr.hpp>
+#include <boost/noncopyable.hpp>
 
 namespace freedm {
 namespace broker {
@@ -33,29 +34,28 @@ namespace device {
 
 /// TCP server that handles a single client connection.
 ////////////////////////////////////////////////////////////////////////////////
-/// A TCP server that redirects clients to the registered connection handler
-/// and handles packets that are delimited with the sequence \r\n\r\n.
+/// A TCP server that redirects clients to the registered connection handler.
 ///
 /// @limitations None.
 ////////////////////////////////////////////////////////////////////////////////
 class CTcpServer
-    : public IServer
+    : private boost::noncopyable
 {
 public:
     /// Convenience type for a shared pointer to self.
     typedef boost::shared_ptr<CTcpServer> Pointer;
-
-    /// Creates a new TCP server on the specified port number.
-    static Pointer Create(boost::asio::io_service & ios, unsigned short port);
-
+    
+    /// Type of the callback function for client connections.
+    typedef boost::function<void (boost::asio::ip::tcp::socket &)> Callback;
+    
     /// Stops the TCP server.
     virtual ~CTcpServer();
     
-    /// Receives a packet from the connected client.
-    std::string ReceiveData() const;
+    /// Creates a new TCP server on the specified port number.
+    static Pointer Create(boost::asio::io_service & ios, unsigned short port);
     
-    /// Sends a packet of data to the connected client.
-    void SendData(const std::string pkt) const;
+    /// Registers a callback function for client connections.
+    void RegisterHandler(Callback h);
     
     /// Gets the listen port of the TCP server.
     unsigned short GetPort() const;
@@ -72,14 +72,20 @@ private:
     /// Handles an accepted client connection.
     void HandleAccept(const boost::system::error_code & error);
     
+    /// Gets a log header.
+    std::string hdr() const;
+    
     /// Acceptor for new client connections.
     boost::asio::ip::tcp::acceptor m_acceptor;
     
-    /// Socket for the current client.
-    mutable boost::asio::ip::tcp::socket m_socket;
-    
     /// Port number of the server.
     unsigned short m_port;
+    
+    /// Callback function to handle clients.
+    ConnectionHandler m_handler;
+protected:
+    /// Socket for the current client.
+    mutable boost::asio::ip::tcp::socket m_socket;
 };
 
 } // namespace device

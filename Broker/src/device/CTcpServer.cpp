@@ -5,18 +5,18 @@
 ///
 /// @project        FREEDM DGI
 ///
-/// @description    TCP server that accepts a single connection at a time.
+/// @description    TCP server that accepts a single client connection.
 ///
 /// @functions
 ///     CTcpServer::CTcpServer
 ///     CTcpServer::~CTcpServer
 ///     CTcpServer::Create
-///     CTcpServer::ReceiveData
-///     CTcpServer::SendData
+///     CTcpServer::RegisterHandler
 ///     CTcpServer::GetPort
 ///     CTcpServer::GetHostname
 ///     CTcpServer::StartAccept
 ///     CTcpServer::HandleAccept
+///     CTcpServer::hdr
 ///     
 ///
 /// These source code files were created at Missouri University of Science and
@@ -35,8 +35,7 @@
 #include "CTcpServer.hpp"
 #include "CLogger.hpp"
 
-#include <sstream>
-#include <iostream>
+#include <string>
 #include <stdexcept>
 
 #include <boost/bind.hpp>
@@ -90,21 +89,21 @@ CTcpServer::CTcpServer(boost::asio::io_service & ios, unsigned short port)
 ////////////////////////////////////////////////////////////////////////////////
 CTcpServer::~CTcpServer()
 {
-    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Trace << hdr() << __PRETTY_FUNCTION__ << std::endl;
     
     if( m_acceptor.is_open() )
     {
-        Logger.Warn << "Closed the TCP server acceptor." << std::endl;
+        Logger.Info << hdr() << "Closed TCP server acceptor." << std::endl;
         m_acceptor.close();
     }
 
     if( m_socket.is_open() )
     {
-        Logger.Warn << "Closed an open client connection." << std::endl;
+        Logger.Warn << hdr() << "Closed open client connection." << std::endl;
         m_socket.close();
     }
     
-    Logger.Status << "Closed TCP server on port " << m_port << std::endl;
+    Logger.Status << "Closed TCP server on port " << m_port << "." << std::endl;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -126,68 +125,33 @@ CTcpServer::Pointer CTcpServer::Create(boost::asio::io_service & ios,
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-/// Retrieves a packet of data from the socket delimited with \r\n\r\n.
+/// Registers a client connection handler with the server.
 ///
-/// @ErrorHandling Throws a std::runtime_error if the socket is not open.
-/// @pre The socket must be open, and the data must end with \r\n\r\n.
-/// @post Reads data from the socket until the sequence \r\n\r\n.
-/// @return A string that contains the entire packet.
+/// @ErrorHanlding Throws a std::runtime_error if either m_handler has already
+/// been initialized or the passed function is null.
+/// @pre m_handler must not be initialized.
+/// @post Assigns the passed function to m_handler.
+/// @param h The callback function to handle client connections.
 ///
-/// @limitations None.
+/// @limitations This function can only be called once.
 ////////////////////////////////////////////////////////////////////////////////
-std::string CTcpServer::ReceiveData() const
+void CTcpServer::RegisterHandler(Callback h)
 {
-    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    
-    boost::asio::streambuf packet;
-    std::istream packet_stream(&packet);
-    std::stringstream sstream;
+    Logger.Trace << hdr() << __PRETTY_FUNCTION__ << std::endl;
 
-    if( !m_socket.is_open() )
+    if( !m_handler.empty() )
     {
-        throw std::runtime_error("The server has no open client connection.");
-    }
-    
-    Logger.Info << "Blocking to receive data on port " << m_port << std::endl;
-    boost::asio::read_until(m_socket, packet, "\r\n\r\n");
-
-    // convert the stream to a string
-    sstream << packet_stream.rdbuf();
-    return sstream.str();
-}
-
-////////////////////////////////////////////////////////////////////////////////
-/// Sends a packet of data to the open socket connection.
-///
-/// @ErrorHandling Throws a std::runtime_error if the socket is not open, or if
-/// the packet does not have the correct \r\n\r\n delimiter.
-/// @pre The socket must be open, and data must end with \r\n\r\n.
-/// @post Sends the passed data over m_socket.
-/// @param pkt The packet of data to send.
-///
-/// @limitations None.
-////////////////////////////////////////////////////////////////////////////////
-void CTcpServer::SendData(const std::string pkt) const
-{
-    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    
-    boost::asio::streambuf packet;
-    std::ostream packet_stream(&packet);
-    
-    if( !m_socket.is_open() )
-    {
-        throw std::runtime_error("The server has no open client connection.");
+        throw std::runtime_error(hdr() + "Cannot override client handler.");
     }
 
-    if( pkt.size() < 4 || (pkt.substr(pkt.size()-4) != "\r\n\r\n") )
+    if( h.empty() )
     {
-        throw std::runtime_error("The server tried to send a corrupt packet.");
+        throw std::runtime_error(hdr() + "Cannot use null client handler.");
     }
+
+    m_handler = h;
     
-    packet_stream << pkt;
-    
-    Logger.Info << "Blocking to send data on port " << m_port << std::endl;
-    boost::asio::write(m_socket, packet);
+    Logger.Notice << hdr() << "Set client connection handler." << std::endl;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -201,7 +165,7 @@ void CTcpServer::SendData(const std::string pkt) const
 ////////////////////////////////////////////////////////////////////////////////
 unsigned short CTcpServer::GetPort() const
 {
-    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Trace << hdr() << __PRETTY_FUNCTION__ << std::endl;
     return m_port;
 }
 
@@ -217,11 +181,11 @@ unsigned short CTcpServer::GetPort() const
 ////////////////////////////////////////////////////////////////////////////////
 std::string CTcpServer::GetHostname() const
 {
-    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Trace << hdr() << __PRETTY_FUNCTION__ << std::endl;
     
     if( !m_socket.is_open() )
     {
-        throw std::runtime_error("The server has no open client connection.");
+        throw std::runtime_error(hdr() + "No open client connection.");
     }
     
     return m_socket.remote_endpoint().address().to_string();
@@ -237,23 +201,25 @@ std::string CTcpServer::GetHostname() const
 ////////////////////////////////////////////////////////////////////////////////
 void CTcpServer::StartAccept()
 {
-    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Trace << hdr() << __PRETTY_FUNCTION__ << std::endl;
 
     if( m_socket.is_open() )
     {
-        Logger.Info << "Closed an open client connection." << std::endl;
+        Logger.Warn << hdr() << "Closed open client connection." << std::endl;
         m_socket.close();
     }
     m_acceptor.async_accept(m_socket, boost::bind(&CTcpServer::HandleAccept,
             this, boost::asio::placeholders::error));
+
+    Logger.Info << hdr() << "Waiting for next connection." << std::endl;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 /// Redirects an accepted client to the connection handler.
 ///
 /// @ErrorHandling Throws a std::runtime_error if the connection handler has
-/// not been defined with IServer::RegisterHandler.
-/// @pre IServer::RegisterHandler must be called prior to this function.
+/// not been defined with CTcpServer::RegisterHandler.
+/// @pre CTcpServer::RegisterHandler must be called prior to this function.
 /// @post Calls m_handler to handle the client connection.
 /// @post Schedules the next client with CTcpServer::StartAccept.
 /// @param error The error code if the connection failed.
@@ -262,25 +228,37 @@ void CTcpServer::StartAccept()
 ////////////////////////////////////////////////////////////////////////////////
 void CTcpServer::HandleAccept(const boost::system::error_code & error)
 {
-    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Trace << hdr() << __PRETTY_FUNCTION__ << std::endl;
 
     if( !error )
     {
-        Logger.Info << "Accepted a new client connection." << std::endl;
+        Logger.Info << hdr() << "Accepted new client connection." << std::endl;
         
         if( m_handler.empty() )
         {
-            throw std::runtime_error("The server tried to call a null "
-                    + std::string("connection handler."));
+            throw std::runtime_error(hdr() + "Null connection handler.");
         }
-        
-        m_handler(boost::enable_shared_from_this());
+        m_handler(m_socket);
     }
     else
     {
-        Logger.Warn << "Failed to accept a client connection." << std::endl;
+        Logger.Warn << hdr() << "Failed to accept a client." << std::endl;
     }
     StartAccept();
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/// Gets a log header for this object.
+///
+/// @pre None.
+/// @post A string "(m_port)" unique to this server.
+/// @return A header to use with the logger.
+///
+/// @limitations None.
+////////////////////////////////////////////////////////////////////////////////
+std::string CTcpServer::hdr() const
+{
+    return "(" + m_port + ") ";
 }
 
 } // namespace device

@@ -83,7 +83,7 @@ int main(int argc, char* argv[])
     std::string cfgFile, loggerCfgFile, adapterCfgFile;
     std::string listenIP, port, uuidString, hostname, uuidgenerator;
     unsigned int globalVerbosity;
-    unsigned short fport;
+    unsigned short factoryPort;
     CUuid uuid;
 
     // Load Config Files
@@ -113,11 +113,11 @@ int main(int argc, char* argv[])
                 ( "port,p",
                 po::value<std::string > ( &port )->default_value("1870"),
                 "TCP port to listen on" )
-                ( "factory-port", po::value<unsigned short>(&fport)->
-                default_value(1610), "port for plug-and-play devices" )
-                ( "factory-tcp-port",
+                ( "factory-port", po::value<unsigned short>(&factoryPort)->
+                default_value(1610), "port number for the adapter factory" )
+                ( "adapter-port",
                 po::value<std::vector<std::string> >()->composing(),
-                "range of port numbers [start:end] for plug-and-play devices" )
+                "available port ranges start:end for ARM adapters" )
                 ( "adapter-config", po::value<std::string>( &adapterCfgFile ),
                 "filename of the adapter specification for physical devices" )
                 ( "list-loggers", "Print all the available loggers and exit" )
@@ -223,6 +223,12 @@ int main(int argc, char* argv[])
         std::string uuidstr2;
         ss2 << uuid;
         ss2 >> uuidstr2;
+
+        //constructors for initial mapping
+        CConnectionManager conManager;
+        ConnectionPtr newConnection;
+        boost::asio::io_service ios;
+
         /// Prepare the global Configuration
         CGlobalConfiguration::instance().SetHostname(hostname);
         CGlobalConfiguration::instance().SetUUID(uuidstr2);
@@ -230,20 +236,16 @@ int main(int argc, char* argv[])
         CGlobalConfiguration::instance().SetListenAddress(listenIP);
         CGlobalConfiguration::instance().SetClockSkew(
                 boost::posix_time::milliseconds(0));
-        //constructors for initial mapping
-        CConnectionManager conManager;
-        ConnectionPtr newConnection;
-        boost::asio::io_service ios;
-
-        // configure the adapter factory
-        CGlobalConfiguration::instance().SetFactorySessionPort(fport);
-        device::CAdapterFactory::Instance();
+        CGlobalConfiguration::instance().SetService(ios);
+        CGlobalConfiguration::instance().SetFactoryPort(factoryPort);
         
-        if( vm.count("factory-tcp-port") > 0 )
+        // configure the adapter factory
+        device::CAdapterFactory::Instance();
+        if( vm.count("adapter-port") > 0 )
         {
             std::vector<std::string> v;
     
-            v = vm["factory-tcp-port"].as<std::vector<std::string> >();
+            v = vm["adapter-port"].as<std::vector<std::string> >();
             
             BOOST_FOREACH(std::string str, v)
             {
@@ -281,9 +283,8 @@ int main(int argc, char* argv[])
         }
         else
         {
-            Logger.Warn << "No ports specified for the factory." << std::endl;
+            Logger.Warn << "No ports specified for ARM adapters." << std::endl;
         }
-        
         if( vm.count("adapter-config") > 0 )
         {
             Logger.Notice << "Reading the file " << adapterCfgFile

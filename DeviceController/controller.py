@@ -25,26 +25,57 @@ import ConfigParser
 import socket
 import time
 
-# TODO - None of this is guaranteed to work in an actual network, where
-#        sends/receives might send or receive only part of a message, depending
-#        on the mood of the network buffers.
-#
-#        Two upgrades are required:
-#         
-#        * reading up to \r\n\r\n and (a) storing any excess received
-#          into a buffer, or (b) asserting that nothing else was sent.
-#          (a) is more general but we might be able to do (b) because I don't
-#          think the DGI should ever send two messages in a row without
-#          receiving under the current protocol, and therefore a \r\n\r\n in the
-#          middle of any string returned by recv would be a BadRequest.
-#
-#        * checking the return value of send to make sure everything is
-#          definitely sent.
-
 # TODO - Currently we recognize BadRequest messages sent by DGI, then quit and
 #        report it as an exception. It'd be better to polite disconnect and
 #        reconnect instead. Also, we never send any BadRequest messages
 #        ourselves - we should.
+
+
+def sendAll(socket, msg):
+    """
+    Ensures the entirety of msg is sent over the socket.
+
+    @param socket the connected stream socket to send to
+    @param msg the message to be sent
+
+    @ErrorHandling Could raise socket.error or socket.timeout if the data
+                   cannot be sent in time.
+    """
+    assert len(msg) != 0
+    sentBytes = socket.send(msg)
+    while (sentBytes != len(msg)):
+        assert sentBytes < len(msg)
+        msg = msg[sentBytes:]
+        assert len(msg) != 0
+        sentBytes = socket.send(msg)
+        if sentBytes == 0:
+            raise socket.error
+
+
+def recvAll(socket):
+    """
+    Receives all the data that has been sent from DGI until \r\n\r\n is reached.
+    
+    @param socket the connected stream socket to receive from
+
+    @ErrorHandling Will raise a RuntimeError if there is data after \r\n\r\n,
+                   since that delimits the end of a message and the DGI is not
+                   allowed to send multiple messages in a row. Or if there is
+                   no \r\n\r\n at all in the packet, or if it doesn't occur at
+                   the very end of the packet. Will raise socket.timeout if
+                   the DGI times out, or socket.error if the connection is
+                   closed.
+
+    @return the data that has been read
+    """
+    msg = socket.recv(1024)
+    while len(msg)%1024 == 0:
+        msg += socket.recv(1024)
+    if len(msg) == 0:
+        raise socket.error
+    if msg.find('\r\n\r\n') != len(msg)-4:
+        raise RuntimeError('Malformed message from DGI:\n' + msg)
+    return msg
 
 
 def enableDevice(deviceTypes, deviceSignals, command):
@@ -104,7 +135,7 @@ def sendStates(adapterSock, deviceSignals):
         msg += name + ' ' + signal + ' ' + deviceSignals[(name, signal)]
     msg += '\r\n'
     print 'Sending states to DGI:\n' + msg
-    adapterSock.send(msg)
+    sendAll(adapterSock, msg)
     print 'Sent states to DGI'
 
 
@@ -119,9 +150,7 @@ def receiveCommands(adapterSock, deviceSignals):
     @ErrorHandling caller must check for socket.timeout
     """
     print 'Awaiting commands from DGI...'
-    # TODO - this will fail if the DGI responds with a ginormous packet
-    #      - we should rather calculate the largest possible size we could get
-    msg = adapterSock.recv(2048)
+    msg = recvAll(adapterSock)
     print 'Received states from DGI:\n' + msg
     if msg.find('DeviceCommands\r\n') != 0:
         raise RuntimeError('Malformed command packet:\n' + msg)
@@ -155,6 +184,7 @@ def work(adapterSock, deviceSignals, stateTimeout):
 def reconnect(deviceTypes, config):
     """
     Sends a Hello message to DGI, and receives its Start message in response.
+    If there is a failure, tries again until it works.
 
     @param deviceTypes dict of device names -> types
     @param config all the settings from the configuration file
@@ -178,20 +208,23 @@ def reconnect(deviceTypes, config):
     while True:
         try:
             adapterFactorySock.connect((dgiHostname, dgiPort))
-            adapterFactorySock.send(devicePacket)
+            sendAll(adapterFactorySock, devicePacket)
             print 'Sent Hello message:\n' + devicePacket
             try:
-                msg = adapterFactorySock.recv(64)
+                msg = recvAll(adapterFactorySock)
                 print 'Received Start message:\n' + msg
                 adapterFactorySock.close()
                 break
             except socket.timeout:
                 adapterFactorySock.close()
-                print 'DGI timeout'
+                print 'DGI AdapterFactory timeout'
                 time.sleep(helloTimeout)
                 print 'Reconnecting...'
+            except socket.error:
+                adapterFactorySock.close()
+                print 'Socket to DGI AdapterFactory unexpectedly closed'
         except socket.error:
-            print 'Fail connecting to DGI'
+            print 'Fail connecting to DGI AdapterFactory'
             time.sleep(helloTimeout)
             print 'Reconnecting...'
 
@@ -209,10 +242,14 @@ def reconnect(deviceTypes, config):
     elif statePort < 0 or statePort > 65535:
         raise ValueError('DGI sent a nonsense statePort' + dgiport)
 
-    adapterSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    adapterSocket.connect(dgiHostname, statePort)
-    adapterSocket.setTimeout(dgiTimeout)
-    return adapterSocket
+    try:
+        adapterSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        adapterSocket.connect(dgiHostname, statePort)
+        adapterSocket.setTimeout(dgiTimeout)
+        return adapterSocket
+    except socket.error:
+        print 'Error connecting to DGI adapter, trying again...'
+        return reconnect(deviceTypes, config)
 
 
 def politeQuit(adapterSock, deviceSignals, stateTimeout):
@@ -230,8 +267,8 @@ def politeQuit(adapterSock, deviceSignals, stateTimeout):
     while True:
         try:
             print 'Sending PoliteDisconnect request to DGI'
-            adapterSock.send('PoliteDisconnect\r\n\r\n')
-            msg = adapterSock.recv(32)
+            sendAll(adapterSock, 'PoliteDisconnect\r\n\r\n')
+            msg = recvAll(adapterSock)
 
             if msg.find('BadRequest: ') == 0:
                 msg.replace('BadRequest: ', '', 1)
@@ -250,7 +287,11 @@ def politeQuit(adapterSock, deviceSignals, stateTimeout):
             work(adapterSock, deviceSignals, stateTimeout)
                     
         except socket.timeout:
-            print 'DGI timeout, closing connection impolitely'
+            print 'DGI adapter timeout, closing connection impolitely'
+            adapterSock.close()
+            return
+        except socket.error:
+            print 'Socket to DGI adapter unexpectedly closed'
             adapterSock.close()
             return
 

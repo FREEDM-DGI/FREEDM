@@ -26,7 +26,6 @@
 #include "IAdapter.hpp"
 
 #include <map>
-#include <sstream>
 #include <string>
 
 #include <boost/property_tree/ptree_fwd.hpp>

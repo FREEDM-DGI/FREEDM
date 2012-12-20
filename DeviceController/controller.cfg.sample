@@ -4,6 +4,18 @@
 dgi-hostname=freedm.bitcurio.us
 dgi-port=3160 ; zapdos 3010
 
-# the port on which this controller will receive from the DGI
-listen-port=14444
+[script]
 
+# there can be only one
+dsp-script=dsp-script.txt
+
+[timings]
+
+# after receiving commands, ms to wait before sending updated states
+state-timeout=1000
+
+# ms to wait before resending a Hello (if the DGI does not respond)
+hello-timeout=2000
+
+# after sending updated states, ms to wait before impolite close/reconnect
+dgi-timeout=5000

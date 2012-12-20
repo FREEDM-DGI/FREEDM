@@ -6,3 +6,13 @@ participate in the device session protocol with the DGI.
 
 This fake code exists to trick DGI into thinking that's happening.
 
+How to use:
+
+1) Make copies of controller.cfg.sample and dsp-script.txt.sample, without the
+   .sample extensions.
+
+2) Modify them.
+
+3) Turn on the DGI. Make sure freedm.cfg points to a CArmAdapter XML file.
+
+4) Run the controller.

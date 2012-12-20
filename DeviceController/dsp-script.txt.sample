@@ -1,42 +1,51 @@
 # valid commands are:
 #
-# enable devicetype devicename
-# disable devicetype devicename
-# sleep n
+# enable devicetype devicename signal1 initialVal1 signal2 initialVal2 ...
+# disable devicename
+# work n
 # dieHorribly n
 #
 # Whenever you enable or disable a device, the controller will send a quit
 # request to DGI, and will reinitiate connection with the new device attached
-# once that succeeds.
+# once that succeeds. So each enable/disable will take several seconds.
 # 
 # If the controller dies horribly, it will do that without sending a quit
 # request. It will wait n seconds (0 is valid) before reconnecting.
 #
-# sleep is used to pass n seconds without enabling/disabling devices or dying.
+# work is used to pass time without enabling/disabling devices or dying.
+# i.e. it is used for normal operation of the controller. For implementation
+# simplicity, n refers to the number of rounds of sends/receives to execute
+# successfully, where one round is one send and one receive. So the seconds
+# of work is lower bounded by n*(state-timeout+command-timeout), where
+# state-timeout is set by the controller and command-timeout by DGI. (Never
+# mind that the controller is mostly going to be blocking during this work.)
 #
 # *The parser accepts comments only if they start on the first column!*
 
-enable Sst SST1
-enable Sst SST2
-enable Sst SST3
-enable Sst SST4
-enable Sst SST5
-enable Sst SST6
+# Note that this won't work, it's just to show the syntax for devices with
+# multiple signals. If we did add weirdsetting to SST, each SST would need
+# to specify the initial value here. Zeroes cannot be assumed!
+enable Sst SST1 gateway 0.0 weirdsetting 25.3
+enable Sst SST2 gateway 0.0
+enable Sst SST3 gateway 18.0
+enable Sst SST4 gateway -10.0
+enable Drer DRER1 generation 5.0
+enable Load LOAD1 drain -4
 enable Fid FID1
 enable Fid FID2
 
-sleep 5
+work 5
 
-disable Sst SST1
-disable Sst SST2
-disable Sst SST3
+disable SST1
+disable SST2
+disable SST3
 
 dieHorribly
 
-disable Fid FID1
+disable FID1
 
-sleep 15
+work 15
 
 enable Sst SST1
 
-sleep 15
+work 15

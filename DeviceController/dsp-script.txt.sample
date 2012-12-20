@@ -16,8 +16,8 @@
 # i.e. it is used for normal operation of the controller. For implementation
 # simplicity, n refers to the number of rounds of sends/receives to execute
 # successfully, where one round is one send and one receive. So the seconds
-# of work is lower bounded by n*(state-timeout+command-timeout), where
-# state-timeout is set by the controller and command-timeout by DGI. (Never
+# of work is lower bounded by n*(stateTimeout+commandTimeout), where
+# stateTimeout is set by the controller and commandTimeout by DGI. (Never
 # mind that the controller is mostly going to be blocking during this work.)
 #
 # *The parser accepts comments only if they start on the first column!*

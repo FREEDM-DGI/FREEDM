@@ -91,7 +91,7 @@ private:
     void EndianSwapIfNeeded(std::vector<SignalValue> & v);
 
     /// Timer object to set communication cycle pace.
-    boost::asio::deadline_timer m_GlobalTimer;
+    boost::asio::deadline_timer m_runTimer;
 };
 
 } //namespace device

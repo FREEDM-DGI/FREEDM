@@ -25,11 +25,6 @@ import ConfigParser
 import socket
 import time
 
-# TODO - Currently we recognize BadRequest messages sent by DGI, then quit and
-#        report it as an exception. It'd be better to polite disconnect and
-#        reconnect instead. Also, we never send any BadRequest messages
-#        ourselves - we should.
-
 
 def sendAll(socket, msg):
     """
@@ -49,7 +44,7 @@ def sendAll(socket, msg):
         assert len(msg) != 0
         sentBytes = socket.send(msg)
         if sentBytes == 0:
-            raise socket.error
+            raise socket.error('Connection to DGI unexpectedly closed')
 
 
 def recvAll(socket):
@@ -72,7 +67,7 @@ def recvAll(socket):
     while len(msg)%1024 == 0:
         msg += socket.recv(1024)
     if len(msg) == 0:
-        raise socket.error
+        raise socket.error('Connection to DGI unexpectedly closed')
     if msg.find('\r\n\r\n') != len(msg)-4:
         raise RuntimeError('Malformed message from DGI:\n' + msg)
     return msg
@@ -195,38 +190,40 @@ def reconnect(deviceTypes, config):
     dgiPort = int(config.get('connection', 'dgi-port'))
     helloTimeout = float(config.get('timings', 'hello-timeout'))/1000.0
     dgiTimeout = float(config.get('timings', 'dgi-timeout'))/1000.0
+    adapterConnRetries = int(config.get('misc', 'adapter-connection-retries'))
 
     devicePacket = 'Hello\r\n'
     for deviceName, deviceType in deviceTypes.items():
         devicePacket += deviceType + ' ' + deviceName + '\r\n'
     devicePacket += '\r\n'
-
-    adapterFactorySock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    adapterFactorySock.settimeout(dgiTimeout)
     
     msg = ''
     while True:
+        adapterFactorySock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        adapterFactorySock.settimeout(dgiTimeout)
         try:
             adapterFactorySock.connect((dgiHostname, dgiPort))
+        except (socket.error, socket.herror, socket.gaierror, socket.timeout) \
+                as e:
+            print 'Fail connecting to AdapterFactory: {0}'.format(e.strerror)
+            time.sleep(helloTimeout)
+            print 'Attempting to reconnect...'
+            continue
+        else:
+            print 'Connected to AdapterFactory'
+
+        try:
             sendAll(adapterFactorySock, devicePacket)
             print 'Sent Hello message:\n' + devicePacket
-            try:
-                msg = recvAll(adapterFactorySock)
-                print 'Received Start message:\n' + msg
-                adapterFactorySock.close()
-                break
-            except socket.timeout:
-                adapterFactorySock.close()
-                print 'DGI AdapterFactory timeout'
-                time.sleep(helloTimeout)
-                print 'Reconnecting...'
-            except socket.error:
-                adapterFactorySock.close()
-                print 'Socket to DGI AdapterFactory unexpectedly closed'
-        except socket.error:
-            print 'Fail connecting to DGI AdapterFactory'
+            msg = recvAll(adapterFactorySock)
+            print 'Received Start message:\n' + msg
+        except (socket.error, socket.timeout) as e:
+            print 'AdapterFactory communication failure: {0}'.format(e.strerror)
+            adapterFactorySock.close()
             time.sleep(helloTimeout)
-            print 'Reconnecting...'
+            print 'Attempting to reconnect...'
+        else:
+            break
 
     if msg.find('BadRequest: ') == 0:
         msg.replace('BadRequest: ', '', 1)
@@ -240,17 +237,24 @@ def reconnect(deviceTypes, config):
     if 0 < statePort < 1024:
         raise ValueError('DGI wants to use DCCP well known port ' + statePort)
     elif statePort < 0 or statePort > 65535:
-        raise ValueError('DGI sent a nonsense statePort' + dgiport)
+        raise ValueError('DGI sent a nonsense statePort ' + dgiport)
 
-    try:
-        adapterSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        adapterSocket.connect(dgiHostname, statePort)
-        adapterSocket.setTimeout(dgiTimeout)
-        return adapterSocket
-    except socket.error:
-        print 'Error connecting to DGI adapter, trying again...'
-        return reconnect(deviceTypes, config)
-
+    for i in range(0, adapterConnRetries):
+        try:
+            adapterSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            adapterSocket.connect(dgiHostname, statePort)
+        except (socket.error, socket.herror, socket.gaierror, socket.timeout) \
+                as e:
+            print 'Error connecting to DGI adapter: {0}'.format(e.strerror)
+            sleep(stateTimeout)
+            if i == 9:
+                print 'Giving up on the adapter, sending a new Hello'
+                return reconnect(deviceTypes, config)
+            else:
+                print 'Trying again...'
+        else:
+            adapterSocket.setTimeout(dgiTimeout)
+            return adapterSocket
 
 def politeQuit(adapterSock, deviceSignals, stateTimeout):
     """
@@ -269,31 +273,35 @@ def politeQuit(adapterSock, deviceSignals, stateTimeout):
             print 'Sending PoliteDisconnect request to DGI'
             sendAll(adapterSock, 'PoliteDisconnect\r\n\r\n')
             msg = recvAll(adapterSock)
+        except (socket.error, socket.timeout) as e:
+            print 'DGI communication error: {0}'.format(e.strerror)
+            print 'Closing connection impolitely'
+            adapterSock.close()
+            return
 
-            if msg.find('BadRequest: ') == 0:
-                msg.replace('BadRequest: ', '', 1)
-                raise ValueError('Sent bad request to DGI: ' + msg)
+        if msg.find('BadRequest: ') == 0:
+            msg.replace('BadRequest: ', '', 1)
+            raise ValueError('Sent bad request to DGI: ' + msg)
+        
+        msg = msg.split()
+        if len(msg) != 2 or msg[0] != 'PoliteDisconnect' or \
+                (msg[1] != 'Accepted' and msg[1] != 'Rejected'):
+            raise RuntimeError('Got bad disconnect response:\n' + ''.join(msg))
 
-            msg = msg.split()
-            if (len(msg) != 2 or msg[0] != 'PoliteDisconnect' or
-                (msg[1] != 'Accepted' and msg[1] != 'Rejected')):
-                raise RuntimeError('Malformed disconnect response:\n' + 
-                               ''.join(msg))
-
-            if msg[1] == 'Accepted':
+        if msg[1] == 'Accepted':
+            adapterSock.close()
+            return
+        else:
+            assert msg[1] == 'Rejected'
+            print 'Performing another round of work'
+            try:
+                work(adapterSock, deviceSignals, stateTimeout)
+                # Loop again
+            except (socket.error, socket.timeout) as e:
+                print 'DGI communication error: {0}'.format(e.strerror)
+                print 'Closing connection impolitely'
                 adapterSock.close()
                 return
-            assert msg[1] == 'Rejected'
-            work(adapterSock, deviceSignals, stateTimeout)
-                    
-        except socket.timeout:
-            print 'DGI adapter timeout, closing connection impolitely'
-            adapterSock.close()
-            return
-        except socket.error:
-            print 'Socket to DGI adapter unexpectedly closed'
-            adapterSock.close()
-            return
 
 
 if __name__ == '__main__':
@@ -330,7 +338,7 @@ if __name__ == '__main__':
 
         print 'Processing command ' + command[:-1] # don't print \n
 
-        if command.find('enable') == 0:
+        if command.find('enable') == 0 and (len(command.split())-3)%2 == 0:
             enableDevice(deviceTypes, deviceSignals, command)
             if not firstHello:
                 politeQuit(adapterSock, deviceSignals, stateTimeout)
@@ -364,8 +372,9 @@ if __name__ == '__main__':
             for i in range(duration):
                 try:
                     work(adapterSock, deviceSignals, stateTimeout)
-                except socket.timeout:
-                    print 'DGI timeout detected, performing impolite reconnect'
+                except (socket.error, socket.timeout) as e:
+                    print 'DGI communication error: {0}'.format(e.strerror)
+                    print 'Performing impolite reconnect'
                     adapterSock.close()
                     adapterSock = reconnect(deviceTypes, config)
 

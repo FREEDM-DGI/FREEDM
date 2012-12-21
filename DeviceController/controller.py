@@ -23,6 +23,7 @@
 
 import ConfigParser
 import socket
+import sys
 import time
 
 
@@ -202,12 +203,14 @@ def reconnect(deviceTypes, config):
         adapterFactorySock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         adapterFactorySock.settimeout(dgiTimeout)
         try:
+            print 'Attempting to connect to AdapterFactory...'
             adapterFactorySock.connect((dgiHostname, dgiPort))
         except (socket.error, socket.herror, socket.gaierror, socket.timeout) \
                 as e:
-            print 'Fail connecting to AdapterFactory: {0}'.format(e.strerror)
+            print >> sys.stderr, \
+                'Fail connecting to AdapterFactory: {0}'.format(e.strerror)
             time.sleep(helloTimeout)
-            print 'Attempting to reconnect...'
+            print >> sys.stderr, 'Attempting to reconnect...'
             continue
         else:
             print 'Connected to AdapterFactory'
@@ -218,10 +221,11 @@ def reconnect(deviceTypes, config):
             msg = recvAll(adapterFactorySock)
             print 'Received Start message:\n' + msg
         except (socket.error, socket.timeout) as e:
-            print 'AdapterFactory communication failure: {0}'.format(e.strerror)
+            print >> sys.stderr, \
+                'AdapterFactory communication failure: {0}'.format(e.strerror)
             adapterFactorySock.close()
             time.sleep(helloTimeout)
-            print 'Attempting to reconnect...'
+            print >> sys.stderr, 'Attempting to reconnect...'
         else:
             break
 
@@ -245,13 +249,15 @@ def reconnect(deviceTypes, config):
             adapterSocket.connect(dgiHostname, statePort)
         except (socket.error, socket.herror, socket.gaierror, socket.timeout) \
                 as e:
-            print 'Error connecting to DGI adapter: {0}'.format(e.strerror)
+            print >> sys.stderr, \
+                'Error connecting to DGI adapter: {0}'.format(e.strerror)
             sleep(stateTimeout)
             if i == 9:
-                print 'Giving up on the adapter, sending a new Hello'
+                print >> sys.stderr, \
+                    'Giving up on the adapter, sending a new Hello'
                 return reconnect(deviceTypes, config)
             else:
-                print 'Trying again...'
+                print >> sys.stderr, 'Trying again...'
         else:
             adapterSocket.setTimeout(dgiTimeout)
             return adapterSocket
@@ -274,8 +280,9 @@ def politeQuit(adapterSock, deviceSignals, stateTimeout):
             sendAll(adapterSock, 'PoliteDisconnect\r\n\r\n')
             msg = recvAll(adapterSock)
         except (socket.error, socket.timeout) as e:
-            print 'DGI communication error: {0}'.format(e.strerror)
-            print 'Closing connection impolitely'
+            print >> sys.stderr, \
+                'DGI communication error: {0}'.format(e.strerror)
+            print >> sys.stderr, 'Closing connection impolitely'
             adapterSock.close()
             return
 
@@ -298,8 +305,9 @@ def politeQuit(adapterSock, deviceSignals, stateTimeout):
                 work(adapterSock, deviceSignals, stateTimeout)
                 # Loop again
             except (socket.error, socket.timeout) as e:
-                print 'DGI communication error: {0}'.format(e.strerror)
-                print 'Closing connection impolitely'
+                print >> sys.stderr, \
+                    'DGI communication error: {0}'.format(e.strerror)
+                print >> sys.stderr, 'Closing connection impolitely'
                 adapterSock.close()
                 return
 
@@ -373,8 +381,9 @@ if __name__ == '__main__':
                 try:
                     work(adapterSock, deviceSignals, stateTimeout)
                 except (socket.error, socket.timeout) as e:
-                    print 'DGI communication error: {0}'.format(e.strerror)
-                    print 'Performing impolite reconnect'
+                    print >> sys.stderr, \
+                        'DGI communication error: {0}'.format(e.strerror)
+                    print >> sys.stderr, 'Performing impolite reconnect'
                     adapterSock.close()
                     adapterSock = reconnect(deviceTypes, config)
 

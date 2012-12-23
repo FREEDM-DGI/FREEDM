@@ -384,7 +384,7 @@ bool CSRConnection::Recieve(const CMessage &msg)
 /// @description Composes an ack and writes it to the channel. ACKS are saved
 ///     to the protocol's state and are written again during resends to try and
 ///     maximize througput.
-/// @param The message to ACK.
+/// @param msg The message to ACK.
 /// @pre A message has been accepted.
 /// @post The m_currentack member is set to the ack and the message will
 ///     be resent during resend until it expires.
@@ -420,7 +420,6 @@ void CSRConnection::SendACK(const CMessage &msg)
 ///////////////////////////////////////////////////////////////////////////////
 /// CSRConnection::SendSYN
 /// @description Composes an SYN and writes it to the channel.
-/// @param The message to SYN.
 /// @pre A message has been accepted.
 /// @post A syn has been written to the channel
 ///////////////////////////////////////////////////////////////////////////////

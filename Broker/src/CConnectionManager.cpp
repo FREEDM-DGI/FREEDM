@@ -94,6 +94,7 @@ void CConnectionManager::PutConnection(std::string uuid, ConnectionPtr c)
 /// @post The hostname is registered with the uuid to hostname map.
 /// @param u_ the uuid to enter into the map.
 /// @param host_ The hostname to enter into the map.
+/// @param port The port to enter into the map.
 ///////////////////////////////////////////////////////////////////////////////
 void CConnectionManager::PutHostname(std::string u_, std::string host_, std::string port)
 {
@@ -202,8 +203,6 @@ SRemoteHost CConnectionManager::GetHostnameByUUID(std::string uuid) const
 /// @description Constructs or retrieves from cache a connection to a specific
 ///              UUID.
 /// @param uuid_ The uuid to construct a connection to
-/// @param ios The ioservice the connection will use.
-/// @param dispatch_ The dispatcher the connection will use
 /// @pre None
 /// @post If a connection has been constructed it will be put in the
 ///        connections table and has been started. If the connection is not

@@ -53,8 +53,7 @@ CLocalLogger Logger(__FILE__);
 /// @post: A new CConnection object is initialized.
 /// @param p_ioService: The socket to use for the connection.
 /// @param p_manager: The related connection manager that tracks this object.
-/// @param p_dispatch: The dispatcher responsible for applying read/write 
-///   handlers to messages.
+/// @param p_broker: The broker.
 /// @param uuid: The uuid this node connects to, or what listener.
 ///////////////////////////////////////////////////////////////////////////////
 CReliableConnection::CReliableConnection(boost::asio::io_service& p_ioService,

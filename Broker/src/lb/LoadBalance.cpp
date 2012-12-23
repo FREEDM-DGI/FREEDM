@@ -89,9 +89,7 @@ CLocalLogger Logger(__FILE__);
 /// @pre: Posix Main should register read handler and invoke this module
 /// @post: Object is initialized and ready to run load balancing
 /// @param uuid_: This object's uuid
-/// @param ios: The io service this node will use to share memory
-/// @param p_dispatch: The dispatcher used by this module to send/recive messages
-/// @param m_conManager: The connection manager instance used in this class
+/// @param broker: The Broker
 /// @limitations: None
 ///////////////////////////////////////////////////////////////////////////////
 LBAgent::LBAgent(std::string uuid_, CBroker &broker):
@@ -196,8 +194,8 @@ LBAgent::PeerNodePtr LBAgent::GetPeer(std::string uuid)
 /// @post: Message is prepared and sent
 /// @param msg: The message to be sent
 /// @param peerSet_: The group of peers that should receive the message
-/// @peer Each peer that exists in the peerSet_
-/// @error If the message cannot be sent, an exception is thrown and the
+/// @peers Each peer that exists in the peerSet_
+/// @ErrorHandling If the message cannot be sent, an exception is thrown and the
 ///	   process continues
 /// @limitations Group should be a PeerSet
 /////////////////////////////////////////////////////////
@@ -237,8 +235,8 @@ void LBAgent::SendMsg(std::string msg, PeerSet peerSet_)
 ///	  prior to this
 /// @post: The group members are sent the computed normal
 /// @param Normal: The value of normal to be sent to the group memebers
-/// @peer Each peer that exists in the peer set, m_AllPeers
-/// @error If the message cannot be sent, an exception is thrown and the
+/// @peers Each peer that exists in the peer set, m_AllPeers
+/// @ErrorHandling If the message cannot be sent, an exception is thrown and the
 ///	   process continues
 /// @limitations None
 /////////////////////////////////////////////////////////
@@ -273,9 +271,9 @@ void LBAgent::SendNormal(double Normal)
 /// @description Prepares and sends a state collection request to SC
 /// @pre: Called only on state timeout or when you are the new leader
 /// @post: SC module receives the request and initiates state collection
-/// @peer  This node (SC module)
-/// @error If the message cannot be sent, an exception is thrown and the
-///	   process continues
+/// @peers  This node (SC module)
+/// @ErrorHandling If the message cannot be sent, an exception
+///	   is thrown and the process continues
 /// @limitations
 /// TODO: Have a generic request message with exact entity to be included in
 ///       state collection; eg., LB requests gateways only.
@@ -542,6 +540,7 @@ void LBAgent::SendDraftRequest()
 /// @return: Multiple objectives depending on the message received and
 ///          power migration on successful negotiation
 /// @param msg: The message dispatched by broker read handler
+/// @param peer
 /// @peers The members of the group or a subset of, from whom message was received
 /// @limitations:
 /////////////////////////////////////////////////////////

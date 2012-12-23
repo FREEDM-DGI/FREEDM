@@ -180,6 +180,7 @@ bool CDeviceManager::DeviceExists(std::string devid) const
 /// @ErrorHandling Will output a warning if the device cannot be found.
 /// @pre The device must be stored in the device manager.
 /// @post Searches m_devices for a device with the passed identifier.
+/// @param devid the ID of the device to get.
 /// @return A shared pointer to the device, or NULL if it wasn't found.
 ///
 /// @limitations We cannot implement a const version of this function unless
@@ -255,7 +256,6 @@ std::multiset<SignalValue> CDeviceManager::GetValues(std::string type,
 /// @post Performs a binary mathematical operation on a subset of m_devices.
 /// @param type The device type that should perform the operation.
 /// @param signal The signal of the device to aggregate.
-/// @param math The operation to perform on the device signal.
 /// @return The aggregate value obtained by applying the binary operation.
 ///
 /// @limitations None.

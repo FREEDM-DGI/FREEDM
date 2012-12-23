@@ -55,6 +55,7 @@ CDispatcher::CDispatcher()
 ///   as appropriate.
 /// @pre Modules have registered their read handlers.
 /// @post Message delievered to a module
+/// @param broker The broker
 /// @param msg The message to distribute to modules
 ///////////////////////////////////////////////////////////////////////////////
 void CDispatcher::HandleRequest(CBroker &broker, CMessage msg)
@@ -226,6 +227,7 @@ void CDispatcher::HandleWrite( ptree &p_mesg )
 ///   dispatcher.
 /// @pre A module that inherits from IReadHandler is provided.
 /// @post A module is registered with a read handler.
+/// @param module the module to register
 /// @param p_type the tree key used to identify which messages the module
 ///   would like to recieve.
 /// @param p_handler The module which will be called to recieve the message.
@@ -253,6 +255,7 @@ void CDispatcher::RegisterReadHandler(const std::string &module, const std::stri
 /// @pre A module that inhertis from IWriteHandler is provided
 /// @post The module will be registered to touch outgoing messages that contain
 ///   the p_type key.
+/// @param module the module to be registered.
 /// @param p_type A ptree key that will be used to identify which messages 
 ///   should be touched.
 /// @param p_handler The module that will be invoked to perform the touch

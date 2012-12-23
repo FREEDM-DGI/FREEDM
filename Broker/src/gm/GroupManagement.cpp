@@ -83,9 +83,7 @@ CLocalLogger Logger(__FILE__);
 /// @pre None
 /// @post Object initialized and ready to enter run state.
 /// @param p_uuid: This object's uuid.
-/// @param p_ios: the io service this node will use to share memory
-/// @param p_dispatch: The dispatcher used by this module
-/// @param p_conManager: The connection manager to use in this class.
+/// @param broker: The broker.
 ///////////////////////////////////////////////////////////////////////////////
 GMAgent::GMAgent(std::string p_uuid, CBroker &broker)
     : IPeerNode(p_uuid,broker.GetConnectionManager()),
@@ -217,6 +215,8 @@ CMessage GMAgent::Ready()
 /// @post No change.
 /// @param payload: Response message (typically yes or no)
 /// @param type: What this message is in response to.
+/// @param exp
+/// @param seq
 /// @return A CMessage with the contents of a Response message
 ///////////////////////////////////////////////////////////////////////////////
 CMessage GMAgent::Response(std::string payload,std::string type,

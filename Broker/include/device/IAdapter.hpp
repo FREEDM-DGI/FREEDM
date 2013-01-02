@@ -1,11 +1,12 @@
 ////////////////////////////////////////////////////////////////////////////////
-/// @file           CGenericAdapter.hpp
+/// @file           IAdapter.hpp
 ///
+/// @author         Thomas Roth <tprfh7@mst.edu>
 /// @author         Michael Catanzaro <michael.catanzaro@mst.edu>
 ///
 /// @project        FREEDM DGI
 ///
-/// @description    Interface for a generic physical device adapter.
+/// @description    Interface for a physical device adapter.
 ///
 /// These source code files were created at Missouri University of Science and
 /// Technology, and are intended for use in teaching or research. They may be
@@ -20,63 +21,57 @@
 /// Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
 ////////////////////////////////////////////////////////////////////////////////
 
-#ifndef CGENERICADAPTER_HPP
-#define	CGENERICADAPTER_HPP
+#ifndef I_ADAPTER_HPP
+#define	I_ADAPTER_HPP
 
-#include "IPhysicalAdapter.hpp"
-
-#include <map>
-#include <sstream>
 #include <string>
+#include <utility>
+
+#include <boost/shared_ptr.hpp>
+#include <boost/noncopyable.hpp>
 
 namespace freedm {
 namespace broker {
 namespace device {
 
-/// Physical adapter device interface that stores settings in itself.
+/// Type of the value for device signals.
+typedef float SignalValue;
+
+/// Type of the unique identifier for device values.
+typedef std::pair<const std::string, const std::string> DeviceSignal;
+
+/// Physical adapter device interface.
 ////////////////////////////////////////////////////////////////////////////////
-/// @description
-///     Physical adapter device interface that stores device settings in itself.
-///     This class is used when no communication outside the DGI processes is
-///     desired - i.e. when there is no PSCAD or RTDS simulation.
+/// Defines the interface each device uses to perform its operations.  The
+/// concrete adapter is responsible for implementation of both Get and Set
+/// functions.
 ///
-/// @limitations
-///     None.
+/// @limitations None.
 ////////////////////////////////////////////////////////////////////////////////
-class CGenericAdapter : public IPhysicalAdapter
-{  
+class IAdapter
+    : private boost::noncopyable
+{
 public:
-    /// Type of a generic adapter pointer
-    typedef boost::shared_ptr<CGenericAdapter> Pointer;
-    
-    /// Creates a new generic adapter.
-    static Pointer Create();
+    /// Pointer to a physical adapter.
+    typedef boost::shared_ptr<IAdapter> Pointer;
+
+    /// Starts the adapter.
+    virtual void Start() = 0;
     
     /// Retrieves a value from a device.
-    virtual SettingValue Get(const Identifier device,
-            const SettingKey key) const;
+    virtual SignalValue Get(const std::string device,
+            const std::string signal) const = 0;
 
     /// Sets a value on a device.
-    virtual void Set(const Identifier device, const SettingKey key,
-            const SettingValue value);
-    
+    virtual void Set(const std::string device, const std::string signal,
+            const SignalValue value) = 0;
+
     /// Virtual destructor for derived classes.
-    virtual ~CGenericAdapter() { }
-
-private:
-    /// Map of device setting keys to values.
-    typedef std::map<SettingKey, SettingValue> KeyMap;
-    
-    /// Map of devices of KeyMaps.
-    typedef std::map<Identifier, KeyMap> DeviceMap;
-
-    /// Registry of device keys and values.
-    mutable DeviceMap m_registry;
+    virtual ~IAdapter() { };
 };
 
-}
-}
-}
+} // namespace device
+} // namespace broker
+} // namespace freedm
 
-#endif	/* CGENERICADAPTER_HPP */
-
+#endif // I_ADAPTER_HPP

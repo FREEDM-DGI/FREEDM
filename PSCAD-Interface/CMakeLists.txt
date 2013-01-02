@@ -23,7 +23,7 @@ include_directories("${CMAKE_SOURCE_DIR}/include")
 include_directories("${CMAKE_SOURCE_DIR}/src")
 
 # specify the C++ compiler flags
-set(CMAKE_CXX_FLAGS "-std=c++98 -W -Wall -pedantic")
+set(CMAKE_CXX_FLAGS "-std=c++98 -Wall -Wextra -pedantic -pthread")
 
 # list the source files for the project
 set(
@@ -35,9 +35,9 @@ set(
     src/CTableManager.cpp
     src/IServer.cpp
     src/CAdapter.cpp
-    src/CAdapterSimulation.cpp
-    src/CAdapterPscad.cpp
-    src/CAdapterRtds.cpp
+    src/CSimulationAdapter.cpp
+    src/CPscadAdapter.cpp
+    src/CRtdsAdapter.cpp
 )
 add_library(simserv ${PROJECT_FILES})
 

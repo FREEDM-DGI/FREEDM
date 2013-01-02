@@ -112,14 +112,14 @@ void CSRConnection::Send(CMessage msg)
         Logger.Debug<<"Set Expire time"<<std::endl;
         msg.SetExpireTimeFromNow(boost::posix_time::milliseconds(3000));
     }
-    m_window.push_back(msg);
     
-    if(m_window.size() == 1)
+    if(m_window.size() == 0)
     {
         Write(msg);
         boost::system::error_code x;
         Resend(x);
     }
+    m_window.push_back(msg);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -149,6 +149,7 @@ void CSRConnection::Resend(const boost::system::error_code& err)
     {
         Logger.Trace<<__PRETTY_FUNCTION__<<" Checking ACK"<<std::endl;
         // Check if the front of the queue is an ACK
+        /*
         m_ackmutex.lock();
         if(m_currentack.GetStatus() == freedm::broker::CMessage::Accepted)
         {
@@ -162,6 +163,7 @@ void CSRConnection::Resend(const boost::system::error_code& err)
             //}
         }
         m_ackmutex.unlock();
+        */
         Logger.Trace<<__PRETTY_FUNCTION__<<" Sent ACK"<<std::endl;
         while(m_window.size() > 0 && m_window.front().IsExpired())
         {

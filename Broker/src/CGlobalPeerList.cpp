@@ -31,7 +31,7 @@ namespace broker {
 /// @description Fetch a peer based on uuid, throws an exception if they aren't found
 /// @param uuid The UUID of the peer you are attempting to access
 /// @return A shared pointer to the node.
-/// @errorhandling Runtime exception if no peer matches that description.
+/// @ErrorHandling Runtime exception if no peer matches that description.
 ////////////////////////////////////////////////////////
 CGlobalPeerList::PeerNodePtr CGlobalPeerList::GetPeer(std::string uuid)
 {

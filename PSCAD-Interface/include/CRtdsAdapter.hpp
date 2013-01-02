@@ -1,5 +1,5 @@
 ///////////////////////////////////////////////////////////////////////////////
-/// @file         CAdapterRtds.hpp
+/// @file         CRtdsAdapter.hpp
 ///
 /// @author       Thomas Roth <tprfh7@mst.edu>
 ///
@@ -7,15 +7,13 @@
 ///
 /// @description  Adapter for the DGI-RTDS interface
 ///
-/// @copyright
-/// These source code files were created at the Missouri University of Science
-/// and Technology, and are intended for use in teaching or research. They may
-/// be freely copied, modified and redistributed as long as modified versions
-/// are clearly marked as such and this notice is not removed.
-///
-/// Neither the authors nor Missouri S&T make any warranty, express or implied,
-/// nor assume any legal responsibility for the accuracy, completeness or
-/// usefulness of these files or any information distributed with these files.
+/// These source code files were created at Missouri University of Science and
+/// Technology, and are intended for use in teaching or research. They may be
+/// freely copied, modified, and redistributed as long as modified versions are
+/// clearly marked as such and this notice is not removed. Neither the authors
+/// nor Missouri S&T make any warranty, express or implied, nor assume any legal
+/// responsibility for the accuracy, completeness, or usefulness of these files
+/// or any information distributed with these files.
 ///
 /// Suggested modifications or questions about these files can be directed to
 /// Dr. Bruce McMillin, Department of Computer Science, Missouri University of
@@ -34,6 +32,9 @@ namespace freedm {
 namespace simulation {
 namespace adapter {
 
+/// type of a device signal value
+typedef float TSignalValue;
+
 /// dgi adapter for the rtds client that handles byte streams
 ///////////////////////////////////////////////////////////////////////////////
 /// The RTDS adapter waits for a byte stream of data from its client.  It uses
@@ -45,19 +46,21 @@ namespace adapter {
 /// from the client, it will be blocked until more data is sent or the client
 /// closes the connection.
 ///////////////////////////////////////////////////////////////////////////////
-class CAdapterRtds
+class CRtdsAdapter
     : public IServer
     , public CAdapter
 {
 public:
     /// constructs a DGI-RTDS adapter instance
-    CAdapterRtds( unsigned short port,
+    CRtdsAdapter( unsigned short port,
             const boost::property_tree::ptree & tree );
 private:
     /// handles the accepted socket connection
     virtual void HandleConnection();
-    /// changes the endian of a given buffer
-    void ChangeEndian( char * buffer, std::size_t size );
+    /// reverses the bytes in a buffer
+    void ReverseBytes( char * buffer, const int numBytes );
+    /// swap byte order of floats in a buffer if system is little-endian
+    void EndianSwapIfNeeded( char * buffer, std::size_t numBytes );
 };
 
 } // namespace adapter

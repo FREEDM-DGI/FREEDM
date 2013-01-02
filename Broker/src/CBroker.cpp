@@ -79,7 +79,7 @@ CBroker::CBroker(const std::string& p_address, const std::string& p_port,
       m_dispatch(p_dispatch),
       m_newConnection(new CListener(m_ioService, m_connManager, *this, m_conMan.GetUUID())),
       m_phasetimer(m_ios),
-      m_beacontimer(m_ios)
+      m_synchronizer(*this)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     // Open the acceptor with the option to reuse the address (i.e. SO_REUSEADDR).
@@ -99,8 +99,6 @@ CBroker::CBroker(const std::string& p_address, const std::string& p_port,
     now -= boost::posix_time::milliseconds(2*ALIGNMENT_DURATION);
     m_last_alignment = now;
 
-    m_kvalue[GetConnectionManager().GetUUID()] = 0;
-    m_laststamp[GetConnectionManager().GetUUID()] = now.time_of_day();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -137,6 +135,7 @@ void CBroker::Run()
     // have finished. While the server is running, there is always at least one
     // asynchronous operation outstanding: the asynchronous accept call waiting
     // for new incoming connections.
+    m_synchronizer.Run();
     m_ioService.run();
 }
 
@@ -165,6 +164,7 @@ void CBroker::Stop()
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     // Post a call to the stop function so that CBroker::stop() is safe to call
     // from any thread.
+    m_synchronizer.Stop();
     m_ioService.post(boost::bind(&CBroker::HandleStop, this));
 }
 
@@ -217,7 +217,6 @@ void CBroker::RegisterModule(CBroker::ModuleIdent m, boost::posix_time::time_dur
         {
             m_schmutex.unlock();
             ChangePhase(err);
-            BroadcastBeacon(err);
             m_schmutex.lock();
         }
     }
@@ -312,7 +311,7 @@ void CBroker::ChangePhase(const boost::system::error_code &err)
         m_phase=0;
         return;
     }
-
+    unsigned int oldphase = m_phase;
     // Past this point assume there is at least one module.
     m_schmutex.lock();
     m_phase++;
@@ -366,6 +365,10 @@ void CBroker::ChangePhase(const boost::system::error_code &err)
     if(m_modules.size() > 0)
     {
         Logger.Notice<<"Phase: "<<m_modules[m_phase].first<<" for "<<sched_duration<<"ms "<<"offset "<<CGlobalConfiguration::instance().GetClockSkew()<<std::endl;
+    }
+    if(m_phase != oldphase)
+    {
+        m_connManager.ChangePhase((m_phase==0));
     }
     //If the worker isn't going, start him again when you change phases.
     if(!m_busy)
@@ -461,229 +464,18 @@ void CBroker::Worker()
         m_schmutex.unlock();
         x();
         m_schmutex.lock();
-        // Schedule the worker again:
-        m_ioService.post(boost::bind(&CBroker::Worker, this));
     }
-    else
-    {
-        m_busy = false;
-        Logger.Debug<<"Worker Idle"<<std::endl;
-    }
+    // Schedule the worker again:
+    m_ioService.post(boost::bind(&CBroker::Worker, this));
     m_schmutex.unlock();
 }
 
-///////////////////////////////////////////////////////////////////////////////
-/// @fn CBroker::HandleClockReading
-/// @description On the reciept of a beacon from a node, enters into the clock
-///     tables and thenupdates the counted offset for the time that node is
-///     providing. Neat!
-/// @param msg A CMessage containing a beacon timestamp.
-/// @pre None
-/// @post A clock reading has been accepted
-///////////////////////////////////////////////////////////////////////////////
-void CBroker::HandleClockReading(CMessage msg)
+//////////////////////////////////
+/// Returns the clock synchronizer
+//////////////////////////////////
+CClockSynchronizer& CBroker::GetClockSynchronizer()
 {
-    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    //Extract the UUID, timestamp and the k value from the message then update the offsets.
-    Logger.Info<<"Got Clock Sync Beacon From "<<msg.GetSourceUUID()<<std::endl;
-    unsigned int newk = msg.GetSubMessages().get<unsigned int>("clock.k");
-    bool firstk = (m_kvalue.find(msg.GetSourceUUID()) == m_kvalue.end());
-    std::string uuid = msg.GetSourceUUID();
-    boost::posix_time::ptime now = boost::posix_time::microsec_clock::universal_time();
-    boost::posix_time::ptime stamp = msg.GetSendTimestamp(); //msg.GetSubMessages().get<boost::posix_time::ptime>("clock.stamp");
-    if(firstk || newk != m_kvalue[uuid]+1)
-    {
-        //We have lost a k value. remove the entry that was in the k-1 table
-        //and update the k table.
-        if(!firstk)
-        {
-            Logger.Warn<<"Missed a timestamp broadcast from "<<uuid<<"(Got "<<newk<<" expected "<<m_kvalue[msg.GetSourceUUID()]<<std::endl;
-        }
-        else
-        {
-            Logger.Warn<<"First beacon from "<<uuid<<std::endl;
-            m_offsets[uuid] = boost::posix_time::milliseconds(0);
-        }
-        m_laststamp2.erase(uuid);
-    }
-    else
-    {
-        m_laststamp2[uuid] = m_laststamp[uuid];
-    }
-    m_kvalue[uuid] = newk;
-    m_laststamp[uuid] = stamp.time_of_day();
-    m_tickssinceupdate[uuid] = 0;
-    m_lastrecieved[uuid] = now;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-/// @fn CBroker::UpdateOffsets
-/// @citation Master-less time synchronization for wireless sensor networks with generic topology
-/// @description Given a beacon sender, the timestamp of the beacon and the k of that beacon,
-///     do an awful lot of fancy stuff, based on the citation. Basically, what this does is
-///     a discrete differential equation to synchronize a bunch of clocks without using a
-///     master. It is pretty awesome. However, it doesn't detect bad clocks, but we aren't
-///     worried about most threats and this works pretty awesome so far.
-///////////////////////////////////////////////////////////////////////////////
-void CBroker::UpdateOffsets()
-{
-    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    const double constT = 2; // Resolution of the clock
-    const double p2 = 0.049033033; // Weight of clock variance
-    const double p1 = 0.0198175; // Weight of the distance between clock readings
-    const double p0 = 0.405283; // Weight of previous measurement 
-    std::map< std::string, double> newzmap;
-    std::map< std::string, boost::posix_time::time_duration >::iterator it,it2;
-    std::map< std::string, unsigned int >::iterator it3;
-    std::string uuid = GetConnectionManager().GetUUID();
-    boost::posix_time::ptime now = boost::posix_time::microsec_clock::universal_time();
-
-    Logger.Debug<<"Updating local stamps"<<std::endl;
-    //Make my dt entry:
-    if(m_laststamp.find(uuid) != m_laststamp.end())
-        m_laststamp2[uuid] = m_laststamp[uuid];
-    m_laststamp[uuid] = now.time_of_day();
-    m_lastrecieved[uuid] = now;
-
-    Logger.Debug<<"zeroing offset table's missing entries"<<std::endl;
-    for(it = m_laststamp2.begin(); it != m_laststamp2.end(); it++)
-    {
-        if(m_offsets.find(it->first) == m_offsets.end())
-            m_offsets[it->first] = boost::posix_time::milliseconds(0);
-    }
-
-    Logger.Debug<<"Looping all known peoples"<<std::endl;
-    //Go through every node we've recieved 2 clock values from
-    for(it = m_laststamp2.begin(); it != m_laststamp2.end(); it++)
-    {
-        double newz;
-        double partial;
-        it3 = m_tickssinceupdate.find(it->first);
-        if(it3 != m_tickssinceupdate.end() && it3->second >= 2)
-            continue;
-        if(m_zfactor.find(it->first) == m_zfactor.end())
-            m_zfactor[it->first] = 0;
-        newz = m_zfactor[it->first];
-        newz += (-p0 * m_zfactor[it->first])*constT;
-        partial = 0.0;
-        //construct the dt term
-        Logger.Debug<<"Computing the dt term for "<<it->first<<std::endl;
-        for(it2 = m_laststamp2.begin(); it2 != m_laststamp2.end(); it2++)
-        {
-            if(it->first == it2->first)
-                continue;
-            double current_ls = TDToDouble(m_laststamp[it2->first]);
-            double current_rs = TDToDouble(now-m_lastrecieved[it2->first]);
-            double current_os = TDToDouble(m_offsets[it2->first]);
-            double uuid_ls = TDToDouble(m_laststamp[it->first]);
-            double uuid_rs = TDToDouble(now-m_lastrecieved[it->first]);
-            double uuid_os = TDToDouble(m_offsets[it->first]);
-            partial += (current_ls+current_os+current_rs);
-            partial -= (uuid_ls+uuid_os+uuid_rs);
-        }
-        partial *= p1 * constT;
-        newz += partial;
-        partial = 0.0;
-        //then the jitter term
-        Logger.Debug<<"Computing jitter term for "<<it->first<<std::endl;
-        for(it2 = m_laststamp2.begin(); it2 != m_laststamp2.end(); it2++)
-        {
-            if(it->first == it2->first)
-                continue;
-            double numer = TDToDouble(m_laststamp[it2->first])-TDToDouble(m_laststamp2[it2->first]); 
-            double denom = TDToDouble(m_laststamp[it->first])-TDToDouble(m_laststamp2[it->first]);
-            partial += (numer/denom)-1;
-        }
-        partial *= p2 * constT;
-        newz += partial;
-        partial = 0.0;
-        newzmap[it->first] = newz;
-    }
-    Logger.Debug<<"Copying map"<<std::endl;
-    m_zfactor = newzmap;
-    Logger.Warn<<"Offsets Table:"<<std::endl;
-    for(it = m_laststamp2.begin(); it != m_laststamp2.end(); it++)
-    {
-        m_offsets[it->first] += DoubleToTD(m_zfactor[it->first] * constT);
-        Logger.Warn<<it->first<<" : "<< m_offsets[it->first] << "\n";
-    }
-    Logger.Warn<<std::endl;
-    CGlobalConfiguration::instance().SetClockSkew(m_offsets[uuid]);
-    Logger.Info<<"Set my clock offset to "<<m_offsets[uuid]<<std::endl;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-/// @fn CBroker::TDToDouble
-/// @description give a time duration td, convert it to a double which represents
-///     the number of seconds the time duration represents
-/// @param td the time duration to convert
-/// @return a double of the time duration, in seconds.
-///////////////////////////////////////////////////////////////////////////////
-double CBroker::TDToDouble(boost::posix_time::time_duration td)
-{
-    double x = td.total_seconds() + (td.fractional_seconds()*1.0)/1000000;
-    return x;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-/// @fn CBroker::DoubleToTD
-/// @description given a double td, convert it to a boost time_duration of
-///     roughly the same value (some losses for the accuracy of posix_time
-/// @param td the time duration (in seconds) to convert
-/// @return a time duration that is roughly the same as td.
-///////////////////////////////////////////////////////////////////////////////
-boost::posix_time::time_duration CBroker::DoubleToTD(double td)
-{
-    double seconds, tmp, fractional;
-    tmp = modf(td, &seconds);
-    tmp *= 1000000; // Shift out to the microseconds
-    modf(tmp, &fractional);
-    return boost::posix_time::seconds(seconds) + boost::posix_time::microseconds(fractional);    
-}
-
-///////////////////////////////////////////////////////////////////////////////
-/// @fn CBroker::BroadcastBeacon
-/// @description Sends the pulse with the current timestamp every so often
-/// @citation Master-less time synchronization for wireless sensor networks with generic topology
-/// @param err if the timer was canceled or what have you
-///////////////////////////////////////////////////////////////////////////////
-void CBroker::BroadcastBeacon(const boost::system::error_code &err)
-{
-    static bool firstever = true;
-    if(!err)
-    {
-        if(firstever == false)
-        {
-            std::string uuid = GetConnectionManager().GetUUID();
-            std::map< std::string, unsigned int >::iterator it;
-            CMessage msg;
-            msg.SetStatus(CMessage::ClockReading);
-            msg.GetSubMessages().put("clock.k",m_kvalue[uuid]);
-            m_kvalue[uuid]++;
-            msg.GetSubMessages().put("clock.stamp",boost::posix_time::microsec_clock::universal_time()+m_offsets[uuid]);
-            // Loop all known peers & send the message to them:
-            Logger.Notice<<"Sending Beacon"<<std::endl;
-            BOOST_FOREACH(boost::shared_ptr<IPeerNode> peer, CGlobalPeerList::instance().PeerList() | boost::adaptors::map_values)
-            {
-                if(peer->GetUUID() == uuid)
-                    continue;
-                peer->Send(msg);
-            }
-            Logger.Info<<"Computing offsets"<<std::endl;
-            for(it = m_tickssinceupdate.begin(); it != m_tickssinceupdate.end(); it++)
-            {
-                it->second++;
-            }
-            UpdateOffsets();
-        }
-        else
-        {
-            firstever = false;
-        }
-        m_beacontimer.expires_from_now(boost::posix_time::milliseconds(BEACON_FREQUENCY));
-        m_beacontimer.async_wait(boost::bind(&CBroker::BroadcastBeacon,this,
-            boost::asio::placeholders::error));
-    }
+    return m_synchronizer;
 }
 
     } // namespace broker

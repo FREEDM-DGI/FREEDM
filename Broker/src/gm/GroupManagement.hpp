@@ -30,8 +30,6 @@
 #include "CGlobalPeerList.hpp"
 #include "CMessage.hpp"
 #include "CUuid.hpp"
-#include "device/CPhysicalDeviceManager.hpp"
-#include "device/PhysicalDeviceTypes.hpp"
 #include "IAgent.hpp"
 #include "IHandler.hpp"
 #include "IPeerNode.hpp"
@@ -66,7 +64,7 @@ class GMAgent
     /// Module states    
     enum { NORMAL,DOWN,RECOVERY,REORGANIZATION,ELECTION };
     /// Constructor for using this object as a module.
-    GMAgent(std::string uuid_, CBroker &broker, device::CPhysicalDeviceManager::Pointer devmanager);
+    GMAgent(std::string uuid_, CBroker &broker);
     /// Module destructor
     ~GMAgent();
     
@@ -133,7 +131,7 @@ class GMAgent
     CMessage Ready();
     /// Creates A Response message
     CMessage Response(std::string payload,std::string type,
-        const boost::posix_time::ptime& exp);
+        const boost::posix_time::ptime& exp, int seq);
     /// Creates an Accept Message
     CMessage Accept();
     /// Creates a AYT, used for Timeout
@@ -219,16 +217,15 @@ class GMAgent
     boost::posix_time::time_duration FID_TIMEOUT;
     /// How long to wait for responses from other nodes.
     boost::posix_time::time_duration RESPONSE_TIMEOUT;
+    /// How long to wait for responses from other nodes.
+    boost::posix_time::time_duration AYT_RESPONSE_TIMEOUT;
 
     ///Maximum clock skew in milliseconds;
     static const int MAX_SKEW = 100;
 
     ///The broker!
     CBroker& m_broker;
-
-    ///The device manager!
-    device::CPhysicalDeviceManager::Pointer m_phyDevManager;
-
+    
     /// Number of groups formed
     int m_groupsformed ;
     /// Number of groups broken

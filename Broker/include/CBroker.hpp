@@ -35,6 +35,7 @@
 
 #include "CListener.hpp"
 #include "CConnectionManager.hpp"
+#include "CClockSynchronizer.hpp"
 
 #include <list>
 #include <string>
@@ -114,17 +115,13 @@ public:
     /// Registers a module for the scheduler
     void RegisterModule(ModuleIdent m, boost::posix_time::time_duration phase);
 
-    /// Takes an incoming clock reading and updates the relevant tables
-    void HandleClockReading(CMessage msg);
-
-    /// Update the tables based on a UUID and new clock readying
-    void UpdateOffsets();
-
     /// Returns how much time the current module has left in its round
     boost::posix_time::time_duration TimeRemaining();
 
+    /// Returns the synchronizer
+    CClockSynchronizer& GetClockSynchronizer();
+    
 private:
-
     /// Handle completion of an asynchronous accept operation.
     void HandleAccept(const boost::system::error_code& e);
 
@@ -166,9 +163,6 @@ private:
 
     ///Time for the phases
     boost::asio::deadline_timer m_phasetimer;
-
-    ///Time for the beacon
-    boost::asio::deadline_timer m_beacontimer;
     
     ///The current counter for the time handlers
     TimerHandle m_handlercounter;
@@ -185,37 +179,9 @@ private:
     ///Lock for the scheduler.
     boost::shared_mutex m_schmutex;
 
-    // Keep track of how long it has been since the last update
-    std::map< std::string, unsigned int> m_tickssinceupdate;
+    ///The magical clock synchronizer
+    CClockSynchronizer m_synchronizer;
 
-    ///Last time a stamp was recieved
-    std::map< std::string, boost::posix_time::ptime> m_lastrecieved;
-
-    ///Map that stores the last time stamp (k) recieved by a node:
-    std::map< std::string, boost::posix_time::time_duration> m_laststamp;
-   
-    ///Map that stores the previous last time stamp (k-1) recieved by a node
-    std::map< std::string, boost::posix_time::time_duration> m_laststamp2;
- 
-    ///Map that stores the k of the last timestamp
-    std::map< std::string, unsigned int> m_kvalue;
-
-    ///Map the stores the adjustment factor z
-    std::map< std::string, double > m_zfactor;
-
-    ///Map the stores the previous adjustment factor z
-    std::map< std::string, boost::posix_time::time_duration > m_prevoffsets;
-    
-    ///Map that stores the clock offset o
-    std::map< std::string, boost::posix_time::time_duration > m_offsets;
-
-    ///Turn a time duration into a double
-    double TDToDouble(boost::posix_time::time_duration td);
-
-    ///Turn a double into a time duration
-    boost::posix_time::time_duration DoubleToTD(double td);
-    
-    void BroadcastBeacon(const boost::system::error_code &err);
 };
 
     } // namespace broker

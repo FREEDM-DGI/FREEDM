@@ -23,106 +23,79 @@
 /// Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
 ////////////////////////////////////////////////////////////////////////////////
 
-#ifndef CRTDSADAPTER_HPP
-#define CRTDSADAPTER_HPP
+#ifndef C_RTDS_ADAPTER_HPP
+#define C_RTDS_ADAPTER_HPP
 
-#include "CTableRTDS.hpp"
-#include "IConnectionAdapter.hpp"
+#include "ITcpAdapter.hpp"
+#include "IBufferAdapter.hpp"
 
-#include <iostream>
-#include <stdexcept>
-#include <string>
-#include <sys/param.h>
-
-#include <boost/asio.hpp>
 #include <boost/shared_ptr.hpp>
-#include <boost/thread/mutex.hpp>
-#include <boost/thread/thread.hpp>
-#include <boost/utility.hpp>
+#include <boost/asio/io_service.hpp>
+#include <boost/asio/deadline_timer.hpp>
+#include <boost/property_tree/ptree_fwd.hpp>
 
 namespace freedm {
 namespace broker {
 namespace device {
 
 /// Provides an interface for communicating with a RTDS simulation model
-class CRtdsAdapter : public IConnectionAdapter
+////////////////////////////////////////////////////////////////////////////////
+/// This class handles communications to and from the RTDS simulation model via
+/// an FPGA device. It serves as client to the FPGA's server, retrieving values
+/// from and transmitting commands to the RTDS.
+///
+/// @peers The FPGA device used by FREEDM research at Florida State University
+///     directly communicates with CRtdsAdapter. For more details about the code
+///     on the FPGA, please contact Dr. Mischa Steurer <steurer@caps.fsu.edu>
+///
+/// @limitations
+///     We assume any multiplexing/demultiplexing (if needed) of readings from
+///     multiple microgrids simulated by the RTDS model is done FPGA-side.
+////////////////////////////////////////////////////////////////////////////////
+class CRtdsAdapter
+     : public ITcpAdapter
+     , public IBufferAdapter
 {
-    ////////////////////////////////////////////////////////
-    ///
-    /// @description
-    ///     This class handles communications to and from the RTDS
-    ///     simulation model via a FPGA device.
-    ///     It serves as client to FPGA's server.
-    ///     It retrieves values from RTDS and transmits commands to RTDS.
-    ///
-    /// @peers
-    ///     The FPGA device used by FREEDM research at Florida State 
-    ///     University directly communicates with CRtdsAdapter.
-    ///     For more details about the code on the FPGA, please contact
-    ///     Dr. Mischa Steurer (steurer@caps.fsu.edu)
-    ///
-    /// @limitations
-    ///     We assume any multiplexing/demultiplexing (if needed) of
-    ///     readings from multiple microgrids simulated by the RTDS model is
-    ///     done in the FPGA side.
-    ///
-    ////////////////////////////////////////////////////////
 public:
-    /// pointer to an CRtdsAdapter object
+    /// Pointer to an CRtdsAdapter object.
     typedef boost::shared_ptr<CRtdsAdapter> Pointer;
 
-    /// create a CRtdsAdapter object and returns a pointer to it
-    static Pointer Create(boost::asio::io_service & service,
-            const std::string xml, const std::string tag);
-
-    /// updates command table
-    void Set(const Identifier device, const SettingKey key,
-            const SettingValue value);
-
-    /// retrieve data from state table
-    SettingValue Get(const Identifier device, const SettingKey key) const;
-
-    /// shut down communication to FPGA
-    void Quit();
-
-    /// destructor
+    /// Create a CRtdsAdapter object and returns a pointer to it.
+    static IAdapter::Pointer Create(boost::asio::io_service & service,
+            const boost::property_tree::ptree & ptree);
+    
+    /// Starts the adapter.
+    void Start();
+    
+    /// Destructor.
     ~CRtdsAdapter();
+    
+private:
+    /// Microseconds between updates, see documentation for Run().
+    static const long TIMESTEP = 50000;
 
-    /// continuous loop for sending and receiving to/from RTDS
+    /// Constructor.
+    CRtdsAdapter(boost::asio::io_service & service,
+            const boost::property_tree::ptree & ptree);
+
+    /// Continuous loop for sending and receiving to/from RTDS.
     void Run();
 
-private:
-    /// constructor
-    CRtdsAdapter(boost::asio::io_service & service,
-            const std::string xml, const std::string tag);
-    /// do byte order conversion if DGI and FPGA have opposite endianess
-    static void endian_swap(char * data, const int num_bytes);
+    /// Shut down communication to FPGA.
+    void Quit();
 
-    /// store the power electronic readings from RTDS
-    CTableRTDS m_cmdTable;
-    /// store the commands to send to RTDS
-    CTableRTDS m_stateTable;
+    /// Reverses all of the bytes in a buffer.    
+    void ReverseBytes( char * buffer, const int numBytes );
+    
+    /// Swaps the endianness of all SignalValues in a vector.
+    void EndianSwapIfNeeded(std::vector<SignalValue> & v);
 
-    /// how many values are in the stateTable
-    int m_rxCount;
-    /// how many values are in the cmdTable
-    int m_txCount;
-
-    /// buffer for reading from FPGA
-    char* m_rxBuffer;
-    /// buffer for writing to FPGA
-    char* m_txBuffer;
-
-    /// buffer size in bytes
-    int m_rxBufSize;
-    int m_txBufSize;
-
-    /// timer object to set communication cycle pace
-    boost::asio::deadline_timer m_GlobalTimer;
+    /// Timer object to set communication cycle pace.
+    boost::asio::deadline_timer m_runTimer;
 };
 
-}//namespace broker
-}//namespace freedm
-}//namespace device
+} //namespace device
+} //namespace broker
+} //namespace freedm
 
-#endif // CRDTSADAPTER_HPP
+#endif // C_RTDS_ADAPTER_HPP

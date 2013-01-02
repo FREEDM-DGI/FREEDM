@@ -22,6 +22,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 #include "CLogger.hpp"
+#include "CGlobalConfiguration.hpp"
 
 #include <boost/program_options/options_description.hpp>
 
@@ -57,7 +58,7 @@ std::streamsize CLog::write(const char* const s, std::streamsize n)
 {
     if (GetOutputLevel() >= m_level)
     {
-        *m_ostream << microsec_clock::local_time() << " : "
+        *m_ostream << microsec_clock::local_time() + CGlobalConfiguration::instance().GetClockSkew() << " : "
                 << m_name << "(" << m_level << "):\n\t";
         boost::iostreams::write(*m_ostream, s, n);
         //*m_ostream << std::endl;

@@ -29,8 +29,7 @@
 #include "CDispatcher.hpp"
 #include "CMessage.hpp"
 #include "CUuid.hpp"
-#include "device/CPhysicalDeviceManager.hpp"
-#include "device/PhysicalDeviceTypes.hpp"
+#include "PhysicalDeviceTypes.hpp"
 #include "IAgent.hpp"
 #include "IHandler.hpp"
 #include "IPeerNode.hpp"
@@ -74,7 +73,7 @@ class SCAgent : public IReadHandler, public IPeerNode,
 {
     public:
         ///Constructor
-        SCAgent(std::string uuid, CBroker &broker, device::CPhysicalDeviceManager::Pointer m_phyManager);
+        SCAgent(std::string uuid, CBroker &broker);
         ///Destructor
         ~SCAgent();
         //Handler
@@ -84,7 +83,6 @@ class SCAgent : public IReadHandler, public IPeerNode,
         void HandleRequest(CMessage msg, PeerNodePtr peer);
         void HandleMarker(CMessage msg, PeerNodePtr peer);
         void HandleState(CMessage msg, PeerNodePtr peer);
-        void HandleDone(CMessage msg, PeerNodePtr peer);
         
     private:
         //Marker structure
@@ -97,8 +95,6 @@ class SCAgent : public IReadHandler, public IPeerNode,
         void    TakeSnapshot(std::string deviceType, std::string valueType);
         ///Peer sends collected states back to the initiator
         void    SendStateBack();
-        ///Peer sends "Done" message to the initiator to indicate finishing sending states back
-        void    SendDoneBack(StateVersion marker);
         ///Initiator sends collected states back to the request module
         void    StateResponse();
         ///Peer save local state and forward maker
@@ -145,8 +141,6 @@ class SCAgent : public IReadHandler, public IPeerNode,
         ///current state
         ptree               m_curstate;
         
-        ///physical device manager
-        device::CPhysicalDeviceManager::Pointer m_phyDevManager;
         ///all known peers
         PeerSet m_AllPeers;
         
@@ -164,4 +158,5 @@ class SCAgent : public IReadHandler, public IPeerNode,
 } // namespace freedm
 
 #endif
+
 

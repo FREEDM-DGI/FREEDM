@@ -6,8 +6,7 @@
 ///
 /// @project      FREEDM DGI
 ///
-/// @description  Client side implementation of the PSCAD simulation line
-///               protocol.
+/// @description  Client side implementation of the PSCAD line protocol.
 ///
 /// These source code files were created at Missouri University of Science and
 /// Technology, and are intended for use in teaching or research. They may be
@@ -22,186 +21,62 @@
 /// Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
 ////////////////////////////////////////////////////////////////////////////////
 
-#ifndef CPSCADADAPTER_HPP
-#define CPSCADADAPTER_HPP
+#ifndef C_PSCAD_ADAPTER_HPP
+#define C_PSCAD_ADAPTER_HPP
 
-#include "IConnectionAdapter.hpp"
+#include "ITcpAdapter.hpp"
 
-#include <iostream>
-#include <stdexcept>
 #include <string>
 
-#include <boost/asio.hpp>
 #include <boost/shared_ptr.hpp>
-#include <boost/utility.hpp>
+#include <boost/asio/io_service.hpp>
+#include <boost/property_tree/ptree_fwd.hpp>
 
 namespace freedm {
 namespace broker {
 namespace device {
 
-/// Provides an interface for communicating commands to a PSCAD model
-class CPscadAdapter : public IConnectionAdapter
+/// Defines the interface for communicating with a PSCAD simulation.
+////////////////////////////////////////////////////////////////////////////////
+/// Provides a set of public functions that get and set device signals from a
+/// server running the PSCAD simulation communication protocol.
+///
+/// @limitations The adapter cannot be restarted if the connection fails.
+////////////////////////////////////////////////////////////////////////////////
+class CPscadAdapter
+    : public ITcpAdapter
 {
-    ////////////////////////////////////////////////////////////////////////////////
-    /// CLineClient
-    ///
-    /// @description
-    ///     Client side of a line protocol with three requests: GET, SET and QUIT.
-    ///     The GET and SET commands operate on (Device,Key) pairs, where Device is
-    ///     the unique identifier of some physical hardware and Key is the variable
-    ///     name of that hardware to be manipulated.
-    ///
-    /// @limitations
-    ///     none
-    ///
-    ////////////////////////////////////////////////////////////////////////////////
 public:
+    /// The type of a shared pointer to this class.
     typedef boost::shared_ptr<CPscadAdapter> Pointer;
-    static Pointer Create(boost::asio::io_service & service);
-
-    ////////////////////////////////////////////////////////////////////////////
-    /// Set( const string &, const string &, const string & )
-    ///
-    /// @description
-    ///     Sends a set request to the line server with a desired set value.
-    ///
-    /// @Shared_Memory
-    ///     none
-    ///
-    /// @Error_Handling
-    ///     Throws an exception if the server does not acknowledge the request.
-    ///
-    /// @pre
-    ///     The socket connection has been established with a call to Connect
-    ///
-    /// @post
-    ///     Writes a set message to m_socket
-    ///     Reads an acknowledgment from m_socket
-    ///
-    /// @param
-    ///     device is the unique identifier of the target device
-    ///     key is the variable of the target device to modify
-    ///     value is the value to set for device's key
-    ///
-    /// @limitations
-    ///     The precondition is not enforced.
-    ///
-    ////////////////////////////////////////////////////////////////////////////
-    void Set(const Identifier device, const SettingKey key,
-            const SettingValue value);
-
-    ////////////////////////////////////////////////////////////////////////////
-    /// Get( const string &, const string & )
-    ///
-    /// @description
-    ///     Sends a get request to the line server and returns the response.
-    ///
-    /// @Shared_Memory
-    ///     none
-    ///
-    /// @Error_Handling
-    ///     Throws an exception if the server does not respond to the request.
-    ///
-    /// @pre
-    ///     The socket connection has been established with a call to Connect
-    ///
-    /// @post
-    ///     Writes a get message to m_socket
-    ///     Reads a response from m_socket
-    ///
-    /// @param
-    ///     device is the unique identifier of the target device
-    ///     key is the variable of the target device to access
-    ///
-    /// @return
-    ///     device's key as determined by the line server response
-    ///
-    /// @limitations
-    ///     The precondition is not enforced.
-    ///
-    ////////////////////////////////////////////////////////////////////////////
-    SettingValue Get(const Identifier device, const SettingKey key) const;
-
-    ////////////////////////////////////////////////////////////////////////////
-    /// Quit
-    ///
-    /// @description
-    ///     Sends a quit request to the line server and closes the socket.
-    ///
-    /// @Shared_Memory
-    ///     none
-    ///
-    /// @Error_Handling
-    ///     Throws an exception if the server does not acknowledge the request.
-    ///
-    /// @pre
-    ///     The socket connection has been established with a call to Connect
-    ///
-    /// @post
-    ///     Writes a quit message to m_socket
-    ///     Reads an acknowledgement from m_socket
-    ///     Closes m_socket if no exception occurs
-    ///
-    /// @limitations
-    ///     The precondition is not enforced.
-    ///
-    ////////////////////////////////////////////////////////////////////////////
+    
+    /// Creates a shared pointer to a new pscad adapter.
+    static IAdapter::Pointer Create(boost::asio::io_service & service,
+            const boost::property_tree::ptree & details);
+    
+    /// Starts the adapter.
+    void Start();
+    
+    /// Sets the value of some device signal at the remote host.
+    void Set(const std::string device, const std::string signal, 
+            const SignalValue value);
+    
+    /// Gets the value of some device signal from the remote host.
+    SignalValue Get(std::string device, std::string signal) const;
+    
+    /// Sends a quit request to the remote host. 
     void Quit();
-
-    ////////////////////////////////////////////////////////////////////////////
-    /// ~CLineClient
-    ///
-    /// @description
-    ///     Closes the socket before destroying an object instance.
-    ///
-    /// @Shared_Memory
-    ///     none
-    ///
-    /// @Error_Handling
-    ///     none
-    ///
-    /// @pre
-    ///     none
-    ///
-    /// @post
-    ///     m_socket is closed
-    ///
-    /// @limitations
-    ///     none
-    ///
-    ////////////////////////////////////////////////////////////////////////////    
+    
+    /// Stops the adapter.
     ~CPscadAdapter();
 private:
-    ////////////////////////////////////////////////////////////////////////////
-    /// CLineClient( io_service & )
-    ///
-    /// @description
-    ///     Creates a line protocol client on the given service.
-    ///
-    /// @Shared_Memory
-    ///     Uses the passed io_service until destroyed.
-    ///
-    /// @Error_Handling
-    ///     none
-    ///
-    /// @pre
-    ///     none
-    ///
-    /// @post
-    ///     io_service is shared with m_socket
-    ///
-    /// @param
-    ///     service is the io_service the socket runs on
-    ///
-    /// @limitations
-    ///     none
-    ///
-    ////////////////////////////////////////////////////////////////////////////
-    CPscadAdapter(boost::asio::io_service & service);
+    /// Constructs a new pscad adapter.
+    CPscadAdapter(boost::asio::io_service & service,
+            const boost::property_tree::ptree & ptree);
 };
 
-}//namespace broker
-}//namespace freedm
-}//namespace device
+} // namespace broker
+} // namespace freedm
+} // namespace device
 
-#endif // CPSCADADAPTER_HPP
+#endif // C_PSCAD_ADAPTER_HPP

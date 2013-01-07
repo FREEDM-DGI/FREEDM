@@ -28,7 +28,6 @@
 
 #include <boost/asio.hpp>
 #include <boost/shared_ptr.hpp>
-#include <boost/enable_shared_from_this.hpp>
 #include <boost/property_tree/ptree_fwd.hpp>
 
 namespace freedm {
@@ -49,7 +48,6 @@ namespace device {
 ////////////////////////////////////////////////////////////////////////////////
 class CArmAdapter
     : public IBufferAdapter
-    , public boost::enable_shared_from_this<CArmAdapter>
 {
 public:
     /// Convenience type for a shared pointer to self.

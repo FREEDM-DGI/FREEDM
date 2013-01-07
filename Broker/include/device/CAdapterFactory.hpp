@@ -99,7 +99,7 @@ private:
     unsigned short GetPortNumber();
 
     /// Session layer protocol for plug-and-play devices.
-    void SessionProtocol(boost::asio::ip::tcp::socket & client);
+    void SessionProtocol();
     
     /// Set of device prototypes managed by the factory.
     std::map<std::string, IDevice::Pointer> m_prototype;

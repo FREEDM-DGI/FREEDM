@@ -70,14 +70,14 @@ CAdapterFactory::CAdapterFactory()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
-    CTcpServer::Callback handler;
+    CTcpServer::ConnectionHandler handler;
     unsigned short port;
     
     RegisterDevices();
     
     // initialize the TCP variant of the session layer protocol
     port        = CGlobalConfiguration::instance().GetFactoryPort();
-    handler     = boost::bind(&CAdapterFactory::SessionProtocol, this, _1);
+    handler     = boost::bind(&CAdapterFactory::SessionProtocol, this);
     m_server    = CTcpServer::Create(m_ios, port);
     m_server->RegisterHandler(handler);
 }
@@ -407,15 +407,15 @@ unsigned short CAdapterFactory::GetPortNumber()
 ////////////////////////////////////////////////////////////////////////////////
 ///
 ////////////////////////////////////////////////////////////////////////////////
-void CAdapterFactory::SessionProtocol(boost::asio::ip::tcp::socket & client)
+void CAdapterFactory::SessionProtocol()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     
     boost::asio::streambuf packet;
-    std::ostream packet_stream(&packet);
+    std::istream packet_stream(&packet);
     
     boost::asio::streambuf response;
-    std::istream response_stream(&response);
+    std::ostream response_stream(&response);
     
     boost::property_tree::ptree config;
     
@@ -429,7 +429,7 @@ void CAdapterFactory::SessionProtocol(boost::asio::ip::tcp::socket & client)
     try
     {
         Logger.Status << "Blocking for client hello message." << std::endl;
-        boost::asio::read_until(client, packet, "\r\n\r\n");
+        boost::asio::read_until(m_server->GetSocket(), packet, "\r\n\r\n");
         
         host = m_server->GetHostname();
         
@@ -512,7 +512,7 @@ void CAdapterFactory::SessionProtocol(boost::asio::ip::tcp::socket & client)
     try
     {
         Logger.Status << "Blocking for client start message." << std::endl;
-        boost::asio::write(client, response);
+        boost::asio::write(m_server->GetSocket(), response);
     }
     catch(std::exception & e)
     {

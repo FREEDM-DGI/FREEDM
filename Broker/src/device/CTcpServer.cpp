@@ -90,6 +90,12 @@ CTcpServer::CTcpServer(boost::asio::io_service & ios, unsigned short port)
 CTcpServer::~CTcpServer()
 {
     Logger.Trace << hdr() << __PRETTY_FUNCTION__ << std::endl;
+    Stop();
+}
+
+void CTcpServer::Stop()
+{
+    Logger.Trace << hdr() << __PRETTY_FUNCTION__ << std::endl;
     
     if( m_acceptor.is_open() )
     {
@@ -135,7 +141,7 @@ CTcpServer::Pointer CTcpServer::Create(boost::asio::io_service & ios,
 ///
 /// @limitations This function can only be called once.
 ////////////////////////////////////////////////////////////////////////////////
-void CTcpServer::RegisterHandler(Callback h)
+void CTcpServer::RegisterHandler(ConnectionHandler h)
 {
     Logger.Trace << hdr() << __PRETTY_FUNCTION__ << std::endl;
 
@@ -238,7 +244,7 @@ void CTcpServer::HandleAccept(const boost::system::error_code & error)
         {
             throw std::runtime_error(hdr() + "Null connection handler.");
         }
-        m_handler(m_socket);
+        m_handler();
     }
     else
     {
@@ -258,7 +264,17 @@ void CTcpServer::HandleAccept(const boost::system::error_code & error)
 ////////////////////////////////////////////////////////////////////////////////
 std::string CTcpServer::hdr() const
 {
-    return "(" + m_port + ") ";
+    return "(" + boost::lexical_cast<std::string>(m_port) + ") ";
+}
+
+boost::asio::ip::tcp::socket & CTcpServer::GetSocket()
+{
+    if( !m_socket.is_open() )
+    {
+        throw std::runtime_error("bad");
+    }
+    
+    return m_socket;
 }
 
 } // namespace device

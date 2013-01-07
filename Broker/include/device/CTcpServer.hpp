@@ -46,16 +46,22 @@ public:
     typedef boost::shared_ptr<CTcpServer> Pointer;
     
     /// Type of the callback function for client connections.
-    typedef boost::function<void (boost::asio::ip::tcp::socket &)> Callback;
+    typedef boost::function<void ()> ConnectionHandler;
     
-    /// Stops the TCP server.
+    /// Virtual destructor for derived classes.
     virtual ~CTcpServer();
     
     /// Creates a new TCP server on the specified port number.
     static Pointer Create(boost::asio::io_service & ios, unsigned short port);
+
+    /// Stops the TCP server.
+    void Stop();
+    
+    /// Gets the current client connection.
+    boost::asio::ip::tcp::socket & GetSocket();
     
     /// Registers a callback function for client connections.
-    void RegisterHandler(Callback h);
+    void RegisterHandler(ConnectionHandler h);
     
     /// Gets the listen port of the TCP server.
     unsigned short GetPort() const;

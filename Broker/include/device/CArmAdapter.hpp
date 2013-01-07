@@ -28,6 +28,7 @@
 
 #include <boost/asio.hpp>
 #include <boost/shared_ptr.hpp>
+#include <boost/enable_shared_from_this.hpp>
 #include <boost/property_tree/ptree_fwd.hpp>
 
 namespace freedm {
@@ -48,6 +49,7 @@ namespace device {
 ////////////////////////////////////////////////////////////////////////////////
 class CArmAdapter
     : public IBufferAdapter
+    , public boost::enable_shared_from_this<CArmAdapter>
 {
 public:
     /// Convenience type for a shared pointer to self.
@@ -67,7 +69,7 @@ public:
     unsigned short GetPortNumber() const;
     
     /// Destructs the object.
-    ~CArmAdapter();
+    virtual ~CArmAdapter();
 private:
     /// Initializes the TCP server and internal storage.
     CArmAdapter(boost::asio::io_service & service,
@@ -76,20 +78,22 @@ private:
     /// Tells the adapter factory to remove its reference to this object.
     void Timeout(const boost::system::error_code & e);
     
-    /// Handles a single client connection from the TCP server.
-    void HandleMessage(IServer::Pointer connection);
+    void StartRead();
+
+    void StartWrite();
+
+    void HandleRead(const boost::system::error_code & e);
+
+    void HandleWrite(const boost::system::error_code & e);
     
     /// Parses a state packet received from the client.
-    std::string ReadStatePacket(const std::string packet) const;
+    std::string ReadStatePacket(const std::string packet);
     
     /// Sends device commands to the current client.
-    void SendCommandPacket();
+    std::string GetCommandPacket();
     
     /// Countdown until the object destroys itself.
-    boost::asio::deadline_timer m_heartbeat;
-    
-    /// Countdown until the next command packet.
-    boost::asio::deadline_timer m_command;
+    boost::asio::deadline_timer m_countdown;
     
     /// Unique identifier of this adapter.
     std::string m_identifier;
@@ -97,11 +101,12 @@ private:
     /// Port of the TCP server.
     unsigned short m_port;
     
-    /// Flag if state data has been received.
-    bool m_initialized;
-    
     /// TCP server for the ARM client.
     CTcpServer::Pointer m_server;
+    
+    bool m_stop;
+    
+    boost::asio::streambuf m_buffer;
 };
 
 } // namespace device

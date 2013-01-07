@@ -227,7 +227,7 @@ int main(int argc, char* argv[])
         //constructors for initial mapping
         CConnectionManager conManager;
         ConnectionPtr newConnection;
-        boost::asio::io_service ios;
+        boost::asio::io_service & ios = CGlobalConfiguration::instance().GetService();
 
         /// Prepare the global Configuration
         CGlobalConfiguration::instance().SetHostname(hostname);
@@ -236,7 +236,6 @@ int main(int argc, char* argv[])
         CGlobalConfiguration::instance().SetListenAddress(listenIP);
         CGlobalConfiguration::instance().SetClockSkew(
                 boost::posix_time::milliseconds(0));
-        CGlobalConfiguration::instance().SetService(ios);
         CGlobalConfiguration::instance().SetFactoryPort(factoryPort);
         
         // configure the adapter factory

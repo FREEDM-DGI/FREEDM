@@ -86,17 +86,16 @@ IAdapter::Pointer CArmAdapter::Create(boost::asio::io_service & service,
 ////////////////////////////////////////////////////////////////////////////////
 CArmAdapter::CArmAdapter(boost::asio::io_service & service,
         boost::property_tree::ptree & p)
-    : m_heartbeat(service)
-    , m_command(service)
-    , m_initialized(0)
+    : m_countdown(service)
+    , m_stop(false)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     
     m_identifier = p.get<std::string>("identifier");
     m_port = p.get<unsigned short>("stateport");
     
-    IServer::ConnectionHandler handler;
-    handler = boost::bind(&CArmAdapter::HandleMessage, this, _1);
+    CTcpServer::ConnectionHandler handler;
+    handler = boost::bind(&CArmAdapter::StartRead, this);
     m_server = CTcpServer::Create(service, m_port);
     m_server->RegisterHandler(handler);
 }
@@ -127,8 +126,8 @@ void CArmAdapter::Start()
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     
     // TODO: this fella should be configurable
-    m_heartbeat.expires_from_now(boost::posix_time::seconds(5));
-    m_heartbeat.async_wait(boost::bind(&CArmAdapter::Timeout, this, _1));
+    m_countdown.expires_from_now(boost::posix_time::seconds(5));
+    m_countdown.async_wait(boost::bind(&CArmAdapter::Timeout, this, _1));
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -144,10 +143,10 @@ void CArmAdapter::Heartbeat()
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     
     // TODO: hello configurable option
-    if( m_heartbeat.expires_from_now(boost::posix_time::seconds(5)) != 0 )
+    if( m_countdown.expires_from_now(boost::posix_time::seconds(5)) != 0 )
     {
         Logger.Info << "Reset an adapter heartbeat timer." << std::endl;
-        m_heartbeat.async_wait(boost::bind(&CArmAdapter::Timeout, this, _1));
+        m_countdown.async_wait(boost::bind(&CArmAdapter::Timeout, this, _1));
     }
     else
     {
@@ -155,18 +154,8 @@ void CArmAdapter::Heartbeat()
     }
 }
 
-////////////////////////////////////////////////////////////////////////////////
-/// Accessor function for the TCP server port number.
-///
-/// @pre None.
-/// @post Returns the value of m_port.
-/// @return The port number associated with m_server.
-///
-/// @limitations None.
-////////////////////////////////////////////////////////////////////////////////
-unsigned short CArmAdapter::GetStatePort() const
+unsigned short CArmAdapter::GetPortNumber() const
 {
-    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     return m_port;
 }
 
@@ -186,57 +175,88 @@ void CArmAdapter::Timeout(const boost::system::error_code & e)
 
     if( !e )
     {
+        m_server->Stop();
+        
         Logger.Status << "Removing an adapter due to timeout." << std::endl;
         CAdapterFactory::Instance().RemoveAdapter(m_identifier);
     }
 }
 
-////////////////////////////////////////////////////////////////////////////////
-///
-////////////////////////////////////////////////////////////////////////////////
-void CArmAdapter::HandleMessage(IServer::Pointer connection)
+void CArmAdapter::StartRead()
 {
-    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    
-    std::stringstream packet, response;
-    std::string header;
-    
-    try
+    Heartbeat();
+    m_buffer.consume(m_buffer.size());
+    boost::asio::async_read_until(m_server->GetSocket(), m_buffer, "\r\n\r\n",
+            boost::bind(&CArmAdapter::HandleRead, this, boost::asio::placeholders::error));
+}
+
+void CArmAdapter::StartWrite()
+{
+    Heartbeat();
+    boost::asio::async_write(m_server->GetSocket(), m_buffer,
+            boost::bind(&CArmAdapter::HandleWrite, this, boost::asio::placeholders::error));
+}
+
+void CArmAdapter::HandleRead(const boost::system::error_code & e)
+{
+    if( !e )
     {
-        packet << connection->ReceiveData();
-        Heartbeat();
+        std::istreambuf_iterator<char> end;
+        std::iostream packet(&m_buffer);
+        std::string data, header;
         
-        packet >> header;
-        
-        Logger.Debug << "Received " << header << " packet." << std::endl;
-        
-        if( header == "DeviceStates" )
+        try
         {
-            response << ReadStatePacket(packet.str());
+            Heartbeat();
+            
+            packet >> header;
+            data = std::string(std::istreambuf_iterator<char>(packet), end);
+            Logger.Debug << "Received " << header << " packet." << std::endl;
+            
+            m_buffer.consume(m_buffer.size());
+            if( header == "DeviceStates" )
+            {
+                if( ReadStatePacket(data) == "Received\r\n\r\n" )
+                {
+                    packet << GetCommandPacket();
+                }
+                else
+                {
+                    packet << "BadRequest\r\n\r\n";
+                }
+            }
+            else if( header == "PoliteDisconnect" )
+            {
+                packet << "PoliteDisconnect: Accepted\r\n\r\n";
+                m_stop = true;
+            }
+            else
+            {
+                packet << "BadRequest\r\n\r\n";
+                m_stop = true;
+            }
+            StartWrite();
         }
-        else if( header == "PoliteDisconnect" )
+        catch(std::exception & e)
         {
-            response << "PoliteDisconnect: Accepted\r\n\r\n";
+            Logger.Info << m_identifier << " communication failed." << std::endl;
         }
-        else
-        {
-            response << "UnknownHeader\r\n\r\n";
-        }
-        
-        connection->SendData(response.str());
-        Heartbeat();
     }
-    catch(std::exception & e)
+}
+
+void CArmAdapter::HandleWrite(const boost::system::error_code & e)
+{
+    if( !e && !m_stop )
     {
-        Logger.Info << m_identifier << " communication failed." << std::endl;
-        return;
+        Heartbeat();
+        StartRead();
     }
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 ///
 ////////////////////////////////////////////////////////////////////////////////
-std::string CArmAdapter::ReadStatePacket(const std::string packet) const
+std::string CArmAdapter::ReadStatePacket(const std::string packet)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     
@@ -247,7 +267,7 @@ std::string CArmAdapter::ReadStatePacket(const std::string packet) const
     std::string name, signal, strval;
     
     std::size_t index;
-    DeviceSignal value;
+    SignalValue value;
     
     out << packet;
     
@@ -255,15 +275,17 @@ std::string CArmAdapter::ReadStatePacket(const std::string packet) const
     {
         name = m_identifier + ":" + name;
         
-        Logger.Debug << "Parsing: " << name << " " << signal << << std::endl;
+        Logger.Debug << "Parsing: " << name << " " << signal << std::endl;
         
-        if( m_stateInfo.count(name) == 0 )
+        DeviceSignal devsig(name, signal);
+        
+        if( m_stateInfo.count(devsig) == 0 )
         {
             return "UnknownDevice\r\n\r\n";
         }
         
-        index = m_stateInfo[name];
-        value = boost::lexical_cast<DeviceSignal>(strval);
+        index = m_stateInfo[devsig];
+        value = boost::lexical_cast<SignalValue>(strval);
         
         if( temp.insert(std::make_pair(index, value)).second == false )
         {
@@ -280,21 +302,11 @@ std::string CArmAdapter::ReadStatePacket(const std::string packet) const
             m_rxBuffer[it->first] = it->second;
         }
     }
-    
-    if( !m_initialized )
-    {
-        m_initialized = true;
-        
-        // TODO: time to configure something!
-        m_command.expires_from_now(boost::posix_time::seconds(2));
-        m_command.async_wait(boost::bind&CArmAdapter::SendCommandPacket,
-                this, _1));
-    }
-    
+
     return "Received\r\n\r\n";
 }
 
-void CArmAdapter::SendCommandPacket()
+std::string CArmAdapter::GetCommandPacket()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     
@@ -304,7 +316,7 @@ void CArmAdapter::SendCommandPacket()
     SignalValue value;
     std::size_t index;
     
-    boost::unique_lock<boost::mutex> lock(m_txMutex);
+    boost::unique_lock<boost::shared_mutex> lock(m_txMutex);
     
     end = m_commandInfo.end();
     for( it = m_commandInfo.begin(); it != end; it++ )
@@ -322,18 +334,7 @@ void CArmAdapter::SendCommandPacket()
     }
     packet << "\r\n";
     
-    try
-    {
-        connection->SendData(packet.str());
-        Heartbeat();
-    }
-    catch(std::exception & e)
-    {
-        // skip
-    }
-    
-    m_command.expires_from_now(boost::posix_time::seconds(2));
-    m_command.async_wait(boost::bind(&CArmAdapter::SendCommandPacket, this, _1));
+    return packet.str();
 }
 
 } // namespace device

@@ -63,8 +63,6 @@ class CGlobalConfiguration : public boost::noncopyable
                 { m_clockskew = t; };
         /// Set the plug-and-play port number
         void SetFactoryPort(unsigned short port) { m_factory_port = port; }
-        /// Set the shared i/o service
-        void SetService(boost::asio::io_service & ios) { m_ios = ios; }
         /// Get the hostname
         std::string GetHostname() const { return m_hostname; };
         /// Get the port
@@ -79,7 +77,7 @@ class CGlobalConfiguration : public boost::noncopyable
         /// Get the plug-and-play port number
         unsigned short GetFactoryPort() const { return m_factory_port; }        
         /// Get the shared i/o service
-        boost::asio::io_service & GetService() const { return m_ios; }
+        boost::asio::io_service & GetService() { return m_ios; }
     private:
         std::string m_hostname; /// Node hostname
         std::string m_port; /// Port number
@@ -87,7 +85,7 @@ class CGlobalConfiguration : public boost::noncopyable
         std::string m_address; /// The listening address.
         boost::posix_time::time_duration m_clockskew; /// The skew of the clock
         unsigned short m_factory_port; /// Port number for adapter factory
-        boost::asio::io_service & m_ios; /// Shared i/o service
+        boost::asio::io_service m_ios; /// Shared i/o service
 };
 
 } // namespace broker

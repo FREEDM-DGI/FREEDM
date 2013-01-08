@@ -190,7 +190,7 @@ class LBAgent
         CBroker::TimerHandle      m_StateTimer;
         
         CBroker &m_broker;
-        bool m_active;
+
         bool m_sstExists;
 };
 

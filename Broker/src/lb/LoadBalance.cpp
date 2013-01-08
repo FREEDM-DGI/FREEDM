@@ -115,7 +115,6 @@ LBAgent::LBAgent(std::string uuid_, CBroker &broker):
     RegisterSubhandle("lb.CollectedState",boost::bind(&LBAgent::HandleCollectedState, this, _1, _2));
     RegisterSubhandle("lb.ComputedNormal",boost::bind(&LBAgent::HandleComputedNormal, this, _1, _2));
     RegisterSubhandle("any",boost::bind(&LBAgent::HandleAny, this, _1, _2));
-    m_active = false;
     m_sstExists = false;
 }
 
@@ -1035,12 +1034,9 @@ void LBAgent::Desd_PStar()
 void LBAgent::StartStateTimer( unsigned int delay )
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    if( !m_active )
-    {
-        m_broker.Schedule(m_StateTimer, boost::posix_time::milliseconds(delay),
-            boost::bind(&LBAgent::HandleStateTimer, this, boost::asio::placeholders::error));
-        m_active = true;
-    }
+
+    m_broker.Schedule(m_StateTimer, boost::posix_time::milliseconds(delay),
+        boost::bind(&LBAgent::HandleStateTimer, this, boost::asio::placeholders::error));
 }
 
 ////////////////////////////////////////////////////////////
@@ -1060,7 +1056,6 @@ void LBAgent::HandleStateTimer( const boost::system::error_code & error )
         CollectState();
     }
 
-    m_active = false;
     StartStateTimer( STATE_TIMEOUT );
 }
 

@@ -67,7 +67,7 @@ CLocalLogger Logger(__FILE__);
 }
 
 /// The copyright year for this DGI release.
-const unsigned int COPYRIGHT_YEAR = 2012;
+const unsigned int COPYRIGHT_YEAR = 2013;
 
 /// Broker entry point
 int main(int argc, char* argv[])

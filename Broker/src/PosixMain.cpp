@@ -69,6 +69,15 @@ CLocalLogger Logger(__FILE__);
 /// The copyright year for this DGI release.
 const unsigned int COPYRIGHT_YEAR = 2012;
 
+/// Phase for Group Management in milliseconds, used by the broker.
+const unsigned int GM_PHASE = 400;
+
+/// Phase for State Collection in milliseconds, used by the broker.
+const unsigned int SC_PHASE = 400;
+
+/// Phase for Load Balance in milliseconds, used by the broker.
+const unsigned int LB_PHASE = 400;
+
 /// Broker entry point
 int main(int argc, char* argv[])
 {
@@ -271,15 +280,15 @@ int main(int argc, char* argv[])
         ss >> uuidstr;
         // Instantiate and register the group management module
         gm::GMAgent GM(uuidstr, broker);
-        broker.RegisterModule("gm",boost::posix_time::milliseconds(400));
+        broker.RegisterModule("gm",boost::posix_time::milliseconds(GM_PHASE));
         dispatch.RegisterReadHandler("gm", "any", &GM);
         // Instantiate and register the state collection module
         sc::SCAgent SC(uuidstr, broker);
-        broker.RegisterModule("sc",boost::posix_time::milliseconds(400));
+        broker.RegisterModule("sc",boost::posix_time::milliseconds(SC_PHASE));
         dispatch.RegisterReadHandler("sc", "any", &SC);
         // Instantiate and register the power management module
-        lb::LBAgent LB(uuidstr, broker);
-        broker.RegisterModule("lb",boost::posix_time::milliseconds(400));
+        lb::LBAgent LB(uuidstr, broker, LB_PHASE);
+        broker.RegisterModule("lb",boost::posix_time::milliseconds(LB_PHASE));
         dispatch.RegisterReadHandler("lb", "lb", &LB);
 
         // The peerlist should be passed into constructors as references or

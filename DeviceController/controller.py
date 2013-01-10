@@ -234,7 +234,7 @@ def reconnect(deviceTypes, config):
         raise ValueError('Sent bad request to DGI: ' + msg)
     else:
         msg = msg.split()
-        if len(msg) != 3 or msg[0] != 'Start' or msg[1] != 'StatePort':
+        if len(msg) != 3 or msg[0] != 'Start' or msg[1] != 'StatePort:':
             raise RuntimeError('DGI sent malformed Start:\n' + ''.join(msg))
     
     statePort = int(msg[2])
@@ -246,7 +246,7 @@ def reconnect(deviceTypes, config):
     for i in range(0, adapterConnRetries):
         try:
             adapterSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            adapterSocket.connect(dgiHostname, statePort)
+            adapterSocket.connect((dgiHostname, statePort))
         except (socket.error, socket.herror, socket.gaierror, socket.timeout) \
                 as e:
             print >> sys.stderr, \
@@ -259,7 +259,7 @@ def reconnect(deviceTypes, config):
             else:
                 print >> sys.stderr, 'Trying again...'
         else:
-            adapterSocket.setTimeout(dgiTimeout)
+            adapterSocket.settimeout(dgiTimeout)
             return adapterSocket
 
 def politeQuit(adapterSock, deviceSignals, stateTimeout):
@@ -390,4 +390,4 @@ if __name__ == '__main__':
         else:
             raise RuntimeError('Read invalid script command:\n' + command)
 
-    close(script)
+    script.close()

@@ -259,7 +259,7 @@ def reconnect(deviceTypes, config):
             else:
                 print >> sys.stderr, 'Trying again...'
         else:
-            adapterSocket.setTimeout(dgiTimeout)
+            adapterSocket.settimeout(dgiTimeout)
             return adapterSocket
 
 def politeQuit(adapterSock, deviceSignals, stateTimeout):

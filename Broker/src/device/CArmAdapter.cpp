@@ -254,7 +254,14 @@ void CArmAdapter::HandleRead(const boost::system::error_code & e)
 void CArmAdapter::HandleWrite(const boost::system::error_code & e)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    if( !e && !m_stop )
+    if( m_stop )
+    {
+	boost::system::error_code null;
+
+        m_countdown.cancel();
+        Timeout(null);
+    }
+    else if( !e )
     {
         Heartbeat();
         StartRead();

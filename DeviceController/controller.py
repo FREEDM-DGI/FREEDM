@@ -90,7 +90,7 @@ def enableDevice(deviceTypes, deviceSignals, command):
     name = command[2]
     deviceTypes[name] = command[1]
     for i in range (3, len(command), 2):
-        deviceSignals[(name, command[i])] = float(command[i+1])
+        deviceSignals[(name, command[i])] = command[i+1]
 
 
 def disableDevice(deviceTypes, deviceSignals, command):
@@ -161,10 +161,9 @@ def receiveCommands(adapterSock, deviceSignals):
             raise RuntimeError('Malformed command in packet:\n' + line)
         if not deviceSignals.has_key((command[0], command[1])):
             raise RuntimeError('Unrecognized command in packet:\n' + line)
-        # Implement the command UNLESS DGI doesn't know our current state.
-        value = float(command[2])
-        if not math.isnan(value):
-            deviceSignals[(command[0], command[1])] = value
+        # Implement the command *unless* DGI doesn't really know our states.
+        if not math.isnan(float(command[2])):
+            deviceSignals[(command[0], command[1])] = command[2]
     print 'Device states have been updated'
 
 
@@ -330,7 +329,7 @@ if __name__ == '__main__':
     stateTimeout = float(config.get('timings', 'state-timeout'))/1000.0
     # dict of names -> types
     deviceTypes = {}
-    # dict of (name, signal) pairs -> floats
+    # dict of (name, signal) pairs -> strings (representing floats :S)
     deviceSignals = {}
     # are we processing the very first command in the script?
     firstHello = True

@@ -129,7 +129,7 @@ def sendStates(adapterSock, deviceSignals):
     msg = 'DeviceStates\r\n'
     for (name, signal) in deviceSignals.keys():
         msg += name + ' ' + signal + ' ' + str(deviceSignals[(name, signal)])
-    msg += '\r\n'
+    msg += '\r\n\r\n'
     print 'Sending states to DGI:\n' + msg
     sendAll(adapterSock, msg)
     print 'Sent states to DGI'

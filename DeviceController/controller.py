@@ -234,7 +234,7 @@ def reconnect(deviceTypes, config):
         raise ValueError('Sent bad request to DGI: ' + msg)
     else:
         msg = msg.split()
-        if len(msg) != 3 or msg[0] != 'Start' or msg[1] != 'StatePort':
+        if len(msg) != 3 or msg[0] != 'Start' or msg[1] != 'StatePort:':
             raise RuntimeError('DGI sent malformed Start:\n' + ''.join(msg))
     
     statePort = int(msg[2])

@@ -137,8 +137,9 @@ def sendStates(adapterSock, deviceSignals):
 
 def receiveCommands(adapterSock, deviceSignals):
     """
-    Receives new commands from the DGI and then implements them by modifying
-    the devices map.
+    Receives new commands from the DGI and then implements them by modifying the
+    devices map. We're basically the best controller ever since we satify the
+    DGI instantanously.
 
     @param adapterSock the connected stream socket to receive commands from
     @param deviceSignals dict of (name, signal) pairs to floats
@@ -160,7 +161,10 @@ def receiveCommands(adapterSock, deviceSignals):
             raise RuntimeError('Malformed command in packet:\n' + line)
         if not deviceSignals.has_key((command[0], command[1])):
             raise RuntimeError('Unrecognized command in packet:\n' + line)
-        deviceSignals[(command[0], command[1])] = command[2]
+        # Implement the command UNLESS DGI doesn't know our current state.
+        value = float(command[2])
+        if not math.isnan(value):
+            deviceSignals[(command[0], command[1])] = value
     print 'Device states have been updated'
 
 

@@ -69,16 +69,21 @@ void IBufferAdapter::Start()
     std::set<std::size_t> stateIndices;
     std::set<std::size_t> commandIndices;
     
+    // It's imperative that these buffers are initially populated with invalid
+    // values (NaN) and anything that communicates with IBufferAdapter knows to
+    // ignore the NaNs. If we just initialize to 0.0 we could be bit by a race
+    // condition where the power level suddenly jumps to 0.0.
+
     BOOST_FOREACH( std::size_t i, m_stateInfo | boost::adaptors::map_values )
     {
         stateIndices.insert(i);
-        m_rxBuffer.push_back(0.0f);
+        m_rxBuffer.push_back(0.0/0.0);
     }
     
     BOOST_FOREACH( std::size_t i, m_commandInfo | boost::adaptors::map_values )
     {
         commandIndices.insert(i);
-        m_txBuffer.push_back(0.0f);
+        m_txBuffer.push_back(0.0/0.0);
     }
     
     // Tom Roth <tprfh7@mst.edu>:

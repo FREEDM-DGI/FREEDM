@@ -253,7 +253,6 @@ void CTcpServer::HandleAccept(const boost::system::error_code & error)
     {
         Logger.Warn << hdr() << "Failed to accept a client." << std::endl;
     }
-    StartAccept();
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -274,7 +273,7 @@ boost::asio::ip::tcp::socket & CTcpServer::GetSocket()
 {
     if( !m_socket.is_open() )
     {
-        throw std::runtime_error("bad");
+        throw std::runtime_error("socket not open");
     }
     
     return m_socket;

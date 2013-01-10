@@ -186,6 +186,7 @@ void CArmAdapter::Timeout(const boost::system::error_code & e)
 
 void CArmAdapter::StartRead()
 {
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     Heartbeat();
     m_buffer.consume(m_buffer.size());
     boost::asio::async_read_until(m_server->GetSocket(), m_buffer, "\r\n\r\n",
@@ -194,6 +195,7 @@ void CArmAdapter::StartRead()
 
 void CArmAdapter::StartWrite()
 {
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     Heartbeat();
     boost::asio::async_write(m_server->GetSocket(), m_buffer,
             boost::bind(&CArmAdapter::HandleWrite, this, boost::asio::placeholders::error));
@@ -201,6 +203,7 @@ void CArmAdapter::StartWrite()
 
 void CArmAdapter::HandleRead(const boost::system::error_code & e)
 {
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     if( !e )
     {
         std::istreambuf_iterator<char> end;
@@ -229,6 +232,7 @@ void CArmAdapter::HandleRead(const boost::system::error_code & e)
             }
             else if( header == "PoliteDisconnect" )
             {
+                Logger.Debug << "Polite Disconnect Accepted" << std::endl;
                 packet << "PoliteDisconnect: Accepted\r\n\r\n";
                 m_stop = true;
             }
@@ -242,12 +246,14 @@ void CArmAdapter::HandleRead(const boost::system::error_code & e)
         catch(std::exception & e)
         {
             Logger.Info << m_identifier << " communication failed." << std::endl;
+            Logger.Debug << "Reason: " << e.what() << std::endl;
         }
     }
 }
 
 void CArmAdapter::HandleWrite(const boost::system::error_code & e)
 {
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     if( !e && !m_stop )
     {
         Heartbeat();

@@ -68,12 +68,12 @@ public:
     
     /// Gets the hostname of the connected client.
     std::string GetHostname() const;
-private:
-    /// Constructs the TCP server on the specified port number.
-    CTcpServer(boost::asio::io_service & ios, unsigned short port);
     
     /// Prepares to accept the next client.
     void StartAccept();
+private:
+    /// Constructs the TCP server on the specified port number.
+    CTcpServer(boost::asio::io_service & ios, unsigned short port);
     
     /// Handles an accepted client connection.
     void HandleAccept(const boost::system::error_code & error);

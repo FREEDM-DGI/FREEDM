@@ -531,6 +531,8 @@ void CAdapterFactory::SessionProtocol()
     {
         Logger.Warn << "Failed to respond to client: " << e.what() << std::endl; 
     }
+
+    m_server->StartAccept();
 }
 
 } // namespace device

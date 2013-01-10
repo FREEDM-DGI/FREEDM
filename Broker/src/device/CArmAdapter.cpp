@@ -221,13 +221,15 @@ void CArmAdapter::HandleRead(const boost::system::error_code & e)
             m_buffer.consume(m_buffer.size());
             if( header == "DeviceStates" )
             {
-                if( ReadStatePacket(data) == "Received\r\n\r\n" )
+                std::string result = ReadStatePacket(data);
+
+                if( result == "Received\r\n\r\n" )
                 {
                     packet << GetCommandPacket();
                 }
                 else
                 {
-                    packet << "BadRequest\r\n\r\n";
+                    packet << "BadRequest\r\n" << result << "\r\n\r\n";
                 }
             }
             else if( header == "PoliteDisconnect" )
@@ -289,6 +291,13 @@ std::string CArmAdapter::ReadStatePacket(const std::string packet)
     while( out >> name >> signal >> strval )
     {
         name = m_identifier + ":" + name;
+        for( int i = 0, n = name.size(); i < n; i++ )
+        {
+            if( name[i] == '.' )
+            {
+                name[i] = ':';
+            }
+        }
         
         Logger.Debug << "Parsing: " << name << " " << signal << std::endl;
         

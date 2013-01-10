@@ -47,6 +47,7 @@
 #include "CMessage.hpp"
 #include "gm/GroupManagement.hpp"
 #include "CDeviceManager.hpp"
+#include "CTimings.hpp"
 
 #include <algorithm>
 #include <cassert>
@@ -89,12 +90,11 @@ CLocalLogger Logger(__FILE__);
 /// @post: Object is initialized and ready to run load balancing
 /// @param uuid_: This object's uuid
 /// @param broker: The Broker
-/// @param phase: The phase duration the broker uses for this module
 /// @limitations: None
 ///////////////////////////////////////////////////////////////////////////////
-LBAgent::LBAgent(std::string uuid_, CBroker &broker, const unsigned int phase):
+LBAgent::LBAgent(std::string uuid_, CBroker &broker):
     IPeerNode(uuid_, broker.GetConnectionManager()),
-    m_broker(broker), m_PHASE(phase)
+    m_broker(broker)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     PeerNodePtr self_(this);
@@ -140,7 +140,7 @@ int LBAgent::Run()
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     // This initializes the algorithm
     LoadManage();
-    StartStateTimer( STATE_TIMEOUT );
+    StartStateTimer( CTimings::LB_STATE_TIMER );
     return 0;
 }
 
@@ -317,27 +317,29 @@ void LBAgent::LoadManage()
     // LB completes, there's still time to run another before scheduling it.
     // Otherwise we'll steal time from the next broker module.
     if (m_broker.TimeRemaining() >
-            boost::posix_time::milliseconds(2*LOAD_TIMEOUT))
+        boost::posix_time::milliseconds(2*CTimings::LB_GLOBAL_TIMER))
     {
         m_broker.Schedule(m_GlobalTimer,
-                          boost::posix_time::milliseconds(LOAD_TIMEOUT),
+                          boost::posix_time::milliseconds(
+                              CTimings::LB_GLOBAL_TIMER),
                           boost::bind(&LBAgent::LoadManage,
                                       this,
                                       boost::asio::placeholders::error));
-        Logger.Info << "Scheduled another LoadManage in " << LOAD_TIMEOUT 
-                    << "ms" << std::endl;
+        Logger.Info << "Scheduled another LoadManage in "
+                    << CTimings::LB_GLOBAL_TIMER << "ms" << std::endl;
     }
     else
     {
         // Schedule past the end of our phase so control will pass to the broker
         // after this LB, and we won't go again until it's our turn. Good.
         m_broker.Schedule(m_GlobalTimer,
-                          boost::posix_time::milliseconds(m_PHASE),
+                          boost::posix_time::milliseconds(
+                              CTimings::LB_STATE_TIMER),
                           boost::bind(&LBAgent::LoadManage,
                                       this,
                                       boost::asio::placeholders::error));
-        Logger.Info << "Won't run over phase, scheduling another LoadManage in " 
-                    << m_PHASE << "ms" << std::endl;
+        Logger.Info << "Won't run over phase, scheduling another LoadManage in "
+                    << CTimings::LB_STATE_TIMER << "ms" << std::endl;
     }
 
     //Remember previous load before computing current load
@@ -1079,7 +1081,7 @@ void LBAgent::HandleStateTimer( const boost::system::error_code & error )
         CollectState();
     }
 
-    StartStateTimer( STATE_TIMEOUT );
+    StartStateTimer( CTimings::LB_STATE_TIMER );
 }
 
 } // namespace lb

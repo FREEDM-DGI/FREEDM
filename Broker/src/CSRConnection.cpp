@@ -25,6 +25,7 @@
 #include "CMessage.hpp"
 #include "CSRConnection.hpp"
 #include "IProtocol.hpp"
+#include "CTimings.hpp"
 
 #include <iomanip>
 #include <set>
@@ -110,7 +111,7 @@ void CSRConnection::Send(CMessage msg)
     if(!msg.HasExpireTime())
     {
         Logger.Debug<<"Set Expire time"<<std::endl;
-        msg.SetExpireTimeFromNow(boost::posix_time::milliseconds(3000));
+        msg.SetExpireTimeFromNow(boost::posix_time::milliseconds(CTimings::CSRC_DEFAULT_TIMEOUT));
     }
     
     if(m_window.size() == 0)
@@ -201,7 +202,7 @@ void CSRConnection::Resend(const boost::system::error_code& err)
             Write(m_window.front());
             // Head of window can be killed.
             m_timeout.cancel();
-            m_timeout.expires_from_now(boost::posix_time::milliseconds(REFIRE_TIME));
+            m_timeout.expires_from_now(boost::posix_time::milliseconds(CTimings::CSRC_RESEND_TIME));
             m_timeout.async_wait(boost::bind(&CSRConnection::Resend,shared_from_this(),
                 boost::asio::placeholders::error));
         }
@@ -412,7 +413,7 @@ void CSRConnection::SendACK(const CMessage &msg)
     m_ackmutex.unlock();
     /// Hook into resend until the message expires.
     m_timeout.cancel();
-    m_timeout.expires_from_now(boost::posix_time::milliseconds(REFIRE_TIME));
+    m_timeout.expires_from_now(boost::posix_time::milliseconds(CTimings::CSRC_RESEND_TIME));
     m_timeout.async_wait(boost::bind(&CSRConnection::Resend,shared_from_this(),
         boost::asio::placeholders::error));
 }

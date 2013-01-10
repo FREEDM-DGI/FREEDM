@@ -17,6 +17,7 @@ set(
     IProtocol.cpp
     IHandler.cpp
     CClockSynchronizer.cpp
+    CTimings.cpp
     gm/GroupManagement.cpp
     lb/LoadBalance.cpp
     sc/StateCollection.cpp

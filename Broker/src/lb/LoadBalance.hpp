@@ -71,12 +71,6 @@ namespace lb {
 
 const double NORMAL_TOLERANCE = 0.5;
 
-/// milliseconds, upper bound on the runtime of a LB
-const unsigned int LOAD_TIMEOUT = 195;
-
-/// milliseconds, upper bound on the runtime of a SC
-const unsigned int STATE_TIMEOUT = 600;
-
 //////////////////////////////////////////////////////////
 /// class LBAgent
 ///
@@ -92,7 +86,7 @@ class LBAgent
         /// Default constructor
         LBAgent();
         /// Constructor for using this object as a module
-        LBAgent(std::string uuid_, CBroker &broker, const unsigned int phase);
+        LBAgent(std::string uuid_, CBroker &broker);
         /// Destructor for the module  
         ~LBAgent();
 
@@ -194,9 +188,6 @@ class LBAgent
         CBroker::TimerHandle      m_StateTimer;
         
         CBroker &m_broker;
-
-        /// Broker's phase for LB, we run multiple LBs in a row for this long
-        const unsigned int m_PHASE;
 
         bool m_sstExists;
 };

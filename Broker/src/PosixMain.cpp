@@ -36,6 +36,7 @@
 #include "lb/LoadBalance.hpp"
 #include "sc/StateCollection.hpp"
 #include "version.h"
+#include "CTimings.hpp"
 
 #include <iostream>
 #include <set>
@@ -69,15 +70,6 @@ CLocalLogger Logger(__FILE__);
 /// The copyright year for this DGI release.
 const unsigned int COPYRIGHT_YEAR = 2012;
 
-/// Phase for Group Management in milliseconds, used by the broker.
-const unsigned int GM_PHASE = 400;
-
-/// Phase for State Collection in milliseconds, used by the broker.
-const unsigned int SC_PHASE = 400;
-
-/// Phase for Load Balance in milliseconds, used by the broker.
-const unsigned int LB_PHASE = 400;
-
 /// Broker entry point
 int main(int argc, char* argv[])
 {
@@ -89,7 +81,7 @@ int main(int argc, char* argv[])
     po::positional_options_description posOpts;
     po::variables_map vm;
     std::ifstream ifs;
-    std::string cfgFile, loggerCfgFile, adapterCfgFile;
+    std::string cfgFile, loggerCfgFile, timingsFile, adapterCfgFile;
     std::string listenIP, port, uuidString, hostname, uuidgenerator;
     unsigned int globalVerbosity;
     CUuid uuid;
@@ -128,6 +120,10 @@ int main(int argc, char* argv[])
                 po::value<std::string > ( &loggerCfgFile )->
                 default_value("./config/logger.cfg"),
                 "name of the logger verbosity configuration file" )
+                ( "timings-config",
+                po::value<std::string > ( &timingsFile )->
+                default_value("./config/timings.cfg"),
+                "name of the timings configuration file" )
                 ( "verbose,v",
                 po::value<unsigned int>( &globalVerbosity )->
                 implicit_value(5)->default_value(5),
@@ -213,6 +209,8 @@ int main(int argc, char* argv[])
             uuid = CUuid::from_dns(hostname,port);
             Logger.Info << "Generated UUID: " << uuid << std::endl;
         }
+        // Load timings from files
+        CTimings::SetTimings(timingsFile);
         // Refine the logger verbosity settings.
         CGlobalLogger::instance().SetGlobalLevel(globalVerbosity);
         CGlobalLogger::instance().SetInitialLoggerLevels(loggerCfgFile);
@@ -280,15 +278,15 @@ int main(int argc, char* argv[])
         ss >> uuidstr;
         // Instantiate and register the group management module
         gm::GMAgent GM(uuidstr, broker);
-        broker.RegisterModule("gm",boost::posix_time::milliseconds(GM_PHASE));
+        broker.RegisterModule("gm",boost::posix_time::milliseconds(CTimings::GM_PHASE_TIME));
         dispatch.RegisterReadHandler("gm", "any", &GM);
         // Instantiate and register the state collection module
         sc::SCAgent SC(uuidstr, broker);
-        broker.RegisterModule("sc",boost::posix_time::milliseconds(SC_PHASE));
+        broker.RegisterModule("sc",boost::posix_time::milliseconds(CTimings::SC_PHASE_TIME));
         dispatch.RegisterReadHandler("sc", "any", &SC);
         // Instantiate and register the power management module
-        lb::LBAgent LB(uuidstr, broker, LB_PHASE);
-        broker.RegisterModule("lb",boost::posix_time::milliseconds(LB_PHASE));
+        lb::LBAgent LB(uuidstr, broker);
+        broker.RegisterModule("lb",boost::posix_time::milliseconds(CTimings::LB_PHASE_TIME));
         dispatch.RegisterReadHandler("lb", "lb", &LB);
 
         // The peerlist should be passed into constructors as references or

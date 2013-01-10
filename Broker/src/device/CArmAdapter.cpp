@@ -339,7 +339,9 @@ std::string CArmAdapter::GetCommandPacket()
     std::string devname, signal;
     SignalValue value;
     std::size_t index;
-    
+
+    packet << "DeviceCommands\r\n";   
+ 
     boost::unique_lock<boost::shared_mutex> lock(m_txMutex);
     
     end = m_commandInfo.end();

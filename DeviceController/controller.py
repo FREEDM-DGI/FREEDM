@@ -390,4 +390,4 @@ if __name__ == '__main__':
         else:
             raise RuntimeError('Read invalid script command:\n' + command)
 
-    close(script)
+    script.close()

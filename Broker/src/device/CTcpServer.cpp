@@ -214,10 +214,13 @@ void CTcpServer::StartAccept()
         Logger.Warn << hdr() << "Closed open client connection." << std::endl;
         m_socket.close();
     }
-    m_acceptor.async_accept(m_socket, boost::bind(&CTcpServer::HandleAccept,
-            this, boost::asio::placeholders::error));
+    if( m_acceptor.is_open() )
+    {
+        m_acceptor.async_accept(m_socket, boost::bind(&CTcpServer::HandleAccept,
+                this, boost::asio::placeholders::error));
 
-    Logger.Info << hdr() << "Waiting for next connection." << std::endl;
+        Logger.Info << hdr() << "Waiting for next connection." << std::endl;
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -124,6 +124,8 @@ CArmAdapter::~CArmAdapter()
 void CArmAdapter::Start()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+
+    IBufferAdapter::Start();
     
     // TODO: this fella should be configurable
     m_countdown.expires_from_now(boost::posix_time::seconds(5));

@@ -224,11 +224,6 @@ int main(int argc, char* argv[])
         ss2 << uuid;
         ss2 >> uuidstr2;
 
-        //constructors for initial mapping
-        CConnectionManager conManager;
-        ConnectionPtr newConnection;
-        boost::asio::io_service & ios = CGlobalConfiguration::instance().GetService();
-
         /// Prepare the global Configuration
         CGlobalConfiguration::instance().SetHostname(hostname);
         CGlobalConfiguration::instance().SetUUID(uuidstr2);
@@ -238,6 +233,11 @@ int main(int argc, char* argv[])
                 boost::posix_time::milliseconds(0));
         CGlobalConfiguration::instance().SetFactoryPort(factoryPort);
         
+        //constructors for initial mapping
+        CConnectionManager conManager;
+        ConnectionPtr newConnection;
+        boost::asio::io_service & ios = CGlobalConfiguration::instance().GetService();
+
         // configure the adapter factory
         device::CAdapterFactory::Instance();
         if( vm.count("adapter-port") > 0 )

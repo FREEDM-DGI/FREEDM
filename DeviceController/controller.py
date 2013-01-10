@@ -25,7 +25,7 @@ import ConfigParser
 import socket
 import sys
 import time
-
+import string
 
 def sendAll(socket, msg):
     """
@@ -150,10 +150,12 @@ def receiveCommands(adapterSock, deviceSignals):
     print 'Received states from DGI:\n' + msg
     if msg.find('DeviceCommands\r\n') != 0:
         raise RuntimeError('Malformed command packet:\n' + msg)
-    for line in msg:
-        if line.find('DeviceCommands\r\n') == 0:
+    for line in msg.split('\r\n'):
+        if line.find('DeviceCommands') == 0:
             continue
         command = line.split()
+        if len(command) == 0:
+            continue
         if len(command) != 3:
             raise RuntimeError('Malformed command in packet:\n' + line)
         if not deviceSignals.has_key((command[0], command[1])):

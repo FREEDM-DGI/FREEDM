@@ -46,6 +46,7 @@
 #include <boost/bind.hpp>
 #include <boost/foreach.hpp>
 #include <boost/property_tree/ptree.hpp>
+#include <boost/property_tree/xml_parser.hpp>
 
 namespace freedm {
 namespace broker {
@@ -453,7 +454,7 @@ void CAdapterFactory::SessionProtocol()
         config.put("<xmlattr>.type", "arm");
         config.put("info.identifier", host);
         config.put("info.stateport", port);
-        
+
         for( int i = 0; packet_stream >> type >> name; i++ )
         {
             if( m_prototype.count(type) == 0 )
@@ -463,6 +464,14 @@ void CAdapterFactory::SessionProtocol()
             }
             
             name = host + ":" + name;
+            for( int k = 0, n = name.size(); k < n; k++ )
+            {
+                if( name[k] == '.' )
+                {
+                    name[k] = ':';
+                }
+            }
+
             states = m_prototype[type]->GetStateSet();
             commands = m_prototype[type]->GetCommandSet();
             
@@ -490,6 +499,10 @@ void CAdapterFactory::SessionProtocol()
                 cindex++;
             }
         }
+
+        // remove me when done with error checking
+        boost::property_tree::xml_writer_settings<char> settings('\t', 1);
+        write_xml("file2.xml", config, std::locale(), settings);
         
         CreateAdapter(config);
         

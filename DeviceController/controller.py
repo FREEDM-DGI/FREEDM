@@ -246,7 +246,7 @@ def reconnect(deviceTypes, config):
     for i in range(0, adapterConnRetries):
         try:
             adapterSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            adapterSocket.connect(dgiHostname, statePort)
+            adapterSocket.connect((dgiHostname, statePort))
         except (socket.error, socket.herror, socket.gaierror, socket.timeout) \
                 as e:
             print >> sys.stderr, \

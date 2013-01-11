@@ -25,27 +25,27 @@
 # Note that this won't work, it's just to show the syntax for devices with
 # multiple signals. If we did add weirdsetting to SST, each SST would need
 # to specify the initial value here. Zeroes cannot be assumed!
-enable Sst SST1 gateway 0.0 weirdsetting 25.3
+#enable Sst SST1 gateway 0.0 weirdsetting 25.3
 enable Sst SST2 gateway 0.0
 enable Sst SST3 gateway 18.0
 enable Sst SST4 gateway -10.0
 enable Drer DRER1 generation 5.0
 enable Load LOAD1 drain -4
-enable Fid FID1
-enable Fid FID2
+
+# FIDs don't work yet. Add these if you want it to crash.
+# enable Fid FID1
+# enable Fid FID2
 
 work 5
 
-disable SST1
 disable SST2
 disable SST3
 
 dieHorribly 5
 
-disable FID1
-
 work 15
 
-enable Sst SST1
+# Again this won't work unless DGI SSTs have weirdsetting.
+#enable Sst SST1 gateway 0.0 weirdsetting 223234
 
 work 15

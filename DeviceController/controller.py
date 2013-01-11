@@ -22,11 +22,12 @@
 ################################################################################
 
 import ConfigParser
+import datetime
+import math
 import socket
+import string
 import sys
 import time
-import string
-import math
 
 def sendAll(socket, msg):
     """
@@ -73,6 +74,19 @@ def recvAll(socket):
     if msg.find('\r\n\r\n') != len(msg)-4:
         raise RuntimeError('Malformed message from DGI:\n' + msg)
     return msg
+
+
+def handleBadRequest(msg):
+    """
+    If the DGI says we sent a bad request, log the error and try to reconnect.
+    You probably need to return immediately after calling this.
+
+    @param msg string the message sent by DGI
+    """
+    msg.replace('BadRequest: ', '', 1)
+    with open('ERRORS', 'a') as errorfile:
+        errorfile.write(str(datetime.datetime.now()) + '\n')
+        errorfile.write('Sent bad request to DGI: ' + msg + '\n')
 
 
 def enableDevice(deviceTypes, deviceSignals, command):
@@ -237,8 +251,8 @@ def reconnect(deviceTypes, config):
             break
 
     if msg.find('BadRequest: ') == 0:
-        msg.replace('BadRequest: ', '', 1)
-        raise ValueError('Sent bad request to DGI: ' + msg)
+        handleBadRequest(msg)
+        return
     else:
         msg = msg.split()
         if len(msg) != 3 or msg[0] != 'Start' or msg[1] != 'StatePort:':
@@ -294,9 +308,9 @@ def politeQuit(adapterSock, deviceSignals, stateTimeout):
             return
 
         if msg.find('BadRequest: ') == 0:
-            msg.replace('BadRequest: ', '', 1)
-            raise ValueError('Sent bad request to DGI: ' + msg)
-        
+            handleBadRequest(msg)
+            return
+
         msg = msg.split()
         if len(msg) != 2 or msg[0] != 'PoliteDisconnect:' or \
                 (msg[1] != 'Accepted' and msg[1] != 'Rejected'):

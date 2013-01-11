@@ -164,7 +164,7 @@ def receiveCommands(adapterSock, deviceSignals):
     """
     print 'Awaiting commands from DGI...'
     msg = recvAll(adapterSock)
-    print 'Received states from DGI:\n' + msg
+    print 'Received commands from DGI:\n' + msg
     if msg.find('DeviceCommands\r\n') != 0:
         raise RuntimeError('Malformed command packet:\n' + msg)
     for line in msg.split('\r\n'):

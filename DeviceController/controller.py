@@ -317,11 +317,12 @@ def politeQuit(adapterSock, deviceSignals, stateTimeout):
             raise RuntimeError('Got bad disconnect response:\n' + ''.join(msg))
 
         if msg[1] == 'Accepted':
+            print 'PoliteDisconnect accepted by DGI'
             adapterSock.close()
             return
         else:
             assert msg[1] == 'Rejected'
-            print 'Performing another round of work'
+            print 'PoliteDisconnect rejected, performing another round of work'
             try:
                 work(adapterSock, deviceSignals, stateTimeout)
                 # Loop again

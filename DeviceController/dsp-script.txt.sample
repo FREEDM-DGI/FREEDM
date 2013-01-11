@@ -32,9 +32,8 @@ enable Sst SST4 gateway -10.0
 enable Drer DRER1 generation 5.0
 enable Load LOAD1 drain -4
 
-# FIDs don't work yet. Add these if you want it to crash.
-# enable Fid FID1
-# enable Fid FID2
+enable Fid FID1 state 1.0
+enable Fid FID2 state 1.0
 
 work 5
 
@@ -47,5 +46,9 @@ work 15
 
 # Again this won't work unless DGI SSTs have weirdsetting.
 #enable Sst SST1 gateway 0.0 weirdsetting 223234
+
+# don't yet have a way to arbitrarily change states
+# e.g. it'd be good to be able to do
+#change Fid FID1 state 0.0
 
 work 15

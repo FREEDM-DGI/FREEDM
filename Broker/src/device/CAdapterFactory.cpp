@@ -395,7 +395,7 @@ unsigned short CAdapterFactory::GetPortNumber()
     
     if( it == m_ports.end() )
     {
-        std::runtime_error("No available port numbers for new adapter.");
+        throw std::runtime_error("No available port numbers for new adapter.");
     }
     
     port = *it;

@@ -40,7 +40,7 @@ disable SST1
 disable SST2
 disable SST3
 
-dieHorribly
+dieHorribly 5
 
 disable FID1
 

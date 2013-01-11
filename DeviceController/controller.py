@@ -412,4 +412,5 @@ if __name__ == '__main__':
         else:
             raise RuntimeError('Read invalid script command:\n' + command)
 
+    print '\n\nThat seems to be the end of my script, have a stupendous day!\n'
     script.close()

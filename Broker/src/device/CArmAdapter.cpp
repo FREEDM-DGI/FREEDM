@@ -286,6 +286,8 @@ std::string CArmAdapter::ReadStatePacket(const std::string packet)
     std::size_t index;
     SignalValue value;
     
+    Logger.Debug << "Processing packet: " << packet;
+    
     out << packet;
     
     while( out >> name >> signal >> strval )
@@ -339,7 +341,7 @@ std::string CArmAdapter::GetCommandPacket()
     std::string devname, signal;
     SignalValue value;
     std::size_t index;
-
+    
     packet << "DeviceCommands\r\n";   
  
     boost::unique_lock<boost::shared_mutex> lock(m_txMutex);
@@ -358,8 +360,8 @@ std::string CArmAdapter::GetCommandPacket()
         
         packet << devname << " " << signal << " " << value << "\r\n";
     }
+    Logger.Debug << "Sending packet:\n" << packet.str() << std::endl;
     packet << "\r\n";
-    
     return packet.str();
 }
 

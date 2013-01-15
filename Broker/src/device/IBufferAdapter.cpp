@@ -88,34 +88,30 @@ void IBufferAdapter::Start()
     
     // Tom Roth <tprfh7@mst.edu>:
     // The following code will ensure the the sets contain consecutive integers
-    // with the values [1,2,...,size].
-    // Assumption: the set does not contain 0 (enforced by RegisterStateInfo).
+    // with the values [0,1,...,size-1].
+    //
     // 1. A set is stored in ascending order, so the last value is the largest.
     // 2. The set stores unsigned integers, so all values must be >= 0.
     // 3. A set cannot contain duplicate values, so no value is repeated twice.
     //
     // Lemma 1:
-    // If the last element of the set is equal to the size of the set, which is
+    // If the last element of the set is less than the size of the set, which is
     // the english translation of the if statements below, then the set must
-    // contain values <= size by (1).
-    //
-    // Lemma 2:
-    // If the assumption holds, then the set cannot store the value zero.  Then
-    // by (2) the set must contain values > 0.
+    // contain values <= size-1 by (1).
     //
     // Proof:
-    // By Lemma 1 and Lemma 2, the set must store values in the range [1,size].
-    // The cardinality of this range |[1,size]| = size.  By definition, the set
+    // By Lemma 1, the set must store values in the range [0,size-1]. The
+    // cardinality of this range |[0,size-1]| = size.  By definition, the set
     // must contain size number of elements.  Because of (3), the set must not
     // contain the same value twice.  Therefore, the relationship is both onto
     // and 1-to-1.  This guarantees the set contains all of the values in the
-    // range [1,size] are stored exactly once.  Q.E.D.
-    if( *(stateIndices.rbegin()) != stateIndices.size() )
+    // range [0,size]-1 are stored exactly once.  Q.E.D.
+    if( *(stateIndices.rbegin()) != stateIndices.size() - 1 )
     {
         throw std::runtime_error("The state indices are not consecutive.");
     }
     
-    if( *(commandIndices.rbegin()) != commandIndices.size() )
+    if( *(commandIndices.rbegin()) != commandIndices.size() - 1 )
     {
         throw std::runtime_error("The command indices are not consecutive.");
     }
@@ -150,8 +146,7 @@ void IBufferAdapter::Set(const std::string device, const std::string signal,
                 + "," + signal + ") that does not exist.");
     }
     
-    // The buffer index is one less than the configured index.
-    m_txBuffer.at(m_commandInfo[devsig] - 1) = value;
+    m_txBuffer.at(m_commandInfo[devsig]) = value;
 }
 
 ////////////////////////////////////////////////////////////////////////////
@@ -184,8 +179,7 @@ SignalValue IBufferAdapter::Get(const std::string device,
                 + "," + signal + ") that does not exist.");
     }
 
-    // The buffer index is one less than the configured index.
-    return m_rxBuffer.at(m_stateInfo.find(devsig)->second - 1);
+    return m_rxBuffer.at(m_stateInfo.find(devsig)->second);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -234,7 +228,8 @@ void IBufferAdapter::RegisterStateInfo(const std::string device,
         }
     }
     
-    m_stateInfo.insert(std::pair<DeviceSignal, std::size_t>(devsig, index));
+    // Buffer indices start at zero, but XML indices start at one...
+    m_stateInfo.insert(std::pair<DeviceSignal, std::size_t>(devsig, index-1));
     Logger.Info << "Registered the device signal (" << device << "," << signal
             << ") as adapter state information." << std::endl;
 }
@@ -285,7 +280,8 @@ void IBufferAdapter::RegisterCommandInfo(const std::string device,
         }
     }
 
-    m_commandInfo.insert(std::pair<DeviceSignal, std::size_t>(devsig, index));
+    // Buffer indices start at zero, but XML indices start at one...
+    m_commandInfo.insert(std::pair<DeviceSignal, std::size_t>(devsig, index-1));
     Logger.Info << "Registered the device (" << device << "," << signal
             << ") as adapter command information." << std::endl;
 }

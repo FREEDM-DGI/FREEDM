@@ -315,7 +315,7 @@ def politeQuit(adapterSock, deviceSignals, stateTimeout):
             return
 
         msg = msg.split()
-        if len(msg) != 2 or msg[0] != 'PoliteDisconnect:' or \
+        if len(msg) != 2 or msg[0] != 'PoliteDisconnect' or \
                 (msg[1] != 'Accepted' and msg[1] != 'Rejected'):
             raise RuntimeError('Got bad disconnect response:\n' + ''.join(msg))
 

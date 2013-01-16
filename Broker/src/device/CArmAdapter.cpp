@@ -235,7 +235,7 @@ void CArmAdapter::HandleRead(const boost::system::error_code & e)
             else if( header == "PoliteDisconnect" )
             {
                 Logger.Debug << "Polite Disconnect Accepted" << std::endl;
-                packet << "PoliteDisconnect: Accepted\r\n\r\n";
+                packet << "PoliteDisconnect\r\nAccepted\r\n\r\n";
                 m_stop = true;
             }
             else

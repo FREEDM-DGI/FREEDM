@@ -385,6 +385,13 @@ if __name__ == '__main__':
             disableDevice(deviceTypes, deviceSignals, command)
             politeQuit(adapterSock, deviceSignals, stateTimeout)
             adapterSock = reconnect(deviceTypes, config)
+            
+        elif command.find('change') == 0 and len(command.split()) == 4:
+            if firstHello:
+                raise RuntimeError("Can't change a signal before first Hello")
+            command = command.split()
+            deviceSignals[(command[1], command[2])] = command[3]
+            print 'Changed', command[1], command[2], 'to', command[3]
 
         elif command.find('dieHorribly') == 0 and len(command.split()) == 2:
             if firstHello:

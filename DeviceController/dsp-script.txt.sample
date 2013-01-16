@@ -2,6 +2,7 @@
 #
 # enable devicetype devicename signal1 initialVal1 signal2 initialVal2 ...
 # disable devicename
+# change devicename signal newvalue
 # work n
 # dieHorribly n
 #
@@ -19,6 +20,7 @@
 # of work is lower bounded by n*(stateTimeout+commandTimeout), where
 # stateTimeout is set by the controller and commandTimeout by DGI. (Never
 # mind that the controller is mostly going to be blocking during this work.)
+# You can also 'work forever'
 #
 # *The parser accepts comments only if they start on the first column!*
 
@@ -45,11 +47,9 @@ dieHorribly 5
 work 15
 
 # Again this won't work unless DGI SSTs have weirdsetting.
-#enable Sst SST1 gateway 0.0 weirdsetting 223234
+#enable Sst SST2 gateway 0.0 weirdsetting 223234
 
-# don't yet have a way to arbitrarily change states
-# e.g. it'd be good to be able to do
-#change Fid FID1 state 0.0
+change FID1 state 0.0
 
 work 15
 

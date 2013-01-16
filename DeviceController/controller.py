@@ -280,6 +280,9 @@ def reconnect(deviceTypes, config):
             else:
                 print >> sys.stderr, 'Trying again...'
         else:
+            # FIXME for some reason this doesn't prevent hangs when dgi dies
+            # Figuring out why would be good. But none of the other code ever
+            # touches anything besides this socket. =/
             adapterSocket.settimeout(dgiTimeout)
             return adapterSocket
 

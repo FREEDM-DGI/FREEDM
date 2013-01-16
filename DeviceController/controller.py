@@ -396,18 +396,29 @@ if __name__ == '__main__':
         elif command.find('work') == 0 and len(command.split()) == 2:
             if firstHello:
                 raise RuntimeError("Can't work before the first Hello")
-            duration = int(command.split()[1])
-            if duration <= 0:
+            duration = command.split()[1]
+            if duration == 'forever':
+                while True:
+                    try:
+                        work(adapterSock, deviceSignals, stateTimeout)
+                    except (socket.error, socket.timeout) as e:
+                        print >> sys.stderr, \
+                            'DGI communication error: {0}'.format(e.strerror)
+                        print >> sys.stderr, 'Performing impolite reconnect'
+                        adapterSock.close()
+                        adapterSock = reconnect(deviceTypes, config)
+            elif int(duration) <= 0:
                 raise ValueError('Nonsense to work for ' + duration + 's')
-            for i in range(duration):
-                try:
-                    work(adapterSock, deviceSignals, stateTimeout)
-                except (socket.error, socket.timeout) as e:
-                    print >> sys.stderr, \
-                        'DGI communication error: {0}'.format(e.strerror)
-                    print >> sys.stderr, 'Performing impolite reconnect'
-                    adapterSock.close()
-                    adapterSock = reconnect(deviceTypes, config)
+            else:
+                for i in range(int(duration)):
+                    try:
+                        work(adapterSock, deviceSignals, stateTimeout)
+                    except (socket.error, socket.timeout) as e:
+                        print >> sys.stderr, \
+                            'DGI communication error: {0}'.format(e.strerror)
+                        print >> sys.stderr, 'Performing impolite reconnect'
+                        adapterSock.close()
+                        adapterSock = reconnect(deviceTypes, config)
 
         else:
             raise RuntimeError('Read invalid script command:\n' + command)

@@ -52,3 +52,7 @@ work 15
 #change Fid FID1 state 0.0
 
 work 15
+
+# The script will now PoliteDisconnect and the adapter will be killed
+# Unless you do this
+work forever

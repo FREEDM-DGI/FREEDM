@@ -465,6 +465,12 @@ void CBroker::Worker()
         x();
         m_schmutex.lock();
     }
+    else
+    {
+        m_busy = false;
+        m_schmutex.unlock();
+        return;
+    }
     // Schedule the worker again:
     m_ioService.post(boost::bind(&CBroker::Worker, this));
     m_schmutex.unlock();

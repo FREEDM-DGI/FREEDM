@@ -12,7 +12,9 @@
 ///     CTcpServer::~CTcpServer
 ///     CTcpServer::Create
 ///     CTcpServer::RegisterHandler
+///     CTcpServer::Stop
 ///     CTcpServer::GetPort
+///     CTcpServer::GetSocket
 ///     CTcpServer::GetHostname
 ///     CTcpServer::StartAccept
 ///     CTcpServer::HandleAccept
@@ -80,10 +82,10 @@ CTcpServer::CTcpServer(boost::asio::io_service & ios, unsigned short port)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-/// Closes the acceptor and socket prior to destruction.
+/// Stops the server prior to destruction.
 ///
 /// @pre None.
-/// @post m_acceptor and m_socket are closed.
+/// @post Calls CTcpServer::Stop.
 ///
 /// @limitations None.
 ////////////////////////////////////////////////////////////////////////////////
@@ -91,25 +93,6 @@ CTcpServer::~CTcpServer()
 {
     Logger.Trace << hdr() << __PRETTY_FUNCTION__ << std::endl;
     Stop();
-}
-
-void CTcpServer::Stop()
-{
-    Logger.Trace << hdr() << __PRETTY_FUNCTION__ << std::endl;
-    
-    if( m_acceptor.is_open() )
-    {
-        Logger.Info << hdr() << "Closed TCP server acceptor." << std::endl;
-        m_acceptor.close();
-    }
-
-    if( m_socket.is_open() )
-    {
-        Logger.Warn << hdr() << "Closed open client connection." << std::endl;
-        m_socket.close();
-    }
-    
-    Logger.Status << "Closed TCP server on port " << m_port << "." << std::endl;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -128,6 +111,33 @@ CTcpServer::Pointer CTcpServer::Create(boost::asio::io_service & ios,
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     return Pointer(new CTcpServer(ios, port));
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/// Stops the TCP server from accepting new clients.
+///
+/// @pre None.
+/// @post m_acceptor and m_socket are closed.
+///
+/// @limitations None.
+////////////////////////////////////////////////////////////////////////////////
+void CTcpServer::Stop()
+{
+    Logger.Trace << hdr() << __PRETTY_FUNCTION__ << std::endl;
+    
+    if( m_acceptor.is_open() )
+    {
+        Logger.Info << hdr() << "Closed TCP server acceptor." << std::endl;
+        m_acceptor.close();
+    }
+
+    if( m_socket.is_open() )
+    {
+        Logger.Warn << hdr() << "Closed open client connection." << std::endl;
+        m_socket.close();
+    }
+    
+    Logger.Status << "Closed TCP server on port " << m_port << "." << std::endl;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -176,6 +186,28 @@ unsigned short CTcpServer::GetPort() const
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+/// Gets a reference to the client socket.
+///
+/// @ErrorHandling Throws a std::runtime_error if the socket is closed.
+/// @pre The socket must have an open connection.
+/// @post Returns a reference to m_socket.
+/// @return A reference to the client socket.
+///
+/// @limitations None.
+////////////////////////////////////////////////////////////////////////////////
+boost::asio::ip::tcp::socket & CTcpServer::GetSocket()
+{
+    Logger.Trace << hdr() << __PRETTY_FUNCTION__ << std::endl;
+    
+    if( !m_socket.is_open() )
+    {
+        throw std::runtime_error(hdr() + "Client socket no open.");
+    }
+    
+    return m_socket;
+}
+
+////////////////////////////////////////////////////////////////////////////////
 /// Gets the hostname of the open socket connection.
 ///
 /// @ErrorHandling Throws a std::runtime_error if there is no open connection.
@@ -187,11 +219,11 @@ unsigned short CTcpServer::GetPort() const
 ////////////////////////////////////////////////////////////////////////////////
 std::string CTcpServer::GetHostname() const
 {
-    Logger.Trace << hdr() << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Trace << hdr() << __PRETTY_FUNCTION__ << std::endl;  
     
     if( !m_socket.is_open() )
     {
-        throw std::runtime_error(hdr() + "No open client connection.");
+        throw std::runtime_error(hdr() + "Client socket no open.");
     }
     
     return m_socket.remote_endpoint().address().to_string();
@@ -230,10 +262,12 @@ void CTcpServer::StartAccept()
 /// not been defined with CTcpServer::RegisterHandler.
 /// @pre CTcpServer::RegisterHandler must be called prior to this function.
 /// @post Calls m_handler to handle the client connection.
-/// @post Schedules the next client with CTcpServer::StartAccept.
 /// @param error The error code if the connection failed.
 ///
-/// @limitations None.
+/// @limitations This function will not schedule the next accept. The owner of
+/// the handler must call CTcpServer::StartAccept when done with the client.
+/// This limitation is because the server handles at most one connection, and
+/// that connection must be closed before the next accept can be scheduled.
 ////////////////////////////////////////////////////////////////////////////////
 void CTcpServer::HandleAccept(const boost::system::error_code & error)
 {
@@ -267,16 +301,6 @@ void CTcpServer::HandleAccept(const boost::system::error_code & error)
 std::string CTcpServer::hdr() const
 {
     return "(" + boost::lexical_cast<std::string>(m_port) + ") ";
-}
-
-boost::asio::ip::tcp::socket & CTcpServer::GetSocket()
-{
-    if( !m_socket.is_open() )
-    {
-        throw std::runtime_error("socket not open");
-    }
-    
-    return m_socket;
 }
 
 } // namespace device

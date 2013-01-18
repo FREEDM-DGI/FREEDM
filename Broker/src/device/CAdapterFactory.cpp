@@ -46,6 +46,7 @@
 #include <boost/bind.hpp>
 #include <boost/foreach.hpp>
 #include <boost/property_tree/ptree.hpp>
+#include <boost/algorithm/string/regex.hpp>
 #include <boost/property_tree/xml_parser.hpp>
 
 namespace freedm {
@@ -406,7 +407,12 @@ unsigned short CAdapterFactory::GetPortNumber()
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+/// Handles the 'Hello' message of the plug and play session protocol.
 ///
+/// @pre m_socket must be connected to a remote endpoint.
+/// @post Attempts to create a new adapter based on the hello message.
+///
+/// @limitations None.
 ////////////////////////////////////////////////////////////////////////////////
 void CAdapterFactory::SessionProtocol()
 {
@@ -432,19 +438,16 @@ void CAdapterFactory::SessionProtocol()
         Logger.Status << "Blocking for client hello message." << std::endl;
         boost::asio::read_until(m_server->GetSocket(), packet, "\r\n\r\n");
         
-        host = m_server->GetHostname();
-        
         packet_stream >> header;
+        host = m_server->GetHostname();
+        Logger.Info << "Received " << header << " from " << host << std::endl;
         
         if( header != "Hello" )
         {
-            Logger.Warn << "Unrecognized header: " << header << std::endl;
-            throw std::runtime_error("Expected 'Hello' message");
+            throw std::runtime_error("Expected 'Hello' message: " + header);
         }
-        
         if( m_adapter.count(host) > 0 )
         {
-            Logger.Warn << "Duplicate session: " << host << std::endl;
             throw std::runtime_error("Duplicate session for " + host);
         }
 
@@ -457,28 +460,24 @@ void CAdapterFactory::SessionProtocol()
 
         for( int i = 0; packet_stream >> type >> name; i++ )
         {
+            Logger.Debug << "Processing " << type << ":" << name << std::endl;
+            
             if( m_prototype.count(type) == 0 )
             {
-                Logger.Warn << "Unrecognized type: " << type << std::endl;
                 throw std::runtime_error("Unknown device type: " + type);
             }
             
             name = host + ":" + name;
-            for( int k = 0, n = name.size(); k < n; k++ )
-            {
-                if( name[k] == '.' )
-                {
-                    name[k] = ':';
-                }
-            }
-
+            boost::replace_all(name, ".", ":");
             states = m_prototype[type]->GetStateSet();
             commands = m_prototype[type]->GetCommandSet();
+            Logger.Debug << "Using adapter name " << name << std::endl;
             
             BOOST_FOREACH(std::string signal, states)
             {
-                entry = name + signal;
+                Logger.Debug << "Adding state for " << signal << std::endl;
                 
+                entry = name + signal;
                 config.put("state." + entry + ".type", type);
                 config.put("state." + entry + ".device", name);
                 config.put("state." + entry + ".signal", signal);
@@ -489,8 +488,9 @@ void CAdapterFactory::SessionProtocol()
 
             BOOST_FOREACH(std::string signal, commands)
             {
-                entry = name + signal;
+                Logger.Debug << "Adding command for " << signal << std::endl;
                 
+                entry = name + signal;
                 config.put("command." + entry + ".type", type);
                 config.put("command." + entry + ".device", name);
                 config.put("command." + entry + ".signal", signal);
@@ -500,9 +500,11 @@ void CAdapterFactory::SessionProtocol()
             }
         }
 
+        /*
         // remove me when done with error checking
         boost::property_tree::xml_writer_settings<char> settings('\t', 1);
         write_xml("file2.xml", config, std::locale(), settings);
+        */
         
         CreateAdapter(config);
         
@@ -511,7 +513,7 @@ void CAdapterFactory::SessionProtocol()
     }
     catch(std::exception & e)
     {
-        Logger.Notice << "Rejected client due to error." << std::endl;
+        Logger.Notice << "Rejected client: " << e.what() << std::endl;
         
         if( port != 0 )
         {

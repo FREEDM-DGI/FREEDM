@@ -54,17 +54,17 @@ public:
     /// Creates a new TCP server on the specified port number.
     static Pointer Create(boost::asio::io_service & ios, unsigned short port);
 
-    /// Stops the TCP server.
-    void Stop();
-    
-    /// Gets the current client connection.
-    boost::asio::ip::tcp::socket & GetSocket();
-    
     /// Registers a callback function for client connections.
     void RegisterHandler(ConnectionHandler h);
     
+    /// Stops the TCP server.
+    void Stop();
+    
     /// Gets the listen port of the TCP server.
     unsigned short GetPort() const;
+    
+    /// Gets the current client connection.
+    boost::asio::ip::tcp::socket & GetSocket();
     
     /// Gets the hostname of the connected client.
     std::string GetHostname() const;
@@ -99,4 +99,3 @@ protected:
 } // namespace freedm
 
 #endif // C_TCP_SERVER_HPP
-

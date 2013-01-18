@@ -77,13 +77,13 @@ void IBufferAdapter::Start()
     BOOST_FOREACH( std::size_t i, m_stateInfo | boost::adaptors::map_values )
     {
         stateIndices.insert(i);
-        m_rxBuffer.push_back(0.0);
+        m_rxBuffer.push_back(0.0f);
     }
     
     BOOST_FOREACH( std::size_t i, m_commandInfo | boost::adaptors::map_values )
     {
         commandIndices.insert(i);
-        m_txBuffer.push_back(0.0/0.0);
+        m_txBuffer.push_back(0.0f/0.0f);
     }
     
     // Tom Roth <tprfh7@mst.edu>:

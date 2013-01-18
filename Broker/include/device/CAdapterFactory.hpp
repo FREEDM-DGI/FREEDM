@@ -94,7 +94,7 @@ private:
     /// Initializes the devices stored on an adapter.
     void InitializeAdapter(IAdapter::Pointer adapter,
             const boost::property_tree::ptree & p);
-
+    
     /// Gets the next available TCP port number.
     unsigned short GetPortNumber();
 

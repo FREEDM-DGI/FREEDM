@@ -47,13 +47,10 @@ CLocalLogger Logger(__FILE__);
 
 /////////////////////////////////////////////////////////////
 /// @fn IPeerNode::IPeerNode
-/// @description Prepares a peer node. Takes in a connection
-///   manager, io_service and dispatcher. Provides node status
+/// @description Prepares a peer node. Provides node status
 ///   and sending functions to the agent in a very clean manner.
 /// @param uuid The uuid of the node
 /// @param connmgr The module managing the connections
-/// @param ios The related ioservice used for scheduling
-/// @param dispatch The dispatcher used to deliver messages
 /////////////////////////////////////////////////////////////
 IPeerNode::IPeerNode(std::string uuid, ConnManagerPtr connmgr)
     : m_uuid(uuid),

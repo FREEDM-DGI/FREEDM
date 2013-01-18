@@ -15,6 +15,12 @@
 ///     CDeviceDesd::GetStorage
 ///     CDeviceDesd::StepStorage
 ///
+/// @functions
+///     DeviceDesd::CDeviceDesd
+///     DeviceDesd::~CDeviceDesd
+///     DeviceDesd::GetStorage
+///     DeviceDesd::StepStorage
+///
 /// These source code files were created at Missouri University of Science and
 /// Technology, and are intended for use in teaching or research. They may be
 /// freely copied, modified, and redistributed as long as modified versions are

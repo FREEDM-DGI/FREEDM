@@ -199,7 +199,6 @@ std::multiset<SignalValue> CDeviceManager::GetValues(
 /// @pre DeviceType must have a typedef for IDevice::Pointer.
 /// @post Performs a binary mathematical operation on a subset of m_devices.
 /// @param getter The function to call on each device to get the signal.
-/// @param math The operation to perform on the device signal.
 /// @return The aggregate value obtained by applying the binary operation.
 ///
 /// @limitations None.

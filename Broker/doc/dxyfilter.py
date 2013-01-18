@@ -47,9 +47,6 @@ KEEP_LINE_STATE = 0
 DISCARD_LINE_STATE = 1
 KEEP_REMAINING_LINES_STATE = 2
 
-if not __name__ == '__main__' or not len(sys.argv) == 2:
-    sys.exit("%s is intended to be called directly by Doxygen" % sys.argv[0])
-
 if not os.path.isfile(sys.argv[1]):
     sys.exit('Oh no, %s is not a valid file!' % sys.argv[1])
 
@@ -64,7 +61,7 @@ def stateTransition(state, line):
     value of this function must be assigned to the state global
     """
     if state < 0 or state > 2:
-        raise ValueError('Fatal: in unknown state %d' % state)
+        raise RuntimeError('Fatal: in unknown state %d' % state)
     elif state == KEEP_LINE_STATE:
         if '@functions' in line:
             return DISCARD_LINE_STATE
@@ -82,11 +79,11 @@ def stateTransition(state, line):
 
 for line in fileinput.input(): 
     state = stateTransition(state, line)
-    if state == KEEP_LINE_STATE or state == KEEP_REMAINING_LINES_STATE:
-        # Used for autogen code, but will trip up Doxygen
-        if '##BREAK' in line:
-            line = line.replace('##BREAK', 'BREAK, after two octothorpes,')
-        # We could lose documentation because we abuse these tags. Hide them.
-        if '@function' not in line and '@fn' not in line:
-            sys.stdout.write(line)
-
+    # Could result in lost documentation
+    if '@function' in line or '@fn' in line or state == DISCARD_LINE_STATE:
+        # if we actually discard the line, we'll mess up line numbering
+        sys.stdout.write('\n')
+    elif state == KEEP_REMAINING_LINES_STATE or state == KEEP_LINE_STATE:
+        sys.stdout.write(line)
+    else:
+        raise RuntimeError('Fatal: in unknown state ' + str(state))

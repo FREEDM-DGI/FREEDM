@@ -42,6 +42,8 @@
 
 #include <utility>
 #include <iostream>
+#include <set>
+
 
 #include <boost/bind.hpp>
 #include <boost/foreach.hpp>

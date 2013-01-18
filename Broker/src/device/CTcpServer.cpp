@@ -63,8 +63,8 @@ CLocalLogger Logger(__FILE__);
 ////////////////////////////////////////////////////////////////////////////////
 CTcpServer::CTcpServer(boost::asio::io_service & ios, unsigned short port)
     : m_acceptor(ios)
-    , m_socket(ios)
     , m_port(port)
+    , m_socket(ios)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
    

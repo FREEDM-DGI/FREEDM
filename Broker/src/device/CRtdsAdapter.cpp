@@ -125,7 +125,7 @@ void CRtdsAdapter::Start()
 ////////////////////////////////////////////////////////////////////////////////
 /// This is the main communication engine.
 ///
-/// @I/O
+/// @IO
 ///     At every timestep, a message is sent to the FPGA via TCP socket
 ///     connection, then a message is retrieved from FPGA via the same
 ///     connection.  On the FPGA side, it's the reverse order -- receive and
@@ -241,7 +241,7 @@ CRtdsAdapter::~CRtdsAdapter()
 /// @pre None
 /// @post The bytes in the buffer are now reversed
 /// @param buffer the data to be reversed
-/// @param size the number of bytes in the buffer
+/// @param numBytes the number of bytes in the buffer
 ////////////////////////////////////////////////////////////////////////////////
 void CRtdsAdapter::ReverseBytes( char * buffer, const int numBytes )
 {

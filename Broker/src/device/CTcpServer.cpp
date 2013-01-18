@@ -143,7 +143,7 @@ void CTcpServer::Stop()
 ////////////////////////////////////////////////////////////////////////////////
 /// Registers a client connection handler with the server.
 ///
-/// @ErrorHanlding Throws a std::runtime_error if either m_handler has already
+/// @ErrorHandling Throws a std::runtime_error if either m_handler has already
 /// been initialized or the passed function is null.
 /// @pre m_handler must not be initialized.
 /// @post Assigns the passed function to m_handler.

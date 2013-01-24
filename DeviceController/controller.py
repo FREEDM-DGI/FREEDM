@@ -1,12 +1,12 @@
 #!/usr/bin/env python2
 ################################################################################
-# @file controller.py
+# @file           controller.py
 #
-# @author Michael Catanzaro <michael.catanzaro@mst.edu>
+# @author         Michael Catanzaro <michael.catanzaro@mst.edu>
 #
-# @project FREEDM Fake Device Controller
+# @project        FREEDM Fake Device Controller
 #
-# @description A fake ARM controller for FREEDM devices.
+# @description    A fake ARM controller for FREEDM devices.
 #
 # These source code files were created at Missouri University of Science and
 # Technology, and are intended for use in teaching or research. They may be

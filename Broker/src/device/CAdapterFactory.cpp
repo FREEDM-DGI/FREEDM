@@ -35,6 +35,7 @@
 #include "IBufferAdapter.hpp"
 #include "CPscadAdapter.hpp"
 #include "CRtdsAdapter.hpp"
+#include "CFakeAdapter.hpp"
 
 #include <set>
 #include <utility>
@@ -178,6 +179,10 @@ void CAdapterFactory::CreateAdapter(const boost::property_tree::ptree & p)
     else if( type == "rtds" )
     {
         adapter = CRtdsAdapter::Create(m_ios, subtree);
+    }
+    else if( type == "fake" )
+    {
+        adapter = CFakeAdapter::Create();
     }
     else
     {

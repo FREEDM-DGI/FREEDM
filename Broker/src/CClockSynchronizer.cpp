@@ -1,4 +1,3 @@
-
 ////////////////////////////////////////////////////////////////////////////////
 /// @file         CClockSynchronizer.cpp
 ///
@@ -327,7 +326,7 @@ void CClockSynchronizer::Exchange(const boost::system::error_code& err)
         tmp1 /= tmp2;
         tmp3 /= tmp2;
         m_myoffset = DoubleToTD(tmp1);
-        Logger.Notice<<"Adjusting Skew to"<<m_myoffset<<std::endl;
+        Logger.Notice<<"Adjusting Skew to "<<m_myoffset<<std::endl;
         CGlobalConfiguration::instance().SetClockSkew(m_myoffset);
         m_myskew = tmp3;
     }

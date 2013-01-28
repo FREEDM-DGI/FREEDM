@@ -94,7 +94,7 @@ void CConnectionManager::PutConnection(std::string uuid, ConnectionPtr c)
 /// @post The hostname is registered with the uuid to hostname map.
 /// @param u_ the uuid to enter into the map.
 /// @param host_ The hostname to enter into the map.
-/// @param port The port to enter into the map.
+/// @param port The port the remote host listens on. 
 ///////////////////////////////////////////////////////////////////////////////
 void CConnectionManager::PutHostname(std::string u_, std::string host_, std::string port)
 {

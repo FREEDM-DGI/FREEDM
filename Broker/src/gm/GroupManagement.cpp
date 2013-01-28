@@ -35,6 +35,7 @@
 #include "SRemoteHost.hpp"
 #include "CDeviceManager.hpp"
 #include "CDeviceFid.hpp"
+#include "CTimings.hpp"
 
 #include <algorithm>
 #include <cassert>
@@ -83,16 +84,16 @@ CLocalLogger Logger(__FILE__);
 /// @pre None
 /// @post Object initialized and ready to enter run state.
 /// @param p_uuid: This object's uuid.
-/// @param broker: The broker.
+/// @param broker: The broker that schedules the message delivery.
 ///////////////////////////////////////////////////////////////////////////////
 GMAgent::GMAgent(std::string p_uuid, CBroker &broker)
     : IPeerNode(p_uuid,broker.GetConnectionManager()),
-    CHECK_TIMEOUT(boost::posix_time::milliseconds(450)),
-    TIMEOUT_TIMEOUT(boost::posix_time::milliseconds(450)),
-    GLOBAL_TIMEOUT(boost::posix_time::milliseconds(500)),
-    FID_TIMEOUT(boost::posix_time::milliseconds(450)),
-    RESPONSE_TIMEOUT(boost::posix_time::milliseconds(150)),
-    AYT_RESPONSE_TIMEOUT(boost::posix_time::milliseconds(300)),
+    CHECK_TIMEOUT(boost::posix_time::milliseconds(CTimings::GM_CHECK_TIMEOUT)),
+    TIMEOUT_TIMEOUT(boost::posix_time::milliseconds(CTimings::GM_TIMEOUT_TIMEOUT)),
+    GLOBAL_TIMEOUT(boost::posix_time::milliseconds(CTimings::GM_GLOBAL_TIMEOUT)),
+    FID_TIMEOUT(boost::posix_time::milliseconds(CTimings::GM_FID_TIMEOUT)),
+    RESPONSE_TIMEOUT(boost::posix_time::milliseconds(CTimings::GM_RESPONSE_TIMEOUT)),
+    AYT_RESPONSE_TIMEOUT(boost::posix_time::milliseconds(CTimings::GM_AYT_RESPONSE_TIMEOUT)),
     m_broker(broker)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
@@ -213,10 +214,10 @@ CMessage GMAgent::Ready()
 /// @description Creates a response message (Yes/No) message from this node
 /// @pre This node has a UUID.
 /// @post No change.
-/// @param payload: Response message (typically yes or no)
-/// @param type: What this message is in response to.
-/// @param exp
-/// @param seq
+/// @param payload Response message (typically yes or no)
+/// @param type What this message is in response to.
+/// @param exp When the response should expire
+/// @param seq sequence number? (?)
 /// @return A CMessage with the contents of a Response message
 ///////////////////////////////////////////////////////////////////////////////
 CMessage GMAgent::Response(std::string payload,std::string type,
@@ -380,6 +381,7 @@ void GMAgent::SystemState()
     nodestatus<<"FID state: "<<device::CDeviceManager::Instance().
             GetNetValue("Fid", "state");
     nodestatus<<std::endl<<"Current Skew: "<<CGlobalConfiguration::instance().GetClockSkew();
+    nodestatus<<std::endl<<"Time left in phase: "<<m_broker.TimeRemaining()<<std::endl;
     Logger.Status<<nodestatus.str()<<std::endl;
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -625,9 +627,9 @@ void GMAgent::Premerge( const boost::system::error_code &err )
                 }
             }
             float wait_val_;
-            int maxWait = 75; /* The longest a node would have to wait to Merge */
-            int minWait = 10;
-            int granularity = 5; /* How finely it can slip in */
+            int maxWait = CTimings::GM_PREMERGE_MAX_TIMEOUT; /* The longest a node would have to wait to Merge */
+            int minWait = CTimings::GM_PREMERGE_MIN_TIMEOUT;
+            int granularity = CTimings::GM_PREMERGE_GRANULARITY; /* How finely it can slip in */
             int delta = ((maxWait-minWait)*1.0)/(granularity*1.0);
             if( myPriority < maxPeer_ )
                 wait_val_ = (((maxPeer_ - myPriority)%(granularity+1))*1.0)*delta+minWait;
@@ -946,6 +948,7 @@ void GMAgent::Prehandler(SubhandleFunctor f,CMessage msg, PeerNodePtr peer)
 /// @description This function collects all incoming messages for the purpose
 ///     of determining peer status.
 ///////////////////////////////////////////////////////////////////////////////
+#pragma GCC diagnostic ignored "-Wunused-parameter"
 void GMAgent::HandleAny(CMessage msg, PeerNodePtr peer)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
@@ -958,6 +961,7 @@ void GMAgent::HandleAny(CMessage msg, PeerNodePtr peer)
         throw std::runtime_error("Unhandled Group Management Message");
     }
 }
+#pragma GCC diagnostic warning "-Wunused-parameter"
 
 ///////////////////////////////////////////////////////////////////////////////
 /// GMAgent::HandlePeerList

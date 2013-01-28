@@ -47,6 +47,7 @@
 #include "CMessage.hpp"
 #include "gm/GroupManagement.hpp"
 #include "CDeviceManager.hpp"
+#include "CTimings.hpp"
 
 #include <algorithm>
 #include <cassert>
@@ -59,7 +60,6 @@
 
 #include <boost/asio.hpp>
 #include <boost/bind.hpp>
-#include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/date_time/posix_time/posix_time_types.hpp>
 #include <boost/foreach.hpp>
 #include <boost/function.hpp>
@@ -115,7 +115,6 @@ LBAgent::LBAgent(std::string uuid_, CBroker &broker):
     RegisterSubhandle("lb.CollectedState",boost::bind(&LBAgent::HandleCollectedState, this, _1, _2));
     RegisterSubhandle("lb.ComputedNormal",boost::bind(&LBAgent::HandleComputedNormal, this, _1, _2));
     RegisterSubhandle("any",boost::bind(&LBAgent::HandleAny, this, _1, _2));
-    m_active = false;
     m_sstExists = false;
 }
 
@@ -141,7 +140,7 @@ int LBAgent::Run()
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     // This initializes the algorithm
     LoadManage();
-    StartStateTimer( STATE_TIMEOUT );
+    StartStateTimer( CTimings::LB_STATE_TIMER );
     return 0;
 }
 
@@ -314,9 +313,34 @@ void LBAgent::LoadManage()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
-    //Start the timer; on timeout, this function is called again
-    m_broker.Schedule(m_GlobalTimer, boost::posix_time::milliseconds(LOAD_TIMEOUT),
-        boost::bind(&LBAgent::LoadManage, this,boost::asio::placeholders::error));
+    // Schedule the NEXT LB before starting this one. So ensure that after this
+    // LB completes, there's still time to run another before scheduling it.
+    // Otherwise we'll steal time from the next broker module.
+    if (m_broker.TimeRemaining() >
+        boost::posix_time::milliseconds(2*CTimings::LB_GLOBAL_TIMER))
+    {
+        m_broker.Schedule(m_GlobalTimer,
+                          boost::posix_time::milliseconds(
+                              CTimings::LB_GLOBAL_TIMER),
+                          boost::bind(&LBAgent::LoadManage,
+                                      this,
+                                      boost::asio::placeholders::error));
+        Logger.Info << "Scheduled another LoadManage in "
+                    << CTimings::LB_GLOBAL_TIMER << "ms" << std::endl;
+    }
+    else
+    {
+        // Schedule past the end of our phase so control will pass to the broker
+        // after this LB, and we won't go again until it's our turn. Good.
+        m_broker.Schedule(m_GlobalTimer,
+                          boost::posix_time::milliseconds(
+                              CTimings::LB_STATE_TIMER),
+                          boost::bind(&LBAgent::LoadManage,
+                                      this,
+                                      boost::asio::placeholders::error));
+        Logger.Info << "Won't run over phase, scheduling another LoadManage in "
+                    << CTimings::LB_STATE_TIMER << "ms" << std::endl;
+    }
 
     //Remember previous load before computing current load
     m_prevStatus = m_Status;
@@ -1035,12 +1059,9 @@ void LBAgent::Desd_PStar()
 void LBAgent::StartStateTimer( unsigned int delay )
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    if( !m_active )
-    {
-        m_broker.Schedule(m_StateTimer, boost::posix_time::milliseconds(delay),
-            boost::bind(&LBAgent::HandleStateTimer, this, boost::asio::placeholders::error));
-        m_active = true;
-    }
+
+    m_broker.Schedule(m_StateTimer, boost::posix_time::milliseconds(delay),
+        boost::bind(&LBAgent::HandleStateTimer, this, boost::asio::placeholders::error));
 }
 
 ////////////////////////////////////////////////////////////
@@ -1060,8 +1081,7 @@ void LBAgent::HandleStateTimer( const boost::system::error_code & error )
         CollectState();
     }
 
-    m_active = false;
-    StartStateTimer( STATE_TIMEOUT );
+    StartStateTimer( CTimings::LB_STATE_TIMER );
 }
 
 } // namespace lb

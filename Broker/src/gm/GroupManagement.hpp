@@ -176,7 +176,7 @@ class GMAgent
     void FIDCheck(const boost::system::error_code& err);
     
     /// Nodes In My Group
-    PeerSet	m_UpNodes;
+    PeerSet m_UpNodes;
     /// Known Coordinators
     PeerSet m_Coordinators;
     /// Nodes expecting AYC response from

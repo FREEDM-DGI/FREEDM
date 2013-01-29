@@ -34,9 +34,9 @@ namespace {
 
 /// This file's logger.
 CLocalLogger Logger(__FILE__);
-const int MAX_REGRESSION_ENTRIES = 3;
+const int MAX_REGRESSION_ENTRIES = 200;
 const double SYNCHRONIZER_LAMBDA = .99999;
-const int QUERY_INTERVAL = 5000;
+const int QUERY_INTERVAL = 10000;
 
 }
 

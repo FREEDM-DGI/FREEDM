@@ -76,33 +76,33 @@ class GMAgent
 
     // Handlers
     /// A set of common code to be run before every message
-    void Prehandler(SubhandleFunctor f,CMessage msg, PeerNodePtr peer);
+    void Prehandler(SubhandleFunctor f,MessagePtr msg, PeerNodePtr peer);
     /// Handles receiving incoming messages.
-    virtual void HandleAny(CMessage msg,PeerNodePtr peer);
+    virtual void HandleAny(MessagePtr msg,PeerNodePtr peer);
     /// Hadles recieving peerlists
-    void HandlePeerList(CMessage msg,PeerNodePtr peer);
+    void HandlePeerList(MessagePtr msg,PeerNodePtr peer);
     /// Handles recieving accept messsages
-    void HandleAccept(CMessage msg,PeerNodePtr peer);
+    void HandleAccept(MessagePtr msg,PeerNodePtr peer);
     /// Handles recieving are you coordinator messages
-    void HandleAreYouCoordinator(CMessage msg,PeerNodePtr peer);
+    void HandleAreYouCoordinator(MessagePtr msg,PeerNodePtr peer);
     /// Handles recieving are you there messsages
-    void HandleAreYouThere(CMessage msg,PeerNodePtr peer);
+    void HandleAreYouThere(MessagePtr msg,PeerNodePtr peer);
     /// Handles recieving invite messages
-    void HandleInvite(CMessage msg,PeerNodePtr peer);
+    void HandleInvite(MessagePtr msg,PeerNodePtr peer);
     /// Handles recieving AYC responses
-    void HandleResponseAYC(CMessage msg,PeerNodePtr peer);
+    void HandleResponseAYC(MessagePtr msg,PeerNodePtr peer);
     /// Handles recieving AYT responses
-    void HandleResponseAYT(CMessage msg,PeerNodePtr peer);
+    void HandleResponseAYT(MessagePtr msg,PeerNodePtr peer);
     /// Handles recieving clock readings
-    void HandleClock(CMessage msg,PeerNodePtr peer);
+    void HandleClock(MessagePtr msg,PeerNodePtr peer);
     /// Handles recieving clock skews
-    void HandleClockSkew(CMessage msg,PeerNodePtr peer);
+    void HandleClockSkew(MessagePtr msg,PeerNodePtr peer);
     /// Handles recieving peerlist requests
-    void HandlePeerListQuery(CMessage msg, PeerNodePtr peer);
+    void HandlePeerListQuery(MessagePtr msg, PeerNodePtr peer);
 
     // Processors
     /// Handles Processing a PeerList
-    static PeerSet ProcessPeerList(CMessage msg, CConnectionManager& connmgr);
+    static PeerSet ProcessPeerList(MessagePtr msg, CConnectionManager& connmgr);
     
     //Routines
     /// Checks for other up leaders
@@ -120,7 +120,7 @@ class GMAgent
     
     // Sending Tools
     /// Sends messages to remote peers if FIDs are closed.
-    void SendToPeer(PeerNodePtr peer,CMessage msg);
+    void SendToPeer(PeerNodePtr peer,CMessage &msg);
     
     // Messages
     /// Creates AYC Message.

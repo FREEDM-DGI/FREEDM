@@ -568,28 +568,28 @@ void LBAgent::SendDraftRequest()
 /// @peers The members of the group or a subset of, from whom message was received
 /// @limitations:
 /////////////////////////////////////////////////////////
-void LBAgent::HandleAny(CMessage msg, PeerNodePtr peer)
+void LBAgent::HandleAny(MessagePtr msg, PeerNodePtr peer)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     PeerSet tempSet_;
     MessagePtr m_;
     std::string line_;
     std::stringstream ss_;
-    line_ = msg.GetSourceUUID();
-    ptree pt = msg.GetSubMessages();
+    line_ = msg->GetSourceUUID();
+    ptree &pt = msg->GetSubMessages();
     Logger.Debug << "Message '" <<pt.get<std::string>("lb","NOEXECPTION")
                  <<"' received from "<< line_<<std::endl;
 
-    if(msg.GetHandler().find("lb") == 0)
+    if(msg->GetHandler().find("lb") == 0)
     {
         Logger.Error<<"Unhandled Load Balancing Message"<<std::endl;
-        msg.Save(Logger.Error);
+        msg->Save(Logger.Error);
         Logger.Error<<std::endl;
         throw std::runtime_error("Unhandled Load Balancing Message");
     }
 }
 
-void LBAgent::HandlePeerList(CMessage msg, PeerNodePtr peer)
+void LBAgent::HandlePeerList(MessagePtr msg, PeerNodePtr peer)
 {
     // --------------------------------------------------------------
     // If you receive a peerList from your new leader, process it and
@@ -632,7 +632,7 @@ void LBAgent::HandlePeerList(CMessage msg, PeerNodePtr peer)
     }
 }
 
-void LBAgent::HandleDemand(CMessage msg, PeerNodePtr peer)
+void LBAgent::HandleDemand(MessagePtr msg, PeerNodePtr peer)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     // --------------------------------------------------------------
@@ -644,7 +644,7 @@ void LBAgent::HandleDemand(CMessage msg, PeerNodePtr peer)
     if(CountInPeerSet(m_AllPeers,peer) == 0)
         return;
 
-    ptree pt = msg.GetSubMessages();
+    ptree &pt = msg->GetSubMessages();
     Logger.Notice << "Demand message received from: "
                    << pt.get<std::string>("lb.source") <<std::endl;
     EraseInPeerSet(m_HiNodes,peer);
@@ -653,7 +653,7 @@ void LBAgent::HandleDemand(CMessage msg, PeerNodePtr peer)
     InsertInPeerSet(m_HiNodes,peer);
 }
 
-void LBAgent::HandleNormal(CMessage msg, PeerNodePtr peer)
+void LBAgent::HandleNormal(MessagePtr msg, PeerNodePtr peer)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     if(CountInPeerSet(m_AllPeers,peer) == 0)
@@ -663,7 +663,7 @@ void LBAgent::HandleNormal(CMessage msg, PeerNodePtr peer)
     // --------------------------------------------------------------
     // You received a Load change of source to Normal state
     // --------------------------------------------------------------
-    ptree pt = msg.GetSubMessages();
+    ptree &pt = msg->GetSubMessages();
     Logger.Notice << "Normal message received from: "
                    << pt.get<std::string>("lb.source") <<std::endl;
     EraseInPeerSet(m_NoNodes,peer);
@@ -672,7 +672,7 @@ void LBAgent::HandleNormal(CMessage msg, PeerNodePtr peer)
     InsertInPeerSet(m_NoNodes,peer);
 }
 
-void LBAgent::HandleSupply(CMessage msg, PeerNodePtr peer)
+void LBAgent::HandleSupply(MessagePtr msg, PeerNodePtr peer)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     if(CountInPeerSet(m_AllPeers,peer) == 0)
@@ -683,7 +683,7 @@ void LBAgent::HandleSupply(CMessage msg, PeerNodePtr peer)
     // You received a message saying the source is in Supply state, which means
     // you are (were, recently) in Demand state; else you would not have received
     // --------------------------------------------------------------
-    ptree pt = msg.GetSubMessages();
+    ptree &pt = msg->GetSubMessages();
     Logger.Notice << "Supply message received from: "
                    << pt.get<std::string>("lb.source") <<std::endl;
     EraseInPeerSet(m_LoNodes,peer);
@@ -693,7 +693,7 @@ void LBAgent::HandleSupply(CMessage msg, PeerNodePtr peer)
 }
 
 #pragma GCC diagnostic ignored "-Wunused-parameter"
-void LBAgent::HandleRequest(CMessage msg, PeerNodePtr peer)
+void LBAgent::HandleRequest(MessagePtr msg, PeerNodePtr peer)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     if(CountInPeerSet(m_AllPeers,peer) == 0)
@@ -745,7 +745,7 @@ void LBAgent::HandleRequest(CMessage msg, PeerNodePtr peer)
     }
 }
 
-void LBAgent::HandleYes(CMessage msg, PeerNodePtr peer)
+void LBAgent::HandleYes(MessagePtr msg, PeerNodePtr peer)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     // --------------------------------------------------------------
@@ -781,7 +781,7 @@ void LBAgent::HandleYes(CMessage msg, PeerNodePtr peer)
     }
 }
 
-void LBAgent::HandleNo(CMessage msg, PeerNodePtr peer)
+void LBAgent::HandleNo(MessagePtr msg, PeerNodePtr peer)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     if(CountInPeerSet(m_AllPeers,peer) == 0)
@@ -791,7 +791,7 @@ void LBAgent::HandleNo(CMessage msg, PeerNodePtr peer)
     Logger.Notice << "(No) from " << peer->GetUUID() << std::endl;
 }
 
-void LBAgent::HandleDrafting(CMessage msg, PeerNodePtr peer)
+void LBAgent::HandleDrafting(MessagePtr msg, PeerNodePtr peer)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     // --------------------------------------------------------------
@@ -843,7 +843,7 @@ void LBAgent::HandleDrafting(CMessage msg, PeerNodePtr peer)
     }
 }
 
-void LBAgent::HandleAccept(CMessage msg, PeerNodePtr peer)
+void LBAgent::HandleAccept(MessagePtr msg, PeerNodePtr peer)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     if(peer->GetUUID() == GetUUID())
@@ -855,7 +855,7 @@ void LBAgent::HandleAccept(CMessage msg, PeerNodePtr peer)
     // --------------------------------------------------------------
     device::SignalValue DemValue;
     std::stringstream ss_;
-    ptree pt = msg.GetSubMessages();
+    ptree &pt = msg->GetSubMessages();
     ss_ << pt.get<std::string>("lb.value");
     ss_ >> DemValue;
     Logger.Notice << " Draft Accept message received from: " << peer->GetUUID()
@@ -877,7 +877,7 @@ void LBAgent::HandleAccept(CMessage msg, PeerNodePtr peer)
     }
 }
 
-void LBAgent::HandleCollectedState(CMessage msg, PeerNodePtr peer)
+void LBAgent::HandleCollectedState(MessagePtr msg, PeerNodePtr peer)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     // --------------------------------------------------------------
@@ -885,7 +885,7 @@ void LBAgent::HandleCollectedState(CMessage msg, PeerNodePtr peer)
     // --------------------------------------------------------------
     int peercount=0;
     double agg_gateway=0;
-    ptree pt = msg.GetSubMessages();
+    ptree &pt = msg->GetSubMessages();
 	BOOST_FOREACH(ptree::value_type &v, pt.get_child("CollectedState.state"))
 	{
 	    Logger.Notice << "SC module returned values: "
@@ -916,13 +916,13 @@ void LBAgent::HandleCollectedState(CMessage msg, PeerNodePtr peer)
     }
 }
 
-void LBAgent::HandleComputedNormal(CMessage msg, PeerNodePtr peer)
+void LBAgent::HandleComputedNormal(MessagePtr msg, PeerNodePtr peer)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     // --------------------------------------------------------------
     // You received the new Normal value calculated and sent by your leader
     // --------------------------------------------------------------
-    ptree pt = msg.GetSubMessages();
+    ptree &pt = msg->GetSubMessages();
     m_Normal = pt.get<double>("lb.cnorm");
     Logger.Notice << "Computed Normal " << m_Normal << " received from "
                    << pt.get<std::string>("lb.source") << std::endl;

@@ -34,9 +34,9 @@ namespace {
 
 /// This file's logger.
 CLocalLogger Logger(__FILE__);
-const int MAX_REGRESSION_ENTRIES = 200;
+const int MAX_REGRESSION_ENTRIES = 3;
 const double SYNCHRONIZER_LAMBDA = .99999;
-const int QUERY_INTERVAL = 10000;
+const int QUERY_INTERVAL = 5000;
 
 }
 
@@ -116,11 +116,11 @@ void CClockSynchronizer::Stop()
 /// @param msg The message from the remote node
 /// @param peer The peer sending the message.
 ///////////////////////////////////////////////////////////////////////////////
-void CClockSynchronizer::HandleExchange(CMessage msg, PeerNodePtr peer)
+void CClockSynchronizer::HandleExchange(MessagePtr msg, PeerNodePtr peer)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     //Pull out the message identifier
-    unsigned int k = msg.GetSubMessages().get<unsigned int>("clk.query");
+    unsigned int k = msg->GetSubMessages().get<unsigned int>("clk.query");
     CMessage resp = ExchangeResponse(k);
     peer->Send(resp);
 }
@@ -135,15 +135,15 @@ void CClockSynchronizer::HandleExchange(CMessage msg, PeerNodePtr peer)
 /// @param msg The message from the remote node
 /// @param peer The remote node.
 ///////////////////////////////////////////////////////////////////////////////
-void CClockSynchronizer::HandleExchangeResponse(CMessage msg, PeerNodePtr peer)
+void CClockSynchronizer::HandleExchangeResponse(MessagePtr msg, PeerNodePtr peer)
 { 
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     std::string sender = peer->GetUUID();
     MapIndex ij(m_uuid,sender);
     boost::posix_time::ptime challenge;
     boost::posix_time::ptime now = boost::posix_time::microsec_clock::universal_time();
-    ptree pt = msg.GetSubMessages();
-    boost::posix_time::ptime response = msg.GetSendTimestamp();
+    ptree& pt = msg->GetSubMessages();
+    boost::posix_time::ptime response = msg->GetSendTimestamp();
     unsigned int k = pt.get<unsigned int>("clk.response");
     Logger.Debug<<__FILE__<<":"<<__LINE__<<std::endl;
     if(m_queries.find(ij) == m_queries.end() || m_queries[ij].first != k)
@@ -238,8 +238,8 @@ void CClockSynchronizer::HandleExchangeResponse(CMessage msg, PeerNodePtr peer)
     SetWeight(ij, 1);
     m_skews[ij] = fij-1;
     // we help spread information by loading a table of j's known nodes.
-    msg.Save(Logger.Debug);
-    Logger.Debug<<std::endl; 
+    //msg.Save(Logger.Debug);
+    //Logger.Debug<<std::endl; 
     BOOST_FOREACH(ptree::value_type &v, pt.get_child("clk.table"))
     {
         ptree sub_pt = v.second;

@@ -21,6 +21,13 @@
 #include <map>
 #include <string>
 
+// TODO - this shouldn't be included in a .hpp
+//      - it's about time to create IAgent.cpp
+//      - (providing a logger would also be good)
+#include <algorithm>
+#include <exception>
+//#include <boost/lambda/lambda.hpp>
+
 #ifndef IAGENT_HPP_
 #define IAGENT_HPP_
 
@@ -34,10 +41,11 @@ class IAgent
 public:
     /// Provides a PeerSet type for a module templated on T
     typedef std::map<std::string, T> PeerSet;
+    /// Type of an element of a PeerSet
     /// Provides a PeerNodePtr templated on T
     typedef T PeerNodePtr;
-    /// Provides and Iterator templated on T
-    typedef typename std::map<std::string, T>::iterator PeerSetIterator;
+    /// Provides a PeerSet iterator templated on T
+    typedef typename PeerSet::iterator PeerSetIterator;
     /// Provides count() for a PeerSet
     static int CountInPeerSet(PeerSet& ps, T m)
         { return ps.count(m->GetUUID()); };
@@ -50,6 +58,76 @@ public:
     /// Provides insert() for a PeerSet
     static void InsertInPeerSet(PeerSet& ps, T m)
         { ps.insert(std::pair<std::string,T>(m->GetUUID(),m)); };
+
+    /// Similar to a PeerSet, but also tracks the time a peer was inserted
+    typedef std::map<std::string,
+                     std::pair<T, boost::posix_time::ptime> > TimedPeerSet;
+
+    /// Provides a TimedPeerSet iterator templated on T
+    typedef typename TimedPeerSet::iterator TimedPeerSetIterator;
+
+    /// Provides count() for a TimedPeerSet
+    static int CountInTimedPeerSet(TimedPeerSet& tps, T m)
+        {
+/* doesn't work :-(
+
+            return std::count_if(tps.begin(),
+                                 tps.end(),
+                                 _1.first == m->GetUUID());
+*/
+
+            ssize_t count = 0;
+            for (TimedPeerSetIterator it = tps.begin(); it != tps.end(); it++)
+            {
+                if (it->first == m->GetUUID())
+                {
+                    count++;
+                }
+            }
+            return count;
+        }
+
+    /// Get the time a peer was placed into the TimedPeerSet; only sensible if the peer is in the set exactly once
+    static boost::posix_time::ptime GetTimeFromPeerSet(TimedPeerSet& tps, T m)
+        {
+            for (TimedPeerSetIterator it = tps.begin(); it != tps.end(); it++)
+            {
+                if (it->first == m->GetUUID())
+                {
+                    return it->second.second;
+                }
+            }
+            throw std::runtime_error("Expected peer wasn't found in peer set");
+        }
+
+    /// Provides erase() for a TimedPeerSet
+    static void EraseInTimedPeerSet(TimedPeerSet& tps, T m)
+        {
+/* doesn't work :-(
+
+            TimedPeerSetIterator newend = std::remove(tps.begin(),
+                                                      tps.end(),
+                                                      _1.first == m->GetUUID());
+            tps.erase(newend, tps.end());
+*/
+            for (TimedPeerSetIterator it = tps.begin(); it != tps.end(); it++)
+            {
+                if (it->first == m->GetUUID())
+                {
+                    // careful not to invalidate the iterator
+                    tps.erase((it++)->first);
+                    it--;
+                }
+            }
+        }
+
+    /// Provides insert() for a TimedPeerSet
+    static void InsertInTimedPeerSet(TimedPeerSet& tps, 
+                                     T m,
+                                     boost::posix_time::ptime time)
+        {
+            tps[m->GetUUID()] = std::make_pair(m, time);
+        }
 };
 
 } // namespace freedm

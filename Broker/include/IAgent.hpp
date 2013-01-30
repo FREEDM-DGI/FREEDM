@@ -26,7 +26,6 @@
 //      - (providing a logger would also be good)
 #include <algorithm>
 #include <exception>
-//#include <boost/lambda/lambda.hpp>
 
 #ifndef IAGENT_HPP_
 #define IAGENT_HPP_
@@ -69,13 +68,6 @@ public:
     /// Provides count() for a TimedPeerSet
     static int CountInTimedPeerSet(TimedPeerSet& tps, T m)
         {
-/* doesn't work :-(
-
-            return std::count_if(tps.begin(),
-                                 tps.end(),
-                                 _1.first == m->GetUUID());
-*/
-
             ssize_t count = 0;
             for (TimedPeerSetIterator it = tps.begin(); it != tps.end(); it++)
             {
@@ -103,20 +95,16 @@ public:
     /// Provides erase() for a TimedPeerSet
     static void EraseInTimedPeerSet(TimedPeerSet& tps, T m)
         {
-/* doesn't work :-(
-
-            TimedPeerSetIterator newend = std::remove(tps.begin(),
-                                                      tps.end(),
-                                                      _1.first == m->GetUUID());
-            tps.erase(newend, tps.end());
-*/
-            for (TimedPeerSetIterator it = tps.begin(); it != tps.end(); it++)
+            for (TimedPeerSetIterator it = tps.begin(); it != tps.end(); )
             {
                 if (it->first == m->GetUUID())
                 {
                     // careful not to invalidate the iterator
                     tps.erase((it++)->first);
-                    it--;
+                }
+                else
+                {
+                    it++;
                 }
             }
         }

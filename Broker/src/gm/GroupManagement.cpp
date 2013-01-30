@@ -1200,7 +1200,7 @@ void GMAgent::HandleResponseAYC(CMessage msg, PeerNodePtr peer)
     if(expected)
     {
         boost::posix_time::time_duration interval = boost::posix_time::microsec_clock::universal_time() - GetTimeFromPeerSet(m_AYCResponse, peer);
-        Logger.Info << "AYC response received " << interval << "after query sent" << std::endl;
+        Logger.Info << "AYC response received " << interval << " after query sent" << std::endl;
     }
     EraseInTimedPeerSet(m_AYCResponse,peer);
     if(expected == true && pt.get<std::string>("gm.payload") == "yes")
@@ -1253,7 +1253,7 @@ void GMAgent::HandleResponseAYT(CMessage msg, PeerNodePtr peer)
     if(expected)
     {
         boost::posix_time::time_duration interval = boost::posix_time::microsec_clock::universal_time() - GetTimeFromPeerSet(m_AYTResponse, peer);
-        Logger.Info << "AYT response received " << interval << "after query sent" << std::endl;
+        Logger.Info << "AYT response received " << interval << " after query sent" << std::endl;
     }
 
     EraseInTimedPeerSet(m_AYTResponse,peer);

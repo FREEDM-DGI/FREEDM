@@ -1,13 +1,13 @@
+[controller]
+
+unique-name=MyUniqueController
+dsp-script=dsp-script.txt
+
 [connection]
 
 # the hostname and port of the DGI this controller must connect to
 dgi-hostname=freedm.bitcurio.us
 dgi-port=3160 ; zapdos 3010
-
-[script]
-
-# there can be only one
-dsp-script=dsp-script.txt
 
 [timings]
 

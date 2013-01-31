@@ -215,6 +215,7 @@ def reconnect(deviceTypes, config):
     adapterConnRetries = int(config.get('misc', 'adapter-connection-retries'))
 
     devicePacket = 'Hello\r\n'
+    devicePacket += config.get('controller', 'unique-name') + '\r\n'
     for deviceName, deviceType in deviceTypes.items():
         devicePacket += deviceType + ' ' + deviceName + '\r\n'
     devicePacket += '\r\n'
@@ -344,7 +345,7 @@ if __name__ == '__main__':
         config.readfp(configFile)
         
     # the name of the DSP script to run
-    dspScript = config.get('script', 'dsp-script')
+    dspScript = config.get('controller', 'dsp-script')
     # how long to wait between work
     stateTimeout = float(config.get('timings', 'state-timeout'))/1000.0
     # dict of names -> types

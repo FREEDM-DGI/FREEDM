@@ -83,7 +83,7 @@ int main(int argc, char* argv[])
     std::string cfgFile, loggerCfgFile, timingsFile, adapterCfgFile;
     std::string listenIP, port, hostname, uuidgenerator;
     unsigned int globalVerbosity;
-    CUuid uuid;
+    std::string uuid;
 
     try
     {
@@ -230,17 +230,9 @@ int main(int argc, char* argv[])
         uuid = CUuid::from_dns(hostname,port);
         Logger.Info << "Generated UUID: " << uuid << std::endl;
 
-        // Get the UUID as a string
-        std::string uuidstr;
-        {
-            std::stringstream ss;
-            ss << uuid;
-            ss >> uuidstr;
-        }
-
         /// Prepare the global Configuration
         CGlobalConfiguration::instance().SetHostname(hostname);
-        CGlobalConfiguration::instance().SetUUID(uuidstr);
+        CGlobalConfiguration::instance().SetUUID(uuid);
         CGlobalConfiguration::instance().SetListenPort(port);
         CGlobalConfiguration::instance().SetListenAddress(listenIP);
         CGlobalConfiguration::instance().SetClockSkew(
@@ -286,15 +278,15 @@ int main(int argc, char* argv[])
         // Run server in background thread
         CBroker broker(listenIP, port, dispatch, ios, conManager);
         // Instantiate and register the group management module
-        gm::GMAgent GM(uuidstr, broker);
+        gm::GMAgent GM(uuid, broker);
         broker.RegisterModule("gm",boost::posix_time::milliseconds(CTimings::GM_PHASE_TIME));
         dispatch.RegisterReadHandler("gm", "any", &GM);
         // Instantiate and register the state collection module
-        sc::SCAgent SC(uuidstr, broker);
+        sc::SCAgent SC(uuid, broker);
         broker.RegisterModule("sc",boost::posix_time::milliseconds(CTimings::SC_PHASE_TIME));
         dispatch.RegisterReadHandler("sc", "any", &SC);
         // Instantiate and register the power management module
-        lb::LBAgent LB(uuidstr, broker);
+        lb::LBAgent LB(uuid, broker);
         broker.RegisterModule("lb",boost::posix_time::milliseconds(CTimings::LB_PHASE_TIME));
         dispatch.RegisterReadHandler("lb", "lb", &LB);
 
@@ -320,14 +312,12 @@ int main(int argc, char* argv[])
                 std::string host(s.begin(), s.begin() + idx),
                         port1(s.begin() + ( idx + 1 ), s.end());
                 // Construct the UUID of host from its DNS
-                CUuid u1 = CUuid::from_dns(host,port1);
+                std::string u1 = CUuid::from_dns(host,port1);
                 //Load the UUID into string
-                std::stringstream uu;
-                uu << u1;
                 // Add the UUID to the list of known hosts
                 //XXX This mechanism should change to allow dynamically arriving
                 //nodes with UUIDS not constructed using their DNS names
-                conManager.PutHostname(uu.str(), host, port1);
+                conManager.PutHostname(u1, host, port1);
             }
         }
         else
@@ -336,7 +326,7 @@ int main(int argc, char* argv[])
         }
 
         // Add the local connection to the hostname list
-        conManager.PutHostname(uuidstr, "localhost", port);
+        conManager.PutHostname(uuid, "localhost", port);
 
         Logger.Debug << "Starting thread of Modules" << std::endl;
         broker.Schedule("gm", boost::bind(&gm::GMAgent::Run, &GM), false);

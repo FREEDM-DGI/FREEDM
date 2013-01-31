@@ -146,9 +146,9 @@ def sendStates(adapterSock, deviceSignals):
         msg += name + ' ' + signal + ' ' + str(deviceSignals[(name, signal)])
         msg += '\r\n'
     msg += '\r\n'
-    print 'Sending states to DGI:\n' + msg
+    print 'Sending states to DGI:\n' + msg.strip()
     sendAll(adapterSock, msg)
-    print 'Sent states to DGI'
+    print 'Sent states to DGI\n'
 
 
 def receiveCommands(adapterSock, deviceSignals):
@@ -164,7 +164,7 @@ def receiveCommands(adapterSock, deviceSignals):
     """
     print 'Awaiting commands from DGI...'
     msg = recvAll(adapterSock)
-    print 'Received commands from DGI:\n' + msg
+    print 'Received commands from DGI:\n' + msg.strip()
     if msg.find('DeviceCommands\r\n') != 0:
         raise RuntimeError('Malformed command packet:\n' + msg)
     for line in msg.split('\r\n'):
@@ -180,7 +180,7 @@ def receiveCommands(adapterSock, deviceSignals):
         # Implement the command *unless* DGI doesn't really know our states.
         if not math.isnan(float(command[2])):
             deviceSignals[(command[0], command[1])] = command[2]
-    print 'Device states have been updated'
+    print 'Device states have been updated\n'
 
 
 def work(adapterSock, deviceSignals, stateTimeout):
@@ -239,9 +239,9 @@ def reconnect(deviceTypes, config):
 
         try:
             sendAll(adapterFactorySock, devicePacket)
-            print 'Sent Hello message:\n' + devicePacket
+            print '\nSent Hello message:\n' + devicePacket.strip()
             msg = recvAll(adapterFactorySock)
-            print 'Received Start message:\n' + msg
+            print '\nReceived Start message:\n' + msg.strip()
         except (socket.error, socket.timeout) as e:
             print >> sys.stderr, \
                 'AdapterFactory communication failure: {0}'.format(e.strerror)
@@ -257,7 +257,7 @@ def reconnect(deviceTypes, config):
     else:
         msg = msg.split()
         if len(msg) != 3 or msg[0] != 'Start' or msg[1] != 'StatePort:':
-            raise RuntimeError('DGI sent malformed Start:\n' + ''.join(msg))
+            raise RuntimeError('DGI sent malformed Start:\n' + ' '.join(msg))
     
     statePort = int(msg[2])
     if 0 < statePort < 1024:
@@ -318,7 +318,7 @@ def politeQuit(adapterSock, deviceSignals, stateTimeout):
         msg = msg.split()
         if len(msg) != 2 or msg[0] != 'PoliteDisconnect' or \
                 (msg[1] != 'Accepted' and msg[1] != 'Rejected'):
-            raise RuntimeError('Got bad disconnect response:\n' + ''.join(msg))
+            raise RuntimeError('Got bad disconnect response:\n' + ' '.join(msg))
 
         if msg[1] == 'Accepted':
             print 'PoliteDisconnect accepted by DGI'
@@ -370,7 +370,7 @@ if __name__ == '__main__':
         if command[0] == '#' or command.isspace(): 
             continue
 
-        print 'Processing command ' + command[:-1] # don't print \n
+        print '\nProcessing command: ' + command.strip()
 
         if command.find('enable') == 0 and (len(command.split())-3)%2 == 0:
             enableDevice(deviceTypes, deviceSignals, command)
@@ -401,6 +401,7 @@ if __name__ == '__main__':
             if duration < 0:
                 raise ValueError("It's nonsense to die for " + duration + "s")
             time.sleep(duration)
+            print 'Back to life!'
             adapterSock.close()
             adapterSock = reconnect(deviceTypes, config)
 
@@ -423,6 +424,7 @@ if __name__ == '__main__':
             else:
                 for i in range(int(duration)):
                     try:
+                        print 'Performing work {0} of {1}\n'.format(i, duration)
                         work(adapterSock, deviceSignals, stateTimeout)
                     except (socket.error, socket.timeout) as e:
                         print >> sys.stderr, \
@@ -434,6 +436,6 @@ if __name__ == '__main__':
         else:
             raise RuntimeError('Read invalid script command:\n' + command)
 
-    print '\n\nThat seems to be the end of my script, disconnecting now...\n'
+    print 'That seems to be the end of my script, disconnecting now...'
     politeQuit(adapterSock, deviceSignals, stateTimeout)
     script.close()

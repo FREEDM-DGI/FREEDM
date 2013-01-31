@@ -119,18 +119,18 @@ class LBAgent
 
         // Handlers
         /// Handles the incoming messages according to the message label
-        virtual void HandleAny(CMessage msg,PeerNodePtr peer);
-        void HandlePeerList(CMessage msg, PeerNodePtr peer); 
-        void HandleDemand(CMessage msg, PeerNodePtr peer); 
-        void HandleNormal(CMessage msg, PeerNodePtr peer); 
-        void HandleSupply(CMessage msg, PeerNodePtr peer); 
-        void HandleRequest(CMessage msg, PeerNodePtr peer); 
-        void HandleYes(CMessage msg, PeerNodePtr peer); 
-        void HandleNo(CMessage msg, PeerNodePtr peer); 
-        void HandleDrafting(CMessage msg, PeerNodePtr peer); 
-        void HandleAccept(CMessage msg, PeerNodePtr peer); 
-        void HandleCollectedState(CMessage msg, PeerNodePtr peer); 
-        void HandleComputedNormal(CMessage msg, PeerNodePtr peer); 
+        virtual void HandleAny(MessagePtr msg,PeerNodePtr peer);
+        void HandlePeerList(MessagePtr msg, PeerNodePtr peer); 
+        void HandleDemand(MessagePtr msg, PeerNodePtr peer); 
+        void HandleNormal(MessagePtr msg, PeerNodePtr peer); 
+        void HandleSupply(MessagePtr msg, PeerNodePtr peer); 
+        void HandleRequest(MessagePtr msg, PeerNodePtr peer); 
+        void HandleYes(MessagePtr msg, PeerNodePtr peer); 
+        void HandleNo(MessagePtr msg, PeerNodePtr peer); 
+        void HandleDrafting(MessagePtr msg, PeerNodePtr peer); 
+        void HandleAccept(MessagePtr msg, PeerNodePtr peer); 
+        void HandleCollectedState(MessagePtr msg, PeerNodePtr peer); 
+        void HandleComputedNormal(MessagePtr msg, PeerNodePtr peer); 
         
         /// Adds a new node to the list of known peers using its UUID
         PeerNodePtr AddPeer(std::string uuid);

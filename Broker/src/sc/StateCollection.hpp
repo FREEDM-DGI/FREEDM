@@ -78,11 +78,11 @@ class SCAgent : public IReadHandler, public IPeerNode,
         ~SCAgent();
         //Handler
         ///Handle receiving messages
-        virtual void HandleAny(CMessage msg, PeerNodePtr peer);
-        void HandlePeerList(CMessage msg, PeerNodePtr peer);
-        void HandleRequest(CMessage msg, PeerNodePtr peer);
-        void HandleMarker(CMessage msg, PeerNodePtr peer);
-        void HandleState(CMessage msg, PeerNodePtr peer);
+        virtual void HandleAny(MessagePtr msg, PeerNodePtr peer);
+        void HandlePeerList(MessagePtr msg, PeerNodePtr peer);
+        void HandleRequest(MessagePtr msg, PeerNodePtr peer);
+        void HandleMarker(MessagePtr msg, PeerNodePtr peer);
+        void HandleState(MessagePtr msg, PeerNodePtr peer);
         
     private:
         //Marker structure

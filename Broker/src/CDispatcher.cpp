@@ -58,13 +58,13 @@ CDispatcher::CDispatcher()
 /// @param broker The broker that schedules the message deliveries
 /// @param msg The message to distribute to modules
 ///////////////////////////////////////////////////////////////////////////////
-void CDispatcher::HandleRequest(CBroker &broker, CMessage msg)
+void CDispatcher::HandleRequest(CBroker &broker, MessagePtr msg)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     ptree sub_;
     ptree::const_iterator it_;
     std::map< std::string, IReadHandler *>::const_iterator mapIt_;
-    ptree p_mesg = static_cast<ptree>(msg);
+    ptree p_mesg = static_cast<ptree>(*msg);
     bool processed = false;
 
     try
@@ -86,7 +86,7 @@ void CDispatcher::HandleRequest(CBroker &broker, CMessage msg)
 	        
 	    // Loop through all submessages of this message to call its
         // handler
-        std::string handler = msg.GetHandler();
+        std::string handler = msg->GetHandler();
         
         Logger.Debug << "Processing " << handler << std::endl;
 
@@ -143,7 +143,7 @@ void CDispatcher::HandleRequest(CBroker &broker, CMessage msg)
 
 }
 
-void CDispatcher::ReadHandlerCallback(IReadHandler *h, CMessage msg)
+void CDispatcher::ReadHandlerCallback(IReadHandler *h, MessagePtr msg)
 {
     (h)->HandleRead(msg);
 }

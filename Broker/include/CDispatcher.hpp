@@ -35,6 +35,7 @@
 
 #include "CBroker.hpp"
 #include "IHandler.hpp"
+#include "CMessage.hpp"
 
 #include <boost/noncopyable.hpp>
 #include <boost/property_tree/ptree.hpp>
@@ -59,7 +60,7 @@ public:
     CDispatcher();
 
     /// Called upon incoming message
-    void HandleRequest(CBroker &broker, CMessage msg );
+    void HandleRequest(CBroker &broker, MessagePtr msg );
 
     /// Called prior to sending a message
     void HandleWrite( ptree &p_mesg );
@@ -74,7 +75,7 @@ public:
 
 private:
     /// Making the handler calls bindable
-    void ReadHandlerCallback(IReadHandler *h, CMessage msg);
+    void ReadHandlerCallback(IReadHandler *h, MessagePtr msg);
     
     /// All the registered read handlers.
     std::multimap< const std::string, IReadHandler *> m_readHandlers;

@@ -440,8 +440,8 @@ void CAdapterFactory::SessionProtocol()
         Logger.Status << "Blocking for client hello message." << std::endl;
         boost::asio::read_until(m_server->GetSocket(), packet, "\r\n\r\n");
         
-        packet_stream >> header;
-        host = m_server->GetHostname();
+        packet_stream >> header >> host;
+        //host = m_server->GetHostname();
         Logger.Info << "Received " << header << " from " << host << std::endl;
         
         if( header != "Hello" )

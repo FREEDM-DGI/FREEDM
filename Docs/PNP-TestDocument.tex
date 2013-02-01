@@ -1,0 +1,163 @@
+\documentclass{article}
+
+\usepackage[landscape]{geometry}
+\usepackage[usenames,dvipsnames]{xcolor}
+\usepackage{longtable}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% YOU NEED TO MODIFY THIS PART
+% fill out the tester name and commit hash below
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newcommand{\testerName}{}
+\newcommand{\commitHash}{}
+
+\newcommand{\pass}{\textcolor{OliveGreen}{PASS}}
+\newcommand{\fail}{\textcolor{BrickRed}{FAIL}}
+
+\newcounter{rownum}
+\newcommand\rownumber{\stepcounter{rownum}\arabic{rownum}}
+
+\let\endtitlepage\relax
+\renewcommand{\arraystretch}{1.5}
+
+\begin{document}
+
+\begin{titlepage}
+\begin{center}
+\textsc{\huge Plug and Play Test Results} \\ [0.25cm]
+\Large Performed on \today \\ [0.5cm]
+
+\begin{minipage}[t]{0.4\textwidth}
+\large \emph{Tester:} \\ \testerName
+\end{minipage}
+\begin{minipage}[t]{0.4\textwidth}
+\raggedleft\large\emph{Commit:} \\ \commitHash
+\end{minipage}
+
+\vspace{0.5cm}\hrule
+
+\end{center}
+\end{titlepage}
+
+\centering
+\begin{longtable}{|c|p{4cm}|p{5cm}|c|p{6cm}|}
+	\hline
+	\# & Test Prefix & Description & Result & Comments \\ \hline \endhead \hline \endfoot
+	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+	% YOU NEED TO MODIFY THIS PART
+	% write \pass or \fail between the ampersands on the second line
+	% write an (optional command between the ampersand and backslash
+	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+	\rownumber & Configuration1 & Run the DGI using a negative factory port.
+						 & & \\
+	\rownumber & Configuration2 & Run the DGI using a reserved port number for the factory port.
+						 & & \\
+	\rownumber & Configuration3 & Run the DGI using a factory port greater than 65535.
+						 & & \\
+	\rownumber & Configuration4 & Run the DGI using a string for the factory port.
+						 & & \\
+	\rownumber & Configuration5 & Run the DGI without the factory port specified.
+						 & & \\
+	\rownumber & Configuration6 & Run the DGI with a single adapter port specified.
+						 & & \\
+	\rownumber & Configuration7 & Run the DGI with a large number of adapter ports specified.
+						 & & \\
+	\rownumber & Configuration8 & Run the DGI with an inverted range for the adapter port.
+						 & & \\
+	\rownumber & Configuration9 & Run the DGI using a negative adapter port.
+						 & & \\
+	\rownumber & Configuration10 & Run the DGI using a reserved port number for the adapter port.
+						 & & \\
+	\rownumber & Configuration11 & Run the DGI using an adapter port greater than 65535.
+						 & & \\
+	\rownumber & Configuration12 & Run the DGI using a string for the adapter port.
+						 & & \\
+	\rownumber & Configuration13 & Run the DGI without the first adapter port.
+						 & & \\
+	\rownumber & Configuration14 & Run the DGI without the second adapter port.
+						 & & \\
+	\rownumber & Configuration15 & Run the DGI without either adapter port.
+						 & & \\
+	\rownumber & Configuration16 & Run the DGI with the same first and second adapter port.
+						 & & \\
+	\rownumber & Configuration17 & Run the DGI without an adapter port range specified.
+						 & & \\
+	\rownumber & Configuration18 & Run the DGI with multiple adapter port ranges specified.
+						 & & \\
+	\rownumber & Configuration19 & Run the DGI with multiple adapter port ranges that overlap.
+						 & & \\
+	\rownumber & Configuration20 & Run the DGI with the same adapter and factory port.
+						 & & \\
+	\rownumber & BasicOperation1 & Detect a single plug and play device.
+						 & & \\
+	\rownumber & BasicOperation2 & Remove a plug and play device that has gone off-line.
+						 & & \\
+	\rownumber & BasicOperation3 & Change the value of a plug and play device at run time.
+						 & & \\
+	\rownumber & BasicOperation4 & Detect two devices of the same type with the correct net value.
+						 & & \\
+	\rownumber & BasicOperation5 & Detect two devices of different types with the correct values.
+						 & & \\
+	\rownumber & BasicOperation6 & Remove the first of two SST devices.
+						 & & \\
+	\rownumber & BasicOperation7 & Remove the second of two SST devices.
+						 & & \\
+	\rownumber & BasicOperation8 & Remove a device other than the SST.
+						 & & \\
+	\rownumber & BasicOperation9 & Change the value of the SST device.
+						 & & \\
+	\rownumber & BasicOperation10 & Change the value of the a non-SST device.
+						 & & \\
+	\rownumber & BasicOperation11 & Handle a large number of devices at once.
+						 & & \\
+ 	\rownumber & BasicOperation12 & Change the value of a large number of devices.
+ 						 & & \\
+ 	\rownumber & Failure1 & Fail before sending the DGI device states.
+ 						 & & \\
+ 	\rownumber & Failure2 & Fail before sending states and then restart.
+ 						 & & \\
+ 	\rownumber & Failure3 & Fail after sending the DGI device states.
+ 						 & & \\
+ 	\rownumber & Failure4 & Fail after sending the device states and restart instantly.
+ 						 & & \\
+ 	\rownumber & Failure5 & Fail after sending the device states and restart after a delay.
+ 						 & & \\
+ 	\rownumber & UnexpectedError1 & Send an unrecognized device type to the DGI.
+ 						 & & \\
+ 	\rownumber & UnexpectedError2 & Send an unrecognized signal type to the DGI.
+ 						 & & \\
+ 	\rownumber & UnexpectedError3 & Send a corrupt state value to the DGI.
+ 						 & & \\
+ 	\rownumber & UnexpectedError4 & Have the same controller specify the same device twice.
+ 						 & & \\
+ 	\rownumber & UnexpectedError5 & Have the same controller start two simultaneous sessions.
+ 						 & & \\
+ 	\rownumber & MultipleControllers1 & Have two controllers use the same device type with different names.
+ 						 & & \\
+ 	\rownumber & MultipleControllers2 & Have two controllers use the same device type with identical names.
+ 						 & & \\
+ 	\rownumber & MultipleControllers3 & Have two controllers use different device types.
+ 						 & & \\
+ 	\rownumber & MultipleControllers4 & Remove the first of two controllers connected to the DGI.
+ 						 & & \\
+ 	\rownumber & MultipleControllers5 & Remove the second of two controllers connected to the DGI.
+ 						 & & \\
+ 	\rownumber & MultipleControllers6 & Change the device value of a controller connected to the DGI.
+ 						 & & \\
+ 	\rownumber & MultipleControllers7 & Use a large number of controllers to connect at once.
+ 						 & & \\
+ 	\rownumber & MultipleControllers8 & Have insufficient port numbers to accept all controllers.
+ 						 & & \\
+ 	\rownumber & MultipleControllers9 & Have insufficient port numbers but have controllers timeout.
+ 						 & & \\
+ 	\rownumber & MultipleDGI1 & Have two DGI converge to a positive normal value.
+ 						 & & \\
+ 	\rownumber & MultipleDGI2 & Have two DGI converge to a negative normal value.
+ 						 & & \\
+ 	\rownumber & MultipleDGI3 & Have the normal value change during convergence.
+ 						 & & \\
+ 	\rownumber & MultipleDGI4 & Have one DGI lose its devices during convergence.
+ 						 & & \\
+\end{longtable}
+
+\end{document}

@@ -230,7 +230,29 @@ void CAdapterFactory::RemoveAdapter(const std::string identifier)
 void CAdapterFactory::AddPortNumber(const unsigned short port)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    m_ports.insert(port);
+    if( m_ports.insert(port).second )
+    {
+        Logger.Info << "Added adapter port: " << port << std::endl;
+    }
+    else
+    {
+        Logger.Warn << "Duplicate adapter port: " << port << std::endl;
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/// Gets the total number of available port numbers for adapters.
+///
+/// @pre None.
+/// @post Returns m_ports.size()
+/// @return The number of available port numbers.
+///
+/// @limitations None.
+////////////////////////////////////////////////////////////////////////////////
+int CAdapterFactory::AvailablePorts() const
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    return m_ports.size();
 }
 
 ////////////////////////////////////////////////////////////////////////////////

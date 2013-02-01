@@ -76,6 +76,9 @@ public:
     
     /// Adds a new TCP port number for adapters.
     void AddPortNumber(const unsigned short port);
+
+    /// Gets the number of available TCP port numbers.
+    int AvailablePorts() const;
 private:
     /// Constructs the factory.
     CAdapterFactory();

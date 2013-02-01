@@ -278,6 +278,9 @@ int main(int argc, char* argv[])
                 {
                     device::CAdapterFactory::Instance().AddPortNumber(i);
                 }
+
+                int pn = device::CAdapterFactory::Instance().AvailablePorts();
+                Logger.Info << pn << " adapter port(s) specified." << std::endl;
             }
         }
         else

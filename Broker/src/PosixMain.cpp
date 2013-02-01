@@ -158,8 +158,18 @@ int main(int argc, char* argv[])
                 ( "verbose,v",
                 po::value<unsigned int>( &globalVerbosity )->
                 implicit_value(5)->default_value(5),
-                "enable verbose output (optionally specify level)" );
+                "enable verbose output (optionally specify level)" )
+                ( "endpoint-address",
+                po::value<std::string> (),
+                "endpoint address for socket to listen on" );
+        hiddenOpts.add_options()
+                ( "setuuid", po::value<std::string > ( &uuidString ),
+                "UUID for this host" );
 
+        // Specify positional arguments
+        posOpts.add("address", 1).add("port", 1);
+        // Visible options
+        visibleOpts.add(genOpts).add(configOpts);
         // Options allowed on command line
         cliOpts.add(genOpts).add(cfgOpts);
         // If submodules need custom commandline options
@@ -275,6 +285,13 @@ int main(int argc, char* argv[])
         CGlobalConfiguration::instance().SetListenAddress(listenIP);
         CGlobalConfiguration::instance().SetClockSkew(
                 boost::posix_time::milliseconds(0));
+        
+        // Specify socket endpoint address, if provided
+        if( vm.count("endpoint-address") )
+        {
+            CGlobalConfiguration::instance().SetSocketEndpoint(
+                vm["endpoint-address"].as<std::string>() );
+        }
         
         //constructors for initial mapping
         CConnectionManager conManager;

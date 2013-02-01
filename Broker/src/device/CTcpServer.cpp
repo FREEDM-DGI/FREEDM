@@ -34,6 +34,7 @@
 /// Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
 ////////////////////////////////////////////////////////////////////////////////
 
+#include "CGlobalConfiguration.hpp"
 #include "CTcpServer.hpp"
 #include "CLogger.hpp"
 
@@ -68,8 +69,15 @@ CTcpServer::CTcpServer(boost::asio::io_service & ios, unsigned short port)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
    
-    using boost::asio::ip::tcp; 
+    using boost::asio::ip::tcp;
+
     tcp::endpoint endpoint(tcp::v4(), port);
+
+    if( CGlobalConfiguration::instance().GetSocketEndpoint() != "" )
+    {
+        endpoint.address( boost::asio::ip::address::from_string( 
+            CGlobalConfiguration::instance().GetSocketEndpoint() ) );
+    }
 
     m_acceptor.open(endpoint.protocol());
     m_acceptor.set_option(tcp::acceptor::reuse_address(true));

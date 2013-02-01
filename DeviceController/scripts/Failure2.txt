@@ -1,0 +1,5 @@
+# Failure 2 - Device Fails before Sending State and Reconnects
+enable Sst SST1 gateway 5.0
+dieHorribly 0
+work forever
+

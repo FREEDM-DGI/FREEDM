@@ -120,11 +120,13 @@ void CListener::HandleRead(const boost::system::error_code& e,
         std::stringstream iss;
         std::ostreambuf_iterator<char> iss_it(iss);
         std::copy(m_buffer.begin(), m_buffer.begin()+bytes_transferred, iss_it);
+        // Create a new CMessage pointer
+        m_message = MessagePtr(new CMessage); 
         
         try
         {
             Logger.Debug<<"Loading xml:"<<std::endl;
-            m_message.Load(iss);
+            m_message->Load(iss);
         }
         catch(std::exception &e)
         {
@@ -136,9 +138,8 @@ void CListener::HandleRead(const boost::system::error_code& e,
             return;
         }
 
-        ptree x = static_cast<ptree>(m_message);
-        std::string uuid = m_message.GetSourceUUID();
-        SRemoteHost hostname = m_message.GetSourceHostname();
+        std::string uuid = m_message->GetSourceUUID();
+        SRemoteHost hostname = m_message->GetSourceHostname();
         ///Make sure the hostname is registered:
         GetConnectionManager().PutHostname(uuid,hostname);                        
         ///Get the pointer to the connection:
@@ -148,35 +149,35 @@ void CListener::HandleRead(const boost::system::error_code& e,
 #ifdef CUSTOMNETWORK
         if((rand()%100) >= GetReliability())
         {
-            Logger.Debug<<"Dropped datagram "<<m_message.GetHash()<<":"
-                          <<m_message.GetSequenceNumber()<<std::endl;
+            Logger.Debug<<"Dropped datagram "<<m_message->GetHash()<<":"
+                          <<m_message->GetSequenceNumber()<<std::endl;
             goto listen;
         }
 #endif
-        if(m_message.GetStatus() == freedm::broker::CMessage::Accepted)
+        if(m_message->GetStatus() == freedm::broker::CMessage::Accepted)
         {
             Logger.Debug<<"Processing Accept Message"<<std::endl;
-            ptree pp = m_message.GetProtocolProperties();
+            ptree pp = m_message->GetProtocolProperties();
             size_t hash = pp.get<size_t>("src.hash");
             Logger.Debug<<"Recieved ACK"<<hash<<":"
-                            <<m_message.GetSequenceNumber()<<std::endl;
-            conn->RecieveACK(m_message);
+                            <<m_message->GetSequenceNumber()<<std::endl;
+            conn->RecieveACK(*m_message);
         }
-        else if(m_message.GetStatus() == freedm::broker::CMessage::ClockReading && conn->Recieve(m_message))
+        else if(m_message->GetStatus() == freedm::broker::CMessage::ClockReading && conn->Recieve(*m_message))
         {
             Logger.Debug<<"Got A clock message"<<std::endl;
             GetBroker().GetClockSynchronizer().HandleRead(m_message);
         }
-        else if(conn->Recieve(m_message))
+        else if(conn->Recieve(*m_message))
         {
-            Logger.Debug<<"Accepted message "<<m_message.GetHash()<<":"
-                          <<m_message.GetSequenceNumber()<<std::endl;
+            Logger.Debug<<"Accepted message "<<m_message->GetHash()<<":"
+                          <<m_message->GetSequenceNumber()<<std::endl;
             GetDispatcher().HandleRequest(GetBroker(),m_message);
         }
-        else if(m_message.GetStatus() != freedm::broker::CMessage::Created)
+        else if(m_message->GetStatus() != freedm::broker::CMessage::Created)
         {
-            Logger.Debug<<"Rejected message "<<m_message.GetHash()<<":"
-                          <<m_message.GetSequenceNumber()<<std::endl;
+            Logger.Debug<<"Rejected message "<<m_message->GetHash()<<":"
+                          <<m_message->GetSequenceNumber()<<std::endl;
         }
 listen:
         Logger.Debug<<"Listening for next message"<<std::endl;

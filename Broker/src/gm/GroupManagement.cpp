@@ -329,7 +329,7 @@ CMessage GMAgent::PeerListQuery(std::string requester)
 /// @param peer the peer to send to
 /// @param msg the message to send
 ///////////////////////////////////////////////////////////////////////////////
-void GMAgent::SendToPeer(PeerNodePtr peer, CMessage msg)
+void GMAgent::SendToPeer(PeerNodePtr peer, CMessage &msg)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     if(m_fidsclosed == true)
@@ -895,11 +895,11 @@ void GMAgent::Timeout( const boost::system::error_code& err )
 /// @param connmgr A connection manager to use for constructing unrecognized peers.
 /// @return A PeerSet with all nodes in the group.
 ///////////////////////////////////////////////////////////////////////////////
-GMAgent::PeerSet GMAgent::ProcessPeerList(CMessage msg, CConnectionManager& connmgr)
+GMAgent::PeerSet GMAgent::ProcessPeerList(MessagePtr msg, CConnectionManager& connmgr)
 {
     // Note: The group leader inserts himself into the peer list.
     PeerSet tmp;
-    ptree pt = msg.GetSubMessages();
+    ptree &pt = msg->GetSubMessages();
     //Logger.Debug<<"Looping Peer List"<<std::endl;
     BOOST_FOREACH(ptree::value_type &v, pt.get_child("any.peers"))
     {
@@ -929,7 +929,7 @@ GMAgent::PeerSet GMAgent::ProcessPeerList(CMessage msg, CConnectionManager& conn
 /// @param msg The message being send
 /// @param peer The peer who sent the message
 ///////////////////////////////////////////////////////////////////////////////
-void GMAgent::Prehandler(SubhandleFunctor f,CMessage msg, PeerNodePtr peer)
+void GMAgent::Prehandler(SubhandleFunctor f,MessagePtr msg, PeerNodePtr peer)
 {
     //Are all FIDs open? 
     if(m_fidsclosed == false)
@@ -952,14 +952,13 @@ void GMAgent::Prehandler(SubhandleFunctor f,CMessage msg, PeerNodePtr peer)
 ///     of determining peer status.
 ///////////////////////////////////////////////////////////////////////////////
 #pragma GCC diagnostic ignored "-Wunused-parameter"
-void GMAgent::HandleAny(CMessage msg, PeerNodePtr peer)
+void GMAgent::HandleAny(MessagePtr msg, PeerNodePtr peer)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    ptree pt = msg.GetSubMessages();
-    if(msg.GetHandler().find("gm") == 0)
+    if(msg->GetHandler().find("gm") == 0)
     {
         Logger.Error<<"Unhandled Group Management Message"<<std::endl;
-        msg.Save(Logger.Error);
+        msg->Save(Logger.Error);
         Logger.Error<<std::endl;
         throw std::runtime_error("Unhandled Group Management Message");
     }
@@ -975,10 +974,9 @@ void GMAgent::HandleAny(CMessage msg, PeerNodePtr peer)
 ///     if the message has come from his coordinator.
 /// @peers Coordinator only.
 ///////////////////////////////////////////////////////////////////////////////
-void GMAgent::HandlePeerList(CMessage msg, PeerNodePtr peer)
+void GMAgent::HandlePeerList(MessagePtr msg, PeerNodePtr peer)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    ptree pt = msg.GetSubMessages();
     if(peer->GetUUID() == m_GroupLeader && GetStatus() == GMAgent::REORGANIZATION)
     {
         SetStatus(GMAgent::NORMAL);
@@ -1022,10 +1020,10 @@ void GMAgent::HandlePeerList(CMessage msg, PeerNodePtr peer)
 ///     the global peerlist, not just the ones this specific node sent the message
 ///     to.)
 ///////////////////////////////////////////////////////////////////////////////
-void GMAgent::HandleAccept(CMessage msg, PeerNodePtr peer)
+void GMAgent::HandleAccept(MessagePtr msg, PeerNodePtr peer)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    ptree pt = msg.GetSubMessages();
+    ptree &pt = msg->GetSubMessages();
     unsigned int msg_group = pt.get<unsigned int>("gm.groupid");
     Logger.Info << "RECV: Accept Message from " << peer->GetUUID() << std::endl;
     if(GetStatus() == GMAgent::ELECTION && msg_group == m_GroupID && IsCoordinator())
@@ -1050,24 +1048,23 @@ void GMAgent::HandleAccept(CMessage msg, PeerNodePtr peer)
 /// @post The node responds yes or no to the request.
 /// @peers Any node in the system is eligible to recieve this at any time.
 ///////////////////////////////////////////////////////////////////////////////
-void GMAgent::HandleAreYouCoordinator(CMessage msg, PeerNodePtr peer)
+void GMAgent::HandleAreYouCoordinator(MessagePtr msg, PeerNodePtr peer)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    ptree pt = msg.GetSubMessages();
-    int seq = msg.GetSubMessages().get<int>("gm.seq");
+    int seq = msg->GetSubMessages().get<int>("gm.seq");
     Logger.Info << "RECV: AreYouCoordinator message from "<< peer->GetUUID() <<" seq: "<<seq<<std::endl;
     if(GetStatus() == GMAgent::NORMAL && IsCoordinator())
     {
         // We are the group Coordinator AND we are at normal operation
         Logger.Info << "SEND: AYC Response (YES) to "<<peer->GetUUID()<<std::endl;
-        CMessage m_ = Response("yes","AreYouCoordinator",msg.GetExpireTime(),seq);
+        CMessage m_ = Response("yes","AreYouCoordinator",msg->GetExpireTime(),seq);
         SendToPeer(peer,m_);
     }
     else
     {
         // We are not the Coordinator OR we are not at normal operation
         Logger.Info << "SEND: AYC Response (NO) to "<<peer->GetUUID()<<std::endl;
-        CMessage m_ = Response("no","AreYouCoordinator",msg.GetExpireTime(),seq);
+        CMessage m_ = Response("no","AreYouCoordinator",msg->GetExpireTime(),seq);
         SendToPeer(peer,m_);
     }
 }
@@ -1080,11 +1077,11 @@ void GMAgent::HandleAreYouCoordinator(CMessage msg, PeerNodePtr peer)
 /// @post The node responds yes or no to the request.
 /// @peers Any node in the system is eligible to recieve this message at any time.
 ///////////////////////////////////////////////////////////////////////////////
-void GMAgent::HandleAreYouThere(CMessage msg, PeerNodePtr peer)
+void GMAgent::HandleAreYouThere(MessagePtr msg, PeerNodePtr peer)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    ptree pt = msg.GetSubMessages();
-    int seq = msg.GetSubMessages().get<int>("gm.seq");
+    ptree &pt = msg->GetSubMessages();
+    int seq = msg->GetSubMessages().get<int>("gm.seq");
     Logger.Info << "RECV: AreYouThere message from " << peer->GetUUID()  <<" seq: "<<seq<< std::endl;
     unsigned int msg_group = pt.get<unsigned int>("gm.groupid");
     bool ingroup = CountInPeerSet(m_UpNodes,peer);
@@ -1092,14 +1089,14 @@ void GMAgent::HandleAreYouThere(CMessage msg, PeerNodePtr peer)
     {
         Logger.Info << "SEND: AYT Response (YES) to "<<peer->GetUUID()<<std::endl;
         // We are Coordinator, peer is in our group, and peer is up
-        CMessage m_ = Response("yes","AreYouThere",msg.GetExpireTime(),seq);
+        CMessage m_ = Response("yes","AreYouThere",msg->GetExpireTime(),seq);
         SendToPeer(peer,m_);
     }
     else
     {
         Logger.Info << "SEND: AYT Response (NO) to "<<peer->GetUUID()<<std::endl;
         // We are not Coordinator OR peer is not in our groups OR peer is down
-        CMessage m_ = Response("no","AreYouThere",msg.GetExpireTime(),seq);
+        CMessage m_ = Response("no","AreYouThere",msg->GetExpireTime(),seq);
         SendToPeer(peer,m_);
     }
 }
@@ -1115,10 +1112,10 @@ void GMAgent::HandleAreYouThere(CMessage msg, PeerNodePtr peer)
 ///     work as part of the group it was invited to.
 /// @peers Any node could send an invite at any time.
 ///////////////////////////////////////////////////////////////////////////////
-void GMAgent::HandleInvite(CMessage msg, PeerNodePtr peer)
+void GMAgent::HandleInvite(MessagePtr msg, PeerNodePtr peer)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    ptree pt = msg.GetSubMessages();
+    ptree &pt = msg->GetSubMessages();
     PeerSet tempSet_;
     std::string coord_;
     Logger.Info << "RECV: Invite message from " <<peer->GetUUID() << std::endl;
@@ -1139,7 +1136,7 @@ void GMAgent::HandleInvite(CMessage msg, PeerNodePtr peer)
             // Forward invitation to all members of my group
             CMessage m_ = Invitation();
             // We will set the expire time to be the same as the source message
-            m_.SetExpireTime(msg.GetExpireTime());    
+            m_.SetExpireTime(msg->GetExpireTime());    
             BOOST_FOREACH(PeerNodePtr peer, tempSet_ | boost::adaptors::map_values)
             {
                 if( peer->GetUUID() == GetUUID())
@@ -1188,12 +1185,12 @@ void GMAgent::HandleInvite(CMessage msg, PeerNodePtr peer)
 ///     to merge in the future.
 /// @peers A node the AYC request was sent to.
 ///////////////////////////////////////////////////////////////////////////////
-void GMAgent::HandleResponseAYC(CMessage msg, PeerNodePtr peer)
+void GMAgent::HandleResponseAYC(MessagePtr msg, PeerNodePtr peer)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    ptree pt = msg.GetSubMessages();
+    ptree &pt = msg->GetSubMessages();
     std::string answer = pt.get<std::string>("gm.payload");
-    int seq = msg.GetSubMessages().get<int>("gm.seq");
+    int seq = msg->GetSubMessages().get<int>("gm.seq");
     Logger.Info << "RECV: Response (AYC) ("<<answer<<") from " <<peer->GetUUID() << " seq "<<seq<< std::endl;
     Logger.Debug << "Checking expected responses." << std::endl;
     bool expected = CountInTimedPeerSet(m_AYCResponse,peer);
@@ -1241,12 +1238,12 @@ void GMAgent::HandleResponseAYC(CMessage msg, PeerNodePtr peer)
 ///     node will enter recovery, if the recovery timer has not already been
 ///     set, otherwise we will allow it to expire.
 ///////////////////////////////////////////////////////////////////////////////
-void GMAgent::HandleResponseAYT(CMessage msg, PeerNodePtr peer)
+void GMAgent::HandleResponseAYT(MessagePtr msg, PeerNodePtr peer)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    ptree pt = msg.GetSubMessages();
+    ptree &pt = msg->GetSubMessages();
     std::string answer = pt.get<std::string>("gm.payload");
-    int seq = msg.GetSubMessages().get<int>("gm.seq");
+    int seq = msg->GetSubMessages().get<int>("gm.seq");
     Logger.Info << "RECV: Response (AYT) ("<<answer<<") from " <<peer->GetUUID() << " seq " <<seq<<std::endl;
     Logger.Debug << "Checking expected responses." << std::endl;
     bool expected = CountInTimedPeerSet(m_AYTResponse,peer);
@@ -1289,9 +1286,9 @@ void GMAgent::HandleResponseAYT(CMessage msg, PeerNodePtr peer)
 /// @post Dispatched a message to the requester with a peerlist.
 /// @peers Any. (Local or remote, doesn't have to be a member of group)
 ///////////////////////////////////////////////////////////////////////////////
-void GMAgent::HandlePeerListQuery(CMessage msg, PeerNodePtr peer)
+void GMAgent::HandlePeerListQuery(MessagePtr msg, PeerNodePtr peer)
 {
-    ptree pt = msg.GetSubMessages();
+    ptree &pt = msg->GetSubMessages();
     std::string requester = pt.get<std::string>("gm.requester");
     peer->Send(PeerList(requester));
 }

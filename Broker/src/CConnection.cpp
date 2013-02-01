@@ -152,7 +152,9 @@ void CConnection::Send(CMessage & p_mesg)
         p_mesg.SetSourceUUID(GetConnectionManager().GetUUID());
         p_mesg.SetSourceHostname(GetConnectionManager().GetHostname());
         p_mesg.SetSendTimestampNow();
-        GetDispatcher().HandleRequest(GetBroker(),p_mesg);
+        MessagePtr local(new CMessage);
+        *local = p_mesg;
+        GetDispatcher().HandleRequest(GetBroker(),local);
         return;
     }
 

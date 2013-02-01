@@ -24,6 +24,7 @@
 #include <boost/uuid/uuid.hpp>
 #include <boost/uuid/uuid_generators.hpp>
 #include <boost/uuid/uuid_io.hpp>
+#include <boost/algorithm/string.hpp>
 
 namespace freedm {
 namespace broker {
@@ -48,8 +49,9 @@ public:
     {}
 
     /// Returns a UUID in the DNS namespace for the given hostname.
-    static CUuid from_dns( const std::string &s, const std::string &p )
+    static CUuid from_dns(std::string s, std::string p)
 	{
+        boost::algorithm::to_lower(s);
     	boost::uuids::uuid dns_namespace =
     		boost::uuids::string_generator()(
     				"{6ba7b810-9dad-11d1-80b4-00c04fd430c8}"

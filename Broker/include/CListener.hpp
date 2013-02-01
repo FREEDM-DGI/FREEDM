@@ -76,7 +76,7 @@ private:
     boost::array<char, CReliableConnection::MAX_PACKET_SIZE> m_buffer;
     
     /// The incoming request.
-    CMessage m_message;
+    MessagePtr m_message;
 
     /// The UUID of the remote endpoint for the connection
     std::string m_uuid;

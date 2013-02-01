@@ -1,0 +1,6 @@
+# Multiple Controllers 6 - Script A - Modifies Correct Adapter
+enable Sst SST1 gateway 5.0
+work 15
+change SST1 gateway 10.0
+work forever
+

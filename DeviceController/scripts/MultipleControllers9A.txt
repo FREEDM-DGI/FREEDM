@@ -1,0 +1,4 @@
+# Multiple Controllers 9 - Script A - Insufficient Ports (B)
+enable Sst SST1 gateway 5.0
+work 30
+

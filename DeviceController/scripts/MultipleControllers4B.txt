@@ -1,0 +1,4 @@
+# Multiple Controllers 4 - Script B - Removes Correct Adapter (A)
+enable Load TOASTER drain 42.0
+work forever
+

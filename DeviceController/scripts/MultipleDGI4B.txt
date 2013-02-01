@@ -1,0 +1,4 @@
+# Multiple DGI 4 - Script B - Device Outage during Convergence
+enable Sst SST2 gateway 250.0
+work 30
+

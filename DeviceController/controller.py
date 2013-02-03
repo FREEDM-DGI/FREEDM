@@ -22,12 +22,92 @@
 ################################################################################
 
 import ConfigParser
+import argparse
 import datetime
 import math
 import socket
 import string
 import sys
 import time
+
+config = {}
+
+COPYRIGHT_YEAR = '2013'
+
+
+def initializeConfig():
+    """
+    Called at the start of main to initialize the global configuration using
+    ConfigParser and argparse.
+    """
+    global config
+
+    desc = \
+'''A fake FREEDM device controller that interfaces with the DGI via the FREEDM
+plug and play protocol and pretends to immediately implement DGI commands.'''
+
+    epi = 'Batteries not included.'
+
+    parser = argparse.ArgumentParser(description=desc, epilog=epi)
+    parser.add_argument('-c', '--config', default='controller.cfg',
+                        help='file to use for additional configuration')
+    parser.add_argument('-g', '--host',
+                        help='hostname of the DGI to connect to')
+    parser.add_argument('-n', '--name',
+                        help='unique identifier of this controller')
+    parser.add_argument('-p', '--port', type=int,
+                        help="the DGI AdapterFactory's listening port")
+    parser.add_argument('-V', '--version', action='store_true',
+                        help='print version info and exit')
+    parser.add_argument('-s', '--script', help='the DSP script file to run')
+    args = parser.parse_args()
+
+    if args.version:
+        version = '(Unknown Version)'
+        try:
+            with open('../Broker/src/version.h', 'r') as versionFile:
+                versionLine = versionFile.readlines()[2]
+                versionStart = versionLine.index('"')
+                versionEnd = versionLine.rindex('"')
+                version = versionLine[versionStart+1:versionEnd]
+        except:
+            pass
+        print 'FREEDM Fake Device Controller', VERSION
+        print 'Copyright (C)', COPYRIGHT_YEAR, 'NSF FREEDM Systems Center'
+        sys.exit(0)
+
+    if args.name:
+        config['name'] = args.name
+    if args.script:
+        config['script'] = args.script
+    if args.host:
+        config['host'] = args.host
+    if args.port:
+        config['port'] = args.port
+
+    configFileName = 'controller.cfg'
+    if args.config:
+        configFileName = args.config
+
+    # read connection settings from the config file
+    with open(configFileName, 'r') as configFile:
+        cp = ConfigParser.SafeConfigParser()
+        cp.readfp(configFile)
+
+    if args.name == None:
+        config['name'] = cp.get('controller', 'name')
+    if args.script == None:
+        config['script'] = cp.get('controller', 'script')
+    if args.host == None:
+        config['host'] = cp.get('connection', 'host')
+    if args.port == None:
+        config['port'] = int(cp.get('connection', 'port'))
+    config['state-timeout'] = float(cp.get('timings', 'state-timeout'))/1000.0
+    config['hello-timeout'] = float(cp.get('timings', 'hello-timeout'))/1000.0
+    config['dgi-timeout'] = float(cp.get('timings', 'dgi-timeout'))/1000.0
+    config['adapter-connection-retries'] = \
+            int(cp.get('misc', 'adapter-connection-retries'))
+
 
 def sendAll(socket, msg):
     """
@@ -183,39 +263,34 @@ def receiveCommands(adapterSock, deviceSignals):
     print 'Device states have been updated\n'
 
 
-def work(adapterSock, deviceSignals, stateTimeout):
+def work(adapterSock, deviceSignals):
     """
     Send states, receive commands, then sleep for a bit.
     
     @param adapterSock the connected stream socket to use
     @param deviceSignals dict of (device, name) pairs to floats
-    @param stateTimeout how long to sleep for
 
     @ErrorHandling caller must check for socket.timeout
     """
+    global config
     sendStates(adapterSock, deviceSignals)
     receiveCommands(adapterSock, deviceSignals)
-    time.sleep(stateTimeout)
+    time.sleep(config['state-timeout'])
 
 
-def reconnect(deviceTypes, config):
+def reconnect(deviceTypes):
     """
     Sends a Hello message to DGI, and receives its Start message in response.
     If there is a failure, tries again until it works.
 
     @param deviceTypes dict of device names -> types
-    @param config all the settings from the configuration file
     
     @return a stream socket connected to a DGI adapter
     """
-    dgiHostname = config.get('connection', 'dgi-hostname')
-    dgiPort = int(config.get('connection', 'dgi-port'))
-    helloTimeout = float(config.get('timings', 'hello-timeout'))/1000.0
-    dgiTimeout = float(config.get('timings', 'dgi-timeout'))/1000.0
-    adapterConnRetries = int(config.get('misc', 'adapter-connection-retries'))
-
+    global config
+    
     devicePacket = 'Hello\r\n'
-    devicePacket += config.get('controller', 'unique-name') + '\r\n'
+    devicePacket += config['name'] + '\r\n'
     for deviceName, deviceType in deviceTypes.items():
         devicePacket += deviceType + ' ' + deviceName + '\r\n'
     devicePacket += '\r\n'
@@ -223,15 +298,15 @@ def reconnect(deviceTypes, config):
     msg = ''
     while True:
         adapterFactorySock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        adapterFactorySock.settimeout(dgiTimeout)
+        adapterFactorySock.settimeout(config['dgi-timeout'])
         try:
             print 'Attempting to connect to AdapterFactory...'
-            adapterFactorySock.connect((dgiHostname, dgiPort))
+            adapterFactorySock.connect((config['host'], config['port']))
         except (socket.error, socket.herror, socket.gaierror, socket.timeout) \
                 as e:
             print >> sys.stderr, \
                 'Fail connecting to AdapterFactory: {0}'.format(e.strerror)
-            time.sleep(helloTimeout)
+            time.sleep(config['hello-timeout'])
             print >> sys.stderr, 'Attempting to reconnect...'
             continue
         else:
@@ -246,7 +321,7 @@ def reconnect(deviceTypes, config):
             print >> sys.stderr, \
                 'AdapterFactory communication failure: {0}'.format(e.strerror)
             adapterFactorySock.close()
-            time.sleep(helloTimeout)
+            time.sleep(config['hello-timeout'])
             print >> sys.stderr, 'Attempting to reconnect...'
         else:
             break
@@ -258,36 +333,36 @@ def reconnect(deviceTypes, config):
         msg = msg.split()
         if len(msg) != 3 or msg[0] != 'Start' or msg[1] != 'StatePort:':
             raise RuntimeError('DGI sent malformed Start:\n' + ' '.join(msg))
-    
-    statePort = int(msg[2])
-    if 0 < statePort < 1024:
-        raise ValueError('DGI wants to use DCCP well known port ' + statePort)
-    elif statePort < 0 or statePort > 65535:
-        raise ValueError('DGI sent a nonsense statePort ' + dgiport)
 
-    for i in range(0, adapterConnRetries):
+    adapterPort = int(msg[2])
+    if 0 < adapterPort < 1024:
+        raise ValueError('DGI wants to use DCCP well known port ' + adapterPort)
+    elif adapterPort < 0 or adapterPort > 65535:
+        raise ValueError('DGI sent a nonsense statePort ' + config['port'])
+
+    for i in range(0, config['adapter-connection-retries']):
         try:
             adapterSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            adapterSocket.connect((dgiHostname, statePort))
+            adapterSocket.connect((config['host'], adapterPort))
         except (socket.error, socket.herror, socket.gaierror, socket.timeout) \
                 as e:
             print >> sys.stderr, \
                 'Error connecting to DGI adapter: {0}'.format(e.strerror)
-            sleep(stateTimeout)
+            sleep(config['state-timeout'])
             if i == 9:
                 print >> sys.stderr, \
                     'Giving up on the adapter, sending a new Hello'
-                return reconnect(deviceTypes, config)
+                return reconnect(deviceTypes)
             else:
                 print >> sys.stderr, 'Trying again...'
         else:
             # FIXME for some reason this doesn't prevent hangs when dgi dies
             # Figuring out why would be good. But none of the other code ever
             # touches anything besides this socket. =/
-            adapterSocket.settimeout(dgiTimeout)
+            adapterSocket.settimeout(config['dgi-timeout'])
             return adapterSocket
 
-def politeQuit(adapterSock, deviceSignals, stateTimeout):
+def politeQuit(adapterSock, deviceSignals):
     """
     Sends a quit request to DGI and returns once the request has been approved.
     If the request is not initially approved, continues to send device states
@@ -297,8 +372,9 @@ def politeQuit(adapterSock, deviceSignals, stateTimeout):
     @param adapterSock the connected stream socket which wants to quit
                        THIS SOCKET WILL BE CLOSED!!
     @param deviceSignals dict of device (name, signal) pairs -> floats
-    @param stateTimeout how long to wait between working
     """
+    global config
+
     while True:
         try:
             print 'Sending PoliteDisconnect request to DGI'
@@ -328,7 +404,7 @@ def politeQuit(adapterSock, deviceSignals, stateTimeout):
             assert msg[1] == 'Rejected'
             print 'PoliteDisconnect rejected, performing another round of work'
             try:
-                work(adapterSock, deviceSignals, stateTimeout)
+                work(adapterSock, deviceSignals, config['state-timeout'])
                 # Loop again
             except (socket.error, socket.timeout) as e:
                 print >> sys.stderr, \
@@ -338,16 +414,7 @@ def politeQuit(adapterSock, deviceSignals, stateTimeout):
                 return
 
 
-if __name__ == '__main__':
-    # read connection settings from the config file
-    with open('controller.cfg', 'r') as configFile:
-        config = ConfigParser.SafeConfigParser()
-        config.readfp(configFile)
-        
-    # the name of the DSP script to run
-    dspScript = config.get('controller', 'dsp-script')
-    # how long to wait between work
-    stateTimeout = float(config.get('timings', 'state-timeout'))/1000.0
+if __name__ == '__main__': 
     # dict of names -> types
     deviceTypes = {}
     # dict of (name, signal) pairs -> strings (representing floats :S)
@@ -356,8 +423,9 @@ if __name__ == '__main__':
     firstHello = True
     # socket connected
     adapterSock = -1
- 
-    script = open(dspScript, 'r')
+    
+    initializeConfig() 
+    script = open(config['script'], 'r')
     for command in script:
         # These dictionaries must be kept in parallel
         assert len(deviceTypes) == len(deviceSignals)
@@ -375,8 +443,8 @@ if __name__ == '__main__':
         if command.find('enable') == 0 and (len(command.split())-3)%2 == 0:
             enableDevice(deviceTypes, deviceSignals, command)
             if not firstHello:
-                politeQuit(adapterSock, deviceSignals, stateTimeout)
-            adapterSock = reconnect(deviceTypes, config)
+                politeQuit(adapterSock, deviceSignals)
+            adapterSock = reconnect(deviceTypes)
             if firstHello:
                 firstHello = False
 
@@ -384,8 +452,8 @@ if __name__ == '__main__':
             if firstHello:
                 raise RuntimeError("Can't disable devices before first Hello")
             disableDevice(deviceTypes, deviceSignals, command)
-            politeQuit(adapterSock, deviceSignals, stateTimeout)
-            adapterSock = reconnect(deviceTypes, config)
+            politeQuit(adapterSock, deviceSignals)
+            adapterSock = reconnect(deviceTypes)
             
         elif command.find('change') == 0 and len(command.split()) == 4:
             if firstHello:
@@ -403,7 +471,7 @@ if __name__ == '__main__':
             time.sleep(duration)
             print 'Back to life!'
             adapterSock.close()
-            adapterSock = reconnect(deviceTypes, config)
+            adapterSock = reconnect(deviceTypes)
 
         elif command.find('work') == 0 and len(command.split()) == 2:
             if firstHello:
@@ -412,30 +480,31 @@ if __name__ == '__main__':
             if duration == 'forever':
                 while True:
                     try:
-                        work(adapterSock, deviceSignals, stateTimeout)
+                        work(adapterSock, deviceSignals)
                     except (socket.error, socket.timeout) as e:
                         print >> sys.stderr, \
                             'DGI communication error: {0}'.format(e.strerror)
                         print >> sys.stderr, 'Performing impolite reconnect'
                         adapterSock.close()
-                        adapterSock = reconnect(deviceTypes, config)
+                        adapterSock = reconnect(deviceTypes)
             elif int(duration) <= 0:
                 raise ValueError('Nonsense to work for ' + duration + 's')
             else:
                 for i in range(int(duration)):
                     try:
                         print 'Performing work {0} of {1}\n'.format(i, duration)
-                        work(adapterSock, deviceSignals, stateTimeout)
+                        work(adapterSock, deviceSignals)
                     except (socket.error, socket.timeout) as e:
                         print >> sys.stderr, \
                             'DGI communication error: {0}'.format(e.strerror)
                         print >> sys.stderr, 'Performing impolite reconnect'
                         adapterSock.close()
-                        adapterSock = reconnect(deviceTypes, config)
+                        adapterSock = reconnect(deviceTypes)
 
         else:
             raise RuntimeError('Read invalid script command:\n' + command)
 
     print 'That seems to be the end of my script, disconnecting now...'
-    politeQuit(adapterSock, deviceSignals, stateTimeout)
+    politeQuit(adapterSock, deviceSignals)
     script.close()
+

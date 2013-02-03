@@ -28,7 +28,6 @@
 #include "CConnectionManager.hpp"
 #include "CDispatcher.hpp"
 #include "CMessage.hpp"
-#include "CUuid.hpp"
 #include "PhysicalDeviceTypes.hpp"
 #include "IAgent.hpp"
 #include "IHandler.hpp"

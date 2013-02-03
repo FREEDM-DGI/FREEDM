@@ -29,7 +29,6 @@
 #include "CDispatcher.hpp"
 #include "CGlobalPeerList.hpp"
 #include "CMessage.hpp"
-#include "CUuid.hpp"
 #include "IAgent.hpp"
 #include "IHandler.hpp"
 #include "IPeerNode.hpp"

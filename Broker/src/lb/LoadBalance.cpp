@@ -452,7 +452,7 @@ void LBAgent::LoadTable()
             << "Calc Gateway: " << "   " << m_CalcGateway  << std::endl;
     ss << "\t| ---------------------------------------------------- |"
             << std::endl;
-    ss << "\t| " << std::setw(20) << "UUID" << std::setw(27) << "State"
+    ss << "\t| " << std::setw(20) << "Node" << std::setw(27) << "State"
             << std::setw(7) << "|" << std::endl;
     ss << "\t| " << std::setw(20) << "----" << std::setw(27) << "-----"
             << std::setw(7) << "|" << std::endl;

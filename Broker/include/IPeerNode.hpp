@@ -27,7 +27,6 @@
 
 #include "CConnection.hpp"
 #include "CConnectionManager.hpp"
-#include "CUuid.hpp"
 
 #include <list>
 #include <set>

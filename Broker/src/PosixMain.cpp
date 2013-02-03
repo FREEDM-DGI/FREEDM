@@ -44,6 +44,7 @@
 #include <vector>
 #include <stdexcept>
 
+#include <boost/algorithm/string.hpp>
 #include <boost/asio.hpp>
 #include <boost/asio/ip/host_name.hpp> //for ip::host_name()
 #include <boost/assign/list_of.hpp>
@@ -182,6 +183,7 @@ int main(int argc, char* argv[])
 
         // Try to resolve the host's dns name
         hostname = boost::asio::ip::host_name();
+        boost::algorithm::to_lower(hostname);
         id = hostname + ":" + port;
         Logger.Info << "Generated ID: " << id << std::endl;
 
@@ -265,6 +267,7 @@ int main(int argc, char* argv[])
                 std::string peerhost(s.begin(), s.begin() + idx),
                         peerport(s.begin() + ( idx + 1 ), s.end());
                 // Construct the D of host from its DNS
+                boost::algorithm::to_lower(peerhost);
                 std::string peerid = peerhost + ":" + peerport;
                 // Add the UUID to the list of known hosts
                 conManager.PutHostname(peerid, peerhost, peerport);

@@ -201,7 +201,7 @@ int main(int argc, char* argv[])
                 {
                     (void) boost::lexical_cast<int>(port);
                 }
-                catch (boost::bad_lexical_cast)
+                catch (boost::bad_lexical_cast &)
                 {
                     badLexicalCast = true;
                 }

@@ -37,6 +37,7 @@
 #include <string>
 #include <stdexcept>
 
+#include <boost/thread.hpp>
 #include <boost/noncopyable.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/io_service.hpp>
@@ -67,6 +68,8 @@ class CAdapterFactory
 public:
     /// Gets the static instance of the factory.
     static CAdapterFactory & Instance();
+
+    void StartSessionProtocol();
     
     /// Creates a new adapter and its associated devices.
     void CreateAdapter(const boost::property_tree::ptree & p);
@@ -76,12 +79,11 @@ public:
     
     /// Adds a new TCP port number for adapters.
     void AddPortNumber(const unsigned short port);
-
-    /// Gets the number of available TCP port numbers.
-    int AvailablePorts() const;
 private:
     /// Constructs the factory.
     CAdapterFactory();
+
+    void RunService();
 
     /// Registers compiled device classes with the factory.
     void RegisterDevices();
@@ -111,13 +113,15 @@ private:
     std::map<std::string, IAdapter::Pointer> m_adapter;
     
     /// I/O service shared by the adapters.
-    boost::asio::io_service & m_ios;
+    boost::asio::io_service m_ios;
     
     /// TCP server to accept plug-and-play devices.
     CTcpServer::Pointer m_server;
     
     /// Set of TCP port numbers.
     std::set<unsigned short> m_ports;
+
+    boost::thread m_thread;
 };
 
 ////////////////////////////////////////////////////////////////////////////////

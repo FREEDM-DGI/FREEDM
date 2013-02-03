@@ -70,6 +70,37 @@ CLocalLogger Logger(__FILE__);
 /// The copyright year for this DGI release.
 const unsigned int COPYRIGHT_YEAR = 2013;
 
+/// Converts a string into a valid port number.
+unsigned short GetPort(const std::string str)
+{
+    long port;
+
+    if( str.empty() )
+    {
+        throw std::runtime_error("received empty string for a port number");
+    }
+
+    try
+    {
+        port = boost::lexical_cast<long>(str);
+        if( port < 0 || port > 65535 )
+        {
+            throw 0;
+        }
+    }
+    catch(...)
+    {
+        throw std::runtime_error("invalid port number: " + str);
+    }
+
+    if( port < 1024 )
+    {
+        throw std::runtime_error("reserved port number: " + str);
+    }
+
+    return boost::lexical_cast<unsigned short>(port);
+}
+
 /// Broker entry point
 int main(int argc, char* argv[])
 {
@@ -80,10 +111,10 @@ int main(int argc, char* argv[])
     po::variables_map vm;
     std::ifstream ifs;
     std::string cfgFile, loggerCfgFile, adapterCfgFile;
-    std::string listenIP, port, hostname, uuidgenerator;
+    std::string listenIP, port, hostname, uuidgenerator, fport;
     unsigned int globalVerbosity;
-    unsigned short factoryPort;
     CUuid uuid;
+    boost::asio::io_service ios;
 
     try
     {
@@ -112,13 +143,14 @@ int main(int argc, char* argv[])
                 ( "port,p",
                 po::value<std::string > ( &port )->default_value("1870"),
                 "TCP port to listen for peers on" )
-                ( "factory-port", po::value<unsigned short>(&factoryPort)->
-                default_value(1610), "port number for the adapter factory" )
+                ( "factory-port", po::value<std::string>(&fport),
+                "port for plug and play session protocol" )
                 ( "adapter-port",
                 po::value<std::vector<std::string> >()->composing(),
-                "available port ranges start:end for ARM adapters" )
-                ( "adapter-config", po::value<std::string>( &adapterCfgFile ),
-                "filename of the adapter specification" )
+                "start:end port ranges reserved for plug and play adapters" )
+                ( "adapter-config", po::value<std::string>(&adapterCfgFile),
+                "filename of the adapter specification for physical devices" )
+                ( "list-loggers", "Print all the available loggers and exit" )
                 ( "logger-config",
                 po::value<std::string > ( &loggerCfgFile )->
                 default_value("./config/logger.cfg"),
@@ -199,7 +231,7 @@ int main(int argc, char* argv[])
                 {
                     (void) boost::lexical_cast<int>(port);
                 }
-                catch (boost::bad_lexical_cast)
+                catch (boost::bad_lexical_cast &)
                 {
                     badLexicalCast = true;
                 }
@@ -243,27 +275,42 @@ int main(int argc, char* argv[])
         CGlobalConfiguration::instance().SetListenAddress(listenIP);
         CGlobalConfiguration::instance().SetClockSkew(
                 boost::posix_time::milliseconds(0));
-        CGlobalConfiguration::instance().SetFactoryPort(factoryPort);
         
         //constructors for initial mapping
         CConnectionManager conManager;
         ConnectionPtr newConnection;
-        boost::asio::io_service & ios = CGlobalConfiguration::instance().GetService();
 
         // configure the adapter factory
-        device::CAdapterFactory::Instance();
-        if( vm.count("adapter-port") > 0 )
+        if( vm.count("adapter-port") == 0 )
+        {
+            Logger.Status << "Plug and play devices disabled." << std::endl;
+        }
+        else
         {
             std::vector<std::string> v;
+            std::string start, end;
+            std::size_t delim;
+            int i, n;
+
+            Logger.Status << "Plug and play devices enabled." << std::endl;
+
+            if( vm.count("factory-port") == 0 )
+            {
+                throw std::runtime_error("factory-port not specified in config");
+            }
+            try
+            {
+                CGlobalConfiguration::instance().SetFactoryPort(GetPort(fport));
+            }
+            catch(std::exception & e)
+            {
+                throw std::runtime_error("factory-port="+fport+": "+e.what());
+            }
     
             v = vm["adapter-port"].as<std::vector<std::string> >();
             
             BOOST_FOREACH(std::string str, v)
             {
-                std::string start, end;
-                std::size_t delim;
-                int i, n;
-                
                 delim = str.find(":");
                 start = str.substr(0, delim);
                 
@@ -278,31 +325,35 @@ int main(int argc, char* argv[])
 
                 try
                 {
-                    i = boost::lexical_cast<unsigned short>(start);
-                    n = boost::lexical_cast<unsigned short>(end);
+                    i = GetPort(start);
+                    n = GetPort(end);
+
+                    if( i > n )
+                    {
+                        throw std::runtime_error("invalid range");
+                    }
                 }
                 catch(std::exception & e)
                 {
-                    throw std::runtime_error("Bad port specification: " + str);
+                    throw std::runtime_error("adapter-port="+str+": "+e.what());
                 }
                 
                 for( /* skip */; i <= n; i++ )
                 {
                     device::CAdapterFactory::Instance().AddPortNumber(i);
                 }
-
-                int pn = device::CAdapterFactory::Instance().AvailablePorts();
-                Logger.Info << pn << " adapter port(s) specified." << std::endl;
             }
+
+            device::CAdapterFactory::Instance().StartSessionProtocol();
+        }
+
+        if( vm.count("adapter-config") == 0 )
+        {
+            Logger.Status << "System will start without adapters." << std::endl;
         }
         else
         {
-            Logger.Warn << "No ports specified for ARM adapters." << std::endl;
-        }
-        if( vm.count("adapter-config") > 0 )
-        {
-            Logger.Notice << "Reading the file " << adapterCfgFile
-                    << " to initialize the adapter factory." << std::endl;
+            Logger.Status << "Using devices in " << adapterCfgFile << std::endl;
             
             try
             {
@@ -315,17 +366,10 @@ int main(int argc, char* argv[])
                     device::CAdapterFactory::Instance().CreateAdapter(t.second);
                 }
             }
-            catch( std::exception & e )
+            catch(std::exception & e)
             {
-                std::stringstream ss;
-                ss << "Failed to configure the adapter factory: " << e.what();
-                throw std::runtime_error(ss.str());
+                throw std::runtime_error(adapterCfgFile+": "+e.what());
             }
-            Logger.Notice << "Initialized the adapter factory." << std::endl;
-        }
-        else
-        {
-            Logger.Notice << "No device adapters specified." << std::endl;
         }
 
         // Instantiate Dispatcher for message delivery

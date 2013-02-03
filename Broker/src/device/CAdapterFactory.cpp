@@ -70,20 +70,11 @@ CLocalLogger Logger(__FILE__);
 /// @limitations None.
 ////////////////////////////////////////////////////////////////////////////////
 CAdapterFactory::CAdapterFactory()
-    : m_ios(CGlobalConfiguration::instance().GetService())
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
-    CTcpServer::ConnectionHandler handler;
-    unsigned short port;
-    
     RegisterDevices();
-    
-    // initialize the TCP variant of the session layer protocol
-    port        = CGlobalConfiguration::instance().GetFactoryPort();
-    handler     = boost::bind(&CAdapterFactory::SessionProtocol, this);
-    m_server    = CTcpServer::Create(m_ios, port);
-    m_server->RegisterHandler(handler);
+    m_thread = boost::thread(boost::bind(&CAdapterFactory::RunService, this));
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -100,6 +91,52 @@ CAdapterFactory & CAdapterFactory::Instance()
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     static CAdapterFactory instance;
     return instance;
+}
+
+void CAdapterFactory::StartSessionProtocol()
+{
+    CTcpServer::ConnectionHandler handler;
+    unsigned short port;
+    std::size_t size;
+
+    size = m_ports.size();
+
+    if( m_server )
+    {
+        throw std::logic_error("Session protocol already started.");
+    }
+    else if( size == 0 )
+    {
+        throw std::runtime_error("No plug and play ports are specified.");
+    }
+    else
+    {
+        Logger.Info << size << " adapter port(s) available." << std::endl;
+
+        // initialize the TCP variant of the session layer protocol
+        port        = CGlobalConfiguration::instance().GetFactoryPort();
+        handler     = boost::bind(&CAdapterFactory::SessionProtocol, this);
+        m_server    = CTcpServer::Create(m_ios, port);
+        m_server->RegisterHandler(handler);
+    }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+/// Runs the i/o service with an infinite workload.
+///
+/// @pre None.
+/// @post Runs m_ios and blocks the calling thread.
+///
+/// @limitations None.
+///////////////////////////////////////////////////////////////////////////////
+void CAdapterFactory::RunService()
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+
+    boost::asio::io_service::work runner(m_ios);
+    m_ios.run();
+
+    Logger.Status << "Started the adapter i/o service." << std::endl;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -238,21 +275,6 @@ void CAdapterFactory::AddPortNumber(const unsigned short port)
     {
         Logger.Warn << "Duplicate adapter port: " << port << std::endl;
     }
-}
-
-////////////////////////////////////////////////////////////////////////////////
-/// Gets the total number of available port numbers for adapters.
-///
-/// @pre None.
-/// @post Returns m_ports.size()
-/// @return The number of available port numbers.
-///
-/// @limitations None.
-////////////////////////////////////////////////////////////////////////////////
-int CAdapterFactory::AvailablePorts() const
-{
-    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    return m_ports.size();
 }
 
 ////////////////////////////////////////////////////////////////////////////////

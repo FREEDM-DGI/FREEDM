@@ -74,7 +74,7 @@ def gm_phase_time(*args,**kwargs):
     t += tr_proc + ts_proc + (n-1) * (tp+tm)
     t += tr_proc
     t += ts_proc + (n-1) * (tp+tm)
-    t += tr_proc + gm_response_timeout(*args,**kwargs) + ts_proc + (n-1) * (tp + tm) + ts_proc    
+    t += tr_proc + gm_invite_response_timeout(*args,**kwargs) + ts_proc + (n-1) * (tp + tm) + ts_proc    
     return t
 
 def gm_premerge_min_timeout(*args,**kwargs):
@@ -87,7 +87,7 @@ def gm_premerge_max_timeout(*args, **kwargs):
 def gm_premerge_granularity(*args, **kwargs):
     return round_trip_time(*args,**kwargs)
 
-def gm_response_timeout(*args, **kwargs):
+def gm_invite_response_timeout(*args, **kwargs):
     n = kwargs.get('n')
     return (n+1) * round_trip_time(*args,**kwargs)
 

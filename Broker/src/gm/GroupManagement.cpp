@@ -92,8 +92,9 @@ GMAgent::GMAgent(std::string p_uuid, CBroker &broker)
     TIMEOUT_TIMEOUT(boost::posix_time::milliseconds(CTimings::GM_TIMEOUT_TIMEOUT)),
     GLOBAL_TIMEOUT(boost::posix_time::milliseconds(CTimings::GM_GLOBAL_TIMEOUT)),
     FID_TIMEOUT(boost::posix_time::milliseconds(CTimings::GM_FID_TIMEOUT)),
-    RESPONSE_TIMEOUT(boost::posix_time::milliseconds(CTimings::GM_RESPONSE_TIMEOUT)),
+    AYC_RESPONSE_TIMEOUT(boost::posix_time::milliseconds(CTimings::GM_AYC_RESPONSE_TIMEOUT)),
     AYT_RESPONSE_TIMEOUT(boost::posix_time::milliseconds(CTimings::GM_AYT_RESPONSE_TIMEOUT)),
+    INVITE_RESPONSE_TIMEOUT(boost::posix_time::milliseconds(CTimings::GM_INVITE_RESPONSE_TIMEOUT)),
     m_broker(broker)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
@@ -554,7 +555,7 @@ void GMAgent::Check( const boost::system::error_code& err )
             // Wait for responses
             Logger.Info << "TIMER: Setting GlobalTimer (Premerge): " << __LINE__ << std::endl;
             m_timerMutex.lock();
-            m_broker.Schedule(m_timer, RESPONSE_TIMEOUT,
+            m_broker.Schedule(m_timer, AYC_RESPONSE_TIMEOUT,
                 boost::bind(&GMAgent::Premerge, this, boost::asio::placeholders::error));
             m_timerMutex.unlock();
         } // End if
@@ -762,7 +763,7 @@ void GMAgent::InviteGroupNodes( const boost::system::error_code& err, PeerSet p_
         {     // We only call Reorganize if we are the new leader
             Logger.Info << "TIMER: Setting GlobalTimer (Reorganize) : " << __LINE__ << std::endl;
             m_timerMutex.lock();
-            m_broker.Schedule(m_timer, RESPONSE_TIMEOUT,
+            m_broker.Schedule(m_timer, INVITE_RESPONSE_TIMEOUT,
                 boost::bind(&GMAgent::Reorganize, this, boost::asio::placeholders::error));
             m_timerMutex.unlock();
         }

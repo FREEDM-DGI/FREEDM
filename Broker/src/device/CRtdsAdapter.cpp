@@ -198,7 +198,7 @@ void CRtdsAdapter::Run()
 
     // Start the timer; on timeout, this function is called again
     m_runTimer.expires_from_now(
-            boost::posix_time::microseconds(CTimings::RTDS_RUN_DELAY));
+            boost::posix_time::milliseconds(CTimings::RTDS_RUN_DELAY));
     m_runTimer.async_wait(boost::bind(&CRtdsAdapter::Run, this));
 }
 

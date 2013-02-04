@@ -161,15 +161,8 @@ int main(int argc, char* argv[])
                 "enable verbose output (optionally specify level)" )
                 ( "endpoint-address",
                 po::value<std::string> (),
-                "endpoint address for socket to listen on" );
-        hiddenOpts.add_options()
-                ( "setuuid", po::value<std::string > ( &uuidString ),
-                "UUID for this host" );
-
-        // Specify positional arguments
-        posOpts.add("address", 1).add("port", 1);
-        // Visible options
-        visibleOpts.add(genOpts).add(configOpts);
+                "address of the interface the DGI will use to communicate with devices" );
+        
         // Options allowed on command line
         cliOpts.add(genOpts).add(cfgOpts);
         // If submodules need custom commandline options

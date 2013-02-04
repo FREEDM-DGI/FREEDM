@@ -52,4 +52,6 @@ VARIABLES = {
     'CSUC_RESEND_TIME': csuc_resend_time,
     # CS VARIABLES
     'CS_EXCHANGE_TIME': cs_exchange_time,
+    # DEV VARIABLES
+    'RTDS_RUN_DELAY': rtds_run_delay,
 }

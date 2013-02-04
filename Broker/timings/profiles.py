@@ -123,3 +123,6 @@ def csrc_default_timeout(*args,**kwargs):
 def cs_exchange_time(*args,**kwargs):
     rounds_per_sync = kwargs.get('rounds_per_sync')
     return rounds_per_sync * (gm_phase_time(*args, **kwargs) + sc_phase_time(*args,**kwargs) + lb_phase_time(*args,**kwargs))
+
+def rtds_run_delay(*args, **kwargs):
+    return kwargs.get('rtds_run_delay')

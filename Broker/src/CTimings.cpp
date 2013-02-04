@@ -25,7 +25,7 @@ unsigned int CTimings::GM_FID_TIMEOUT;
 
 unsigned int CTimings::SC_PHASE_TIME;
 
-unsigned int CTimings::LB_GLOBAL_TIMER;
+unsigned int CTimings::RTDS_RUN_DELAY;
 
 unsigned int CTimings::GM_AYC_RESPONSE_TIMEOUT;
 
@@ -34,6 +34,8 @@ unsigned int CTimings::GM_AYT_RESPONSE_TIMEOUT;
 unsigned int CTimings::CS_EXCHANGE_TIME;
 
 unsigned int CTimings::GM_GLOBAL_TIMEOUT;
+
+unsigned int CTimings::LB_GLOBAL_TIMER;
 
 unsigned int CTimings::GM_PREMERGE_MAX_TIMEOUT;
 
@@ -85,9 +87,9 @@ void CTimings::SetTimings(const std::string timingsFile)
         po::value<unsigned int>( )->default_value(0),
         desc.c_str() );
 
-    desc = "The timing value LB_GLOBAL_TIMER";
+    desc = "The timing value RTDS_RUN_DELAY";
     loggerOpts.add_options()
-        ("LB_GLOBAL_TIMER",
+        ("RTDS_RUN_DELAY",
         po::value<unsigned int>( )->default_value(0),
         desc.c_str() );
 
@@ -112,6 +114,12 @@ void CTimings::SetTimings(const std::string timingsFile)
     desc = "The timing value GM_GLOBAL_TIMEOUT";
     loggerOpts.add_options()
         ("GM_GLOBAL_TIMEOUT",
+        po::value<unsigned int>( )->default_value(0),
+        desc.c_str() );
+
+    desc = "The timing value LB_GLOBAL_TIMER";
+    loggerOpts.add_options()
+        ("LB_GLOBAL_TIMER",
         po::value<unsigned int>( )->default_value(0),
         desc.c_str() );
 
@@ -206,7 +214,7 @@ void CTimings::SetTimings(const std::string timingsFile)
 
     SC_PHASE_TIME = vm["SC_PHASE_TIME"].as<unsigned int>();
 
-    LB_GLOBAL_TIMER = vm["LB_GLOBAL_TIMER"].as<unsigned int>();
+    RTDS_RUN_DELAY = vm["RTDS_RUN_DELAY"].as<unsigned int>();
 
     GM_AYC_RESPONSE_TIMEOUT = vm["GM_AYC_RESPONSE_TIMEOUT"].as<unsigned int>();
 
@@ -215,6 +223,8 @@ void CTimings::SetTimings(const std::string timingsFile)
     CS_EXCHANGE_TIME = vm["CS_EXCHANGE_TIME"].as<unsigned int>();
 
     GM_GLOBAL_TIMEOUT = vm["GM_GLOBAL_TIMEOUT"].as<unsigned int>();
+
+    LB_GLOBAL_TIMER = vm["LB_GLOBAL_TIMER"].as<unsigned int>();
 
     GM_PREMERGE_MAX_TIMEOUT = vm["GM_PREMERGE_MAX_TIMEOUT"].as<unsigned int>();
 

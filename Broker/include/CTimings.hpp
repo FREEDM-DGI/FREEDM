@@ -17,7 +17,7 @@ public:
 
     static unsigned int SC_PHASE_TIME;
 
-    static unsigned int LB_GLOBAL_TIMER;
+    static unsigned int RTDS_RUN_DELAY;
 
     static unsigned int GM_AYC_RESPONSE_TIMEOUT;
 
@@ -26,6 +26,8 @@ public:
     static unsigned int CS_EXCHANGE_TIME;
 
     static unsigned int GM_GLOBAL_TIMEOUT;
+
+    static unsigned int LB_GLOBAL_TIMER;
 
     static unsigned int GM_PREMERGE_MAX_TIMEOUT;
 

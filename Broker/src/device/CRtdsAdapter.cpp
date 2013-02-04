@@ -34,6 +34,7 @@
 
 #include "CRtdsAdapter.hpp"
 #include "CLogger.hpp"
+#include "CTimings.hpp"
 
 #include <sys/param.h>
 
@@ -196,7 +197,8 @@ void CRtdsAdapter::Run()
     }
 
     // Start the timer; on timeout, this function is called again
-    m_runTimer.expires_from_now(boost::posix_time::microseconds(TIMESTEP));
+    m_runTimer.expires_from_now(
+            boost::posix_time::microseconds(CTimings::RTDS_RUN_DELAY));
     m_runTimer.async_wait(boost::bind(&CRtdsAdapter::Run, this));
 }
 

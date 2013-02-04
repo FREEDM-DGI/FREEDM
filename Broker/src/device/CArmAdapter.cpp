@@ -35,6 +35,7 @@
 #include "CArmAdapter.hpp"
 #include "CAdapterFactory.hpp"
 #include "CLogger.hpp"
+#include "CGlobalConfiguration.hpp"
 
 #include <map>
 #include <sstream>
@@ -96,7 +97,8 @@ CArmAdapter::CArmAdapter(boost::asio::io_service & service,
     
     CTcpServer::ConnectionHandler handler;
     handler = boost::bind(&CArmAdapter::StartRead, this);
-    m_server = CTcpServer::Create(service, m_port);
+    m_server = CTcpServer::Create(service, m_port,
+        CGlobalConfiguration::instance().GetSocketEndpoint() );
     m_server->RegisterHandler(handler);
 }
 

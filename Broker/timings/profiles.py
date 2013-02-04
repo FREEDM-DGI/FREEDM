@@ -59,7 +59,8 @@ def lb_global_timer(*args,**kwargs):
 
 def lb_phase_time(*args,**kwargs):
     c = kwargs.get('lb_per_phase')
-    return c * lb_global_timer(*args,**kwargs)
+    # Add 10ms of leeway of LB will one one time fewer than expected
+    return c * lb_global_timer(*args,**kwargs) + 10
 
 def gm_phase_time(*args,**kwargs):
     tp = kwargs.get('tp')

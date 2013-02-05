@@ -248,6 +248,7 @@ void SCAgent::StateResponse()
                     Logger.Status << "Marker: "<<(*it).first.first << " + " << (*it).first.second << "  Value:"
                                   << (*it).second.get<std::string>("sc.value") << std::endl;
                     m_.m_submessages.add("CollectedState.state.value", (*it).second.get<std::string>("sc.value"));
+                    m_.m_submessages.add("CollectedState.state.count", (*it).second.get<std::string>("sc.count"));
                 }
                 else if ((*it).second.get<std::string>("sc.type")== "Message")
                 {
@@ -316,13 +317,16 @@ void SCAgent::TakeSnapshot(std::string deviceType, std::string valueType)
 {
     Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
     device::SignalValue PowerValue;
+    std::size_t count = 0;
     PowerValue = device::CDeviceManager::Instance().GetNetValue(deviceType,
             valueType);
-    Logger.Status << "DeviceType: " << deviceType << "  ValueType: " << valueType 
+    count = device::CDeviceManager::Instance().GetDevicesOfType(deviceType).size();
+    Logger.Status << "DeviceType: " << deviceType << "  ValueType: " << valueType
                   << "  PowerValue: " << PowerValue << std::endl;
     //save state
     m_curstate.put("sc.type", valueType);
     m_curstate.put("sc.value", PowerValue);
+    m_curstate.put("sc.count", count );
     m_curstate.put("sc.source", GetUUID());
 
 }
@@ -359,6 +363,7 @@ void SCAgent::SendStateBack()
                 ptree sub_ptree1;
                 sub_ptree1.add("valueType", m_valueType);
                 sub_ptree1.add("value", (*it).second.get<std::string>("sc.value"));
+                sub_ptree1.add("count", (*it).second.get<std::string>("sc.count"));
                 m_.m_submessages.add_child("sc.types.type", sub_ptree1);                
             }
             else if ((*it).second.get<std::string>("sc.type")== "Message")
@@ -727,6 +732,7 @@ void SCAgent::HandleState(MessagePtr msg, PeerNodePtr peer)
                 Logger.Notice << "Receive status from peer " << pt.get<std::string>("sc.source") << std::endl;
                 m_curstate.put("sc.type", m_valueType);
                 m_curstate.put("sc.value", sub_pt1.get<std::string>("value"));
+                m_curstate.put("sc.count", sub_pt1.get<std::string>("count"));
                 m_curstate.put("sc.source", pt.get<std::string>("sc.source"));
 
                 //save state into the map "collectstate"

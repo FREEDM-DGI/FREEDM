@@ -269,7 +269,7 @@ void CAdapterFactory::AddPortNumber(const unsigned short port)
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     if( m_ports.insert(port).second )
     {
-        Logger.Info << "Added adapter port: " << port << std::endl;
+        Logger.Debug << "Added adapter port: " << port << std::endl;
     }
     else
     {
@@ -476,6 +476,7 @@ void CAdapterFactory::SessionProtocol()
     std::string host, header, type, name, entry;
     int sindex = 1, cindex = 1;
     unsigned short port = 0;
+    bool newport = true;
     
     Logger.Notice << "A wild client appears!" << std::endl;
     
@@ -497,12 +498,10 @@ void CAdapterFactory::SessionProtocol()
             throw std::runtime_error("Duplicate session for " + host);
         }
 
-        port = GetPortNumber();
-        
         config.put("<xmlattr>.name", host);
         config.put("<xmlattr>.type", "arm");
         config.put("info.identifier", host);
-        config.put("info.stateport", port);
+        // info.stateport handled below
 
         for( int i = 0; packet_stream >> type >> name; i++ )
         {
@@ -551,8 +550,29 @@ void CAdapterFactory::SessionProtocol()
         boost::property_tree::xml_writer_settings<char> settings('\t', 1);
         write_xml("file2.xml", config, std::locale(), settings);
         */
-        
-        CreateAdapter(config);
+
+        while( newport )
+        {
+            try
+            {
+                port = GetPortNumber();
+                config.put("info.stateport", port);
+                CreateAdapter(config);
+                newport = false;
+            }
+            catch(std::exception & e)
+            {
+                if( e.what() == std::string("Address already in use") )
+                {
+                    Logger.Warn << "Port already used: " << port << std::endl;
+                    port = 0; // reset to default value
+                }
+                else
+                {
+                    throw;
+                }
+            }
+        }
         
         response_stream << "Start\r\n";
         response_stream << "StatePort: " << port << "\r\n\r\n";

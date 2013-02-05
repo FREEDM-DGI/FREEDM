@@ -156,7 +156,6 @@ bool CDeviceManager::RemoveDevice(std::string devid)
                 << " device manager: no such device exists." << std::endl;
         return false;
     }
-    Logger.Warn << device.use_count() << std::endl;
     return true;
 }
 

@@ -1,23 +1,29 @@
 \documentclass{article}
 
+% landscape orientation
 \usepackage[landscape]{geometry}
-\usepackage[usenames,dvipsnames]{xcolor}
+
+% table spans pages
 \usepackage{longtable}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% YOU NEED TO MODIFY THIS PART
-% fill out the tester name and commit hash below
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% pass / fail colors
+\usepackage{color}
+\usepackage[dvipsnames]{xcolor}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newcommand{\testerName}{}
 \newcommand{\commitHash}{}
 
+% \pass and \fail{text} definitions
 \newcommand{\pass}{\textcolor{OliveGreen}{PASS}}
-\newcommand{\fail}{\textcolor{BrickRed}{FAIL}}
+\newcommand{\fail}[1]{\textcolor{BrickRed}{FAIL}\footnote{#1}}
 
-\newcounter{rownum}
-\newcommand\rownumber{\stepcounter{rownum}\arabic{rownum}}
-
+% no new page for title
 \let\endtitlepage\relax
+
+% more space between table entries
 \renewcommand{\arraystretch}{1.5}
 
 \begin{document}
@@ -39,54 +45,36 @@
 \end{center}
 \end{titlepage}
 
-\centering
-\begin{longtable}{|c|p{4cm}|p{5cm}|c|p{6cm}|}
+\begin{center}
+\begin{footnotesize}
+\begin{longtable}{|p{3cm}|p{4cm}|p{8cm}|c|}
     \hline
-    \# & Test Prefix & Description & Result & Comments \\ \hline \endhead \hline \endfoot
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    % YOU NEED TO MODIFY THIS PART
-    % write \pass or \fail between the ampersands on the second line
-    % write an (optional) command between the ampersand and backslash
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    \rownumber & Configuration1 & Run the DGI using a negative factory port.
-               & & \\
-    \rownumber & Configuration2 & Run the DGI using a reserved port number for the factory port.
-               & & \\
-    \rownumber & Configuration3 & Run the DGI using a factory port greater than 65535.
-               & & \\
-    \rownumber & Configuration4 & Run the DGI using a string for the factory port.
-               & & \\
-    \rownumber & Configuration5 & Run the DGI without the factory port specified.
-               & & \\
-    \rownumber & Configuration6 & Run the DGI with a single adapter port specified.
-               & & \\
-    \rownumber & Configuration7 & Run the DGI with a large number of adapter ports specified.
-               & & \\
-    \rownumber & Configuration8 & Run the DGI with an inverted range for the adapter port.
-               & & \\
-    \rownumber & Configuration9 & Run the DGI using a negative adapter port.
-               & & \\
-    \rownumber & Configuration10 & Run the DGI using a reserved port number for the adapter port.
-               & & \\
-    \rownumber & Configuration11 & Run the DGI using an adapter port greater than 65535.
-               & & \\
-    \rownumber & Configuration12 & Run the DGI using a string for the adapter port.
-               & & \\
-    \rownumber & Configuration13 & Run the DGI without the first adapter port.
-               & & \\
-    \rownumber & Configuration14 & Run the DGI without the second adapter port.
-               & & \\
-    \rownumber & Configuration15 & Run the DGI without either adapter port.
-               & & \\
-    \rownumber & Configuration16 & Run the DGI with the same first and second adapter port.
-               & & \\
-    \rownumber & Configuration17 & Run the DGI without an adapter port range specified.
-               & & \\
-    \rownumber & Configuration18 & Run the DGI with multiple adapter port ranges specified.
-               & & \\
-    \rownumber & Configuration19 & Run the DGI with multiple adapter port ranges that overlap.
-               & & \\
-    \rownumber & Configuration20 & Run the DGI with the same adapter and factory port.
+    % NOTE TO ME PLEASE REEEEEAD
+    % move the adapter port count inside the factory StartSessionProtocol
+    % remove the public accessor function for this as well
+    % throw exception if no ports available
+    Test Prefix & Description & Expected Result & Result \\ \hline \endhead \hline \endfoot
+    Configuration1 & Run the DGI using a negative session port. & Exception caught in main: factory-port=-3000: invalid port number: -3000 & \\
+    Configuration2 & Run the DGI using a reserved session port. & Exception caught in main: factory-port=0: reserved port number: 0 & \\
+    Configuration3 & Run the DGI using a session port greater than 65535. & Exception caught in main: factory-port=68000: invalid port number: 68000 & \\
+    Configuration4 & Run the DGI using a non-numeric session port. & Exception caught in main: factory-port=3000wq: invalid port number: 3000wq & \\
+    Configuration5 & Run the DGI without the session port specified. & Exception caught in main: factory-port not specified in config & \\
+    Configuration6 & Run the DGI with a single plug and play port. & 1 adapter port(s) available. & \\
+    Configuration7 & Run the DGI with a large number of plug and play ports. & 36011 adapter port(s) available. & \\
+    Configuration8 & Run the DGI with an inverted plug and play port range. & Exception caught in main: adapter-port=4010:4000: invalid range & \\
+    Configuration9 & Run the DGI using a negative plug and play port. & Exception caught in main: adapter-port=-4010:-4000: invalid port number: -4010 & \\
+    Configuration10 & Run the DGI using a reserved plug and play port. & Exception caught in main: adapter-port=0:10: reserved port number: 0 & \\
+    Configuration11 & Run the DGI using a plug and play port greater than 65535. & Exception caught in main: adapter-port=68000:68007: invalid port number: 68000 & \\
+    Configuration12 & Run the DGI using a non-numeric plug and play port. & Exception caught in main: adapter-port=4000:4010i: invalid port number: 4010i & \\
+    Configuration13 & Run the DGI without the start of the plug and play port range. & Exception caught in main: adapter-port=:4010: received empty string for a port number & \\
+    Configuration14 & Run the DGI without the end of the plug and play port range. & Exception caught in main: adapter-port=4000:: received empty string for a port number & \\
+    Configuration15 & Run the DGI with an empty plug and play port range. & Exception caught in main: adapter-port=:: received empty string for a port number & \\
+    Configuration16 & Run the DGI with the same value for the start and end of the plug and play port range. & 1 adapter port(s) available. & \\
+    Configuration17 & Run the DGI without a plug and play port specified. & Will not use plug and play devices. & \\
+    Configuration18 & Run the DGI with multiple plug and play port ranges. & 1 adapter port(s) available. & \\
+    Configuration19 & Run the DGI with multiple plug and play port ranges that overlap. & Duplicate adapter port: 4005 & \\
+    Configuration20 & Run the DGI with the lone plug and play port the same as the session port. & Rejected client: No available port numbers for new adapter. & \\
+    Configuration21 & Run the DGI with the first plug and play port the same as thes session port. & Port already used: 3000 & \\
                & & \\
     \rownumber & BasicOperation1 & Detect a single plug and play device.
                & & \\
@@ -120,7 +108,7 @@
                & & \\
     \rownumber & Failure4 & Fail after sending the device states and restart instantly.
                & & \\
-    \rownumber & Failure5 & Fail after sending the device states and restart after a delay.
+    \rownumber & Failure5 & Fail after sending the device states and restart after a delay.\fail{Reason}
                & & \\
     \rownumber & UnexpectedError1 & Send an unrecognized device type to the DGI.
                & & \\
@@ -159,5 +147,7 @@
     \rownumber & MultipleDGI4 & Have one DGI lose its devices during convergence.
                & & \\
 \end{longtable}
+\end{footnotesize}
+\end{center}
 
 \end{document}

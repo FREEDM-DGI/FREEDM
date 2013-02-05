@@ -45,14 +45,13 @@
 \end{center}
 \end{titlepage}
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{center}
 \begin{footnotesize}
 \begin{longtable}{|p{3cm}|p{4cm}|p{10cm}|c|}
     \hline
-    % NOTE TO ME PLEASE REEEEEAD
-    % move the adapter port count inside the factory StartSessionProtocol
-    % remove the public accessor function for this as well
-    % throw exception if no ports available
     Test Prefix & Description & Expected Result & Result \\ \hline \endhead \hline \endfoot
     Configuration1 & Run the DGI using a negative session port. & Exception caught in main: factory-port$\rightarrow$-3000: invalid port number: -3000 & \\
     Configuration2 & Run the DGI using a reserved session port. & Exception caught in main: factory-port$\rightarrow$0: reserved port number: 0 & \\
@@ -86,12 +85,12 @@
     BasicOperation9 & Change the value of one of several SST devices. & SST (0) $\rightarrow$ 0.0 \newline SST (2) $\rightarrow$ 12.0 \newline SST (2) $\rightarrow$ 17.0 & \\
     BasicOperation10 & Change the value of the a non-SST device. & SST (0) $\rightarrow$ 0.0 ; LOAD (0) $\rightarrow$ 0.0 \newline SST (1) $\rightarrow$ 5.0 ; LOAD (1) $\rightarrow$ 42.0 \newline SST (1) $\rightarrow$ 5.0 ; LOAD (1) $\rightarrow$ 24.0 & \\
     BasicOperation11 & Handle a large number of devices at once. &  SST (0) $\rightarrow$ 0.0 ; LOAD (0) $\rightarrow$ 0.0 ; DRER (0) $\rightarrow$ 0.0 ; DESD (0) $\rightarrow$ 0.0 \newline SST (2) $\rightarrow$ 12.0 ; LOAD (1) $\rightarrow$ 42.0 ; DRER (3) $\rightarrow$ 111.0 ; DESD (1) $\rightarrow$ 10.0 & \\
-    BasicOperation12 & Change the value of a large number of devices. & SST (0) net 0.0 ; LOAD (0) net 0.0 ; DRER (0) net 0.0 ; DESD (0) net 0.0 \newline SST (1) net 5.0 ; LOAD (1) net 42.0 ; DRER (2) net 39.0 ; DESD (1) net 10.0 \newline SST (1) net 10.0 ; LOAD (1) net 42.0 ; DRER (2) net 49.0 ; DESD (1) net 10.0 & \\
+    BasicOperation12 & Change the value of a large number of devices. & SST (0) $\rightarrow$ 0.0 ; LOAD (0) $\rightarrow$ 0.0 ; DRER (0) $\rightarrow$ 0.0 ; DESD (0) $\rightarrow$ 0.0 \newline SST (1) $\rightarrow$ 5.0 ; LOAD (1) $\rightarrow$ 42.0 ; DRER (2) $\rightarrow$ 39.0 ; DESD (1) $\rightarrow$ 10.0 \newline SST (1) $\rightarrow$ 10.0 ; LOAD (1) $\rightarrow$ 42.0 ; DRER (2) $\rightarrow$ 49.0 ; DESD (1) $\rightarrow$ 10.0 & \\
     Failure1 & Fail before sending the DGI device states. & & \\
     Failure2 & Fail before sending states and then restart. & & \\
-    Failure3 & Fail after sending the DGI device states. & SST (0) net 0.0 \newline SST (1) net 5.0 \newline SST (0) net 0.0 & \\
-    Failure4 & Fail after sending the device states and restart instantly. & SST (0) net 0.0 \newline SST (1) net 5.0 & \\
-    Failure5 & Fail after sending the device states and restart after a delay. & SST (0) net 0.0 \newline SST (1) net 5.0 \newline SST (0) net 0.0 \newline SST (1) net 5.0 & \\
+    Failure3 & Fail after sending the DGI device states. & SST (0) $\rightarrow$ 0.0 \newline SST (1) $\rightarrow$ 5.0 \newline SST (0) $\rightarrow$ 0.0 & \\
+    Failure4 & Fail after sending the device states and restart instantly. & SST (0) $\rightarrow$ 0.0 \newline SST (1) $\rightarrow$ 5.0 & \\
+    Failure5 & Fail after sending the device states and restart after a delay. & SST (0) $\rightarrow$ 0.0 \newline SST (1) $\rightarrow$ 5.0 \newline SST (0) $\rightarrow$ 0.0 \newline SST (1) $\rightarrow$ 5.0 & \\
     UnexpectedError1 & Send an unrecognized device type to the DGI. & Rejected client: Unknown device type: SST & \\
     UnexpectedError2 & Send an unrecognized signal type to the DGI. & Corrupt state: Unknown device signal: TestController:SST1 gateawy & \\
     UnexpectedError3 & Send a corrupt state value to the DGI. & Corrupt state: received non-numeric value & \\
@@ -102,19 +101,20 @@
     UnexpectedError8 & Send a single packet with the wrong delimiter to a plug and play adapter. & & \\
     UnexpectedError9 & Send a packet with the wrong delimiter followed by a real packet to the session protocol. & & \\
     UnexpectedError10 & Send a packet with the wrong delimited followed by a real packet to a plug and play adapter. & & \\
-    MultipleControllers1 & Have two controllers use the same device type with different names. & & \\
-    MultipleControllers2 & Have two controllers use the same device type with identical names. & & \\
-    MultipleControllers3 & Have two controllers use different device types. & & \\
-    MultipleControllers4 & Remove the first of two controllers connected to the DGI. & & \\
-    MultipleControllers5 & Remove the second of two controllers connected to the DGI. & & \\
-    MultipleControllers6 & Change the device value of a controller connected to the DGI. & & \\
-    MultipleControllers7 & Use a large number of controllers to connect at once. & & \\
+    MultipleControllers1 & Have two controllers use the same device type with different names. & SST (0) $\rightarrow$ 0.0 \newline \ldots \newline SST (2) $\rightarrow$ 12.0 & \\
+    MultipleControllers2 & Have two controllers use the same device type with identical names. & SST (0) $\rightarrow$ 0.0 \newline \ldots \newline SST (2) $\rightarrow$ 12.0 & \\
+    MultipleControllers3 & Have two controllers use different device types. & SST (0) $\rightarrow$ 0.0 ; LOAD (0) $\rightarrow$ 0.0 \newline \ldots \newline SST (1) $\rightarrow$ 5.0 ; LOAD (1) $\rightarrow$ 42.0 & \\
+    MultipleControllers4 & Remove the first of two controllers connected to the DGI. & SST (0) $\rightarrow$ 0.0 ; LOAD (0) $\rightarrow$ 0.0 \newline \ldots \newline SST (1) $\rightarrow$ 5.0 ; LOAD (1) $\rightarrow$ 42.0 \newline SST (0) $\rightarrow$ 0.0 ; LOAD (1) $\rightarrow$ 42.0 & \\
+    MultipleControllers5 & Remove the second of two controllers connected to the DGI. & SST (0) $\rightarrow$ 0.0 ; LOAD (0) $\rightarrow$ 0.0 \newline \ldots \newline SST (1) $\rightarrow$ 5.0 ; LOAD (1) $\rightarrow$ 42.0 \newline SST (1) $\rightarrow$ 5.0 ; LOAD (0) $\rightarrow$ 0.0 & \\
+    MultipleControllers6 & Change the device value of a controller connected to the DGI. & SST (0) $\rightarrow$ 0.0 \newline \ldots \newline SST (2) $\rightarrow$ 12.0 \newline SST (2) $\rightarrow$ 17.0 & \\
+    MultipleControllers7 & Use a large number of controllers to connect at once. & SST (0) $\rightarrow$ 0.0 ; LOAD (0) $\rightarrow$ 0.0 ; DRER (0) $\rightarrow$ 0.0 ; DESD (0) $\rightarrow$ 0.0 \newline \ldots \newline SST (2) $\rightarrow$ 12.0 ; LOAD (1) $\rightarrow$ 42.0 ; DRER (3) $\rightarrow$ 111.0 ; DESD (1) $\rightarrow$ 10.0 \newline \ldots \newline SST (2) $\rightarrow$ 17.0 ; LOAD (1) $\rightarrow$ 42.0 ; DRER (3) $\rightarrow$ 121.0 ; DESD (1) $\rightarrow$ 10.0 & \\
     MultipleControllers8 & Have insufficient port numbers to accept all controllers. & & \\
     MultipleControllers9 & Have insufficient port numbers but have controllers timeout. & & \\
     MultipleDGI1 & Have two DGI converge to a positive normal value. & & \\
     MultipleDGI2 & Have two DGI converge to a negative normal value. & & \\
     MultipleDGI3 & Have the normal value change during convergence. & & \\
     MultipleDGI4 & Have one DGI lose its devices during convergence. & & \\
+    MultipleDGI5 & Have one DGI with no attached devices. & & \\
 \end{longtable}
 \end{footnotesize}
 \end{center}

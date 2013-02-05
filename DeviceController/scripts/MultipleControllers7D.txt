@@ -1,4 +1,4 @@
 # Multiple Controllers 7 - Script D - Stress Test
-enable Drer HAMTARO 72.0
+enable Drer HAMTARO generation 72.0
 work forever
 

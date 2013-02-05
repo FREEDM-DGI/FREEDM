@@ -936,15 +936,13 @@ void LBAgent::HandleCollectedState(MessagePtr msg, PeerNodePtr peer)
     int peercount=0;
     double agg_gateway=0;
     ptree &pt = msg->GetSubMessages();
+
 	BOOST_FOREACH(ptree::value_type &v, pt.get_child("CollectedState.state"))
 	{
 	    Logger.Notice << "SC module returned values: "
-			  << v.second.get<double>("value") << std::endl;
-        if( v.second.get<int>("count") > 0 )
-        {
-            peercount++;
-            agg_gateway += v.second.get<double>("value");
-        }
+			  << v.second.data() << std::endl;
+        peercount++;
+        agg_gateway += boost::lexical_cast<double>(v.second.data());
 	}
 
 	//Consider any intransit "accept" messages in agg_gateway calculation

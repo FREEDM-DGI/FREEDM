@@ -245,10 +245,12 @@ void SCAgent::StateResponse()
             {
                 if ((*it).second.get<std::string>("sc.type")== m_valueType)
                 {
+                    if( (*it).second.get<std::size_t>("sc.count") > 0 )
+                    {
                     Logger.Status << "Marker: "<<(*it).first.first << " + " << (*it).first.second << "  Value:"
                                   << (*it).second.get<std::string>("sc.value") << std::endl;
                     m_.m_submessages.add("CollectedState.state.value", (*it).second.get<std::string>("sc.value"));
-                    m_.m_submessages.add("CollectedState.state.count", (*it).second.get<std::string>("sc.count"));
+                    }
                 }
                 else if ((*it).second.get<std::string>("sc.type")== "Message")
                 {

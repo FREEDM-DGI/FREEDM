@@ -34,7 +34,7 @@
 #include "CMessage.hpp"
 #include "SRemoteHost.hpp"
 #include "CDeviceManager.hpp"
-#include "CDeviceFid.hpp"
+#include "PhysicalDeviceTypes.hpp"
 #include "CTimings.hpp"
 
 #include <algorithm>
@@ -356,8 +356,14 @@ void GMAgent::SystemState()
     nodestatus<<"- SYSTEM STATE"<<std::endl
               <<"Me: "<<GetUUID()<<", Group: "<<m_GroupID<<" Leader:"<<Coordinator()<<std::endl
               <<"SYSTEM NODES"<<std::endl;
-    BOOST_FOREACH(PeerNodePtr peer, CGlobalPeerList::instance().PeerList() | boost::adaptors::map_values)
+    unsigned int bit = 2;
+    unsigned int groupfield = 0;
+    if(IsCoordinator())
     {
+        groupfield = 1;
+    }
+    BOOST_FOREACH(PeerNodePtr peer, CGlobalPeerList::instance().PeerList() | boost::adaptors::map_values)
+    {        
         nodestatus<<"Node: "<<peer->GetUUID()<<" State: ";
         if(peer->GetUUID() == GetUUID())
         {
@@ -365,20 +371,44 @@ void GMAgent::SystemState()
                 nodestatus<<"Up (Me)"<<std::endl;
             else
                 nodestatus<<"Up (Me, Coordinator)"<<std::endl;
+            groupfield |= bit;
         }
         else if(peer->GetUUID() == Coordinator())
         {
             nodestatus<<"Up (Coordinator)"<<std::endl;
+            groupfield |= bit;
         }
         else if(CountInPeerSet(m_UpNodes,peer) > 0)
         {
             nodestatus<<"Up (In Group)"<<std::endl; 
+            groupfield |= bit;
         }
         else
         {
             nodestatus<<"Unknown"<<std::endl;
         }
-    } 
+        bit = bit << 1;
+    }
+
+    float* groupfloat = (float *) &groupfield;
+
+    Logger.Status<<"Group Bitfield : ";
+    bit = 1;
+    for(int i=0; i < 32; i++)
+    {
+        Logger.Status<< ((groupfield & bit)?1:0);
+        bit = bit << 1;
+    }
+    Logger.Status<<std::endl;
+    Logger.Status<<"Group Float : "<< *groupfloat << std::endl;
+    
+    std::multiset<device::CDeviceLogger::Pointer> devset;
+    devset = device::CDeviceManager::Instance().GetDevicesOfType<device::CDeviceLogger>();
+    if( !devset.empty() )
+    {
+        (*devset.begin())->SetGroupStatus(*groupfloat);
+    }
+
     nodestatus<<"FID state: "<<device::CDeviceManager::Instance().
             GetNetValue("Fid", "state");
     nodestatus<<std::endl<<"Current Skew: "<<CGlobalConfiguration::instance().GetClockSkew();

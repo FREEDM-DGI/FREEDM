@@ -66,6 +66,13 @@ namespace {
 /// This file's logger.
 CLocalLogger Logger(__FILE__);
 
+/// UUID of the DGI, currently hostname:port
+std::string generate_uuid(std::string host, std::string port)
+{
+    boost::algorithm::to_lower(host);
+    return host + ":" + port;
+}
+
 }
 
 /// The copyright year for this DGI release.
@@ -94,11 +101,12 @@ int main(int argc, char* argv[])
                 "filename of additional configuration." )
                 ( "help,h", "print usage help (this screen)" )
                 ( "list-loggers,l", "print all available loggers" )
+                ( "uuid,u", "print this node's generated ID" )
                 ( "version,V", "print version info" );
 
         // These options can be specified on command line or in the config file.
         cfgOpts.add_options()
-                ( "add-host",
+                ( "add-host,H",
                 po::value<std::vector<std::string> >( )->composing(),
                 "hostname:port of a peer" )
                 ( "address",
@@ -146,13 +154,18 @@ int main(int argc, char* argv[])
             po::store(parse_config_file(ifs, cfgOpts), vm);
             po::notify(vm);
 
-            if (!vm.count("help"))
+            if (!vm.count("help") && !vm.count("version") &&
+                !vm.count("uuid") && !vm.count("list-loggers"))
             {
-                Logger.Info << "Config file " << cfgFile <<
-                        " successfully loaded." << std::endl;
+                Logger.Info << "Config file " << cfgFile
+                            << " successfully loaded." << std::endl;
             }
         }
         ifs.close();
+
+        // Refine the logger verbosity settings.
+        CGlobalLogger::instance().SetGlobalLevel(globalVerbosity);
+        CGlobalLogger::instance().SetInitialLoggerLevels(loggerCfgFile);
 
         if (vm.count("help"))
         {
@@ -163,29 +176,33 @@ int main(int argc, char* argv[])
         if (vm.count("version"))
         {
             std::cout << basename(argv[0]) << " (FREEDM DGI Revision "
-                    << BROKER_VERSION << ")" << std::endl;
+                      << BROKER_VERSION << ")" << std::endl;
             std::cout << "Copyright (C) " << COPYRIGHT_YEAR
                       << " NSF FREEDM Systems Center" << std::endl;
             return 0;
         }
 
-        // Load timings from files
-        CTimings::SetTimings(timingsFile);
-
-        // Refine the logger verbosity settings.
-        CGlobalLogger::instance().SetGlobalLevel(globalVerbosity);
-        CGlobalLogger::instance().SetInitialLoggerLevels(loggerCfgFile);
+        // Must be after SetInitialLoggerLevels
         if (vm.count("list-loggers"))
         {
             CGlobalLogger::instance().ListLoggers();
             return 0;
         }
 
-        // Try to resolve the host's dns name
         hostname = boost::asio::ip::host_name();
-        boost::algorithm::to_lower(hostname);
-        id = hostname + ":" + port;
-        Logger.Info << "Generated ID: " << id << std::endl;
+        id = generate_uuid(hostname, port);
+        if (vm.count("uuid"))
+        {
+            std::cout << id << std::endl;
+            return 0;
+        }
+        else
+        {
+            Logger.Info << "Generated UUID: " << id << std::endl;
+        }
+
+        // Load timings from files
+        CTimings::SetTimings(timingsFile);
 
         /// Prepare the global Configuration
         CGlobalConfiguration::instance().SetHostname(hostname);
@@ -266,9 +283,8 @@ int main(int argc, char* argv[])
 
                 std::string peerhost(s.begin(), s.begin() + idx),
                         peerport(s.begin() + ( idx + 1 ), s.end());
-                // Construct the D of host from its DNS
-                boost::algorithm::to_lower(peerhost);
-                std::string peerid = peerhost + ":" + peerport;
+                // Construct the UUID of the peer
+                std::string peerid = generate_uuid(peerhost, peerport);
                 // Add the UUID to the list of known hosts
                 conManager.PutHostname(peerid, peerhost, peerport);
             }

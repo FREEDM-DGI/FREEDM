@@ -215,9 +215,11 @@ class GMAgent
     /// How long to wait before checking attached FIDs
     boost::posix_time::time_duration FID_TIMEOUT;
     /// How long to wait for responses from other nodes.
-    boost::posix_time::time_duration RESPONSE_TIMEOUT;
+    boost::posix_time::time_duration AYC_RESPONSE_TIMEOUT;
     /// How long to wait for responses from other nodes.
     boost::posix_time::time_duration AYT_RESPONSE_TIMEOUT;
+    /// How long to wait for responses from other nodes.
+    boost::posix_time::time_duration INVITE_RESPONSE_TIMEOUT;
 
     ///Maximum clock skew in milliseconds;
     static const int MAX_SKEW = 100;

@@ -36,8 +36,9 @@ VARIABLES = {
     'GM_PREMERGE_MAX_TIMEOUT': gm_premerge_max_timeout,
     'GM_PREMERGE_MIN_TIMEOUT': gm_premerge_min_timeout,
     'GM_PREMERGE_GRANULARITY': gm_premerge_granularity,
-    'GM_RESPONSE_TIMEOUT': gm_response_timeout,
+    'GM_INVITE_RESPONSE_TIMEOUT': gm_invite_response_timeout,
     'GM_AYT_RESPONSE_TIMEOUT': gm_ayt_response_timeout,
+    'GM_AYC_RESPONSE_TIMEOUT': gm_invite_response_timeout,
     # SC VARIABLES
     'SC_PHASE_TIME': sc_phase_time,
     # LB VARIABLES
@@ -51,4 +52,6 @@ VARIABLES = {
     'CSUC_RESEND_TIME': csuc_resend_time,
     # CS VARIABLES
     'CS_EXCHANGE_TIME': cs_exchange_time,
+    # DEV VARIABLES
+    'RTDS_RUN_DELAY': rtds_run_delay,
 }

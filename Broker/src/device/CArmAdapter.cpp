@@ -147,7 +147,7 @@ void CArmAdapter::Heartbeat()
     // TODO: hello configurable option
     if( m_countdown.expires_from_now(boost::posix_time::seconds(5)) != 0 )
     {
-        Logger.Info << "Reset an adapter heartbeat timer." << std::endl;
+        Logger.Debug << "Reset an adapter heartbeat timer." << std::endl;
         m_countdown.async_wait(boost::bind(&CArmAdapter::Timeout, this, _1));
     }
     else

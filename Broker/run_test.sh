@@ -2,7 +2,7 @@
 
 if [ $# -ne 1 ]
 then
-    echo "Usage: $0 <1 or 2>"
+    echo "Usage: $0 <1|2>"
     exit
 fi
 
@@ -15,7 +15,7 @@ elif [ $1 -eq 2 ]
 then
     ./PosixBroker -c config/testing/DGI-2.cfg --add-host "$HOST:1870"
 else
-    echo "Argument must be 1 or 2."
+    echo "Invalid argument."
     exit
 fi
 

@@ -55,16 +55,16 @@ CDispatcher::CDispatcher()
 ///   as appropriate.
 /// @pre Modules have registered their read handlers.
 /// @post Message delievered to a module
-/// @param broker The broker
+/// @param broker The broker that schedules the message deliveries
 /// @param msg The message to distribute to modules
 ///////////////////////////////////////////////////////////////////////////////
-void CDispatcher::HandleRequest(CBroker &broker, CMessage msg)
+void CDispatcher::HandleRequest(CBroker &broker, MessagePtr msg)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     ptree sub_;
     ptree::const_iterator it_;
     std::map< std::string, IReadHandler *>::const_iterator mapIt_;
-    ptree p_mesg = static_cast<ptree>(msg);
+    ptree p_mesg = static_cast<ptree>(*msg);
     bool processed = false;
 
     try
@@ -86,7 +86,7 @@ void CDispatcher::HandleRequest(CBroker &broker, CMessage msg)
 	        
 	    // Loop through all submessages of this message to call its
         // handler
-        std::string handler = msg.GetHandler();
+        std::string handler = msg->GetHandler();
         
         Logger.Debug << "Processing " << handler << std::endl;
 
@@ -143,7 +143,7 @@ void CDispatcher::HandleRequest(CBroker &broker, CMessage msg)
 
 }
 
-void CDispatcher::ReadHandlerCallback(IReadHandler *h, CMessage msg)
+void CDispatcher::ReadHandlerCallback(IReadHandler *h, MessagePtr msg)
 {
     (h)->HandleRead(msg);
 }
@@ -227,7 +227,7 @@ void CDispatcher::HandleWrite( ptree &p_mesg )
 ///   dispatcher.
 /// @pre A module that inherits from IReadHandler is provided.
 /// @post A module is registered with a read handler.
-/// @param module the module to register
+/// @param module The module name that the handler is on behalf of.
 /// @param p_type the tree key used to identify which messages the module
 ///   would like to recieve.
 /// @param p_handler The module which will be called to recieve the message.
@@ -255,7 +255,7 @@ void CDispatcher::RegisterReadHandler(const std::string &module, const std::stri
 /// @pre A module that inhertis from IWriteHandler is provided
 /// @post The module will be registered to touch outgoing messages that contain
 ///   the p_type key.
-/// @param module the module to be registered.
+/// @param module The module the read handler is on behalf of.
 /// @param p_type A ptree key that will be used to identify which messages 
 ///   should be touched.
 /// @param p_handler The module that will be invoked to perform the touch

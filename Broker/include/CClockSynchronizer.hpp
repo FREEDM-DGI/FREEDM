@@ -50,9 +50,9 @@ class CClockSynchronizer
     /// Destructor for module
     ~CClockSynchronizer();
     /// Reciever
-    void HandleExchangeResponse(CMessage msg, PeerNodePtr peer);
+    void HandleExchangeResponse(MessagePtr msg, PeerNodePtr peer);
     /// Reciever
-    void HandleExchange(CMessage msg, PeerNodePtr peer);
+    void HandleExchange(MessagePtr msg, PeerNodePtr peer);
     /// Broadcaster    
     void Exchange(const boost::system::error_code& err );    
     /// Generate the exchange message

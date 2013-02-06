@@ -59,8 +59,7 @@ CLocalLogger Logger(__FILE__);
 /// @post A new CConnection object is initialized.
 /// @param p_ioService The socket to use for the connection.
 /// @param p_manager The related connection manager that tracks this object.
-/// @param p_dispatch The dispatcher responsible for applying read/write 
-///   handlers to messages.
+/// @param p_broker The broker used for scheduling the message deliveries
 /// @param uuid The uuid this node connects to, or what listener.
 ///////////////////////////////////////////////////////////////////////////////
 CConnection::CConnection(boost::asio::io_service& p_ioService,
@@ -153,7 +152,9 @@ void CConnection::Send(CMessage & p_mesg)
         p_mesg.SetSourceUUID(GetConnectionManager().GetUUID());
         p_mesg.SetSourceHostname(GetConnectionManager().GetHostname());
         p_mesg.SetSendTimestampNow();
-        GetDispatcher().HandleRequest(GetBroker(),p_mesg);
+        MessagePtr local(new CMessage);
+        *local = p_mesg;
+        GetDispatcher().HandleRequest(GetBroker(),local);
         return;
     }
 

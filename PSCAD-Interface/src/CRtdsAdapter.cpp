@@ -91,7 +91,8 @@ void CRtdsAdapter::HandleConnection()
             writeLock = CTableManager::AsWriter(COMMAND_TABLE);
             for( std::size_t i = 0; i < recvSize; i++ )
             {
-                writeLock->SetValue(m_CommandDetails[i],recvBuffer[i]);
+                if( recvBuffer[i] != 0.0 )
+                    writeLock->SetValue(m_CommandDetails[i],recvBuffer[i]);
             }
             writeLock.reset();
             

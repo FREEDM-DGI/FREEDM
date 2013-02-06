@@ -2,11 +2,10 @@
 cmake_minimum_required(VERSION 2.6)
 project(Broker)
 
-#set(ALT_BUILD_VERSION 1.2.0)
 # Build Versioning
-#list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/")
-#include(GetGitRevisionDescription)
-#get_git_head_revision(GIT_REFSPEC GIT_SHA1)
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/")
+include(GetGitRevisionDescription)
+get_git_head_revision(GIT_REFSPEC GIT_SHA1)
 
 # configurable project options
 # TUTORIAL on how to add a new option:
@@ -15,8 +14,8 @@ project(Broker)
 #   activate / deactivate the option as described in the message below
 option(CUSTOMNETWORK "for network.xml support" OFF)
 option(DATAGRAM "for UDP Datagram service w/o sequencing" OFF)
-option(SHOW_WARNINGS "warnings displayed during project compile" ON)
-option(RUN_DOXYGEN "run Doxygen after project compile" ON)
+option(WARNINGS "warnings displayed during project compile" ON)
+option(DOXYGEN "run Doxygen after project compile" ON)
 
 # Check for a variety of conditions that should generate an error.
 if(!LINUX)
@@ -42,9 +41,9 @@ link_directories(${Boost_LIBRARY_DIRS})
 
 # set C++ compiler flags
 set(WARNING_FLAGS "-w")
-if(SHOW_WARNINGS)
+if(WARNINGS)
     set(WARNING_FLAGS "-Wall -Wextra")
-endif(SHOW_WARNINGS)
+endif(WARNINGS)
 
 # Run -DCMAKE_BUILD_TYPE=DEBUG if you need debugging -g
 # Don't use -DCMAKE_BUILD_TYPE=RELEASE - it makes things not work =/
@@ -85,6 +84,6 @@ target_link_libraries(
 )
 
 # run Doxygen
-if(RUN_DOXYGEN)
+if(DOXYGEN)
     add_custom_command(TARGET PosixBroker POST_BUILD COMMAND ./builddocs.sh)
-endif(RUN_DOXYGEN)
+endif(DOXYGEN)

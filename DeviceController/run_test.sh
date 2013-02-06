@@ -1,29 +1,28 @@
 #!/bin/bash
 trap "kill 0" SIGINT
 
-CFG="config/default.cfg"
-
-if [ $# -eq 2 ]
+if [ -z $1 ]
 then
-    CFG_PREFIX=$2
-elif [ $# -ne 1 ]
-then
-    echo "Usage: $0 <TestPrefix> <OptionalConfigPrefix>"
+    echo "Usage: $0 <TestPrefix>"
     exit
 fi
 
-for i in $1*.txt; do
-    CTR_SUFFIX=${i%.txt}
-    CTR_SUFFIX=${CTR_SUFFIX#$1}
-    CTR="TestController$CTR_SUFFIX"
-
-    if [ $# -eq 2 ]
+for i in $1.txt $1[A-Z].txt; do
+    if [ -f $i ]
     then
-        CFG="$CFG_PREFIX$CTR_SUFFIX.cfg"
-    fi
+        CTR=${i%.txt}
+        CTR=${CTR#$1}
 
-    echo "Starting $CTR using the script $i with the config $CFG..."
-    python controller.py -c $CFG -s $i -n $CTR &
+        if [ $# -eq 1 ]
+        then
+            CFG="config/default.cfg"
+        else
+            CFG="$2$CTR.cfg"
+        fi
+
+        echo "Using configuration $CFG with the script $i..."
+        python controller.py -c $CFG -s $i -n "TestController$CTR" &
+    fi
 done
 
 wait

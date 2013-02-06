@@ -59,11 +59,11 @@ void IReadHandler::RegisterSubhandle(std::string key, SubhandleFunctor f)
 /// functor
 /// @param msg The CMessage Recieved.
 ///////////////////////////////////////////////////////////////////////////////
-void IReadHandler::HandleRead(freedm::broker::CMessage msg)
+void IReadHandler::HandleRead(MessagePtr msg)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    std::string source = msg.GetSourceUUID();
-    ptree pt = msg.GetSubMessages();
+    std::string source = msg->GetSourceUUID();
+    ptree pt = msg->GetSubMessages();
     CGlobalPeerList::PeerNodePtr peer;
     try
     {
@@ -80,21 +80,21 @@ void IReadHandler::HandleRead(freedm::broker::CMessage msg)
         ConnManagerPtr connmgr = CGlobalPeerList::instance().begin()->second->GetConnectionManager();
         peer = CGlobalPeerList::instance().Create(source,connmgr);
     }
-    if(msg.GetHandler() == "")
+    if(msg->GetHandler() == "")
     {
         throw std::runtime_error("Message didn't specify a handler");
     }
     //Try to find the key in the map, unless its type is any:
     BOOST_FOREACH(SubhandleContainer::value_type f, m_handlers)
     {
-        if(f.first == "any" || msg.GetHandler() == f.first)
+        if(f.first == "any" || msg->GetHandler() == f.first)
         {
             f.second(msg,peer);
             Logger.Debug<<"Found key "<<f.first<<" in message"<<std::endl;
             return;
         }
     }
-    Logger.Warn<<"No handlers found for message. ("<<msg.GetHandler()<<")"<<std::endl;
+    Logger.Warn<<"No handlers found for message. ("<<msg->GetHandler()<<")"<<std::endl;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

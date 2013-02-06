@@ -47,6 +47,7 @@
 #include "CMessage.hpp"
 #include "gm/GroupManagement.hpp"
 #include "CDeviceManager.hpp"
+#include "CTimings.hpp"
 
 #include <algorithm>
 #include <cassert>
@@ -59,7 +60,6 @@
 
 #include <boost/asio.hpp>
 #include <boost/bind.hpp>
-#include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/date_time/posix_time/posix_time_types.hpp>
 #include <boost/foreach.hpp>
 #include <boost/function.hpp>
@@ -89,9 +89,7 @@ CLocalLogger Logger(__FILE__);
 /// @pre: Posix Main should register read handler and invoke this module
 /// @post: Object is initialized and ready to run load balancing
 /// @param uuid_: This object's uuid
-/// @param ios: The io service this node will use to share memory
-/// @param p_dispatch: The dispatcher used by this module to send/recive messages
-/// @param m_conManager: The connection manager instance used in this class
+/// @param broker: The Broker
 /// @limitations: None
 ///////////////////////////////////////////////////////////////////////////////
 LBAgent::LBAgent(std::string uuid_, CBroker &broker):
@@ -117,7 +115,6 @@ LBAgent::LBAgent(std::string uuid_, CBroker &broker):
     RegisterSubhandle("lb.CollectedState",boost::bind(&LBAgent::HandleCollectedState, this, _1, _2));
     RegisterSubhandle("lb.ComputedNormal",boost::bind(&LBAgent::HandleComputedNormal, this, _1, _2));
     RegisterSubhandle("any",boost::bind(&LBAgent::HandleAny, this, _1, _2));
-    m_active = false;
     m_sstExists = false;
 }
 
@@ -143,7 +140,7 @@ int LBAgent::Run()
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     // This initializes the algorithm
     LoadManage();
-    StartStateTimer( STATE_TIMEOUT );
+    StartStateTimer( CTimings::LB_STATE_TIMER );
     return 0;
 }
 
@@ -196,8 +193,8 @@ LBAgent::PeerNodePtr LBAgent::GetPeer(std::string uuid)
 /// @post: Message is prepared and sent
 /// @param msg: The message to be sent
 /// @param peerSet_: The group of peers that should receive the message
-/// @peer Each peer that exists in the peerSet_
-/// @error If the message cannot be sent, an exception is thrown and the
+/// @peers Each peer that exists in the peerSet_
+/// @ErrorHandling If the message cannot be sent, an exception is thrown and the
 ///	   process continues
 /// @limitations Group should be a PeerSet
 /////////////////////////////////////////////////////////
@@ -237,8 +234,8 @@ void LBAgent::SendMsg(std::string msg, PeerSet peerSet_)
 ///	  prior to this
 /// @post: The group members are sent the computed normal
 /// @param Normal: The value of normal to be sent to the group memebers
-/// @peer Each peer that exists in the peer set, m_AllPeers
-/// @error If the message cannot be sent, an exception is thrown and the
+/// @peers Each peer that exists in the peer set, m_AllPeers
+/// @ErrorHandling If the message cannot be sent, an exception is thrown and the
 ///	   process continues
 /// @limitations None
 /////////////////////////////////////////////////////////
@@ -273,9 +270,9 @@ void LBAgent::SendNormal(double Normal)
 /// @description Prepares and sends a state collection request to SC
 /// @pre: Called only on state timeout or when you are the new leader
 /// @post: SC module receives the request and initiates state collection
-/// @peer  This node (SC module)
-/// @error If the message cannot be sent, an exception is thrown and the
-///	   process continues
+/// @peers  This node (SC module)
+/// @ErrorHandling If the message cannot be sent, an exception
+///	   is thrown and the process continues
 /// @limitations
 /// TODO: Have a generic request message with exact entity to be included in
 ///       state collection; eg., LB requests gateways only.
@@ -316,9 +313,34 @@ void LBAgent::LoadManage()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
-    //Start the timer; on timeout, this function is called again
-    m_broker.Schedule(m_GlobalTimer, boost::posix_time::milliseconds(LOAD_TIMEOUT),
-        boost::bind(&LBAgent::LoadManage, this,boost::asio::placeholders::error));
+    // Schedule the NEXT LB before starting this one. So ensure that after this
+    // LB completes, there's still time to run another before scheduling it.
+    // Otherwise we'll steal time from the next broker module.
+    if (m_broker.TimeRemaining() >
+        boost::posix_time::milliseconds(2*CTimings::LB_GLOBAL_TIMER))
+    {
+        m_broker.Schedule(m_GlobalTimer,
+                          boost::posix_time::milliseconds(
+                              CTimings::LB_GLOBAL_TIMER),
+                          boost::bind(&LBAgent::LoadManage,
+                                      this,
+                                      boost::asio::placeholders::error));
+        Logger.Info << "Scheduled another LoadManage in "
+                    << CTimings::LB_GLOBAL_TIMER << "ms" << std::endl;
+    }
+    else
+    {
+        // Schedule past the end of our phase so control will pass to the broker
+        // after this LB, and we won't go again until it's our turn. Good.
+        m_broker.Schedule(m_GlobalTimer,
+                          boost::posix_time::milliseconds(
+                              CTimings::LB_STATE_TIMER),
+                          boost::bind(&LBAgent::LoadManage,
+                                      this,
+                                      boost::asio::placeholders::error));
+        Logger.Info << "Won't run over phase, scheduling another LoadManage in "
+                    << CTimings::LB_STATE_TIMER << "ms" << std::endl;
+    }
 
     //Remember previous load before computing current load
     m_prevStatus = m_Status;
@@ -408,43 +430,72 @@ void LBAgent::LoadTable()
     m_Gen = CDeviceManager::Instance().GetNetValue<DRER>(&DRER::GetGeneration);
     m_Storage = CDeviceManager::Instance().GetNetValue<DESD>(&DESD::GetStorage);
     m_Load = CDeviceManager::Instance().GetNetValue<LOAD>(&LOAD::GetLoad);
-    m_Gateway = CDeviceManager::Instance().GetNetValue<SST>(&SST::GetGateway);
+    m_SstGateway = CDeviceManager::Instance().GetNetValue<SST>(&SST::GetGateway);
+
     if (numSSTs >= 1)
     {
-    m_CalcGateway = m_Gateway;
-    m_sstExists = true;
+        m_sstExists = true;
+        // FIXME should consider other devices
+        m_NetGateway = m_SstGateway;
     }
     else
-    m_CalcGateway = m_Load - m_Gen - m_Storage;
+    {
+        m_sstExists = false;
+        // FIXME should consider Gateway
+        m_NetGateway = m_Load - m_Gen - m_Storage;
+    }
+
+    // used to ensure three digits before the decimal, two after
+    unsigned int genWidth = (m_Gen > 0 ? 6 : 7);
+    unsigned int storageWidth = (m_Storage > 0 ? 6 : 7);
+    unsigned int loadWidth = (m_Load > 0 ? 6 : 7);
+    unsigned int sstGateWidth = (m_SstGateway > 0 ? 6 : 7);
+    std::string extraGenSpace = (genWidth == 6 ? " " : "");
+    std::string extraStorageSpace = (storageWidth == 6 ? " " : "");
+    std::string extraLoadSpace = (loadWidth == 6 ? " " : "");
+    std::string extraSstSpace = (sstGateWidth == 6 ? " " : "");
 
     std::stringstream ss;
-    ss << "----------- LOAD TABLE (Power Management) ------------"
+    ss << std::setprecision(2) << std::fixed;
+    ss << " ----------- LOAD TABLE (Power Management) ------------"
             << std::endl;
-    ss << "\t| " << "Net DRER (" << numDRERs << "): " << m_Gen
-            << std::setw(14) << "Net DESD (" << numDESDs << "): "
-            << "   " << m_Storage  << std::endl;
-    ss << "\t| " << "Net Load (" << numLOADs << "): " << m_Load
-            << std::setw(17) << "Net Gateway (" << numSSTs << "): "
-            << m_Gateway << std::endl;
-    ss << "\t| Normal = " << m_Normal << std::setw(23)
-            << "Calc Gateway: " << "   " << m_CalcGateway  << std::endl;
+    ss << "\t| " << "Net DRER (" << std::setfill('0') << std::setw(2) 
+            << numDRERs << "): " << extraGenSpace << std::setfill(' ')
+            << std::setw(genWidth) << m_Gen << "     Net DESD    ("
+            << std::setfill('0') << std::setw(2) << numDESDs << "): "
+            << extraStorageSpace << std::setfill(' ') << std::setw(storageWidth)
+            << m_Storage << " |" << std::endl;
+    ss << "\t| " << "Net Load (" << std::setfill('0') << std::setw(2)
+            << numLOADs << "): " << extraLoadSpace << std::setfill(' ')
+            << std::setw(loadWidth) << m_Load << "     SST Gateway ("
+            << std::setfill('0') << std::setw(2) << numSSTs << "): " 
+            << extraSstSpace << std::setfill(' ') << std::setw(sstGateWidth)
+            << m_SstGateway << " |" << std::endl;
+//
+// We will hide Overall Gateway for the time being as it is useless until
+// we properly support multiple device LBs.
+//
+//    ss << "\t| Normal:       " << m_Normal << "    Overall Gateway:  "
+//            << m_NetGateway << "   |" << std::endl;
+    ss << "\t| Normal:        " << std::setw(7) << m_Normal << std::setfill(' ')
+            << std::setw(32) << "|" << std::endl;
     ss << "\t| ---------------------------------------------------- |"
             << std::endl;
-    ss << "\t| " << std::setw(20) << "UUID" << std::setw(27) << "State"
+//
+    ss << "\t| " << std::setw(20) << "Node" << std::setw(27) << "State"
             << std::setw(7) << "|" << std::endl;
     ss << "\t| " << std::setw(20) << "----" << std::setw(27) << "-----"
             << std::setw(7) << "|" << std::endl;
 
     //Compute the Load state based on the current gateway value and Normal
-    //TODO: API for future-could be the cost consensus algorithm from NCSU
-    if(m_CalcGateway < m_Normal - NORMAL_TOLERANCE)
+    if(m_NetGateway < m_Normal - NORMAL_TOLERANCE)
     {
         m_Status = LBAgent::SUPPLY;
     }
-    else if(m_CalcGateway > m_Normal + NORMAL_TOLERANCE)
+    else if(m_NetGateway > m_Normal + NORMAL_TOLERANCE)
     {
         m_Status = LBAgent::DEMAND;
-        m_DemandVal = m_Gateway-m_Normal;
+        m_DemandVal = m_SstGateway-m_Normal;
     }
     else
     {
@@ -475,32 +526,45 @@ void LBAgent::LoadTable()
         }
     }
     //Print the load information you have about the rest of the system
-    BOOST_FOREACH( PeerNodePtr p_, m_AllPeers | boost::adaptors::map_values)
+    BOOST_FOREACH( PeerNodePtr p, m_AllPeers | boost::adaptors::map_values)
     {
-        //std::cout<<"| " << p_->GetUUID() << std::setw(12)<< "Grp Member"
-        //                                   << std::setw(6) <<"|"<<std::endl;
-        if (CountInPeerSet(m_HiNodes,p_) > 0 )
+        std::string centeredUUID = p->GetUUID();
+        std::string pad = "       ";
+        if (centeredUUID.size() >= 36)
         {
-            ss<<"\t| " << p_->GetUUID() << std::setw(12)<< "Demand"
-                          << std::setw(6) <<"|"<<std::endl;
-        }
-        else if (CountInPeerSet(m_NoNodes,p_) > 0 )
-        {
-            ss<<"\t| " << p_->GetUUID() << std::setw(12)<< "Normal"
-                          << std::setw(6) <<"|"<<std::endl;
-        }
-        else if (CountInPeerSet(m_LoNodes,p_) > 0 )
-        {
-            ss<<"\t| " << p_->GetUUID() << std::setw(12)<< "Supply"
-                          << std::setw(6) <<"|"<<std::endl;
+            centeredUUID.erase(35);
+            pad = "...    ";
         }
         else
         {
-            ss<<"\t| " << p_->GetUUID() << std::setw(12)<< "------"
-                          << std::setw(6) <<"|"<<std::endl;
+            unsigned int padding = (36 - centeredUUID.length())/2;
+            centeredUUID.insert(0, padding, ' ');
+            if (p->GetUUID().size()%2 == 0)
+            {
+                padding--;
+            }
+            centeredUUID.append(padding, ' ');
+        }
+
+        ss.setf(std::ios::internal, std::ios::adjustfield);
+        if (CountInPeerSet(m_HiNodes,p) > 0 )
+        {
+            ss << "\t| " << centeredUUID << pad << "Demand     |" << std::endl;
+        }
+        else if (CountInPeerSet(m_NoNodes,p) > 0 )
+        {
+            ss << "\t| " << centeredUUID << pad << "Normal     |" << std::endl;
+        }
+        else if (CountInPeerSet(m_LoNodes,p) > 0 )
+        {
+            ss << "\t| " << centeredUUID << pad << "Supply     |" << std::endl;
+        }
+        else
+        {
+            ss << "\t| " << centeredUUID << pad << "------     |" << std::endl;
         }
     }
-    ss << "\t -----------------------------------------------------";
+    ss << "\t ------------------------------------------------------";
 
     Logger.Status << ss.str() << std::endl;
 }//end LoadTable
@@ -542,31 +606,32 @@ void LBAgent::SendDraftRequest()
 /// @return: Multiple objectives depending on the message received and
 ///          power migration on successful negotiation
 /// @param msg: The message dispatched by broker read handler
+/// @param peer
 /// @peers The members of the group or a subset of, from whom message was received
 /// @limitations:
 /////////////////////////////////////////////////////////
-void LBAgent::HandleAny(CMessage msg, PeerNodePtr peer)
+void LBAgent::HandleAny(MessagePtr msg, PeerNodePtr peer)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     PeerSet tempSet_;
     MessagePtr m_;
     std::string line_;
     std::stringstream ss_;
-    line_ = msg.GetSourceUUID();
-    ptree pt = msg.GetSubMessages();
+    line_ = msg->GetSourceUUID();
+    ptree &pt = msg->GetSubMessages();
     Logger.Debug << "Message '" <<pt.get<std::string>("lb","NOEXECPTION")
                  <<"' received from "<< line_<<std::endl;
 
-    if(msg.GetHandler().find("lb") == 0)
+    if(msg->GetHandler().find("lb") == 0)
     {
         Logger.Error<<"Unhandled Load Balancing Message"<<std::endl;
-        msg.Save(Logger.Error);
+        msg->Save(Logger.Error);
         Logger.Error<<std::endl;
         throw std::runtime_error("Unhandled Load Balancing Message");
     }
 }
 
-void LBAgent::HandlePeerList(CMessage msg, PeerNodePtr peer)
+void LBAgent::HandlePeerList(MessagePtr msg, PeerNodePtr peer)
 {
     // --------------------------------------------------------------
     // If you receive a peerList from your new leader, process it and
@@ -609,7 +674,7 @@ void LBAgent::HandlePeerList(CMessage msg, PeerNodePtr peer)
     }
 }
 
-void LBAgent::HandleDemand(CMessage msg, PeerNodePtr peer)
+void LBAgent::HandleDemand(MessagePtr msg, PeerNodePtr peer)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     // --------------------------------------------------------------
@@ -621,7 +686,7 @@ void LBAgent::HandleDemand(CMessage msg, PeerNodePtr peer)
     if(CountInPeerSet(m_AllPeers,peer) == 0)
         return;
 
-    ptree pt = msg.GetSubMessages();
+    ptree &pt = msg->GetSubMessages();
     Logger.Notice << "Demand message received from: "
                    << pt.get<std::string>("lb.source") <<std::endl;
     EraseInPeerSet(m_HiNodes,peer);
@@ -630,7 +695,7 @@ void LBAgent::HandleDemand(CMessage msg, PeerNodePtr peer)
     InsertInPeerSet(m_HiNodes,peer);
 }
 
-void LBAgent::HandleNormal(CMessage msg, PeerNodePtr peer)
+void LBAgent::HandleNormal(MessagePtr msg, PeerNodePtr peer)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     if(CountInPeerSet(m_AllPeers,peer) == 0)
@@ -640,7 +705,7 @@ void LBAgent::HandleNormal(CMessage msg, PeerNodePtr peer)
     // --------------------------------------------------------------
     // You received a Load change of source to Normal state
     // --------------------------------------------------------------
-    ptree pt = msg.GetSubMessages();
+    ptree &pt = msg->GetSubMessages();
     Logger.Notice << "Normal message received from: "
                    << pt.get<std::string>("lb.source") <<std::endl;
     EraseInPeerSet(m_NoNodes,peer);
@@ -649,7 +714,7 @@ void LBAgent::HandleNormal(CMessage msg, PeerNodePtr peer)
     InsertInPeerSet(m_NoNodes,peer);
 }
 
-void LBAgent::HandleSupply(CMessage msg, PeerNodePtr peer)
+void LBAgent::HandleSupply(MessagePtr msg, PeerNodePtr peer)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     if(CountInPeerSet(m_AllPeers,peer) == 0)
@@ -660,7 +725,7 @@ void LBAgent::HandleSupply(CMessage msg, PeerNodePtr peer)
     // You received a message saying the source is in Supply state, which means
     // you are (were, recently) in Demand state; else you would not have received
     // --------------------------------------------------------------
-    ptree pt = msg.GetSubMessages();
+    ptree &pt = msg->GetSubMessages();
     Logger.Notice << "Supply message received from: "
                    << pt.get<std::string>("lb.source") <<std::endl;
     EraseInPeerSet(m_LoNodes,peer);
@@ -670,7 +735,7 @@ void LBAgent::HandleSupply(CMessage msg, PeerNodePtr peer)
 }
 
 #pragma GCC diagnostic ignored "-Wunused-parameter"
-void LBAgent::HandleRequest(CMessage msg, PeerNodePtr peer)
+void LBAgent::HandleRequest(MessagePtr msg, PeerNodePtr peer)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     if(CountInPeerSet(m_AllPeers,peer) == 0)
@@ -722,7 +787,7 @@ void LBAgent::HandleRequest(CMessage msg, PeerNodePtr peer)
     }
 }
 
-void LBAgent::HandleYes(CMessage msg, PeerNodePtr peer)
+void LBAgent::HandleYes(MessagePtr msg, PeerNodePtr peer)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     // --------------------------------------------------------------
@@ -758,7 +823,7 @@ void LBAgent::HandleYes(CMessage msg, PeerNodePtr peer)
     }
 }
 
-void LBAgent::HandleNo(CMessage msg, PeerNodePtr peer)
+void LBAgent::HandleNo(MessagePtr msg, PeerNodePtr peer)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     if(CountInPeerSet(m_AllPeers,peer) == 0)
@@ -768,7 +833,7 @@ void LBAgent::HandleNo(CMessage msg, PeerNodePtr peer)
     Logger.Notice << "(No) from " << peer->GetUUID() << std::endl;
 }
 
-void LBAgent::HandleDrafting(CMessage msg, PeerNodePtr peer)
+void LBAgent::HandleDrafting(MessagePtr msg, PeerNodePtr peer)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     // --------------------------------------------------------------
@@ -820,7 +885,7 @@ void LBAgent::HandleDrafting(CMessage msg, PeerNodePtr peer)
     }
 }
 
-void LBAgent::HandleAccept(CMessage msg, PeerNodePtr peer)
+void LBAgent::HandleAccept(MessagePtr msg, PeerNodePtr peer)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     if(peer->GetUUID() == GetUUID())
@@ -832,7 +897,7 @@ void LBAgent::HandleAccept(CMessage msg, PeerNodePtr peer)
     // --------------------------------------------------------------
     device::SignalValue DemValue;
     std::stringstream ss_;
-    ptree pt = msg.GetSubMessages();
+    ptree &pt = msg->GetSubMessages();
     ss_ << pt.get<std::string>("lb.value");
     ss_ >> DemValue;
     Logger.Notice << " Draft Accept message received from: " << peer->GetUUID()
@@ -854,7 +919,7 @@ void LBAgent::HandleAccept(CMessage msg, PeerNodePtr peer)
     }
 }
 
-void LBAgent::HandleCollectedState(CMessage msg, PeerNodePtr peer)
+void LBAgent::HandleCollectedState(MessagePtr msg, PeerNodePtr peer)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     // --------------------------------------------------------------
@@ -862,7 +927,7 @@ void LBAgent::HandleCollectedState(CMessage msg, PeerNodePtr peer)
     // --------------------------------------------------------------
     int peercount=0;
     double agg_gateway=0;
-    ptree pt = msg.GetSubMessages();
+    ptree &pt = msg->GetSubMessages();
 	BOOST_FOREACH(ptree::value_type &v, pt.get_child("CollectedState.state"))
 	{
 	    Logger.Notice << "SC module returned values: "
@@ -893,13 +958,13 @@ void LBAgent::HandleCollectedState(CMessage msg, PeerNodePtr peer)
     }
 }
 
-void LBAgent::HandleComputedNormal(CMessage msg, PeerNodePtr peer)
+void LBAgent::HandleComputedNormal(MessagePtr msg, PeerNodePtr peer)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     // --------------------------------------------------------------
     // You received the new Normal value calculated and sent by your leader
     // --------------------------------------------------------------
-    ptree pt = msg.GetSubMessages();
+    ptree &pt = msg->GetSubMessages();
     m_Normal = pt.get<double>("lb.cnorm");
     Logger.Notice << "Computed Normal " << m_Normal << " received from "
                    << pt.get<std::string>("lb.source") << std::endl;
@@ -972,9 +1037,9 @@ void LBAgent::PStar(device::SignalValue DemandValue)
         }
         else if(LBAgent::SUPPLY == m_Status)
         {
-            if( DemandValue <= m_Gateway + NORMAL_TOLERANCE - m_Normal )
+            if( DemandValue <= m_SstGateway + NORMAL_TOLERANCE - m_Normal )
             {
-                Logger.Notice << "P* = " << m_Gateway + DemandValue << std::endl;
+                Logger.Notice << "P* = " << m_SstGateway + DemandValue << std::endl;
                 (*it)->StepGateway(P_Migrate);
             }
             else
@@ -1036,12 +1101,9 @@ void LBAgent::Desd_PStar()
 void LBAgent::StartStateTimer( unsigned int delay )
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    if( !m_active )
-    {
-        m_broker.Schedule(m_StateTimer, boost::posix_time::milliseconds(delay),
-            boost::bind(&LBAgent::HandleStateTimer, this, boost::asio::placeholders::error));
-        m_active = true;
-    }
+
+    m_broker.Schedule(m_StateTimer, boost::posix_time::milliseconds(delay),
+        boost::bind(&LBAgent::HandleStateTimer, this, boost::asio::placeholders::error));
 }
 
 ////////////////////////////////////////////////////////////
@@ -1061,8 +1123,7 @@ void LBAgent::HandleStateTimer( const boost::system::error_code & error )
         CollectState();
     }
 
-    m_active = false;
-    StartStateTimer( STATE_TIMEOUT );
+    StartStateTimer( CTimings::LB_STATE_TIMER );
 }
 
 } // namespace lb

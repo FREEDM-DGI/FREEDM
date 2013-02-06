@@ -29,7 +29,6 @@
 #include "CGlobalConfiguration.hpp"
 #include "CListener.hpp"
 #include "CReliableConnection.hpp"
-#include "CUuid.hpp"
 #include "IHandler.hpp"
 #include "SRemoteHost.hpp"
 

@@ -26,6 +26,7 @@
 #include "CMessage.hpp"
 #include "CSUConnection.hpp"
 #include "IProtocol.hpp"
+#include "CTimings.hpp"
 
 #include <iomanip>
 #include <set>
@@ -81,7 +82,7 @@ void CSUConnection::Send(CMessage msg)
     {
         Write(msg);
         m_timeout.cancel();
-        m_timeout.expires_from_now(boost::posix_time::milliseconds(50));
+        m_timeout.expires_from_now(boost::posix_time::milliseconds(CTimings::CSUC_RESEND_TIME));
         m_timeout.async_wait(boost::bind(&CSUConnection::Resend,this,
             boost::asio::placeholders::error)); 
     }
@@ -116,7 +117,7 @@ void CSUConnection::Resend(const boost::system::error_code& err)
         if(m_window.size() > 0)
         {
             m_timeout.cancel();
-            m_timeout.expires_from_now(boost::posix_time::milliseconds(50));
+            m_timeout.expires_from_now(boost::posix_time::milliseconds(CTimings::CSUC_RESEND_TIME));
             m_timeout.async_wait(boost::bind(&CSUConnection::Resend,this,
                 boost::asio::placeholders::error));
         }

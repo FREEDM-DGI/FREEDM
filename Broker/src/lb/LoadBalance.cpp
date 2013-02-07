@@ -426,6 +426,7 @@ void LBAgent::LoadTable()
     int numDESDs = CDeviceManager::Instance().GetDevicesOfType<DESD>().size();
     int numLOADs = CDeviceManager::Instance().GetDevicesOfType<LOAD>().size();
     int numSSTs = CDeviceManager::Instance().GetDevicesOfType<SST>().size();
+    int numDevices = CDeviceManager::Instance().DeviceCount();
 
     m_Gen = CDeviceManager::Instance().GetNetValue<DRER>(&DRER::GetGeneration);
     m_Storage = CDeviceManager::Instance().GetNetValue<DESD>(&DESD::GetStorage);
@@ -443,6 +444,16 @@ void LBAgent::LoadTable()
         m_sstExists = false;
         // FIXME should consider Gateway
         m_NetGateway = m_Load - m_Gen - m_Storage;
+    }
+
+    typedef CDeviceLogger LOGGER;
+    std::multiset<LOGGER::Pointer> LSet;
+    LSet = device::CDeviceManager::Instance().GetDevicesOfType<LOGGER>();
+    
+    if( !LSet.empty() )
+    {
+        (*LSet.begin())->SetGateway(m_NetGateway);
+        (*LSet.begin())->SetDeviceCount(numDevices);
     }
 
     // used to ensure three digits before the decimal, two after

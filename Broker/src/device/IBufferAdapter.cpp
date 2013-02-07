@@ -66,6 +66,8 @@ void IBufferAdapter::Start()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     
+    std::size_t stateSize;
+    std::size_t commandSize;
     std::set<std::size_t> stateIndices;
     std::set<std::size_t> commandIndices;
     
@@ -85,6 +87,9 @@ void IBufferAdapter::Start()
         commandIndices.insert(i);
         m_txBuffer.push_back(0.0f/0.0f);
     }
+
+    stateSize = stateIndices.size();
+    commandSize = commandIndices.size();
     
     // Tom Roth <tprfh7@mst.edu>:
     // The following code will ensure the the sets contain consecutive integers
@@ -106,12 +111,12 @@ void IBufferAdapter::Start()
     // contain the same value twice.  Therefore, the relationship is both onto
     // and 1-to-1.  This guarantees the set contains all of the values in the
     // range [0,size]-1 are stored exactly once.  Q.E.D.
-    if( *(stateIndices.rbegin()) != stateIndices.size() - 1 )
+    if( stateSize > 0 && *(stateIndices.rbegin()) != stateSize - 1 )
     {
         throw std::runtime_error("The state indices are not consecutive.");
     }
     
-    if( *(commandIndices.rbegin()) != commandIndices.size() - 1 )
+    if( commandSize > 0 && *(commandIndices.rbegin()) != commandSize - 1 )
     {
         throw std::runtime_error("The command indices are not consecutive.");
     }
@@ -221,7 +226,7 @@ void IBufferAdapter::RegisterStateInfo(const std::string device,
     
     BOOST_FOREACH( std::size_t i, m_stateInfo | boost::adaptors::map_values )
     {
-        if( index == i )
+        if( index-1 == i )
         {
             throw std::runtime_error("Detected duplicate state index " 
                     + boost::lexical_cast<std::string>(index));
@@ -273,7 +278,7 @@ void IBufferAdapter::RegisterCommandInfo(const std::string device,
 
     BOOST_FOREACH( std::size_t i, m_commandInfo | boost::adaptors::map_values )
     {
-        if( index == i )
+        if( index-1 == i )
         {
             throw std::runtime_error("Detected duplicate command index " 
                     + boost::lexical_cast<std::string>(index));

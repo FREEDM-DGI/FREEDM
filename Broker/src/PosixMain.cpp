@@ -118,17 +118,10 @@ int main(int argc, char* argv[])
     po::options_description cliOpts; // genOpts + cfgOpts
     po::variables_map vm;
     std::ifstream ifs;
-<<<<<<< HEAD
-    std::string cfgFile, loggerCfgFile, adapterCfgFile;
-    std::string listenIP, port, hostname, uuidgenerator, fport;
-    unsigned int globalVerbosity;
-    CUuid uuid;
     boost::asio::io_service ios;
-=======
     std::string cfgFile, loggerCfgFile, timingsFile, adapterCfgFile;
-    std::string listenIP, port, hostname, id;
+    std::string listenIP, port, hostname, fport, id;
     unsigned int globalVerbosity;
->>>>>>> master
 
     try
     {
@@ -138,27 +131,14 @@ int main(int argc, char* argv[])
                 po::value<std::string > ( &cfgFile )->
                 default_value("./config/freedm.cfg"),
                 "filename of additional configuration." )
-<<<<<<< HEAD
-                ( "generateuuid,g",
-                po::value<std::string > ( &uuidgenerator )->default_value(""),
-                "generate a uuid for a host or host:port" )
-                ( "help,h", "print usage help (this screen)" )
-                ( "list-loggers,l", "print all available loggers" )
-                ( "uuid,u", "print this node's generated uuid" )
-=======
                 ( "help,h", "print usage help (this screen)" )
                 ( "list-loggers,l", "print all available loggers" )
                 ( "uuid,u", "print this node's generated ID" )
->>>>>>> master
                 ( "version,V", "print version info" );
 
         // These options can be specified on command line or in the config file.
         cfgOpts.add_options()
-<<<<<<< HEAD
-                ( "add-host",
-=======
                 ( "add-host,H",
->>>>>>> master
                 po::value<std::vector<std::string> >( )->composing(),
                 "hostname:port of a peer" )
                 ( "address",
@@ -167,7 +147,6 @@ int main(int argc, char* argv[])
                 ( "port,p",
                 po::value<std::string > ( &port )->default_value("1870"),
                 "TCP port to listen for peers on" )
-<<<<<<< HEAD
                 ( "factory-port", po::value<std::string>(&fport),
                 "port for plug and play session protocol" )
                 ( "adapter-port",
@@ -176,10 +155,6 @@ int main(int argc, char* argv[])
                 ( "adapter-config", po::value<std::string>(&adapterCfgFile),
                 "filename of the adapter specification for physical devices" )
                 ( "list-loggers", "Print all the available loggers and exit" )
-=======
-                ( "adapter-config", po::value<std::string>( &adapterCfgFile ),
-                "filename of the adapter specification" )
->>>>>>> master
                 ( "logger-config",
                 po::value<std::string > ( &loggerCfgFile )->
                 default_value("./config/logger.cfg"),

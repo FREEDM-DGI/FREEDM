@@ -46,6 +46,10 @@ public:
     /// Convenience type for a shared pointer to self.
     typedef boost::shared_ptr<CDeviceLogger> Pointer;
 
+    /// Virtual constructor for another device of the same type.
+    IDevice::Pointer Create(const std::string identifier,
+            IAdapter::Pointer adapter) const;
+
     /// Constructor which takes an identifier and internal structure.
     CDeviceLogger(std::string device, IAdapter::Pointer adapter);
 

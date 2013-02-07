@@ -199,6 +199,7 @@ void CAdapterFactory::CreateAdapter(const boost::property_tree::ptree & p)
     else if( type == "arm" )
     {
         adapter = CArmAdapter::Create(m_ios, subtree);
+    }
     else if( type == "fake" )
     {
         adapter = CFakeAdapter::Create();

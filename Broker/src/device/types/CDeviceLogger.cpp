@@ -67,6 +67,24 @@ CDeviceLogger::~CDeviceLogger()
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+/// Constructs another CDeviceLogger.
+///
+/// @pre None.
+/// @post Constructs a new device.
+/// @param identifier The unique identifier for the device.
+/// @param adapter The adapter that implements operations for the device.
+/// @return shared pointer to the new device.
+///
+/// @limitations None.
+////////////////////////////////////////////////////////////////////////////////
+IDevice::Pointer CDeviceLogger::Create(const std::string identifier,
+        IAdapter::Pointer adapter) const
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    return IDevice::Pointer(new CDeviceLogger(identifier, adapter));
+}
+
+////////////////////////////////////////////////////////////////////////////////
 /// Sets the current group membership status.
 ///
 /// @pre None.

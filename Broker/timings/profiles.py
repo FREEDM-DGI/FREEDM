@@ -59,7 +59,8 @@ def lb_global_timer(*args,**kwargs):
 
 def lb_phase_time(*args,**kwargs):
     c = kwargs.get('lb_per_phase')
-    return c * lb_global_timer(*args,**kwargs)
+    # Add 10ms of leeway of LB will one one time fewer than expected
+    return c * lb_global_timer(*args,**kwargs) + 10
 
 def gm_phase_time(*args,**kwargs):
     tp = kwargs.get('tp')
@@ -74,7 +75,7 @@ def gm_phase_time(*args,**kwargs):
     t += tr_proc + ts_proc + (n-1) * (tp+tm)
     t += tr_proc
     t += ts_proc + (n-1) * (tp+tm)
-    t += tr_proc + gm_response_timeout(*args,**kwargs) + ts_proc + (n-1) * (tp + tm) + ts_proc    
+    t += tr_proc + gm_invite_response_timeout(*args,**kwargs) + ts_proc + (n-1) * (tp + tm) + ts_proc    
     return t
 
 def gm_premerge_min_timeout(*args,**kwargs):
@@ -87,7 +88,7 @@ def gm_premerge_max_timeout(*args, **kwargs):
 def gm_premerge_granularity(*args, **kwargs):
     return round_trip_time(*args,**kwargs)
 
-def gm_response_timeout(*args, **kwargs):
+def gm_invite_response_timeout(*args, **kwargs):
     n = kwargs.get('n')
     return (n+1) * round_trip_time(*args,**kwargs)
 
@@ -123,3 +124,6 @@ def csrc_default_timeout(*args,**kwargs):
 def cs_exchange_time(*args,**kwargs):
     rounds_per_sync = kwargs.get('rounds_per_sync')
     return rounds_per_sync * (gm_phase_time(*args, **kwargs) + sc_phase_time(*args,**kwargs) + lb_phase_time(*args,**kwargs))
+
+def rtds_run_delay(*args, **kwargs):
+    return kwargs.get('rtds_run_delay')

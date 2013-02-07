@@ -25,9 +25,9 @@ unsigned int CTimings::GM_FID_TIMEOUT;
 
 unsigned int CTimings::SC_PHASE_TIME;
 
-unsigned int CTimings::LB_GLOBAL_TIMER;
+unsigned int CTimings::RTDS_RUN_DELAY;
 
-unsigned int CTimings::GM_PREMERGE_MIN_TIMEOUT;
+unsigned int CTimings::GM_AYC_RESPONSE_TIMEOUT;
 
 unsigned int CTimings::GM_AYT_RESPONSE_TIMEOUT;
 
@@ -35,23 +35,27 @@ unsigned int CTimings::CS_EXCHANGE_TIME;
 
 unsigned int CTimings::GM_GLOBAL_TIMEOUT;
 
+unsigned int CTimings::LB_GLOBAL_TIMER;
+
 unsigned int CTimings::GM_PREMERGE_MAX_TIMEOUT;
 
 unsigned int CTimings::CSRC_RESEND_TIME;
 
-unsigned int CTimings::CSRC_DEFAULT_TIMEOUT;
+unsigned int CTimings::GM_INVITE_RESPONSE_TIMEOUT;
 
 unsigned int CTimings::GM_PREMERGE_GRANULARITY;
 
-unsigned int CTimings::GM_CHECK_TIMEOUT;
+unsigned int CTimings::GM_PREMERGE_MIN_TIMEOUT;
 
 unsigned int CTimings::LB_STATE_TIMER;
 
-unsigned int CTimings::GM_RESPONSE_TIMEOUT;
+unsigned int CTimings::GM_CHECK_TIMEOUT;
 
 unsigned int CTimings::CSUC_RESEND_TIME;
 
 unsigned int CTimings::GM_TIMEOUT_TIMEOUT;
+
+unsigned int CTimings::CSRC_DEFAULT_TIMEOUT;
 
 unsigned int CTimings::LB_PHASE_TIME;
 
@@ -83,15 +87,15 @@ void CTimings::SetTimings(const std::string timingsFile)
         po::value<unsigned int>( )->default_value(0),
         desc.c_str() );
 
-    desc = "The timing value LB_GLOBAL_TIMER";
+    desc = "The timing value RTDS_RUN_DELAY";
     loggerOpts.add_options()
-        ("LB_GLOBAL_TIMER",
+        ("RTDS_RUN_DELAY",
         po::value<unsigned int>( )->default_value(0),
         desc.c_str() );
 
-    desc = "The timing value GM_PREMERGE_MIN_TIMEOUT";
+    desc = "The timing value GM_AYC_RESPONSE_TIMEOUT";
     loggerOpts.add_options()
-        ("GM_PREMERGE_MIN_TIMEOUT",
+        ("GM_AYC_RESPONSE_TIMEOUT",
         po::value<unsigned int>( )->default_value(0),
         desc.c_str() );
 
@@ -113,6 +117,12 @@ void CTimings::SetTimings(const std::string timingsFile)
         po::value<unsigned int>( )->default_value(0),
         desc.c_str() );
 
+    desc = "The timing value LB_GLOBAL_TIMER";
+    loggerOpts.add_options()
+        ("LB_GLOBAL_TIMER",
+        po::value<unsigned int>( )->default_value(0),
+        desc.c_str() );
+
     desc = "The timing value GM_PREMERGE_MAX_TIMEOUT";
     loggerOpts.add_options()
         ("GM_PREMERGE_MAX_TIMEOUT",
@@ -125,9 +135,9 @@ void CTimings::SetTimings(const std::string timingsFile)
         po::value<unsigned int>( )->default_value(0),
         desc.c_str() );
 
-    desc = "The timing value CSRC_DEFAULT_TIMEOUT";
+    desc = "The timing value GM_INVITE_RESPONSE_TIMEOUT";
     loggerOpts.add_options()
-        ("CSRC_DEFAULT_TIMEOUT",
+        ("GM_INVITE_RESPONSE_TIMEOUT",
         po::value<unsigned int>( )->default_value(0),
         desc.c_str() );
 
@@ -137,9 +147,9 @@ void CTimings::SetTimings(const std::string timingsFile)
         po::value<unsigned int>( )->default_value(0),
         desc.c_str() );
 
-    desc = "The timing value GM_CHECK_TIMEOUT";
+    desc = "The timing value GM_PREMERGE_MIN_TIMEOUT";
     loggerOpts.add_options()
-        ("GM_CHECK_TIMEOUT",
+        ("GM_PREMERGE_MIN_TIMEOUT",
         po::value<unsigned int>( )->default_value(0),
         desc.c_str() );
 
@@ -149,9 +159,9 @@ void CTimings::SetTimings(const std::string timingsFile)
         po::value<unsigned int>( )->default_value(0),
         desc.c_str() );
 
-    desc = "The timing value GM_RESPONSE_TIMEOUT";
+    desc = "The timing value GM_CHECK_TIMEOUT";
     loggerOpts.add_options()
-        ("GM_RESPONSE_TIMEOUT",
+        ("GM_CHECK_TIMEOUT",
         po::value<unsigned int>( )->default_value(0),
         desc.c_str() );
 
@@ -164,6 +174,12 @@ void CTimings::SetTimings(const std::string timingsFile)
     desc = "The timing value GM_TIMEOUT_TIMEOUT";
     loggerOpts.add_options()
         ("GM_TIMEOUT_TIMEOUT",
+        po::value<unsigned int>( )->default_value(0),
+        desc.c_str() );
+
+    desc = "The timing value CSRC_DEFAULT_TIMEOUT";
+    loggerOpts.add_options()
+        ("CSRC_DEFAULT_TIMEOUT",
         po::value<unsigned int>( )->default_value(0),
         desc.c_str() );
 
@@ -198,9 +214,9 @@ void CTimings::SetTimings(const std::string timingsFile)
 
     SC_PHASE_TIME = vm["SC_PHASE_TIME"].as<unsigned int>();
 
-    LB_GLOBAL_TIMER = vm["LB_GLOBAL_TIMER"].as<unsigned int>();
+    RTDS_RUN_DELAY = vm["RTDS_RUN_DELAY"].as<unsigned int>();
 
-    GM_PREMERGE_MIN_TIMEOUT = vm["GM_PREMERGE_MIN_TIMEOUT"].as<unsigned int>();
+    GM_AYC_RESPONSE_TIMEOUT = vm["GM_AYC_RESPONSE_TIMEOUT"].as<unsigned int>();
 
     GM_AYT_RESPONSE_TIMEOUT = vm["GM_AYT_RESPONSE_TIMEOUT"].as<unsigned int>();
 
@@ -208,23 +224,27 @@ void CTimings::SetTimings(const std::string timingsFile)
 
     GM_GLOBAL_TIMEOUT = vm["GM_GLOBAL_TIMEOUT"].as<unsigned int>();
 
+    LB_GLOBAL_TIMER = vm["LB_GLOBAL_TIMER"].as<unsigned int>();
+
     GM_PREMERGE_MAX_TIMEOUT = vm["GM_PREMERGE_MAX_TIMEOUT"].as<unsigned int>();
 
     CSRC_RESEND_TIME = vm["CSRC_RESEND_TIME"].as<unsigned int>();
 
-    CSRC_DEFAULT_TIMEOUT = vm["CSRC_DEFAULT_TIMEOUT"].as<unsigned int>();
+    GM_INVITE_RESPONSE_TIMEOUT = vm["GM_INVITE_RESPONSE_TIMEOUT"].as<unsigned int>();
 
     GM_PREMERGE_GRANULARITY = vm["GM_PREMERGE_GRANULARITY"].as<unsigned int>();
 
-    GM_CHECK_TIMEOUT = vm["GM_CHECK_TIMEOUT"].as<unsigned int>();
+    GM_PREMERGE_MIN_TIMEOUT = vm["GM_PREMERGE_MIN_TIMEOUT"].as<unsigned int>();
 
     LB_STATE_TIMER = vm["LB_STATE_TIMER"].as<unsigned int>();
 
-    GM_RESPONSE_TIMEOUT = vm["GM_RESPONSE_TIMEOUT"].as<unsigned int>();
+    GM_CHECK_TIMEOUT = vm["GM_CHECK_TIMEOUT"].as<unsigned int>();
 
     CSUC_RESEND_TIME = vm["CSUC_RESEND_TIME"].as<unsigned int>();
 
     GM_TIMEOUT_TIMEOUT = vm["GM_TIMEOUT_TIMEOUT"].as<unsigned int>();
+
+    CSRC_DEFAULT_TIMEOUT = vm["CSRC_DEFAULT_TIMEOUT"].as<unsigned int>();
 
     LB_PHASE_TIME = vm["LB_PHASE_TIME"].as<unsigned int>();
 

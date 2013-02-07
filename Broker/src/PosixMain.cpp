@@ -29,7 +29,6 @@
 #include "CGlobalConfiguration.hpp"
 #include "CLogger.hpp"
 #include "config.hpp"
-#include "CUuid.hpp"
 #include "CAdapterFactory.hpp"
 #include "PhysicalDeviceTypes.hpp"
 #include "gm/GroupManagement.hpp"
@@ -45,6 +44,7 @@
 #include <vector>
 #include <stdexcept>
 
+#include <boost/algorithm/string.hpp>
 #include <boost/asio.hpp>
 #include <boost/asio/ip/host_name.hpp> //for ip::host_name()
 #include <boost/assign/list_of.hpp>
@@ -66,6 +66,13 @@ namespace {
 /// This file's logger.
 CLocalLogger Logger(__FILE__);
 
+/// UUID of the DGI, currently hostname:port
+std::string generate_uuid(std::string host, std::string port)
+{
+    boost::algorithm::to_lower(host);
+    return host + ":" + port;
+}
+
 }
 
 /// The copyright year for this DGI release.
@@ -81,9 +88,8 @@ int main(int argc, char* argv[])
     po::variables_map vm;
     std::ifstream ifs;
     std::string cfgFile, loggerCfgFile, timingsFile, adapterCfgFile;
-    std::string listenIP, port, hostname, uuidgenerator;
+    std::string listenIP, port, hostname, id;
     unsigned int globalVerbosity;
-    CUuid uuid;
 
     try
     {
@@ -93,17 +99,14 @@ int main(int argc, char* argv[])
                 po::value<std::string > ( &cfgFile )->
                 default_value("./config/freedm.cfg"),
                 "filename of additional configuration." )
-                ( "generateuuid,g",
-                po::value<std::string > ( &uuidgenerator )->default_value(""),
-                "generate a uuid for a host or host:port" )
                 ( "help,h", "print usage help (this screen)" )
                 ( "list-loggers,l", "print all available loggers" )
-                ( "uuid,u", "print this node's generated uuid" )
+                ( "uuid,u", "print this node's generated ID" )
                 ( "version,V", "print version info" );
 
         // These options can be specified on command line or in the config file.
         cfgOpts.add_options()
-                ( "add-host",
+                ( "add-host,H",
                 po::value<std::vector<std::string> >( )->composing(),
                 "hostname:port of a peer" )
                 ( "address",
@@ -151,13 +154,18 @@ int main(int argc, char* argv[])
             po::store(parse_config_file(ifs, cfgOpts), vm);
             po::notify(vm);
 
-            if (!vm.count("help"))
+            if (!vm.count("help") && !vm.count("version") &&
+                !vm.count("uuid") && !vm.count("list-loggers"))
             {
-                Logger.Info << "Config file " << cfgFile <<
-                        " successfully loaded." << std::endl;
+                Logger.Info << "Config file " << cfgFile
+                            << " successfully loaded." << std::endl;
             }
         }
         ifs.close();
+
+        // Refine the logger verbosity settings.
+        CGlobalLogger::instance().SetGlobalLevel(globalVerbosity);
+        CGlobalLogger::instance().SetInitialLoggerLevels(loggerCfgFile);
 
         if (vm.count("help"))
         {
@@ -168,79 +176,37 @@ int main(int argc, char* argv[])
         if (vm.count("version"))
         {
             std::cout << basename(argv[0]) << " (FREEDM DGI Revision "
-                    << BROKER_VERSION << ")" << std::endl;
+                      << BROKER_VERSION << ")" << std::endl;
             std::cout << "Copyright (C) " << COPYRIGHT_YEAR
                       << " NSF FREEDM Systems Center" << std::endl;
             return 0;
         }
 
-        // Load timings from files
-        CTimings::SetTimings(timingsFile);
-
-        // Refine the logger verbosity settings.
-        CGlobalLogger::instance().SetGlobalLevel(globalVerbosity);
-        CGlobalLogger::instance().SetInitialLoggerLevels(loggerCfgFile);
+        // Must be after SetInitialLoggerLevels
         if (vm.count("list-loggers"))
         {
             CGlobalLogger::instance().ListLoggers();
             return 0;
         }
 
-        if (uuidgenerator != "" || vm.count("uuid"))
+        hostname = boost::asio::ip::host_name();
+        id = generate_uuid(hostname, port);
+        if (vm.count("uuid"))
         {
-            std::size_t colonPosition = uuidgenerator.find(':');
-            if (colonPosition != std::string::npos) // -g with hostname:port
-            {
-                // need to use his port to generate the uuid, not ours
-                port = uuidgenerator.substr(colonPosition+1);
-                uuidgenerator = uuidgenerator.substr(0, colonPosition);
-
-                // this is just a sanity-check
-                bool badLexicalCast = false;
-                try
-                {
-                    (void) boost::lexical_cast<int>(port);
-                }
-                catch (boost::bad_lexical_cast)
-                {
-                    badLexicalCast = true;
-                }
-                if (port.length() < 4 || port.length() > 5 || badLexicalCast)
-                {
-                  std::cerr << "Tried to generate a UUID using hostname="
-                            << uuidgenerator << ", port=" << port
-                            << ", but this is silly." << std::endl;
-                  return 1;
-                }
-            }
-            else if (uuidgenerator == "") // -u
-            {
-                uuidgenerator = boost::asio::ip::host_name();
-            }
-            // else -g with hostname, but use our port
-
-            uuid = CUuid::from_dns(uuidgenerator, port);
-            std::cout << uuid << std::endl;
+            std::cout << id << std::endl;
             return 0;
         }
-
-        // Try to resolve the host's dns name
-        hostname = boost::asio::ip::host_name();
-        Logger.Info << "Hostname: " << hostname << std::endl;
-        uuid = CUuid::from_dns(hostname,port);
-        Logger.Info << "Generated UUID: " << uuid << std::endl;
-
-        // Get the UUID as a string
-        std::string uuidstr;
+        else
         {
-            std::stringstream ss;
-            ss << uuid;
-            ss >> uuidstr;
+            Logger.Info << "Generated UUID: " << id << std::endl;
         }
+
+        // Load timings from files
+        CTimings::SetTimings(timingsFile);
 
         /// Prepare the global Configuration
         CGlobalConfiguration::instance().SetHostname(hostname);
-        CGlobalConfiguration::instance().SetUUID(uuidstr);
+        CGlobalConfiguration::instance().SetUUID(id);
         CGlobalConfiguration::instance().SetListenPort(port);
         CGlobalConfiguration::instance().SetListenAddress(listenIP);
         CGlobalConfiguration::instance().SetClockSkew(
@@ -281,20 +247,18 @@ int main(int argc, char* argv[])
 
         // Instantiate Dispatcher for message delivery
         CDispatcher dispatch;
-        // Register UUID handler
-        //dispatch_.RegisterWriteHandler( "any", &uuidHandler_ );
         // Run server in background thread
         CBroker broker(listenIP, port, dispatch, ios, conManager);
         // Instantiate and register the group management module
-        gm::GMAgent GM(uuidstr, broker);
+        gm::GMAgent GM(id, broker);
         broker.RegisterModule("gm",boost::posix_time::milliseconds(CTimings::GM_PHASE_TIME));
         dispatch.RegisterReadHandler("gm", "any", &GM);
         // Instantiate and register the state collection module
-        sc::SCAgent SC(uuidstr, broker);
+        sc::SCAgent SC(id, broker);
         broker.RegisterModule("sc",boost::posix_time::milliseconds(CTimings::SC_PHASE_TIME));
         dispatch.RegisterReadHandler("sc", "any", &SC);
         // Instantiate and register the power management module
-        lb::LBAgent LB(uuidstr, broker);
+        lb::LBAgent LB(id, broker);
         broker.RegisterModule("lb",boost::posix_time::milliseconds(CTimings::LB_PHASE_TIME));
         dispatch.RegisterReadHandler("lb", "lb", &LB);
 
@@ -317,17 +281,12 @@ int main(int argc, char* argv[])
                     continue;
                 }
 
-                std::string host(s.begin(), s.begin() + idx),
-                        port1(s.begin() + ( idx + 1 ), s.end());
-                // Construct the UUID of host from its DNS
-                CUuid u1 = CUuid::from_dns(host,port1);
-                //Load the UUID into string
-                std::stringstream uu;
-                uu << u1;
+                std::string peerhost(s.begin(), s.begin() + idx),
+                        peerport(s.begin() + ( idx + 1 ), s.end());
+                // Construct the UUID of the peer
+                std::string peerid = generate_uuid(peerhost, peerport);
                 // Add the UUID to the list of known hosts
-                //XXX This mechanism should change to allow dynamically arriving
-                //nodes with UUIDS not constructed using their DNS names
-                conManager.PutHostname(uu.str(), host, port1);
+                conManager.PutHostname(peerid, peerhost, peerport);
             }
         }
         else
@@ -336,7 +295,7 @@ int main(int argc, char* argv[])
         }
 
         // Add the local connection to the hostname list
-        conManager.PutHostname(uuidstr, "localhost", port);
+        conManager.PutHostname(id, "localhost", port);
 
         Logger.Debug << "Starting thread of Modules" << std::endl;
         broker.Schedule("gm", boost::bind(&gm::GMAgent::Run, &GM), false);

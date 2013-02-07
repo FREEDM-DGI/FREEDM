@@ -331,7 +331,9 @@ void LBAgent::LoadManage()
     else
     {
         // Schedule past the end of our phase so control will pass to the broker
-        // after this LB, and we won't go again until it's our turn. Good.
+        // after this LB, and we won't go again until it's our turn.
+        // FIXME - This should be using LB_GLOBAL_TIMER not the state timer,
+        //         but it's pointless to fix it now because Issue #146
         m_broker.Schedule(m_GlobalTimer,
                           boost::posix_time::milliseconds(
                               CTimings::LB_STATE_TIMER),

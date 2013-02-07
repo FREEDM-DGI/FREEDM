@@ -131,8 +131,6 @@ class LBAgent
         void HandleCollectedState(MessagePtr msg, PeerNodePtr peer); 
         void HandleComputedNormal(MessagePtr msg, PeerNodePtr peer); 
         
-        /// Adds a new node to the list of known peers using its UUID
-        PeerNodePtr AddPeer(std::string uuid);
         /// Adds a new peer by a pointer
         PeerNodePtr AddPeer(PeerNodePtr peer);
         /// Returns a pointer to the peer based on its UUID

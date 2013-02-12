@@ -3,9 +3,10 @@ cmake_minimum_required(VERSION 2.6)
 project(Broker)
 
 # Build Versioning
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/")
-include(GetGitRevisionDescription)
-get_git_head_revision(GIT_REFSPEC GIT_SHA1)
+#list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/")
+#include(GetGitRevisionDescription)
+#get_git_head_revision(GIT_REFSPEC GIT_SHA1)
+set(GIT_SHA1 1.3.0)
 
 # configurable project options
 # TUTORIAL on how to add a new option:
@@ -14,8 +15,8 @@ get_git_head_revision(GIT_REFSPEC GIT_SHA1)
 #   activate / deactivate the option as described in the message below
 option(CUSTOMNETWORK "for network.xml support" OFF)
 option(DATAGRAM "for UDP Datagram service w/o sequencing" OFF)
-option(WARNINGS "warnings displayed during project compile" ON)
-option(DOXYGEN "run Doxygen after project compile" ON)
+option(WARNINGS "warnings displayed during project compile" OFF)
+option(DOXYGEN "run Doxygen after project compile" OFF)
 
 # Check for a variety of conditions that should generate an error.
 if(!LINUX)

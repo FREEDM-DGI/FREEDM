@@ -69,7 +69,6 @@ namespace broker {
 namespace lb {
 
 const double NORMAL_TOLERANCE = 0.5;
-
 //////////////////////////////////////////////////////////
 /// class LBAgent
 ///

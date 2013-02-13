@@ -282,10 +282,35 @@ void LBAgent::CollectState()
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     CMessage m_cs;
     m_cs.SetHandler("sc.request");
-    m_cs.m_submessages.put("sc.deviceType", "Sst");
-    m_cs.m_submessages.put("sc.valueType", "gateway");
     m_cs.m_submessages.put("sc.source", GetUUID());
     m_cs.m_submessages.put("sc.module", "lb");
+
+/*
+    //for only one device
+    m_cs.m_submessages.put("sc.deviceType", "Sst");
+    m_cs.m_submessages.put("sc.valueType", "gateway");
+*/
+
+    //for multiple devices
+    m_cs.m_submessages.put("sc.deviceNum", 3);
+    //SST device
+    ptree subPtree1;
+    subPtree1.add("deviceType", "Sst");
+    subPtree1.add("valueType", "gateway");
+    m_cs.m_submessages.add_child("sc.devices.device", subPtree1);
+
+    //DRER device
+    ptree subPtree2;
+    subPtree2.add("deviceType", "Drer");
+    subPtree2.add("valueType", "generation");
+    m_cs.m_submessages.add_child("sc.devices.device", subPtree2);
+
+    //DESD device
+    ptree subPtree3;
+    subPtree1.add("deviceType", "Desd");
+    subPtree1.add("valueType", "storage");
+    m_cs.m_submessages.add_child("sc.devices.device", subPtree3);
+
     try
     {
        GetPeer(GetUUID())->Send(m_cs);
@@ -426,6 +451,7 @@ void LBAgent::LoadTable()
     int numDESDs = CDeviceManager::Instance().GetDevicesOfType<DESD>().size();
     int numLOADs = CDeviceManager::Instance().GetDevicesOfType<LOAD>().size();
     int numSSTs = CDeviceManager::Instance().GetDevicesOfType<SST>().size();
+    int numDevices = CDeviceManager::Instance().DeviceCount();
 
     m_Gen = CDeviceManager::Instance().GetNetValue<DRER>(&DRER::GetGeneration);
     m_Storage = CDeviceManager::Instance().GetNetValue<DESD>(&DESD::GetStorage);
@@ -443,6 +469,16 @@ void LBAgent::LoadTable()
         m_sstExists = false;
         // FIXME should consider Gateway
         m_NetGateway = m_Load - m_Gen - m_Storage;
+    }
+
+    typedef CDeviceLogger LOGGER;
+    std::multiset<LOGGER::Pointer> LSet;
+    LSet = device::CDeviceManager::Instance().GetDevicesOfType<LOGGER>();
+    
+    if( !LSet.empty() )
+    {
+        (*LSet.begin())->SetGateway(m_NetGateway);
+        (*LSet.begin())->SetDeviceCount(numDevices);
     }
 
     // used to ensure three digits before the decimal, two after
@@ -927,6 +963,8 @@ void LBAgent::HandleCollectedState(MessagePtr msg, PeerNodePtr peer)
     // --------------------------------------------------------------
     int peercount=0;
     double agg_gateway=0;
+/*
+<<<<<<< HEAD
     ptree &pt = msg->GetSubMessages();
 	BOOST_FOREACH(ptree::value_type &v, pt.get_child("CollectedState.state"))
 	{
@@ -935,16 +973,52 @@ void LBAgent::HandleCollectedState(MessagePtr msg, PeerNodePtr peer)
  	    peercount++;
             agg_gateway += boost::lexical_cast<double>(v.second.data());
 	}
-
+=======
+*/
+    ptree &pt = msg->GetSubMessages();
+    if(pt.get_child_optional("CollectedState.gateway"))
+    {
+	    BOOST_FOREACH(ptree::value_type &v, pt.get_child("CollectedState.gateway"))
+	    {
+	        Logger.Notice << "SC module returned gateway values: "
+			              << v.second.data() << std::endl;
+ 	        peercount++;
+            agg_gateway += boost::lexical_cast<double>(v.second.data());
+	    }
+    }
+    else if(pt.get_child_optional("CollectedState.generation"))
+    {
+	    BOOST_FOREACH(ptree::value_type &v, pt.get_child("CollectedState.generation"))
+	    {
+	        Logger.Notice << "SC module returned generation values: "
+			              << v.second.data() << std::endl;
+	    }
+    }
+    else if(pt.get_child_optional("CollectedState.storage"))
+    {
+	    BOOST_FOREACH(ptree::value_type &v, pt.get_child("CollectedState.storage"))
+	    {
+	        Logger.Notice << "SC module returned storage values: "
+			              << v.second.data() << std::endl;
+	    }
+    }
+    else if(pt.get_child_optional("CollectedState.drain"))
+    {
+	    BOOST_FOREACH(ptree::value_type &v, pt.get_child("CollectedState.drain"))
+	    {
+	        Logger.Notice << "SC module returned drain values: "
+			              << v.second.data() << std::endl;
+	    }
+    }
 	//Consider any intransit "accept" messages in agg_gateway calculation
-    if(pt.get_child_optional("CollectedState.intransit"))
+    else if(pt.get_child_optional("CollectedState.intransit"))
     {
         BOOST_FOREACH(ptree::value_type &v, pt.get_child("CollectedState.intransit"))
         {
             Logger.Status << "SC module returned intransit messages: "
                 << v.second.data() << std::endl;
             if(v.second.data() == "accept"){
-	    Logger.Notice << "SC module returned values: "
+	        Logger.Notice << "SC module returned values: "
 			  << v.second.data() << std::endl;
                 agg_gateway += P_Migrate;
              }

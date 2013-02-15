@@ -6,7 +6,7 @@ project(Broker)
 #list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/")
 #include(GetGitRevisionDescription)
 #get_git_head_revision(GIT_REFSPEC GIT_SHA1)
-set(GIT_SHA1 1.3.0)
+set(GIT_SHA1 1.3.0.1)
 
 # configurable project options
 # TUTORIAL on how to add a new option:

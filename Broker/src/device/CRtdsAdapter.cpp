@@ -34,6 +34,7 @@
 
 #include "CRtdsAdapter.hpp"
 #include "CLogger.hpp"
+#include "CTimings.hpp"
 
 #include <sys/param.h>
 
@@ -125,7 +126,7 @@ void CRtdsAdapter::Start()
 ////////////////////////////////////////////////////////////////////////////////
 /// This is the main communication engine.
 ///
-/// @I/O
+/// @IO
 ///     At every timestep, a message is sent to the FPGA via TCP socket
 ///     connection, then a message is retrieved from FPGA via the same
 ///     connection.  On the FPGA side, it's the reverse order -- receive and
@@ -196,7 +197,8 @@ void CRtdsAdapter::Run()
     }
 
     // Start the timer; on timeout, this function is called again
-    m_runTimer.expires_from_now(boost::posix_time::microseconds(TIMESTEP));
+    m_runTimer.expires_from_now(
+            boost::posix_time::milliseconds(CTimings::RTDS_RUN_DELAY));
     m_runTimer.async_wait(boost::bind(&CRtdsAdapter::Run, this));
 }
 
@@ -241,7 +243,7 @@ CRtdsAdapter::~CRtdsAdapter()
 /// @pre None
 /// @post The bytes in the buffer are now reversed
 /// @param buffer the data to be reversed
-/// @param size the number of bytes in the buffer
+/// @param numBytes the number of bytes in the buffer
 ////////////////////////////////////////////////////////////////////////////////
 void CRtdsAdapter::ReverseBytes( char * buffer, const int numBytes )
 {

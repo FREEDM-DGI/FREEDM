@@ -203,6 +203,8 @@ private:
     std::string m_handler;
 };
 
+typedef boost::shared_ptr<CMessage> MessagePtr;
+
 } // namespace broker
 } // namespace freedm
 

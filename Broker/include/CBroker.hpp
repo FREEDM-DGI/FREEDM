@@ -91,6 +91,9 @@ public:
     /// Puts the stop request into the ioservice queue.
     void Stop();
 
+    /// Handle signals
+    void HandleSignal(const boost::system::error_code& error, int parameter);
+
     /// Stop the server.
     void HandleStop();
     
@@ -114,6 +117,9 @@ public:
     
     /// Registers a module for the scheduler
     void RegisterModule(ModuleIdent m, boost::posix_time::time_duration phase);
+
+    /// Returns how much time the current module has left in its round
+    boost::posix_time::time_duration TimeRemaining();
 
     /// Returns the synchronizer
     CClockSynchronizer& GetClockSynchronizer();
@@ -155,6 +161,9 @@ private:
     ///Whose turn is it for round robin.
     PhaseMarker m_phase;
 
+    ///Computed ptime for when the current phase ends
+    boost::posix_time::ptime m_phaseends;
+
     ///Time for the phases
     boost::asio::deadline_timer m_phasetimer;
     
@@ -176,6 +185,8 @@ private:
     ///The magical clock synchronizer
     CClockSynchronizer m_synchronizer;
 
+    ///The register for signal handling.
+    boost::asio::signal_set m_signals;
 };
 
     } // namespace broker

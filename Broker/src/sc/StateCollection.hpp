@@ -28,7 +28,6 @@
 #include "CConnectionManager.hpp"
 #include "CDispatcher.hpp"
 #include "CMessage.hpp"
-#include "CUuid.hpp"
 #include "PhysicalDeviceTypes.hpp"
 #include "IAgent.hpp"
 #include "IHandler.hpp"
@@ -78,11 +77,11 @@ class SCAgent : public IReadHandler, public IPeerNode,
         ~SCAgent();
         //Handler
         ///Handle receiving messages
-        virtual void HandleAny(CMessage msg, PeerNodePtr peer);
-        void HandlePeerList(CMessage msg, PeerNodePtr peer);
-        void HandleRequest(CMessage msg, PeerNodePtr peer);
-        void HandleMarker(CMessage msg, PeerNodePtr peer);
-        void HandleState(CMessage msg, PeerNodePtr peer);
+        virtual void HandleAny(MessagePtr msg, PeerNodePtr peer);
+        void HandlePeerList(MessagePtr msg, PeerNodePtr peer);
+        void HandleRequest(MessagePtr msg, PeerNodePtr peer);
+        void HandleMarker(MessagePtr msg, PeerNodePtr peer);
+        void HandleState(MessagePtr msg, PeerNodePtr peer);
         
     private:
         //Marker structure
@@ -105,8 +104,6 @@ class SCAgent : public IReadHandler, public IPeerNode,
         CMessage marker();
         
         //Peer set operations
-        ///Add a peer to peer set from UUID
-        PeerNodePtr AddPeer(std::string uuid);
         ///Add a peer to peer set from a pointer to a peer node object
         PeerNodePtr AddPeer(PeerNodePtr peer);
         ///Get a pointer to a peer from UUID

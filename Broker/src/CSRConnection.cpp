@@ -25,6 +25,7 @@
 #include "CMessage.hpp"
 #include "CSRConnection.hpp"
 #include "IProtocol.hpp"
+#include "CTimings.hpp"
 
 #include <iomanip>
 #include <set>
@@ -110,7 +111,7 @@ void CSRConnection::Send(CMessage msg)
     if(!msg.HasExpireTime())
     {
         Logger.Debug<<"Set Expire time"<<std::endl;
-        msg.SetExpireTimeFromNow(boost::posix_time::milliseconds(3000));
+        msg.SetExpireTimeFromNow(boost::posix_time::milliseconds(CTimings::CSRC_DEFAULT_TIMEOUT));
     }
     
     if(m_window.size() == 0)
@@ -201,7 +202,7 @@ void CSRConnection::Resend(const boost::system::error_code& err)
             Write(m_window.front());
             // Head of window can be killed.
             m_timeout.cancel();
-            m_timeout.expires_from_now(boost::posix_time::milliseconds(REFIRE_TIME));
+            m_timeout.expires_from_now(boost::posix_time::milliseconds(CTimings::CSRC_RESEND_TIME));
             m_timeout.async_wait(boost::bind(&CSRConnection::Resend,shared_from_this(),
                 boost::asio::placeholders::error));
         }
@@ -384,7 +385,7 @@ bool CSRConnection::Recieve(const CMessage &msg)
 /// @description Composes an ack and writes it to the channel. ACKS are saved
 ///     to the protocol's state and are written again during resends to try and
 ///     maximize througput.
-/// @param The message to ACK.
+/// @param msg The message to ACK.
 /// @pre A message has been accepted.
 /// @post The m_currentack member is set to the ack and the message will
 ///     be resent during resend until it expires.
@@ -412,7 +413,7 @@ void CSRConnection::SendACK(const CMessage &msg)
     m_ackmutex.unlock();
     /// Hook into resend until the message expires.
     m_timeout.cancel();
-    m_timeout.expires_from_now(boost::posix_time::milliseconds(REFIRE_TIME));
+    m_timeout.expires_from_now(boost::posix_time::milliseconds(CTimings::CSRC_RESEND_TIME));
     m_timeout.async_wait(boost::bind(&CSRConnection::Resend,shared_from_this(),
         boost::asio::placeholders::error));
 }
@@ -420,7 +421,6 @@ void CSRConnection::SendACK(const CMessage &msg)
 ///////////////////////////////////////////////////////////////////////////////
 /// CSRConnection::SendSYN
 /// @description Composes an SYN and writes it to the channel.
-/// @param The message to SYN.
 /// @pre A message has been accepted.
 /// @post A syn has been written to the channel
 ///////////////////////////////////////////////////////////////////////////////

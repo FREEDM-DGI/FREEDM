@@ -79,7 +79,8 @@ CBroker::CBroker(const std::string& p_address, const std::string& p_port,
       m_dispatch(p_dispatch),
       m_newConnection(new CListener(m_ioService, m_connManager, *this, m_conMan.GetUUID())),
       m_phasetimer(m_ios),
-      m_synchronizer(*this)
+      m_synchronizer(*this),
+      m_signals(m_ios,SIGINT)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     // Open the acceptor with the option to reuse the address (i.e. SO_REUSEADDR).
@@ -135,6 +136,7 @@ void CBroker::Run()
     // have finished. While the server is running, there is always at least one
     // asynchronous operation outstanding: the asynchronous accept call waiting
     // for new incoming connections.
+    m_signals.async_wait(boost::bind(&CBroker::HandleSignal, this,_1,_2));
     m_synchronizer.Run();
     m_ioService.run();
 }
@@ -166,6 +168,21 @@ void CBroker::Stop()
     // from any thread.
     m_synchronizer.Stop();
     m_ioService.post(boost::bind(&CBroker::HandleStop, this));
+}
+
+///////////////////////////////////////////////////////////////////////////////
+/// @fn CBroker::HandleSignal
+/// @description Handle signals from signal
+/// @pre None
+/// @post The broker winds down
+///////////////////////////////////////////////////////////////////////////////
+void CBroker::HandleSignal(const boost::system::error_code& error, int parameter)
+{
+    if(!error)
+    {
+        Logger.Fatal<<"Caught signal "<<parameter<<". Shutting Down..."<<std::endl;
+        Stop();
+    }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -377,12 +394,29 @@ void CBroker::ChangePhase(const boost::system::error_code &err)
         Worker();
         m_schmutex.lock();
     }
-    m_phasetimer.expires_from_now(boost::posix_time::milliseconds(sched_duration));
+    boost::posix_time::time_duration r = boost::posix_time::milliseconds(sched_duration);
+    m_phaseends = now + r;
+    m_phasetimer.expires_from_now(r);
     m_phasetimer.async_wait(boost::bind(&CBroker::ChangePhase,this,
         boost::asio::placeholders::error));
     m_schmutex.unlock();
 }
 #pragma GCC diagnostic warning "-Wunused-parameter"
+
+///////////////////////////////////////////////////////////////////////////////
+/// @fn CBroker::TimeRemaining
+/// @description Shows how much time is remaining in the current pgase
+/// @pre The Change Phase function has been called at least once. This should
+///     have occured by the time the first module is ready to look at the 
+///     remaining time.
+/// @post no change
+/// @return A time_duration describing the amount of time remaining in the
+///     phase.
+///////////////////////////////////////////////////////////////////////////////
+boost::posix_time::time_duration CBroker::TimeRemaining()
+{
+    return m_phaseends - boost::posix_time::microsec_clock::universal_time();
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 /// @fn CBroker::ScheduledTask
@@ -448,11 +482,20 @@ void CBroker::Worker()
         x();
         m_schmutex.lock();
     }
+    else
+    {
+        m_busy = false;
+        m_schmutex.unlock();
+        return;
+    }
     // Schedule the worker again:
     m_ioService.post(boost::bind(&CBroker::Worker, this));
     m_schmutex.unlock();
 }
 
+//////////////////////////////////
+/// Returns the clock synchronizer
+//////////////////////////////////
 CClockSynchronizer& CBroker::GetClockSynchronizer()
 {
     return m_synchronizer;

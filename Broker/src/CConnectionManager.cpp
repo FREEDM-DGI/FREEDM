@@ -214,6 +214,7 @@ ConnectionPtr CConnectionManager::GetConnectionByUUID(std::string uuid_)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
+    ConnectionPtr c_;  
     std::string s_,port;
 
     // See if there is a connection in the open connections already
@@ -250,7 +251,7 @@ ConnectionPtr CConnectionManager::GetConnectionByUUID(std::string uuid_)
 
     // Create a new CConnection object for this host	
     Logger.Debug<<"Constructing CConnection"<<std::endl;
-    ConnectionPtr c_(new CConnection(m_inchannel->GetIOService(), *this, m_inchannel->GetBroker(), uuid_));  
+    c_.reset(new CConnection(m_inchannel->GetIOService(), *this, m_inchannel->GetBroker(), uuid_));  
    
     // Initiate the TCP connection
     Logger.Debug<<"Computing remote endpoint"<<std::endl;

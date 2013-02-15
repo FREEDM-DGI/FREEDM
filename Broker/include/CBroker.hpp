@@ -91,9 +91,6 @@ public:
     /// Puts the stop request into the ioservice queue.
     void Stop();
 
-    /// Handle signals
-    void HandleSignal(const boost::system::error_code& error, int parameter);
-
     /// Stop the server.
     void HandleStop();
     
@@ -185,8 +182,6 @@ private:
     ///The magical clock synchronizer
     CClockSynchronizer m_synchronizer;
 
-    ///The register for signal handling.
-    boost::asio::signal_set m_signals;
 };
 
     } // namespace broker

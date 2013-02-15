@@ -79,8 +79,7 @@ CBroker::CBroker(const std::string& p_address, const std::string& p_port,
       m_dispatch(p_dispatch),
       m_newConnection(new CListener(m_ioService, m_connManager, *this, m_conMan.GetUUID())),
       m_phasetimer(m_ios),
-      m_synchronizer(*this),
-      m_signals(m_ios,SIGINT)
+      m_synchronizer(*this)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     // Open the acceptor with the option to reuse the address (i.e. SO_REUSEADDR).
@@ -136,9 +135,15 @@ void CBroker::Run()
     // have finished. While the server is running, there is always at least one
     // asynchronous operation outstanding: the asynchronous accept call waiting
     // for new incoming connections.
-    m_signals.async_wait(boost::bind(&CBroker::HandleSignal, this,_1,_2));
     m_synchronizer.Run();
-    m_ioService.run();
+    try
+    {
+        m_ioService.run();
+    }
+    catch(std::exception &e)
+    {
+        Logger.Error<<"Broker Exception: "<<e.what()<<std::endl;
+    }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -168,21 +173,6 @@ void CBroker::Stop()
     // from any thread.
     m_synchronizer.Stop();
     m_ioService.post(boost::bind(&CBroker::HandleStop, this));
-}
-
-///////////////////////////////////////////////////////////////////////////////
-/// @fn CBroker::HandleSignal
-/// @description Handle signals from signal
-/// @pre None
-/// @post The broker winds down
-///////////////////////////////////////////////////////////////////////////////
-void CBroker::HandleSignal(const boost::system::error_code& error, int parameter)
-{
-    if(!error)
-    {
-        Logger.Fatal<<"Caught signal "<<parameter<<". Shutting Down..."<<std::endl;
-        Stop();
-    }
 }
 
 ///////////////////////////////////////////////////////////////////////////////

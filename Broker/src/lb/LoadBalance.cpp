@@ -97,7 +97,7 @@ LBAgent::LBAgent(std::string uuid_, CBroker &broker):
     m_broker(broker)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    PeerNodePtr self_ = CGlobalPeerList::instance().GetPeer(uuid_);
+    PeerNodePtr self_(this);
     InsertInPeerSet(m_AllPeers, self_);
     m_Leader = GetUUID();
     m_Normal = 0;
@@ -151,6 +151,13 @@ int LBAgent::Run()
 /// @post: Peer set is populated with a pointer to the added node
 /// @limitations Addition of new peers is strictly based on group membership
 /////////////////////////////////////////////////////////
+LBAgent::PeerNodePtr LBAgent::AddPeer(std::string uuid)
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    PeerNodePtr tmp_;
+    tmp_.reset(new IPeerNode(uuid,GetConnectionManager()));
+    return AddPeer(tmp_);
+}
 LBAgent::PeerNodePtr LBAgent::AddPeer(PeerNodePtr peer)
 {
     InsertInPeerSet(m_AllPeers,peer);
@@ -661,6 +668,7 @@ void LBAgent::HandlePeerList(MessagePtr msg, PeerNodePtr peer)
     temp = gm::GMAgent::ProcessPeerList(msg,GetConnectionManager());
     BOOST_FOREACH( PeerNodePtr p_, temp | boost::adaptors::map_values )
     {
+        PeerNodePtr p = GetPeer(p_->GetUUID());
         if(CountInPeerSet(m_AllPeers,p_) == 0)
         {
             AddPeer(p_);

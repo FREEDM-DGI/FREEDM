@@ -292,7 +292,7 @@ void LBAgent::CollectState()
 */
 
     //for multiple devices
-    m_cs.m_submessages.put("sc.deviceNum", 3);
+    m_cs.m_submessages.put("sc.deviceNum", 4);
     //SST device
     ptree subPtree1;
     subPtree1.add("deviceType", "Sst");
@@ -305,12 +305,18 @@ void LBAgent::CollectState()
     subPtree2.add("valueType", "generation");
     m_cs.m_submessages.add_child("sc.devices.device", subPtree2);
 
-    //DESD device
+    //LOAD device
     ptree subPtree3;
-    subPtree1.add("deviceType", "Desd");
-    subPtree1.add("valueType", "storage");
+    subPtree3.add("deviceType", "Load");
+    subPtree3.add("valueType", "drain");
     m_cs.m_submessages.add_child("sc.devices.device", subPtree3);
-
+    
+    //FID device
+    ptree subPtree4;
+    subPtree4.add("deviceType", "Fid");
+    subPtree4.add("valueType", "state");
+    m_cs.m_submessages.add_child("sc.devices.device", subPtree4);
+	
     try
     {
        GetPeer(GetUUID())->Send(m_cs);
@@ -963,18 +969,7 @@ void LBAgent::HandleCollectedState(MessagePtr msg, PeerNodePtr peer)
     // --------------------------------------------------------------
     int peercount=0;
     double agg_gateway=0;
-/*
-<<<<<<< HEAD
-    ptree &pt = msg->GetSubMessages();
-	BOOST_FOREACH(ptree::value_type &v, pt.get_child("CollectedState.state"))
-	{
-	    Logger.Notice << "SC module returned values: "
-			  << v.second.data() << std::endl;
- 	    peercount++;
-            agg_gateway += boost::lexical_cast<double>(v.second.data());
-	}
-=======
-*/
+
     ptree &pt = msg->GetSubMessages();
     if(pt.get_child_optional("CollectedState.gateway"))
     {
@@ -982,11 +977,14 @@ void LBAgent::HandleCollectedState(MessagePtr msg, PeerNodePtr peer)
 	    {
 	        Logger.Notice << "SC module returned gateway values: "
 			              << v.second.data() << std::endl;
- 	        peercount++;
-            agg_gateway += boost::lexical_cast<double>(v.second.data());
+		if (v.second.data() != "no device")
+		{
+ 	            peercount++;
+            	    agg_gateway += boost::lexical_cast<double>(v.second.data());
+		}
 	    }
     }
-    else if(pt.get_child_optional("CollectedState.generation"))
+    if(pt.get_child_optional("CollectedState.generation"))
     {
 	    BOOST_FOREACH(ptree::value_type &v, pt.get_child("CollectedState.generation"))
 	    {
@@ -994,7 +992,7 @@ void LBAgent::HandleCollectedState(MessagePtr msg, PeerNodePtr peer)
 			              << v.second.data() << std::endl;
 	    }
     }
-    else if(pt.get_child_optional("CollectedState.storage"))
+    if(pt.get_child_optional("CollectedState.storage"))
     {
 	    BOOST_FOREACH(ptree::value_type &v, pt.get_child("CollectedState.storage"))
 	    {
@@ -1002,7 +1000,7 @@ void LBAgent::HandleCollectedState(MessagePtr msg, PeerNodePtr peer)
 			              << v.second.data() << std::endl;
 	    }
     }
-    else if(pt.get_child_optional("CollectedState.drain"))
+    if(pt.get_child_optional("CollectedState.drain"))
     {
 	    BOOST_FOREACH(ptree::value_type &v, pt.get_child("CollectedState.drain"))
 	    {
@@ -1010,8 +1008,16 @@ void LBAgent::HandleCollectedState(MessagePtr msg, PeerNodePtr peer)
 			              << v.second.data() << std::endl;
 	    }
     }
-	//Consider any intransit "accept" messages in agg_gateway calculation
-    else if(pt.get_child_optional("CollectedState.intransit"))
+    if(pt.get_child_optional("CollectedState.state"))
+    {
+	    BOOST_FOREACH(ptree::value_type &v, pt.get_child("CollectedState.state"))
+	    {
+		Logger.Notice << "SC module returned state values: "
+				      << v.second.data() << std::endl;
+	    }
+    }
+    //Consider any intransit "accept" messages in agg_gateway calculation
+    if(pt.get_child_optional("CollectedState.intransit"))
     {
         BOOST_FOREACH(ptree::value_type &v, pt.get_child("CollectedState.intransit"))
         {

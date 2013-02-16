@@ -116,7 +116,7 @@ SCAgent::SCAgent(std::string uuid, CBroker &broker):
         m_broker(broker)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    AddPeer(uuid);
+    AddPeer(CGlobalPeerList::instance().GetPeer(uuid));
     RegisterSubhandle("any.PeerList",boost::bind(&SCAgent::HandlePeerList,this,_1,_2));
     RegisterSubhandle("sc.request",boost::bind(&SCAgent::HandleRequest,this,_1,_2));
     RegisterSubhandle("sc.marker",boost::bind(&SCAgent::HandleMarker,this,_1,_2));
@@ -744,23 +744,6 @@ void SCAgent::HandleState(MessagePtr msg, PeerNodePtr peer)
 }
 
 
-////////////////////////////////////////////////////////////
-/// AddPeer
-/// @description Add a peer to peer set m_AllPeers from UUID.
-///               m_AllPeers is a specific peer set for SC module.
-/// @pre m_AllPeers
-/// @post Add a peer to m_AllPeers
-/// @param uuid string
-/// @return a pointer to a peer node
-/////////////////////////////////////////////////////////
-SCAgent::PeerNodePtr SCAgent::AddPeer(std::string uuid)
-{
-    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    PeerNodePtr tmp_;
-    tmp_.reset(new IPeerNode(uuid,GetConnectionManager()));
-    InsertInPeerSet(m_AllPeers,tmp_);
-    return tmp_;
-}
 
 ////////////////////////////////////////////////////////////
 /// AddPeer

@@ -45,6 +45,7 @@
 #include <iostream>
 #include <set>
 
+#include <boost/asio.hpp>
 #include <boost/bind.hpp>
 #include <boost/foreach.hpp>
 #include <boost/property_tree/ptree.hpp>
@@ -70,6 +71,7 @@ CLocalLogger Logger(__FILE__);
 /// @limitations None.
 ////////////////////////////////////////////////////////////////////////////////
 CAdapterFactory::CAdapterFactory()
+    : m_timeout(m_ios)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
@@ -115,7 +117,7 @@ void CAdapterFactory::StartSessionProtocol()
 
         // initialize the TCP variant of the session layer protocol
         port        = CGlobalConfiguration::instance().GetFactoryPort();
-        handler     = boost::bind(&CAdapterFactory::SessionProtocol, this);
+        handler     = boost::bind(&CAdapterFactory::StartSession, this);
         m_server    = CTcpServer::Create(m_ios, port);
         m_server->RegisterHandler(handler);
     }
@@ -464,13 +466,68 @@ unsigned short CAdapterFactory::GetPortNumber()
 ///
 /// @limitations None.
 ////////////////////////////////////////////////////////////////////////////////
-void CAdapterFactory::SessionProtocol()
+
+void CAdapterFactory::StartSession()
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+
+    Logger.Notice << "A wild client appears!" << std::endl;
+    m_timeout.expires_from_now(boost::posix_time::seconds(2));
+    m_timeout.async_wait(boost::bind(&CAdapterFactory::Timeout, this,
+            boost::asio::placeholders::error));
+
+    m_buffer.consume(m_buffer.size());
+    boost::asio::async_read_until(m_server->GetSocket(), m_buffer, "\r\n\r\n",
+            boost::bind(&CAdapterFactory::HandleRead, this,
+            boost::asio::placeholders::error));
+}
+
+void CAdapterFactory::Timeout(const boost::system::error_code & e)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     
-    boost::asio::streambuf packet;
-    std::istream packet_stream(&packet);
-    
+    if( !e ) 
+    {
+        m_server->GetSocket().close();
+        Logger.Info << "Connection closed due to timeout." << std::endl;
+        m_server->StartAccept();
+    }
+    else if( e == boost::asio::error::operation_aborted )
+    {
+        Logger.Debug << "Factory connection timeout aborted." << std::endl;
+    }
+    else
+    {
+        throw e;
+    }
+}
+
+void CAdapterFactory::HandleRead(const boost::system::error_code & e)
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+
+    if( !e )
+    {
+        if( m_timeout.cancel() == 1 )
+        {
+            SessionProtocol();
+        }
+        else
+        {
+            Logger.Debug << "Dropped packet due to timeout." << std::endl;
+        }
+    }
+    else
+    {
+        throw e;
+    }
+}
+
+void CAdapterFactory::SessionProtocol()
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+   
+    std::istream packet(&m_buffer); 
     boost::asio::streambuf response;
     std::ostream response_stream(&response);
     
@@ -481,15 +538,10 @@ void CAdapterFactory::SessionProtocol()
     int sindex = 1, cindex = 1;
     unsigned short port = 0;
     bool newport = true;
-    
-    Logger.Notice << "A wild client appears!" << std::endl;
-    
+
     try
-    {
-        Logger.Status << "Blocking for client hello message." << std::endl;
-        boost::asio::read_until(m_server->GetSocket(), packet, "\r\n\r\n");
-        
-        packet_stream >> header >> host;
+    {        
+        packet >> header >> host;
         //host = m_server->GetHostname();
         Logger.Info << "Received " << header << " from " << host << std::endl;
         
@@ -507,7 +559,7 @@ void CAdapterFactory::SessionProtocol()
         config.put("info.identifier", host);
         // info.stateport handled below
 
-        for( int i = 0; packet_stream >> type >> name; i++ )
+        for( int i = 0; packet >> type >> name; i++ )
         {
             Logger.Debug << "Processing " << type << ":" << name << std::endl;
             

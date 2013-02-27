@@ -41,6 +41,7 @@
 #include <boost/noncopyable.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/io_service.hpp>
+#include <boost/asio/deadline_timer.hpp>
 #include <boost/property_tree/ptree_fwd.hpp>
 
 namespace freedm {
@@ -105,7 +106,13 @@ private:
 
     /// Session layer protocol for plug-and-play devices.
     void SessionProtocol();
-    
+
+    void StartSession();   
+ 
+    void HandleRead(const boost::system::error_code & e);
+
+    void Timeout(const boost::system::error_code & e);
+
     /// Set of device prototypes managed by the factory.
     std::map<std::string, IDevice::Pointer> m_prototype;
     
@@ -122,6 +129,10 @@ private:
     std::set<unsigned short> m_ports;
 
     boost::thread m_thread;
+
+    boost::asio::streambuf m_buffer;
+
+    boost::asio::deadline_timer m_timeout;
 };
 
 ////////////////////////////////////////////////////////////////////////////////

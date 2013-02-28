@@ -164,7 +164,7 @@ def handleBadRequest(msg):
 
     @param msg string the message sent by DGI
     """
-    msg.replace('BadRequest: ', '', 1)
+    msg.replace('BadRequest', '', 1)
     with open('ERRORS', 'a') as errorfile:
         errorfile.write(str(datetime.datetime.now()) + '\n')
         errorfile.write('Sent bad request to DGI: ' + msg + '\n')
@@ -390,7 +390,7 @@ def politeQuit(adapterSock, deviceSignals):
             adapterSock.close()
             return
 
-        if msg.find('BadRequest: ') == 0:
+        if msg.find('BadRequest') == 0:
             handleBadRequest(msg)
             return
 

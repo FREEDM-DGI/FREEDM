@@ -25,7 +25,6 @@
 ///     HandleRead
 ///     Step_PStar
 ///     PStar
-///     StartStateTimer
 ///     HandleStateTimer
 ///
 /// These source code files were created at Missouri University of Science and
@@ -102,7 +101,8 @@ LBAgent::LBAgent(std::string uuid_, CBroker &broker):
     m_Leader = GetUUID();
     m_Normal = 0;
     m_GlobalTimer = broker.AllocateTimer("lb");
-    m_StateTimer = broker.AllocateTimer("lb");
+    // Bound to lbq so it resolves before the state collection round
+    m_StateTimer = broker.AllocateTimer("lbq");
     RegisterSubhandle("any.PeerList",boost::bind(&LBAgent::HandlePeerList, this, _1, _2));
     RegisterSubhandle("lb.demand",boost::bind(&LBAgent::HandleDemand, this, _1, _2));
     RegisterSubhandle("lb.normal",boost::bind(&LBAgent::HandleNormal, this, _1, _2));
@@ -137,10 +137,20 @@ LBAgent::~LBAgent()
 /////////////////////////////////////////////////////////
 int LBAgent::Run()
 {
+    // This function should now be bound to lbq which is the "module"
+    // responsible for calling state collection immediately before state
+    // collection starts.
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     // This initializes the algorithm
-    LoadManage();
-    StartStateTimer( CTimings::LB_STATE_TIMER );
+    boost::system::error_code e;
+    HandleStateTimer(e);
+    // This timer gets resolved for the lb module (instead of lbq) so
+    // it is safe to give it a timeout of 1 effectively making it expire
+    // immediately
+    m_broker.Schedule(m_GlobalTimer,
+        boost::posix_time::milliseconds(1),
+        boost::bind(&LBAgent::LoadManage, this,
+            boost::asio::placeholders::error));
     return 0;
 }
 
@@ -325,11 +335,9 @@ void LBAgent::LoadManage()
     {
         // Schedule past the end of our phase so control will pass to the broker
         // after this LB, and we won't go again until it's our turn.
-        // FIXME - This should be using LB_GLOBAL_TIMER not the state timer,
-        //         but it's pointless to fix it now because Issue #146
         m_broker.Schedule(m_GlobalTimer,
                           boost::posix_time::milliseconds(
-                              CTimings::LB_STATE_TIMER),
+                              2*CTimings::LB_GLOBAL_TIMER),
                           boost::bind(&LBAgent::LoadManage,
                                       this,
                                       boost::asio::placeholders::error));
@@ -613,10 +621,6 @@ void LBAgent::HandleAny(MessagePtr msg, PeerNodePtr peer)
     std::string line_;
     std::stringstream ss_;
     line_ = msg->GetSourceUUID();
-    ptree &pt = msg->GetSubMessages();
-    Logger.Debug << "Message '" <<pt.get<std::string>("lb","NOEXECPTION")
-                 <<"' received from "<< line_<<std::endl;
-
     if(msg->GetHandler().find("lb") == 0)
     {
         Logger.Error<<"Unhandled Load Balancing Message"<<std::endl;
@@ -1086,21 +1090,6 @@ void LBAgent::Desd_PStar()
 }
 
 ////////////////////////////////////////////////////////////
-/// StartStateTimer
-/// @description Starts the state timer and restarts on timeout
-/// @pre: Starts only on timeout or when you are the new leader
-/// @post: Passes control to HandleStateTimer
-/// @limitations
-/////////////////////////////////////////////////////////
-void LBAgent::StartStateTimer( unsigned int delay )
-{
-    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-
-    m_broker.Schedule(m_StateTimer, boost::posix_time::milliseconds(delay),
-        boost::bind(&LBAgent::HandleStateTimer, this, boost::asio::placeholders::error));
-}
-
-////////////////////////////////////////////////////////////
 /// HandleStateTimer
 /// @description Sends request to SC module to initiate and restarts on timeout
 /// @pre: Starts only on timeout
@@ -1117,7 +1106,8 @@ void LBAgent::HandleStateTimer( const boost::system::error_code & error )
         CollectState();
     }
 
-    StartStateTimer( CTimings::LB_STATE_TIMER );
+    m_broker.Schedule(m_StateTimer, boost::posix_time::milliseconds(CTimings::LB_STATE_TIMER),
+        boost::bind(&LBAgent::HandleStateTimer, this, boost::asio::placeholders::error));
 }
 
 } // namespace lb

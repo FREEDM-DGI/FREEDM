@@ -43,6 +43,8 @@ public:
 
     static unsigned int GM_CHECK_TIMEOUT;
 
+    static unsigned int LB_SC_QUERY_TIME;
+
     static unsigned int CSUC_RESEND_TIME;
 
     static unsigned int GM_TIMEOUT_TIMEOUT;

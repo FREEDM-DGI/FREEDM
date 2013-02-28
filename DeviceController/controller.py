@@ -330,12 +330,9 @@ def reconnect(deviceTypes):
             break
 
     if msg.find('BadRequest') == 0:
-        if 'Duplicate session' in msg:
-            time.sleep(config['hello-timeout'])
-            return reconnect(deviceTypes)
-        else:
-            handleBadRequest(msg)
-            return
+        time.sleep(config['hello-timeout'])
+        handleBadRequest(msg)
+        return reconnect(deviceTypes)
     else:
         msg = msg.split()
         if len(msg) != 3 or msg[0] != 'Start' or msg[1] != 'StatePort:':

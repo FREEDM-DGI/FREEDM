@@ -32,6 +32,7 @@
 
 #include "CPscadAdapter.hpp"
 #include "CLogger.hpp"
+#include "SynchronousTimeout.hpp"
 
 #include <iostream>
 #include <stdexcept>

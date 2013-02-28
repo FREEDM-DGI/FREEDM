@@ -165,9 +165,11 @@ def handleBadRequest(msg):
     @param msg string the message sent by DGI
     """
     msg.replace('BadRequest', '', 1)
+    errormsg = 'Sent bad request to DGI: ' + msg
+    print >> sys.stderr, errormsg
     with open('ERRORS', 'a') as errorfile:
         errorfile.write(str(datetime.datetime.now()) + '\n')
-        errorfile.write('Sent bad request to DGI: ' + msg + '\n')
+        errorfile.write(errormsg)
 
 
 def enableDevice(deviceTypes, deviceSignals, command):

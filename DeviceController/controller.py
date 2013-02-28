@@ -33,6 +33,7 @@ import time
 config = {}
 
 COPYRIGHT_YEAR = '2013'
+VERSION_FILE = '../Broker/src/version.h'
 
 
 def initializeConfig():
@@ -65,14 +66,14 @@ plug and play protocol and pretends to immediately implement DGI commands.'''
     if args.version:
         version = '(Unknown Version)'
         try:
-            with open('../Broker/src/version.h', 'r') as versionFile:
+            with open(VERSION_FILE, 'r') as versionFile:
                 versionLine = versionFile.readlines()[2]
                 versionStart = versionLine.index('"')
                 versionEnd = versionLine.rindex('"')
                 version = versionLine[versionStart+1:versionEnd]
         except:
             pass
-        print 'FREEDM Fake Device Controller', VERSION
+        print 'FREEDM Fake Device Controller Revision', version
         print 'Copyright (C)', COPYRIGHT_YEAR, 'NSF FREEDM Systems Center'
         sys.exit(0)
 

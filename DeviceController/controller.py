@@ -330,8 +330,8 @@ def reconnect(deviceTypes):
             break
 
     if msg.find('BadRequest') == 0:
-        time.sleep(config['hello-timeout'])
         handleBadRequest(msg)
+        time.sleep(config['hello-timeout'])
         return reconnect(deviceTypes)
     else:
         msg = msg.split()

@@ -164,7 +164,7 @@ def handleBadRequest(msg):
 
     @param msg string the message sent by DGI
     """
-    msg.replace('BadRequest', '', 1)
+    msg = msg.replace('BadRequest', '', 1)
     errormsg = 'Sent bad request to DGI: ' + msg
     print >> sys.stderr, errormsg
     with open('ERRORS', 'a') as errorfile:

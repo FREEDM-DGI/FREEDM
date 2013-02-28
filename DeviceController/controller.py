@@ -25,6 +25,7 @@ import ConfigParser
 import argparse
 import datetime
 import math
+import os
 import socket
 import string
 import sys
@@ -33,6 +34,7 @@ import time
 config = {}
 
 COPYRIGHT_YEAR = '2013'
+ERROR_FILE = 'ERRORS'
 VERSION_FILE = '../Broker/src/version.h'
 
 
@@ -167,7 +169,7 @@ def handleBadRequest(msg):
     msg = msg.replace('BadRequest', '', 1)
     errormsg = 'Sent bad request to DGI: ' + msg
     print >> sys.stderr, errormsg
-    with open('ERRORS', 'a') as errorfile:
+    with open(ERROR_FILE, 'a') as errorfile:
         errorfile.write(str(datetime.datetime.now()) + '\n')
         errorfile.write(errormsg)
 
@@ -429,6 +431,13 @@ if __name__ == '__main__':
     firstHello = True
     # socket connected
     adapterSock = -1
+
+    # we don't want to see errors from previous runs
+    try:
+        os.remove(ERROR_FILE)
+    except OSError:
+        # no errors, yay
+        pass
     
     initializeConfig() 
     script = open(config['script'], 'r')

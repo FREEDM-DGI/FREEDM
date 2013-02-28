@@ -183,6 +183,8 @@ def enableDevice(deviceTypes, deviceSignals, command):
     assert command[0] == 'enable'
     assert (len(command)-3)%2 == 0 and len(command) >= 5
     name = command[2]
+    if deviceTypes.has_key(name):
+        raise AssertionError('Device ' + name + ' is already enabled!')
     deviceTypes[name] = command[1]
     for i in range (3, len(command), 2):
         deviceSignals[(name, command[i])] = command[i+1]

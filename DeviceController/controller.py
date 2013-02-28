@@ -471,7 +471,12 @@ if __name__ == '__main__':
         elif command.find('dieHorribly') == 0 and len(command.split()) == 2:
             if firstHello:
                 raise RuntimeError("Can't die before first Hello")
-            duration = int(command.split()[1])
+            duration = command.split()[1]
+            if duration == 'forever':
+                print 'I have died horribly forever, goodbye'
+                script.close()
+                sys.exit(0)
+            duration = int(duration)
             if duration < 0:
                 raise ValueError("It's nonsense to die for " + duration + "s")
             time.sleep(duration)

@@ -11,7 +11,9 @@
 # once that succeeds. So each enable/disable will take several seconds.
 # 
 # If the controller dies horribly, it will do that without sending a quit
-# request. It will wait n seconds (0 is valid) before reconnecting.
+# request. It will wait n seconds (0 is valid) before reconnecting. You can also
+# 'dieHorribly forever' to never reconnect if it's the last command in the
+# script.
 #
 # work is used to pass time without enabling/disabling devices or dying.
 # i.e. it is used for normal operation of the controller. For implementation
@@ -20,7 +22,7 @@
 # of work is lower bounded by n*(stateTimeout+commandTimeout), where
 # stateTimeout is set by the controller and commandTimeout by DGI. (Never
 # mind that the controller is mostly going to be blocking during this work.)
-# You can also 'work forever'
+# You can also 'work forever' if it's the last command in the script.
 #
 # *The parser accepts comments only if they start on the first column!*
 

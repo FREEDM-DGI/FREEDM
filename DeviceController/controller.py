@@ -351,7 +351,7 @@ def reconnect(deviceTypes):
                 as e:
             print >> sys.stderr, \
                 'Error connecting to DGI adapter: {0}'.format(e.strerror)
-            sleep(config['state-timeout'])
+            time.sleep(config['state-timeout'])
             if i == 9:
                 print >> sys.stderr, \
                     'Giving up on the adapter, sending a new Hello'

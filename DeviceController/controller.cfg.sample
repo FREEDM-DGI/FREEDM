@@ -19,7 +19,7 @@ port=3160 ; zapdos 3010
 # after receiving commands, ms to wait before sending updated states
 state-timeout=1000
 
-# ms to wait before resending a Hello (if the DGI does not respond)
+# ms to wait before resending a Hello (e.g. no response, duplicate session)
 hello-timeout=2000
 
 # after sending updated states, ms to wait before impolite close/reconnect

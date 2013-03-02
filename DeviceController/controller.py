@@ -525,6 +525,7 @@ if __name__ == '__main__':
         elif command.find('sendtofactory') == 0 and len(command.split()) == 2:
             filename = command.split()[1]
             msg = ''
+            response = ''
             with open(filename, 'r') as packet:
                 msg = packet.read()
             print 'Going to send to adapter factory:\n' + msg
@@ -533,25 +534,38 @@ if __name__ == '__main__':
             try:
                 factorySock.connect((config['host'], config['port']))
                 sendAll(factorySock, msg)
+                response = recvAll(factorySock)
                 factorySock.close()
             except (socket.error, socket.herror, socket.gaierror,
                     socket.timeout) as e:
                 print >> sys.stderr, \
                 'sendtofactory failed: {0}'.format(e.strerror)
+            if response.find('BadRequest') == 0:
+                handleBadRequest(response)
+            else:
+                print 'Factory responded:\n' + response
             time.sleep(config['custom-timeout'])
 
         elif command.find('sendtoadapter') == 0 and len(command.split()) == 2:
+            if firstHello:
+                raise RuntimeError("Can't sendtoadapter before the first Hello")
             filename = command.split()[1]
             msg = ''
+            response = ''
             with open(filename, 'r') as packet:
                 msg = packet.read()
             print 'Going to send to adapter:\n' + msg
             try:
                 sendAll(adapterSock, msg)
+                response = recvAll(adapterSock)
             except (socket.error, socket.herror, socket.gaierror,
                     socket.timeout) as e:
                 print >> sys.stderr, \
                 'sendtoadapter failed: {0}'.format(e.strerror)
+            if response.find('BadRequest') == 0:
+                handleBadRequest(response)
+            else:
+                print 'Adapter responded:\n' + response
             time.sleep(config['custom-timeout'])
 
         else:

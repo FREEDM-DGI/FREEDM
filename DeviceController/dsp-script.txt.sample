@@ -27,7 +27,11 @@
 # You can also 'work forever' if it's the last command in the script.
 #
 # Use sendtofactory and sendtoadapter to specify the name of a file containing a
-# packet to send to the DGI. Envisioned useful for testing error cases.
+# packet to send to the DGI. Envisioned useful for testing error cases. When
+# sending to the factory, open a socket connection to the factory, send the
+# packet, then print the factory's response and disconnect. When sending to the
+# adapter, just send the packet and print the factory's response. (sendtoadapter
+# cannot be the first command in the script.) BadRequests will be logged.
 #
 # *The parser accepts comments only if they start on the first column!*
 

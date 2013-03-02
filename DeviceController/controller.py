@@ -141,11 +141,11 @@ def recvAll(socket):
 
     @ErrorHandling Will raise a RuntimeError if there is data after \r\n\r\n,
                    since that delimits the end of a message and the DGI is not
-                   allowed to send multiple messages in a row. Or if there is
-                   no \r\n\r\n at all in the packet, or if it doesn't occur at
-                   the very end of the packet. Will raise socket.timeout if
-                   the DGI times out, or socket.error if the connection is
-                   closed.
+                   allowed to send multiple messages in a row. Also raises
+                   runtime errors if there is no \r\n\r\n at all in the packet,
+                   or if it doesn't occur at the very end of the packet. Will
+                   raise socket.timeout if the DGI times out, or socket.error if
+                   the connection is closed.
 
     @return the data that has been read
     """

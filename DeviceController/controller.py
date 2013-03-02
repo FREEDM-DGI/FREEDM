@@ -558,8 +558,7 @@ if __name__ == '__main__':
             try:
                 sendAll(adapterSock, msg)
                 response = recvAll(adapterSock)
-            except (socket.error, socket.herror, socket.gaierror,
-                    socket.timeout) as e:
+            except (socket.error, socket.timeout) as e:
                 print >> sys.stderr, \
                 'sendtoadapter failed: {0}'.format(e.strerror)
             if response.find('BadRequest') == 0:

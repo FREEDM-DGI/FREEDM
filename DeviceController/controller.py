@@ -108,6 +108,7 @@ plug and play protocol and pretends to immediately implement DGI commands.'''
     config['state-timeout'] = float(cp.get('timings', 'state-timeout'))/1000.0
     config['hello-timeout'] = float(cp.get('timings', 'hello-timeout'))/1000.0
     config['dgi-timeout'] = float(cp.get('timings', 'dgi-timeout'))/1000.0
+    config['custom-timeout'] = float(cp.get('timings', 'custom-timeout'))/1000.0
     config['adapter-connection-retries'] = \
             int(cp.get('misc', 'adapter-connection-retries'))
 
@@ -520,6 +521,38 @@ if __name__ == '__main__':
                         print >> sys.stderr, 'Performing impolite reconnect'
                         adapterSock.close()
                         adapterSock = reconnect(deviceTypes)
+
+        elif command.find('sendtofactory') == 0 and len(command.split()) == 2:
+            filename = command.split()[1]
+            msg = ''
+            with open(filename, 'r') as packet:
+                msg = packet.read()
+            print 'Going to send to adapter factory:\n' + msg
+            factorySock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            factorySock.settimeout(config['dgi-timeout'])
+            try:
+                factorySock.connect((config['host'], config['port']))
+                sendAll(factorySock, msg)
+                factorySock.close()
+            except (socket.error, socket.herror, socket.gaierror,
+                    socket.timeout) as e:
+                print >> sys.stderr, \
+                'sendtofactory failed: {0}'.format(e.strerror)
+            time.sleep(config['custom-timeout'])
+
+        elif command.find('sendtoadapter') == 0 and len(command.split()) == 2:
+            filename = command.split()[1]
+            msg = ''
+            with open(filename, 'r') as packet:
+                msg = packet.read()
+            print 'Going to send to adapter:\n' + msg
+            try:
+                sendAll(adapterSock, msg)
+            except (socket.error, socket.herror, socket.gaierror,
+                    socket.timeout) as e:
+                print >> sys.stderr, \
+                'sendtoadapter failed: {0}'.format(e.strerror)
+            time.sleep(config['custom-timeout'])
 
         else:
             raise RuntimeError('Read invalid script command:\n' + command)

@@ -25,6 +25,9 @@ hello-timeout=2000
 # after sending updated states, ms to wait before impolite close/reconnect
 dgi-timeout=5000
 
+# ms to wait after sending a custom command to AdapterFactory or an adapter
+custom-timeout=1000
+
 [misc]
 
 # after receiving a Start from the AdapterFactory, how many times to try to

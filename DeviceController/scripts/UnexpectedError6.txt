@@ -1,0 +1,4 @@
+# Unexpected Error 6
+# The DGI receives a packet with a header it does not recognize
+enable Sst SST1 gateway 5.0
+sendtoadapter scripts/packets/UnrecognizedHeader.txt

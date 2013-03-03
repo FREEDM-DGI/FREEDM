@@ -79,11 +79,18 @@ void TimedRead(ReadStream & stream, const BufferSequence & buffer, int duration)
 
     SyncTimeoutLogger.Info << "Blocking for synchronous read." << std::endl;
 
-    while( !result && !timeout );
+    while( !result && !timeout )
+    {
+        stream.get_io_service().run_one();
+    }
 
     if( timeout )
     {
         throw std::runtime_error("Synchronous Read Timeout");
+    }
+    else
+    {
+        timer.cancel();
     }
     SyncTimeoutLogger.Info << "Synchronous read complete." << std::endl;
 }
@@ -120,11 +127,18 @@ void TimedReadUntil(ReadStream & stream,
 
     SyncTimeoutLogger.Info << "Blocking for synchronous read." << std::endl;
 
-    while( !result && !timeout );
+    while( !result && !timeout )
+    {
+        stream.get_io_service().run_one();
+    }
 
     if( timeout )
     {
         throw std::runtime_error("Synchronous Read Until Timeout");
+    }
+    else
+    {
+        timer.cancel();
     }
     SyncTimeoutLogger.Info << "Synchronous read complete." << std::endl;
 }
@@ -151,18 +165,23 @@ void TimedWrite(WriteStream & stream, const BufferSequence & buffer,
     boost::asio::deadline_timer timer(stream.get_io_service());
 
     timer.expires_from_now(boost::posix_time::milliseconds(duration));
-    timer.async_wait(boost::bind(SetResult, &timeout,
-            boost::asio::placeholders::error));
-    boost::asio::async_write(stream, buffer, boost::bind(SetResult, &result,
-            boost::asio::placeholders::error));
+    timer.async_wait(boost::bind(SetResult, &timeout, _1));
+    boost::asio::async_write(stream, buffer, boost::bind(SetResult, &result, _1));
 
     SyncTimeoutLogger.Info << "Blocking for synchronous write." << std::endl;
 
-    while( !result && !timeout );
+    while( !result && !timeout )
+    {
+        stream.get_io_service().run_one();
+    }
 
     if( timeout )
     {
         throw std::runtime_error("Synchronous Write Timeout");
+    }
+    else
+    {
+        timer.cancel();
     }
     SyncTimeoutLogger.Info << "Synchronous write complete." << std::endl;
 }
@@ -196,11 +215,18 @@ void TimedWrite(WriteStream & stream,
 
     SyncTimeoutLogger.Info << "Blocking for synchronous write." << std::endl;
 
-    while( !result && !timeout );
+    while( !result && !timeout )
+    {
+        stream.get_io_service().run_one();
+    }
 
     if( timeout )
     {
         throw std::runtime_error("Synchronous Write Timeout");
+    }
+    else
+    {
+        timer.cancel();
     }
     SyncTimeoutLogger.Info << "Synchronous write complete." << std::endl;
 }

@@ -9,6 +9,7 @@ set(
     IBufferAdapter.cpp
     ITcpAdapter.cpp
     PhysicalDeviceTypes.cpp
+    SynchronousTimeout.cpp
    )
 
 # compile the device type source files

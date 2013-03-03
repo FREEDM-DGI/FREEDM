@@ -8,7 +8,6 @@
 /// @description  Synchronous i/o operations with timeouts.
 ///
 /// @functions
-///     SetResult
 ///     TimedRead
 ///     TimedReadUntil
 ///     TimedWrite
@@ -47,26 +46,9 @@ namespace {
 CLocalLogger SyncTimeoutLogger(__FILE__);
 }
 
-struct SetResult {
-typedef void result_type;
-////////////////////////////////////////////////////////////////////////////////
-/// Sets an optional variable to a specified value. This function is meant to
-/// be used in conjunction with asynchronous race conditions.
-///
-/// @pre None.
-/// @post The first parameter is set equal to the second.
-/// @param status The optional variable to receive a value.
-/// @param value The value to assign to the optional variable.
-///
-/// @limitations None.
-////////////////////////////////////////////////////////////////////////////////
-template <typename ResultType>
-void operator()(boost::optional<ResultType> * status, const ResultType & value)
-{
-    SyncTimeoutLogger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    status->reset(value);
-}
-};
+/// Callback function for the timed socket operations.
+void SetResult(boost::optional<boost::system::error_code> * status,
+        const boost::system::error_code & error);
 
 ////////////////////////////////////////////////////////////////////////////////
 /// A read that blocks until the buffer is full or the time duration expires.
@@ -86,12 +68,14 @@ void TimedRead(ReadStream & stream, const BufferSequence & buffer, int duration)
 {
     SyncTimeoutLogger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
-    boost::optional<int> result, timeout;
+    boost::optional<boost::system::error_code> result, timeout;
     boost::asio::deadline_timer timer(stream.get_io_service());
 
     timer.expires_from_now(boost::posix_time::milliseconds(duration));
-    timer.async_wait(boost::bind(SetResult(), &timeout, 1));
-    boost::asio::async_read(stream, buffer, boost::bind(SetResult(), &result, 1));
+    timer.async_wait(boost::bind(SetResult, &timeout,
+            boost::asio::placeholders::error));
+    boost::asio::async_read(stream, buffer, boost::bind(SetResult, &result,
+            boost::asio::placeholders::error));
 
     SyncTimeoutLogger.Info << "Blocking for synchronous read." << std::endl;
 
@@ -125,13 +109,14 @@ void TimedReadUntil(ReadStream & stream,
 {
     SyncTimeoutLogger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
-    boost::optional<int> result, timeout;
+    boost::optional<boost::system::error_code> result, timeout;
     boost::asio::deadline_timer timer(stream.get_io_service());
 
     timer.expires_from_now(boost::posix_time::milliseconds(duration));
-    timer.async_wait(boost::bind(SetResult(), &timeout, 1));
-    boost::asio::async_read_until(stream, buffer, delim,
-            boost::bind(SetResult(), &result, 1));
+    timer.async_wait(boost::bind(SetResult, &timeout,
+            boost::asio::placeholders::error));
+    boost::asio::async_read_until(stream, buffer, delim, boost::bind(SetResult,
+            &result, boost::asio::placeholders::error));
 
     SyncTimeoutLogger.Info << "Blocking for synchronous read." << std::endl;
 
@@ -162,13 +147,14 @@ void TimedWrite(WriteStream & stream, const BufferSequence & buffer,
 {
     SyncTimeoutLogger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
-    boost::optional<int> result, timeout;
+    boost::optional<boost::system::error_code> result, timeout;
     boost::asio::deadline_timer timer(stream.get_io_service());
 
     timer.expires_from_now(boost::posix_time::milliseconds(duration));
-    timer.async_wait(boost::bind(SetResult(), &timeout, 1));
-    boost::asio::async_write(stream, buffer,
-            boost::bind(SetResult(), &result, 1));
+    timer.async_wait(boost::bind(SetResult, &timeout,
+            boost::asio::placeholders::error));
+    boost::asio::async_write(stream, buffer, boost::bind(SetResult, &result,
+            boost::asio::placeholders::error));
 
     SyncTimeoutLogger.Info << "Blocking for synchronous write." << std::endl;
 
@@ -199,13 +185,14 @@ void TimedWrite(WriteStream & stream,
 {
     SyncTimeoutLogger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
-    boost::optional<int> result, timeout;
+    boost::optional<boost::system::error_code> result, timeout;
     boost::asio::deadline_timer timer(stream.get_io_service());
 
     timer.expires_from_now(boost::posix_time::milliseconds(duration));
-    timer.async_wait(boost::bind(SetResult(), &timeout, 1));
-    boost::asio::async_write(stream, buffer,
-            boost::bind(SetResult(), &result, 1));
+    timer.async_wait(boost::bind(SetResult, &timeout,
+            boost::asio::placeholders::error));
+    boost::asio::async_write(stream, buffer, boost::bind(SetResult, &result,
+            boost::asio::placeholders::error));
 
     SyncTimeoutLogger.Info << "Blocking for synchronous write." << std::endl;
 

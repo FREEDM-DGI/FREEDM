@@ -121,11 +121,11 @@ void CPscadAdapter::Set(const std::string device, const std::string signal,
     // format and send the request stream
     request_stream << "SET " << device <<' '<< signal <<' '<< value << "\r\n";
     Logger.Notice << "Sending data through a blocking write." << std::endl;
-    boost::asio::write(m_socket, request);
+    TimedWrite(m_socket, request, 800);
 
     // receive and split the response stream
     Logger.Notice << "Receiving data through a blocking read." << std::endl;
-    boost::asio::read_until(m_socket, response, "\r\n");
+    TimedReadUntil(m_socket, response, "\r\n", 800);
     response_stream >> response_code >> response_message;
 
     // handle bad responses
@@ -173,11 +173,11 @@ SignalValue CPscadAdapter::Get(const std::string device,
     // format and send the request stream
     request_stream << "GET " << device << ' ' << signal << "\r\n";
     Logger.Notice << "Sending data through a blocking write." << std::endl;
-    boost::asio::write(m_socket, request);
+    TimedWrite(m_socket, request, 800);
 
     // receive and split the response stream
     Logger.Notice << "Receiving data through a blocking read." << std::endl;
-    boost::asio::read_until(m_socket, response, "\r\n");
+    TimedReadUntil(m_socket, response, "\r\n", 800);
     response_stream >> response_code >> response_message >> value;
 
     // handle bad responses
@@ -223,11 +223,11 @@ void CPscadAdapter::Quit()
     // format and send the request stream
     request_stream << "QUIT\r\n";
     Logger.Notice << "Sending data through a blocking write." << std::endl;
-    boost::asio::write(m_socket, request);
+    TimedWrite(m_socket, request, 800);
 
     // receive and split the response stream
     Logger.Notice << "Receiving data through a blocking read." << std::endl;
-    boost::asio::read_until(m_socket, response, "\r\n");
+    TimedReadUntil(m_socket, response, "\r\n", 800);
     response_stream >> response_code >> response_message;
 
     // handle bad responses

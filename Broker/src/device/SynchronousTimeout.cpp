@@ -44,13 +44,13 @@ CLocalLogger Logger(__FILE__);
 /// @pre The first argument should be uninitialized.
 /// @post The first argument will be set to the error code.
 /// @param status The optional variable that will store the error code.
-/// @param error The error code of the call bound to this function.
+/// @param error The error code of an asynchronous call bound to this function.
 ///
 /// @limitations The optional variable will also be set in error cases when the
 /// asynchronous call fails. Check the value of the first argument to determine
 /// whether an error has occured.
 ////////////////////////////////////////////////////////////////////////////////
-void SetResult(boost::optional<boost::system::error_code> * status,
+void SetResult(boost::shared_ptr<OptionalError> status,
         const boost::system::error_code & error)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;

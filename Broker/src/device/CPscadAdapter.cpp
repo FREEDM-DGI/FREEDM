@@ -177,6 +177,10 @@ SignalValue CPscadAdapter::Get(const std::string device,
 
     // receive and split the response stream
     Logger.Notice << "Receiving data through a blocking read." << std::endl;
+    if( m_socket.is_open() )
+    std::cout << "socket open" << std::endl;
+    else
+    std::cout << "socket closed" << std::endl;
     TimedReadUntil(m_socket, response, "\r\n", 800);
     response_stream >> response_code >> response_message >> value;
 

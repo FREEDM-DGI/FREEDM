@@ -11,7 +11,6 @@
 ///     TimedRead
 ///     TimedReadUntil
 ///     TimedWrite
-///     
 ///
 /// These source code files were created at Missouri University of Science and
 /// Technology, and are intended for use in teaching or research. They may be
@@ -36,6 +35,7 @@
 #include <boost/asio.hpp>
 #include <boost/bind.hpp>
 #include <boost/optional.hpp>
+#include <boost/shared_ptr.hpp>
 
 namespace freedm {
 namespace broker {
@@ -46,20 +46,24 @@ namespace {
 CLocalLogger SyncTimeoutLogger(__FILE__);
 }
 
-/// Callback function for the timed socket operations.
-void SetResult(boost::optional<boost::system::error_code> * status,
+/// Convenience typedef for the SetResult function.
+typedef boost::optional<boost::system::error_code> OptionalError;
+
+/// Callback function for the timed synchronous operations.
+void SetResult(boost::shared_ptr<OptionalError> status,
         const boost::system::error_code & error);
 
 ////////////////////////////////////////////////////////////////////////////////
-/// A read that blocks until the buffer is full or the time duration expires.
+/// A read that blocks until the buffer is full or a time duration expires.
 ///
-/// @ErrorHandling Throws std::runtime_error if the time duration expires.
+/// @ErrorHandling Throws std::runtime_error if either the read operation fails
+/// or the time duration expires.
 /// @pre The stream must receive data within the given time duration.
 /// @post The call will block until data is read from the stream.
 /// @post The result of the read will be stored in the passed buffer.
 /// @param stream The read stream that will receive data.
 /// @param buffer The buffer to store the result of the read.
-/// @param duration The amount of time in milliseconds before a timeout.
+/// @param duration The amount of time in milliseconds for the timeout.
 ///
 /// @limitations None.
 ////////////////////////////////////////////////////////////////////////////////
@@ -68,44 +72,49 @@ void TimedRead(ReadStream & stream, const BufferSequence & buffer, int duration)
 {
     SyncTimeoutLogger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
-    boost::optional<boost::system::error_code> result, timeout;
-    boost::asio::deadline_timer timer(stream.get_io_service());
-
-    timer.expires_from_now(boost::posix_time::milliseconds(duration));
-    timer.async_wait(boost::bind(SetResult, &timeout,
-            boost::asio::placeholders::error));
-    boost::asio::async_read(stream, buffer, boost::bind(SetResult, &result,
-            boost::asio::placeholders::error));
+    boost::asio::io_service & ios = stream.get_io_service();
+    boost::shared_ptr<OptionalError> result(new OptionalError);
+    boost::shared_ptr<OptionalError> timeout(new OptionalError);
+    boost::asio::deadline_timer timer(ios);
 
     SyncTimeoutLogger.Info << "Blocking for synchronous read." << std::endl;
 
-    while( !result && !timeout )
+    boost::asio::async_read(stream, buffer,
+            boost::bind(SetResult, result, _1));
+    timer.expires_from_now(boost::posix_time::milliseconds(duration));
+    timer.async_wait(boost::bind(SetResult, timeout, _1));
+
+    while( !(*result) && !(*timeout) )
     {
-        stream.get_io_service().run_one();
+        ios.poll();
     }
 
-    if( timeout )
+    if( *result && (*result)->value() == boost::system::errc::success )
+    {
+        SyncTimeoutLogger.Info << "Synchronous read complete." << std::endl;
+    }
+    else if( *timeout && (*timeout)->value() == boost::system::errc::success )
     {
         throw std::runtime_error("Synchronous Read Timeout");
     }
     else
     {
-        timer.cancel();
+        throw std::runtime_error("Synchronous Read Failed");
     }
-    SyncTimeoutLogger.Info << "Synchronous read complete." << std::endl;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-/// A read that blocks until a delimiter is read or the time duration expires.
+/// A read that blocks until a delimiter is read or a time duration expires.
 ///
-/// @ErrorHandling Throws std::runtime_error if the time duration expires.
+/// @ErrorHandling Throws std::runtime_error if either the read operation fails
+/// or the time duration expires.
 /// @pre The stream must receive delimited data within the time duration.
 /// @post The call will block until the delimiter is read from the stream.
 /// @post The result of the read will be stored in the passed buffer.
 /// @param stream The read stream that will receive delimited data.
 /// @param buffer The buffer to store the reuslt of the read.
 /// @param delim The delimiter that marks the end of the data.
-/// @param duration The amount of time in milliseconds before a timeout.
+/// @param duration The amount of time in milliseconds for the timeout.
 ///
 /// @limitations None.
 ////////////////////////////////////////////////////////////////////////////////
@@ -116,42 +125,47 @@ void TimedReadUntil(ReadStream & stream,
 {
     SyncTimeoutLogger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
-    boost::optional<boost::system::error_code> result, timeout;
-    boost::asio::deadline_timer timer(stream.get_io_service());
-
-    timer.expires_from_now(boost::posix_time::milliseconds(duration));
-    timer.async_wait(boost::bind(SetResult, &timeout,
-            boost::asio::placeholders::error));
-    boost::asio::async_read_until(stream, buffer, delim, boost::bind(SetResult,
-            &result, boost::asio::placeholders::error));
+    boost::asio::io_service & ios = stream.get_io_service();
+    boost::shared_ptr<OptionalError> result(new OptionalError);
+    boost::shared_ptr<OptionalError> timeout(new OptionalError);
+    boost::asio::deadline_timer timer(ios);
 
     SyncTimeoutLogger.Info << "Blocking for synchronous read." << std::endl;
 
-    while( !result && !timeout )
+    boost::asio::async_read_until(stream, buffer, delim,
+            boost::bind(SetResult, result, _1));
+    timer.expires_from_now(boost::posix_time::milliseconds(duration));
+    timer.async_wait(boost::bind(SetResult, timeout, _1));
+
+    while( !(*result) && !(*timeout) )
     {
-        stream.get_io_service().run_one();
+        ios.poll();
     }
 
-    if( timeout )
+    if( *result && (*result)->value() == boost::system::errc::success )
+    {
+        SyncTimeoutLogger.Info << "Synchronous read complete." << std::endl;
+    }
+    else if( *timeout && (*timeout)->value() == boost::system::errc::success )
     {
         throw std::runtime_error("Synchronous Read Until Timeout");
     }
     else
     {
-        timer.cancel();
+        throw std::runtime_error("Synchronous Read Until Failed");
     }
-    SyncTimeoutLogger.Info << "Synchronous read complete." << std::endl;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-/// A write that blocks until either successful or the time duration expires.
+/// A write that blocks until either completion or a time duration expires.
 ///
-/// @ErrorHandling Throws std::runtime_error if the time duration expires.
+/// @ErrorHandling Throws std::runtime_error if the write operation fails or
+/// the time duration expires.
 /// @pre The write must complete within the given time duration.
 /// @post The call will block until the write is successful.
 /// @param stream The write stream to receive the data.
 /// @param buffer The buffered data to write to the stream.
-/// @param duration The amount of time in milliseconds before a timeout.
+/// @param duration The amount of time in milliseconds for the timeout.
 ///
 /// @limitations None.
 ////////////////////////////////////////////////////////////////////////////////
@@ -161,40 +175,47 @@ void TimedWrite(WriteStream & stream, const BufferSequence & buffer,
 {
     SyncTimeoutLogger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
-    boost::optional<boost::system::error_code> result, timeout;
-    boost::asio::deadline_timer timer(stream.get_io_service());
-
-    timer.expires_from_now(boost::posix_time::milliseconds(duration));
-    timer.async_wait(boost::bind(SetResult, &timeout, _1));
-    boost::asio::async_write(stream, buffer, boost::bind(SetResult, &result, _1));
+    boost::asio::io_service & ios = stream.get_io_service();
+    boost::shared_ptr<OptionalError> result(new OptionalError);
+    boost::shared_ptr<OptionalError> timeout(new OptionalError);
+    boost::asio::deadline_timer timer(ios);
 
     SyncTimeoutLogger.Info << "Blocking for synchronous write." << std::endl;
 
-    while( !result && !timeout )
+    boost::asio::async_write(stream, buffer,
+            boost::bind(SetResult, result, _1));
+    timer.expires_from_now(boost::posix_time::milliseconds(duration));
+    timer.async_wait(boost::bind(SetResult, timeout, _1));
+
+    while( !(*result) && !(*timeout) )
     {
-        stream.get_io_service().run_one();
+        ios.poll();
     }
 
-    if( timeout )
+    if( *result && (*result)->value() == boost::system::errc::success )
+    {
+        SyncTimeoutLogger.Info << "Synchronous write complete." << std::endl;
+    }
+    else if( *timeout && (*timeout)->value() == boost::system::errc::success )
     {
         throw std::runtime_error("Synchronous Write Timeout");
     }
     else
     {
-        timer.cancel();
+        throw std::runtime_error("Synchronous Write Failed");
     }
-    SyncTimeoutLogger.Info << "Synchronous write complete." << std::endl;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-/// A write that blocks until either successful or the time duration expires.
+/// A write that blocks until either completion or a time duration expires.
 ///
-/// @ErrorHandling Throws std::runtime_error if the time duration expires.
+/// @ErrorHandling Throws std::runtime_error if the write opertaion fails or
+/// the time duration expires.
 /// @pre The write must complete within the given time duration.
 /// @post The call will block until the write is successful.
 /// @param stream The write stream to receive the data.
 /// @param buffer The buffered data to write to the stream.
-/// @param duration The amount of time in milliseconds before a timeout.
+/// @param duration The amount of time in milliseconds for the timeout.
 ///
 /// @limitations None.
 ////////////////////////////////////////////////////////////////////////////////
@@ -204,31 +225,35 @@ void TimedWrite(WriteStream & stream,
 {
     SyncTimeoutLogger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
-    boost::optional<boost::system::error_code> result, timeout;
-    boost::asio::deadline_timer timer(stream.get_io_service());
-
-    timer.expires_from_now(boost::posix_time::milliseconds(duration));
-    timer.async_wait(boost::bind(SetResult, &timeout,
-            boost::asio::placeholders::error));
-    boost::asio::async_write(stream, buffer, boost::bind(SetResult, &result,
-            boost::asio::placeholders::error));
+    boost::asio::io_service & ios = stream.get_io_service();
+    boost::shared_ptr<OptionalError> result(new OptionalError);
+    boost::shared_ptr<OptionalError> timeout(new OptionalError);
+    boost::asio::deadline_timer timer(ios);
 
     SyncTimeoutLogger.Info << "Blocking for synchronous write." << std::endl;
 
-    while( !result && !timeout )
+    boost::asio::async_write(stream, buffer,
+            boost::bind(SetResult, result, _1));
+    timer.expires_from_now(boost::posix_time::milliseconds(duration));
+    timer.async_wait(boost::bind(SetResult, timeout, _1));
+
+    while( !(*result) && !(*timeout) )
     {
-        stream.get_io_service().run_one();
+        ios.poll();
     }
 
-    if( timeout )
+    if( *result && (*result)->value() == boost::system::errc::success )
+    {
+        SyncTimeoutLogger.Info << "Synchronous write complete." << std::endl;
+    }
+    else if( *timeout && (*timeout)->value() == boost::system::errc::success )
     {
         throw std::runtime_error("Synchronous Write Timeout");
     }
     else
     {
-        timer.cancel();
+        throw std::runtime_error("Synchronous Write Failed");
     }
-    SyncTimeoutLogger.Info << "Synchronous write complete." << std::endl;
 }
 
 } // namespace device

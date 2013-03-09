@@ -120,7 +120,9 @@ void CRtdsAdapter::Start()
     
     IBufferAdapter::Start();
     ITcpAdapter::Connect();
-    Run();
+    m_runTimer.expires_from_now(
+            boost::posix_time::milliseconds(CTimings::RTDS_RUN_DELAY));
+    m_runTimer.async_wait(boost::bind(&CRtdsAdapter::Run, this, _1));
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -146,10 +148,13 @@ void CRtdsAdapter::Start()
 ///
 /// @limitations This function uses synchronous communication.
 ////////////////////////////////////////////////////////////////////////////////
-void CRtdsAdapter::Run()
+void CRtdsAdapter::Run(const boost::system::error_code & e)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    
+
+    if( e )
+        return;    
+
     // Always send data to FPGA first
     if( !m_txBuffer.empty() )
     {
@@ -199,7 +204,7 @@ void CRtdsAdapter::Run()
     // Start the timer; on timeout, this function is called again
     m_runTimer.expires_from_now(
             boost::posix_time::milliseconds(CTimings::RTDS_RUN_DELAY));
-    m_runTimer.async_wait(boost::bind(&CRtdsAdapter::Run, this));
+    m_runTimer.async_wait(boost::bind(&CRtdsAdapter::Run, this, _1));
 }
 
 ////////////////////////////////////////////////////////////////////////////

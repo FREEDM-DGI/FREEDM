@@ -76,7 +76,7 @@ private:
             const boost::property_tree::ptree & ptree);
 
     /// Continuous loop for sending and receiving to/from RTDS.
-    void Run();
+    void Run(const boost::system::error_code & e);
 
     /// Shut down communication to FPGA.
     void Quit();

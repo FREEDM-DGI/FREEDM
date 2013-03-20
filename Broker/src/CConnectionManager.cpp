@@ -252,7 +252,7 @@ ConnectionPtr CConnectionManager::GetConnectionByUUID(std::string uuid_)
     Logger.Debug<<"Constructing CConnection"<<std::endl;
     ConnectionPtr c_(new CConnection(m_inchannel->GetIOService(), *this, m_inchannel->GetBroker(), uuid_));  
    
-    // Initiate the TCP connection
+    // Initiate the UDP connection
     Logger.Debug<<"Computing remote endpoint"<<std::endl;
     boost::asio::ip::udp::resolver resolver(m_inchannel->GetIOService());
     boost::asio::ip::udp::resolver::query query( s_, port);

@@ -228,7 +228,7 @@ ConnectionPtr CConnectionManager::GetConnectionByUUID(std::string uuid_)
         }
         else
         {
-            Logger.Warn <<" Connection to " << uuid_ << " has gone stale " << std::endl;
+            Logger.Warn <<"Connection to " << uuid_ << " has gone stale " << std::endl;
             //The socket is not marked as open anymore, we
             //should stop it.
             Stop(m_connections.left.at(uuid_));

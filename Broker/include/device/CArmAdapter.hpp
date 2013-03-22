@@ -85,7 +85,7 @@ private:
     void HandleWrite(const boost::system::error_code & e);
     
     /// Parses a state packet received from the client.
-    std::string ReadStatePacket(const std::string packet);
+    void ReadStatePacket(const std::string packet);
     
     /// Sends device commands to the current client.
     std::string GetCommandPacket();

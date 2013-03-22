@@ -25,6 +25,7 @@ import ConfigParser
 import argparse
 import datetime
 import math
+import os
 import socket
 import string
 import sys
@@ -33,6 +34,8 @@ import time
 config = {}
 
 COPYRIGHT_YEAR = '2013'
+ERROR_FILE = 'ERRORS'
+VERSION_FILE = '../Broker/src/version.h'
 
 
 def initializeConfig():
@@ -65,14 +68,14 @@ plug and play protocol and pretends to immediately implement DGI commands.'''
     if args.version:
         version = '(Unknown Version)'
         try:
-            with open('../Broker/src/version.h', 'r') as versionFile:
+            with open(VERSION_FILE, 'r') as versionFile:
                 versionLine = versionFile.readlines()[2]
                 versionStart = versionLine.index('"')
                 versionEnd = versionLine.rindex('"')
                 version = versionLine[versionStart+1:versionEnd]
         except:
             pass
-        print 'FREEDM Fake Device Controller', VERSION
+        print 'FREEDM Fake Device Controller Revision', version
         print 'Copyright (C)', COPYRIGHT_YEAR, 'NSF FREEDM Systems Center'
         sys.exit(0)
 
@@ -105,6 +108,7 @@ plug and play protocol and pretends to immediately implement DGI commands.'''
     config['state-timeout'] = float(cp.get('timings', 'state-timeout'))/1000.0
     config['hello-timeout'] = float(cp.get('timings', 'hello-timeout'))/1000.0
     config['dgi-timeout'] = float(cp.get('timings', 'dgi-timeout'))/1000.0
+    config['custom-timeout'] = float(cp.get('timings', 'custom-timeout'))/1000.0
     config['adapter-connection-retries'] = \
             int(cp.get('misc', 'adapter-connection-retries'))
 
@@ -138,11 +142,11 @@ def recvAll(socket):
 
     @ErrorHandling Will raise a RuntimeError if there is data after \r\n\r\n,
                    since that delimits the end of a message and the DGI is not
-                   allowed to send multiple messages in a row. Or if there is
-                   no \r\n\r\n at all in the packet, or if it doesn't occur at
-                   the very end of the packet. Will raise socket.timeout if
-                   the DGI times out, or socket.error if the connection is
-                   closed.
+                   allowed to send multiple messages in a row. Also raises
+                   runtime errors if there is no \r\n\r\n at all in the packet,
+                   or if it doesn't occur at the very end of the packet. Will
+                   raise socket.timeout if the DGI times out, or socket.error if
+                   the connection is closed.
 
     @return the data that has been read
     """
@@ -163,10 +167,12 @@ def handleBadRequest(msg):
 
     @param msg string the message sent by DGI
     """
-    msg.replace('BadRequest: ', '', 1)
-    with open('ERRORS', 'a') as errorfile:
+    msg = msg.replace('BadRequest', '', 1)
+    errormsg = 'Sent bad request to DGI: ' + msg
+    print >> sys.stderr, errormsg
+    with open(ERROR_FILE, 'a') as errorfile:
         errorfile.write(str(datetime.datetime.now()) + '\n')
-        errorfile.write('Sent bad request to DGI: ' + msg + '\n')
+        errorfile.write(errormsg)
 
 
 def enableDevice(deviceTypes, deviceSignals, command):
@@ -183,6 +189,8 @@ def enableDevice(deviceTypes, deviceSignals, command):
     assert command[0] == 'enable'
     assert (len(command)-3)%2 == 0 and len(command) >= 5
     name = command[2]
+    if deviceTypes.has_key(name):
+        raise AssertionError('Device ' + name + ' is already enabled!')
     deviceTypes[name] = command[1]
     for i in range (3, len(command), 2):
         deviceSignals[(name, command[i])] = command[i+1]
@@ -326,9 +334,10 @@ def reconnect(deviceTypes):
         else:
             break
 
-    if msg.find('BadRequest: ') == 0:
+    if msg.find('BadRequest') == 0:
         handleBadRequest(msg)
-        return
+        time.sleep(config['hello-timeout'])
+        return reconnect(deviceTypes)
     else:
         msg = msg.split()
         if len(msg) != 3 or msg[0] != 'Start' or msg[1] != 'StatePort:':
@@ -348,7 +357,7 @@ def reconnect(deviceTypes):
                 as e:
             print >> sys.stderr, \
                 'Error connecting to DGI adapter: {0}'.format(e.strerror)
-            sleep(config['state-timeout'])
+            time.sleep(config['state-timeout'])
             if i == 9:
                 print >> sys.stderr, \
                     'Giving up on the adapter, sending a new Hello'
@@ -387,7 +396,7 @@ def politeQuit(adapterSock, deviceSignals):
             adapterSock.close()
             return
 
-        if msg.find('BadRequest: ') == 0:
+        if msg.find('BadRequest') == 0:
             handleBadRequest(msg)
             return
 
@@ -423,6 +432,13 @@ if __name__ == '__main__':
     firstHello = True
     # socket connected
     adapterSock = -1
+
+    # we don't want to see errors from previous runs
+    try:
+        os.remove(ERROR_FILE)
+    except OSError:
+        # no errors, yay
+        pass
     
     initializeConfig() 
     script = open(config['script'], 'r')
@@ -465,7 +481,12 @@ if __name__ == '__main__':
         elif command.find('dieHorribly') == 0 and len(command.split()) == 2:
             if firstHello:
                 raise RuntimeError("Can't die before first Hello")
-            duration = int(command.split()[1])
+            duration = command.split()[1]
+            if duration == 'forever':
+                print 'I have died horribly forever, goodbye'
+                script.close()
+                sys.exit(0)
+            duration = int(duration)
             if duration < 0:
                 raise ValueError("It's nonsense to die for " + duration + "s")
             time.sleep(duration)
@@ -500,6 +521,51 @@ if __name__ == '__main__':
                         print >> sys.stderr, 'Performing impolite reconnect'
                         adapterSock.close()
                         adapterSock = reconnect(deviceTypes)
+
+        elif command.find('sendtofactory') == 0 and len(command.split()) == 2:
+            filename = command.split()[1]
+            msg = ''
+            response = ''
+            with open(filename, 'r') as packet:
+                msg = packet.read()
+            print 'Going to send to adapter factory:\n' + msg
+            factorySock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            factorySock.settimeout(config['dgi-timeout'])
+            try:
+                factorySock.connect((config['host'], config['port']))
+                sendAll(factorySock, msg)
+                response = recvAll(factorySock)
+                factorySock.close()
+            except (socket.error, socket.herror, socket.gaierror,
+                    socket.timeout) as e:
+                print >> sys.stderr, \
+                'sendtofactory failed: {0}'.format(e.strerror)
+            if response.find('BadRequest') == 0:
+                handleBadRequest(response)
+            else:
+                print 'Factory responded:\n' + response
+            time.sleep(config['custom-timeout'])
+
+        elif command.find('sendtoadapter') == 0 and len(command.split()) == 2:
+            if firstHello:
+                raise RuntimeError("Can't sendtoadapter before the first Hello")
+            filename = command.split()[1]
+            msg = ''
+            response = ''
+            with open(filename, 'r') as packet:
+                msg = packet.read()
+            print 'Going to send to adapter:\n' + msg
+            try:
+                sendAll(adapterSock, msg)
+                response = recvAll(adapterSock)
+            except (socket.error, socket.timeout) as e:
+                print >> sys.stderr, \
+                'sendtoadapter failed: {0}'.format(e.strerror)
+            if response.find('BadRequest') == 0:
+                handleBadRequest(response)
+            else:
+                print 'Adapter responded:\n' + response
+            time.sleep(config['custom-timeout'])
 
         else:
             raise RuntimeError('Read invalid script command:\n' + command)

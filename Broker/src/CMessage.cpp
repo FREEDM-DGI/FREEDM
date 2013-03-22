@@ -25,7 +25,7 @@
 
 #include <boost/functional/hash.hpp>
 #include <boost/property_tree/ptree.hpp>
-#include <boost/property_tree/xml_parser.hpp>
+#include <boost/property_tree/info_parser.hpp>
 
 using boost::property_tree::ptree;
 
@@ -324,7 +324,7 @@ size_t CMessage::GetHash() const
 {
     std::stringstream ss;
     boost::hash<std::string> string_hash;
-    write_xml(ss,m_submessages);
+    write_info(ss,m_submessages);
     ss<<GetSendTimestamp();
     return string_hash(ss.str());
 }
@@ -345,14 +345,14 @@ bool CMessage::Load( std::istream &p_is )
     ptree pt;
     bool result;
 
-    // We allow exceptions from read_xml to propagate out in the
+    // We allow exceptions from read_info to propagate out in the
     // event that the message is incomplete.
     
     // Load XML into the property tree using the input stream
     // An exception is thrown if reading fails.  This is propagated
     // up to distinguish between successful parse and valid
     // message from below
-    read_xml( p_is, pt );
+    read_info( p_is, pt );
 
     // If the message is complete but doesn't have a source or
     // submessage identifier, then the message is malformed,
@@ -394,7 +394,7 @@ void CMessage::Save( std::ostream &p_os ) const
     pt = static_cast< ptree >( *this );
 
     // Write the property tree to xml on the stream
-    write_xml( p_os, pt );
+    write_info( p_os, pt );
 }
 
 ///////////////////////////////////////////////////////////////////////////////

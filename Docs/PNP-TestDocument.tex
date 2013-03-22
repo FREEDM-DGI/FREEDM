@@ -1,23 +1,29 @@
 \documentclass{article}
 
+% landscape orientation
 \usepackage[landscape]{geometry}
-\usepackage[usenames,dvipsnames]{xcolor}
+
+% table spans pages
 \usepackage{longtable}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% YOU NEED TO MODIFY THIS PART
-% fill out the tester name and commit hash below
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% pass / fail colors
+\usepackage{color}
+\usepackage[dvipsnames]{xcolor}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newcommand{\testerName}{}
 \newcommand{\commitHash}{}
 
+% \pass and \fail{text} definitions
 \newcommand{\pass}{\textcolor{OliveGreen}{PASS}}
-\newcommand{\fail}{\textcolor{BrickRed}{FAIL}}
+\newcommand{\fail}[1]{\textcolor{BrickRed}{FAIL}\footnote{#1}}
 
-\newcounter{rownum}
-\newcommand\rownumber{\stepcounter{rownum}\arabic{rownum}}
-
+% no new page for title
 \let\endtitlepage\relax
+
+% more space between table entries
 \renewcommand{\arraystretch}{1.5}
 
 \begin{document}
@@ -39,125 +45,73 @@
 \end{center}
 \end{titlepage}
 
-\centering
-\begin{longtable}{|c|p{4cm}|p{5cm}|c|p{6cm}|}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{center}
+\begin{footnotesize}
+\begin{longtable}{|p{3cm}|p{4cm}|p{10cm}|c|}
     \hline
-    \# & Test Prefix & Description & Result & Comments \\ \hline \endhead \hline \endfoot
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    % YOU NEED TO MODIFY THIS PART
-    % write \pass or \fail between the ampersands on the second line
-    % write an (optional) command between the ampersand and backslash
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    \rownumber & Configuration1 & Run the DGI using a negative factory port.
-               & & \\
-    \rownumber & Configuration2 & Run the DGI using a reserved port number for the factory port.
-               & & \\
-    \rownumber & Configuration3 & Run the DGI using a factory port greater than 65535.
-               & & \\
-    \rownumber & Configuration4 & Run the DGI using a string for the factory port.
-               & & \\
-    \rownumber & Configuration5 & Run the DGI without the factory port specified.
-               & & \\
-    \rownumber & Configuration6 & Run the DGI with a single adapter port specified.
-               & & \\
-    \rownumber & Configuration7 & Run the DGI with a large number of adapter ports specified.
-               & & \\
-    \rownumber & Configuration8 & Run the DGI with an inverted range for the adapter port.
-               & & \\
-    \rownumber & Configuration9 & Run the DGI using a negative adapter port.
-               & & \\
-    \rownumber & Configuration10 & Run the DGI using a reserved port number for the adapter port.
-               & & \\
-    \rownumber & Configuration11 & Run the DGI using an adapter port greater than 65535.
-               & & \\
-    \rownumber & Configuration12 & Run the DGI using a string for the adapter port.
-               & & \\
-    \rownumber & Configuration13 & Run the DGI without the first adapter port.
-               & & \\
-    \rownumber & Configuration14 & Run the DGI without the second adapter port.
-               & & \\
-    \rownumber & Configuration15 & Run the DGI without either adapter port.
-               & & \\
-    \rownumber & Configuration16 & Run the DGI with the same first and second adapter port.
-               & & \\
-    \rownumber & Configuration17 & Run the DGI without an adapter port range specified.
-               & & \\
-    \rownumber & Configuration18 & Run the DGI with multiple adapter port ranges specified.
-               & & \\
-    \rownumber & Configuration19 & Run the DGI with multiple adapter port ranges that overlap.
-               & & \\
-    \rownumber & Configuration20 & Run the DGI with the same adapter and factory port.
-               & & \\
-    \rownumber & BasicOperation1 & Detect a single plug and play device.
-               & & \\
-    \rownumber & BasicOperation2 & Remove a plug and play device that has gone off-line.
-               & & \\
-    \rownumber & BasicOperation3 & Change the value of a plug and play device at run time.
-               & & \\
-    \rownumber & BasicOperation4 & Detect two devices of the same type with the correct net value.
-               & & \\
-    \rownumber & BasicOperation5 & Detect two devices of different types with the correct values.
-               & & \\
-    \rownumber & BasicOperation6 & Remove the first of two SST devices.
-               & & \\
-    \rownumber & BasicOperation7 & Remove the second of two SST devices.
-               & & \\
-    \rownumber & BasicOperation8 & Remove a device other than the SST.
-               & & \\
-    \rownumber & BasicOperation9 & Change the value of the SST device.
-               & & \\
-    \rownumber & BasicOperation10 & Change the value of the a non-SST device.
-               & & \\
-    \rownumber & BasicOperation11 & Handle a large number of devices at once.
-               & & \\
-    \rownumber & BasicOperation12 & Change the value of a large number of devices.
-               & & \\
-    \rownumber & Failure1 & Fail before sending the DGI device states.
-               & & \\
-    \rownumber & Failure2 & Fail before sending states and then restart.
-               & & \\
-    \rownumber & Failure3 & Fail after sending the DGI device states.
-               & & \\
-    \rownumber & Failure4 & Fail after sending the device states and restart instantly.
-               & & \\
-    \rownumber & Failure5 & Fail after sending the device states and restart after a delay.
-               & & \\
-    \rownumber & UnexpectedError1 & Send an unrecognized device type to the DGI.
-               & & \\
-    \rownumber & UnexpectedError2 & Send an unrecognized signal type to the DGI.
-               & & \\
-    \rownumber & UnexpectedError3 & Send a corrupt state value to the DGI.
-               & & \\
-    \rownumber & UnexpectedError4 & Have the same controller specify the same device twice.
-               & & \\
-    \rownumber & UnexpectedError5 & Have the same controller start two simultaneous sessions.
-               & & \\
-    \rownumber & MultipleControllers1 & Have two controllers use the same device type with different names.
-               & & \\
-    \rownumber & MultipleControllers2 & Have two controllers use the same device type with identical names.
-               & & \\
-    \rownumber & MultipleControllers3 & Have two controllers use different device types.
-               & & \\
-    \rownumber & MultipleControllers4 & Remove the first of two controllers connected to the DGI.
-               & & \\
-    \rownumber & MultipleControllers5 & Remove the second of two controllers connected to the DGI.
-               & & \\
-    \rownumber & MultipleControllers6 & Change the device value of a controller connected to the DGI.
-               & & \\
-    \rownumber & MultipleControllers7 & Use a large number of controllers to connect at once.
-               & & \\
-    \rownumber & MultipleControllers8 & Have insufficient port numbers to accept all controllers.
-               & & \\
-    \rownumber & MultipleControllers9 & Have insufficient port numbers but have controllers timeout.
-               & & \\
-    \rownumber & MultipleDGI1 & Have two DGI converge to a positive normal value.
-               & & \\
-    \rownumber & MultipleDGI2 & Have two DGI converge to a negative normal value.
-               & & \\
-    \rownumber & MultipleDGI3 & Have the normal value change during convergence.
-               & & \\
-    \rownumber & MultipleDGI4 & Have one DGI lose its devices during convergence.
-               & & \\
+    Test Prefix & Description & Expected Result & Result \\ \hline \endhead \hline \endfoot
+    Configuration1 & Run the DGI using a negative session port. & Exception caught in main: factory-port=-3000: invalid port number: -3000 & \\
+    Configuration2 & Run the DGI using a reserved session port. & Exception caught in main: factory-port=0: reserved port number: 0 & \\
+    Configuration3 & Run the DGI using a session port greater than 65535. & Exception caught in main: factory-port=68000: invalid port number: 68000 & \\
+    Configuration4 & Run the DGI using a non-numeric session port. & Exception caught in main: factory-port=3000wq: invalid port number: 3000wq & \\
+    Configuration5 & Run the DGI without the session port specified. & Exception caught in main: factory-port not specified in config & \\
+    Configuration6 & Run the DGI with a single plug and play port. & 1 adapter port(s) available. & \\
+    Configuration7 & Run the DGI with a large number of plug and play ports. & 36011 adapter port(s) available. & \\
+    Configuration8 & Run the DGI with an inverted plug and play port range. & Exception caught in main: adapter-port=4010:4000: invalid range & \\
+    Configuration9 & Run the DGI using a negative plug and play port. & Exception caught in main: adapter-port=-4010:-4000: invalid port number: -4010 & \\
+    Configuration10 & Run the DGI using a reserved plug and play port. & Exception caught in main: adapter-port=0:10: reserved port number: 0 & \\
+    Configuration11 & Run the DGI using a plug and play port greater than 65535. & Exception caught in main: adapter-port=68000:68007: invalid port number: 68000 & \\
+    Configuration12 & Run the DGI using a non-numeric plug and play port. & Exception caught in main: adapter-port=4000:4010i: invalid port number: 4010i & \\
+    Configuration13 & Run the DGI without the start of the plug and play port range. & Exception caught in main: adapter-port=:4010: received empty string for a port number & \\
+    Configuration14 & Run the DGI without the end of the plug and play port range. & Exception caught in main: adapter-port=4000:: received empty string for a port number & \\
+    Configuration15 & Run the DGI with an empty plug and play port range. & Exception caught in main: adapter-port=:: received empty string for a port number & \\
+    Configuration16 & Run the DGI with the same value for the start and end of the plug and play port range. & 1 adapter port(s) available. & \\
+    Configuration17 & Run the DGI without a plug and play port specified. & Will not use plug and play devices. & \\
+    Configuration18 & Run the DGI with multiple plug and play port ranges. & 11 adapter port(s) available. & \\
+    Configuration19 & Run the DGI with multiple plug and play port ranges that overlap. & Duplicate adapter port: 4005 & \\
+    Configuration20 & Run the DGI with the lone plug and play port the same as the session port. & Rejected client: No available port numbers for new adapter. & \\
+    Configuration21 & Run the DGI with the first plug and play port the same as thes session port. & Port already used: 3000 & \\
+    BasicOperation1 & Detect a single plug and play device. & SST (0) $\rightarrow$ 0.0 \newline SST (1) $\rightarrow$ 5.0 & \\
+    BasicOperation2 & Remove a plug and play device that has gone off-line. & SST (0) $\rightarrow$ 0.0 \newline SST (1) $\rightarrow$ 5.0 \newline SST (0) $\rightarrow$ 0.0 & \\
+    BasicOperation3 & Change the value of a plug and play device at run time. & SST (0) $\rightarrow$ 0.0 \newline SST (1) $\rightarrow$ 5.0 \newline SST (1) $\rightarrow$ 10.0 & \\
+    BasicOperation4 & Detect two devices of the same type with the correct $\rightarrow$ value. & SST (0) $\rightarrow$ 0.0 \newline SST (2) $\rightarrow$ 12.0 & \\
+    BasicOperation5 & Detect two devices of different types with the correct values. & LOAD (0) $\rightarrow$ 0.0 ; SST (0) $\rightarrow$ 0.0 \newline LOAD (1) $\rightarrow$ 42.0 ; SST (1) $\rightarrow$ 5.0 & \\
+    BasicOperation6 & Remove the first of two SST devices. & SST (0) $\rightarrow$ 0.0 \newline SST (2) $\rightarrow$ 12.0 \newline SST (1) $\rightarrow$ 7.0 & \\
+    BasicOperation7 & Remove the second of two SST devices. & SST (0) $\rightarrow$ 0.0 \newline SST (2) $\rightarrow$ 12.0 \newline SST (1) $\rightarrow$ 5.0 & \\
+    BasicOperation8 & Remove a device other than the SST. & LOAD (0) $\rightarrow$ 0.0 ; SST (0) $\rightarrow$ 0.0 \newline LOAD (1) $\rightarrow$ 42.0 ; SST (1) $\rightarrow$ 5.0 \newline LOAD (0) $\rightarrow$ 0.0 ; SST (1) $\rightarrow$ 5.0 & \\
+    BasicOperation9 & Change the value of one of several SST devices. & SST (0) $\rightarrow$ 0.0 \newline SST (2) $\rightarrow$ 12.0 \newline SST (2) $\rightarrow$ 17.0 & \\
+    BasicOperation10 & Change the value of the a non-SST device. & LOAD (0) $\rightarrow$ 0.0 ; SST (0) $\rightarrow$ 0.0 \newline LOAD (1) $\rightarrow$ 42.0 ; SST (1) $\rightarrow$ 5.0 \newline LOAD (1) $\rightarrow$ 24.0 ; SST (1) $\rightarrow$ 5.0 & \\
+    BasicOperation11 & Handle a large number of devices at once. & DRER (0) $\rightarrow$ 0.0 ; DESD (0) $\rightarrow$ 0.0 ; LOAD (0) $\rightarrow$ 0.0 ; SST (0) $\rightarrow$ 0.0 \newline DRER (3) $\rightarrow$ 111.0 ; DESD (1) $\rightarrow$ 10.0 ; LOAD (1) $\rightarrow$ 42.0 ; SST (2) $\rightarrow$ 12.0 & \\
+    BasicOperation12 & Change the value of a large number of devices. & DRER (0) $\rightarrow$ 0.0 ; DESD (0) $\rightarrow$ 0.0 ; LOAD (0) $\rightarrow$ 0.0 ; SST (0) $\rightarrow$ 0.0 \newline DRER (2) $\rightarrow$ 39.0 ; DESD (1) $\rightarrow$ 10.0 ; LOAD (1) $\rightarrow$ 42.0 ; SST (1) $\rightarrow$ 5.0 \newline DRER (2) $\rightarrow$ 49.0 ; DESD (1) $\rightarrow$ 10.0; LOAD (1) $\rightarrow$ 42.0 ; SST (1) $\rightarrow$ 10.0 & \\
+    Failure1 & Fail before sending the DGI device states. & test case incomplete & \\
+    Failure2 & Fail before sending states and then restart. & test case incomplete & \\
+    Failure3 & Fail after sending the DGI device states. & SST (0) $\rightarrow$ 0.0 \newline SST (1) $\rightarrow$ 5.0 \newline SST (0) $\rightarrow$ 0.0 & \\
+    Failure4 & Fail after sending the device states and restart instantly. & SST (0) $\rightarrow$ 0.0 \newline SST (1) $\rightarrow$ 5.0 & \\
+    Failure5 & Fail after sending the device states and restart after a delay. & SST (0) $\rightarrow$ 0.0 \newline SST (1) $\rightarrow$ 5.0 \newline SST (0) $\rightarrow$ 0.0 \newline SST (1) $\rightarrow$ 5.0 & \\
+    UnexpectedError1 & Send an unrecognized device type to the DGI. & Rejected client: Unknown device type: SST & \\
+    UnexpectedError2 & Send an unrecognized signal type to the DGI. & Corrupt state: Unknown device signal: TestController:SST1 gateawy & \\
+    UnexpectedError3 & Send a corrupt state value to the DGI. & Corrupt state: received non-numeric value & \\
+    UnexpectedError4 & Have the same controller specify the same device twice. & Rejected client: The device TestController:SST1 already exists. & \\
+    UnexpectedError5 & Have the same controller start two simultaneous sessions. & Rejected client: Duplicate session for TestController & \\
+    MultipleControllers1 & Have two controllers use the same device type with different names. & SST (0) $\rightarrow$ 0.0 \newline \ldots \newline SST (2) $\rightarrow$ 12.0 & \\
+    MultipleControllers2 & Have two controllers use the same device type with identical names. & SST (0) $\rightarrow$ 0.0 \newline \ldots \newline SST (2) $\rightarrow$ 12.0 & \\
+    MultipleControllers3 & Have two controllers use different device types. & LOAD (0) $\rightarrow$ 0.0 ; SST (0) $\rightarrow$ 0.0 \newline \ldots \newline LOAD (1) $\rightarrow$ 42.0 ; SST (1) $\rightarrow$ 5.0 & \\
+    MultipleControllers4 & Remove the first of two controllers connected to the DGI. & LOAD (0) $\rightarrow$ 0.0 ; SST (0) $\rightarrow$ 0.0 \newline \ldots \newline LOAD (1) $\rightarrow$ 42.0 ; SST (1) $\rightarrow$ 5.0 \newline LOAD (1) $\rightarrow$ 42.0 ; SST (0) $\rightarrow$ 0.0 & \\
+    MultipleControllers5 & Remove the second of two controllers connected to the DGI. & LOAD (0) ; SST (0) $\rightarrow$ 0.0 $\rightarrow$ 0.0 \newline \ldots \newline LOAD (1) $\rightarrow$ 42.0 ; SST (1) $\rightarrow$ 5.0 \newline LOAD (0) $\rightarrow$ 0.0 ; SST (1) $\rightarrow$ 5.0 & \\
+    MultipleControllers6 & Change the device value of a controller connected to the DGI. & SST (0) $\rightarrow$ 0.0 \newline \ldots \newline SST (2) $\rightarrow$ 12.0 \newline SST (2) $\rightarrow$ 17.0 & \\
+    MultipleControllers7 & Use a large number of controllers to connect at once. & DRER (0) $\rightarrow$ 0.0 ; DESD (0) $\rightarrow$ 0.0 ; LOAD (0) $\rightarrow$ 0.0 ; SST (0) $\rightarrow$ 0.0 \newline \ldots \newline DRER (3) $\rightarrow$ 111.0 ; DESD (1) $\rightarrow$ 10.0 ; LOAD (1) $\rightarrow$ 42.0 ; SST (2) $\rightarrow$ 12.0 \newline \ldots \newline DRER (3) $\rightarrow$ 121.0 ; DESD (1) $\rightarrow$ 10.0 ; LOAD (1) $\rightarrow$ 42.0 ; SST (2) $\rightarrow$ 17.0 & \\
+    MultipleControllers8 & Have insufficient port numbers to accept all controllers. & test case incomplete & \\
+    MultipleControllers9 & Have insufficient port numbers but have controllers timeout. & test case incomplete & \\
+    MultipleDGI1 & Have two DGI converge to a positive normal value. & \begin{minipage}[t]{0.5\linewidth}SST (0) $\rightarrow$ 0.0 \newline \ldots \newline SST (1) $\rightarrow$ 20.0\end{minipage}\begin{minipage}[t]{0.5\linewidth}SST (0) $\rightarrow$ 0.0 \newline \ldots \newline SST (1) $\rightarrow$ 20.0\end{minipage} & \\
+    MultipleDGI2 & Have two DGI converge to a negative normal value. & \begin{minipage}[t]{0.5\linewidth}SST (0) $\rightarrow$ 0.0 \newline \ldots \newline SST (1) $\rightarrow$ -5.0\end{minipage}\begin{minipage}[t]{0.5\linewidth}SST (0) $\rightarrow$ 0.0 \newline \ldots \newline SST (1) $\rightarrow$ -5.0\end{minipage} & \\
+    MultipleDGI3 & Have the normal value change during convergence. & \begin{minipage}[t]{0.5\linewidth}SST (0) $\rightarrow$ 0.0 \newline \ldots \newline SST (1) $\rightarrow$ -3.0 \newline \ldots \newline SST (1) $\rightarrow$ -6.0\end{minipage}\begin{minipage}[t]{0.5\linewidth}SST (0) $\rightarrow$ 0.0 \newline \ldots \newline SST (1) $\rightarrow$ -3.0 \newline \ldots \newline SST (1) $\rightarrow$ -6.0\end{minipage} & \\
+    MultipleDGI4 & Have one DGI lose its devices during convergence. & \begin{minipage}[t]{0.5\linewidth}SST (0) $\rightarrow$ 0.0 \newline \ldots \newline SST (1) $<$ 250.0\end{minipage}\begin{minipage}[t]{0.5\linewidth}SST (0) $\rightarrow$ 0.0 \newline \ldots \newline SST (0) $\rightarrow$ 0.0\end{minipage} & \\
+    MultipleDGI5 & Have one DGI with no attached devices. & \begin{minipage}[t]{0.5\linewidth}SST (0) $\rightarrow$ 0.0 \newline \ldots \newline SST (1) $\rightarrow$ 10.0\end{minipage}\begin{minipage}[t]{0.5\linewidth}SST (0) $\rightarrow$ 0.0\end{minipage} & \\
 \end{longtable}
+\end{footnotesize}
+\end{center}
 
 \end{document}

@@ -149,7 +149,7 @@ void CArmAdapter::Heartbeat()
     // TODO: hello configurable option
     if( m_countdown.expires_from_now(boost::posix_time::seconds(5)) != 0 )
     {
-        Logger.Info << "Reset an adapter heartbeat timer." << std::endl;
+        Logger.Debug << "Reset an adapter heartbeat timer." << std::endl;
         m_countdown.async_wait(boost::bind(&CArmAdapter::Timeout, this, _1));
     }
     else
@@ -223,15 +223,21 @@ void CArmAdapter::HandleRead(const boost::system::error_code & e)
             m_buffer.consume(m_buffer.size());
             if( header == "DeviceStates" )
             {
-                std::string result = ReadStatePacket(data);
-
-                if( result == "Received\r\n\r\n" )
+                try
                 {
+                    ReadStatePacket(data);
                     packet << GetCommandPacket();
                 }
-                else
+                catch(boost::bad_lexical_cast &)
                 {
-                    packet << "BadRequest\r\n" << result << "\r\n\r\n";
+                    std::string str = "received non-numeric value";
+                    Logger.Warn << "Corrupt state: " << str << std::endl;
+                    packet << "BadRequest\r\n" << str << "\r\n\r\n";
+                }
+                catch(std::exception & e)
+                {
+                    Logger.Warn << "Corrupt state: " << e.what() << std::endl;
+                    packet << "BadRequest\r\n" << e.what() << "\r\n\r\n";
                 }
             }
             else if( header == "PoliteDisconnect" )
@@ -242,6 +248,7 @@ void CArmAdapter::HandleRead(const boost::system::error_code & e)
             }
             else
             {
+                Logger.Warn << "Unknown header: " << header << std::endl;
                 packet << "BadRequest\r\n\r\n";
                 m_stop = true;
             }
@@ -275,7 +282,7 @@ void CArmAdapter::HandleWrite(const boost::system::error_code & e)
 ////////////////////////////////////////////////////////////////////////////////
 ///
 ////////////////////////////////////////////////////////////////////////////////
-std::string CArmAdapter::ReadStatePacket(const std::string packet)
+void CArmAdapter::ReadStatePacket(const std::string packet)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     
@@ -295,21 +302,16 @@ std::string CArmAdapter::ReadStatePacket(const std::string packet)
     while( out >> name >> signal >> strval )
     {
         name = m_identifier + ":" + name;
-        for( int i = 0, n = name.size(); i < n; i++ )
-        {
-            if( name[i] == '.' )
-            {
-                name[i] = ':';
-            }
-        }
+        boost::replace_all(name, ".", ":");
         
         Logger.Debug << "Parsing: " << name << " " << signal << std::endl;
         
         DeviceSignal devsig(name, signal);
+        std::string devsigstr = name + " " + signal; 
         
         if( m_stateInfo.count(devsig) == 0 )
         {
-            return "UnknownDevice\r\n\r\n";
+            throw std::runtime_error("Unknown device signal: " + devsigstr);
         }
         
         index = m_stateInfo[devsig];
@@ -317,7 +319,7 @@ std::string CArmAdapter::ReadStatePacket(const std::string packet)
         
         if( temp.insert(std::make_pair(index, value)).second == false )
         {
-            return "DuplicateDevice\r\n\r\n";
+            throw std::runtime_error("Duplicate device signal: " + devsigstr);
         }
     }
     
@@ -330,8 +332,6 @@ std::string CArmAdapter::ReadStatePacket(const std::string packet)
             m_rxBuffer[it->first] = it->second;
         }
     }
-
-    return "Received\r\n\r\n";
 }
 
 std::string CArmAdapter::GetCommandPacket()

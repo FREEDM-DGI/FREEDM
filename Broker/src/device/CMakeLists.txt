@@ -3,6 +3,7 @@ set(
     DEVICE_FILES
     CAdapterFactory.cpp
     CDeviceManager.cpp
+    CFakeAdapter.cpp
     CPscadAdapter.cpp
     CRtdsAdapter.cpp
     IBufferAdapter.cpp

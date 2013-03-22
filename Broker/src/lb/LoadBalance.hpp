@@ -44,7 +44,6 @@
 #include "CConnectionManager.hpp"
 #include "CDispatcher.hpp"
 #include "CMessage.hpp"
-#include "CUuid.hpp"
 #include "PhysicalDeviceTypes.hpp"
 
 #include "IPeerNode.hpp"
@@ -70,9 +69,6 @@ namespace broker {
 namespace lb {
 
 const double NORMAL_TOLERANCE = 0.5;
-const unsigned int LOAD_TIMEOUT = 200; //milliseconds
-const unsigned int STATE_TIMEOUT = 600; //milliseconds
-
 //////////////////////////////////////////////////////////
 /// class LBAgent
 ///
@@ -121,18 +117,18 @@ class LBAgent
 
         // Handlers
         /// Handles the incoming messages according to the message label
-        virtual void HandleAny(CMessage msg,PeerNodePtr peer);
-        void HandlePeerList(CMessage msg, PeerNodePtr peer); 
-        void HandleDemand(CMessage msg, PeerNodePtr peer); 
-        void HandleNormal(CMessage msg, PeerNodePtr peer); 
-        void HandleSupply(CMessage msg, PeerNodePtr peer); 
-        void HandleRequest(CMessage msg, PeerNodePtr peer); 
-        void HandleYes(CMessage msg, PeerNodePtr peer); 
-        void HandleNo(CMessage msg, PeerNodePtr peer); 
-        void HandleDrafting(CMessage msg, PeerNodePtr peer); 
-        void HandleAccept(CMessage msg, PeerNodePtr peer); 
-        void HandleCollectedState(CMessage msg, PeerNodePtr peer); 
-        void HandleComputedNormal(CMessage msg, PeerNodePtr peer); 
+        virtual void HandleAny(MessagePtr msg,PeerNodePtr peer);
+        void HandlePeerList(MessagePtr msg, PeerNodePtr peer); 
+        void HandleDemand(MessagePtr msg, PeerNodePtr peer); 
+        void HandleNormal(MessagePtr msg, PeerNodePtr peer); 
+        void HandleSupply(MessagePtr msg, PeerNodePtr peer); 
+        void HandleRequest(MessagePtr msg, PeerNodePtr peer); 
+        void HandleYes(MessagePtr msg, PeerNodePtr peer); 
+        void HandleNo(MessagePtr msg, PeerNodePtr peer); 
+        void HandleDrafting(MessagePtr msg, PeerNodePtr peer); 
+        void HandleAccept(MessagePtr msg, PeerNodePtr peer); 
+        void HandleCollectedState(MessagePtr msg, PeerNodePtr peer); 
+        void HandleComputedNormal(MessagePtr msg, PeerNodePtr peer); 
         
         /// Adds a new node to the list of known peers using its UUID
         PeerNodePtr AddPeer(std::string uuid);
@@ -154,10 +150,10 @@ class LBAgent
         float   m_Storage;
         /// Target value of gateway
         float   m_PStar;
-        /// Current gateway
-        float   m_Gateway;
-        /// Calculated gateway
-        float   m_CalcGateway;
+        /// Aggregate gateway from SST devices only
+        float   m_SstGateway;
+        /// equals m_SstGateway when an SST exists; don't run LB without an SST
+        float   m_NetGateway;
         /// Demand cost of this node in Demand
         float   m_DemandVal;
         /// Current Demand state of this node  
@@ -190,7 +186,7 @@ class LBAgent
         CBroker::TimerHandle      m_StateTimer;
         
         CBroker &m_broker;
-        bool m_active;
+
         bool m_sstExists;
 };
 

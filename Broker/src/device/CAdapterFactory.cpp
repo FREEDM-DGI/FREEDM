@@ -39,12 +39,13 @@
 #include "CArmAdapter.hpp"
 #include "CDeviceManager.hpp"
 #include "CGlobalConfiguration.hpp"
+#include "CFakeAdapter.hpp"
 
 #include <utility>
 #include <iostream>
 #include <set>
 
-
+#include <boost/asio.hpp>
 #include <boost/bind.hpp>
 #include <boost/foreach.hpp>
 #include <boost/property_tree/ptree.hpp>
@@ -70,6 +71,7 @@ CLocalLogger Logger(__FILE__);
 /// @limitations None.
 ////////////////////////////////////////////////////////////////////////////////
 CAdapterFactory::CAdapterFactory()
+    : m_timeout(m_ios)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
@@ -115,7 +117,7 @@ void CAdapterFactory::StartSessionProtocol()
 
         // initialize the TCP variant of the session layer protocol
         port        = CGlobalConfiguration::instance().GetFactoryPort();
-        handler     = boost::bind(&CAdapterFactory::SessionProtocol, this);
+        handler     = boost::bind(&CAdapterFactory::StartSession, this);
         m_server    = CTcpServer::Create(m_ios, port,
                 CGlobalConfiguration::instance().GetSocketEndpoint() );
         m_server->RegisterHandler(handler);
@@ -201,6 +203,10 @@ void CAdapterFactory::CreateAdapter(const boost::property_tree::ptree & p)
     {
         adapter = CArmAdapter::Create(m_ios, subtree);
     }
+    else if( type == "fake" )
+    {
+        adapter = CFakeAdapter::Create();
+    }
     else
     {
         throw std::runtime_error("Unregistered adapter type: " + type);
@@ -270,7 +276,7 @@ void CAdapterFactory::AddPortNumber(const unsigned short port)
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     if( m_ports.insert(port).second )
     {
-        Logger.Info << "Added adapter port: " << port << std::endl;
+        Logger.Debug << "Added adapter port: " << port << std::endl;
     }
     else
     {
@@ -461,13 +467,68 @@ unsigned short CAdapterFactory::GetPortNumber()
 ///
 /// @limitations None.
 ////////////////////////////////////////////////////////////////////////////////
-void CAdapterFactory::SessionProtocol()
+
+void CAdapterFactory::StartSession()
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+
+    Logger.Notice << "A wild client appears!" << std::endl;
+    m_timeout.expires_from_now(boost::posix_time::seconds(2));
+    m_timeout.async_wait(boost::bind(&CAdapterFactory::Timeout, this,
+            boost::asio::placeholders::error));
+
+    m_buffer.consume(m_buffer.size());
+    boost::asio::async_read_until(m_server->GetSocket(), m_buffer, "\r\n\r\n",
+            boost::bind(&CAdapterFactory::HandleRead, this,
+            boost::asio::placeholders::error));
+}
+
+void CAdapterFactory::Timeout(const boost::system::error_code & e)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     
-    boost::asio::streambuf packet;
-    std::istream packet_stream(&packet);
-    
+    if( !e ) 
+    {
+        m_server->GetSocket().close();
+        Logger.Info << "Connection closed due to timeout." << std::endl;
+        m_server->StartAccept();
+    }
+    else if( e == boost::asio::error::operation_aborted )
+    {
+        Logger.Debug << "Factory connection timeout aborted." << std::endl;
+    }
+    else
+    {
+        throw e;
+    }
+}
+
+void CAdapterFactory::HandleRead(const boost::system::error_code & e)
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+
+    if( !e )
+    {
+        if( m_timeout.cancel() == 1 )
+        {
+            SessionProtocol();
+        }
+        else
+        {
+            Logger.Debug << "Dropped packet due to timeout." << std::endl;
+        }
+    }
+    else
+    {
+        throw e;
+    }
+}
+
+void CAdapterFactory::SessionProtocol()
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+   
+    std::istream packet(&m_buffer); 
     boost::asio::streambuf response;
     std::ostream response_stream(&response);
     
@@ -477,15 +538,11 @@ void CAdapterFactory::SessionProtocol()
     std::string host, header, type, name, entry;
     int sindex = 1, cindex = 1;
     unsigned short port = 0;
-    
-    Logger.Notice << "A wild client appears!" << std::endl;
-    
+    bool newport = true;
+
     try
-    {
-        Logger.Status << "Blocking for client hello message." << std::endl;
-        boost::asio::read_until(m_server->GetSocket(), packet, "\r\n\r\n");
-        
-        packet_stream >> header >> host;
+    {        
+        packet >> header >> host;
         //host = m_server->GetHostname();
         Logger.Info << "Received " << header << " from " << host << std::endl;
         
@@ -498,14 +555,12 @@ void CAdapterFactory::SessionProtocol()
             throw std::runtime_error("Duplicate session for " + host);
         }
 
-        port = GetPortNumber();
-        
         config.put("<xmlattr>.name", host);
         config.put("<xmlattr>.type", "arm");
         config.put("info.identifier", host);
-        config.put("info.stateport", port);
+        // info.stateport handled below
 
-        for( int i = 0; packet_stream >> type >> name; i++ )
+        for( int i = 0; packet >> type >> name; i++ )
         {
             Logger.Debug << "Processing " << type << ":" << name << std::endl;
             
@@ -552,8 +607,29 @@ void CAdapterFactory::SessionProtocol()
         boost::property_tree::xml_writer_settings<char> settings('\t', 1);
         write_xml("file2.xml", config, std::locale(), settings);
         */
-        
-        CreateAdapter(config);
+
+        while( newport )
+        {
+            try
+            {
+                port = GetPortNumber();
+                config.put("info.stateport", port);
+                CreateAdapter(config);
+                newport = false;
+            }
+            catch(std::exception & e)
+            {
+                if( e.what() == std::string("Address already in use") )
+                {
+                    Logger.Warn << "Port already used: " << port << std::endl;
+                    port = 0; // reset to default value
+                }
+                else
+                {
+                    throw;
+                }
+            }
+        }
         
         response_stream << "Start\r\n";
         response_stream << "StatePort: " << port << "\r\n\r\n";

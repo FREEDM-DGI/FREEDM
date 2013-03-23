@@ -191,7 +191,7 @@ def enable_device(device_types, device_signals, command):
     assert command[0] == 'enable'
     assert (len(command)-3)%2 == 0 and len(command) >= 5
     name = command[2]
-    if device_types.has_key(name):
+    if name in device_types:
         raise AssertionError('Device ' + name + ' is already enabled!')
     device_types[name] = command[1]
     for i in range (3, len(command), 2):
@@ -211,7 +211,7 @@ def disable_device(device_types, device_signals, command):
     assert command[0] == 'disable'
     assert len(command) == 2
 
-    assert device_types.has_key(command[1])
+    assert command[1] in device_types
     del device_types[command[1]]
 
     removedSomething = False
@@ -265,7 +265,7 @@ def receive_commands(adaptersock, device_signals):
             continue
         if len(command) != 3:
             raise RuntimeError('Malformed command in packet:\n' + line)
-        if not device_signals.has_key((command[0], command[1])):
+        if (command[0], command[1]) not in device_signals.has_key:
             raise RuntimeError('Unrecognized command in packet:\n' + line)
         # Implement the command *unless* DGI doesn't really know our states.
         if not math.isnan(float(command[2])):

@@ -97,7 +97,7 @@ LBAgent::LBAgent(std::string uuid_, CBroker &broker):
     m_broker(broker)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    PeerNodePtr self_(this);
+    PeerNodePtr self_ = CGlobalPeerList::instance().GetPeer(uuid_);
     InsertInPeerSet(m_AllPeers, self_);
     m_Leader = GetUUID();
     m_Normal = 0;
@@ -151,13 +151,6 @@ int LBAgent::Run()
 /// @post: Peer set is populated with a pointer to the added node
 /// @limitations Addition of new peers is strictly based on group membership
 /////////////////////////////////////////////////////////
-LBAgent::PeerNodePtr LBAgent::AddPeer(std::string uuid)
-{
-    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    PeerNodePtr tmp_;
-    tmp_.reset(new IPeerNode(uuid,GetConnectionManager()));
-    return AddPeer(tmp_);
-}
 LBAgent::PeerNodePtr LBAgent::AddPeer(PeerNodePtr peer)
 {
     InsertInPeerSet(m_AllPeers,peer);
@@ -362,7 +355,9 @@ void LBAgent::LoadManage()
     else
     {
         // Schedule past the end of our phase so control will pass to the broker
-        // after this LB, and we won't go again until it's our turn. Good.
+        // after this LB, and we won't go again until it's our turn.
+        // FIXME - This should be using LB_GLOBAL_TIMER not the state timer,
+        //         but it's pointless to fix it now because Issue #146
         m_broker.Schedule(m_GlobalTimer,
                           boost::posix_time::milliseconds(
                               CTimings::LB_STATE_TIMER),
@@ -708,7 +703,6 @@ void LBAgent::HandlePeerList(MessagePtr msg, PeerNodePtr peer)
     temp = gm::GMAgent::ProcessPeerList(msg,GetConnectionManager());
     BOOST_FOREACH( PeerNodePtr p_, temp | boost::adaptors::map_values )
     {
-        PeerNodePtr p = GetPeer(p_->GetUUID());
         if(CountInPeerSet(m_AllPeers,p_) == 0)
         {
             AddPeer(p_);

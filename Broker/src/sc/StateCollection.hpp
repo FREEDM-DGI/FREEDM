@@ -105,8 +105,6 @@ class SCAgent : public IReadHandler, public IPeerNode,
         CMessage marker();
         
         //Peer set operations
-        ///Add a peer to peer set from UUID
-        PeerNodePtr AddPeer(std::string uuid);
         ///Add a peer to peer set from a pointer to a peer node object
         PeerNodePtr AddPeer(PeerNodePtr peer);
         ///Get a pointer to a peer from UUID

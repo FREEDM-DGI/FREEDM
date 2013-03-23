@@ -118,7 +118,6 @@ int main(int argc, char* argv[])
     po::options_description cliOpts; // genOpts + cfgOpts
     po::variables_map vm;
     std::ifstream ifs;
-    boost::asio::io_service ios;
     std::string cfgFile, loggerCfgFile, timingsFile, adapterCfgFile;
     std::string listenIP, port, hostname, fport, id;
     unsigned int globalVerbosity;
@@ -249,10 +248,6 @@ int main(int argc, char* argv[])
         CGlobalConfiguration::instance().SetListenAddress(listenIP);
         CGlobalConfiguration::instance().SetClockSkew(
                 boost::posix_time::milliseconds(0));
-        
-        //constructors for initial mapping
-        CConnectionManager conManager;
-        ConnectionPtr newConnection;
 
         // configure the adapter factory
         if( vm.count("adapter-port") == 0 )
@@ -345,21 +340,37 @@ int main(int argc, char* argv[])
                 throw std::runtime_error(adapterCfgFile+": "+e.what());
             }
         }
+    }
+    catch (std::exception & e)
+    {
+        Logger.Error << "Exception caught in main during start up: " << e.what() << std::endl;
+        return 0;
+    }
+    
+    //constructors for initial mapping
+    CConnectionManager conManager;
+    ConnectionPtr newConnection;
+    boost::asio::io_service ios;
 
-        // Instantiate Dispatcher for message delivery
-        CDispatcher dispatch;
-        // Run server in background thread
-        CBroker broker(listenIP, port, dispatch, ios, conManager);
+    // Instantiate Dispatcher for message delivery
+    CDispatcher dispatch;
+    // Run server in background thread
+    CBroker broker(listenIP, port, dispatch, ios, conManager);
+    
+    // Initialize modules
+    gm::GMAgent GM(id, broker);
+    sc::SCAgent SC(id, broker);
+    lb::LBAgent LB(id, broker);
+        
+    try
+    {
         // Instantiate and register the group management module
-        gm::GMAgent GM(id, broker);
         broker.RegisterModule("gm",boost::posix_time::milliseconds(CTimings::GM_PHASE_TIME));
         dispatch.RegisterReadHandler("gm", "any", &GM);
         // Instantiate and register the state collection module
-        sc::SCAgent SC(id, broker);
         broker.RegisterModule("sc",boost::posix_time::milliseconds(CTimings::SC_PHASE_TIME));
         dispatch.RegisterReadHandler("sc", "any", &SC);
         // Instantiate and register the power management module
-        lb::LBAgent LB(id, broker);
         broker.RegisterModule("lb",boost::posix_time::milliseconds(CTimings::LB_PHASE_TIME));
         dispatch.RegisterReadHandler("lb", "lb", &LB);
 
@@ -401,11 +412,21 @@ int main(int argc, char* argv[])
         Logger.Debug << "Starting thread of Modules" << std::endl;
         broker.Schedule("gm", boost::bind(&gm::GMAgent::Run, &GM), false);
         broker.Schedule("lb", boost::bind(&lb::LBAgent::Run, &LB), false);
+    }
+    catch (std::exception & e)
+    {
+        Logger.Error << "Exception caught in module initialization: " << e.what() << std::endl;
+    }
+    
+    try
+    {
         broker.Run();
     }
     catch (std::exception & e)
     {
-        Logger.Error << "Exception caught in main: " << e.what() << std::endl;
+        Logger.Error << "Exception caught in Broker: " << e.what() << std::endl;
+        broker.Stop();
+        ios.run();
     }
 
     return 0;

@@ -501,6 +501,7 @@ if __name__ == '__main__':
             if duration == 'forever':
                 while True:
                     try:
+						print 'Working forever, as ordered captain!'
                         work(adapterSock, deviceSignals)
                     except (socket.error, socket.timeout) as e:
                         print >> sys.stderr, \
@@ -573,4 +574,3 @@ if __name__ == '__main__':
     print 'That seems to be the end of my script, disconnecting now...'
     politeQuit(adapterSock, deviceSignals)
     script.close()
-

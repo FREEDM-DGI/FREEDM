@@ -1,4 +1,5 @@
 #!/usr/bin/env python2
+# -*- mode: python; indent-tabs-mode: nil; tab-width: 4 -*-
 ###############################################################################
 # @file           controller.py
 #
@@ -29,6 +30,7 @@ import os
 import socket
 import string
 import sys
+import threading
 import time
 
 config = {}
@@ -108,8 +110,10 @@ plug and play protocol and pretends to immediately implement DGI commands.'''
     config['state-timeout'] = float(cp.get('timings', 'state-timeout'))/1000.0
     config['hello-timeout'] = float(cp.get('timings', 'hello-timeout'))/1000.0
     config['dgi-timeout'] = float(cp.get('timings', 'dgi-timeout'))/1000.0
-    config['custom-timeout'] = float(
-            cp.get('timings', 'custom-timeout'))/1000.0
+    config['custom-timeout'] = float(cp.get(
+            'timings', 'custom-timeout'))/1000.0
+    config['protected-state-duration'] = float(cp.get(
+            'timings', 'protected-state-duration'))/1000.0
     config['adapter-connection-retries'] = \
             int(cp.get('misc', 'adapter-connection-retries'))
 
@@ -241,14 +245,24 @@ def send_states(adaptersock, device_signals):
     print 'Sent states to DGI\n'
 
 
-def receive_commands(adaptersock, device_signals):
+def receive_commands(adaptersock, device_signals, protected_signals):
     """
     Receives new commands from the DGI and then implements them by modifying
-    the devices map. We're basically the best controller ever since we satify
-    the DGI instantanously.
+    the devices map. We're basically the best controller ever since we
+    generally satify the DGI instantanously. However, we do ignore the DGI:
+
+    * The DGI will send a NaN command initially (when it doesn't yet know our
+      state) to indicate we should ignore the command.
+
+    * DGI might be operating based on old state info if the state suddenly
+      changes sharply based on a command in the dsp simulation script.
+      In this case we shall ignore commands on this state for some configurable
+      amount of time (protected-state-duration).
 
     @param adaptersock the connected stream socket to receive commands from
     @param device_signals dict of (name, signal) pairs to floats
+    @param protected_signals dict of (device, signal) pairs to ints; the int
+                             represents the number of locks on the signal
 
     @ErrorHandling caller must check for socket.timeout
     """
@@ -265,26 +279,34 @@ def receive_commands(adaptersock, device_signals):
             continue
         if len(command) != 3:
             raise RuntimeError('Malformed command in packet:\n' + line)
-        if (command[0], command[1]) not in device_signals.has_key:
+        if (command[0], command[1]) not in device_signals:
             raise RuntimeError('Unrecognized command in packet:\n' + line)
-        # Implement the command *unless* DGI doesn't really know our states.
-        if not math.isnan(float(command[2])):
+        if math.isnan(float(command[2])):
+            print 'Not updating ({0}, {1}): received NaN command'.format(
+                    command[0], command[1])
+        elif (command[0], command[1]) in protected_signals:
+            print 'Not updating ({0}, {1}): signal has {2} lock(s)'.format(
+                    command[0], command[1],
+                    protected_signals[(command[0], command[1])])
+        else:
             device_signals[(command[0], command[1])] = command[2]
     print 'Device states have been updated\n'
 
 
-def work(adaptersock, device_signals):
+def work(adaptersock, device_signals, protected_signals):
     """
     Send states, receive commands, then sleep for a bit.
     
     @param adaptersock the connected stream socket to use
-    @param device_signals dict of (device, name) pairs to floats
+    @param device_signals dict of (device, signal) pairs to floats
+    @param protected_signals dict of (device, signal) pairs to ints; the int
+                             represents the number of locks on the signal
 
     @ErrorHandling caller must check for socket.timeout
     """
     global config
     send_states(adaptersock, device_signals)
-    receive_commands(adaptersock, device_signals)
+    receive_commands(adaptersock, device_signals, protected_signals)
     time.sleep(config['state-timeout'])
 
 
@@ -374,7 +396,7 @@ def reconnect(device_types):
             adaptersocket.settimeout(config['dgi-timeout'])
             return adaptersocket
 
-def polite_quit(adaptersock, device_signals):
+def polite_quit(adaptersock, device_signals, protected_signals):
     """
     Sends a quit request to DGI and returns once the request has been approved.
     If the request is not initially approved, continues to send device states
@@ -384,6 +406,8 @@ def polite_quit(adaptersock, device_signals):
     @param adaptersock the connected stream socket which wants to quit
                        THIS SOCKET WILL BE CLOSED!!
     @param device_signals dict of device (name, signal) pairs -> floats
+    @param protected_signals dict of device (name, signal) pairs -> ints; the
+                             int represents the number of locks on the signal
     """
     global config
 
@@ -417,7 +441,8 @@ def polite_quit(adaptersock, device_signals):
             assert msg[1] == 'Rejected'
             print 'PoliteDisconnect rejected, performing another round of work'
             try:
-                work(adaptersock, device_signals, config['state-timeout'])
+                work(adaptersock, device_signals, config['state-timeout'],
+                     protected_signals)
                 # Loop again
             except (socket.error, socket.timeout) as e:
                 print >> sys.stderr, \
@@ -427,11 +452,33 @@ def polite_quit(adaptersock, device_signals):
                 return
 
 
+def unlock_signal(device_signal_pair, protected_signals,
+                  protected_signals_lock):
+    """
+    Removes a (device, signal) pair from a set of locked signals
+
+    @param device_signal_pair a (device, signal) on which to release a lock
+    @param protected_signals dict of (device, signal) -> ints; the int
+                             represents the number of locks on the signal
+    @param protected_signals_lock mutex for the protected_signals dictionary
+    """
+    protected_signals_lock.acquire()
+    protected_signals[device_signal_pair] -= 1
+    if protected_signals[device_signal_pair] == 0:
+        del protected_signals[device_signal_pair]
+    protected_signals_lock.release()
+
+
 if __name__ == '__main__': 
+    # FIXME this got a bit out of hand, we need devices to be a class
     # dict of names -> types
     device_types = {}
     # dict of (name, signal) pairs -> strings (representing floats :S)
     device_signals = {}
+    # dict of (name, signal) pairs -> int (number of locks on the signal)
+    protected_signals = {}
+    # ensure only one thread touches the set of protected signals at a time
+    protected_signals_lock = threading.Lock()
     # are we processing the very first command in the script?
     first_hello = True
     # socket connected
@@ -463,7 +510,7 @@ if __name__ == '__main__':
         if command.find('enable') == 0 and (len(command.split())-3)%2 == 0:
             enable_device(device_types, device_signals, command)
             if not first_hello:
-                polite_quit(adaptersock, device_signals)
+                polite_quit(adaptersock, device_signals, protected_signals)
             adaptersock = reconnect(device_types)
             if first_hello:
                 first_hello = False
@@ -472,7 +519,7 @@ if __name__ == '__main__':
             if first_hello:
                 raise RuntimeError("Can't disable devices before first Hello")
             disable_device(device_types, device_signals, command)
-            polite_quit(adaptersock, device_signals)
+            polite_quit(adaptersock, device_signals, protected_signals)
             adaptersock = reconnect(device_types)
             
         elif command.find('change') == 0 and len(command.split()) == 4:
@@ -480,6 +527,17 @@ if __name__ == '__main__':
                 raise RuntimeError("Can't change a signal before first Hello")
             command = command.split()
             device_signals[(command[1], command[2])] = command[3]
+            protected_signals_lock.acquire()
+            if (command[1], command[2]) in protected_signals:
+                protected_signals[(command[1], command[2])] += 1
+            else:
+                protected_signals[(command[1], command[2])] = 1
+            protected_signals_lock.release()
+            t = threading.Timer(
+                    config['protected-state-duration'], unlock_signal,
+                    args=((command[1], command[2]), protected_signals,
+                          protected_signals_lock))
+            t.start()
             print 'Changed', command[1], command[2], 'to', command[3]
 
         elif command.find('dieHorribly') == 0 and len(command.split()) == 2:
@@ -506,7 +564,7 @@ if __name__ == '__main__':
                 while True:
                     try:
                         print 'Working forever, as ordered captain!'
-                        work(adaptersock, device_signals)
+                        work(adaptersock, device_signals, protected_signals)
                     except (socket.error, socket.timeout) as e:
                         print >> sys.stderr, \
                             'DGI communication error: {0}'.format(e.strerror)
@@ -520,7 +578,7 @@ if __name__ == '__main__':
                     try:
                         print 'Performing work {0} of {1}\n'.format(
                                 i, duration)
-                        work(adaptersock, device_signals)
+                        work(adaptersock, device_signals, protected_signals)
                     except (socket.error, socket.timeout) as e:
                         print >> sys.stderr, \
                             'DGI communication error: {0}'.format(e.strerror)
@@ -577,5 +635,6 @@ if __name__ == '__main__':
             raise RuntimeError('Read invalid script command:\n' + command)
 
     print 'That seems to be the end of my script, disconnecting now...'
-    polite_quit(adaptersock, device_signals)
+    polite_quit(adaptersock, device_signals, protected_signals)
+    # FIXME what if a timer hasn't expired yet -> should be stopped
     script.close()

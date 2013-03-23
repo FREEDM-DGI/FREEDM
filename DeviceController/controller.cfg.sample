@@ -28,6 +28,9 @@ dgi-timeout=5000
 # ms to wait after sending a custom command to AdapterFactory or an adapter
 custom-timeout=1000
 
+# ms for which to ignore new commands after force-updating a state
+protected-state-duration=2000
+
 [misc]
 
 # after receiving a Start from the AdapterFactory, how many times to try to

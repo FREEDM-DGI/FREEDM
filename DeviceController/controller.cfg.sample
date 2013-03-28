@@ -1,6 +1,6 @@
 [controller]
 
-#unique identifier of this controller
+# unique identifier of this controller
 name=MyUniqueController
 
 # the DSP script file to run

@@ -1,5 +1,5 @@
 #!/usr/bin/env python2
-/* -*- mode: python; indent-tabs-mode: nil; tab-width: 4 -*- */
+# -*- mode: python; indent-tabs-mode: nil; tab-width: 4 -*-
 ################################################################################
 # @file           controller.py
 #

@@ -249,7 +249,7 @@ def receive_commands(adaptersock, device_signals, protected_signals):
     """
     Receives new commands from the DGI and then implements them by modifying
     the devices map. We're basically the best controller ever since we
-    generally satify the DGI instantanously. However, we do ignore the DGI:
+    generally satify the DGI instantanously. But sometimes we ignore the DGI:
 
     * The DGI will send a NaN command initially (when it doesn't yet know our
       state) to indicate we should ignore the command.

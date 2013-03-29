@@ -36,7 +36,6 @@ import time
 config = {}
 
 COPYRIGHT_YEAR = '2013'
-ERROR_FILE = 'ERRORS'
 VERSION_FILE = '../Broker/src/version.h'
 
 
@@ -168,17 +167,25 @@ def recv_all(socket):
 
 def handle_bad_request(msg):
     """
-    If the DGI says we sent a bad request, log the error and try to reconnect.
-    You probably need to return immediately after calling this.
+    Terminate immediately if the DGI says we sent a bad request.
 
     @param msg string the message sent by DGI
     """
     msg = msg.replace('BadRequest', '', 1)
-    errormsg = 'Sent bad request to DGI: ' + msg
-    print >> sys.stderr, errormsg
-    with open(ERROR_FILE, 'a') as errorfile:
-        errorfile.write(str(datetime.datetime.now()) + '\n')
-        errorfile.write(errormsg)
+    raise RuntimeError('Sent bad request to DGI: ' + msg)
+
+
+def handle_dgi_error(msg):
+    """
+    If the DGI reports an on its end, print the error, wait for the hello
+    timeout, then try to reconnect.
+
+    @param msg string the message sent by DGI
+    """
+    msg = msg.replace('Error', '', 1)
+    print >> sys.stderr, 'Received an error from DGI: ' + msg
+    time.sleep(config['hello-timeout'])
+    return reconnect(device_types)
 
 
 def enable_device(device_types, device_signals, command):
@@ -348,7 +355,6 @@ def reconnect(device_types):
             send_all(adapterFactorySock, devicePacket)
             print '\nSent Hello message:\n' + devicePacket.strip()
             msg = recv_all(adapterFactorySock)
-            print '\nReceived Start message:\n' + msg.strip()
         except (socket.error, socket.timeout) as e:
             print >> sys.stderr, \
                 'AdapterFactory communication failure: {0}'.format(e.strerror)
@@ -358,14 +364,16 @@ def reconnect(device_types):
         else:
             break
 
-    if msg.find('BadRequest') == 0:
+    if msg.find('Error') == 0:
+        return handle_dgi_error(msg)
+    elif msg.find('BadRequest') == 0:
         handle_bad_request(msg)
-        time.sleep(config['hello-timeout'])
-        return reconnect(device_types)
     else:
         msg = msg.split()
         if len(msg) != 3 or msg[0] != 'Start' or msg[1] != 'StatePort:':
             raise RuntimeError('DGI sent malformed Start:\n' + ' '.join(msg))
+        else:
+            print '\nReceived Start message:\n' + ' '.join(msg)
 
     adapterPort = int(msg[2])
     if 0 < adapterPort < 1024:
@@ -425,7 +433,6 @@ def polite_quit(adaptersock, device_signals, protected_signals):
 
         if msg.find('BadRequest') == 0:
             handle_bad_request(msg)
-            return
 
         msg = msg.split()
         if len(msg) != 2 or msg[0] != 'PoliteDisconnect' or \
@@ -483,13 +490,6 @@ if __name__ == '__main__':
     first_hello = True
     # socket connected
     adaptersock = -1
-
-    # we don't want to see errors from previous runs
-    try:
-        os.remove(ERROR_FILE)
-    except OSError:
-        # no errors, yay
-        pass
     
     initialize_config() 
     script = open(config['script'], 'r')

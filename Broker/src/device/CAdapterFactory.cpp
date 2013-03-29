@@ -40,6 +40,7 @@
 #include "CDeviceManager.hpp"
 #include "CGlobalConfiguration.hpp"
 #include "CFakeAdapter.hpp"
+#include "PlugNPlayExceptions.hpp"
 
 #include <utility>
 #include <iostream>
@@ -109,7 +110,7 @@ void CAdapterFactory::StartSessionProtocol()
     }
     else if( size == 0 )
     {
-        throw std::runtime_error("No plug and play ports are specified.");
+        throw EDgiConfigError("No plug and play ports are specified.");
     }
     else
     {
@@ -147,7 +148,9 @@ void CAdapterFactory::RunService()
 /// manager.  The adapter is configured to recognize its own device signals,
 /// and started when the configuration is complete.
 ///
-/// @ErrorHandling Throws a std::runtime_error if the property tree is bad.
+/// @ErrorHandling Throws an EDgiConfigError if the property tree is bad, or
+/// EBadRequest if a PnP controller has assigned an unexpected signal to a
+/// device (which would be an EDgiConfigError otherwise)
 /// @pre The adapter must not begin work until IAdapter::Start.
 /// @pre The adapter's devices must not be specified in other adapters.
 /// @post Calls CAdapterFactory::InitializeAdapter to create devices.
@@ -173,7 +176,7 @@ void CAdapterFactory::CreateAdapter(const boost::property_tree::ptree & p)
     }
     catch( std::exception & e )
     {
-        throw std::runtime_error("Failed to create adapter: "
+        throw EDgiConfigError("Failed to create adapter: "
                 + std::string(e.what()));
     }
     
@@ -182,11 +185,11 @@ void CAdapterFactory::CreateAdapter(const boost::property_tree::ptree & p)
     // range check the properties
     if( name.empty() )
     {
-        throw std::runtime_error("Tried to create an unnamed adapter.");
+        throw EDgiConfigError("Tried to create an unnamed adapter.");
     }
     else if( m_adapter.count(name) > 0 )
     {
-        throw std::runtime_error("Multiple adapters share the name: " + name);
+        throw EDgiConfigError("Multiple adapters share the name: " + name);
     }
     
     // create the adapter
@@ -208,10 +211,10 @@ void CAdapterFactory::CreateAdapter(const boost::property_tree::ptree & p)
     }
     else
     {
-        throw std::runtime_error("Unregistered adapter type: " + type);
+        throw EDgiConfigError("Unregistered adapter type: " + type);
     }
     
-    // store the adapter
+    // store the adapter; note that InitializeAdapter can throw EBadRequest
     InitializeAdapter(adapter, p);
     m_adapter[name] = adapter;
     Logger.Info << "Created the " << type << " adapter " << name << std::endl;
@@ -326,8 +329,9 @@ void CAdapterFactory::CreateDevice(const std::string name,
 ////////////////////////////////////////////////////////////////////////////////
 /// Initializes an adapter to contain a set of device signals.
 ///
-/// @ErrorHandling Throws a std::runtime_error if the adapter is empty or the
-/// property tree has a bad specification format.
+/// @ErrorHandling Throws EDgiConfigError if the property tree has a bad
+/// specification format. Could also throw EBadRequest if the adapter is a
+/// CArmAdapter and the Hello message assigns an unexpected signal to a device.
 /// @pre The property tree must contain an adapter specification.
 /// @post Associates a set of device signals with the passed adapter.
 /// @param adapter The adapter to initialize.
@@ -349,7 +353,7 @@ void CAdapterFactory::InitializeAdapter(IAdapter::Pointer adapter,
     
     if( !adapter )
     {
-        throw std::runtime_error("Received a null IAdapter::Pointer.");
+        throw std::logic_error("Received a null IAdapter::Pointer.");
     }
 
     buffer = boost::dynamic_pointer_cast<IBufferAdapter>(adapter);
@@ -367,7 +371,7 @@ void CAdapterFactory::InitializeAdapter(IAdapter::Pointer adapter,
         }
         catch( std::exception & e )
         {
-            throw std::runtime_error("Failed to create adapter: "
+            throw EDgiConfigError("Failed to create adapter: "
                     + std::string(e.what()));
         }
         
@@ -382,7 +386,7 @@ void CAdapterFactory::InitializeAdapter(IAdapter::Pointer adapter,
             }
             catch( std::exception & e )
             {
-                throw std::runtime_error("Failed to create adapter: "
+                throw EDgiConfigError("Failed to create adapter: "
                         + std::string(e.what()));
             }
             
@@ -401,15 +405,23 @@ void CAdapterFactory::InitializeAdapter(IAdapter::Pointer adapter,
             IDevice::Pointer dev = CDeviceManager::Instance().GetDevice(name);
             if( !dev )
             {
-                throw std::runtime_error("Something bad happened.");
+                throw std::logic_error("Device " + name + " not in manager");
             }
             
             if( (i == 0 && !dev->HasStateSignal(signal)) ||
                 (i == 1 && !dev->HasCommandSignal(signal)) )
             {
-                throw std::runtime_error("Failed to create adapter: The "
+                std::string what = "Failed to create adapter: The "
                         + type + " device, " + name
-                        + ", does not recognize the signal: " + signal);
+                        + ", does not recognize the signal: " + signal;
+                if (boost::dynamic_pointer_cast<CArmAdapter>(adapter) != 0)
+                {
+                    throw EBadRequest(what);
+                }
+                else
+                {
+                    throw EDgiConfigError(what);
+                }
             }
 
             if( buffer && i == 0 )
@@ -430,7 +442,7 @@ void CAdapterFactory::InitializeAdapter(IAdapter::Pointer adapter,
 ////////////////////////////////////////////////////////////////////////////////
 /// Retrieves and consumes the next available TCP port number.
 ///
-/// @ErrorHandling Throws a std::runtime_exception if there are no available
+/// @ErrorHandling Throws an EOutOfPorts if there are no available
 /// port numbers in m_ports.
 /// @pre m_ports must contain at least one unassigned element.
 /// @post Removes and returns the first port number in m_ports.
@@ -448,7 +460,7 @@ unsigned short CAdapterFactory::GetPortNumber()
     
     if( it == m_ports.end() )
     {
-        throw std::runtime_error("No available port numbers for new adapter.");
+        throw EOutOfPorts("No available port numbers for new adapter.");
     }
     
     port = *it;
@@ -540,18 +552,18 @@ void CAdapterFactory::SessionProtocol()
     bool newport = true;
 
     try
-    {        
+    {
         packet >> header >> host;
         //host = m_server->GetHostname();
         Logger.Info << "Received " << header << " from " << host << std::endl;
         
         if( header != "Hello" )
         {
-            throw std::runtime_error("Expected 'Hello' message: " + header);
+            throw EBadRequest("Expected 'Hello' message: " + header);
         }
         if( m_adapter.count(host) > 0 )
         {
-            throw std::runtime_error("Duplicate session for " + host);
+            throw EDuplicateSession("Duplicate session for " + host);
         }
 
         config.put("<xmlattr>.name", host);
@@ -565,7 +577,7 @@ void CAdapterFactory::SessionProtocol()
             
             if( m_prototype.count(type) == 0 )
             {
-                throw std::runtime_error("Unknown device type: " + type);
+                throw EBadRequest("Unknown device type: " + type);
             }
             
             name = host + ":" + name;
@@ -616,6 +628,21 @@ void CAdapterFactory::SessionProtocol()
                 CreateAdapter(config);
                 newport = false;
             }
+            catch(EBadRequest & e)
+            {
+                throw;
+            }
+            catch(EOutOfPorts & e)
+            {
+                throw;
+            }
+            catch(EDgiConfigError & e)
+            {
+                throw std::logic_error("Caught EDgiConfigError from "
+                        "CAdapterFactory::CreateAdapter; note this makes no "
+                        "sense for a plug and play adapter; what: "
+                        + std::string(e.what()));
+            }
             catch(std::exception & e)
             {
                 if( e.what() == std::string("Address already in use") )
@@ -632,11 +659,12 @@ void CAdapterFactory::SessionProtocol()
         
         response_stream << "Start\r\n";
         response_stream << "StatePort: " << port << "\r\n\r\n";
+        Logger.Status << "Blocking to send Start to client" << std::endl;
     }
-    catch(std::exception & e)
+    catch(EBadRequest & e)
     {
         Logger.Notice << "Rejected client: " << e.what() << std::endl;
-        
+
         if( port != 0 )
         {
             AddPortNumber(port);
@@ -644,11 +672,26 @@ void CAdapterFactory::SessionProtocol()
         
         response_stream << "BadRequest\r\n";
         response_stream << e.what() << "\r\n\r\n";
+
+        Logger.Status << "Blocking to send BadRequest to client" << std::endl;
+    }
+    catch(EOutOfPorts & e)
+    {
+        Logger.Notice << "Rejected client: " << e.what() << std::endl;
+        response_stream << "Error\r\nInsufficient adapter ports\r\n\r\n";
+        Logger.Status << "Blocking to send Error to client" << std::endl;
+    }
+    catch(EDuplicateSession & e)
+    {
+        Logger.Notice << "Rejected client: " << e.what() << std::endl;
+        // FIXME sending e.what() to the client is not robust
+        // we need boost exceptions to handle this properly
+        response_stream << "Error\r\n" << e.what() << "\r\n\r\n";
+        Logger.Status << "Blocking to send Error to client" << std::endl;
     }
     
     try
     {
-        Logger.Status << "Blocking for client start message." << std::endl;
         boost::asio::write(m_server->GetSocket(), response);
     }
     catch(std::exception & e)

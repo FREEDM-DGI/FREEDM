@@ -255,7 +255,8 @@ void CArmAdapter::HandleRead(const boost::system::error_code & e)
         }
         catch(std::exception & e)
         {
-            Logger.Info << m_identifier << " communication failed." << std::endl;
+            Logger.Info << m_identifier << " communication failed."
+                    << std::endl;
             Logger.Debug << "Reason: " << e.what() << std::endl;
         }
     }
@@ -266,7 +267,7 @@ void CArmAdapter::HandleWrite(const boost::system::error_code & e)
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     if( m_stop )
     {
-	boost::system::error_code null;
+	    boost::system::error_code null;
 
         m_countdown.cancel();
         Timeout(null);

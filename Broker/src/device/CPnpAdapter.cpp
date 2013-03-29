@@ -99,7 +99,7 @@ CPnpAdapter::CPnpAdapter(boost::asio::io_service & service,
     CTcpServer::ConnectionHandler handler;
     handler = boost::bind(&CPnpAdapter::StartRead, this);
     m_server = CTcpServer::Create(service, m_port,
-        CGlobalConfiguration::instance().GetSocketEndpoint() );
+        CGlobalConfiguration::instance().GetDevicesEndpoint() );
     m_server->RegisterHandler(handler);
 }
 

@@ -166,10 +166,11 @@ int main(int argc, char* argv[])
                 po::value<unsigned int>( &globalVerbosity )->
                 implicit_value(5)->default_value(5),
                 "enable verbose output (optionally specify level)" )
-                ( "endpoint-address",
+                ( "devices-endpoint",
                 po::value<std::string> (),
-                "address of the interface the DGI will use to communicate with devices" );
-        
+                "restrict the endpoint to use for all network communications "
+                "from the device module to the specified IP");
+
         // Options allowed on command line
         cliOpts.add(genOpts).add(cfgOpts);
         // If submodules need custom commandline options
@@ -253,10 +254,10 @@ int main(int argc, char* argv[])
                 boost::posix_time::milliseconds(0));
         
         // Specify socket endpoint address, if provided
-        if( vm.count("endpoint-address") )
+        if( vm.count("devices-endpoint") )
         {
-            CGlobalConfiguration::instance().SetSocketEndpoint(
-                vm["endpoint-address"].as<std::string>() );
+            CGlobalConfiguration::instance().SetDevicesEndpoint(
+                vm["devices-endpoint"].as<std::string>() );
         }
 
         // configure the adapter factory

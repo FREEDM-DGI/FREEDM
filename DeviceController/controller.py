@@ -379,7 +379,7 @@ def reconnect(device_types):
     if 0 < adapterPort < 1024:
         raise ValueError('DGI wants to use DCCP well known port ' \
                 + adapterPort)
-    elif adapterPort < 0 or adapterPort > 65535:
+    elif 0 < adapterPort < 65535:
         raise ValueError('DGI sent a nonsense statePort ' + config['port'])
 
     for i in range(0, config['adapter-connection-retries']):

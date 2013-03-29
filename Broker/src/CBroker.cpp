@@ -218,7 +218,7 @@ void CBroker::RegisterModule(CBroker::ModuleIdent m, boost::posix_time::time_dur
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     m_schmutex.lock();
     boost::system::error_code err;
-    bool exists;
+    bool exists = false;
     for(unsigned int i=0; i < m_modules.size(); i++)
     {
         if(m_modules[i].first == m)

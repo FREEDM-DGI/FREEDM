@@ -644,6 +644,9 @@ void CAdapterFactory::SessionProtocol()
             }
             catch(std::exception & e)
             {
+                // FIXME we can't rely on anything except the type of the
+                // exception for control flow. This message could change
+                // in the future and is definitely nonportable
                 if( e.what() == std::string("Address already in use") )
                 {
                     Logger.Warn << "Port already used: " << port << std::endl;

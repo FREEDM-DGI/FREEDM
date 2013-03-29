@@ -1,5 +1,5 @@
 ////////////////////////////////////////////////////////////////////////////////
-/// @file           CArmAdapter.cpp
+/// @file           CPnpAdapter.cpp
 ///
 /// @author         Thomas Roth <tprfh7@mst.edu>
 ///
@@ -8,16 +8,16 @@
 /// @description    Adapter for plug-and-play devices on an ARM board.
 ///
 /// @functions
-///     CArmAdapter::Create
-///     CArmAdapter::CArmAdapter
-///     CArmAdapter::~CArmAdapter
-///     CArmAdapter::Start
-///     CArmAdapter::Heartbeat
-///     CArmAdapter::GetPortNumber
-///     CArmAdapter::Timeout
-///     CArmAdapter::HandleMessage
-///     CArmAdapter::ReadStatePacket
-///     CArmAdapter::SendCommandPacket
+///     CPnpAdapter::Create
+///     CPnpAdapter::CPnpAdapter
+///     CPnpAdapter::~CPnpAdapter
+///     CPnpAdapter::Start
+///     CPnpAdapter::Heartbeat
+///     CPnpAdapter::GetPortNumber
+///     CPnpAdapter::Timeout
+///     CPnpAdapter::HandleMessage
+///     CPnpAdapter::ReadStatePacket
+///     CPnpAdapter::SendCommandPacket
 ///
 /// These source code files were created at Missouri University of Science and
 /// Technology, and are intended for use in teaching or research. They may be
@@ -32,7 +32,7 @@
 /// Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
 ////////////////////////////////////////////////////////////////////////////////
 
-#include "CArmAdapter.hpp"
+#include "CPnpAdapter.hpp"
 #include "CAdapterFactory.hpp"
 #include "CLogger.hpp"
 #include "PlugNPlayExceptions.hpp"
@@ -67,11 +67,11 @@ CLocalLogger Logger(__FILE__);
 ///
 /// @limitations None.
 ////////////////////////////////////////////////////////////////////////////////
-IAdapter::Pointer CArmAdapter::Create(boost::asio::io_service & service,
+IAdapter::Pointer CPnpAdapter::Create(boost::asio::io_service & service,
         boost::property_tree::ptree & p)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    return CArmAdapter::Pointer(new CArmAdapter(service, p));
+    return CPnpAdapter::Pointer(new CPnpAdapter(service, p));
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -79,24 +79,24 @@ IAdapter::Pointer CArmAdapter::Create(boost::asio::io_service & service,
 ///
 /// @pre The ptree must have the 'identifier' and 'stateport' properties.
 /// @post Creates a new TCP server on the specified 'stateport'.
-/// @post Registers CArmAdapter::HandleMessage with m_server.
+/// @post Registers CPnpAdapter::HandleMessage with m_server.
 /// @param service The i/o service for the TCP server.
 /// @param p The property tree that configures the adapter.
 ///
 /// @limitations None.
 ////////////////////////////////////////////////////////////////////////////////
-CArmAdapter::CArmAdapter(boost::asio::io_service & service,
+CPnpAdapter::CPnpAdapter(boost::asio::io_service & service,
         boost::property_tree::ptree & p)
     : m_countdown(service)
     , m_stop(false)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    
+
     m_identifier = p.get<std::string>("identifier");
     m_port = p.get<unsigned short>("stateport");
-    
+
     CTcpServer::ConnectionHandler handler;
-    handler = boost::bind(&CArmAdapter::StartRead, this);
+    handler = boost::bind(&CPnpAdapter::StartRead, this);
     m_server = CTcpServer::Create(service, m_port);
     m_server->RegisterHandler(handler);
 }
@@ -109,7 +109,7 @@ CArmAdapter::CArmAdapter(boost::asio::io_service & service,
 ///
 /// @limitations None.
 ////////////////////////////////////////////////////////////////////////////////
-CArmAdapter::~CArmAdapter()
+CPnpAdapter::~CPnpAdapter()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 }
@@ -118,19 +118,19 @@ CArmAdapter::~CArmAdapter()
 /// Starts the internal countdown timer to destroy this object.
 ///
 /// @pre None.
-/// @post m_heartbeat set to call CArmAdapter::Timeout on expiration.
+/// @post m_heartbeat set to call CPnpAdapter::Timeout on expiration.
 ///
 /// @limitations None.
 ////////////////////////////////////////////////////////////////////////////////
-void CArmAdapter::Start()
+void CPnpAdapter::Start()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
     IBufferAdapter::Start();
-    
+
     // TODO: this fella should be configurable
     m_countdown.expires_from_now(boost::posix_time::seconds(5));
-    m_countdown.async_wait(boost::bind(&CArmAdapter::Timeout, this, _1));
+    m_countdown.async_wait(boost::bind(&CPnpAdapter::Timeout, this, _1));
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -141,15 +141,15 @@ void CArmAdapter::Start()
 ///
 /// @limitations This call will do nothing if the timer has already expired.
 ////////////////////////////////////////////////////////////////////////////////
-void CArmAdapter::Heartbeat()
+void CPnpAdapter::Heartbeat()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    
+
     // TODO: hello configurable option
     if( m_countdown.expires_from_now(boost::posix_time::seconds(5)) != 0 )
     {
         Logger.Debug << "Reset an adapter heartbeat timer." << std::endl;
-        m_countdown.async_wait(boost::bind(&CArmAdapter::Timeout, this, _1));
+        m_countdown.async_wait(boost::bind(&CPnpAdapter::Timeout, this, _1));
     }
     else
     {
@@ -157,7 +157,7 @@ void CArmAdapter::Heartbeat()
     }
 }
 
-unsigned short CArmAdapter::GetPortNumber() const
+unsigned short CPnpAdapter::GetPortNumber() const
 {
     return m_port;
 }
@@ -172,37 +172,37 @@ unsigned short CArmAdapter::GetPortNumber() const
 /// @limitations This function will not work as intended if the shared pointer
 /// to the calling object has a reference outside of CAdapterFactory.
 ////////////////////////////////////////////////////////////////////////////////
-void CArmAdapter::Timeout(const boost::system::error_code & e)
+void CPnpAdapter::Timeout(const boost::system::error_code & e)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
     if( !e )
     {
         m_server->Stop();
-        
+
         Logger.Status << "Removing an adapter due to timeout." << std::endl;
         CAdapterFactory::Instance().RemoveAdapter(m_identifier);
     }
 }
 
-void CArmAdapter::StartRead()
+void CPnpAdapter::StartRead()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     Heartbeat();
     m_buffer.consume(m_buffer.size());
     boost::asio::async_read_until(m_server->GetSocket(), m_buffer, "\r\n\r\n",
-            boost::bind(&CArmAdapter::HandleRead, this, boost::asio::placeholders::error));
+            boost::bind(&CPnpAdapter::HandleRead, this, boost::asio::placeholders::error));
 }
 
-void CArmAdapter::StartWrite()
+void CPnpAdapter::StartWrite()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     Heartbeat();
     boost::asio::async_write(m_server->GetSocket(), m_buffer,
-            boost::bind(&CArmAdapter::HandleWrite, this, boost::asio::placeholders::error));
+            boost::bind(&CPnpAdapter::HandleWrite, this, boost::asio::placeholders::error));
 }
 
-void CArmAdapter::HandleRead(const boost::system::error_code & e)
+void CPnpAdapter::HandleRead(const boost::system::error_code & e)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     if( !e )
@@ -210,15 +210,15 @@ void CArmAdapter::HandleRead(const boost::system::error_code & e)
         std::istreambuf_iterator<char> end;
         std::iostream packet(&m_buffer);
         std::string data, header;
-        
+
         try
         {
             Heartbeat();
-            
+
             packet >> header;
             data = std::string(std::istreambuf_iterator<char>(packet), end);
             Logger.Debug << "Received " << header << " packet." << std::endl;
-            
+
             m_buffer.consume(m_buffer.size());
             if( header == "DeviceStates" )
             {
@@ -262,7 +262,7 @@ void CArmAdapter::HandleRead(const boost::system::error_code & e)
     }
 }
 
-void CArmAdapter::HandleWrite(const boost::system::error_code & e)
+void CPnpAdapter::HandleWrite(const boost::system::error_code & e)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     if( m_stop )
@@ -282,51 +282,51 @@ void CArmAdapter::HandleWrite(const boost::system::error_code & e)
 ////////////////////////////////////////////////////////////////////////////////
 ///
 ////////////////////////////////////////////////////////////////////////////////
-void CArmAdapter::ReadStatePacket(const std::string packet)
+void CPnpAdapter::ReadStatePacket(const std::string packet)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    
+
     std::map<std::size_t, SignalValue> temp;
     std::map<std::size_t, SignalValue>::iterator it, end;
-    
+
     std::stringstream out;
     std::string name, signal, strval;
-    
+
     std::size_t index;
     SignalValue value;
-    
+
     Logger.Debug << "Processing packet: " << packet;
-    
+
     out << packet;
-    
+
     while( out >> name >> signal >> strval )
     {
         name = m_identifier + ":" + name;
         boost::replace_all(name, ".", ":");
-        
+
         Logger.Debug << "Parsing: " << name << " " << signal << std::endl;
-        
+
         DeviceSignal devsig(name, signal);
-        std::string devsigstr = name + " " + signal; 
-        
+        std::string devsigstr = name + " " + signal;
+
         if( m_stateInfo.count(devsig) == 0 )
         {
             throw EBadRequest("Unknown device signal: " + devsigstr);
         }
-        
+
         index = m_stateInfo[devsig];
         value = boost::lexical_cast<SignalValue>(strval);
-        
+
         if( temp.insert(std::make_pair(index, value)).second == false )
         {
             throw EBadRequest("Duplicate device signal: " + devsigstr);
         }
     }
-    
+
     // critical section
     {
         boost::unique_lock<boost::shared_mutex> lock(m_rxMutex);
-        
+
         for( it = temp.begin(), end = temp.end(); it != end; it++ )
         {
             m_rxBuffer[it->first] = it->second;
@@ -334,32 +334,32 @@ void CArmAdapter::ReadStatePacket(const std::string packet)
     }
 }
 
-std::string CArmAdapter::GetCommandPacket()
+std::string CPnpAdapter::GetCommandPacket()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    
+
     std::map<const DeviceSignal, const std::size_t>::iterator it, end;
     std::stringstream packet;
     std::string devname, signal;
     SignalValue value;
     std::size_t index;
-    
-    packet << "DeviceCommands\r\n";   
- 
+
+    packet << "DeviceCommands\r\n";
+
     boost::unique_lock<boost::shared_mutex> lock(m_txMutex);
-    
+
     end = m_commandInfo.end();
     for( it = m_commandInfo.begin(); it != end; it++ )
     {
         devname = it->first.first;
         signal = it->first.second;
-        
+
         // remove the hostname identifier
         index = devname.find_last_of(":");
         devname = devname.substr(index+1);
-        
+
         value = m_txBuffer[it->second];
-        
+
         packet << devname << " " << signal << " " << value << "\r\n";
     }
     Logger.Debug << "Sending packet:\n" << packet.str() << std::endl;

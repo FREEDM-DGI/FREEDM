@@ -36,7 +36,7 @@
 #include "IBufferAdapter.hpp"
 #include "CPscadAdapter.hpp"
 #include "CRtdsAdapter.hpp"
-#include "CArmAdapter.hpp"
+#include "CPnpAdapter.hpp"
 #include "CDeviceManager.hpp"
 #include "CGlobalConfiguration.hpp"
 #include "CFakeAdapter.hpp"
@@ -214,9 +214,9 @@ void CAdapterFactory::CreateAdapter(const boost::property_tree::ptree & p)
     {
         adapter = CRtdsAdapter::Create(m_ios, subtree);
     }
-    else if( type == "arm" )
+    else if( type == "pnp" )
     {
-        adapter = CArmAdapter::Create(m_ios, subtree);
+        adapter = CPnpAdapter::Create(m_ios, subtree);
     }
     else if( type == "fake" )
     {
@@ -252,7 +252,7 @@ void CAdapterFactory::RemoveAdapter(const std::string identifier)
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     
     std::set<std::string> devices;
-    CArmAdapter::Pointer arm;
+    CPnpAdapter::Pointer pnp;
     
     if( m_adapter.count(identifier) == 0 )
     {
@@ -260,12 +260,12 @@ void CAdapterFactory::RemoveAdapter(const std::string identifier)
     }
     
     devices = m_adapter[identifier]->GetDevices();
-    arm = boost::dynamic_pointer_cast<CArmAdapter>(m_adapter[identifier]);
+    pnp = boost::dynamic_pointer_cast<CPnpAdapter>(m_adapter[identifier]);
     
-    if( arm )
+    if( pnp )
     {
         Logger.Info << "Recycling an adapter port number." << std::endl;
-        m_ports.insert(arm->GetPortNumber());
+        m_ports.insert(pnp->GetPortNumber());
     }
     m_adapter.erase(identifier);
     
@@ -344,7 +344,7 @@ void CAdapterFactory::CreateDevice(const std::string name,
 ///
 /// @ErrorHandling Throws EDgiConfigError if the property tree has a bad
 /// specification format. Could also throw EBadRequest if the adapter is a
-/// CArmAdapter and the Hello message assigns an unexpected signal to a device.
+/// CPnpAdapter and the Hello message assigns an unexpected signal to a device.
 /// @pre The property tree must contain an adapter specification.
 /// @post Associates a set of device signals with the passed adapter.
 /// @param adapter The adapter to initialize.
@@ -427,7 +427,7 @@ void CAdapterFactory::InitializeAdapter(IAdapter::Pointer adapter,
                 std::string what = "Failed to create adapter: The "
                         + type + " device, " + name
                         + ", does not recognize the signal: " + signal;
-                if (boost::dynamic_pointer_cast<CArmAdapter>(adapter) != 0)
+                if (boost::dynamic_pointer_cast<CPnpAdapter>(adapter) != 0)
                 {
                     throw EBadRequest(what);
                 }
@@ -579,7 +579,7 @@ void CAdapterFactory::SessionProtocol()
         }
 
         config.put("<xmlattr>.name", host);
-        config.put("<xmlattr>.type", "arm");
+        config.put("<xmlattr>.type", "pnp");
         config.put("info.identifier", host);
         // info.stateport handled below
 

@@ -30,6 +30,14 @@ struct EBadRequest
         : std::runtime_error(what) { }
 };
 
+/// Used when the DGI has been misconfigured
+struct EDgiConfigError
+    : virtual std::runtime_error
+{
+    EDgiConfigError(const std::string& what)
+        : std::runtime_error(what) { }
+};
+
 /// Used when the adapter factory already has an open session for a controller
 struct EDuplicateSession
     : virtual std::runtime_error

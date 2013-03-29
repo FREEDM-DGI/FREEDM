@@ -13,6 +13,6 @@ How to use:
 
 2) Modify them.
 
-3) Turn on the DGI. Make sure freedm.cfg points to a CArmAdapter XML file.
+3) Turn on the DGI.
 
 4) Run the controller.

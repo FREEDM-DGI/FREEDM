@@ -578,7 +578,7 @@ void GMAgent::Check( const boost::system::error_code& err )
                 if( peer->GetUUID() == GetUUID())
                     continue;
                 SendToPeer(peer,m_);
-                InsertInPeerSet(m_AYCResponse,peer);
+                InsertInTimedPeerSet(m_AYCResponse, peer, boost::posix_time::microsec_clock::universal_time());
             }
             // The AlivePeers set is no longer good, we should clear it and make them
             // Send us new messages
@@ -623,8 +623,11 @@ void GMAgent::Premerge( const boost::system::error_code &err )
         // Remove everyone who didn't respond (Nodes that are still in AYCResponse)
         // From the upnodes list.
         bool list_change = false;
-        BOOST_FOREACH( PeerNodePtr peer, m_AYCResponse | boost::adaptors::map_values)
+        for( TimedPeerSetIterator it = m_AYCResponse.begin();
+             it != m_AYCResponse.end();
+             it++)
         {
+            PeerNodePtr peer = it->second.first;
             if(CountInPeerSet(m_UpNodes,peer)) //&& CountInPeerSet(m_AlivePeers,peer) == 0)
             {
                 list_change = true;
@@ -878,7 +881,7 @@ void GMAgent::Timeout( const boost::system::error_code& err )
                 {
                     SendToPeer(peer,m_);
                     Logger.Info << "Expecting response from "<<peer->GetUUID()<<std::endl;
-                    InsertInPeerSet(m_AYTResponse,peer);
+                    InsertInTimedPeerSet(m_AYTResponse, peer, boost::posix_time::microsec_clock::universal_time());
                 }
                 Logger.Info << "TIMER: Setting TimeoutTimer (Recovery):" << __LINE__ << std::endl;
                 m_timerMutex.lock();
@@ -1221,8 +1224,13 @@ void GMAgent::HandleResponseAYC(MessagePtr msg, PeerNodePtr peer)
     int seq = msg->GetSubMessages().get<int>("gm.seq");
     Logger.Info << "RECV: Response (AYC) ("<<answer<<") from " <<peer->GetUUID() << " seq "<<seq<< std::endl;
     Logger.Debug << "Checking expected responses." << std::endl;
-    bool expected = CountInPeerSet(m_AYCResponse,peer);
-    EraseInPeerSet(m_AYCResponse,peer);
+    bool expected = CountInTimedPeerSet(m_AYCResponse,peer);
+    if(expected)
+    {
+        boost::posix_time::time_duration interval = boost::posix_time::microsec_clock::universal_time() - GetTimeFromPeerSet(m_AYCResponse, peer);
+        Logger.Info << "AYC response received " << interval << " after query sent" << std::endl;
+    }
+    EraseInTimedPeerSet(m_AYCResponse,peer);
     if(expected == true && pt.get<std::string>("gm.payload") == "yes")
     {
         InsertInPeerSet(m_Coordinators,peer);
@@ -1269,8 +1277,14 @@ void GMAgent::HandleResponseAYT(MessagePtr msg, PeerNodePtr peer)
     int seq = msg->GetSubMessages().get<int>("gm.seq");
     Logger.Info << "RECV: Response (AYT) ("<<answer<<") from " <<peer->GetUUID() << " seq " <<seq<<std::endl;
     Logger.Debug << "Checking expected responses." << std::endl;
-    bool expected = CountInPeerSet(m_AYTResponse,peer);
-    EraseInPeerSet(m_AYTResponse,peer);
+    bool expected = CountInTimedPeerSet(m_AYTResponse,peer);
+    if(expected)
+    {
+        boost::posix_time::time_duration interval = boost::posix_time::microsec_clock::universal_time() - GetTimeFromPeerSet(m_AYTResponse, peer);
+        Logger.Info << "AYT response received " << interval << " after query sent" << std::endl;
+    }
+
+    EraseInTimedPeerSet(m_AYTResponse,peer);
     if(expected == true && pt.get<std::string>("gm.payload") == "yes")
     {
         m_timerMutex.lock();

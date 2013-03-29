@@ -1,5 +1,5 @@
 ////////////////////////////////////////////////////////////////////////////////
-/// @file           CArmAdapter.hpp
+/// @file           CPnpAdapter.hpp
 ///
 /// @author         Thomas Roth <tprfh7@mst.edu>
 ///
@@ -20,8 +20,8 @@
 /// Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
 ////////////////////////////////////////////////////////////////////////////////
 
-#ifndef C_ARM_ADAPTER_HPP
-#define C_ARM_ADAPTER_HPP
+#ifndef C_PNP_ADAPTER_HPP
+#define C_PNP_ADAPTER_HPP
 
 #include "IBufferAdapter.hpp"
 #include "CTcpServer.hpp"
@@ -38,7 +38,7 @@ namespace device {
 ////////////////////////////////////////////////////////////////////////////////
 /// The ARM adapter implements the plug-and-play session protocol. An object of
 /// this class will delete itself on expiration of an internal countdown timer
-/// unless the CArmAdapter::Heartbeat function is called to refresh the timer.
+/// unless the CPnpAdapter::Heartbeat function is called to refresh the timer.
 /// The adapter calls this function itself whenever it sends or receives data
 /// on its TCP server without incident.
 ///
@@ -46,36 +46,36 @@ namespace device {
 /// the CAdapterFactory class. If a shared pointer is stored, then the session
 /// protocol will no longer function as intended.
 ////////////////////////////////////////////////////////////////////////////////
-class CArmAdapter
+class CPnpAdapter
     : public IBufferAdapter
 {
 public:
     /// Convenience type for a shared pointer to self.
-    typedef boost::shared_ptr<CArmAdapter> Pointer;
+    typedef boost::shared_ptr<CPnpAdapter> Pointer;
 
     /// Creates a shared instance of the arm adapter.
     static IAdapter::Pointer Create(boost::asio::io_service & service,
             boost::property_tree::ptree & p);
-    
+
     /// Starts the internal countdown timer.
     void Start();
-    
+
     /// Refreshes the internal countdown timer.
     void Heartbeat();
-    
+
     /// Gets the TCP server listen port number.
     unsigned short GetPortNumber() const;
-    
+
     /// Destructs the object.
-    virtual ~CArmAdapter();
+    virtual ~CPnpAdapter();
 private:
     /// Initializes the TCP server and internal storage.
-    CArmAdapter(boost::asio::io_service & service,
+    CPnpAdapter(boost::asio::io_service & service,
             boost::property_tree::ptree & p);
 
     /// Tells the adapter factory to remove its reference to this object.
     void Timeout(const boost::system::error_code & e);
-    
+
     void StartRead();
 
     void StartWrite();
@@ -83,27 +83,27 @@ private:
     void HandleRead(const boost::system::error_code & e);
 
     void HandleWrite(const boost::system::error_code & e);
-    
+
     /// Parses a state packet received from the client.
     void ReadStatePacket(const std::string packet);
-    
+
     /// Sends device commands to the current client.
     std::string GetCommandPacket();
-    
+
     /// Countdown until the object destroys itself.
     boost::asio::deadline_timer m_countdown;
-    
+
     /// Unique identifier of this adapter.
     std::string m_identifier;
-    
+
     /// Port of the TCP server.
     unsigned short m_port;
-    
+
     /// TCP server for the ARM client.
     CTcpServer::Pointer m_server;
-    
+
     bool m_stop;
-    
+
     boost::asio::streambuf m_buffer;
 };
 
@@ -111,4 +111,4 @@ private:
 } // namespace broker
 } // namespace freedm
 
-#endif // C_ARM_ADAPTER_HPP
+#endif // C_PNP_ADAPTER_HPP

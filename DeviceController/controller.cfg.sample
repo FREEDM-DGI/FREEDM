@@ -1,6 +1,6 @@
 [controller]
 
-#unique identifier of this controller
+# unique identifier of this controller
 name=MyUniqueController
 
 # the DSP script file to run
@@ -27,6 +27,9 @@ dgi-timeout=5000
 
 # ms to wait after sending a custom command to AdapterFactory or an adapter
 custom-timeout=1000
+
+# ms for which to ignore new commands after force-updating a state
+protected-state-duration=2000
 
 [misc]
 

@@ -1,0 +1,55 @@
+////////////////////////////////////////////////////////////////////////////////
+/// @file           PlugNPlayExceptions.hpp
+///
+/// @author         Michael Catanzaro <michael.catanzaro@mst.edu>
+///
+/// @project        FREEDM DGI
+///
+/// @description    Exception classes related to the plug and play protocol.
+///
+/// These source code files were created at Missouri University of Science and
+/// Technology, and are intended for use in teaching or research. They may be
+/// freely copied, modified, and redistributed as long as modified versions are
+/// clearly marked as such and this notice is not removed. Neither the authors
+/// nor Missouri S&T make any warranty, express or implied, nor assume any legal
+/// responsibility for the accuracy, completeness, or usefulness of these files
+/// or any information distributed with these files.
+///
+/// Suggested modifications or questions about these files can be directed to
+/// Dr. Bruce McMillin, Department of Computer Science, Missouri University of
+/// Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
+////////////////////////////////////////////////////////////////////////////////
+
+#include <stdexcept>
+
+/// Used when a device controller sends a bad packet
+struct EBadRequest
+    : virtual std::runtime_error
+{
+    EBadRequest(const std::string& what)
+        : std::runtime_error(what) { }
+};
+
+/// Used when the DGI has been misconfigured
+struct EDgiConfigError
+    : virtual std::runtime_error
+{
+    EDgiConfigError(const std::string& what)
+        : std::runtime_error(what) { }
+};
+
+/// Used when the adapter factory already has an open session for a controller
+struct EDuplicateSession
+    : virtual std::runtime_error
+{
+    EDuplicateSession(const std::string& what)
+        : std::runtime_error(what) { }
+};
+
+/// Used when the adapter factory has no free ports for a new controller
+struct EOutOfPorts
+    : virtual std::runtime_error
+{
+    EOutOfPorts(const std::string& what)
+        : std::runtime_error(what) { }
+};

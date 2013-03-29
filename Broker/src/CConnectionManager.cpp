@@ -214,7 +214,6 @@ ConnectionPtr CConnectionManager::GetConnectionByUUID(std::string uuid_)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
-    ConnectionPtr c_;  
     std::string s_,port;
 
     // See if there is a connection in the open connections already
@@ -229,7 +228,7 @@ ConnectionPtr CConnectionManager::GetConnectionByUUID(std::string uuid_)
         }
         else
         {
-            Logger.Warn <<" Connection to " << uuid_ << " has gone stale " << std::endl;
+            Logger.Warn <<"Connection to " << uuid_ << " has gone stale " << std::endl;
             //The socket is not marked as open anymore, we
             //should stop it.
             Stop(m_connections.left.at(uuid_));
@@ -251,9 +250,9 @@ ConnectionPtr CConnectionManager::GetConnectionByUUID(std::string uuid_)
 
     // Create a new CConnection object for this host	
     Logger.Debug<<"Constructing CConnection"<<std::endl;
-    c_.reset(new CConnection(m_inchannel->GetIOService(), *this, m_inchannel->GetBroker(), uuid_));  
+    ConnectionPtr c_(new CConnection(m_inchannel->GetIOService(), *this, m_inchannel->GetBroker(), uuid_));
    
-    // Initiate the TCP connection
+    // Initiate the UDP connection
     Logger.Debug<<"Computing remote endpoint"<<std::endl;
     boost::asio::ip::udp::resolver resolver(m_inchannel->GetIOService());
     boost::asio::ip::udp::resolver::query query( s_, port);

@@ -10,7 +10,7 @@ set(
     ITcpAdapter.cpp
     IAdapter.cpp
     CTcpServer.cpp
-    CArmAdapter.cpp
+    CPnpAdapter.cpp
     PhysicalDeviceTypes.cpp
    )
 

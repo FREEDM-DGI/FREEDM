@@ -1,5 +1,6 @@
 #!/usr/bin/env python2
-################################################################################
+# -*- mode: python; indent-tabs-mode: nil; tab-width: 4 -*-
+###############################################################################
 # @file           controller.py
 #
 # @author         Michael Catanzaro <michael.catanzaro@mst.edu>
@@ -19,7 +20,7 @@
 # Suggested modifications or questions about these files can be directed to
 # Dr. Bruce McMillin, Department of Computer Science, Missouri University of
 # Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
-################################################################################
+###############################################################################
 
 import ConfigParser
 import argparse
@@ -29,16 +30,16 @@ import os
 import socket
 import string
 import sys
+import threading
 import time
 
 config = {}
 
 COPYRIGHT_YEAR = '2013'
-ERROR_FILE = 'ERRORS'
 VERSION_FILE = '../Broker/src/version.h'
 
 
-def initializeConfig():
+def initialize_config():
     """
     Called at the start of main to initialize the global configuration using
     ConfigParser and argparse.
@@ -68,11 +69,11 @@ plug and play protocol and pretends to immediately implement DGI commands.'''
     if args.version:
         version = '(Unknown Version)'
         try:
-            with open(VERSION_FILE, 'r') as versionFile:
-                versionLine = versionFile.readlines()[2]
-                versionStart = versionLine.index('"')
-                versionEnd = versionLine.rindex('"')
-                version = versionLine[versionStart+1:versionEnd]
+            with open(VERSION_FILE, 'r') as version_file:
+                version_line = version_file.readlines()[2]
+                version_start = version_line.index('"')
+                version_end = version_line.rindex('"')
+                version = version_line[version_start+1:version_end]
         except:
             pass
         print 'FREEDM Fake Device Controller Revision', version
@@ -88,14 +89,14 @@ plug and play protocol and pretends to immediately implement DGI commands.'''
     if args.port:
         config['port'] = args.port
 
-    configFileName = 'controller.cfg'
+    config_filename = 'controller.cfg'
     if args.config:
-        configFileName = args.config
+        config_filename = args.config
 
     # read connection settings from the config file
-    with open(configFileName, 'r') as configFile:
+    with open(config_filename, 'r') as config_file:
         cp = ConfigParser.SafeConfigParser()
-        cp.readfp(configFile)
+        cp.readfp(config_file)
 
     if args.name == None:
         config['name'] = cp.get('controller', 'name')
@@ -108,12 +109,15 @@ plug and play protocol and pretends to immediately implement DGI commands.'''
     config['state-timeout'] = float(cp.get('timings', 'state-timeout'))/1000.0
     config['hello-timeout'] = float(cp.get('timings', 'hello-timeout'))/1000.0
     config['dgi-timeout'] = float(cp.get('timings', 'dgi-timeout'))/1000.0
-    config['custom-timeout'] = float(cp.get('timings', 'custom-timeout'))/1000.0
+    config['custom-timeout'] = float(cp.get(
+            'timings', 'custom-timeout'))/1000.0
+    config['protected-state-duration'] = float(cp.get(
+            'timings', 'protected-state-duration'))/1000.0
     config['adapter-connection-retries'] = \
             int(cp.get('misc', 'adapter-connection-retries'))
 
 
-def sendAll(socket, msg):
+def send_all(socket, msg):
     """
     Ensures the entirety of msg is sent over the socket.
 
@@ -124,19 +128,20 @@ def sendAll(socket, msg):
                    cannot be sent in time.
     """
     assert len(msg) != 0
-    sentBytes = socket.send(msg)
-    while (sentBytes != len(msg)):
-        assert sentBytes < len(msg)
-        msg = msg[sentBytes:]
+    sent_bytes = socket.send(msg)
+    while (sent_bytes != len(msg)):
+        assert sent_bytes < len(msg)
+        msg = msg[sent_bytes:]
         assert len(msg) != 0
-        sentBytes = socket.send(msg)
-        if sentBytes == 0:
+        sent_bytes = socket.send(msg)
+        if sent_bytes == 0:
             raise socket.error('Connection to DGI unexpectedly closed')
 
 
-def recvAll(socket):
+def recv_all(socket):
     """
-    Receives all the data that has been sent from DGI until \r\n\r\n is reached.
+    Receives all the data that has been sent from DGI until \r\n\r\n is
+    reached.
     
     @param socket the connected stream socket to receive from
 
@@ -145,8 +150,8 @@ def recvAll(socket):
                    allowed to send multiple messages in a row. Also raises
                    runtime errors if there is no \r\n\r\n at all in the packet,
                    or if it doesn't occur at the very end of the packet. Will
-                   raise socket.timeout if the DGI times out, or socket.error if
-                   the connection is closed.
+                   raise socket.timeout if the DGI times out, or socket.error
+                   if the connection is closed.
 
     @return the data that has been read
     """
@@ -160,98 +165,116 @@ def recvAll(socket):
     return msg
 
 
-def handleBadRequest(msg):
+def handle_bad_request(msg):
     """
-    If the DGI says we sent a bad request, log the error and try to reconnect.
-    You probably need to return immediately after calling this.
+    Terminate immediately if the DGI says we sent a bad request.
 
     @param msg string the message sent by DGI
     """
     msg = msg.replace('BadRequest', '', 1)
-    errormsg = 'Sent bad request to DGI: ' + msg
-    print >> sys.stderr, errormsg
-    with open(ERROR_FILE, 'a') as errorfile:
-        errorfile.write(str(datetime.datetime.now()) + '\n')
-        errorfile.write(errormsg)
+    raise RuntimeError('Sent bad request to DGI: ' + msg)
 
 
-def enableDevice(deviceTypes, deviceSignals, command):
+def handle_dgi_error(msg):
+    """
+    If the DGI reports an on its end, print the error, wait for the hello
+    timeout, then try to reconnect.
+
+    @param msg string the message sent by DGI
+    """
+    msg = msg.replace('Error', '', 1)
+    print >> sys.stderr, 'Received an error from DGI: ' + msg
+    time.sleep(config['hello-timeout'])
+    return reconnect(device_types)
+
+
+def enable_device(device_types, device_signals, command):
     """
     Add a new device to the list of devices. Takes a map that represents the
     previous devices in the system and a command from the DSP script, and adds
     the new device and its signals to the map.
 
-    @param deviceTypes dict of names -> types
-    @param deviceSignals dict of device (name, signal) -> float
+    @param device_types dict of names -> types
+    @param device_signals dict of device (name, signal) -> float
     @param command string from the dsp-script
     """
     command = command.split()
     assert command[0] == 'enable'
     assert (len(command)-3)%2 == 0 and len(command) >= 5
     name = command[2]
-    if deviceTypes.has_key(name):
+    if name in device_types:
         raise AssertionError('Device ' + name + ' is already enabled!')
-    deviceTypes[name] = command[1]
+    device_types[name] = command[1]
     for i in range (3, len(command), 2):
-        deviceSignals[(name, command[i])] = command[i+1]
+        device_signals[(name, command[i])] = command[i+1]
 
 
-def disableDevice(deviceTypes, deviceSignals, command):
+def disable_device(device_types, device_signals, command):
     """
-    Remove a device from the list of devices. Operates just like enableDevice
+    Remove a device from the list of devices. Operates just like enable_device
     (see above), except in reverse.
 
-    @param deviceTypes dict of names -> types
-    @param deviceSignals dict of device (name, signal) -> float
+    @param device_types dict of names -> types
+    @param device_signals dict of device (name, signal) -> float
     @param command string from the dsp-script
     """
     command = command.split()
     assert command[0] == 'disable'
     assert len(command) == 2
 
-    assert deviceTypes.has_key(command[1])
-    del deviceTypes[command[1]]
+    assert command[1] in device_types
+    del device_types[command[1]]
 
     removedSomething = False
-    for name, signal in deviceSignals.keys():
+    for name, signal in device_signals.keys():
         if name == command[1]:
-            del deviceSignals[(name, signal)]
+            del device_signals[(name, signal)]
             removedSomething = True
     assert removedSomething
 
 
-def sendStates(adapterSock, deviceSignals):
+def send_states(adaptersock, device_signals):
     """
     Sends updated device states to the DGI.
 
-    @param adapterSock the connected stream socket to send the states on
-    @param deviceSignals dict of (name, signal) pairs to floats
+    @param adaptersock the connected stream socket to send the states on
+    @param device_signals dict of (name, signal) pairs to floats
 
     @ErrorHandling caller must check for socket.timeout
     """
     msg = 'DeviceStates\r\n'
-    for (name, signal) in deviceSignals.keys():
-        msg += name + ' ' + signal + ' ' + str(deviceSignals[(name, signal)])
+    for (name, signal) in device_signals.keys():
+        msg += name + ' ' + signal + ' ' + str(device_signals[(name, signal)])
         msg += '\r\n'
     msg += '\r\n'
     print 'Sending states to DGI:\n' + msg.strip()
-    sendAll(adapterSock, msg)
+    send_all(adaptersock, msg)
     print 'Sent states to DGI\n'
 
 
-def receiveCommands(adapterSock, deviceSignals):
+def receive_commands(adaptersock, device_signals, protected_signals):
     """
-    Receives new commands from the DGI and then implements them by modifying the
-    devices map. We're basically the best controller ever since we satify the
-    DGI instantanously.
+    Receives new commands from the DGI and then implements them by modifying
+    the devices map. We're basically the best controller ever since we
+    generally satify the DGI instantanously. But sometimes we ignore the DGI:
 
-    @param adapterSock the connected stream socket to receive commands from
-    @param deviceSignals dict of (name, signal) pairs to floats
+    * The DGI will send a NaN command initially (when it doesn't yet know our
+      state) to indicate we should ignore the command.
+
+    * DGI might be operating based on old state info if the state suddenly
+      changes sharply based on a command in the dsp simulation script.
+      In this case we shall ignore commands on this state for some configurable
+      amount of time (protected-state-duration).
+
+    @param adaptersock the connected stream socket to receive commands from
+    @param device_signals dict of (name, signal) pairs to floats
+    @param protected_signals dict of (device, signal) pairs to ints; the int
+                             represents the number of locks on the signal
 
     @ErrorHandling caller must check for socket.timeout
     """
     print 'Awaiting commands from DGI...'
-    msg = recvAll(adapterSock)
+    msg = recv_all(adaptersock)
     print 'Received commands from DGI:\n' + msg.strip()
     if msg.find('DeviceCommands\r\n') != 0:
         raise RuntimeError('Malformed command packet:\n' + msg)
@@ -263,35 +286,43 @@ def receiveCommands(adapterSock, deviceSignals):
             continue
         if len(command) != 3:
             raise RuntimeError('Malformed command in packet:\n' + line)
-        if not deviceSignals.has_key((command[0], command[1])):
+        if (command[0], command[1]) not in device_signals:
             raise RuntimeError('Unrecognized command in packet:\n' + line)
-        # Implement the command *unless* DGI doesn't really know our states.
-        if not math.isnan(float(command[2])):
-            deviceSignals[(command[0], command[1])] = command[2]
+        if math.isnan(float(command[2])):
+            print 'Not updating ({0}, {1}): received NaN command'.format(
+                    command[0], command[1])
+        elif (command[0], command[1]) in protected_signals:
+            print 'Not updating ({0}, {1}): signal has {2} lock(s)'.format(
+                    command[0], command[1],
+                    protected_signals[(command[0], command[1])])
+        else:
+            device_signals[(command[0], command[1])] = command[2]
     print 'Device states have been updated\n'
 
 
-def work(adapterSock, deviceSignals):
+def work(adaptersock, device_signals, protected_signals):
     """
     Send states, receive commands, then sleep for a bit.
     
-    @param adapterSock the connected stream socket to use
-    @param deviceSignals dict of (device, name) pairs to floats
+    @param adaptersock the connected stream socket to use
+    @param device_signals dict of (device, signal) pairs to floats
+    @param protected_signals dict of (device, signal) pairs to ints; the int
+                             represents the number of locks on the signal
 
     @ErrorHandling caller must check for socket.timeout
     """
     global config
-    sendStates(adapterSock, deviceSignals)
-    receiveCommands(adapterSock, deviceSignals)
+    send_states(adaptersock, device_signals)
+    receive_commands(adaptersock, device_signals, protected_signals)
     time.sleep(config['state-timeout'])
 
 
-def reconnect(deviceTypes):
+def reconnect(device_types):
     """
     Sends a Hello message to DGI, and receives its Start message in response.
     If there is a failure, tries again until it works.
 
-    @param deviceTypes dict of device names -> types
+    @param device_types dict of device names -> types
     
     @return a stream socket connected to a DGI adapter
     """
@@ -299,7 +330,7 @@ def reconnect(deviceTypes):
     
     devicePacket = 'Hello\r\n'
     devicePacket += config['name'] + '\r\n'
-    for deviceName, deviceType in deviceTypes.items():
+    for deviceName, deviceType in device_types.items():
         devicePacket += deviceType + ' ' + deviceName + '\r\n'
     devicePacket += '\r\n'
     
@@ -321,10 +352,9 @@ def reconnect(deviceTypes):
             print 'Connected to AdapterFactory'
 
         try:
-            sendAll(adapterFactorySock, devicePacket)
+            send_all(adapterFactorySock, devicePacket)
             print '\nSent Hello message:\n' + devicePacket.strip()
-            msg = recvAll(adapterFactorySock)
-            print '\nReceived Start message:\n' + msg.strip()
+            msg = recv_all(adapterFactorySock)
         except (socket.error, socket.timeout) as e:
             print >> sys.stderr, \
                 'AdapterFactory communication failure: {0}'.format(e.strerror)
@@ -334,122 +364,140 @@ def reconnect(deviceTypes):
         else:
             break
 
-    if msg.find('BadRequest') == 0:
-        handleBadRequest(msg)
-        time.sleep(config['hello-timeout'])
-        return reconnect(deviceTypes)
+    if msg.find('Error') == 0:
+        return handle_dgi_error(msg)
+    elif msg.find('BadRequest') == 0:
+        handle_bad_request(msg)
     else:
         msg = msg.split()
         if len(msg) != 3 or msg[0] != 'Start' or msg[1] != 'StatePort:':
             raise RuntimeError('DGI sent malformed Start:\n' + ' '.join(msg))
+        else:
+            print '\nReceived Start message:\n' + ' '.join(msg)
 
     adapterPort = int(msg[2])
     if 0 < adapterPort < 1024:
-        raise ValueError('DGI wants to use DCCP well known port ' + adapterPort)
+        raise ValueError('DGI wants to use DCCP well known port ' \
+                + adapterPort)
     elif adapterPort < 0 or adapterPort > 65535:
-        raise ValueError('DGI sent a nonsense statePort ' + config['port'])
+        raise ValueError('DGI sent a nonsense statePort ' + str(config['port']))
 
     for i in range(0, config['adapter-connection-retries']):
         try:
-            adapterSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            adapterSocket.connect((config['host'], adapterPort))
+            adaptersocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            adaptersocket.connect((config['host'], adapterPort))
         except (socket.error, socket.herror, socket.gaierror, socket.timeout) \
                 as e:
             print >> sys.stderr, \
                 'Error connecting to DGI adapter: {0}'.format(e.strerror)
             time.sleep(config['state-timeout'])
-            if i == 9:
+            if i == config['adapter-connection-retries'] - 1:
                 print >> sys.stderr, \
                     'Giving up on the adapter, sending a new Hello'
-                return reconnect(deviceTypes)
+                return reconnect(device_types)
             else:
                 print >> sys.stderr, 'Trying again...'
         else:
-            # FIXME for some reason this doesn't prevent hangs when dgi dies
-            # Figuring out why would be good. But none of the other code ever
-            # touches anything besides this socket. =/
-            adapterSocket.settimeout(config['dgi-timeout'])
-            return adapterSocket
+            adaptersocket.settimeout(config['dgi-timeout'])
+            return adaptersocket
 
-def politeQuit(adapterSock, deviceSignals):
+def polite_quit(adaptersock, device_signals, protected_signals):
     """
     Sends a quit request to DGI and returns once the request has been approved.
     If the request is not initially approved, continues to send device states
     and receive device commands until the request is approved or the DGI times
     out, at which point control returns to the script.
 
-    @param adapterSock the connected stream socket which wants to quit
+    @param adaptersock the connected stream socket which wants to quit
                        THIS SOCKET WILL BE CLOSED!!
-    @param deviceSignals dict of device (name, signal) pairs -> floats
+    @param device_signals dict of device (name, signal) pairs -> floats
+    @param protected_signals dict of device (name, signal) pairs -> ints; the
+                             int represents the number of locks on the signal
     """
     global config
 
     while True:
         try:
             print 'Sending PoliteDisconnect request to DGI'
-            sendAll(adapterSock, 'PoliteDisconnect\r\n\r\n')
-            msg = recvAll(adapterSock)
+            send_all(adaptersock, 'PoliteDisconnect\r\n\r\n')
+            msg = recv_all(adaptersock)
         except (socket.error, socket.timeout) as e:
             print >> sys.stderr, \
                 'DGI communication error: {0}'.format(e.strerror)
             print >> sys.stderr, 'Closing connection impolitely'
-            adapterSock.close()
+            adaptersock.close()
             return
 
         if msg.find('BadRequest') == 0:
-            handleBadRequest(msg)
-            return
+            handle_bad_request(msg)
 
         msg = msg.split()
         if len(msg) != 2 or msg[0] != 'PoliteDisconnect' or \
                 (msg[1] != 'Accepted' and msg[1] != 'Rejected'):
-            raise RuntimeError('Got bad disconnect response:\n' + ' '.join(msg))
+            raise RuntimeError('Got bad disconnect response:\n' \
+                    + ' '.join(msg))
 
         if msg[1] == 'Accepted':
             print 'PoliteDisconnect accepted by DGI'
-            adapterSock.close()
+            adaptersock.close()
             return
         else:
             assert msg[1] == 'Rejected'
             print 'PoliteDisconnect rejected, performing another round of work'
             try:
-                work(adapterSock, deviceSignals, config['state-timeout'])
+                work(adaptersock, device_signals, config['state-timeout'],
+                     protected_signals)
                 # Loop again
             except (socket.error, socket.timeout) as e:
                 print >> sys.stderr, \
                     'DGI communication error: {0}'.format(e.strerror)
                 print >> sys.stderr, 'Closing connection impolitely'
-                adapterSock.close()
+                adaptersock.close()
                 return
 
 
-if __name__ == '__main__': 
-    # dict of names -> types
-    deviceTypes = {}
-    # dict of (name, signal) pairs -> strings (representing floats :S)
-    deviceSignals = {}
-    # are we processing the very first command in the script?
-    firstHello = True
-    # socket connected
-    adapterSock = -1
+def unlock_signal(device_signal_pair, protected_signals,
+                  protected_signals_lock):
+    """
+    Removes a (device, signal) pair from a set of locked signals
 
-    # we don't want to see errors from previous runs
-    try:
-        os.remove(ERROR_FILE)
-    except OSError:
-        # no errors, yay
-        pass
-    
-    initializeConfig() 
+    @param device_signal_pair a (device, signal) on which to release a lock
+    @param protected_signals dict of (device, signal) -> ints; the int
+                             represents the number of locks on the signal
+    @param protected_signals_lock mutex for the protected_signals dictionary
+    """
+    protected_signals_lock.acquire()
+    protected_signals[device_signal_pair] -= 1
+    if protected_signals[device_signal_pair] == 0:
+        del protected_signals[device_signal_pair]
+    protected_signals_lock.release()
+
+
+if __name__ == '__main__': 
+    # FIXME this got a bit out of hand, we need devices to be a class
+    # dict of names -> types
+    device_types = {}
+    # dict of (name, signal) pairs -> strings (representing floats :S)
+    device_signals = {}
+    # dict of (name, signal) pairs -> int (number of locks on the signal)
+    protected_signals = {}
+    # ensure only one thread touches the set of protected signals at a time
+    protected_signals_lock = threading.Lock()
+    # are we processing the very first command in the script?
+    first_hello = True
+    # socket connected
+    adaptersock = -1
+
+    initialize_config()
     script = open(config['script'], 'r')
     for command in script:
         # These dictionaries must be kept in parallel
-        assert len(deviceTypes) == len(deviceSignals)
+        assert len(device_types) == len(device_signals)
 
         # If we ever need to break connection, we will reconnect immediately.
-        # So after the first Hello, adapterSock will ALWAYS be valid.
-        if not firstHello:
-            assert adapterSock.fileno() > 1
+        # So after the first Hello, adaptersock will ALWAYS be valid.
+        if not first_hello:
+            assert adaptersock.fileno() > 1
 
         if command[0] == '#' or command.isspace(): 
             continue
@@ -457,29 +505,40 @@ if __name__ == '__main__':
         print '\nProcessing command: ' + command.strip()
 
         if command.find('enable') == 0 and (len(command.split())-3)%2 == 0:
-            enableDevice(deviceTypes, deviceSignals, command)
-            if not firstHello:
-                politeQuit(adapterSock, deviceSignals)
-            adapterSock = reconnect(deviceTypes)
-            if firstHello:
-                firstHello = False
+            enable_device(device_types, device_signals, command)
+            if not first_hello:
+                polite_quit(adaptersock, device_signals, protected_signals)
+            adaptersock = reconnect(device_types)
+            if first_hello:
+                first_hello = False
 
         elif command.find('disable') == 0 and len(command.split()) == 2:
-            if firstHello:
+            if first_hello:
                 raise RuntimeError("Can't disable devices before first Hello")
-            disableDevice(deviceTypes, deviceSignals, command)
-            politeQuit(adapterSock, deviceSignals)
-            adapterSock = reconnect(deviceTypes)
+            disable_device(device_types, device_signals, command)
+            polite_quit(adaptersock, device_signals, protected_signals)
+            adaptersock = reconnect(device_types)
             
         elif command.find('change') == 0 and len(command.split()) == 4:
-            if firstHello:
+            if first_hello:
                 raise RuntimeError("Can't change a signal before first Hello")
             command = command.split()
-            deviceSignals[(command[1], command[2])] = command[3]
+            device_signals[(command[1], command[2])] = command[3]
+            protected_signals_lock.acquire()
+            if (command[1], command[2]) in protected_signals:
+                protected_signals[(command[1], command[2])] += 1
+            else:
+                protected_signals[(command[1], command[2])] = 1
+            protected_signals_lock.release()
+            t = threading.Timer(
+                    config['protected-state-duration'], unlock_signal,
+                    args=((command[1], command[2]), protected_signals,
+                          protected_signals_lock))
+            t.start()
             print 'Changed', command[1], command[2], 'to', command[3]
 
         elif command.find('dieHorribly') == 0 and len(command.split()) == 2:
-            if firstHello:
+            if first_hello:
                 raise RuntimeError("Can't die before first Hello")
             duration = command.split()[1]
             if duration == 'forever':
@@ -491,36 +550,38 @@ if __name__ == '__main__':
                 raise ValueError("It's nonsense to die for " + duration + "s")
             time.sleep(duration)
             print 'Back to life!'
-            adapterSock.close()
-            adapterSock = reconnect(deviceTypes)
+            adaptersock.close()
+            adaptersock = reconnect(device_types)
 
         elif command.find('work') == 0 and len(command.split()) == 2:
-            if firstHello:
+            if first_hello:
                 raise RuntimeError("Can't work before the first Hello")
             duration = command.split()[1]
             if duration == 'forever':
                 while True:
                     try:
-                        work(adapterSock, deviceSignals)
+                        print 'Working forever, as ordered captain!'
+                        work(adaptersock, device_signals, protected_signals)
                     except (socket.error, socket.timeout) as e:
                         print >> sys.stderr, \
                             'DGI communication error: {0}'.format(e.strerror)
                         print >> sys.stderr, 'Performing impolite reconnect'
-                        adapterSock.close()
-                        adapterSock = reconnect(deviceTypes)
+                        adaptersock.close()
+                        adaptersock = reconnect(device_types)
             elif int(duration) <= 0:
                 raise ValueError('Nonsense to work for ' + duration + 's')
             else:
                 for i in range(int(duration)):
                     try:
-                        print 'Performing work {0} of {1}\n'.format(i, duration)
-                        work(adapterSock, deviceSignals)
+                        print 'Performing work {0} of {1}\n'.format(
+                                i, duration)
+                        work(adaptersock, device_signals, protected_signals)
                     except (socket.error, socket.timeout) as e:
                         print >> sys.stderr, \
                             'DGI communication error: {0}'.format(e.strerror)
                         print >> sys.stderr, 'Performing impolite reconnect'
-                        adapterSock.close()
-                        adapterSock = reconnect(deviceTypes)
+                        adaptersock.close()
+                        adaptersock = reconnect(device_types)
 
         elif command.find('sendtofactory') == 0 and len(command.split()) == 2:
             filename = command.split()[1]
@@ -533,22 +594,22 @@ if __name__ == '__main__':
             factorySock.settimeout(config['dgi-timeout'])
             try:
                 factorySock.connect((config['host'], config['port']))
-                sendAll(factorySock, msg)
-                response = recvAll(factorySock)
+                send_all(factorySock, msg)
+                response = recv_all(factorySock)
                 factorySock.close()
             except (socket.error, socket.herror, socket.gaierror,
                     socket.timeout) as e:
                 print >> sys.stderr, \
                 'sendtofactory failed: {0}'.format(e.strerror)
             if response.find('BadRequest') == 0:
-                handleBadRequest(response)
+                handle_bad_request(response)
             else:
                 print 'Factory responded:\n' + response
             time.sleep(config['custom-timeout'])
 
         elif command.find('sendtoadapter') == 0 and len(command.split()) == 2:
-            if firstHello:
-                raise RuntimeError("Can't sendtoadapter before the first Hello")
+            if first_hello:
+                raise RuntimeError("Can't sendtoadapter before first Hello")
             filename = command.split()[1]
             msg = ''
             response = ''
@@ -556,13 +617,13 @@ if __name__ == '__main__':
                 msg = packet.read()
             print 'Going to send to adapter:\n' + msg
             try:
-                sendAll(adapterSock, msg)
-                response = recvAll(adapterSock)
+                send_all(adaptersock, msg)
+                response = recv_all(adaptersock)
             except (socket.error, socket.timeout) as e:
                 print >> sys.stderr, \
                 'sendtoadapter failed: {0}'.format(e.strerror)
             if response.find('BadRequest') == 0:
-                handleBadRequest(response)
+                handle_bad_request(response)
             else:
                 print 'Adapter responded:\n' + response
             time.sleep(config['custom-timeout'])
@@ -571,6 +632,5 @@ if __name__ == '__main__':
             raise RuntimeError('Read invalid script command:\n' + command)
 
     print 'That seems to be the end of my script, disconnecting now...'
-    politeQuit(adapterSock, deviceSignals)
+    polite_quit(adaptersock, device_signals, protected_signals)
     script.close()
-

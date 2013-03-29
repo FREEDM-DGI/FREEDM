@@ -35,6 +35,7 @@
 #include "CArmAdapter.hpp"
 #include "CAdapterFactory.hpp"
 #include "CLogger.hpp"
+#include "PlugNPlayExceptions.hpp"
 
 #include <map>
 #include <sstream>
@@ -232,7 +233,7 @@ void CArmAdapter::HandleRead(const boost::system::error_code & e)
                     Logger.Warn << "Corrupt state: " << str << std::endl;
                     packet << "BadRequest\r\n" << str << "\r\n\r\n";
                 }
-                catch(std::exception & e)
+                catch(EBadRequest & e)
                 {
                     Logger.Warn << "Corrupt state: " << e.what() << std::endl;
                     packet << "BadRequest\r\n" << e.what() << "\r\n\r\n";
@@ -309,7 +310,7 @@ void CArmAdapter::ReadStatePacket(const std::string packet)
         
         if( m_stateInfo.count(devsig) == 0 )
         {
-            throw std::runtime_error("Unknown device signal: " + devsigstr);
+            throw EBadRequest("Unknown device signal: " + devsigstr);
         }
         
         index = m_stateInfo[devsig];
@@ -317,7 +318,7 @@ void CArmAdapter::ReadStatePacket(const std::string packet)
         
         if( temp.insert(std::make_pair(index, value)).second == false )
         {
-            throw std::runtime_error("Duplicate device signal: " + devsigstr);
+            throw EBadRequest("Duplicate device signal: " + devsigstr);
         }
     }
     

@@ -137,7 +137,20 @@ void CAdapterFactory::RunService()
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
     boost::asio::io_service::work runner(m_ios);
-    m_ios.run();
+
+    try
+    {
+        m_ios.run();
+    }
+    catch (std::exception & e)
+    {
+        Logger.Warn << "Fatal exception in the device ioservice: "
+                << e.what() << std::endl;
+        // FIXME We ought to pass the exception to the parent thread
+        // and flush the broker's ioservice, but this is not possible without
+        // Boost or C++11.
+        std::exit(1);
+    }
 
     Logger.Status << "Started the adapter i/o service." << std::endl;
 }

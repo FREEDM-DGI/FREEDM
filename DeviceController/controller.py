@@ -380,7 +380,7 @@ def reconnect(device_types):
         raise ValueError('DGI wants to use DCCP well known port ' \
                 + adapterPort)
     elif adapterPort < 0 or adapterPort > 65535:
-        raise ValueError('DGI sent a nonsense statePort ' + config['port'])
+        raise ValueError('DGI sent a nonsense statePort ' + str(config['port']))
 
     for i in range(0, config['adapter-connection-retries']):
         try:
@@ -633,5 +633,4 @@ if __name__ == '__main__':
 
     print 'That seems to be the end of my script, disconnecting now...'
     polite_quit(adaptersock, device_signals, protected_signals)
-    # FIXME what if a timer hasn't expired yet -> should be stopped
     script.close()

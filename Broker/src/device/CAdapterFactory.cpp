@@ -549,7 +549,6 @@ void CAdapterFactory::SessionProtocol()
     std::string host, header, type, name, entry;
     int sindex = 1, cindex = 1;
     unsigned short port = 0;
-    bool newport = true;
 
     try
     {
@@ -619,14 +618,14 @@ void CAdapterFactory::SessionProtocol()
         write_xml("file2.xml", config, std::locale(), settings);
         */
 
-        while( newport )
+        while( true )
         {
             try
             {
                 port = GetPortNumber();
                 config.put("info.stateport", port);
                 CreateAdapter(config);
-                newport = false;
+                break;
             }
             catch(EBadRequest & e)
             {

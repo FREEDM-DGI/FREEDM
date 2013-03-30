@@ -487,8 +487,8 @@ if __name__ == '__main__':
     first_hello = True
     # socket connected
     adaptersock = -1
-    
-    initialize_config() 
+
+    initialize_config()
     script = open(config['script'], 'r')
     for command in script:
         # These dictionaries must be kept in parallel

@@ -58,25 +58,33 @@ CLocalLogger Logger(__FILE__);
 /// @post Constructs a TCP server that accepts connections on the given port.
 /// @param ios The I/O service used by the server.
 /// @param port The listen port of the server.
+/// @param address The address of the interface used for listening.
 ///
 /// @limitations None.
 ////////////////////////////////////////////////////////////////////////////////
-CTcpServer::CTcpServer(boost::asio::io_service & ios, unsigned short port)
+CTcpServer::CTcpServer(boost::asio::io_service & ios, unsigned short port,
+    const std::string address)
     : m_acceptor(ios)
     , m_port(port)
     , m_socket(ios)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
    
-    using boost::asio::ip::tcp; 
+    using boost::asio::ip::tcp;
+
     tcp::endpoint endpoint(tcp::v4(), port);
+
+    if( address != "" )
+    {
+        endpoint.address( boost::asio::ip::address::from_string(address) );
+    }
 
     m_acceptor.open(endpoint.protocol());
     m_acceptor.set_option(tcp::acceptor::reuse_address(true));
     m_acceptor.bind(endpoint);
     m_acceptor.listen();
 
-    Logger.Status << "Opened TCP server on port " << port << "." << std::endl;
+    Logger.Status << "Opened TCP server: " << endpoint << "." << std::endl;
 
     StartAccept();
 }
@@ -102,15 +110,16 @@ CTcpServer::~CTcpServer()
 /// @post Creates a TCP server that accepts connections on the given port.
 /// @param ios The I/O service used by the server.
 /// @param port The listen port of the server.
+/// @param address The address of the interface used for listening.
 /// @return Shared pointer to the server.
 ///
 /// @limitations None.
 ////////////////////////////////////////////////////////////////////////////////
 CTcpServer::Pointer CTcpServer::Create(boost::asio::io_service & ios,
-        unsigned short port)
+        unsigned short port, const std::string address)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    return Pointer(new CTcpServer(ios, port));
+    return Pointer(new CTcpServer(ios, port, address));
 }
 
 ////////////////////////////////////////////////////////////////////////////////

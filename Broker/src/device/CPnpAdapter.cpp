@@ -35,6 +35,7 @@
 #include "CPnpAdapter.hpp"
 #include "CAdapterFactory.hpp"
 #include "CLogger.hpp"
+#include "CGlobalConfiguration.hpp"
 #include "PlugNPlayExceptions.hpp"
 
 #include <map>
@@ -97,7 +98,8 @@ CPnpAdapter::CPnpAdapter(boost::asio::io_service & service,
 
     CTcpServer::ConnectionHandler handler;
     handler = boost::bind(&CPnpAdapter::StartRead, this);
-    m_server = CTcpServer::Create(service, m_port);
+    m_server = CTcpServer::Create(service, m_port,
+        CGlobalConfiguration::instance().GetDevicesEndpoint() );
     m_server->RegisterHandler(handler);
 }
 

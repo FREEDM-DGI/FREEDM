@@ -52,7 +52,8 @@ public:
     virtual ~CTcpServer();
     
     /// Creates a new TCP server on the specified port number.
-    static Pointer Create(boost::asio::io_service & ios, unsigned short port);
+    static Pointer Create(boost::asio::io_service & ios, unsigned short port,
+        const std::string address="");
 
     /// Registers a callback function for client connections.
     void RegisterHandler(ConnectionHandler h);
@@ -73,7 +74,8 @@ public:
     void StartAccept();
 private:
     /// Constructs the TCP server on the specified port number.
-    CTcpServer(boost::asio::io_service & ios, unsigned short port);
+    CTcpServer(boost::asio::io_service & ios, unsigned short port,
+        const std::string address="");
     
     /// Handles an accepted client connection.
     void HandleAccept(const boost::system::error_code & error);

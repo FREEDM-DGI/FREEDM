@@ -125,7 +125,8 @@ def send_all(socket, msg):
     @param msg the message to be sent
 
     @ErrorHandling Could raise socket.error or socket.timeout if the data
-                   cannot be sent in time.
+                   cannot be sent in time. Raises RuntimeError if the
+                   connection to the DGI is closed.
     """
     assert len(msg) != 0
     sent_bytes = socket.send(msg)
@@ -135,7 +136,7 @@ def send_all(socket, msg):
         assert len(msg) != 0
         sent_bytes = socket.send(msg)
         if sent_bytes == 0:
-            raise socket.error('Connection to DGI unexpectedly closed')
+            raise RuntimeError('Connection to DGI unexpectedly closed')
 
 
 def recv_all(socket):
@@ -150,16 +151,18 @@ def recv_all(socket):
                    allowed to send multiple messages in a row. Also raises
                    runtime errors if there is no \r\n\r\n at all in the packet,
                    or if it doesn't occur at the very end of the packet. Will
-                   raise socket.timeout if the DGI times out, or socket.error
+                   raise socket.timeout if the DGI times out, or RuntimeError
                    if the connection is closed.
 
     @return the data that has been read
     """
     msg = socket.recv(1024)
-    while len(msg)%1024 == 0:
+    while len(msg)%1024 == 0 and len(msg) != 0:
+        print 'About to call recv'
         msg += socket.recv(1024)
+        print 'I recvd!'
     if len(msg) == 0:
-        raise socket.error('Connection to DGI unexpectedly closed')
+        raise RuntimeError('Connection to DGI unexpectedly closed')
     if msg.find('\r\n\r\n') != len(msg)-4:
         raise RuntimeError('Malformed message from DGI:\n' + msg)
     return msg

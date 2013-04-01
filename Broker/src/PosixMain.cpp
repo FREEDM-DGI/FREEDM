@@ -165,7 +165,11 @@ int main(int argc, char* argv[])
                 ( "verbose,v",
                 po::value<unsigned int>( &globalVerbosity )->
                 implicit_value(5)->default_value(5),
-                "enable verbose output (optionally specify level)" );
+                "enable verbose output (optionally specify level)" )
+                ( "devices-endpoint",
+                po::value<std::string> (),
+                "restrict the endpoint to use for all network communications "
+                "from the device module to the specified IP");
 
         // Options allowed on command line
         cliOpts.add(genOpts).add(cfgOpts);
@@ -248,6 +252,13 @@ int main(int argc, char* argv[])
         CGlobalConfiguration::instance().SetListenAddress(listenIP);
         CGlobalConfiguration::instance().SetClockSkew(
                 boost::posix_time::milliseconds(0));
+        
+        // Specify socket endpoint address, if provided
+        if( vm.count("devices-endpoint") )
+        {
+            CGlobalConfiguration::instance().SetDevicesEndpoint(
+                vm["devices-endpoint"].as<std::string>() );
+        }
 
         // configure the adapter factory
         if( vm.count("adapter-port") == 0 )
@@ -346,7 +357,7 @@ int main(int argc, char* argv[])
         Logger.Error << "Exception caught in main during start up: " << e.what() << std::endl;
         return 0;
     }
-    
+
     //constructors for initial mapping
     CConnectionManager conManager;
     ConnectionPtr newConnection;
@@ -356,12 +367,12 @@ int main(int argc, char* argv[])
     CDispatcher dispatch;
     // Run server in background thread
     CBroker broker(listenIP, port, dispatch, ios, conManager);
-    
+
     // Initialize modules
     gm::GMAgent GM(id, broker);
     sc::SCAgent SC(id, broker);
     lb::LBAgent LB(id, broker);
-        
+
     try
     {
         // Instantiate and register the group management module
@@ -417,7 +428,7 @@ int main(int argc, char* argv[])
     {
         Logger.Error << "Exception caught in module initialization: " << e.what() << std::endl;
     }
-    
+
     try
     {
         broker.Run();

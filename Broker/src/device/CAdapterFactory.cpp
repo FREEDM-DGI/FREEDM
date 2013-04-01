@@ -119,7 +119,8 @@ void CAdapterFactory::StartSessionProtocol()
         // initialize the TCP variant of the session layer protocol
         port        = CGlobalConfiguration::instance().GetFactoryPort();
         handler     = boost::bind(&CAdapterFactory::StartSession, this);
-        m_server    = CTcpServer::Create(m_ios, port);
+        m_server    = CTcpServer::Create(m_ios, port,
+                CGlobalConfiguration::instance().GetDevicesEndpoint() );
         m_server->RegisterHandler(handler);
     }
 }

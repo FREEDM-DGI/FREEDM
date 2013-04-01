@@ -144,7 +144,7 @@ void CAdapterFactory::RunService()
     }
     catch (std::exception & e)
     {
-        Logger.Warn << "Fatal exception in the device ioservice: "
+        Logger.Fatal << "Fatal exception in the device ioservice: "
                 << e.what() << std::endl;
         // FIXME We ought to pass the exception to the parent thread
         // and flush the broker's ioservice, but this is not possible without

@@ -158,9 +158,7 @@ def recv_all(socket):
     """
     msg = socket.recv(1024)
     while len(msg)%1024 == 0 and len(msg) != 0:
-        print 'About to call recv'
         msg += socket.recv(1024)
-        print 'I recvd!'
     if len(msg) == 0:
         raise RuntimeError('Connection to DGI unexpectedly closed')
     if msg.find('\r\n\r\n') != len(msg)-4:

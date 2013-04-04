@@ -670,7 +670,7 @@ void CAdapterFactory::SessionProtocol()
     }
     catch(EBadRequest & e)
     {
-        Logger.Notice << "Rejected client: " << e.what() << std::endl;
+        Logger.Warn << "Rejected client: " << e.what() << std::endl;
 
         if( port != 0 )
         {
@@ -684,13 +684,13 @@ void CAdapterFactory::SessionProtocol()
     }
     catch(EOutOfPorts & e)
     {
-        Logger.Notice << "Rejected client: " << e.what() << std::endl;
+        Logger.Warn << "Rejected client: " << e.what() << std::endl;
         response_stream << "Error\r\nInsufficient adapter ports\r\n\r\n";
         Logger.Status << "Blocking to send Error to client" << std::endl;
     }
     catch(EDuplicateSession & e)
     {
-        Logger.Notice << "Rejected client: " << e.what() << std::endl;
+        Logger.Warn << "Rejected client: " << e.what() << std::endl;
         // FIXME sending e.what() to the client is not robust
         // we need boost exceptions to handle this properly
         response_stream << "Error\r\n" << e.what() << "\r\n\r\n";

@@ -42,6 +42,7 @@
 #include "CFakeAdapter.hpp"
 #include "PlugNPlayExceptions.hpp"
 
+#include <cerrno>
 #include <utility>
 #include <iostream>
 #include <set>
@@ -50,6 +51,7 @@
 #include <boost/bind.hpp>
 #include <boost/foreach.hpp>
 #include <boost/property_tree/ptree.hpp>
+#include <boost/system/system_error.hpp>
 #include <boost/algorithm/string/regex.hpp>
 #include <boost/property_tree/xml_parser.hpp>
 
@@ -641,14 +643,6 @@ void CAdapterFactory::SessionProtocol()
                 CreateAdapter(config);
                 break;
             }
-            catch(EBadRequest & e)
-            {
-                throw;
-            }
-            catch(EOutOfPorts & e)
-            {
-                throw;
-            }
             catch(EDgiConfigError & e)
             {
                 throw std::logic_error("Caught EDgiConfigError from "
@@ -656,12 +650,9 @@ void CAdapterFactory::SessionProtocol()
                         "sense for a plug and play adapter; what: "
                         + std::string(e.what()));
             }
-            catch(std::exception & e)
+            catch(boost::system::system_error & e)
             {
-                // FIXME we can't rely on anything except the type of the
-                // exception for control flow. This message could change
-                // in the future and is definitely nonportable
-                if( e.what() == std::string("Address already in use") )
+                if( e.code().value() == EADDRINUSE )
                 {
                     Logger.Warn << "Port already used: " << port << std::endl;
                     port = 0; // reset to default value

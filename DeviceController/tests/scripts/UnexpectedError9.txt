@@ -1,3 +1,3 @@
 # Unexpected Error 9
-# The AdapterFactory receives a packet containing a lone Golbat, no \r\n
-sendtofactory scripts/packets/Golbat.txt
+# The DGI adapter factory receives a packet containing a lone Hello command with the wrong delimiter
+sendtofactory tests/scripts/packets/Factory-WrongDelimiter-Nonsense.txt

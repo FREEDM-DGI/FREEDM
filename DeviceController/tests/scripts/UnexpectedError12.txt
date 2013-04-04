@@ -1,0 +1,4 @@
+# Unexpected Error 12
+# The DGI adapter receives a packet containing a lone command with the wrong delimiter followed by nonsense data
+enable Sst SST1 gateway 5.0
+sendtoadapter tests/scripts/packets/Adapter-WrongDelimiter-Nonsense.txt

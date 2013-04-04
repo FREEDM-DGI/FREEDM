@@ -96,6 +96,15 @@
     UnexpectedError3 & Send a corrupt state value to the DGI. & Corrupt state: received non-numeric value & \\
     UnexpectedError4 & Have the same controller specify the same device twice. & Rejected client: The device TestController:SST1 already exists. & \\
     UnexpectedError5 & Have the same controller start two simultaneous sessions. & Rejected client: Duplicate session for TestController & \\
+    UnexpectedError6 & The DGI adapter factory receives a packet with a header it does not recognize & Expected & \\
+    UnexpectedError7 & The DGI adapter receives a packet with a header it does not recognize & Expected & \\
+    UnexpectedError8 & The DGI adapter factory receives a packet containing a lone Hello command with the wrong delimiter & Expected & \\
+    UnexpectedError9 & The DGI adapter factory receives a packet containing a lone Hello command followed by nonsense data & Expected & \\
+    UnexpectedError10 & The DGI adapter factory receives a packet containing nonsense data & Expected & \\
+    UnexpectedError11 & The DGI adapter receives a packet containing a lone command with the wrong delimiter & Expected & \\
+    UnexpectedError12 & The DGI adapter receives a packet containing a lone command with the wrong delimiter follwed by nonsense data & Expected & \\
+    UnexpectedError13 & The DGI adapter receives a packet containing a series of commands with the wrong delimiters & Expected & \\
+    UnexpectedError14 & The DGI adapter receives a packet containing nonsense data & Expected & \\
     MultipleControllers1 & Have two controllers use the same device type with different names. & SST (0) $\rightarrow$ 0.0 \newline \ldots \newline SST (2) $\rightarrow$ 12.0 & \\
     MultipleControllers2 & Have two controllers use the same device type with identical names. & SST (0) $\rightarrow$ 0.0 \newline \ldots \newline SST (2) $\rightarrow$ 12.0 & \\
     MultipleControllers3 & Have two controllers use different device types. & LOAD (0) $\rightarrow$ 0.0 ; SST (0) $\rightarrow$ 0.0 \newline \ldots \newline LOAD (1) $\rightarrow$ 42.0 ; SST (1) $\rightarrow$ 5.0 & \\

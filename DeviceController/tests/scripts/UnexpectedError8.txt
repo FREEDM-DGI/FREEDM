@@ -1,4 +1,3 @@
 # Unexpected Error 8
-# The DGI receives a packet with the wrong delimiter in a sequence
-enable Sst SST1 gateway 5.0
-sendtoadapter scripts/packets/WrongDelimiter-Sequence.txt
+# The DGI adapter factory receives a packet containing a lone Hello command with the wrong delimiter
+sendtofactory tests/scripts/packets/Factory-WrongDelimiter-Lone.txt

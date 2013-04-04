@@ -1,3 +1,3 @@
 # Unexpected Error 7
-# The DGI receives a packet with the wrong delimiter as a lone packet
-sendtofactory scripts/packets/WrongDelimiter-Lone.txt
+# The DGI adapter receives a packet with a header it does not recognize
+sendtoadapter tests/scripts/packets/UnrecognizedHeader.txt

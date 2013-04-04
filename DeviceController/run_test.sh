@@ -21,7 +21,7 @@ for i in $1.txt $1[A-Z].txt; do
         fi
 
         echo "Using configuration $CFG with the script $i..."
-        python controller.py -c $CFG -s $i -n "TestController$CTR" &
+        python2 controller.py -c $CFG -s $i -n "TestController$CTR" &
     fi
 done
 

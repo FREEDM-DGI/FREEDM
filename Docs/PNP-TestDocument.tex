@@ -69,11 +69,11 @@
     Configuration14 & Run the DGI without the end of the plug and play port range. & Exception caught in main: adapter-port=4000:: received empty string for a port number & \\
     Configuration15 & Run the DGI with an empty plug and play port range. & Exception caught in main: adapter-port=:: received empty string for a port number & \\
     Configuration16 & Run the DGI with the same value for the start and end of the plug and play port range. & 1 adapter port(s) available. & \\
-    Configuration17 & Run the DGI without a plug and play port specified. & Will not use plug and play devices. & \\
+    Configuration17 & Run the DGI without a plug and play port specified. & Plug and play devices disabled. & \\
     Configuration18 & Run the DGI with multiple plug and play port ranges. & 11 adapter port(s) available. & \\
     Configuration19 & Run the DGI with multiple plug and play port ranges that overlap. & Duplicate adapter port: 4005 & \\
     Configuration20 & Run the DGI with the lone plug and play port the same as the session port. & Rejected client: No available port numbers for new adapter. & \\
-    Configuration21 & Run the DGI with the first plug and play port the same as thes session port. & Port already used: 3000 & \\
+    Configuration21 & Run the DGI with the first plug and play port the same as the session port. & Port already used: 3000 & \\
     BasicOperation1 & Detect a single plug and play device. & SST (0) $\rightarrow$ 0.0 \newline SST (1) $\rightarrow$ 5.0 & \\
     BasicOperation2 & Remove a plug and play device that has gone off-line. & SST (0) $\rightarrow$ 0.0 \newline SST (1) $\rightarrow$ 5.0 \newline SST (0) $\rightarrow$ 0.0 & \\
     BasicOperation3 & Change the value of a plug and play device at run time. & SST (0) $\rightarrow$ 0.0 \newline SST (1) $\rightarrow$ 5.0 \newline SST (1) $\rightarrow$ 10.0 & \\
@@ -92,7 +92,7 @@
     Failure4 & Fail after sending the device states and restart instantly. & SST (0) $\rightarrow$ 0.0 \newline SST (1) $\rightarrow$ 5.0 & \\
     Failure5 & Fail after sending the device states and restart after a delay. & SST (0) $\rightarrow$ 0.0 \newline SST (1) $\rightarrow$ 5.0 \newline SST (0) $\rightarrow$ 0.0 \newline SST (1) $\rightarrow$ 5.0 & \\
     UnexpectedError1 & Send an unrecognized device type to the DGI. & Rejected client: Unknown device type: SST & \\
-    UnexpectedError2 & Send an unrecognized signal type to the DGI. & Corrupt state: Unknown device signal: TestController:SST1 gateway & \\
+    UnexpectedError2 & Send an unrecognized signal type to the DGI. & Corrupt state: Unknown device signal: TestController:SST1 gateawy & \\
     UnexpectedError3 & Send a corrupt state value to the DGI. & Corrupt state: received non-numeric value & \\
     UnexpectedError4 & Have the same controller specify the same device twice. & Rejected client: The device TestController:SST1 already exists. & \\
     UnexpectedError5 & Have the same controller start two simultaneous sessions. & Rejected client: Duplicate session for TestController & \\

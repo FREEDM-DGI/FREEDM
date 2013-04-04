@@ -1,4 +1,3 @@
 # Unexpected Error 7
 # The DGI receives a packet with the wrong delimiter as a lone packet
-enable Sst SST1 gateway 5.0
-sendtoadapter scripts/packets/WrongDelimiter-Lone.txt
+sendtofactory scripts/packets/WrongDelimiter-Lone.txt

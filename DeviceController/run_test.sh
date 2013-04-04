@@ -15,7 +15,7 @@ for i in $1.txt $1[A-Z].txt; do
 
         if [ $# -eq 1 ]
         then
-            CFG="config/default.cfg"
+            CFG="tests/config/default.cfg"
         else
             CFG="$2$CTR.cfg"
         fi

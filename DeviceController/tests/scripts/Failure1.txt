@@ -1,4 +1,4 @@
 # Failure 1 - Device Fails before Sending State
 enable Sst SST1 gateway 5.0
-dieHorribly 0
+dieHorribly forever
 

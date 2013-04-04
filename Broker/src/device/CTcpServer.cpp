@@ -142,7 +142,7 @@ void CTcpServer::Stop()
 
     if( m_socket.is_open() )
     {
-        Logger.Warn << hdr() << "Closed open client connection." << std::endl;
+        Logger.Notice << hdr() << "Closed open client connection." << std::endl;
         m_socket.close();
     }
     

@@ -61,7 +61,7 @@ plug and play protocol and pretends to immediately implement DGI commands.'''
     epi = 'Batteries not included.'
 
     parser = argparse.ArgumentParser(description=desc, epilog=epi)
-    parser.add_argument('-c', '--config', default='controller.cfg',
+    parser.add_argument('-c', '--config', default='config/controller.cfg',
                         help='file to use for additional configuration')
     parser.add_argument('-g', '--host',
                         help='hostname of the DGI to connect to')
@@ -97,7 +97,6 @@ plug and play protocol and pretends to immediately implement DGI commands.'''
     if args.port:
         config['port'] = args.port
 
-    config_filename = 'controller.cfg'
     if args.config:
         config_filename = args.config
 

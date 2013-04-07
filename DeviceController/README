@@ -8,8 +8,7 @@ This fake code exists to trick DGI into thinking that's happening.
 
 How to use:
 
-1) Make copies of controller.cfg.sample and dsp-script.txt.sample, without the
-   .sample extensions.
+1) Move controller.cfg and dsp-script.txt from config/samples/ to config/
 
 2) Modify them.
 

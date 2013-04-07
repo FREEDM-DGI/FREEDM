@@ -1,3 +1,0 @@
-# Basic Operation 1 - Detects a Single Device
-enable Sst SST1 gateway 5.0
-work forever

@@ -568,9 +568,10 @@ if __name__ == '__main__':
                 raise RuntimeError("Can't work before the first Hello")
             duration = command.split()[1]
             if duration == 'forever':
+                i = 0
                 while True:
                     try:
-                        print 'Working forever, as ordered captain!'
+                        print 'Working forever ', str(i), 'as ordered captain!'
                         work(adaptersock, device_signals, protected_signals)
                     except (socket.error, socket.timeout, ConnectionLost) as e:
                         print >> sys.stderr, \
@@ -578,6 +579,7 @@ if __name__ == '__main__':
                         print >> sys.stderr, 'Performing impolite reconnect'
                         adaptersock.close()
                         adaptersock = reconnect(device_types)
+                    i += 1
             elif int(duration) <= 0:
                 raise ValueError('Nonsense to work for ' + duration + 's')
             else:

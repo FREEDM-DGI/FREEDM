@@ -33,10 +33,18 @@ import sys
 import threading
 import time
 
+
 config = {}
 
 COPYRIGHT_YEAR = '2013'
 VERSION_FILE = '../Broker/src/version.h'
+
+
+class ConnectionLost(Exception):
+    """
+    An exception to be rasied when the DGI disappears.
+    """
+    pass
 
 
 def initialize_config():
@@ -125,7 +133,7 @@ def send_all(socket, msg):
     @param msg the message to be sent
 
     @ErrorHandling Could raise socket.error or socket.timeout if the data
-                   cannot be sent in time. Raises RuntimeError if the
+                   cannot be sent in time. Raises ConnectionLost if the
                    connection to the DGI is closed.
     """
     assert len(msg) != 0
@@ -136,7 +144,7 @@ def send_all(socket, msg):
         assert len(msg) != 0
         sent_bytes = socket.send(msg)
         if sent_bytes == 0:
-            raise RuntimeError('Connection to DGI unexpectedly closed')
+            raise ConnectionLost('Connection to DGI unexpectedly lost')
 
 
 def recv_all(socket):
@@ -151,8 +159,8 @@ def recv_all(socket):
                    allowed to send multiple messages in a row. Also raises
                    runtime errors if there is no \r\n\r\n at all in the packet,
                    or if it doesn't occur at the very end of the packet. Will
-                   raise socket.timeout if the DGI times out, or RuntimeError
-                   if the connection is closed.
+                   raise ConnectionLost if the DGI times out, or
+                   RuntimeError if the DGI sends a malformed packet.
 
     @return the data that has been read
     """
@@ -160,7 +168,7 @@ def recv_all(socket):
     while len(msg)%1024 == 0 and len(msg) != 0:
         msg += socket.recv(1024)
     if len(msg) == 0:
-        raise RuntimeError('Connection to DGI unexpectedly closed')
+        raise ConnectionLost('Connection to DGI unexpectedly lost')
     if msg.find('\r\n\r\n') != len(msg)-4:
         raise RuntimeError('Malformed message from DGI:\n' + msg)
     return msg
@@ -310,7 +318,8 @@ def work(adaptersock, device_signals, protected_signals):
     @param protected_signals dict of (device, signal) pairs to ints; the int
                              represents the number of locks on the signal
 
-    @ErrorHandling caller must check for socket.timeout
+    @ErrorHandling caller must check for socket.timeout, socket.error, and
+                   ConnectionLost
     """
     global config
     send_states(adaptersock, device_signals)
@@ -345,7 +354,7 @@ def reconnect(device_types):
         except (socket.error, socket.herror, socket.gaierror, socket.timeout) \
                 as e:
             print >> sys.stderr, \
-                'Fail connecting to AdapterFactory: {0}'.format(e.strerror)
+                'Fail connecting to AdapterFactory: {0}'.format(str(e))
             time.sleep(config['hello-timeout'])
             print >> sys.stderr, 'Attempting to reconnect...'
             continue
@@ -356,9 +365,9 @@ def reconnect(device_types):
             send_all(adapterFactorySock, devicePacket)
             print '\nSent Hello message:\n' + devicePacket.strip()
             msg = recv_all(adapterFactorySock)
-        except (socket.error, socket.timeout) as e:
+        except (socket.error, socket.timeout, ConnectionLost) as e:
             print >> sys.stderr, \
-                'AdapterFactory communication failure: {0}'.format(e.strerror)
+                'AdapterFactory communication failure: {0}'.format(str(e))
             adapterFactorySock.close()
             time.sleep(config['hello-timeout'])
             print >> sys.stderr, 'Attempting to reconnect...'
@@ -390,7 +399,7 @@ def reconnect(device_types):
         except (socket.error, socket.herror, socket.gaierror, socket.timeout) \
                 as e:
             print >> sys.stderr, \
-                'Error connecting to DGI adapter: {0}'.format(e.strerror)
+                'Error connecting to DGI adapter: {0}'.format(str(e))
             time.sleep(config['state-timeout'])
             if i == config['adapter-connection-retries'] - 1:
                 print >> sys.stderr, \
@@ -422,9 +431,9 @@ def polite_quit(adaptersock, device_signals, protected_signals):
             print 'Sending PoliteDisconnect request to DGI'
             send_all(adaptersock, 'PoliteDisconnect\r\n\r\n')
             msg = recv_all(adaptersock)
-        except (socket.error, socket.timeout) as e:
+        except (socket.error, socket.timeout, ConnectionLost) as e:
             print >> sys.stderr, \
-                'DGI communication error: {0}'.format(e.strerror)
+                'DGI communication error: {0}'.format(str(e))
             print >> sys.stderr, 'Closing connection impolitely'
             adaptersock.close()
             return
@@ -449,9 +458,9 @@ def polite_quit(adaptersock, device_signals, protected_signals):
                 work(adaptersock, device_signals, config['state-timeout'],
                      protected_signals)
                 # Loop again
-            except (socket.error, socket.timeout) as e:
+            except (socket.error, socket.timeout, ConnectionLost) as e:
                 print >> sys.stderr, \
-                    'DGI communication error: {0}'.format(e.strerror)
+                    'DGI communication error: {0}'.format(str(e))
                 print >> sys.stderr, 'Closing connection impolitely'
                 adaptersock.close()
                 return
@@ -563,9 +572,9 @@ if __name__ == '__main__':
                     try:
                         print 'Working forever, as ordered captain!'
                         work(adaptersock, device_signals, protected_signals)
-                    except (socket.error, socket.timeout) as e:
+                    except (socket.error, socket.timeout, ConnectionLost) as e:
                         print >> sys.stderr, \
-                            'DGI communication error: {0}'.format(e.strerror)
+                            'DGI communication error: {0}'.format(str(e))
                         print >> sys.stderr, 'Performing impolite reconnect'
                         adaptersock.close()
                         adaptersock = reconnect(device_types)
@@ -577,9 +586,9 @@ if __name__ == '__main__':
                         print 'Performing work {0} of {1}\n'.format(
                                 i, duration)
                         work(adaptersock, device_signals, protected_signals)
-                    except (socket.error, socket.timeout) as e:
+                    except (socket.error, socket.timeout, ConnectionLost) as e:
                         print >> sys.stderr, \
-                            'DGI communication error: {0}'.format(e.strerror)
+                            'DGI communication error: {0}'.format(str(e))
                         print >> sys.stderr, 'Performing impolite reconnect'
                         adaptersock.close()
                         adaptersock = reconnect(device_types)
@@ -599,9 +608,9 @@ if __name__ == '__main__':
                 response = recv_all(factorySock)
                 factorySock.close()
             except (socket.error, socket.herror, socket.gaierror,
-                    socket.timeout) as e:
+                    socket.timeout, ConnectionLost) as e:
                 print >> sys.stderr, \
-                'sendtofactory failed: {0}'.format(e.strerror)
+                'sendtofactory failed: {0}'.format(str(e))
             if response.find('BadRequest') == 0:
                 handle_bad_request(response)
             else:
@@ -620,9 +629,9 @@ if __name__ == '__main__':
             try:
                 send_all(adaptersock, msg)
                 response = recv_all(adaptersock)
-            except (socket.error, socket.timeout) as e:
+            except (socket.error, socket.timeout, ConnectionLost) as e:
                 print >> sys.stderr, \
-                'sendtoadapter failed: {0}'.format(e.strerror)
+                'sendtoadapter failed: {0}'.format(str(e))
             if response.find('BadRequest') == 0:
                 handle_bad_request(response)
             else:

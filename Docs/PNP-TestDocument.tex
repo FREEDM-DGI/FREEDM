@@ -86,11 +86,21 @@
     BasicOperation10 & Change the value of the a non-SST device. & LOAD (0) $\rightarrow$ 0.0 ; SST (0) $\rightarrow$ 0.0 \newline LOAD (1) $\rightarrow$ 42.0 ; SST (1) $\rightarrow$ 5.0 \newline LOAD (1) $\rightarrow$ 24.0 ; SST (1) $\rightarrow$ 5.0 & \\
     BasicOperation11 & Handle a large number of devices at once. & DRER (0) $\rightarrow$ 0.0 ; DESD (0) $\rightarrow$ 0.0 ; LOAD (0) $\rightarrow$ 0.0 ; SST (0) $\rightarrow$ 0.0 \newline DRER (3) $\rightarrow$ 111.0 ; DESD (1) $\rightarrow$ 10.0 ; LOAD (1) $\rightarrow$ 42.0 ; SST (2) $\rightarrow$ 12.0 & \\
     BasicOperation12 & Change the value of a large number of devices. & DRER (0) $\rightarrow$ 0.0 ; DESD (0) $\rightarrow$ 0.0 ; LOAD (0) $\rightarrow$ 0.0 ; SST (0) $\rightarrow$ 0.0 \newline DRER (2) $\rightarrow$ 39.0 ; DESD (1) $\rightarrow$ 10.0 ; LOAD (1) $\rightarrow$ 42.0 ; SST (1) $\rightarrow$ 5.0 \newline DRER (2) $\rightarrow$ 49.0 ; DESD (1) $\rightarrow$ 10.0; LOAD (1) $\rightarrow$ 42.0 ; SST (1) $\rightarrow$ 10.0 & \\
-    Failure1 & Fail before sending the DGI device states. & test case incomplete & \\
-    Failure2 & Fail before sending states and then restart. & test case incomplete & \\
+    Failure1 & Fail before sending the DGI device states. & Removing an adapter due to timeout & \\
+    Failure2 & Fail before sending states and then restart. & SST (0) $\rightarrow$ 0.0 \newline SST (1) $\rightarrow$ 5.0 & \\
     Failure3 & Fail after sending the DGI device states. & SST (0) $\rightarrow$ 0.0 \newline SST (1) $\rightarrow$ 5.0 \newline SST (0) $\rightarrow$ 0.0 & \\
     Failure4 & Fail after sending the device states and restart instantly. & SST (0) $\rightarrow$ 0.0 \newline SST (1) $\rightarrow$ 5.0 & \\
     Failure5 & Fail after sending the device states and restart after a delay. & SST (0) $\rightarrow$ 0.0 \newline SST (1) $\rightarrow$ 5.0 \newline SST (0) $\rightarrow$ 0.0 \newline SST (1) $\rightarrow$ 5.0 & \\
+    Failure6A & DGI loses Wi-Fi before receiving device states. & Removing an adapter due to timeout & \\
+    Failure6B & Controller loses Wi-Fi before sending the DGI device states. & Removing an adapter due to timeout & \\
+    Failure7A & DGI loses loses Wi-Fi before sending states and then regains it. & SST (0) $\rightarrow$ 0.0 \newline SST (1) $\rightarrow$ 5.0 & \\
+    Failure7B & Controller loses Wi-Fi before sending states and then regains it. & SST (0) $\rightarrow$ 0.0 \newline SST (1) $\rightarrow$ 5.0 & \\
+    Failure8A & DGI loses Wi-Fi after receiving device states. & SST (0) $\rightarrow$ 0.0 \newline SST (1) $\rightarrow$ 5.0 \newline SST (0) $\rightarrow$ 0.0 & \\
+    Failure8B & Controller loses Wi-Fi after sending the DGI device states. & SST (0) $\rightarrow$ 0.0 \newline SST (1) $\rightarrow$ 5.0 \newline SST (0) $\rightarrow$ 0.0 & \\
+    Failure9A & DGI loses Wi-Fi after receiving device states and regains it instantly. & SST (0) $\rightarrow$ 0.0 \newline SST (1) $\rightarrow$ 5.0 & \\
+    Failure9B & Controller loses Wi-Fi after sending device states and regains it instantly. & SST (0) $\rightarrow$ 0.0 \newline SST (1) $\rightarrow$ 5.0 & \\
+    Failure10A & DGI loses Wi-Fi after receiving device states and regains it after a delay. & SST (0) $\rightarrow$ 0.0 \newline SST (1) $\rightarrow$ 5.0 \newline SST (0) $\rightarrow$ 0.0 \newline SST (1) $\rightarrow$ 5.0 & \\
+    Failure10B & Controller loses Wi-Fi after sending device states and regains it after a delay. & SST (0) $\rightarrow$ 0.0 \newline SST (1) $\rightarrow$ 5.0 \newline SST (0) $\rightarrow$ 0.0 \newline SST (1) $\rightarrow$ 5.0 & \\
     UnexpectedError1 & Send an unrecognized device type to the DGI. & Rejected client: Unknown device type: SST & \\
     UnexpectedError2 & Send an unrecognized signal type to the DGI. & Corrupt state: Unknown device signal: TestController:SST1 gateawy & \\
     UnexpectedError3 & Send a corrupt state value to the DGI. & Corrupt state: received non-numeric value & \\

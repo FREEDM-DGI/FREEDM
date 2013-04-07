@@ -53,28 +53,28 @@
 \begin{longtable}{|p{3cm}|p{4cm}|p{10cm}|c|}
     \hline
     Test Prefix & Description & Expected Result & Result \\ \hline \endhead \hline \endfoot
-    Configuration1 & Run the DGI using a negative session port. & Exception caught in main: factory-port=-3000: invalid port number: -3000 & \\
-    Configuration2 & Run the DGI using a reserved session port. & Exception caught in main: factory-port=0: reserved port number: 0 & \\
-    Configuration3 & Run the DGI using a session port greater than 65535. & Exception caught in main: factory-port=68000: invalid port number: 68000 & \\
-    Configuration4 & Run the DGI using a non-numeric session port. & Exception caught in main: factory-port=3000wq: invalid port number: 3000wq & \\
-    Configuration5 & Run the DGI without the session port specified. & Exception caught in main: factory-port not specified in config & \\
+    Configuration1 & Run the DGI using a negative session port. & Exception caught in main during start up: factory-port=-53000: invalid port number: -53000 & \\
+    Configuration2 & Run the DGI using a reserved session port. & Exception caught in main during start up: factory-port=0: reserved port number: 0 & \\
+    Configuration3 & Run the DGI using a session port greater than 65535. & Exception caught in main during start up: factory-port=68000: invalid port number: 68000 & \\
+    Configuration4 & Run the DGI using a non-numeric session port. & Exception caught in main during start up: factory-port=53000wq: invalid port number: 53000wq & \\
+    Configuration5 & Run the DGI without the session port specified. & Exception caught in main during start up: factory-port not specified in config & \\
     Configuration6 & Run the DGI with a single plug and play port. & 1 adapter port(s) available. & \\
-    Configuration7 & Run the DGI with a large number of plug and play ports. & 36011 adapter port(s) available. & \\
-    Configuration8 & Run the DGI with an inverted plug and play port range. & Exception caught in main: adapter-port=4010:4000: invalid range & \\
-    Configuration9 & Run the DGI using a negative plug and play port. & Exception caught in main: adapter-port=-4010:-4000: invalid port number: -4010 & \\
-    Configuration10 & Run the DGI using a reserved plug and play port. & Exception caught in main: adapter-port=0:10: reserved port number: 0 & \\
-    Configuration11 & Run the DGI using a plug and play port greater than 65535. & Exception caught in main: adapter-port=68000:68007: invalid port number: 68000 & \\
-    Configuration12 & Run the DGI using a non-numeric plug and play port. & Exception caught in main: adapter-port=4000:4010i: invalid port number: 4010i & \\
-    Configuration13 & Run the DGI without the start of the plug and play port range. & Exception caught in main: adapter-port=:4010: received empty string for a port number & \\
-    Configuration14 & Run the DGI without the end of the plug and play port range. & Exception caught in main: adapter-port=4000:: received empty string for a port number & \\
-    Configuration15 & Run the DGI with an empty plug and play port range. & Exception caught in main: adapter-port=:: received empty string for a port number & \\
+    Configuration7 & Run the DGI with a large number of plug and play ports. & 16383 adapter port(s) available. & \\
+    Configuration8 & Run the DGI with an inverted plug and play port range. & Exception caught in main during start up: adapter-port=54010:54000: invalid range & \\
+    Configuration9 & Run the DGI using a negative plug and play port. & Exception caught in main during start up: adapter-port=-54010:-54000: invalid port number: -54010 & \\
+    Configuration10 & Run the DGI using a reserved plug and play port. & Exception caught in main during start up: adapter-port=0:10: reserved port number: 0 & \\
+    Configuration11 & Run the DGI using a plug and play port greater than 65535. & Exception caught in main during start up: adapter-port=68000:68007: invalid port number: 68000 & \\
+    Configuration12 & Run the DGI using a non-numeric plug and play port. & Exception caught in main during start up: adapter-port=54000:54010i: invalid port number: 54010i & \\
+    Configuration13 & Run the DGI without the start of the plug and play port range. & Exception caught in main during start up: adapter-port=:54010: received empty string for a port number & \\
+    Configuration14 & Run the DGI without the end of the plug and play port range. & Exception caught in main during start up: adapter-port=54000:: received empty string for a port number & \\
+    Configuration15 & Run the DGI with an empty plug and play port range. & Exception caught in main during start up: adapter-port=:: received empty string for a port number & \\
     Configuration16 & Run the DGI with the same value for the start and end of the plug and play port range. & 1 adapter port(s) available. & \\
     Configuration17 & Run the DGI without a plug and play port specified. & Plug and play devices disabled. & \\
     Configuration18 & Run the DGI with multiple plug and play port ranges. & 11 adapter port(s) available. & \\
-    Configuration19 & Run the DGI with multiple plug and play port ranges that overlap. & Duplicate adapter port: 4005 & \\
+    Configuration19 & Run the DGI with multiple plug and play port ranges that overlap. & Duplicate adapter port: 54005 & \\
     Configuration20 & Run the DGI with the lone plug and play port the same as the session port. & Rejected client: No available port numbers for new adapter. & \\
-    Configuration21 & Run the DGI with the first plug and play port the same as the session port. & Port already used: 3000 & \\
-    BasicOperation1 & Detect a single plug and play device. & SST (0) $\rightarrow$ 0.0 \newline SST (1) $\rightarrow$ 5.0 & \\
+    Configuration21 & Run the DGI with the first plug and play port the same as the session port. & Port already used: 53000 & \\
+    BasicOperation1 & Detect a single plug and play controller. & SST (0) $\rightarrow$ 0.0 \newline SST (1) $\rightarrow$ 5.0 & \\
     BasicOperation2 & Remove a plug and play device that has gone off-line. & SST (0) $\rightarrow$ 0.0 \newline SST (1) $\rightarrow$ 5.0 \newline SST (0) $\rightarrow$ 0.0 & \\
     BasicOperation3 & Change the value of a plug and play device at run time. & SST (0) $\rightarrow$ 0.0 \newline SST (1) $\rightarrow$ 5.0 \newline SST (1) $\rightarrow$ 10.0 & \\
     BasicOperation4 & Detect two devices of the same type with the correct $\rightarrow$ value. & SST (0) $\rightarrow$ 0.0 \newline SST (2) $\rightarrow$ 12.0 & \\
@@ -96,15 +96,15 @@
     UnexpectedError3 & Send a corrupt state value to the DGI. & Corrupt state: received non-numeric value & \\
     UnexpectedError4 & Have the same controller specify the same device twice. & Rejected client: The device TestController:SST1 already exists. & \\
     UnexpectedError5 & Have the same controller start two simultaneous sessions. & Rejected client: Duplicate session for TestController & \\
-    UnexpectedError6 & The DGI adapter factory receives a packet with a header it does not recognize & Expected & \\
-    UnexpectedError7 & The DGI adapter receives a packet with a header it does not recognize & Expected & \\
-    UnexpectedError8 & The DGI adapter factory receives a packet containing a lone Hello command with the wrong delimiter & Expected & \\
-    UnexpectedError9 & The DGI adapter factory receives a packet containing a lone Hello command followed by nonsense data & Expected & \\
-    UnexpectedError10 & The DGI adapter factory receives a packet containing nonsense data & Expected & \\
-    UnexpectedError11 & The DGI adapter receives a packet containing a lone command with the wrong delimiter & Expected & \\
-    UnexpectedError12 & The DGI adapter receives a packet containing a lone command with the wrong delimiter follwed by nonsense data & Expected & \\
-    UnexpectedError13 & The DGI adapter receives a packet containing a series of commands with the wrong delimiters & Expected & \\
-    UnexpectedError14 & The DGI adapter receives a packet containing nonsense data & Expected & \\
+    UnexpectedError6 & The DGI adapter factory receives a packet with a header it does not recognize & BadRequest from DGI & \\
+    UnexpectedError7 & The DGI adapter receives a packet with a header it does not recognize & BadRequest from DGI & \\
+    UnexpectedError8 & The DGI adapter factory receives a packet containing a lone Hello command with the wrong delimiter & BadRequest from DGI & \\
+    UnexpectedError9 & The DGI adapter factory receives a packet containing a lone Hello command followed by nonsense data & BadRequest from DGI & \\
+    UnexpectedError10 & The DGI adapter factory receives a packet containing nonsense data & BadRequest from DGI  & \\
+    UnexpectedError11 & The DGI adapter receives a packet containing a lone command with the wrong delimiter & BadRequest from DGI & \\
+    UnexpectedError12 & The DGI adapter receives a packet containing a lone command with the wrong delimiter follwed by nonsense data & BadRequest from DGI & \\
+    UnexpectedError13 & The DGI adapter receives a packet containing a series of commands with the wrong delimiters & BadRequest from DGI & \\
+    UnexpectedError14 & The DGI adapter receives a packet containing nonsense data & BadRequest from DGI & \\
     MultipleControllers1 & Have two controllers use the same device type with different names. & SST (0) $\rightarrow$ 0.0 \newline \ldots \newline SST (2) $\rightarrow$ 12.0 & \\
     MultipleControllers2 & Have two controllers use the same device type with identical names. & SST (0) $\rightarrow$ 0.0 \newline \ldots \newline SST (2) $\rightarrow$ 12.0 & \\
     MultipleControllers3 & Have two controllers use different device types. & LOAD (0) $\rightarrow$ 0.0 ; SST (0) $\rightarrow$ 0.0 \newline \ldots \newline LOAD (1) $\rightarrow$ 42.0 ; SST (1) $\rightarrow$ 5.0 & \\

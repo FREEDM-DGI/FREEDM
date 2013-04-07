@@ -644,5 +644,6 @@ if __name__ == '__main__':
             raise RuntimeError('Read invalid script command:\n' + command)
 
     print 'That seems to be the end of my script, disconnecting now...'
-    polite_quit(adaptersock, device_signals, protected_signals)
+    if adaptersock != -1: # crash when doing only sendtofactory
+        polite_quit(adaptersock, device_signals, protected_signals)
     script.close()

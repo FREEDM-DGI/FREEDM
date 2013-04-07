@@ -1,0 +1,3 @@
+config/controller*.cfg
+config/*.txt
+tests/config/controller*.cfg

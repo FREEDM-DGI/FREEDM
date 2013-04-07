@@ -557,7 +557,8 @@ if __name__ == '__main__':
                 raise ValueError("It's nonsense to die for " + duration + "s")
             time.sleep(duration)
             print 'Back to life!'
-            adaptersock.close()
+            if adaptersock != -1:
+                adaptersock.close()
             adaptersock = reconnect(device_types)
 
         elif command.find('work') == 0 and len(command.split()) == 2:

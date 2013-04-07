@@ -547,8 +547,6 @@ if __name__ == '__main__':
             print 'Changed', command[1], command[2], 'to', command[3]
 
         elif command.find('dieHorribly') == 0 and len(command.split()) == 2:
-            if first_hello:
-                raise RuntimeError("Can't die before first Hello")
             duration = command.split()[1]
             if duration == 'forever':
                 print 'I have died horribly forever, goodbye'

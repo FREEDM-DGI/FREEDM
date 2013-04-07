@@ -571,7 +571,7 @@ if __name__ == '__main__':
                 i = 0
                 while True:
                     try:
-                        print 'Working forever ', str(i), 'as ordered captain!'
+                        print 'Working forever, as ordered captain:', i
                         work(adaptersock, device_signals, protected_signals)
                     except (socket.error, socket.timeout, ConnectionLost) as e:
                         print >> sys.stderr, \

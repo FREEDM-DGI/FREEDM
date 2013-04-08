@@ -4,6 +4,7 @@
 # disable devicename
 # change devicename signal newvalue
 # work n
+# sleep n
 # dieHorribly n
 # sendtofactory filename
 # sendtoadapter filename

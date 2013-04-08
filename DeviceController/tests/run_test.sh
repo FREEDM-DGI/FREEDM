@@ -13,7 +13,7 @@ for i in $1.txt $1[A-Z].txt; do
 
         if [ $# == "1" ]; then
             CFG="config/controller$CTR.cfg"
-        elif [ $# == "@" ]; then
+        elif [ $# == "2" ]; then
             CFG="config/$2$CTR.cfg"
         fi
 

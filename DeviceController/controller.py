@@ -550,8 +550,7 @@ if __name__ == '__main__':
             duration = command.split()[1]
             if duration == 'forever':
                 print 'I have died horribly forever, goodbye'
-                script.close()
-                sys.exit(0)
+                adaptersock.this_is_a_syntax_error()
             duration = int(duration)
             if duration < 0:
                 raise ValueError("It's nonsense to die for " + duration + "s")

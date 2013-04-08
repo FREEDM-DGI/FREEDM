@@ -50,7 +50,6 @@ const int QUERY_INTERVAL = 10000;
 ///////////////////////////////////////////////////////////////////////////////
 CClockSynchronizer::CClockSynchronizer(CBroker &broker)
     : m_exchangetimer(broker.GetIOService()),
-      m_broker(broker),
       m_uuid(broker.GetConnectionManager().GetUUID())
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;

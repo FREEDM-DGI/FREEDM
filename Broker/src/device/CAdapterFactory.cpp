@@ -574,7 +574,7 @@ void CAdapterFactory::SessionProtocol()
                     + std::string(e.what()));
         }
         
-        response_stream << "Start\r\n";
+        response_stream << "Start\r\n\r\n";
         Logger.Status << "Blocking to send Start to client" << std::endl;
     }
     catch(EBadRequest & e)

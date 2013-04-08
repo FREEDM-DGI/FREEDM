@@ -638,9 +638,9 @@ if __name__ == '__main__':
             time.sleep(config['custom-timeout'])
 
         elif command.find('sleep') == 0 and len(command.split()) == 2:
-            duration = command.split()[1]
+            duration = int(command.split()[1])
             print "I'm going to sleep for {0} seconds".format(duration)
-            time.sleep(durations)
+            time.sleep(duration)
 
         else:
             raise RuntimeError('Read invalid script command:\n' + command)

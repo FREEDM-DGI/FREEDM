@@ -1,0 +1,5 @@
+# Failure 9 - Wi-Fi drops for less than DGI Timeout Value
+enable Sst SST1 gateway 5.0
+# Kill Wi-Fi and immediately restore it while working.
+# May need to increase timeouts if this can't be done quickly enough
+work forever

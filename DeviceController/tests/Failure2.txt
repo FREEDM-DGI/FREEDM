@@ -3,4 +3,3 @@ sendtofactory packets/ValidHello.txt
 dieHorribly 0
 enable Sst SST1 gateway 5.0
 work forever
-

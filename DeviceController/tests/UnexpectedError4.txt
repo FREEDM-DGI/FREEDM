@@ -1,5 +1,3 @@
 # Unexpected Error 4 - Duplicate Device Names
-enable Sst SST1 gateway 5.0
-enable Sst SST1 gateway 7.0
-work forever
+sendtofactory packets/Factory-DoubleDevice.txt
 

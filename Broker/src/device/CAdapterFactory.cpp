@@ -219,7 +219,7 @@ void CAdapterFactory::CreateAdapter(const boost::property_tree::ptree & p)
     }
     else if( type == "pnp" )
     {
-        adapter = CPnpAdapter::Create(m_ios, subtree);
+        adapter = CPnpAdapter::Create(m_ios, subtree, m_server->GetClient());
     }
     else if( type == "fake" )
     {
@@ -494,7 +494,6 @@ unsigned short CAdapterFactory::GetPortNumber()
 ///
 /// @limitations None.
 ////////////////////////////////////////////////////////////////////////////////
-
 void CAdapterFactory::StartSession()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
@@ -505,7 +504,7 @@ void CAdapterFactory::StartSession()
             boost::asio::placeholders::error));
 
     m_buffer.consume(m_buffer.size());
-    boost::asio::async_read_until(m_server->GetSocket(), m_buffer, "\r\n\r\n",
+    boost::asio::async_read_until(*m_server->GetClient(), m_buffer, "\r\n\r\n",
             boost::bind(&CAdapterFactory::HandleRead, this,
             boost::asio::placeholders::error));
 }
@@ -516,7 +515,6 @@ void CAdapterFactory::Timeout(const boost::system::error_code & e)
     
     if( !e ) 
     {
-        m_server->GetSocket().close();
         Logger.Info << "Connection closed due to timeout." << std::endl;
         m_server->StartAccept();
     }
@@ -569,7 +567,6 @@ void CAdapterFactory::SessionProtocol()
     try
     {
         packet >> header >> host;
-        //host = m_server->GetHostname();
         Logger.Info << "Received " << header << " from " << host << std::endl;
         
         if( header != "Hello" )
@@ -699,7 +696,7 @@ void CAdapterFactory::SessionProtocol()
     
     try
     {
-        boost::asio::write(m_server->GetSocket(), response);
+        boost::asio::write(*m_server->GetClient(), response);
     }
     catch(std::exception & e)
     {

@@ -55,7 +55,7 @@ public:
 
     /// Creates a shared instance of the arm adapter.
     static IAdapter::Pointer Create(boost::asio::io_service & service,
-            boost::property_tree::ptree & p);
+            boost::property_tree::ptree & p, CTcpServer::Connection client);
 
     /// Starts the internal countdown timer.
     void Start();
@@ -71,7 +71,7 @@ public:
 private:
     /// Initializes the TCP server and internal storage.
     CPnpAdapter(boost::asio::io_service & service,
-            boost::property_tree::ptree & p);
+            boost::property_tree::ptree & p, CTcpServer::Connection client);
 
     /// Tells the adapter factory to remove its reference to this object.
     void Timeout(const boost::system::error_code & e);
@@ -100,7 +100,7 @@ private:
     unsigned short m_port;
 
     /// TCP server for the ARM client.
-    CTcpServer::Pointer m_server;
+    CTcpServer::Connection m_client;
 
     bool m_stop;
 

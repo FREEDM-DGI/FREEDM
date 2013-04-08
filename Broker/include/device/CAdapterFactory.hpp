@@ -77,9 +77,6 @@ public:
 
     /// Removes an adapter and its associated devices.
     void RemoveAdapter(const std::string identifier);
-    
-    /// Adds a new TCP port number for adapters.
-    void AddPortNumber(const unsigned short port);
 private:
     /// Constructs the factory.
     CAdapterFactory();
@@ -100,9 +97,6 @@ private:
     /// Initializes the devices stored on an adapter.
     void InitializeAdapter(IAdapter::Pointer adapter,
             const boost::property_tree::ptree & p);
-    
-    /// Gets the next available TCP port number.
-    unsigned short GetPortNumber();
 
     /// Session layer protocol for plug-and-play devices.
     void SessionProtocol();
@@ -124,9 +118,6 @@ private:
     
     /// TCP server to accept plug-and-play devices.
     CTcpServer::Pointer m_server;
-    
-    /// Set of TCP port numbers.
-    std::set<unsigned short> m_ports;
 
     boost::thread m_thread;
 

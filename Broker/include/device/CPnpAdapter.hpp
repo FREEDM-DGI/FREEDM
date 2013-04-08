@@ -63,9 +63,6 @@ public:
     /// Refreshes the internal countdown timer.
     void Heartbeat();
 
-    /// Gets the TCP server listen port number.
-    unsigned short GetPortNumber() const;
-
     /// Destructs the object.
     virtual ~CPnpAdapter();
 private:
@@ -95,9 +92,6 @@ private:
 
     /// Unique identifier of this adapter.
     std::string m_identifier;
-
-    /// Port of the TCP server.
-    unsigned short m_port;
 
     /// TCP server for the ARM client.
     CTcpServer::Connection m_client;

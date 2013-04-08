@@ -95,7 +95,6 @@ CPnpAdapter::CPnpAdapter(boost::asio::io_service & service,
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
     m_identifier = p.get<std::string>("identifier");
-    m_port = p.get<unsigned short>("stateport");
     StartRead();
 }
 
@@ -153,11 +152,6 @@ void CPnpAdapter::Heartbeat()
     {
         Logger.Warn << "The heartbeat timer has already expired." << std::endl;
     }
-}
-
-unsigned short CPnpAdapter::GetPortNumber() const
-{
-    return m_port;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

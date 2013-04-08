@@ -102,22 +102,13 @@ void CAdapterFactory::StartSessionProtocol()
 {
     CTcpServer::ConnectionHandler handler;
     unsigned short port;
-    std::size_t size;
-
-    size = m_ports.size();
 
     if( m_server )
     {
         throw std::logic_error("Session protocol already started.");
     }
-    else if( size == 0 )
-    {
-        throw EDgiConfigError("No plug and play ports are specified.");
-    }
     else
     {
-        Logger.Info << size << " adapter port(s) available." << std::endl;
-
         // initialize the TCP variant of the session layer protocol
         port        = CGlobalConfiguration::instance().GetFactoryPort();
         handler     = boost::bind(&CAdapterFactory::StartSession, this);
@@ -125,6 +116,29 @@ void CAdapterFactory::StartSessionProtocol()
                 CGlobalConfiguration::instance().GetDevicesEndpoint() );
         m_server->RegisterHandler(handler);
     }
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/// Handles the 'Hello' message of the plug and play session protocol.
+///
+/// @pre m_socket must be connected to a remote endpoint.
+/// @post Attempts to create a new adapter based on the hello message.
+///
+/// @limitations None.
+////////////////////////////////////////////////////////////////////////////////
+void CAdapterFactory::StartSession()
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+
+    Logger.Notice << "A wild client appears!" << std::endl;
+    m_timeout.expires_from_now(boost::posix_time::seconds(2));
+    m_timeout.async_wait(boost::bind(&CAdapterFactory::Timeout, this,
+            boost::asio::placeholders::error));
+
+    m_buffer.consume(m_buffer.size());
+    boost::asio::async_read_until(*m_server->GetClient(), m_buffer, "\r\n\r\n",
+            boost::bind(&CAdapterFactory::HandleRead, this,
+            boost::asio::placeholders::error));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -265,40 +279,12 @@ void CAdapterFactory::RemoveAdapter(const std::string identifier)
     devices = m_adapter[identifier]->GetDevices();
     pnp = boost::dynamic_pointer_cast<CPnpAdapter>(m_adapter[identifier]);
     
-    if( pnp )
-    {
-        Logger.Info << "Recycling an adapter port number." << std::endl;
-        m_ports.insert(pnp->GetPortNumber());
-    }
     m_adapter.erase(identifier);
-    
     Logger.Info << "Removed the adapter: " << identifier << std::endl;
     
     BOOST_FOREACH(std::string device, devices)
     {
         CDeviceManager::Instance().RemoveDevice(device);
-    }
-}
-
-////////////////////////////////////////////////////////////////////////////////
-/// Adds a port number to the list of available TCP ports.
-///
-/// @pre None.
-/// @post Adds the port number to m_ports.
-/// @param port The port number to add to the available port set.
-///
-/// @limitations None.
-////////////////////////////////////////////////////////////////////////////////
-void CAdapterFactory::AddPortNumber(const unsigned short port)
-{
-    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    if( m_ports.insert(port).second )
-    {
-        Logger.Debug << "Added adapter port: " << port << std::endl;
-    }
-    else
-    {
-        Logger.Warn << "Duplicate adapter port: " << port << std::endl;
     }
 }
 
@@ -455,60 +441,6 @@ void CAdapterFactory::InitializeAdapter(IAdapter::Pointer adapter,
     Logger.Debug << "Initialized the device adapter." << std::endl;
 }
 
-////////////////////////////////////////////////////////////////////////////////
-/// Retrieves and consumes the next available TCP port number.
-///
-/// @ErrorHandling Throws an EOutOfPorts if there are no available
-/// port numbers in m_ports.
-/// @pre m_ports must contain at least one unassigned element.
-/// @post Removes and returns the first port number in m_ports.
-/// @return The next available port number for a TCP server.
-///
-/// @limitations None.
-////////////////////////////////////////////////////////////////////////////////
-unsigned short CAdapterFactory::GetPortNumber()
-{
-    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    std::set<unsigned short>::iterator it;
-    unsigned short port;
-    
-    it = m_ports.begin();
-    
-    if( it == m_ports.end() )
-    {
-        throw EOutOfPorts("No available port numbers for new adapter.");
-    }
-    
-    port = *it;
-    m_ports.erase(it);
-    Logger.Debug << "Consumed the port number: " << port << std::endl;
-    
-    return port;
-}
-
-////////////////////////////////////////////////////////////////////////////////
-/// Handles the 'Hello' message of the plug and play session protocol.
-///
-/// @pre m_socket must be connected to a remote endpoint.
-/// @post Attempts to create a new adapter based on the hello message.
-///
-/// @limitations None.
-////////////////////////////////////////////////////////////////////////////////
-void CAdapterFactory::StartSession()
-{
-    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-
-    Logger.Notice << "A wild client appears!" << std::endl;
-    m_timeout.expires_from_now(boost::posix_time::seconds(2));
-    m_timeout.async_wait(boost::bind(&CAdapterFactory::Timeout, this,
-            boost::asio::placeholders::error));
-
-    m_buffer.consume(m_buffer.size());
-    boost::asio::async_read_until(*m_server->GetClient(), m_buffer, "\r\n\r\n",
-            boost::bind(&CAdapterFactory::HandleRead, this,
-            boost::asio::placeholders::error));
-}
-
 void CAdapterFactory::Timeout(const boost::system::error_code & e)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
@@ -581,7 +513,6 @@ void CAdapterFactory::SessionProtocol()
         config.put("<xmlattr>.name", host);
         config.put("<xmlattr>.type", "pnp");
         config.put("info.identifier", host);
-        // info.stateport handled below
 
         for( int i = 0; packet >> type >> name; i++ )
         {
@@ -631,59 +562,29 @@ void CAdapterFactory::SessionProtocol()
         write_xml("file2.xml", config, std::locale(), settings);
         */
 
-        while( true )
+        try
         {
-            try
-            {
-                port = GetPortNumber();
-                config.put("info.stateport", port);
-                CreateAdapter(config);
-                break;
-            }
-            catch(EDgiConfigError & e)
-            {
-                throw std::logic_error("Caught EDgiConfigError from "
-                        "CAdapterFactory::CreateAdapter; note this makes no "
-                        "sense for a plug and play adapter; what: "
-                        + std::string(e.what()));
-            }
-            catch(boost::system::system_error & e)
-            {
-                if( e.code().value() == EADDRINUSE )
-                {
-                    Logger.Warn << "Port already used: " << port << std::endl;
-                    port = 0; // reset to default value
-                }
-                else
-                {
-                    throw;
-                }
-            }
+            CreateAdapter(config);
+        }
+        catch(EDgiConfigError & e)
+        {
+            throw std::logic_error("Caught EDgiConfigError from "
+                    "CAdapterFactory::CreateAdapter; note this makes no "
+                    "sense for a plug and play adapter; what: "
+                    + std::string(e.what()));
         }
         
         response_stream << "Start\r\n";
-        response_stream << "StatePort: " << port << "\r\n\r\n";
         Logger.Status << "Blocking to send Start to client" << std::endl;
     }
     catch(EBadRequest & e)
     {
         Logger.Warn << "Rejected client: " << e.what() << std::endl;
-
-        if( port != 0 )
-        {
-            AddPortNumber(port);
-        }
         
         response_stream << "BadRequest\r\n";
         response_stream << e.what() << "\r\n\r\n";
 
         Logger.Status << "Blocking to send BadRequest to client" << std::endl;
-    }
-    catch(EOutOfPorts & e)
-    {
-        Logger.Warn << "Rejected client: " << e.what() << std::endl;
-        response_stream << "Error\r\nInsufficient adapter ports\r\n\r\n";
-        Logger.Status << "Blocking to send Error to client" << std::endl;
     }
     catch(EDuplicateSession & e)
     {

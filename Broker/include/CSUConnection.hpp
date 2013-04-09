@@ -89,7 +89,7 @@ class CSUConnection : public IProtocol
         /// The sequence modulo
         const static unsigned int SEQUENCE_MODULO = 1024;
         /// The refire time in ms
-        const static unsigned int REFIRE_TIME = 100;
+        const static unsigned int REFIRE_TIME = 200;
         /// Queue item
         struct QueueItem {
             int ret; //The retries remaining

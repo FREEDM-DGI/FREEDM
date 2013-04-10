@@ -1,4 +1,0 @@
-# Multiple Controllers 9 - Script B - Insufficient Ports (B)
-sleep 5
-enable Sst SST2 gateway 7.0
-work forever

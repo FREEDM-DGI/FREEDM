@@ -46,10 +46,3 @@ struct EDuplicateSession
         : std::runtime_error(what) { }
 };
 
-/// Used when the adapter factory has no free ports for a new controller
-struct EOutOfPorts
-    : virtual std::runtime_error
-{
-    EOutOfPorts(const std::string& what)
-        : std::runtime_error(what) { }
-};

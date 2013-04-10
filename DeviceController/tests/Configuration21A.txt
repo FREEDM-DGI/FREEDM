@@ -1,4 +1,0 @@
-# Multiple Controllers 5 - Script A - Removes Correct Adapter (B)
-enable Sst SST1 gateway 5.0
-work forever
-

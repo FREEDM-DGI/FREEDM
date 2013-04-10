@@ -69,10 +69,10 @@ CLocalLogger Logger(__FILE__);
 /// @limitations None.
 ////////////////////////////////////////////////////////////////////////////////
 IAdapter::Pointer CPnpAdapter::Create(boost::asio::io_service & service,
-        boost::property_tree::ptree & p)
+        boost::property_tree::ptree & p, CTcpServer::Connection client)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    return CPnpAdapter::Pointer(new CPnpAdapter(service, p));
+    return CPnpAdapter::Pointer(new CPnpAdapter(service, p, client));
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -87,20 +87,15 @@ IAdapter::Pointer CPnpAdapter::Create(boost::asio::io_service & service,
 /// @limitations None.
 ////////////////////////////////////////////////////////////////////////////////
 CPnpAdapter::CPnpAdapter(boost::asio::io_service & service,
-        boost::property_tree::ptree & p)
+        boost::property_tree::ptree & p, CTcpServer::Connection client)
     : m_countdown(service)
     , m_stop(false)
+    , m_client(client)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
     m_identifier = p.get<std::string>("identifier");
-    m_port = p.get<unsigned short>("stateport");
-
-    CTcpServer::ConnectionHandler handler;
-    handler = boost::bind(&CPnpAdapter::StartRead, this);
-    m_server = CTcpServer::Create(service, m_port,
-        CGlobalConfiguration::instance().GetDevicesEndpoint() );
-    m_server->RegisterHandler(handler);
+    StartRead();
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -159,11 +154,6 @@ void CPnpAdapter::Heartbeat()
     }
 }
 
-unsigned short CPnpAdapter::GetPortNumber() const
-{
-    return m_port;
-}
-
 ////////////////////////////////////////////////////////////////////////////////
 /// Attempts to destroy the adapter due to timeout.
 ///
@@ -180,8 +170,6 @@ void CPnpAdapter::Timeout(const boost::system::error_code & e)
 
     if( !e )
     {
-        m_server->Stop();
-
         Logger.Status << "Removing an adapter due to timeout." << std::endl;
         CAdapterFactory::Instance().RemoveAdapter(m_identifier);
     }
@@ -192,7 +180,7 @@ void CPnpAdapter::StartRead()
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     Heartbeat();
     m_buffer.consume(m_buffer.size());
-    boost::asio::async_read_until(m_server->GetSocket(), m_buffer, "\r\n\r\n",
+    boost::asio::async_read_until(*m_client, m_buffer, "\r\n\r\n",
             boost::bind(&CPnpAdapter::HandleRead, this, boost::asio::placeholders::error));
 }
 
@@ -200,7 +188,7 @@ void CPnpAdapter::StartWrite()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     Heartbeat();
-    boost::asio::async_write(m_server->GetSocket(), m_buffer,
+    boost::asio::async_write(*m_client, m_buffer,
             boost::bind(&CPnpAdapter::HandleWrite, this, boost::asio::placeholders::error));
 }
 

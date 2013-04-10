@@ -44,6 +44,9 @@ class CTcpServer
 public:
     /// Convenience type for a shared pointer to self.
     typedef boost::shared_ptr<CTcpServer> Pointer;
+
+    /// Convenient type for the client socket.
+    typedef boost::shared_ptr<boost::asio::ip::tcp::socket> Connection;
     
     /// Type of the callback function for client connections.
     typedef boost::function<void ()> ConnectionHandler;
@@ -61,17 +64,11 @@ public:
     /// Stops the TCP server.
     void Stop();
     
-    /// Gets the listen port of the TCP server.
-    unsigned short GetPort() const;
-    
-    /// Gets the current client connection.
-    boost::asio::ip::tcp::socket & GetSocket();
-    
-    /// Gets the hostname of the connected client.
-    std::string GetHostname() const;
-    
     /// Prepares to accept the next client.
     void StartAccept();
+
+    /// Gets the current client.
+    Connection GetClient() { return m_client; }
 private:
     /// Constructs the TCP server on the specified port number.
     CTcpServer(boost::asio::io_service & ios, unsigned short port,
@@ -93,7 +90,7 @@ private:
     ConnectionHandler m_handler;
 protected:
     /// Socket for the current client.
-    mutable boost::asio::ip::tcp::socket m_socket;
+    Connection m_client;
 };
 
 } // namespace device

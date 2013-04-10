@@ -379,36 +379,13 @@ def reconnect(device_types):
         handle_bad_request(msg)
     else:
         msg = msg.split()
-        if len(msg) != 3 or msg[0] != 'Start' or msg[1] != 'StatePort:':
+        if len(msg) != 1 or msg[0] != 'Start':
             raise RuntimeError('DGI sent malformed Start:\n' + ' '.join(msg))
         else:
             print '\nReceived Start message:\n' + ' '.join(msg)
 
-    adapterPort = int(msg[2])
-    if 0 < adapterPort < 1024:
-        raise ValueError('DGI wants to use DCCP well known port ' \
-                + adapterPort)
-    elif adapterPort < 0 or adapterPort > 65535:
-        raise ValueError('DGI sent a nonsense statePort ' + str(config['port']))
+    return adapterFactorySock
 
-    for i in range(0, config['adapter-connection-retries']):
-        try:
-            adaptersocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            adaptersocket.connect((config['host'], adapterPort))
-        except (socket.error, socket.herror, socket.gaierror, socket.timeout) \
-                as e:
-            print >> sys.stderr, \
-                'Error connecting to DGI adapter: {0}'.format(str(e))
-            time.sleep(config['state-timeout'])
-            if i == config['adapter-connection-retries'] - 1:
-                print >> sys.stderr, \
-                    'Giving up on the adapter, sending a new Hello'
-                return reconnect(device_types)
-            else:
-                print >> sys.stderr, 'Trying again...'
-        else:
-            adaptersocket.settimeout(config['dgi-timeout'])
-            return adaptersocket
 
 def polite_quit(adaptersock, device_signals, protected_signals):
     """

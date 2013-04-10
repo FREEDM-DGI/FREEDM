@@ -4,15 +4,15 @@
 name=MyUniqueController
 
 # the DSP script file to run
-script=dsp-script.txt
+script=config/dsp-script.txt
 
 [connection]
 
 # hostname of the DGI to connect to
-host=freedm.bitcurio.us
+host=localhost
 
 # the DGI AdapterFactory's listening port
-port=3160 ; zapdos 3010
+port=50310
 
 [timings]
 

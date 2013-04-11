@@ -442,8 +442,8 @@ void CAdapterFactory::InitializeAdapter(IAdapter::Pointer adapter,
         }
     }
     Logger.Debug << "Initialized the device adapter." << std::endl;
-}
 
+}
 void CAdapterFactory::Timeout(const boost::system::error_code & e)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
@@ -477,6 +477,10 @@ void CAdapterFactory::HandleRead(const boost::system::error_code & e)
         {
             Logger.Debug << "Dropped packet due to timeout." << std::endl;
         }
+    }
+    else if( e == boost::asio::error::operation_aborted )
+    {
+        Logger.Debug << "Factory connection timeout aborted." << std::endl;
     }
     else
     {

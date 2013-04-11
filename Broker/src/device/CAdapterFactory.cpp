@@ -497,7 +497,6 @@ void CAdapterFactory::SessionProtocol()
     std::set<std::string> states, commands;
     std::string host, header, type, name, entry;
     int sindex = 1, cindex = 1;
-    unsigned short port = 0;
 
     try
     {

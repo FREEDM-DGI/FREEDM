@@ -175,23 +175,56 @@ void CPnpAdapter::Timeout(const boost::system::error_code & e)
     }
 }
 
+////////////////////////////////////////////////////////////////////////////////
+/// Schedules the next read from the plug and play device.
+///
+/// @pre m_client must not be uninitialized.
+/// @post Clears the content of m_buffer prior to the read.
+/// @post Calls CPnpAdapter::Heartbeat to refresh the connection.
+/// @post Schedules the next socket connection on m_client.
+///
+/// @limitations None.
+////////////////////////////////////////////////////////////////////////////////
 void CPnpAdapter::StartRead()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     Heartbeat();
     m_buffer.consume(m_buffer.size());
     boost::asio::async_read_until(*m_client, m_buffer, "\r\n\r\n",
-            boost::bind(&CPnpAdapter::HandleRead, this, boost::asio::placeholders::error));
+            boost::bind(&CPnpAdapter::HandleRead, this,
+            boost::asio::placeholders::error));
 }
 
+////////////////////////////////////////////////////////////////////////////////
+/// Schedules the next write to the plug and play device.
+///
+/// @pre m_client must not be uninitialized.
+/// @pre m_buffer must contain the data to write.
+/// @post Calls CPnpAdapter::Heartbeat to refresh the connection.
+/// @post Sends the content of m_buffer to m_client.
+///
+/// @limitations None.
+////////////////////////////////////////////////////////////////////////////////
 void CPnpAdapter::StartWrite()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     Heartbeat();
     boost::asio::async_write(*m_client, m_buffer,
-            boost::bind(&CPnpAdapter::HandleWrite, this, boost::asio::placeholders::error));
+            boost::bind(&CPnpAdapter::HandleWrite, this,
+            boost::asio::placeholders::error));
 }
 
+////////////////////////////////////////////////////////////////////////////////
+/// Handles a packet received from the plug and play device.
+///
+/// @ErrorHandling If an exception occurs, it will be caught and a bad request
+/// message will be sent to the client to indicate failure.
+/// @pre The packet must be stored in m_buffer.
+/// @post Processes the packet and prepares an appropriate response.
+/// @param e The error code associated with the last read operation.
+///
+/// @limitations None.
+////////////////////////////////////////////////////////////////////////////////
 void CPnpAdapter::HandleRead(const boost::system::error_code & e)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
@@ -252,6 +285,16 @@ void CPnpAdapter::HandleRead(const boost::system::error_code & e)
     }
 }
 
+////////////////////////////////////////////////////////////////////////////////
+/// Prepares the next read operation after a successful write.
+///
+/// @pre None.
+/// @post If the m_stop flag has been raised, stops the adapter.
+/// @post Otherwise, prepares the next read with CPnpAdapter::StartRead.
+/// @param e The error code associated with the last write operation.
+///
+/// @limitations None.
+////////////////////////////////////////////////////////////////////////////////
 void CPnpAdapter::HandleWrite(const boost::system::error_code & e)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
@@ -270,7 +313,15 @@ void CPnpAdapter::HandleWrite(const boost::system::error_code & e)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+/// Processes the content of a state packet received from the device.
 ///
+/// @ErrorHandling Throws a EBadRequest if the packet is malformed.
+/// @pre The packet format must adhere to the session protocol specifications.
+/// @post Extracts the device state information from packet.
+/// @post Updates m_rxBuffer with the new state information.
+/// @param packet The device packet that contains updated state information.
+///
+/// @limitations None.
 ////////////////////////////////////////////////////////////////////////////////
 void CPnpAdapter::ReadStatePacket(const std::string packet)
 {
@@ -324,6 +375,15 @@ void CPnpAdapter::ReadStatePacket(const std::string packet)
     }
 }
 
+////////////////////////////////////////////////////////////////////////////////
+/// Generates the next command packet from the current DGI commands.
+///
+/// @pre None.
+/// @post Creates a command packet from the content of m_txBuffer.
+/// @return A string that contains the next command packet.
+///
+/// @limitations None.
+////////////////////////////////////////////////////////////////////////////////
 std::string CPnpAdapter::GetCommandPacket()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;

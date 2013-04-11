@@ -11,12 +11,15 @@
 /// @functions
 ///     CAdapterFactory::CAdapterFactory
 ///     CAdapterFactory::Instance
+///     CAdapterFactory::RunService    
 ///     CAdapterFactory::CreateAdapter
 ///     CAdapterFactory::RemoveAdapter
-///     CAdapterFactory::AddPortNumber
-///     CAdapterFactory::CreateDevice
 ///     CAdapterFactory::InitializeAdapter
-///     CAdapterFactory::GetPortNumber
+///     CAdapterFactory::CreateDevice
+///     CAdapterFactory::StartSessionProtocol
+///     CAdapterFactory::StartSession
+///     CAdapterFactory::HandleRead
+///     CAdapterFactory::Timeout
 ///     CAdapterFactory::SessionProtocol
 ///
 /// These source code files were created at Missouri University of Science and
@@ -96,49 +99,6 @@ CAdapterFactory & CAdapterFactory::Instance()
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     static CAdapterFactory instance;
     return instance;
-}
-
-void CAdapterFactory::StartSessionProtocol()
-{
-    CTcpServer::ConnectionHandler handler;
-    unsigned short port;
-
-    if( m_server )
-    {
-        throw std::logic_error("Session protocol already started.");
-    }
-    else
-    {
-        // initialize the TCP variant of the session layer protocol
-        port        = CGlobalConfiguration::instance().GetFactoryPort();
-        handler     = boost::bind(&CAdapterFactory::StartSession, this);
-        m_server    = CTcpServer::Create(m_ios, port,
-                CGlobalConfiguration::instance().GetDevicesEndpoint() );
-        m_server->RegisterHandler(handler);
-    }
-}
-
-////////////////////////////////////////////////////////////////////////////////
-/// Handles the 'Hello' message of the plug and play session protocol.
-///
-/// @pre m_socket must be connected to a remote endpoint.
-/// @post Attempts to create a new adapter based on the hello message.
-///
-/// @limitations None.
-////////////////////////////////////////////////////////////////////////////////
-void CAdapterFactory::StartSession()
-{
-    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-
-    Logger.Notice << "A wild client appears!" << std::endl;
-    m_timeout.expires_from_now(boost::posix_time::seconds(2));
-    m_timeout.async_wait(boost::bind(&CAdapterFactory::Timeout, this,
-            boost::asio::placeholders::error));
-
-    m_buffer.consume(m_buffer.size());
-    boost::asio::async_read_until(*m_server->GetClient(), m_buffer, "\r\n\r\n",
-            boost::bind(&CAdapterFactory::HandleRead, this,
-            boost::asio::placeholders::error));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -292,46 +252,6 @@ void CAdapterFactory::RemoveAdapter(const std::string identifier)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-/// Creates a new device and registers it with the device manager.
-///
-/// @ErrorHandling Throws a std::runtime_error if the name is already in use,
-/// the type is not recognized, or the adapter is null.
-/// @pre Type must be registered with CAdapterFactory::RegisterDevicePrototype.
-/// @post Creates a new device using m_prototype[type].
-/// @post Adds the new device to the device manager.
-/// @param name The unique identifier for the device to be created.
-/// @param type The string identifier for the type of device to create.
-/// @param adapter The adapter that will handle the data of the new device.
-///
-/// @limitations The device types must be registered prior to this call.
-////////////////////////////////////////////////////////////////////////////////
-void CAdapterFactory::CreateDevice(const std::string name,
-        const std::string type, IAdapter::Pointer adapter)
-{
-    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    
-    if( CDeviceManager::Instance().DeviceExists(name) )
-    {
-        throw std::runtime_error("The device " + name + " already exists.");
-    }
-    
-    if( m_prototype.count(type) == 0 )
-    {
-        throw std::runtime_error("Unrecognized device type: " + type);
-    }
-    
-    if( !adapter )
-    {
-        throw std::runtime_error("Tried to create device using null adapter.");
-    }
-    
-    IDevice::Pointer device = m_prototype[type]->Create(name, adapter);
-    CDeviceManager::Instance().AddDevice(device);
-    
-    Logger.Info << "Created new device: " << name << std::endl;
-}
-
-////////////////////////////////////////////////////////////////////////////////
 /// Initializes an adapter to contain a set of device signals.
 ///
 /// @ErrorHandling Throws EDgiConfigError if the property tree has a bad
@@ -442,27 +362,111 @@ void CAdapterFactory::InitializeAdapter(IAdapter::Pointer adapter,
         }
     }
     Logger.Debug << "Initialized the device adapter." << std::endl;
-
 }
-void CAdapterFactory::Timeout(const boost::system::error_code & e)
+
+////////////////////////////////////////////////////////////////////////////////
+/// Creates a new device and registers it with the device manager.
+///
+/// @ErrorHandling Throws a std::runtime_error if the name is already in use,
+/// the type is not recognized, or the adapter is null.
+/// @pre Type must be registered with CAdapterFactory::RegisterDevicePrototype.
+/// @post Creates a new device using m_prototype[type].
+/// @post Adds the new device to the device manager.
+/// @param name The unique identifier for the device to be created.
+/// @param type The string identifier for the type of device to create.
+/// @param adapter The adapter that will handle the data of the new device.
+///
+/// @limitations The device types must be registered prior to this call.
+////////////////////////////////////////////////////////////////////////////////
+void CAdapterFactory::CreateDevice(const std::string name,
+        const std::string type, IAdapter::Pointer adapter)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     
-    if( !e ) 
+    if( CDeviceManager::Instance().DeviceExists(name) )
     {
-        Logger.Info << "Connection closed due to timeout." << std::endl;
-        m_server->StartAccept();
+        throw std::runtime_error("The device " + name + " already exists.");
     }
-    else if( e == boost::asio::error::operation_aborted )
+    
+    if( m_prototype.count(type) == 0 )
     {
-        Logger.Debug << "Factory connection timeout aborted." << std::endl;
+        throw std::runtime_error("Unrecognized device type: " + type);
+    }
+    
+    if( !adapter )
+    {
+        throw std::runtime_error("Tried to create device using null adapter.");
+    }
+    
+    IDevice::Pointer device = m_prototype[type]->Create(name, adapter);
+    CDeviceManager::Instance().AddDevice(device);
+    
+    Logger.Info << "Created new device: " << name << std::endl;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/// Initializes the plug and play session protocol.
+///
+/// @ErrorHandling Throws a std::logic_error if the session protoocl has been
+/// initialized through a prior call to this function.
+/// @pre m_server must not be initialized by a prior call to this function.
+/// @post m_server is created to accept connections from plug and play devices.
+///
+/// @limitations This function must be called at most once.
+////////////////////////////////////////////////////////////////////////////////
+void CAdapterFactory::StartSessionProtocol()
+{
+    CTcpServer::ConnectionHandler handler;
+    unsigned short port;
+
+    if( m_server )
+    {
+        throw std::logic_error("Session protocol already started.");
     }
     else
     {
-        throw boost::system::system_error(e);
+        // initialize the TCP variant of the session layer protocol
+        port        = CGlobalConfiguration::instance().GetFactoryPort();
+        handler     = boost::bind(&CAdapterFactory::StartSession, this);
+        m_server    = CTcpServer::Create(m_ios, port,
+                CGlobalConfiguration::instance().GetDevicesEndpoint() );
+        m_server->RegisterHandler(handler);
     }
 }
 
+////////////////////////////////////////////////////////////////////////////////
+/// Prepares to read the hello message from a new plug and play device.
+///
+/// @pre m_server must be connected to a remote endpoint.
+/// @post m_timeout is started to disconnect the device if it does not respond.
+/// @post Schedules a read into m_buffer from the current m_server connection.
+///
+/// @limitations This function must only be called by m_server.
+////////////////////////////////////////////////////////////////////////////////
+void CAdapterFactory::StartSession()
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+
+    Logger.Notice << "A wild client appears!" << std::endl;
+    m_timeout.expires_from_now(boost::posix_time::seconds(2));
+    m_timeout.async_wait(boost::bind(&CAdapterFactory::Timeout, this,
+            boost::asio::placeholders::error));
+
+    m_buffer.consume(m_buffer.size());
+    boost::asio::async_read_until(*m_server->GetClient(), m_buffer, "\r\n\r\n",
+            boost::bind(&CAdapterFactory::HandleRead, this,
+            boost::asio::placeholders::error));
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/// Starts the session protocol after a successful read from a device.
+///
+/// @pre None.
+/// @post If a successful read, calls CAdapterFactory::SessionProtocol.
+/// @param e The error code associated with the last read operation.
+///
+/// @limitations None.
+////////////////////////////////////////////////////////////////////////////////
 void CAdapterFactory::HandleRead(const boost::system::error_code & e)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
@@ -475,19 +479,56 @@ void CAdapterFactory::HandleRead(const boost::system::error_code & e)
         }
         else
         {
-            Logger.Debug << "Dropped packet due to timeout." << std::endl;
+            Logger.Info << "Dropped packet due to timeout." << std::endl;
         }
     }
     else if( e == boost::asio::error::operation_aborted )
     {
-        Logger.Debug << "Factory connection timeout aborted." << std::endl;
-    }
-    else
-    {
-        throw boost::system::system_error(e);
+        Logger.Info << "Factory connection timeout aborted." << std::endl;
     }
 }
 
+////////////////////////////////////////////////////////////////////////////////
+/// Closes a plug and play connection if it does not send a well-formed packet.
+///
+/// @pre None.
+/// @post If timeout or error, closes the current m_server connection.
+/// @param e The error code associated with the timer.
+///
+/// @limitations None.
+////////////////////////////////////////////////////////////////////////////////
+void CAdapterFactory::Timeout(const boost::system::error_code & e)
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    
+    if( !e ) 
+    {
+        Logger.Info << "Connection closed due to timeout." << std::endl;
+        m_server->GetClient()->cancel();
+        m_server->StartAccept();
+    }
+    else if( e == boost::asio::error::operation_aborted )
+    {
+        Logger.Info << "Factory connection timeout aborted." << std::endl;
+    }
+    else
+    {
+        Logger.Warn << "Connection closed due to error." << std::endl;
+        m_server->GetClient()->cancel();
+        m_server->StartAccept();
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/// Handles the hello message for the plug and play session protoocl.
+///
+/// @pre m_buffer must contain the device hello packet.
+/// @post If the packet is well-formed, creates a new adapter and responds to
+/// the plug and play connection with a start packet.
+/// @post Otherwise, responds with a bad request that indicates the error.
+///
+/// @limitations None.
+////////////////////////////////////////////////////////////////////////////////
 void CAdapterFactory::SessionProtocol()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
@@ -516,6 +557,9 @@ void CAdapterFactory::SessionProtocol()
             throw EDuplicateSession("Duplicate session for " + host);
         }
 
+////////////////////////////////////////////////////////////////////////////////
+/// Reformat the packet as a property tree that can be used with CreateAdapter.
+////////////////////////////////////////////////////////////////////////////////
         config.put("<xmlattr>.name", host);
         config.put("<xmlattr>.type", "pnp");
         config.put("info.identifier", host);
@@ -561,13 +605,10 @@ void CAdapterFactory::SessionProtocol()
                 cindex++;
             }
         }
-
-        /*
-        // remove me when done with error checking
-        boost::property_tree::xml_writer_settings<char> settings('\t', 1);
-        write_xml("file2.xml", config, std::locale(), settings);
-        */
-
+////////////////////////////////////////////////////////////////////////////////
+/// The config property tree now contains a valid adapter specification.
+////////////////////////////////////////////////////////////////////////////////
+        
         try
         {
             CreateAdapter(config);

@@ -89,8 +89,8 @@ IAdapter::Pointer CPnpAdapter::Create(boost::asio::io_service & service,
 CPnpAdapter::CPnpAdapter(boost::asio::io_service & service,
         boost::property_tree::ptree & p, CTcpServer::Connection client)
     : m_countdown(service)
-    , m_stop(false)
     , m_client(client)
+    , m_stop(false)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 

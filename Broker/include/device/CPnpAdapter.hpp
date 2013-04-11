@@ -73,12 +73,16 @@ private:
     /// Tells the adapter factory to remove its reference to this object.
     void Timeout(const boost::system::error_code & e);
 
+    /// Schedules the next read operation.
     void StartRead();
 
+    /// Schedules the next write operation.
     void StartWrite();
 
+    /// Handles a packet received from the device.
     void HandleRead(const boost::system::error_code & e);
 
+    /// Handles when a packet has been sent to the device.
     void HandleWrite(const boost::system::error_code & e);
 
     /// Parses a state packet received from the client.
@@ -95,9 +99,11 @@ private:
 
     /// TCP server for the ARM client.
     CTcpServer::Connection m_client;
-
+    
+    /// Flag for when the adapter is stopped.
     bool m_stop;
 
+    /// Stream used to send and receive data.
     boost::asio::streambuf m_buffer;
 };
 

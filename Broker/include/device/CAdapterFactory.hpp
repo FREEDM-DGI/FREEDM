@@ -35,6 +35,7 @@
 #include <map>
 #include <set>
 #include <string>
+#include <iostream>
 #include <stdexcept>
 
 #include <boost/thread.hpp>
@@ -70,6 +71,7 @@ public:
     /// Gets the static instance of the factory.
     static CAdapterFactory & Instance();
 
+    /// Starts the session TCP server.
     void StartSessionProtocol();
     
     /// Creates a new adapter and its associated devices.
@@ -81,6 +83,7 @@ private:
     /// Constructs the factory.
     CAdapterFactory();
 
+    /// Runs the adapter i/o service.
     void RunService();
 
     /// Registers compiled device classes with the factory.
@@ -101,12 +104,15 @@ private:
     /// Session layer protocol for plug-and-play devices.
     void SessionProtocol();
 
+    /// Handles one plug and play device session.
     void StartSession();   
- 
+
+    /// Handles plug and play devices that send a session packet.
     void HandleRead(const boost::system::error_code & e);
 
+    /// Disconnects plug and play devices that timeout.
     void Timeout(const boost::system::error_code & e);
-
+    
     /// Set of device prototypes managed by the factory.
     std::map<std::string, IDevice::Pointer> m_prototype;
     
@@ -119,10 +125,13 @@ private:
     /// TCP server to accept plug-and-play devices.
     CTcpServer::Pointer m_server;
 
+    /// Thread for the adapter i/o service.
     boost::thread m_thread;
 
+    /// Packet received from plug and play device.
     boost::asio::streambuf m_buffer;
 
+    /// Timer for bad plug and play sessions.
     boost::asio::deadline_timer m_timeout;
 };
 

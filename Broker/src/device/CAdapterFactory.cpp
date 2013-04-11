@@ -159,6 +159,9 @@ void CAdapterFactory::RunService()
     {
         m_ios.run();
     }
+    catch (boost::exception & e)
+    {
+    }
     catch (std::exception & e)
     {
         Logger.Fatal << "Fatal exception in the device ioservice: "
@@ -456,7 +459,7 @@ void CAdapterFactory::Timeout(const boost::system::error_code & e)
     }
     else
     {
-        throw e;
+        throw boost::system::system_error(e);
     }
 }
 
@@ -477,7 +480,7 @@ void CAdapterFactory::HandleRead(const boost::system::error_code & e)
     }
     else
     {
-        throw e;
+        throw boost::system::system_error(e);
     }
 }
 

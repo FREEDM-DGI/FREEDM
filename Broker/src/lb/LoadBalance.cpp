@@ -961,7 +961,7 @@ void LBAgent::HandleCollectedState(MessagePtr msg, PeerNodePtr peer)
     // --------------------------------------------------------------
     // You received the collected global state in response to your SC Request
     // --------------------------------------------------------------
-    int peercount=0;
+    int peercount=0; // number of peers *with devices*
     double agg_gateway=0;
 
     ptree &pt = msg->GetSubMessages();
@@ -971,11 +971,11 @@ void LBAgent::HandleCollectedState(MessagePtr msg, PeerNodePtr peer)
 	    {
 	        Logger.Notice << "SC module returned gateway values: "
 			              << v.second.data() << std::endl;
-		if (v.second.data() != "no device")
-		{
- 	            peercount++;
-            	    agg_gateway += boost::lexical_cast<double>(v.second.data());
-		}
+		    if (v.second.data() != "no device")
+		    {
+     	            peercount++;
+                	    agg_gateway += boost::lexical_cast<double>(v.second.data());
+		    }
 	    }
     }
     if(pt.get_child_optional("CollectedState.generation"))
@@ -1028,8 +1028,12 @@ void LBAgent::HandleCollectedState(MessagePtr msg, PeerNodePtr peer)
     {
         m_Normal = agg_gateway/peercount;
         Logger.Info << "Computed Normal: " << m_Normal << std::endl;
-        SendNormal(m_Normal);
     }
+    else
+    {
+        m_Normal = 0;
+    }
+    SendNormal(m_Normal);
 }
 
 void LBAgent::HandleComputedNormal(MessagePtr msg, PeerNodePtr peer)

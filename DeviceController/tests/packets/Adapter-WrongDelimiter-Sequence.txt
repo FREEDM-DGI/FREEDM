@@ -1,6 +1,1 @@
-DeviceStates\r
-Stuff\r
-PoliteDisconnect\r
-Stuff\r
-\r
-
+DeviceStatesStuffPoliteDisconnectStuff

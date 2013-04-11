@@ -1,1 +1,1 @@
-DeviceStates\r
+DeviceStates

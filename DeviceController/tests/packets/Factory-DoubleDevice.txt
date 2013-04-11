@@ -1,6 +1,5 @@
-Hello\r\n
-VeryUnfortunateController\r\n
-SST Sst1\r\n
-SST Sst1\r\n
-\r\n
+Hello
+VeryUnfortunateController
+SST Sst1
+SST Sst1
 

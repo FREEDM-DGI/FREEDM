@@ -575,7 +575,7 @@ if __name__ == '__main__':
             response = ''
             with open(filename, 'r') as packet:
                 msg = packet.read()
-            print 'Going to send to adapter factory:\n' + msg
+            print 'Going to send to adapter factory:\n' + msg.replace('\r', '')
             factorySock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             factorySock.settimeout(config['dgi-timeout'])
             try:
@@ -601,7 +601,7 @@ if __name__ == '__main__':
             response = ''
             with open(filename, 'r') as packet:
                 msg = packet.read()
-            print 'Going to send to adapter:\n' + msg
+            print 'Going to send to adapter:\n' + msg.replace('\r', '')
             try:
                 send_all(adaptersock, msg)
                 response = recv_all(adaptersock)

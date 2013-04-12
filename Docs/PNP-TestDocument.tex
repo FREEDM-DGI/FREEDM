@@ -90,15 +90,15 @@
     UnexpectedError3 & Send a corrupt state value to the DGI. & Corrupt state: received non-numeric value & \\
     UnexpectedError4 & Have the same controller specify the same device twice. & Rejected client: The device ControllerA:SST1 already exists. & \\
     UnexpectedError5 & Have the same controller start two simultaneous sessions. & Rejected client: Duplicate session for ControllerA & \\
-    UnexpectedError6 & The DGI adapter factory receives a packet with a header it does not recognize & BadRequest from DGI & \\
-    UnexpectedError7 & The DGI adapter receives a packet with a header it does not recognize & BadRequest from DGI & \\
-    UnexpectedError8 & The DGI adapter factory receives a packet containing a lone Hello command with the wrong delimiter & BadRequest from DGI & \\
-    UnexpectedError9 & The DGI adapter factory receives a packet containing a lone Hello command followed by nonsense data & BadRequest from DGI & \\
-    UnexpectedError10 & The DGI adapter factory receives a packet containing nonsense data & BadRequest from DGI  & \\
-    UnexpectedError11 & The DGI adapter receives a packet containing a lone command with the wrong delimiter & BadRequest from DGI & \\
-    UnexpectedError12 & The DGI adapter receives a packet containing a lone command with the wrong delimiter follwed by nonsense data & BadRequest from DGI & \\
-    UnexpectedError13 & The DGI adapter receives a packet containing a series of commands with the wrong delimiters & BadRequest from DGI & \\
-    UnexpectedError14 & The DGI adapter receives a packet containing nonsense data & BadRequest from DGI & \\
+    UnexpectedError6 & The DGI adapter factory receives a packet with a header it does not recognize & Connection closed due to timeout. & \\
+    UnexpectedError7 & The DGI adapter receives a packet with a header it does not recognize & Unknown header: BadPacket & \\
+    UnexpectedError8 & The DGI adapter factory receives a packet containing a lone Hello command with the wrong delimiter & Malformed Hello & \\
+    UnexpectedError9 & The DGI adapter factory receives a packet containing a lone Hello command followed by nonsense data & Malformed Hello & \\
+    UnexpectedError10 & The DGI adapter factory receives a packet containing nonsense data & Connection closed due to timeout. & \\
+    UnexpectedError11 & The DGI adapter receives a packet containing a lone command with the wrong delimiter & Malformed DeviceStates & \\
+    UnexpectedError12 & The DGI adapter receives a packet containing a lone command with the wrong delimiter follwed by nonsense data & Malformed DeviceStates & \\
+    UnexpectedError13 & The DGI adapter receives a packet containing a series of commands with the wrong delimiters & Malformed DeviceStates & \\
+    UnexpectedError14 & The DGI adapter receives a packet containing nonsense data & Malformed packet & \\
     MultipleControllers1 & Have two controllers use the same device type with different names. & SST (0) $\rightarrow$ 0.0 \newline \ldots \newline SST (2) $\rightarrow$ 12.0 & \\
     MultipleControllers2 & Have two controllers use the same device type with identical names. & SST (0) $\rightarrow$ 0.0 \newline \ldots \newline SST (2) $\rightarrow$ 12.0 & \\
     MultipleControllers3 & Have two controllers use different device types. & LOAD (0) $\rightarrow$ 0.0 ; SST (0) $\rightarrow$ 0.0 \newline \ldots \newline LOAD (1) $\rightarrow$ 42.0 ; SST (1) $\rightarrow$ 5.0 & \\

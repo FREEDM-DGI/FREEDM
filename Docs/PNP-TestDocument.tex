@@ -86,10 +86,10 @@
     Failure10A & DGI loses Wi-Fi after receiving device states and regains it after a delay. & SST (0) $\rightarrow$ 0.0 \newline SST (1) $\rightarrow$ 5.0 \newline SST (0) $\rightarrow$ 0.0 \newline SST (1) $\rightarrow$ 5.0 & \\
     Failure10B & Controller loses Wi-Fi after sending device states and regains it after a delay. & SST (0) $\rightarrow$ 0.0 \newline SST (1) $\rightarrow$ 5.0 \newline SST (0) $\rightarrow$ 0.0 \newline SST (1) $\rightarrow$ 5.0 & \\
     UnexpectedError1 & Send an unrecognized device type to the DGI. & Rejected client: Unknown device type: SST & \\
-    UnexpectedError2 & Send an unrecognized signal type to the DGI. & Corrupt state: Unknown device signal: TestController:SST1 gateawy & \\
+    UnexpectedError2 & Send an unrecognized signal type to the DGI. & Corrupt state: Unknown device signal: ControllerA:SST1 gateawy & \\
     UnexpectedError3 & Send a corrupt state value to the DGI. & Corrupt state: received non-numeric value & \\
-    UnexpectedError4 & Have the same controller specify the same device twice. & Rejected client: The device TestController:SST1 already exists. & \\
-    UnexpectedError5 & Have the same controller start two simultaneous sessions. & Rejected client: Duplicate session for TestController & \\
+    UnexpectedError4 & Have the same controller specify the same device twice. & Rejected client: The device ControllerA:SST1 already exists. & \\
+    UnexpectedError5 & Have the same controller start two simultaneous sessions. & Rejected client: Duplicate session for ControllerA & \\
     UnexpectedError6 & The DGI adapter factory receives a packet with a header it does not recognize & BadRequest from DGI & \\
     UnexpectedError7 & The DGI adapter receives a packet with a header it does not recognize & BadRequest from DGI & \\
     UnexpectedError8 & The DGI adapter factory receives a packet containing a lone Hello command with the wrong delimiter & BadRequest from DGI & \\

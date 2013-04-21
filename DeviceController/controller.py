@@ -523,19 +523,9 @@ if __name__ == '__main__':
             t.start()
             print 'Changed', command[1], command[2], 'to', command[3]
 
-        elif command.find('dieHorribly') == 0 and len(command.split()) == 2:
-            duration = command.split()[1]
-            if duration == 'forever':
-                print 'I have died horribly forever, goodbye'
-                adaptersock.this_is_a_syntax_error()
-            duration = int(duration)
-            if duration < 0:
-                raise ValueError("It's nonsense to die for " + duration + "s")
-            time.sleep(duration)
-            print 'Back to life!'
-            if adaptersock != -1:
-                adaptersock.close()
-            adaptersock = connect(device_types)
+        elif command.find('dieHorribly') == 0 and len(command.split()) == 1:
+            print 'I have died horribly, goodbye'
+            adaptersock.this_is_a_syntax_error()
 
         elif command.find('work') == 0 and len(command.split()) == 2:
             if first_hello:

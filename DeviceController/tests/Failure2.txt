@@ -1,5 +1,4 @@
-# Failure 2 - Device Fails before Sending State and Reconnects
-sendtofactory packets/ValidHello.txt
-dieHorribly 0
+# Failure 3 - Device Fails after Sending State
 enable Sst SST1 gateway 5.0
-work forever
+work 5
+dieHorribly

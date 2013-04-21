@@ -5,7 +5,7 @@
 # change devicename signal newvalue
 # work n
 # sleep n
-# dieHorribly n
+# dieHorribly
 # sendtofactory filename
 # sendtoadapter filename
 #
@@ -13,10 +13,7 @@
 # request to DGI, and will reinitiate connection with the new device attached
 # once that succeeds. So each enable/disable will take several seconds.
 # 
-# If the controller dies horribly, it will do that without sending a quit
-# request. It will wait n seconds (0 is valid) before reconnecting. You can also
-# 'dieHorribly forever' to never reconnect if it's the last command in the
-# script.
+# dieHorribly is simply a scripted crash.
 #
 # work is used to pass time without enabling/disabling devices or dying.
 # i.e. it is used for normal operation of the controller. For implementation

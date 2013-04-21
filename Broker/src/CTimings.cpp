@@ -51,6 +51,8 @@ unsigned int CTimings::LB_STATE_TIMER;
 
 unsigned int CTimings::GM_CHECK_TIMEOUT;
 
+unsigned int CTimings::LB_SC_QUERY_TIME;
+
 unsigned int CTimings::CSUC_RESEND_TIME;
 
 unsigned int CTimings::GM_TIMEOUT_TIMEOUT;
@@ -165,6 +167,12 @@ void CTimings::SetTimings(const std::string timingsFile)
         po::value<unsigned int>( )->default_value(0),
         desc.c_str() );
 
+    desc = "The timing value LB_SC_QUERY_TIME";
+    loggerOpts.add_options()
+        ("LB_SC_QUERY_TIME",
+        po::value<unsigned int>( )->default_value(0),
+        desc.c_str() );
+
     desc = "The timing value CSUC_RESEND_TIME";
     loggerOpts.add_options()
         ("CSUC_RESEND_TIME",
@@ -239,6 +247,8 @@ void CTimings::SetTimings(const std::string timingsFile)
     LB_STATE_TIMER = vm["LB_STATE_TIMER"].as<unsigned int>();
 
     GM_CHECK_TIMEOUT = vm["GM_CHECK_TIMEOUT"].as<unsigned int>();
+
+    LB_SC_QUERY_TIME = vm["LB_SC_QUERY_TIME"].as<unsigned int>();
 
     CSUC_RESEND_TIME = vm["CSUC_RESEND_TIME"].as<unsigned int>();
 

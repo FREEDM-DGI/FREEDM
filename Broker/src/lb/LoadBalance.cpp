@@ -422,6 +422,8 @@ void LBAgent::LoadTable()
     int numLOADs = CDeviceManager::Instance().GetDevicesOfType<LOAD>().size();
     int numSSTs = CDeviceManager::Instance().GetDevicesOfType<SST>().size();
 
+    bool active = false;
+
     m_Gen = CDeviceManager::Instance().GetNetValue<DRER>(&DRER::GetGeneration);
     m_Storage = CDeviceManager::Instance().GetNetValue<DESD>(&DESD::GetStorage);
     m_Load = CDeviceManager::Instance().GetNetValue<LOAD>(&LOAD::GetLoad);
@@ -482,12 +484,18 @@ void LBAgent::LoadTable()
     ss << "\t| " << std::setw(20) << "----" << std::setw(27) << "-----"
             << std::setw(7) << "|" << std::endl;
 
+    //Determine if this node can participate in power migrations
+    if( m_sstExists || numDESDs > 0 )
+    {
+        active = true;
+    }
+
     //Compute the Load state based on the current gateway value and Normal
-    if(m_NetGateway < m_Normal - NORMAL_TOLERANCE)
+    if(active && m_NetGateway < m_Normal - NORMAL_TOLERANCE)
     {
         m_Status = LBAgent::SUPPLY;
     }
-    else if(m_NetGateway > m_Normal + NORMAL_TOLERANCE)
+    else if(active && m_NetGateway > m_Normal + NORMAL_TOLERANCE)
     {
         m_Status = LBAgent::DEMAND;
         m_DemandVal = m_SstGateway-m_Normal;
@@ -922,12 +930,13 @@ void LBAgent::HandleCollectedState(MessagePtr msg, PeerNodePtr peer)
     int peercount=0;
     double agg_gateway=0;
     ptree &pt = msg->GetSubMessages();
+
 	BOOST_FOREACH(ptree::value_type &v, pt.get_child("CollectedState.state"))
 	{
 	    Logger.Notice << "SC module returned values: "
 			  << v.second.data() << std::endl;
- 	    peercount++;
-            agg_gateway += boost::lexical_cast<double>(v.second.data());
+        peercount++;
+        agg_gateway += boost::lexical_cast<double>(v.second.data());
 	}
 
 	//Consider any intransit "accept" messages in agg_gateway calculation

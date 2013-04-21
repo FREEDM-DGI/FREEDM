@@ -193,7 +193,7 @@ def handle_dgi_error(msg):
     msg = msg.replace('Error', '', 1)
     print >> sys.stderr, 'Received an error from DGI: ' + msg
     time.sleep(config['hello-timeout'])
-    return reconnect(device_types)
+    return connect(device_types)
 
 
 def enable_device(device_types, device_signals, command):
@@ -326,7 +326,7 @@ def work(adaptersock, device_signals, protected_signals):
     time.sleep(config['state-timeout'])
 
 
-def reconnect(device_types):
+def connect(device_types):
     """
     Sends a Hello message to DGI, and receives its Start message in response.
     If there is a failure, tries again until it works.
@@ -494,7 +494,7 @@ if __name__ == '__main__':
             enable_device(device_types, device_signals, command)
             if not first_hello:
                 polite_quit(adaptersock, device_signals, protected_signals)
-            adaptersock = reconnect(device_types)
+            adaptersock = connect(device_types)
             if first_hello:
                 first_hello = False
 
@@ -503,7 +503,7 @@ if __name__ == '__main__':
                 raise RuntimeError("Can't disable devices before first Hello")
             disable_device(device_types, device_signals, command)
             polite_quit(adaptersock, device_signals, protected_signals)
-            adaptersock = reconnect(device_types)
+            adaptersock = connect(device_types)
             
         elif command.find('change') == 0 and len(command.split()) == 4:
             if first_hello:
@@ -535,7 +535,7 @@ if __name__ == '__main__':
             print 'Back to life!'
             if adaptersock != -1:
                 adaptersock.close()
-            adaptersock = reconnect(device_types)
+            adaptersock = connect(device_types)
 
         elif command.find('work') == 0 and len(command.split()) == 2:
             if first_hello:
@@ -552,7 +552,7 @@ if __name__ == '__main__':
                             'DGI communication error: {0}'.format(str(e))
                         print >> sys.stderr, 'Performing impolite reconnect'
                         adaptersock.close()
-                        adaptersock = reconnect(device_types)
+                        adaptersock = connect(device_types)
                     i += 1
             elif int(duration) <= 0:
                 raise ValueError('Nonsense to work for ' + duration + 's')
@@ -567,7 +567,7 @@ if __name__ == '__main__':
                             'DGI communication error: {0}'.format(str(e))
                         print >> sys.stderr, 'Performing impolite reconnect'
                         adaptersock.close()
-                        adaptersock = reconnect(device_types)
+                        adaptersock = connect(device_types)
 
         elif command.find('sendtofactory') == 0 and len(command.split()) == 2:
             filename = command.split()[1]

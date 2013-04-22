@@ -148,7 +148,7 @@ int LBAgent::Run()
     // it is safe to give it a timeout of 1 effectively making it expire
     // immediately
     m_broker.Schedule(m_GlobalTimer,
-        boost::posix_time::milliseconds(1),
+        boost::posix_time::not_a_date_time,
         boost::bind(&LBAgent::LoadManage, this,
             boost::asio::placeholders::error));
     return 0;
@@ -336,13 +336,12 @@ void LBAgent::LoadManage()
         // Schedule past the end of our phase so control will pass to the broker
         // after this LB, and we won't go again until it's our turn.
         m_broker.Schedule(m_GlobalTimer,
-                          boost::posix_time::milliseconds(
-                              2*CTimings::LB_GLOBAL_TIMER),
+                          boost::posix_time::not_a_date_time,
                           boost::bind(&LBAgent::LoadManage,
                                       this,
                                       boost::asio::placeholders::error));
         Logger.Info << "Won't run over phase, scheduling another LoadManage in "
-                    << CTimings::LB_STATE_TIMER << "ms" << std::endl;
+                    << "next round" << std::endl;
     }
 
     //Remember previous load before computing current load

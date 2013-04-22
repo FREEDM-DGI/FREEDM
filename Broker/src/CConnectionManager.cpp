@@ -256,38 +256,20 @@ ConnectionPtr CConnectionManager::GetConnectionByUUID(std::string uuid_)
     Logger.Debug<<"Computing remote endpoint"<<std::endl;
     boost::asio::ip::udp::resolver resolver(m_inchannel->GetIOService());
     boost::asio::ip::udp::resolver::query query( s_, port);
-    boost::system::error_code e;
-    boost::asio::ip::udp::resolver::iterator rit;
-    boost::asio::ip::udp::resolver::iterator end;
-    rit = resolver.resolve( query, e );
-    if(e)
+    boost::asio::ip::udp::resolver::iterator it;
+    try
     {
-        rit = end;
+        it = resolver.resolve(query);
+        boost::asio::connect(c_->GetSocket(), it);
     }
-    boost::asio::ip::udp::endpoint endpoint;
-    boost::asio::ip::udp::endpoint etmp;
-    bool first=true, resolved=false;
-    while(rit != end)
-    {
-        if(first == true)
-        {
-        Logger.Debug<<__LINE__<<std::endl;
-            endpoint = *rit;
-            first = false;
-        }
-        etmp = *rit;
-        Logger.Info<<"Resolved: "<<etmp<<std::endl;
-        resolved = true;
-        rit++;
-    }
-    if(resolved == false)
+    catch (boost::system::system_error& e)
     {
         std::stringstream ss;
-        ss<<"Could not resolve the endpoint "<<s_<<":"<<port<<" ("<<uuid_<<")"
-          <<" Are your hostnames configured correctly?"<<std::endl;
+        ss<<"Error connecting to host "<<s_<<":"<<port<<": "<< e.what();
         throw std::runtime_error(ss.str());
     }
-    c_->GetSocket().connect( endpoint ); 
+    // *it is safe only if we get here
+    Logger.Info<<"Resolved: "<<static_cast<boost::asio::ip::udp::endpoint>(*it)<<std::endl;
 
     //Once the connection is built, connection manager gets a call back to register it.    
     Logger.Debug<<"Inserting connection"<<std::endl;

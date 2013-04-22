@@ -51,7 +51,7 @@ work 5
 disable SST2
 disable SST3
 
-dieHorribly 5
+sleep 8
 
 work 15
 

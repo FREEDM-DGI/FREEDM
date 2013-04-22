@@ -74,127 +74,127 @@ void CTimings::SetTimings(const std::string timingsFile)
     desc = "The timing value GM_PHASE_TIME";
     loggerOpts.add_options()
         ("GM_PHASE_TIME",
-        po::value<unsigned int>( )->default_value(0),
+        po::value<unsigned int>( ),
         desc.c_str() );
 
     desc = "The timing value GM_FID_TIMEOUT";
     loggerOpts.add_options()
         ("GM_FID_TIMEOUT",
-        po::value<unsigned int>( )->default_value(0),
+        po::value<unsigned int>( ),
         desc.c_str() );
 
     desc = "The timing value SC_PHASE_TIME";
     loggerOpts.add_options()
         ("SC_PHASE_TIME",
-        po::value<unsigned int>( )->default_value(0),
+        po::value<unsigned int>( ),
         desc.c_str() );
 
     desc = "The timing value RTDS_RUN_DELAY";
     loggerOpts.add_options()
         ("RTDS_RUN_DELAY",
-        po::value<unsigned int>( )->default_value(0),
+        po::value<unsigned int>( ),
         desc.c_str() );
 
     desc = "The timing value GM_AYC_RESPONSE_TIMEOUT";
     loggerOpts.add_options()
         ("GM_AYC_RESPONSE_TIMEOUT",
-        po::value<unsigned int>( )->default_value(0),
+        po::value<unsigned int>( ),
         desc.c_str() );
 
     desc = "The timing value GM_AYT_RESPONSE_TIMEOUT";
     loggerOpts.add_options()
         ("GM_AYT_RESPONSE_TIMEOUT",
-        po::value<unsigned int>( )->default_value(0),
+        po::value<unsigned int>( ),
         desc.c_str() );
 
     desc = "The timing value CS_EXCHANGE_TIME";
     loggerOpts.add_options()
         ("CS_EXCHANGE_TIME",
-        po::value<unsigned int>( )->default_value(0),
+        po::value<unsigned int>( ),
         desc.c_str() );
 
     desc = "The timing value GM_GLOBAL_TIMEOUT";
     loggerOpts.add_options()
         ("GM_GLOBAL_TIMEOUT",
-        po::value<unsigned int>( )->default_value(0),
+        po::value<unsigned int>( ),
         desc.c_str() );
 
     desc = "The timing value LB_GLOBAL_TIMER";
     loggerOpts.add_options()
         ("LB_GLOBAL_TIMER",
-        po::value<unsigned int>( )->default_value(0),
+        po::value<unsigned int>( ),
         desc.c_str() );
 
     desc = "The timing value GM_PREMERGE_MAX_TIMEOUT";
     loggerOpts.add_options()
         ("GM_PREMERGE_MAX_TIMEOUT",
-        po::value<unsigned int>( )->default_value(0),
+        po::value<unsigned int>( ),
         desc.c_str() );
 
     desc = "The timing value CSRC_RESEND_TIME";
     loggerOpts.add_options()
         ("CSRC_RESEND_TIME",
-        po::value<unsigned int>( )->default_value(0),
+        po::value<unsigned int>( ),
         desc.c_str() );
 
     desc = "The timing value GM_INVITE_RESPONSE_TIMEOUT";
     loggerOpts.add_options()
         ("GM_INVITE_RESPONSE_TIMEOUT",
-        po::value<unsigned int>( )->default_value(0),
+        po::value<unsigned int>( ),
         desc.c_str() );
 
     desc = "The timing value GM_PREMERGE_GRANULARITY";
     loggerOpts.add_options()
         ("GM_PREMERGE_GRANULARITY",
-        po::value<unsigned int>( )->default_value(0),
+        po::value<unsigned int>( ),
         desc.c_str() );
 
     desc = "The timing value GM_PREMERGE_MIN_TIMEOUT";
     loggerOpts.add_options()
         ("GM_PREMERGE_MIN_TIMEOUT",
-        po::value<unsigned int>( )->default_value(0),
+        po::value<unsigned int>( ),
         desc.c_str() );
 
     desc = "The timing value LB_STATE_TIMER";
     loggerOpts.add_options()
         ("LB_STATE_TIMER",
-        po::value<unsigned int>( )->default_value(0),
+        po::value<unsigned int>( ),
         desc.c_str() );
 
     desc = "The timing value GM_CHECK_TIMEOUT";
     loggerOpts.add_options()
         ("GM_CHECK_TIMEOUT",
-        po::value<unsigned int>( )->default_value(0),
+        po::value<unsigned int>( ),
         desc.c_str() );
 
     desc = "The timing value LB_SC_QUERY_TIME";
     loggerOpts.add_options()
         ("LB_SC_QUERY_TIME",
-        po::value<unsigned int>( )->default_value(0),
+        po::value<unsigned int>( ),
         desc.c_str() );
 
     desc = "The timing value CSUC_RESEND_TIME";
     loggerOpts.add_options()
         ("CSUC_RESEND_TIME",
-        po::value<unsigned int>( )->default_value(0),
+        po::value<unsigned int>( ),
         desc.c_str() );
 
     desc = "The timing value GM_TIMEOUT_TIMEOUT";
     loggerOpts.add_options()
         ("GM_TIMEOUT_TIMEOUT",
-        po::value<unsigned int>( )->default_value(0),
+        po::value<unsigned int>( ),
         desc.c_str() );
 
     desc = "The timing value CSRC_DEFAULT_TIMEOUT";
     loggerOpts.add_options()
         ("CSRC_DEFAULT_TIMEOUT",
-        po::value<unsigned int>( )->default_value(0),
+        po::value<unsigned int>( ),
         desc.c_str() );
 
     desc = "The timing value LB_PHASE_TIME";
     loggerOpts.add_options()
         ("LB_PHASE_TIME",
-        po::value<unsigned int>( )->default_value(0),
+        po::value<unsigned int>( ),
         desc.c_str() );
 
 

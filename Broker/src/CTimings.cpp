@@ -216,47 +216,215 @@ void CTimings::SetTimings(const std::string timingsFile)
     }
     ifs.close();
 
-    GM_PHASE_TIME = vm["GM_PHASE_TIME"].as<unsigned int>();
+    try
+    {
+        GM_PHASE_TIME = vm["GM_PHASE_TIME"].as<unsigned int>();
+    }
+    catch (boost::bad_any_cast& e)
+    {
+        throw std::runtime_error(
+                "GM_PHASE_TIME is missing, please check your timings config");
+    }
 
-    GM_FID_TIMEOUT = vm["GM_FID_TIMEOUT"].as<unsigned int>();
+    try
+    {
+        GM_FID_TIMEOUT = vm["GM_FID_TIMEOUT"].as<unsigned int>();
+    }
+    catch (boost::bad_any_cast& e)
+    {
+        throw std::runtime_error(
+                "GM_FID_TIMEOUT is missing, please check your timings config");
+    }
 
-    SC_PHASE_TIME = vm["SC_PHASE_TIME"].as<unsigned int>();
+    try
+    {
+        SC_PHASE_TIME = vm["SC_PHASE_TIME"].as<unsigned int>();
+    }
+    catch (boost::bad_any_cast& e)
+    {
+        throw std::runtime_error(
+                "SC_PHASE_TIME is missing, please check your timings config");
+    }
 
-    RTDS_RUN_DELAY = vm["RTDS_RUN_DELAY"].as<unsigned int>();
+    try
+    {
+        RTDS_RUN_DELAY = vm["RTDS_RUN_DELAY"].as<unsigned int>();
+    }
+    catch (boost::bad_any_cast& e)
+    {
+        throw std::runtime_error(
+                "RTDS_RUN_DELAY is missing, please check your timings config");
+    }
 
-    GM_AYC_RESPONSE_TIMEOUT = vm["GM_AYC_RESPONSE_TIMEOUT"].as<unsigned int>();
+    try
+    {
+        GM_AYC_RESPONSE_TIMEOUT = vm["GM_AYC_RESPONSE_TIMEOUT"].as<unsigned int>();
+    }
+    catch (boost::bad_any_cast& e)
+    {
+        throw std::runtime_error(
+                "GM_AYC_RESPONSE_TIMEOUT is missing, please check your timings config");
+    }
 
-    GM_AYT_RESPONSE_TIMEOUT = vm["GM_AYT_RESPONSE_TIMEOUT"].as<unsigned int>();
+    try
+    {
+        GM_AYT_RESPONSE_TIMEOUT = vm["GM_AYT_RESPONSE_TIMEOUT"].as<unsigned int>();
+    }
+    catch (boost::bad_any_cast& e)
+    {
+        throw std::runtime_error(
+                "GM_AYT_RESPONSE_TIMEOUT is missing, please check your timings config");
+    }
 
-    CS_EXCHANGE_TIME = vm["CS_EXCHANGE_TIME"].as<unsigned int>();
+    try
+    {
+        CS_EXCHANGE_TIME = vm["CS_EXCHANGE_TIME"].as<unsigned int>();
+    }
+    catch (boost::bad_any_cast& e)
+    {
+        throw std::runtime_error(
+                "CS_EXCHANGE_TIME is missing, please check your timings config");
+    }
 
-    GM_GLOBAL_TIMEOUT = vm["GM_GLOBAL_TIMEOUT"].as<unsigned int>();
+    try
+    {
+        GM_GLOBAL_TIMEOUT = vm["GM_GLOBAL_TIMEOUT"].as<unsigned int>();
+    }
+    catch (boost::bad_any_cast& e)
+    {
+        throw std::runtime_error(
+                "GM_GLOBAL_TIMEOUT is missing, please check your timings config");
+    }
 
-    LB_GLOBAL_TIMER = vm["LB_GLOBAL_TIMER"].as<unsigned int>();
+    try
+    {
+        LB_GLOBAL_TIMER = vm["LB_GLOBAL_TIMER"].as<unsigned int>();
+    }
+    catch (boost::bad_any_cast& e)
+    {
+        throw std::runtime_error(
+                "LB_GLOBAL_TIMER is missing, please check your timings config");
+    }
 
-    GM_PREMERGE_MAX_TIMEOUT = vm["GM_PREMERGE_MAX_TIMEOUT"].as<unsigned int>();
+    try
+    {
+        GM_PREMERGE_MAX_TIMEOUT = vm["GM_PREMERGE_MAX_TIMEOUT"].as<unsigned int>();
+    }
+    catch (boost::bad_any_cast& e)
+    {
+        throw std::runtime_error(
+                "GM_PREMERGE_MAX_TIMEOUT is missing, please check your timings config");
+    }
 
-    CSRC_RESEND_TIME = vm["CSRC_RESEND_TIME"].as<unsigned int>();
+    try
+    {
+        CSRC_RESEND_TIME = vm["CSRC_RESEND_TIME"].as<unsigned int>();
+    }
+    catch (boost::bad_any_cast& e)
+    {
+        throw std::runtime_error(
+                "CSRC_RESEND_TIME is missing, please check your timings config");
+    }
 
-    GM_INVITE_RESPONSE_TIMEOUT = vm["GM_INVITE_RESPONSE_TIMEOUT"].as<unsigned int>();
+    try
+    {
+        GM_INVITE_RESPONSE_TIMEOUT = vm["GM_INVITE_RESPONSE_TIMEOUT"].as<unsigned int>();
+    }
+    catch (boost::bad_any_cast& e)
+    {
+        throw std::runtime_error(
+                "GM_INVITE_RESPONSE_TIMEOUT is missing, please check your timings config");
+    }
 
-    GM_PREMERGE_GRANULARITY = vm["GM_PREMERGE_GRANULARITY"].as<unsigned int>();
+    try
+    {
+        GM_PREMERGE_GRANULARITY = vm["GM_PREMERGE_GRANULARITY"].as<unsigned int>();
+    }
+    catch (boost::bad_any_cast& e)
+    {
+        throw std::runtime_error(
+                "GM_PREMERGE_GRANULARITY is missing, please check your timings config");
+    }
 
-    GM_PREMERGE_MIN_TIMEOUT = vm["GM_PREMERGE_MIN_TIMEOUT"].as<unsigned int>();
+    try
+    {
+        GM_PREMERGE_MIN_TIMEOUT = vm["GM_PREMERGE_MIN_TIMEOUT"].as<unsigned int>();
+    }
+    catch (boost::bad_any_cast& e)
+    {
+        throw std::runtime_error(
+                "GM_PREMERGE_MIN_TIMEOUT is missing, please check your timings config");
+    }
 
-    LB_STATE_TIMER = vm["LB_STATE_TIMER"].as<unsigned int>();
+    try
+    {
+        LB_STATE_TIMER = vm["LB_STATE_TIMER"].as<unsigned int>();
+    }
+    catch (boost::bad_any_cast& e)
+    {
+        throw std::runtime_error(
+                "LB_STATE_TIMER is missing, please check your timings config");
+    }
 
-    GM_CHECK_TIMEOUT = vm["GM_CHECK_TIMEOUT"].as<unsigned int>();
+    try
+    {
+        GM_CHECK_TIMEOUT = vm["GM_CHECK_TIMEOUT"].as<unsigned int>();
+    }
+    catch (boost::bad_any_cast& e)
+    {
+        throw std::runtime_error(
+                "GM_CHECK_TIMEOUT is missing, please check your timings config");
+    }
 
-    LB_SC_QUERY_TIME = vm["LB_SC_QUERY_TIME"].as<unsigned int>();
+    try
+    {
+        LB_SC_QUERY_TIME = vm["LB_SC_QUERY_TIME"].as<unsigned int>();
+    }
+    catch (boost::bad_any_cast& e)
+    {
+        throw std::runtime_error(
+                "LB_SC_QUERY_TIME is missing, please check your timings config");
+    }
 
-    CSUC_RESEND_TIME = vm["CSUC_RESEND_TIME"].as<unsigned int>();
+    try
+    {
+        CSUC_RESEND_TIME = vm["CSUC_RESEND_TIME"].as<unsigned int>();
+    }
+    catch (boost::bad_any_cast& e)
+    {
+        throw std::runtime_error(
+                "CSUC_RESEND_TIME is missing, please check your timings config");
+    }
 
-    GM_TIMEOUT_TIMEOUT = vm["GM_TIMEOUT_TIMEOUT"].as<unsigned int>();
+    try
+    {
+        GM_TIMEOUT_TIMEOUT = vm["GM_TIMEOUT_TIMEOUT"].as<unsigned int>();
+    }
+    catch (boost::bad_any_cast& e)
+    {
+        throw std::runtime_error(
+                "GM_TIMEOUT_TIMEOUT is missing, please check your timings config");
+    }
 
-    CSRC_DEFAULT_TIMEOUT = vm["CSRC_DEFAULT_TIMEOUT"].as<unsigned int>();
+    try
+    {
+        CSRC_DEFAULT_TIMEOUT = vm["CSRC_DEFAULT_TIMEOUT"].as<unsigned int>();
+    }
+    catch (boost::bad_any_cast& e)
+    {
+        throw std::runtime_error(
+                "CSRC_DEFAULT_TIMEOUT is missing, please check your timings config");
+    }
 
-    LB_PHASE_TIME = vm["LB_PHASE_TIME"].as<unsigned int>();
+    try
+    {
+        LB_PHASE_TIME = vm["LB_PHASE_TIME"].as<unsigned int>();
+    }
+    catch (boost::bad_any_cast& e)
+    {
+        throw std::runtime_error(
+                "LB_PHASE_TIME is missing, please check your timings config");
+    }
 
 
 }

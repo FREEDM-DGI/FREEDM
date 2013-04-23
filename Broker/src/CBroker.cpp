@@ -276,7 +276,7 @@ CBroker::TimerHandle CBroker::AllocateTimer(CBroker::ModuleIdent module)
 /// @param x The partially bound function that will be scheduled.
 /// @pre The module is registered
 /// @post A function is scheduled to be called in the future. If a next time
-///     function is scheduled, it w
+///     function is scheduled, its timer will expire as soon as its round ends.
 ///////////////////////////////////////////////////////////////////////////////
 void CBroker::Schedule(CBroker::TimerHandle h,
     boost::posix_time::time_duration wait, CBroker::Scheduleable x)

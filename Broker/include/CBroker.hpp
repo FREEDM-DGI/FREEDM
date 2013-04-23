@@ -177,9 +177,10 @@ private:
     ///A list of timers used for scheduling
     TimersMap m_timers;
 
-    ///Wether the time should expire at the end of the round.
+    ///Maps handle to bool: if a timer handle is set to expire for the next round.
     NextTimeMap m_nexttime;
-    ///Wether the time should expire at the end of the round.
+    
+    ///Maps if a specific timer has been cancelled or triggered by end of round
     NextTimeMap m_ntexpired;
 
     ///A map of jobs that are ready to run as soon as their phase comes up

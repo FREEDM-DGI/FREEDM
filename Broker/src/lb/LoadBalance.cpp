@@ -524,12 +524,14 @@ void LBAgent::LoadTable()
     ss << "\t| " << std::setw(20) << "----" << std::setw(27) << "-----"
             << std::setw(7) << "|" << std::endl;
 
+    bool isActive = (m_sstExists || numDESDs > 0);
+
     //Compute the Load state based on the current gateway value and Normal
-    if(m_NetGateway < m_Normal - NORMAL_TOLERANCE)
+    if(isActive && m_NetGateway < m_Normal - NORMAL_TOLERANCE)
     {
         m_Status = LBAgent::SUPPLY;
     }
-    else if(m_NetGateway > m_Normal + NORMAL_TOLERANCE)
+    else if(isActive && m_NetGateway > m_Normal + NORMAL_TOLERANCE)
     {
         m_Status = LBAgent::DEMAND;
         m_DemandVal = m_SstGateway-m_Normal;

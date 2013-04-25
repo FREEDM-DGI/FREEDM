@@ -34,6 +34,7 @@
 #include "gm/GroupManagement.hpp"
 #include "lb/LoadBalance.hpp"
 #include "sc/StateCollection.hpp"
+#include "dnp3/DNP3Slave.hpp"
 #include "version.h"
 #include "CTimings.hpp"
 
@@ -381,6 +382,7 @@ int main(int argc, char* argv[])
 
     try
     {
+        DNP3Slave::Instance();
         broker.Run();
     }
     catch (std::exception & e)

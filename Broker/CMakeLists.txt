@@ -31,12 +31,17 @@ message("This project uses custom CMake settings:"
     "\n\tView the available settings with cmake -LH"
     "\n\tChange a setting with -DSETTING=ON/OFF")
 
+# find the dnp3 library
+find_library(DNP3_LIBRARY opendnp3)
+find_path(DNP3_PATH opendnp3/version.hpp)
+set(DNP3_INCLUDE_DIRS "${DNP3_PATH}/opendnp3")
+
 # find the required boost libraries
 find_package(Boost REQUIRED COMPONENTS system thread program_options 
              serialization date_time)
 
 # add the boost libraries to the project
-include_directories(SYSTEM ${Boost_INCLUDE_DIRS})
+include_directories(SYSTEM ${Boost_INCLUDE_DIRS} ${DNP3_INCLUDE_DIRS})
 link_directories(${Boost_LIBRARY_DIRS})
 
 # set C++ compiler flags
@@ -81,6 +86,7 @@ target_link_libraries(
     ${Boost_SERIALIZATION_LIBRARY}
     ${Boost_PROGRAM_OPTIONS_LIBRARY}
     ${Boost_DATE_TIME_LIBRARY}
+    ${DNP3_LIBRARY}
 )
 
 # run Doxygen

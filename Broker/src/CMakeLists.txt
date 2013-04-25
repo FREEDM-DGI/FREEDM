@@ -21,6 +21,8 @@ set(
     gm/GroupManagement.cpp
     lb/LoadBalance.cpp
     sc/StateCollection.cpp
+    dnp3/DNP3Slave.cpp
+    dnp3/SlaveDemo.cpp
    )
 
 # set BROKER_VERSION macro : cp version.h.cmake version.h

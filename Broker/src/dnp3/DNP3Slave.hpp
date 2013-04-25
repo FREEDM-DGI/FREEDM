@@ -13,6 +13,8 @@ class DNP3Slave
 {
 public:
     static DNP3Slave & Instance();
+
+    void Update(float value);
 private:
     DNP3Slave();
 

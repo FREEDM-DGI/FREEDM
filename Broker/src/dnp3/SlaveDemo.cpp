@@ -68,26 +68,6 @@ CommandStatus SlaveDemoApp::HandleControl(Setpoint& aControl, size_t aIndex)
 {
 	LOG_BLOCK(LEV_INFO, "Received " << aControl.ToString() << " on index: " << aIndex);
 
-	// Update a  feedback point that has the same value as the setpoint we were
-	// given from the master. Configure it with the current time and good quality
-	Analog a(aControl.GetValue(), AQ_ONLINE);
-	a.SetToNow();
-
-	// Create an additional counter to let the master know how many setpoints
-	// we've receieved
-	Counter c(++mCountSetPoints, CQ_ONLINE);
-	c.SetToNow();
-
-	// We would like all updates to be sent at one time.When the Transaction object
-	// goes out of scope, all updates will be sent in one block to do the slave database.
-	Transaction t(mpObserver);
-
-	// Push the prepared datapoints to the database of this slave. The slave
-	// can now transmit the changes to the master (polling or unsol)
-	mpObserver->Update(a, aIndex);
-	mpObserver->Update(c, 0);
-
-
 	// This is the control code returned to the slave stack, and forwared
 	// on to the master. These are DNP3 control codes.
 	return CS_SUCCESS;
@@ -97,18 +77,6 @@ CommandStatus SlaveDemoApp::HandleControl(Setpoint& aControl, size_t aIndex)
 CommandStatus SlaveDemoApp::HandleControl(BinaryOutput& aControl, size_t aIndex)
 {
 	LOG_BLOCK(LEV_INFO, "Received " << aControl.ToString() << " on index: " << aIndex);
-
-	// set the binary to ON if the command  code was LATCH_ON, otherwise set it off (LATCH_OFF)
-	apl::Binary b(aControl.GetCode() == CC_LATCH_ON, BQ_ONLINE);
-	b.SetToNow();
-
-	// count how many BinaryOutput commands we recieve
-	apl::Counter c(++mCountBinaryOutput, CQ_ONLINE);
-	c.SetToNow();
-
-	Transaction t(mpObserver);
-	mpObserver->Update(b, aIndex);
-	mpObserver->Update(c, 1);
 
 	return CS_SUCCESS;
 }

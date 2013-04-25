@@ -29,7 +29,7 @@ DNP3Slave::DNP3Slave()
 
     // Create a log object for the stack to use and configure it
     // with a subscriber that print alls messages to the stdout
-    LogToFile(&log, "dnp3.log");
+    log.AddLogSubscriber(LogToStdio::Inst());
 
     // Specify a FilterLevel for the stack/physical layer to use.
     // Log statements with a lower priority will not be logged.
@@ -65,7 +65,7 @@ DNP3Slave::DNP3Slave()
     // The DeviceTemplate struct specifies the structure of the
     // slave's database, as well as the index range of controls and
     // setpoints it accepts.
-    DeviceTemplate device(5, 5, 5, 5, 5, 5, 5);
+    DeviceTemplate device(0, 1, 0, 0, 0, 0, 0);
     stackConfig.device = device;
 
     // Create a new slave on a previously declared port, with a
@@ -90,6 +90,14 @@ void DNP3Slave::Work()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     app->Run();
+}
+
+void DNP3Slave::Update(float value)
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    using namespace apl;
+    Transaction t(pDataObserver);
+    pDataObserver->Update(Analog(value, AQ_ONLINE), 0);
 }
 
 } // namespace broker

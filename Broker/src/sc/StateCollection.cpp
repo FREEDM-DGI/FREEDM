@@ -44,6 +44,7 @@
 #include "gm/GroupManagement.hpp"
 #include "IPeerNode.hpp"
 #include "CDeviceManager.hpp"
+#include "dnp3/DNP3Slave.hpp"
 
 #include <algorithm>
 #include <cassert>
@@ -401,6 +402,11 @@ void SCAgent::TakeSnapshot(const std::vector<std::string>& devicelist)
         PowerValue = device::CDeviceManager::Instance().GetNetValue(name, type);
         Logger.Status << "Device:   "<< name << "  Signal:  "<< type << " Value:  " << PowerValue << std::endl;
         count = device::CDeviceManager::Instance().GetDevicesOfType(name).size();
+
+        if( type == "gateway" )
+        {
+            DNP3Slave::Instance().Update(PowerValue);
+        }
 
 	//save device state
         ptree sub_ptree;

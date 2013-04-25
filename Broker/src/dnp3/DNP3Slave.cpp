@@ -1,20 +1,20 @@
 #include "DNP3Slave.hpp"
+#include "LogToClog.hpp"
 #include "CLogger.hpp"
-
-#include <string>
-
-#include <APL/Log.h>
-#include <APL/LogToFile.h>
-#include <boost/bind.hpp>
 
 namespace freedm {
 namespace broker {
 
 namespace {
+/// This file's logger.
 CLocalLogger Logger(__FILE__);
 }
 
 DNP3Slave::DNP3Slave()
+    : LOG_LEVEL(apl::LEV_INFO)
+    , m_logger()
+    , m_stack_mgr(m_logger.GetLogger(LOG_LEVEL, "dnp3"))
+    , m_observer(NULL)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
@@ -27,57 +27,36 @@ DNP3Slave::DNP3Slave()
     std::string     local_ip    = "127.0.0.1";
     boost::uint16_t local_port  = 4999;
 
-    // Create a log object for the stack to use and configure it
-    // with a subscriber that print alls messages to the stdout
-    log.AddLogSubscriber(LogToStdio::Inst());
-
-    // Specify a FilterLevel for the stack/physical layer to use.
-    // Log statements with a lower priority will not be logged.
-    const FilterLevel LOG_LEVEL = LEV_INFO;
-
-    // create our demo application that handles commands and
-    // demonstrates how to publish data give it a loffer with a
-    // unique name and log level
-    app = boost::shared_ptr<SlaveDemoApp>(new SlaveDemoApp(log.GetLogger(LOG_LEVEL, "demoapp")));
-
-    // This is the main point of interaction with the stack. The
-    // AsyncStackManager object instantiates master/slave DNP
-    // stacks, as well as their physical layers
-    mgr = boost::shared_ptr<AsyncStackManager>(new AsyncStackManager(log.GetLogger(LOG_LEVEL, "dnp")));
-
-    // Add a TCPServer to the manager with the name "tcpserver".
-    // The server will wait 3000 ms in between failed bind calls.
-    mgr->AddTCPServer(
-        "tcpserver",
-        PhysLayerSettings(LOG_LEVEL, 3000),
-        local_ip,
-        local_port
+    // slave configuration objects
+    DeviceTemplate format(
+        0,  // binary
+        1,  // analog
+        0,  // counter
+        0,  // control status
+        0,  // setpoint status
+        0,  // control
+        0   // setpoint
     );
+    SlaveStackConfig config;
+    config.device           = format;
+    config.link.LocalAddr   = local_dnp3;
+    config.link.RemoteAddr  = remote_dnp3;
 
-    // The master config object for a slave. The default are
-    // useable, but understanding the options are important.
-    SlaveStackConfig stackConfig;
+    m_logger.AddLogSubscriber(LogToClog::Inst());
 
-    // Override the default link addressing
-    stackConfig.link.LocalAddr  = local_dnp3;
-    stackConfig.link.RemoteAddr = remote_dnp3;
+    // initialize the slave communication stack
+    m_stack_mgr.AddTCPServer("tcpserver", PhysLayerSettings(LOG_LEVEL, 3000), local_ip, local_port);
+    m_slave = boost::shared_ptr<SlaveDemoApp>(new SlaveDemoApp(m_logger.GetLogger(LOG_LEVEL, "dnp3")));
+    m_observer = m_stack_mgr.AddSlave("tcpserver", "Slave", LOG_LEVEL, m_slave->GetCmdAcceptor(), config);
+    m_slave->SetDataObserver(m_observer);
 
-    // The DeviceTemplate struct specifies the structure of the
-    // slave's database, as well as the index range of controls and
-    // setpoints it accepts.
-    DeviceTemplate device(0, 1, 0, 0, 0, 0, 0);
-    stackConfig.device = device;
+    m_thread = boost::thread(boost::bind(&DNP3Slave::RunService, this));
+}
 
-    // Create a new slave on a previously declared port, with a
-    // name, log level, command acceptor, and config info This
-    // returns a thread-safe interface used for updating the slave's
-    // database.
-    pDataObserver = mgr->AddSlave("tcpserver", "slave", LOG_LEVEL, app->GetCmdAcceptor(), stackConfig);
-
-    // Tell the app where to write opdates
-    app->SetDataObserver(pDataObserver);
-
-    m_thread = boost::thread(boost::bind(&DNP3Slave::Work, this));
+DNP3Slave::~DNP3Slave()
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    m_observer = NULL;
 }
 
 DNP3Slave & DNP3Slave::Instance()
@@ -86,18 +65,29 @@ DNP3Slave & DNP3Slave::Instance()
     return instance;
 }
 
-void DNP3Slave::Work()
+void DNP3Slave::RunService()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    app->Run();
+    m_slave->Run();
 }
 
-void DNP3Slave::Update(float value)
+void DNP3Slave::Update(std::size_t index, double value)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    using namespace apl;
-    Transaction t(pDataObserver);
-    pDataObserver->Update(Analog(value, AQ_ONLINE), 0);
+
+    if( !m_lock )
+    {
+        Logger.Info << "Locked the DNP3 slave buffer." << std::endl;
+        m_lock.reset(new apl::Transaction(m_observer));
+    }
+    m_observer->Update(apl::Analog(value, apl::AQ_ONLINE), index);
+}
+
+void DNP3Slave::Flush()
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    m_lock.reset();
+    Logger.Info << "Flushed the DNP3 slave buffer." << std::endl;
 }
 
 } // namespace broker

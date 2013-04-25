@@ -405,7 +405,8 @@ void SCAgent::TakeSnapshot(const std::vector<std::string>& devicelist)
 
         if( type == "gateway" )
         {
-            DNP3Slave::Instance().Update(PowerValue);
+            DNP3Slave::Instance().Update(0, PowerValue);
+            DNP3Slave::Instance().Flush();
         }
 
 	//save device state

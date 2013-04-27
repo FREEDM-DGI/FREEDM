@@ -102,8 +102,6 @@ class LBAgent
         void LoadManage();        
         /// Triggers the LoadManage routine on timeout
         void LoadManage( const boost::system::error_code& err );
-        /// Starts the state timer and restarts on timeout
-        void StartStateTimer( unsigned int delay );
         /// Sends request to SC module to initiate state collection on timeout
         void HandleStateTimer( const boost::system::error_code & error);
         

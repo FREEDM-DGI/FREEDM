@@ -329,6 +329,7 @@ int main(int argc, char* argv[])
         broker.RegisterModule("gm",boost::posix_time::milliseconds(CTimings::GM_PHASE_TIME));
         dispatch.RegisterReadHandler("gm", "any", &GM);
         // Instantiate and register the state collection module
+        broker.RegisterModule("lbq",boost::posix_time::milliseconds(CTimings::LB_SC_QUERY_TIME));
         broker.RegisterModule("sc",boost::posix_time::milliseconds(CTimings::SC_PHASE_TIME));
         dispatch.RegisterReadHandler("sc", "any", &SC);
         // Instantiate and register the power management module
@@ -372,7 +373,7 @@ int main(int argc, char* argv[])
 
         Logger.Debug << "Starting thread of Modules" << std::endl;
         broker.Schedule("gm", boost::bind(&gm::GMAgent::Run, &GM), false);
-        broker.Schedule("lb", boost::bind(&lb::LBAgent::Run, &LB), false);
+        broker.Schedule("lbq", boost::bind(&lb::LBAgent::Run, &LB), false);
     }
     catch (std::exception & e)
     {

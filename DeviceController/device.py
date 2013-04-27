@@ -4,7 +4,7 @@
 #
 # @author         Michael Catanzaro <michael.catanzaro@mst.edu>
 #
-# @project        FREEDM Fake Device Controller
+# @project        FREEDM Device Controller
 #
 # @description    A class for storing the signals of a physical device, plus
 #                 associated errors and functions.
@@ -45,20 +45,20 @@ class Device(object):
     Represents a physical device.
     """
 
-    def __init__(self, name, type_, signals):
+    def __init__(self, name, type_, signals, protected_state_duration):
         """
         Creates a new device!
 
         @param name string containing the name of the device
         @param type_ string containing the type of the device
         @param signals dictionary of string signal names -> float values
+        @param protected_state_duration how long for which to protect a
+               signal's state from commands after calling set_state
         """
-        # string - name of the device
         self._name = name
-        # string - type of the device
         self._type = type_
-        # strings (signal names) -> floats (signal values)
         self._signals = signals
+        self._protected_state_duration = protected_state_duration
         # dict of strings -> ints indicating num locks on the signal
         # (recently-modified signals accept no commands until locks fall to 0)
         self._protected_signals = {}
@@ -132,7 +132,7 @@ class Device(object):
             self._protected_signals[signal] = 1
         self._protected_signals_lock.release()
         t = threading.Timer(
-                config['protected-state-duration'],
+                self._protected_state_duration,
                 self._unlock_signal,
                 args=(signal))
         t.start()

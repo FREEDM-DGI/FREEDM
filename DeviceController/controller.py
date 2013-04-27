@@ -175,7 +175,8 @@ class Device(object):
             self._protected_signals[signal] = 1
         self._protected_signals_lock.release()
         t = threading.Timer(
-                config['protected-state-duration'], self._unlock_signal,
+                config['protected-state-duration'],
+                self._unlock_signal,
                 args=(signal))
         t.start()
 

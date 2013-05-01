@@ -384,7 +384,7 @@ void LBAgent::LoadManage( const boost::system::error_code& err )
 
     if(!err)
     {
-        LoadManage();
+        m_broker.Schedule("lb", boost::bind(&LBAgent::LoadManage, this), true);
     }
     else if(boost::asio::error::operation_aborted == err )
     {

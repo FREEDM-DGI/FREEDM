@@ -116,6 +116,7 @@ LBAgent::LBAgent(std::string uuid_, CBroker &broker):
     RegisterSubhandle("lb.ComputedNormal",boost::bind(&LBAgent::HandleComputedNormal, this, _1, _2));
     RegisterSubhandle("any",boost::bind(&LBAgent::HandleAny, this, _1, _2));
     m_sstExists = false;
+    m_actuallyread = true;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -322,6 +323,7 @@ void LBAgent::LoadManage()
     if (m_broker.TimeRemaining() >
         boost::posix_time::milliseconds(2*CTimings::LB_GLOBAL_TIMER))
     {
+        m_actuallyread = false;
         m_broker.Schedule(m_GlobalTimer,
                           boost::posix_time::milliseconds(
                               CTimings::LB_GLOBAL_TIMER),
@@ -342,6 +344,7 @@ void LBAgent::LoadManage()
                                       boost::asio::placeholders::error));
         Logger.Info << "Won't run over phase, scheduling another LoadManage in "
                     << "next round" << std::endl;
+        m_actuallyread = true;
     }
 
     //Remember previous load before computing current load
@@ -429,10 +432,13 @@ void LBAgent::LoadTable()
     int numLOADs = CDeviceManager::Instance().GetDevicesOfType<LOAD>().size();
     int numSSTs = CDeviceManager::Instance().GetDevicesOfType<SST>().size();
 
-    m_Gen = CDeviceManager::Instance().GetNetValue<DRER>(&DRER::GetGeneration);
-    m_Storage = CDeviceManager::Instance().GetNetValue<DESD>(&DESD::GetStorage);
-    m_Load = CDeviceManager::Instance().GetNetValue<LOAD>(&LOAD::GetLoad);
-    m_SstGateway = CDeviceManager::Instance().GetNetValue<SST>(&SST::GetGateway);
+    if(m_actuallyread)
+    {
+        m_Gen = CDeviceManager::Instance().GetNetValue<DRER>(&DRER::GetGeneration);
+        m_Storage = CDeviceManager::Instance().GetNetValue<DESD>(&DESD::GetStorage);
+        m_Load = CDeviceManager::Instance().GetNetValue<LOAD>(&LOAD::GetLoad);
+        m_SstGateway = CDeviceManager::Instance().GetNetValue<SST>(&SST::GetGateway);
+    }
 
     if (numSSTs >= 1)
     {
@@ -989,14 +995,14 @@ void LBAgent::Step_PStar()
     {
         if(LBAgent::DEMAND == m_Status)
         {
-            m_PStar = (*it)->GetGateway() - P_Migrate;
-            (*it)->StepGateway(-P_Migrate);
+            m_NetGateway -= P_Migrate;
+            (*it)->SetGateway(m_NetGateway);
             Logger.Notice << "P* = " << m_PStar << std::endl;
         }
         else if(LBAgent::SUPPLY == m_Status)
         {
-            m_PStar = (*it)->GetGateway() + P_Migrate;
-            (*it)->StepGateway(P_Migrate);
+            m_NetGateway += P_Migrate;
+            (*it)->SetGateway(m_NetGateway);
             Logger.Notice << "P* = " << m_PStar << std::endl;
         }
         else
@@ -1030,14 +1036,14 @@ void LBAgent::PStar(device::SignalValue DemandValue)
         {
             m_PStar = (*it)->GetGateway() - P_Migrate;
             Logger.Notice << "P* = " << m_PStar << std::endl;
-            (*it)->StepGateway(-P_Migrate);
+            (*it)->SetGateway(-P_Migrate);
         }
         else if(LBAgent::SUPPLY == m_Status)
         {
             if( DemandValue <= m_SstGateway + NORMAL_TOLERANCE - m_Normal )
             {
                 Logger.Notice << "P* = " << m_SstGateway + DemandValue << std::endl;
-                (*it)->StepGateway(P_Migrate);
+                (*it)->SetGateway(P_Migrate);
             }
             else
             {

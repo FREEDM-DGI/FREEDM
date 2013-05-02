@@ -432,26 +432,27 @@ void LBAgent::LoadTable()
     int numLOADs = CDeviceManager::Instance().GetDevicesOfType<LOAD>().size();
     int numSSTs = CDeviceManager::Instance().GetDevicesOfType<SST>().size();
 
+    m_Gen = CDeviceManager::Instance().GetNetValue<DRER>(&DRER::GetGeneration);
+    m_Storage = CDeviceManager::Instance().GetNetValue<DESD>(&DESD::GetStorage);
+    m_Load = CDeviceManager::Instance().GetNetValue<LOAD>(&LOAD::GetLoad);
+    m_SstGateway = CDeviceManager::Instance().GetNetValue<SST>(&SST::GetGateway);
+    
     if(m_actuallyread)
     {
-        m_Gen = CDeviceManager::Instance().GetNetValue<DRER>(&DRER::GetGeneration);
-        m_Storage = CDeviceManager::Instance().GetNetValue<DESD>(&DESD::GetStorage);
-        m_Load = CDeviceManager::Instance().GetNetValue<LOAD>(&LOAD::GetLoad);
-        m_SstGateway = CDeviceManager::Instance().GetNetValue<SST>(&SST::GetGateway);
+        if (numSSTs >= 1)
+        {
+            m_sstExists = true;
+            // FIXME should consider other devices
+            m_NetGateway = m_SstGateway;
+        }
+        else
+        {
+            m_sstExists = false;
+            // FIXME should consider Gateway
+            m_NetGateway = m_Load - m_Gen - m_Storage;
+        }
     }
 
-    if (numSSTs >= 1)
-    {
-        m_sstExists = true;
-        // FIXME should consider other devices
-        m_NetGateway = m_SstGateway;
-    }
-    else
-    {
-        m_sstExists = false;
-        // FIXME should consider Gateway
-        m_NetGateway = m_Load - m_Gen - m_Storage;
-    }
 
     // used to ensure three digits before the decimal, two after
     unsigned int genWidth = (m_Gen > 0 ? 6 : 7);
@@ -479,6 +480,8 @@ void LBAgent::LoadTable()
             << std::setfill('0') << std::setw(2) << numSSTs << "): " 
             << extraSstSpace << std::setfill(' ') << std::setw(sstGateWidth)
             << m_SstGateway << " |" << std::endl;
+    ss << "\t| " << "Net Gateway : " << m_NetGateway << std::endl;
+
 //
 // We will hide Overall Gateway for the time being as it is useless until
 // we properly support multiple device LBs.

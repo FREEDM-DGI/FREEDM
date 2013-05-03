@@ -191,9 +191,6 @@ private:
 
     ///The magical clock synchronizer
     CClockSynchronizer m_synchronizer;
-
-    ///The register for signal handling.
-    boost::asio::signal_set m_signals;
 };
 
     } // namespace broker

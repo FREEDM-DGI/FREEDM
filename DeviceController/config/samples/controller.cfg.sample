@@ -3,11 +3,6 @@
 # unique identifier of this controller
 name=MyUniqueController
 
-[fake-controller]
-
-# the DSP script file to run
-script=config/dsp-script.txt
-
 [connection]
 
 # hostname of the DGI to connect to

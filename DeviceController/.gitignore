@@ -2,3 +2,10 @@ config/controller*.cfg
 config/*.txt
 tests/config/controller*.cfg
 tests/config/multiple-dgi-controller*.cfg
+CMakeCache.txt
+CMakeFiles/
+Makefile
+cmake_install.cmake
+config.h
+controller
+libsocthing.a

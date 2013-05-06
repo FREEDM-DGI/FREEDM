@@ -21,6 +21,7 @@ Description: This is the program used on TS7800 to communicate with DESD via Zig
 #include <string.h>
 #include <sys/time.h>
 
+#include "config.h"
 #include "SoCObserver.h"
 #include "Comm.h"
 
@@ -29,9 +30,11 @@ Description: This is the program used on TS7800 to communicate with DESD via Zig
 
 int main(int argc, char* argv[])
 {
+#ifdef ZIGBEE
 	//"/dev/ttts10" is the port for PC104-Zigbee on TS-7800
 	int fd;
 	struct termios options;
+#endif
 
 	//to stroe received message
 	unsigned char data[SIZE] = {0};
@@ -55,6 +58,7 @@ int main(int argc, char* argv[])
 	////////////////////////////////////////////////
 	//following is the configuration for ARM board//
 	////////////////////////////////////////////////	
+#ifdef ZIGBEE
 	// Open port "tsuart-rf" through PC104 interface
 	fd=open("/dev/ttts10", O_RDWR | O_NOCTTY);
 	if(!fd){
@@ -85,6 +89,7 @@ int main(int argc, char* argv[])
 	options.c_cc[VMIN] = 0; 
 
 	tcsetattr(fd, TCSANOW, &options);	// Write the new configuration to the port
+#endif
 	////////////////////////////////////
 	//ARM board configuration finished//
 	////////////////////////////////////
@@ -102,9 +107,11 @@ int main(int argc, char* argv[])
 				int read_flag = 0;				
 				char IDbuf[6] = "#0000$";
 				IDbuf[4] = (char)(((int)'0')+id);  //compose the ID string with ID#
-					
+
+#ifdef ZIGBEE
 				do{	//broadcast beacon with ID#
 					write_msg(fd, IDbuf, sizeof(IDbuf));
+
 					timeout++;
 					if(timeout > 2){
 						//0, 1, 2, timeout for 3 times
@@ -122,6 +129,7 @@ int main(int argc, char* argv[])
 						break;
 					}
 				}while((read_flag = read_msg(fd, data, 97)) == 0);
+#endif
 				
 				if(read_flag){
 					//a legitimate message should of exactly 101 characters
@@ -228,8 +236,8 @@ int main(int argc, char* argv[])
 		//send out beacon, ID0, to unknow devices
 		unsigned char beacon_data[SIZE];  //buffer to store complete beacon response
 		unsigned char beacon_mac[SIZE];    //buffer to store mac address in beacon response
-		unsigned char beacon_asgn[SIZE];  //buffer to store the assigend ID#		
-		
+		unsigned char beacon_asgn[SIZE];  //buffer to store the assigend ID#
+#ifdef ZIGBEE
 		write_msg(fd, "#ID0$", 5);
 		
 		if(read_msg(fd, beacon_data, 12)){
@@ -252,15 +260,16 @@ int main(int argc, char* argv[])
 				strcat(beacon_asgn, "$");
 								
 				//send assign message to device
+
 				write_msg(fd, beacon_asgn, strlen(beacon_asgn));
-				
+
 				//printf("Deivce %2d is added!\n", id);
 				//ID[id] = id;
 				
 				//read response from deivce
 				unsigned char beacon_asgn_resp[SIZE] = {0};
 				unsigned char beacon_asgn_temp[SIZE] = {0};
-				
+
 				if(read_msg(fd, beacon_asgn_temp, 14)){
 					strcat(beacon_asgn_resp, "#");
 					strcat(beacon_asgn_resp, beacon_asgn_temp);
@@ -274,14 +283,15 @@ int main(int argc, char* argv[])
 						ID[id] = id;
 					}
 				}
-				
-				
+
+
 			}
 			else{
 				printf("Maximum devices achieved, unable to add new devices!\n");
 			}
 			
 		}
+#endif
 	}
 	return 1;
 }

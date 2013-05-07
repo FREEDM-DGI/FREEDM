@@ -71,6 +71,8 @@ class CSUConnection : public IProtocol
         std::string GetIdentifier() { return Identifier(); };
         /// Returns the identifier for this protocol.
         static std::string Identifier() { return "SUC"; };
+        /// The refire time in ms
+        const static unsigned int REFIRE_TIME = 200;
     private:
         /// Resend outstanding messages
         void Resend(const boost::system::error_code& err);
@@ -88,8 +90,6 @@ class CSUConnection : public IProtocol
         const static unsigned int WINDOW_SIZE = 8;
         /// The sequence modulo
         const static unsigned int SEQUENCE_MODULO = 1024;
-        /// The refire time in ms
-        const static unsigned int REFIRE_TIME = 200;
         /// Queue item
         struct QueueItem {
             int ret; //The retries remaining

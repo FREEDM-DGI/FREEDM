@@ -74,6 +74,8 @@ class CSRConnection : public IProtocol
         std::string GetIdentifier() { return Identifier(); };
         /// Returns the identifier for this protocol.
         static std::string Identifier() { return "SRC"; };
+        /// Refire time in MS
+        static const unsigned int REFIRE_TIME = 100;
     private:
         /// Resend outstanding messages
         void Resend(const boost::system::error_code& err);
@@ -103,8 +105,6 @@ class CSRConnection : public IProtocol
         std::deque<CMessage> m_window;
         /// Sequence modulo
         static const unsigned int SEQUENCE_MODULO = 1024;
-        /// Refire time in MS
-        static const unsigned int REFIRE_TIME = 100;
 };
 
     }

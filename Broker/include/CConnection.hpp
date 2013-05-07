@@ -83,14 +83,15 @@ public:
 
     /// Handler that calls the correct protocol for accept logic
     bool Recieve(const CMessage &msg);
+    
+    /// Default protocol
+    std::string m_defaultprotocol;
 private:
     typedef boost::shared_ptr<IProtocol> ProtocolPtr;
     typedef std::map<std::string,ProtocolPtr> ProtocolMap;
     /// Protocol Handler Map
     ProtocolMap m_protocols;
     
-    /// Default protocol
-    std::string m_defaultprotocol;
 };
 
 typedef boost::shared_ptr<CConnection> ConnectionPtr;

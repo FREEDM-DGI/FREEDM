@@ -158,19 +158,6 @@ GMAgent::GMAgent(std::string p_uuid, boost::asio::io_service &p_ios,
     m_groupsjoined = 0;
     m_membership = 0;
     m_membershipchecks = 0;
-    m_markovlog.open("markovlog.dat",std::fstream::app);
-    std::string defprotocol = p_conManager.GetConnectionByUUID(p_uuid,p_ios,p_dispatch)->m_defaultprotocol;
-    unsigned int refire = 0;
-    if(defprotocol == "SRC")
-    {
-        refire = broker::CSRConnection::REFIRE_TIME;
-    }
-    else if(defprotocol == "SUC")
-    {
-        refire = broker::CSUConnection::REFIRE_TIME;
-    }
-    m_markovlog<<"##"<<defprotocol<<"-"<<refire<<std::endl;
-    m_markovlog<<"###Simulation Start"<<std::endl;
 #ifdef RANDOM_PREMERGE
     srand(time(0));
 #endif
@@ -1228,6 +1215,19 @@ int GMAgent::Run()
     {
         Logger::Notice << "! " <<p_->GetUUID() << " added to peer set" <<std::endl;
     }
+    m_markovlog.open("markovlog.dat",std::fstream::app);
+    std::string defprotocol = GetConnection()->m_defaultprotocol;
+    unsigned int refire = 0;
+    if(defprotocol == "SRC")
+    {
+        refire = broker::CSRConnection::REFIRE_TIME;
+    }
+    else if(defprotocol == "SUC")
+    {
+        refire = broker::CSUConnection::REFIRE_TIME;
+    }
+    m_markovlog<<"##"<<defprotocol<<"-"<<refire<<std::endl;
+    m_markovlog<<"###Simulation Start"<<std::endl;
     Recovery();
     //m_localservice.post(boost::bind(&GMAgent::Recovery,this));
     //m_localservice.run();

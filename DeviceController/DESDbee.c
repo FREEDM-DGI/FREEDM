@@ -108,6 +108,9 @@ int main(int argc, char* argv[])
 	//following is the configuration for ARM board//
 	////////////////////////////////////////////////	
 #ifdef ZIGBEE
+	printf("Starting with support for Zigbee enabled.\n");
+	printf("This is doomed to fail if not on a TS-7800!\n");
+
 	// Open port "tsuart-rf" through PC104 interface
 	fd=open("/dev/ttts10", O_RDWR | O_NOCTTY);
 	if(!fd){
@@ -138,6 +141,9 @@ int main(int argc, char* argv[])
 	options.c_cc[VMIN] = 0; 
 
 	tcsetattr(fd, TCSANOW, &options);	// Write the new configuration to the port
+#else
+	printf("Starting with support for Zigbee DISABLED.\n");
+	printf("This will feed bogus data to the Python translator.\n");
 #endif
 
 	////////////////////////////////////

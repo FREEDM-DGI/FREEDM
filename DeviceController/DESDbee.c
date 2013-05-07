@@ -11,6 +11,9 @@ Description: This is the program used on TS7800 to communicate with DESD via Zig
 		1. to MicroSCADA server via DNP3 protocol
 		2. to a computer running a GUI to display DESD status via ehternet (TCP/UDP)
 		3. to local disk and stored as a log file
+
+Turned into an abomination by Michael Catanzaro, May 2013.
+This is intended only for the site visit, NOT for mainline plug and play!
 *********************************************************************************************************/
 
 #include <stdio.h>
@@ -18,8 +21,11 @@ Description: This is the program used on TS7800 to communicate with DESD via Zig
 #include <termios.h>
 #include <errno.h>
 #include <unistd.h>
+#include <signal.h>
 #include <string.h>
+#include <sys/stat.h>
 #include <sys/time.h>
+#include <sys/types.h>
 
 #include "config.h"
 #include "SoCObserver.h"
@@ -28,16 +34,40 @@ Description: This is the program used on TS7800 to communicate with DESD via Zig
 #define GROUP 10  //the max number of devices allowed, the first number, 0, is reserved for new device query
 #define SIZE 256  //size of message array
 
+#define FIFO_NAME "sitevisitfifo2013"
+
+void sigint_handler(int sig)
+{
+	if (remove(FIFO_NAME) < 0 && errno != ENOENT){
+		perror("Failed to remove FIFO");
+	}
+	exit(1);
+}
+
+void sigpipe_handler(int sig)
+{
+	printf("Translator stopped listening, giving up\n");
+	if (remove(FIFO_NAME) < 0){
+		perror("Failed to remove FIFO");
+	}
+	exit(1);
+}
+
 int main(int argc, char* argv[])
 {
 #ifdef ZIGBEE
 	//"/dev/ttts10" is the port for PC104-Zigbee on TS-7800
 	int fd;
 	struct termios options;
-#endif
 
 	//to stroe received message
 	unsigned char data[SIZE] = {0};
+#endif
+	//fd of Unix FIFO for communicating with a device controller
+	int fifo = -1;
+
+	//Storage for the data to be sent to the device controller
+	char to_python[SIZE] = {0};
 	
 	//group of device ID, max allowed plug-n-play device is 12-1=11, ID[0] is not used
 	int ID[GROUP] = {0};
@@ -47,13 +77,32 @@ int main(int argc, char* argv[])
 
 	//value will be calculated based on voltage and current
 	double Soc1, Soc2, Soc3, Soc4;
+
+	//to get timestamp when algorithm is executed
+	struct timeval timestamp;
+
+	//clean up the FIFO when we quit
+	struct sigaction sa;
+
+	sa.sa_handler = sigint_handler;
+	sa.sa_flags = 0;
+	sigemptyset(&sa.sa_mask);
+
+	if (sigaction(SIGINT, &sa, NULL) < 0){
+	        perror("Failed to set SIGINT handler");
+	        exit(1);
+	}
+
+	sa.sa_handler = sigpipe_handler;
+	if (sigaction(SIGPIPE, &sa, NULL) < 0){
+	        perror("Failed to set SIGPIPE handler");
+	        exit(1);
+	}
+
 	Soc1 = 0.8;
 	Soc2 = 0.8;
 	Soc3 = 0.8;
 	Soc4 = 0.8;
-
-	//to get timestamp when algorithm is executed
-	struct timeval timestamp;  
 
 	////////////////////////////////////////////////
 	//following is the configuration for ARM board//
@@ -90,9 +139,22 @@ int main(int argc, char* argv[])
 
 	tcsetattr(fd, TCSANOW, &options);	// Write the new configuration to the port
 #endif
+
 	////////////////////////////////////
 	//ARM board configuration finished//
 	////////////////////////////////////
+
+	if(mknod(FIFO_NAME, S_IFIFO | 0644, 0) < 0){
+		perror("Failed to create FIFO");
+		return 1;
+	}
+
+	// Note this will block until the Python reader opens the FIFO...
+	printf("Blocking to open the FIFO\n");
+	if((fifo = open(FIFO_NAME, O_WRONLY)) < 0){
+		perror("Error opening FIFO for writing");
+		return 1;
+	}
 	
 	printf("DESD operation started:\n");
 	printf("Device list is empty, waitting for new deivce to be added...\n");
@@ -134,25 +196,51 @@ int main(int argc, char* argv[])
 				if(read_flag){
 					//a legitimate message should of exactly 101 characters
 					int rcv_id;
+#ifdef ZIGBEE
 					sscanf(data, "Device:%4d,Current:%lf,V1:%lf,V2:%lf,V3:%lf,V4:%lf,T1:%lf,T2:%lf,T3:%lf,T4:%lf", 
 					       &rcv_id, &Current, &V1, &V2, &V3, &V4, &T1, &T2, &T3, &T4);
-						
+#else
+					// TODO - fake support pnp?
+					rcv_id = 1;
+					Current = 11.1;
+					V1 = 22.2;
+					V2 = 33.3;
+					V3 = 44.4;
+					V4 = 55.5;
+					T1 = 66.6;
+					T2 = 77.7;
+					T3 = 88.8;
+					T4 = 99.9;
+#endif
+
 					if(rcv_id == id){
 						gettimeofday(&timestamp, NULL);
+#ifdef ZIGBEE
 						Soc1 = estimateSoC(V1, Current, timestamp.tv_sec*1000, Soc1);
 						Soc2 = estimateSoC(V2, Current, timestamp.tv_sec*1000, Soc2);
 						Soc3 = estimateSoC(V3, Current, timestamp.tv_sec*1000, Soc3);
 						Soc4 = estimateSoC(V4, Current, timestamp.tv_sec*1000, Soc4);
-						printf("Device:%04d,Current:%1.3lf,V1:%1.3lf,V2:%1.3lf,V3:%1.3lf,V4:%1.3lf,T1:%1.3lf,T2:%1.3lf,T3:%1.3lf,T4:%1.3lf,Soc1:%1.3lf,Soc2:%1.3lf,Soc3:%1.3lf,Soc4:%1.3lf \n", rcv_id, Current, V1, V2, V3, V4, T1, T2, T3, T4, Soc1, Soc2, Soc3, Soc4);
-							
+#else
+						Soc1 = 111.11;
+						Soc2 = 222.22;
+						Soc3 = 333.33;
+						Soc4 = 444.44;
+#endif
+						sprintf(to_python, "Device:%04d,Current:%1.3lf,V1:%1.3lf,V2:%1.3lf,V3:%1.3lf,V4:%1.3lf,T1:%1.3lf,T2:%1.3lf,T3:%1.3lf,T4:%1.3lf,Soc1:%1.3lf,Soc2:%1.3lf,Soc3:%1.3lf,Soc4:%1.3lf \n", rcv_id, Current, V1, V2, V3, V4, T1, T2, T3, T4, Soc1, Soc2, Soc3, Soc4);
+						if(write(fifo, to_python, strlen(to_python)) < 0){
+							perror("Failed to write to FIFO");
+						}
+						printf("%s", to_python);
 						//TODO: 
 						//1. issue command via dnp3 terminal
 						//issue_DNP("issue st 1 1\n");
 						//2. send data via ethernet to Labview
 						//send_eth("hellooooo");
 						//3. write event to log file
+
 					}
 				}					
+
 				/*
 				while(1){
 					

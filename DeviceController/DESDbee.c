@@ -231,91 +231,10 @@ int main(int argc, char* argv[])
 							perror("Failed to write to FIFO");
 						}
 						printf("%s", to_python);
-						//TODO: 
-						//1. issue command via dnp3 terminal
-						//issue_DNP("issue st 1 1\n");
-						//2. send data via ethernet to Labview
-						//send_eth("hellooooo");
-						//3. write event to log file
 
 					}
 				}					
 
-				/*
-				while(1){
-					
-					if(timeout){			
-						//broadcast beacon with ID#
-						if( write(fd, IDbuf, 3) == -1){
-							printf("Write returned -1. ");
-							printf("Error: %d, %s\n", errno, strerror(errno));
-						}
-					}
-					
-					val = read(fd, buf, sizeof(buf));
-					
-					if(val == -1){
-						//if read error
-						printf("Read returned -1.  ");
-						printf("Error: %d, %s\n", errno, strerror(errno));
-						break;
-					}
-					
-					if(val == 0){
-						//if timeout without read at least 1 byte
-						timeout++;
-					}
-					
-					else{
-						timeout = 0;
-					}
-					
-					strcat(data, buf);
-					for(i=0; i<sizeof(buf); i++){buf[i]='\0';}
-					if(strlen(data) == 101){
-						//a legitimate message should of exactly 101 characters
-						int rcv_id;
-						sscanf(data, "Device:%4d,Current:%lf,V1:%lf,V2:%lf,V3:%lf,V4:%lf,T1:%lf,T2:%lf,T3:%lf,T4:%lf", 
-						&rcv_id, &Current, &V1, &V2, &V3, &V4, &T1, &T2, &T3, &T4);
-						
-						if(rcv_id == id){
-							gettimeofday(&timestamp, NULL);
-							Soc1 = estimateSoC(V1, Current, timestamp.tv_sec);
-							Soc2 = estimateSoC(V2, Current, timestamp.tv_sec);
-							Soc3 = estimateSoC(V3, Current, timestamp.tv_sec);
-							Soc4 = estimateSoC(V4, Current, timestamp.tv_sec);
-							printf("Device:%04d,Current:%1.3lf,V1:%1.3lf,V2:%1.3lf,V3:%1.3lf,V4:%1.3lf,T1:%1.3lf,T2:%1.3lf,T3:%1.3lf,T4:%1.3lf,Soc1:%1.3lf,Soc2:%1.3lf,Soc3:%1.3lf,Soc4:%1.3lf \n", rcv_id, Current, V1, V2, V3, V4, T1, T2, T3, T4, Soc1, Soc2, Soc3, Soc4);
-							
-							//TODO: 
-							//1. issue command via dnp3 terminal
-							//issue_DNP("issue st 1 1\n");
-							//2. send data via ethernet to Labview
-							//send_eth("hellooooo");
-							//3. write event to log file
-						}
-						for(i=0; i<sizeof(data); i++){data[i] = '\0';}
-						
-						id++;
-						break;
-					}
-					
-					else if(strlen(data) > 101) {
-						//if the message length exceeds 101, drop the message and clear data buffer
-						for(i=0; i<sizeof(data); i++){data[i] = '\0';}
-						
-						id++;
-						break;
-					}
-					
-					else if(timeout > 2){
-						//if timeout for 3 times, delete device from list
-						printf("device %d read timeout! \n", id);
-						ID[id] = 0;
-						id++;
-						break;
-					}
-				}
-				*/
 			}
 			id++;
 			

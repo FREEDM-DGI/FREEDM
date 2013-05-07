@@ -89,3 +89,7 @@ def build(options=""):
 
 def eject():
     sudo("eject")
+
+def grablogs():
+    get('~/FREEDM-LONG/Broker/src/markovlog.dat','%(host)s/markovlog.dat')
+    get('~/FREEDM-LONG/Broker/src/grouplog.dat','%(host)s/grouplog.dat')

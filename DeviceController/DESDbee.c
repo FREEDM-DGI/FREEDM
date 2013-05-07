@@ -197,6 +197,8 @@ int main(int argc, char* argv[])
 						break;
 					}
 				}while((read_flag = read_msg(fd, data, 97)) == 0);
+#else
+				read_flag = 1;
 #endif
 				
 				if(read_flag){
@@ -207,7 +209,7 @@ int main(int argc, char* argv[])
 					       &rcv_id, &Current, &V1, &V2, &V3, &V4, &T1, &T2, &T3, &T4);
 #else
 					// TODO - fake support pnp?
-					rcv_id = 1;
+					rcv_id = id;
 					Current = 11.1;
 					V1 = 22.2;
 					V2 = 33.3;
@@ -304,6 +306,9 @@ int main(int argc, char* argv[])
 			}
 			
 		}
+#else
+		ID[1] = 1;
+		ID[4] = 4;
 #endif
 	}
 	return 1;

@@ -285,7 +285,8 @@ void CAdapterFactory::InitializeAdapter(IAdapter::Pointer adapter,
     
     // i = 0 parses state information
     // i = 1 parses command information
-    for( int i = 0; i < 2; i++ )
+	// SITE VISIT CODE.......
+    for( int i = 0; i < 1; i++ )
     {
         Logger.Debug << "Reading the " << (i == 0 ? "state" : "command")
                 << " property tree specification." << std::endl;

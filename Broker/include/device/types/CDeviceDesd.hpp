@@ -53,12 +53,7 @@ public:
     /// Virtual constructor for another device of the same type.
     IDevice::Pointer Create(const std::string identifier,
             IAdapter::Pointer adapter) const;
-    
-    /// Determine the energy storage of the DESD.
-    SignalValue GetStorage() const;
 
-    /// Increases the storage by the specified amount.
-    void StepStorage(const SignalValue step = 1);
 private:
     /// Redefine the base accessor as private.
     using IDevice::Get;

@@ -62,8 +62,19 @@ CDeviceDesd::CDeviceDesd(const std::string identifier,
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
-    m_StateSet.insert("storage");
-    m_CommandSet.insert("storage");
+    m_StateSet.insert("Current");
+    m_StateSet.insert("T1");
+    m_StateSet.insert("T2");
+    m_StateSet.insert("T3");
+    m_StateSet.insert("T4");
+    m_StateSet.insert("V1");
+    m_StateSet.insert("V2");
+    m_StateSet.insert("V3");
+    m_StateSet.insert("V4");
+    m_StateSet.insert("Soc1");
+    m_StateSet.insert("Soc2");
+    m_StateSet.insert("Soc3");
+    m_StateSet.insert("Soc4");
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -95,37 +106,6 @@ IDevice::Pointer CDeviceDesd::Create(const std::string identifier,
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     return IDevice::Pointer(new CDeviceDesd(identifier, adapter));
-}
-
-////////////////////////////////////////////////////////////////////////////////
-/// Determine how much energy is stored by the DESD.
-///
-/// @pre None.
-/// @post Calls IAdapter::Get with the signal "storage".
-/// @return The amount of energy stored in this DESD.
-///
-/// @limitations None.
-////////////////////////////////////////////////////////////////////////////////
-SignalValue CDeviceDesd::GetStorage() const
-{
-    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    return Get("storage");
-}
-
-////////////////////////////////////////////////////////////////////////////////
-/// Increases the stored energy of the DESD by the passed amount.
-///
-/// @pre None.
-/// @post Determines the current storage with CDeviceDesd::GetStorage.
-/// @post Calls IAdapter::Set with the signal "storage".
-/// @param step The amount to add to the current storage.
-///
-/// @limitations The storage increase will take some time to manifest.
-////////////////////////////////////////////////////////////////////////////////
-void CDeviceDesd::StepStorage(const SignalValue step)
-{
-    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    Set("storage", GetStorage() + step);
 }
 
 } // namespace device

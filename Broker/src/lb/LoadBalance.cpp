@@ -463,7 +463,7 @@ void LBAgent::LoadTable()
     int numDevices = CDeviceManager::Instance().DeviceCount();
 
     m_Gen = CDeviceManager::Instance().GetNetValue<DRER>(&DRER::GetGeneration);
-    m_Storage = CDeviceManager::Instance().GetNetValue<DESD>(&DESD::GetStorage);
+    m_Storage = 0;
     m_Load = CDeviceManager::Instance().GetNetValue<LOAD>(&LOAD::GetLoad);
     m_SstGateway = CDeviceManager::Instance().GetNetValue<SST>(&SST::GetGateway);
 
@@ -1148,31 +1148,7 @@ void LBAgent::PStar(device::SignalValue DemandValue)
 /////////////////////////////////////////////////////////
 void LBAgent::Desd_PStar()
 {
-    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    typedef device::CDeviceDesd DESD;
-    std::multiset<DESD::Pointer> DESDContainer;
-    std::multiset<DESD::Pointer>::iterator it, end;
-    DESDContainer = device::CDeviceManager::Instance().GetDevicesOfType<DESD>();
-
-    for( it = DESDContainer.begin(), end = DESDContainer.end(); it != end; it++ )
-    {
-        if(LBAgent::DEMAND == m_Status)
-        {
-            m_PStar = (*it)->GetStorage() + P_Migrate;
-            (*it)->StepStorage(P_Migrate);
-            Logger.Notice << "P* (on DESD) = " << m_PStar << std::endl;
-        }
-        else if(LBAgent::SUPPLY == m_Status)
-        {
-            m_PStar = (*it)->GetStorage() - P_Migrate;
-            (*it)->StepStorage(-P_Migrate);
-            Logger.Notice << "P* (on DESD) = " << m_PStar << std::endl;
-        }
-        else
-        {
-            Logger.Warn << "Power migration aborted due to state change " << std::endl;
-        }
-    }
+	// You shouldn't be using this code...
 }
 
 ////////////////////////////////////////////////////////////

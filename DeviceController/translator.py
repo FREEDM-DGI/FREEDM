@@ -53,6 +53,8 @@ desds = set()
 fifo = open('sitevisitfifo2013', 'r')
 
 reconnect = True
+adaptersock = -1
+
 while True:
     while True:
         states = fifo.readline().strip()
@@ -65,6 +67,7 @@ while True:
         states = {state[0] : float(state[2]) for state in states}
 
         name = str(int(states['Device']))
+	    del states['Device']
 
         if device.device_exists(name, desds):
             desd = device.get_device(name, desds)
@@ -72,13 +75,16 @@ while True:
             for setting, value in states.iteritems():
                 desd.set_signal(setting, value)
         else:
-            del states['Device']
             desd = device.Device(name, 'Desd', states)
             print 'Adding new device', name
             desds.add(desd)
             reconnect = True
     
-    if reconnect:
-        #
-        reconnect = False
+    if len(desds) > 0:
+        if reconnect:
+            if adaptersock != -1:
+                polite_quit(adaptersock, desds, config['dgi-timeout'])
+            adaptersock = protocol.connect(desds, config)
+            reconnect = False
+        protocol.work(adaptersock, desds, config['state-timeout'])
 

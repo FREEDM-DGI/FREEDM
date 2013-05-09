@@ -1,4 +1,4 @@
-config/controller*.cfg
+config/translator.cfg
 config/*.txt
 tests/config/controller*.cfg
 tests/config/multiple-dgi-controller*.cfg

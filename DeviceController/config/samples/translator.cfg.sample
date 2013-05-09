@@ -14,6 +14,7 @@ port=50300
 [timings]
 
 # after receiving commands, ms to wait before sending updated states
+# warning, must match value hardcoded into Mingkui's controller
 state-timeout=1000
 
 # ms to wait before resending a Hello (e.g. no response, duplicate session)
@@ -21,12 +22,6 @@ hello-timeout=2000
 
 # after sending updated states, ms to wait before impolite close/reconnect
 dgi-timeout=5000
-
-# ms to wait after sending a custom command to AdapterFactory or an adapter
-custom-timeout=1000
-
-# ms for which to ignore new commands after force-updating a state
-protected-state-duration=2000
 
 [misc]
 

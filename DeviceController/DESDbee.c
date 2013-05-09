@@ -26,6 +26,7 @@ This is intended only for the site visit, NOT for mainline plug and play!
 #include <sys/stat.h>
 #include <sys/time.h>
 #include <sys/types.h>
+#include <time.h>
 
 #include "config.h"
 #include "SoCObserver.h"
@@ -35,6 +36,9 @@ This is intended only for the site visit, NOT for mainline plug and play!
 #define SIZE 256  //size of message array
 
 #define FIFO_NAME "sitevisitfifo2013"
+
+//seconds
+#define FIFO_UPDATE_DELAY 1
 
 void sigint_handler(int sig)
 {
@@ -65,6 +69,9 @@ int main(int argc, char* argv[])
 #endif
 	//fd of Unix FIFO for communicating with a device controller
 	int fifo = -1;
+
+	//the time we last updated the fifo
+	time_t last_update = 0;
 
 	//Storage for the data to be sent to the device controller
 	char to_python[SIZE] = {0};
@@ -168,85 +175,91 @@ int main(int argc, char* argv[])
 	while(1){
 		int id = 1;
 		int val, i, j, k;
-		
-		while(id < GROUP){
-			if(ID[id] != 0){
-				int timeout = 0;
-				int read_flag = 0;				
-				char IDbuf[6] = "#0000$";
-				IDbuf[4] = (char)(((int)'0')+id);  //compose the ID string with ID#
+
+		if (difftime(time(NULL), last_update) > FIFO_UPDATE_DELAY){
+			(void) time(&last_update);
+
+			while(id < GROUP){
+				if(ID[id] != 0){
+					int timeout = 0;
+					int read_flag = 0;				
+					char IDbuf[6] = "#0000$";
+					IDbuf[4] = (char)(((int)'0')+id);  //compose the ID string with ID#
 
 #ifdef ZIGBEE
-				do{	//broadcast beacon with ID#
-					write_msg(fd, IDbuf, sizeof(IDbuf));
+					do{	//broadcast beacon with ID#
+						write_msg(fd, IDbuf, sizeof(IDbuf));
 
-					timeout++;
-					if(timeout > 2){
-						//0, 1, 2, timeout for 3 times
-						printf("Device %2d timeout, deleted!\n", id);
-						//delete device
-						ID[id] = 0;
-						read_flag = 0;
+						timeout++;
+						if(timeout > 2){
+							//0, 1, 2, timeout for 3 times
+							printf("Device %2d timeout, deleted!\n", id);
+							//delete device
+							ID[id] = 0;
+							read_flag = 0;
 						
-						i=0;
-						for(j=1; j<GROUP; j++)
-							if(ID[j])
-								i=1;
-						if(i == 0)  
-							printf("Device list is empty, waitting for new deivce to be added...\n");
-						break;
-					}
-				}while((read_flag = read_msg(fd, data, 97)) == 0);
+							i=0;
+							for(j=1; j<GROUP; j++)
+								if(ID[j])
+									i=1;
+							if(i == 0)  
+								printf("Device list is empty, waitting for new deivce to be added...\n");
+							break;
+						}
+					}while((read_flag = read_msg(fd, data, 97)) == 0);
 #else
-				read_flag = 1;
+					read_flag = 1;
 #endif
 				
-				if(read_flag){
-					//a legitimate message should of exactly 101 characters
-					int rcv_id;
+					if(read_flag){
+						//a legitimate message should of exactly 101 characters
+						int rcv_id;
 #ifdef ZIGBEE
-					sscanf(data, "Device:%4d,Current:%lf,V1:%lf,V2:%lf,V3:%lf,V4:%lf,T1:%lf,T2:%lf,T3:%lf,T4:%lf", 
-					       &rcv_id, &Current, &V1, &V2, &V3, &V4, &T1, &T2, &T3, &T4);
+						sscanf(data, "Device:%4d,Current:%lf,V1:%lf,V2:%lf,V3:%lf,V4:%lf,T1:%lf,T2:%lf,T3:%lf,T4:%lf", 
+						       &rcv_id, &Current, &V1, &V2, &V3, &V4, &T1, &T2, &T3, &T4);
 #else
-					// TODO - fake support pnp?
-					rcv_id = id;
-					Current = 11.1;
-					V1 = 22.2;
-					V2 = 33.3;
-					V3 = 44.4;
-					V4 = 55.5;
-					T1 = 66.6;
-					T2 = 77.7;
-					T3 = 88.8;
-					T4 = 99.9;
+						// TODO - fake support pnp?
+						rcv_id = id;
+						Current = 11.1;
+						V1 = 22.2;
+						V2 = 33.3;
+						V3 = 44.4;
+						V4 = 55.5;
+						T1 = 66.6;
+						T2 = 77.7;
+						T3 = 88.8;
+						T4 = 99.9;
 #endif
 
-					if(rcv_id == id){
-						gettimeofday(&timestamp, NULL);
+						if(rcv_id == id){
+							gettimeofday(&timestamp, NULL);
 #ifdef ZIGBEE
-						Soc1 = estimateSoC(V1, Current, timestamp.tv_sec*1000, Soc1);
-						Soc2 = estimateSoC(V2, Current, timestamp.tv_sec*1000, Soc2);
-						Soc3 = estimateSoC(V3, Current, timestamp.tv_sec*1000, Soc3);
-						Soc4 = estimateSoC(V4, Current, timestamp.tv_sec*1000, Soc4);
+							Soc1 = estimateSoC(V1, Current, timestamp.tv_sec*1000, Soc1);
+							Soc2 = estimateSoC(V2, Current, timestamp.tv_sec*1000, Soc2);
+							Soc3 = estimateSoC(V3, Current, timestamp.tv_sec*1000, Soc3);
+							Soc4 = estimateSoC(V4, Current, timestamp.tv_sec*1000, Soc4);
 #else
-						Soc1 = 111.11;
-						Soc2 = 222.22;
-						Soc3 = 333.33;
-						Soc4 = 444.44;
+							Soc1 = 111.11;
+							Soc2 = 222.22;
+							Soc3 = 333.33;
+							Soc4 = 444.44;
 #endif
-						sprintf(to_python, "Device:%04d,Current:%1.3lf,V1:%1.3lf,V2:%1.3lf,V3:%1.3lf,V4:%1.3lf,T1:%1.3lf,T2:%1.3lf,T3:%1.3lf,T4:%1.3lf,Soc1:%1.3lf,Soc2:%1.3lf,Soc3:%1.3lf,Soc4:%1.3lf \n", rcv_id, Current, V1, V2, V3, V4, T1, T2, T3, T4, Soc1, Soc2, Soc3, Soc4);
-						if(write(fifo, to_python, strlen(to_python)) < 0){
-							perror("Failed to write to FIFO");
+							sprintf(to_python, "Device:%04d,Current:%1.3lf,V1:%1.3lf,V2:%1.3lf,V3:%1.3lf,V4:%1.3lf,T1:%1.3lf,T2:%1.3lf,T3:%1.3lf,T4:%1.3lf,Soc1:%1.3lf,Soc2:%1.3lf,Soc3:%1.3lf,Soc4:%1.3lf \n", rcv_id, Current, V1, V2, V3, V4, T1, T2, T3, T4, Soc1, Soc2, Soc3, Soc4);
+							if(write(fifo, to_python, strlen(to_python)) < 0){
+								perror("Failed to write to FIFO");
+							}
+							printf("%s", to_python);
 						}
-						printf("%s", to_python);
+					}					
 
-					}
-				}					
-
-			}
-			id++;
+				}
+				id++;
 			
-		}		
+			}
+			if(write(fifo, "end\n", 4) < 0){
+				perror("Failed to write to FIFO");
+			}
+		}
 		
 		//send out beacon, ID0, to unknow devices
 		unsigned char beacon_data[SIZE];  //buffer to store complete beacon response

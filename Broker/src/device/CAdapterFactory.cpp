@@ -285,8 +285,7 @@ void CAdapterFactory::InitializeAdapter(IAdapter::Pointer adapter,
     
     // i = 0 parses state information
     // i = 1 parses command information
-	// SITE VISIT CODE.......
-    for( int i = 0; i < 1; i++ )
+    for( int i = 0; i < 2; i++ )
     {
         Logger.Debug << "Reading the " << (i == 0 ? "state" : "command")
                 << " property tree specification." << std::endl;
@@ -579,6 +578,9 @@ void CAdapterFactory::SessionProtocol()
             states = m_prototype[type]->GetStateSet();
             commands = m_prototype[type]->GetCommandSet();
             Logger.Debug << "Using adapter name " << name << std::endl;
+
+            config.put("state", "");
+            config.put("command", "");
             
             BOOST_FOREACH(std::string signal, states)
             {

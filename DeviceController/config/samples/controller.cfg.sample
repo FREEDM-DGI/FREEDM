@@ -14,7 +14,7 @@ script=config/dsp-script.txt
 host=localhost
 
 # the DGI AdapterFactory's listening port
-port=50300
+port=53000
 
 [timings]
 

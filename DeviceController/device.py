@@ -99,6 +99,10 @@ class Device(object):
         else:
             self._signals[signal] = value
 
+    def __repr__(self):
+        """This is probably unholy"""
+        return self.get_name()
+
 def get_device(name, devices):
     """
     Loops through a set of devices and finds the device with the requested name
@@ -113,6 +117,27 @@ def get_device(name, devices):
     for device in devices:
         if device.get_name() == name:
             return device
+    else:
+        raise NoSuchDeviceError('Device ' + name + ' not found in set')
+
+def remove_device(name, devices):
+    """
+    Loops through a set of devices and removes the device with the requested name
+
+    @param name the name of the device to find
+    @param devices the set of devices to look in
+
+    @ErrorHandling throws NoSuchDeviceError if the device does not exist
+
+    @return A NEW SET
+    """
+    for device in devices:
+        if device.get_name() == name:
+            print devices
+            devices.remove(device)
+            print 'REMOVED', name
+            print devices
+            return devices
     else:
         raise NoSuchDeviceError('Device ' + name + ' not found in set')
 

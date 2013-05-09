@@ -54,6 +54,20 @@ public:
     IDevice::Pointer Create(const std::string identifier,
             IAdapter::Pointer adapter) const;
 
+    SignalValue GetCurrent() const { return Get("Current"); }
+    SignalValue GetV1() const { return Get("V1"); }
+    SignalValue GetV2() const { return Get("V2"); }
+    SignalValue GetV3() const { return Get("V3"); }
+    SignalValue GetV4() const { return Get("V4"); }
+    SignalValue GetT1() const { return Get("T1"); }
+    SignalValue GetT2() const { return Get("T2"); }
+    SignalValue GetT3() const { return Get("T3"); }
+    SignalValue GetT4() const { return Get("T4"); }
+    SignalValue GetSoc1() const { return Get("Soc1"); }
+    SignalValue GetSoc2() const { return Get("Soc2"); }
+    SignalValue GetSoc3() const { return Get("Soc3"); }
+    SignalValue GetSoc4() const { return Get("Soc4"); }
+
 private:
     /// Redefine the base accessor as private.
     using IDevice::Get;

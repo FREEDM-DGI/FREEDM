@@ -50,12 +50,19 @@ config['adapter-connection-retries'] = \
 
 desds = set()
 
-fifo = open('sitevisitfifo2013', 'r')
+try:
+    fifo = open('sitevisitfifo2013', 'r')
+except IOError:
+    print "Start Mingkui's controller first"
+    sys.exit(1)
 
 reconnect = True
 adaptersock = -1
 
 while True:
+    desds_present = [None, False, False, False, False, False,
+                           False, False, False, False, False]
+
     while True:
         states = fifo.readline().strip()
 
@@ -66,12 +73,13 @@ while True:
         states = [state.partition(':') for state in states]
         states = {state[0] : float(state[2]) for state in states}
 
-        name = str(int(states['Device']))
+        name = int(states['Device'])
+        desds_present[name] = True
+        name = str(name)
 	    del states['Device']
 
         if device.device_exists(name, desds):
             desd = device.get_device(name, desds)
-            print name + ': updating states:', states
             for setting, value in states.iteritems():
                 desd.set_signal(setting, value)
         else:
@@ -80,11 +88,19 @@ while True:
             desds.add(desd)
             reconnect = True
     
+    for i in range(1, 11):
+        name = str(i)
+        if not desds_present[i] and device.device_exists(name, desds):
+            desds = device.remove_device(name, desds)
+
     if len(desds) > 0:
         if reconnect:
             if adaptersock != -1:
-                polite_quit(adaptersock, desds, config['dgi-timeout'])
+                protocol.polite_quit(adaptersock, desds, config['dgi-timeout'])
             adaptersock = protocol.connect(desds, config)
             reconnect = False
         protocol.work(adaptersock, desds, config['state-timeout'])
+    elif adaptersock != -1:
+        protocol.polite_quit(adaptersock, desds, config['dgi-timeout'])
+        reconnect = True
 

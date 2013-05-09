@@ -463,7 +463,7 @@ void LBAgent::LoadTable()
     int numDevices = CDeviceManager::Instance().DeviceCount();
 
     m_Gen = CDeviceManager::Instance().GetNetValue<DRER>(&DRER::GetGeneration);
-    m_Storage = 0;
+    m_Storage = 0./0.;
     m_Load = CDeviceManager::Instance().GetNetValue<LOAD>(&LOAD::GetLoad);
     m_SstGateway = CDeviceManager::Instance().GetNetValue<SST>(&SST::GetGateway);
 
@@ -502,7 +502,7 @@ void LBAgent::LoadTable()
 
     std::stringstream ss;
     ss << std::setprecision(2) << std::fixed;
-    ss << " ----------- LOAD TABLE (Power Management) ------------"
+    ss << "\t----------- LOAD TABLE (Power Management) ------------"
             << std::endl;
     ss << "\t| " << "Net DRER (" << std::setfill('0') << std::setw(2) 
             << numDRERs << "): " << extraGenSpace << std::setfill(' ')
@@ -611,9 +611,26 @@ void LBAgent::LoadTable()
             ss << "\t| " << centeredUUID << pad << "------     |" << std::endl;
         }
     }
-    ss << "\t ------------------------------------------------------";
+    ss << "\t ------------------------------------------------------" << std::endl;
 
-    Logger.Status << ss.str() << std::endl;
+    if (numDESDs > 0)
+    {
+        ss << "\n\t                     Attached DESDs\n\n";
+        
+        BOOST_FOREACH(DESD::Pointer desd, CDeviceManager::Instance().GetDevicesOfType<DESD>())
+        {
+            ss << "\tName: " << desd->GetID() << "\tCurrent: " << desd->GetCurrent() << std::endl;
+            ss << "\tV1: " << desd->GetV1() << "\tV2: " << desd->GetV2() << "\tV3: "
+               << desd->GetV3() << "\tV4: " << desd->GetV4() << std::endl;
+            ss << "\tT1: " << desd->GetT1() << "\tT2: " << desd->GetT2() << "\tT3: "
+               << desd->GetT3() << "\tT4: " << desd->GetT4() << std::endl;
+            ss << "\tSoc1: " << desd->GetSoc1() << "\tSoc2: " << desd->GetSoc2() << "\tSoc3: "
+               << desd->GetSoc3() << "\tSoc4: " << desd->GetSoc4() << std::endl;
+            ss << std::endl;
+        }
+    }
+
+    std::cout << ss.str();
 }//end LoadTable
 
 

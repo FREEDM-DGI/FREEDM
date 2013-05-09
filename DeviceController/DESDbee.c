@@ -115,6 +115,8 @@ int main(int argc, char* argv[])
 	//following is the configuration for ARM board//
 	////////////////////////////////////////////////	
 #ifdef ZIGBEE
+	srand(time(NULL));
+
 	printf("Starting with support for Zigbee enabled.\n");
 	printf("This is doomed to fail if not on a TS-7800!\n");
 
@@ -214,21 +216,23 @@ int main(int argc, char* argv[])
 					if(read_flag){
 						//a legitimate message should of exactly 101 characters
 						int rcv_id;
+						int randnum;
 #ifdef ZIGBEE
 						sscanf(data, "Device:%4d,Current:%lf,V1:%lf,V2:%lf,V3:%lf,V4:%lf,T1:%lf,T2:%lf,T3:%lf,T4:%lf", 
 						       &rcv_id, &Current, &V1, &V2, &V3, &V4, &T1, &T2, &T3, &T4);
-#else
-						// TODO - fake support pnp?
+#else						
+						randnum = rand() % 100;
+
 						rcv_id = id;
-						Current = 11.1;
-						V1 = 22.2;
-						V2 = 33.3;
-						V3 = 44.4;
-						V4 = 55.5;
-						T1 = 66.6;
-						T2 = 77.7;
-						T3 = 88.8;
-						T4 = 99.9;
+						Current = 1 * randnum;
+						V1 = 2 * randnum;
+						V2 = 3 * randnum;
+						V3 = 4 * randnum;
+						V4 = 5 * randnum;
+						T1 = 6 * randnum;
+						T2 = 7 * randnum;
+						T3 = 8 * randnum;
+						T4 = 9 * randnum;
 #endif
 
 						if(rcv_id == id){
@@ -239,10 +243,10 @@ int main(int argc, char* argv[])
 							Soc3 = estimateSoC(V3, Current, timestamp.tv_sec*1000, Soc3);
 							Soc4 = estimateSoC(V4, Current, timestamp.tv_sec*1000, Soc4);
 #else
-							Soc1 = 111.11;
-							Soc2 = 222.22;
-							Soc3 = 333.33;
-							Soc4 = 444.44;
+							Soc1 = 10 * randnum;
+							Soc2 = 20 * randnum;
+							Soc3 = 30 * randnum;
+							Soc4 = 40 * randnum;
 #endif
 							sprintf(to_python, "Device:%04d,Current:%1.3lf,V1:%1.3lf,V2:%1.3lf,V3:%1.3lf,V4:%1.3lf,T1:%1.3lf,T2:%1.3lf,T3:%1.3lf,T4:%1.3lf,Soc1:%1.3lf,Soc2:%1.3lf,Soc3:%1.3lf,Soc4:%1.3lf \n", rcv_id, Current, V1, V2, V3, V4, T1, T2, T3, T4, Soc1, Soc2, Soc3, Soc4);
 							if(write(fifo, to_python, strlen(to_python)) < 0){
@@ -320,9 +324,17 @@ int main(int argc, char* argv[])
 			
 		}
 #else
-		ID[1] = 1;
-		ID[4] = 4;
+		ID[1] = (rand()%10 < 2) ? 1 : 0;
+		ID[2] = (rand()%10 < 2) ? 2 : 0;
+		ID[3] = (rand()%10 < 2) ? 3 : 0;
+		ID[4] = (rand()%10 < 2) ? 4 : 0;
+		ID[5] = (rand()%10 < 2) ? 5 : 0;
+		ID[6] = (rand()%10 < 2) ? 6 : 0;
+		ID[7] = (rand()%10 < 2) ? 7 : 0;
+		ID[8] = (rand()%10 < 2) ? 8 : 0;
+		ID[9] = (rand()%10 < 2) ? 9 : 0;
+		ID[10] = (rand()%10 < 2) ? 10 : 0;
 #endif
 	}
-	return 1;
+	//return 1;
 }

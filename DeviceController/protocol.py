@@ -153,26 +153,7 @@ def receive_commands(adaptersock, devices):
     """
     print 'Awaiting commands from DGI...'
     msg = recv_all(adaptersock)
-    print 'Received commands from DGI:\n' + msg.strip()
-    if msg.find('DeviceCommands\r\n') != 0:
-        raise RuntimeError('Malformed command packet:\n' + msg)
-    for line in msg.split('\r\n'):
-        if line.find('DeviceCommands') == 0:
-            continue
-        command = line.split()
-        if len(command) == 0:
-            continue
-        if len(command) != 3:
-            raise RuntimeError('Malformed command in packet:\n' + line)        
-        try:
-            name = command[0]
-            signal = command[1]
-            value = float(command[2])
-            get_device(name, devices).command_signal(signal, value)
-        except NoSuchSignalError as e:
-            raise RuntimeError('Packet contains invalid signal: '
-                    + str(e))
-    print 'Device states have been updated\n'
+    print 'Received commands from DGI, discarding them all'
 
 
 def work(adaptersock, devices, delay):

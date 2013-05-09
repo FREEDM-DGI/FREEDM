@@ -579,6 +579,9 @@ void CAdapterFactory::SessionProtocol()
             commands = m_prototype[type]->GetCommandSet();
             Logger.Debug << "Using adapter name " << name << std::endl;
             
+            config.put("state", "");
+            config.put("command", "");
+            
             BOOST_FOREACH(std::string signal, states)
             {
                 Logger.Debug << "Adding state for " << signal << std::endl;

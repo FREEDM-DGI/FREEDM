@@ -92,6 +92,7 @@ while True:
         name = str(i)
         if not desds_present[i] and device.device_exists(name, desds):
             desds = device.remove_device(name, desds)
+            reconnect = True
 
     if len(desds) > 0:
         if reconnect:

@@ -582,6 +582,9 @@ void CAdapterFactory::SessionProtocol()
             config.put("state", "");
             config.put("command", "");
             
+            config.put("state", "");
+            config.put("command", "");
+            
             BOOST_FOREACH(std::string signal, states)
             {
                 Logger.Debug << "Adding state for " << signal << std::endl;

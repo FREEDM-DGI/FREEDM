@@ -48,6 +48,7 @@
 #include "gm/GroupManagement.hpp"
 #include "CDeviceManager.hpp"
 #include "CTimings.hpp"
+#include "dnp3/DNP3Slave.hpp"
 
 #include <algorithm>
 #include <cassert>
@@ -470,6 +471,25 @@ void LBAgent::LoadTable()
         m_sstExists = false;
         // FIXME should consider Gateway
         m_NetGateway = m_Load - m_Gen - m_Storage;
+    }
+
+    if( numDESDs > 0 )
+    {
+        CDeviceDesd::Pointer desd = *CDeviceManager::Instance().GetDevicesOfType<CDeviceDesd>().begin();
+        DNP3Slave::Instance().Update(0, desd->GetCurrent());
+        DNP3Slave::Instance().Update(1, desd->GetV1());
+        DNP3Slave::Instance().Update(2, desd->GetV2());
+        DNP3Slave::Instance().Update(3, desd->GetV3());
+        DNP3Slave::Instance().Update(4, desd->GetV4());
+        DNP3Slave::Instance().Update(5, desd->GetT1());
+        DNP3Slave::Instance().Update(6, desd->GetT2());
+        DNP3Slave::Instance().Update(7, desd->GetT3());
+        DNP3Slave::Instance().Update(8, desd->GetT4());
+        DNP3Slave::Instance().Update(9, desd->GetSoc1());
+        DNP3Slave::Instance().Update(10, desd->GetSoc2());
+        DNP3Slave::Instance().Update(11, desd->GetSoc3());
+        DNP3Slave::Instance().Update(12, desd->GetSoc4());
+        DNP3Slave::Instance().Flush();
     }
 
     typedef CDeviceLogger LOGGER;

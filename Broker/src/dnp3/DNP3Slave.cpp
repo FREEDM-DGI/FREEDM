@@ -24,13 +24,13 @@ DNP3Slave::DNP3Slave()
     // default values for test slave
     boost::uint16_t remote_dnp3 = 100;
     boost::uint16_t local_dnp3  = 1;
-    std::string     local_ip    = "127.0.0.1";
+    std::string     local_ip    = "192.168.1.56";
     boost::uint16_t local_port  = 4999;
 
     // slave configuration objects
     DeviceTemplate format(
         0,  // binary
-        1,  // analog
+        13,  // analog
         0,  // counter
         0,  // control status
         0,  // setpoint status

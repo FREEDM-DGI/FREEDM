@@ -69,6 +69,7 @@ namespace broker {
 namespace lb {
 
 const double NORMAL_TOLERANCE = 0.5;
+
 //////////////////////////////////////////////////////////
 /// class LBAgent
 ///
@@ -129,7 +130,10 @@ class LBAgent
         void HandleAccept(MessagePtr msg, PeerNodePtr peer); 
         void HandleCollectedState(MessagePtr msg, PeerNodePtr peer); 
         void HandleComputedNormal(MessagePtr msg, PeerNodePtr peer); 
-        
+        /// ICC handlers
+	void HandleLamda(MessagePtr msg, PeerNodePtr peer);
+	void HandleUpdate(MessagePtr msg, PeerNodePtr peer);
+ 
         /// Adds a new peer by a pointer
         PeerNodePtr AddPeer(PeerNodePtr peer);
         /// Returns a pointer to the peer based on its UUID
@@ -158,7 +162,43 @@ class LBAgent
         EStatus   m_Status;
         /// Previous demand state of this node before state change
         EStatus   m_prevStatus;  
-   
+  
+	//ICC
+	CMessage m_locallamda(float lamda);
+	/// Incremental Cost Consensus Algorithm
+	float m_lamda;
+	float m_alpha;
+	float m_beta;
+	float m_gama;
+	float m_PGen;
+	float m_deltaP;
+	float m_epsilon;
+
+	/// Previous lamda
+	float m_preLamda;
+
+	/// number of lamda received
+	unsigned int countlambda;
+
+	/// number of lamda update cycle
+	unsigned int countcycle;	
+
+	//functions
+	void LeaderICC();
+	void FollowerICC();
+	void Update(float lamda, float PGen);
+	bool isEqual(float preLamda, float curLamda);
+
+	//network topology parameters (three nodes with fully connected)
+ 	std::map<int, float> m_var;
+ 	std::map<int, float>::iterator itt;
+	//container to save lamda and UUID
+	std::map<std::string, float> m_collectlamda;
+	std::map<std::string, float> m_collectvar;
+	std::map<std::string, float>::iterator it;
+	std::map<std::string, float> m_collectPGen;
+	float m_PDemand;
+ 	
         // Peer lists
         /// Set of known peers in Demand State
         PeerSet     m_HiNodes;
@@ -195,4 +235,5 @@ class LBAgent
 } // namespace freedm
 
 #endif
+
 

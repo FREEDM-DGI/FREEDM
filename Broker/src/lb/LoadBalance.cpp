@@ -11,8 +11,8 @@
 ///               Lionel Ni, Chong Xu, Thomas Gendreau, IEEE Transactions on
 ///               Software Engineering, 1985
 ///
-/// @functions  
-///	LBAgent
+/// @functions
+/// LBAgent
 ///     Run
 ///     AddPeer
 ///     GetPeer
@@ -68,15 +68,19 @@
 
 using boost::property_tree::ptree;
 
-namespace freedm {
+namespace freedm
+{
 
-namespace broker {
+namespace broker
+{
 
-namespace lb {
+namespace lb
+{
 
 const int P_Migrate = 1;
 
-namespace {
+namespace
+{
 
 /// This file's logger.
 CLocalLogger Logger(__FILE__);
@@ -93,8 +97,8 @@ CLocalLogger Logger(__FILE__);
 /// @limitations: None
 ///////////////////////////////////////////////////////////////////////////////
 LBAgent::LBAgent(std::string uuid_, CBroker &broker):
-    IPeerNode(uuid_, broker.GetConnectionManager()),
-    m_broker(broker)
+        IPeerNode(uuid_, broker.GetConnectionManager()),
+        m_broker(broker)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     PeerNodePtr self_ = CGlobalPeerList::instance().GetPeer(uuid_);
@@ -114,8 +118,12 @@ LBAgent::LBAgent(std::string uuid_, CBroker &broker):
     RegisterSubhandle("lb.accept",boost::bind(&LBAgent::HandleAccept, this, _1, _2));
     RegisterSubhandle("lb.CollectedState",boost::bind(&LBAgent::HandleCollectedState, this, _1, _2));
     RegisterSubhandle("lb.ComputedNormal",boost::bind(&LBAgent::HandleComputedNormal, this, _1, _2));
-    RegisterSubhandle("any",boost::bind(&LBAgent::HandleAny, this, _1, _2));
+    //always register message handler before "any"
+    RegisterSubhandle("lb.lamda", boost::bind(&LBAgent::HandleLamda, this, _1, _2));
+    RegisterSubhandle("lb.LamdaUpdate", boost::bind(&LBAgent::HandleUpdate, this, _1, _2));
+    RegisterSubhandle("any", boost::bind(&LBAgent::HandleAny, this, _1, _2));
     m_sstExists = false;
+    countcycle = 0;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -139,6 +147,26 @@ int LBAgent::Run()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     // This initializes the algorithm
+    //---------------------------------------------------------------------------------//
+    //ICC
+    // Cost function variables initialization (ICC)
+    boost::property_tree::ptree pt;
+    boost::property_tree::read_xml("config/ICCInit.xml",pt);
+    m_lamda = pt.get<float>("Init.costVar.lamda");
+    m_alpha = pt.get<float>("Init.costVar.alpha");
+    m_beta = pt.get<float>("Init.costVar.beta");
+    m_gama = pt.get<float>("Init.costVar.gama");
+    m_epsilon = pt.get<float>("Init.costVar.epsilon");
+    m_PGen = pt.get<float>("Init.costVar.PGen");
+    Logger.Status << "ICC cost variables are obtained from xml are: "
+                  << m_lamda << ", " << m_alpha << ", "
+                  << m_beta << ", " << m_gama << ", "
+                  << m_epsilon << ", " << m_PGen << std::endl;
+    //Initially nodes save local lamda into container(ICC)
+    Logger.Status << "Save local lamda into local container" << std::endl;
+    m_collectlamda.insert(std::pair<std::string, float>(GetUUID(), m_lamda));
+    //ICC
+    //---------------------------------------------------------------------------------//
     LoadManage();
     StartStateTimer( CTimings::LB_STATE_TIMER );
     return 0;
@@ -168,8 +196,8 @@ LBAgent::PeerNodePtr LBAgent::AddPeer(PeerNodePtr peer)
 LBAgent::PeerNodePtr LBAgent::GetPeer(std::string uuid)
 {
     PeerSet::iterator it = m_AllPeers.find(uuid);
-
-    if(it != m_AllPeers.end())
+    
+    if (it != m_AllPeers.end())
     {
         return it->second;
     }
@@ -178,6 +206,27 @@ LBAgent::PeerNodePtr LBAgent::GetPeer(std::string uuid)
         return PeerNodePtr();
     }
 }
+
+//-----------------------------------------------------------------------------//
+//ICC
+///////////////////////////////////////////////////////////////////////////////
+/// m_locallamda (ICC)
+/// @description: Creates a message containing local lamda from this node.
+/// @pre: This node has a local lamda.
+/// @post: No Change.
+/// @param lamda: the lamda to be sent
+/// @return: A CMessage with the value of local lamda.
+///////////////////////////////////////////////////////////////////////////////
+CMessage LBAgent::m_locallamda(float lamda)
+{
+    freedm::broker::CMessage m_;
+    m_.SetHandler("lb.lamda");
+    m_.m_submessages.put("lb.source", GetUUID());
+    m_.m_submessages.put("lb.llamda", boost::lexical_cast<std::string>(lamda));
+    return m_;
+}
+//ICC
+//-----------------------------------------------------------------------------//
 
 ////////////////////////////////////////////////////////////
 /// SendMsg
@@ -188,7 +237,7 @@ LBAgent::PeerNodePtr LBAgent::GetPeer(std::string uuid)
 /// @param peerSet_: The group of peers that should receive the message
 /// @peers Each peer that exists in the peerSet_
 /// @ErrorHandling If the message cannot be sent, an exception is thrown and the
-///	   process continues
+///    process continues
 /// @limitations Group should be a PeerSet
 /////////////////////////////////////////////////////////
 void LBAgent::SendMsg(std::string msg, PeerSet peerSet_)
@@ -198,10 +247,10 @@ void LBAgent::SendMsg(std::string msg, PeerSet peerSet_)
     m_.m_submessages.put("lb.source", GetUUID());
     m_.SetHandler("lb."+ msg);
     Logger.Notice << "Sending '" << msg << "' from: "
-                   << m_.m_submessages.get<std::string>("lb.source") << std::endl;
+    << m_.m_submessages.get<std::string>("lb.source") << std::endl;
     BOOST_FOREACH( PeerNodePtr peer, peerSet_ | boost::adaptors::map_values)
     {
-        if( peer->GetUUID() == GetUUID())
+        if ( peer->GetUUID() == GetUUID())
         {
             continue;
         }
@@ -224,19 +273,19 @@ void LBAgent::SendMsg(std::string msg, PeerSet peerSet_)
 /// @description  Compute Normal if you are the Leader and push
 ///               it to the group members
 /// @pre: You should be the leader and you should have called StateNormalize()
-///	  prior to this
+///   prior to this
 /// @post: The group members are sent the computed normal
 /// @param Normal: The value of normal to be sent to the group memebers
 /// @peers Each peer that exists in the peer set, m_AllPeers
 /// @ErrorHandling If the message cannot be sent, an exception is thrown and the
-///	   process continues
+///    process continues
 /// @limitations None
 /////////////////////////////////////////////////////////
 void LBAgent::SendNormal(double Normal)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-
-    if(m_Leader == GetUUID())
+    
+    if (m_Leader == GetUUID())
     {
         Logger.Status <<"Sending Computed Normal to the group members" <<std::endl;
         CMessage m_;
@@ -265,7 +314,7 @@ void LBAgent::SendNormal(double Normal)
 /// @post: SC module receives the request and initiates state collection
 /// @peers  This node (SC module)
 /// @ErrorHandling If the message cannot be sent, an exception
-///	   is thrown and the process continues
+///    is thrown and the process continues
 /// @limitations
 /// TODO: Have a generic request message with exact entity to be included in
 ///       state collection; eg., LB requests gateways only.
@@ -275,14 +324,10 @@ void LBAgent::CollectState()
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     CMessage m_cs;
     m_cs.SetHandler("sc.request");
+//    m_cs.m_submessages.put("sc.deviceType", "Sst");
+//    m_cs.m_submessages.put("sc.valueType", "gateway");
     m_cs.m_submessages.put("sc.source", GetUUID());
     m_cs.m_submessages.put("sc.module", "lb");
-
-/*
-    //for only one device
-    m_cs.m_submessages.put("sc.deviceType", "Sst");
-    m_cs.m_submessages.put("sc.valueType", "gateway");
-*/
 
     //for multiple devices
     m_cs.m_submessages.put("sc.deviceNum", 4);
@@ -309,15 +354,15 @@ void LBAgent::CollectState()
     subPtree4.add("deviceType", "Fid");
     subPtree4.add("valueType", "state");
     m_cs.m_submessages.add_child("sc.devices.device", subPtree4);
-	
+    
     try
     {
-       GetPeer(GetUUID())->Send(m_cs);
-       Logger.Status << "LB module requested State Collection" << std::endl;
+        GetPeer(GetUUID())->Send(m_cs);
+        Logger.Status << "LB module requested State Collection" << std::endl;
     }
     catch (boost::system::system_error& e)
     {
-       Logger.Info << "Couldn't Send Message To Peer" << std::endl;
+        Logger.Info << "Couldn't Send Message To Peer" << std::endl;
     }
 }
 
@@ -336,12 +381,12 @@ void LBAgent::CollectState()
 void LBAgent::LoadManage()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-
+    
     // Schedule the NEXT LB before starting this one. So ensure that after this
     // LB completes, there's still time to run another before scheduling it.
     // Otherwise we'll steal time from the next broker module.
     if (m_broker.TimeRemaining() >
-        boost::posix_time::milliseconds(2*CTimings::LB_GLOBAL_TIMER))
+            boost::posix_time::milliseconds(2*CTimings::LB_GLOBAL_TIMER))
     {
         m_broker.Schedule(m_GlobalTimer,
                           boost::posix_time::milliseconds(
@@ -350,7 +395,7 @@ void LBAgent::LoadManage()
                                       this,
                                       boost::asio::placeholders::error));
         Logger.Info << "Scheduled another LoadManage in "
-                    << CTimings::LB_GLOBAL_TIMER << "ms" << std::endl;
+        << CTimings::LB_GLOBAL_TIMER << "ms" << std::endl;
     }
     else
     {
@@ -365,14 +410,14 @@ void LBAgent::LoadManage()
                                       this,
                                       boost::asio::placeholders::error));
         Logger.Info << "Won't run over phase, scheduling another LoadManage in "
-                    << CTimings::LB_STATE_TIMER << "ms" << std::endl;
+        << CTimings::LB_STATE_TIMER << "ms" << std::endl;
     }
-
+    
     //Remember previous load before computing current load
     m_prevStatus = m_Status;
     //Call LoadTable to update load state of the system as observed by this node
     LoadTable();
-
+    
     //Send Demand message when the current state is Demand
     //NOTE: (changing the original architecture in which Demand broadcast is done
     //only when the Normal->Demand or Demand->Normal cases happen)
@@ -405,15 +450,15 @@ void LBAgent::LoadManage()
 void LBAgent::LoadManage( const boost::system::error_code& err )
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-
-    if(!err)
+    
+    if (!err)
     {
         LoadManage();
     }
-    else if(boost::asio::error::operation_aborted == err )
+    else if (boost::asio::error::operation_aborted == err )
     {
         Logger.Info << "LoadManage(operation_aborted error) " << __LINE__
-                     << std::endl;
+        << std::endl;
     }
     else
     {
@@ -427,38 +472,33 @@ void LBAgent::LoadManage( const boost::system::error_code& err )
 ////////////////////////////////////////////////////////////
 /// LoadTable
 /// @description  Reads values from attached physical devices via the physical
-///		  device manager, determines the demand state of this node
-///		  and prints the load table
+///       device manager, determines the demand state of this node
+///       and prints the load table
 /// @pre: LoadManage calls this function
 /// @post: Aggregate attributes are computed, new demand state is determined and
 ///        demand states of peers are printed
 /// @limitations Some entries in Load table could become stale relative to the
 ///              global state. The definition of Supply/Normal/Demand could
-///		 change in future
+///      change in future
 /////////////////////////////////////////////////////////
 void LBAgent::LoadTable()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-
     using namespace device;
-    
     // device typedef for convenience
     typedef CDeviceDrer DRER;
     typedef CDeviceDesd DESD;
     typedef CDeviceLoad LOAD;
     typedef CDeviceSst SST;
-
     int numDRERs = CDeviceManager::Instance().GetDevicesOfType<DRER>().size();
     int numDESDs = CDeviceManager::Instance().GetDevicesOfType<DESD>().size();
     int numLOADs = CDeviceManager::Instance().GetDevicesOfType<LOAD>().size();
     int numSSTs = CDeviceManager::Instance().GetDevicesOfType<SST>().size();
-    int numDevices = CDeviceManager::Instance().DeviceCount();
-
     m_Gen = CDeviceManager::Instance().GetNetValue<DRER>(&DRER::GetGeneration);
     m_Storage = CDeviceManager::Instance().GetNetValue<DESD>(&DESD::GetStorage);
     m_Load = CDeviceManager::Instance().GetNetValue<LOAD>(&LOAD::GetLoad);
     m_SstGateway = CDeviceManager::Instance().GetNetValue<SST>(&SST::GetGateway);
-
+    
     if (numSSTs >= 1)
     {
         m_sstExists = true;
@@ -471,17 +511,7 @@ void LBAgent::LoadTable()
         // FIXME should consider Gateway
         m_NetGateway = m_Load - m_Gen - m_Storage;
     }
-
-    typedef CDeviceLogger LOGGER;
-    std::multiset<LOGGER::Pointer> LSet;
-    LSet = device::CDeviceManager::Instance().GetDevicesOfType<LOGGER>();
     
-    if( !LSet.empty() )
-    {
-        (*LSet.begin())->SetGateway(m_NetGateway);
-        (*LSet.begin())->SetDeviceCount(numDevices);
-    }
-
     // used to ensure three digits before the decimal, two after
     unsigned int genWidth = (m_Gen > 0 ? 6 : 7);
     unsigned int storageWidth = (m_Storage > 0 ? 6 : 7);
@@ -491,23 +521,22 @@ void LBAgent::LoadTable()
     std::string extraStorageSpace = (storageWidth == 6 ? " " : "");
     std::string extraLoadSpace = (loadWidth == 6 ? " " : "");
     std::string extraSstSpace = (sstGateWidth == 6 ? " " : "");
-
     std::stringstream ss;
     ss << std::setprecision(2) << std::fixed;
     ss << " ----------- LOAD TABLE (Power Management) ------------"
-            << std::endl;
-    ss << "\t| " << "Net DRER (" << std::setfill('0') << std::setw(2) 
-            << numDRERs << "): " << extraGenSpace << std::setfill(' ')
-            << std::setw(genWidth) << m_Gen << "     Net DESD    ("
-            << std::setfill('0') << std::setw(2) << numDESDs << "): "
-            << extraStorageSpace << std::setfill(' ') << std::setw(storageWidth)
-            << m_Storage << " |" << std::endl;
+    << std::endl;
+    ss << "\t| " << "Net DRER (" << std::setfill('0') << std::setw(2)
+    << numDRERs << "): " << extraGenSpace << std::setfill(' ')
+    << std::setw(genWidth) << m_Gen << "     Net DESD    ("
+    << std::setfill('0') << std::setw(2) << numDESDs << "): "
+    << extraStorageSpace << std::setfill(' ') << std::setw(storageWidth)
+    << m_Storage << " |" << std::endl;
     ss << "\t| " << "Net Load (" << std::setfill('0') << std::setw(2)
-            << numLOADs << "): " << extraLoadSpace << std::setfill(' ')
-            << std::setw(loadWidth) << m_Load << "     SST Gateway ("
-            << std::setfill('0') << std::setw(2) << numSSTs << "): " 
-            << extraSstSpace << std::setfill(' ') << std::setw(sstGateWidth)
-            << m_SstGateway << " |" << std::endl;
+    << numLOADs << "): " << extraLoadSpace << std::setfill(' ')
+    << std::setw(loadWidth) << m_Load << "     SST Gateway ("
+    << std::setfill('0') << std::setw(2) << numSSTs << "): "
+    << extraSstSpace << std::setfill(' ') << std::setw(sstGateWidth)
+    << m_SstGateway << " |" << std::endl;
 //
 // We will hide Overall Gateway for the time being as it is useless until
 // we properly support multiple device LBs.
@@ -515,21 +544,21 @@ void LBAgent::LoadTable()
 //    ss << "\t| Normal:       " << m_Normal << "    Overall Gateway:  "
 //            << m_NetGateway << "   |" << std::endl;
     ss << "\t| Normal:        " << std::setw(7) << m_Normal << std::setfill(' ')
-            << std::setw(32) << "|" << std::endl;
+    << std::setw(32) << "|" << std::endl;
     ss << "\t| ---------------------------------------------------- |"
-            << std::endl;
+    << std::endl;
 //
     ss << "\t| " << std::setw(20) << "Node" << std::setw(27) << "State"
-            << std::setw(7) << "|" << std::endl;
+    << std::setw(7) << "|" << std::endl;
     ss << "\t| " << std::setw(20) << "----" << std::setw(27) << "-----"
-            << std::setw(7) << "|" << std::endl;
-
+    << std::setw(7) << "|" << std::endl;
+    
     //Compute the Load state based on the current gateway value and Normal
-    if(m_NetGateway < m_Normal - NORMAL_TOLERANCE)
+    if (m_NetGateway < m_Normal - NORMAL_TOLERANCE)
     {
         m_Status = LBAgent::SUPPLY;
     }
-    else if(m_NetGateway > m_Normal + NORMAL_TOLERANCE)
+    else if (m_NetGateway > m_Normal + NORMAL_TOLERANCE)
     {
         m_Status = LBAgent::DEMAND;
         m_DemandVal = m_SstGateway-m_Normal;
@@ -538,16 +567,16 @@ void LBAgent::LoadTable()
     {
         m_Status = LBAgent::NORM;
     }
-
+    
     //Update info about this node in the load table based on above computation
     BOOST_FOREACH( PeerNodePtr self_, m_AllPeers | boost::adaptors::map_values)
     {
-        if( self_->GetUUID() == GetUUID())
+        if ( self_->GetUUID() == GetUUID())
         {
             EraseInPeerSet(m_LoNodes,self_);
             EraseInPeerSet(m_HiNodes,self_);
             EraseInPeerSet(m_NoNodes,self_);
-
+            
             if (LBAgent::SUPPLY == m_Status)
             {
                 InsertInPeerSet(m_LoNodes,self_);
@@ -567,6 +596,7 @@ void LBAgent::LoadTable()
     {
         std::string centeredUUID = p->GetUUID();
         std::string pad = "       ";
+        
         if (centeredUUID.size() >= 36)
         {
             centeredUUID.erase(35);
@@ -576,14 +606,17 @@ void LBAgent::LoadTable()
         {
             unsigned int padding = (36 - centeredUUID.length())/2;
             centeredUUID.insert(0, padding, ' ');
+            
             if (p->GetUUID().size()%2 == 0)
             {
                 padding--;
             }
+            
             centeredUUID.append(padding, ' ');
         }
-
+        
         ss.setf(std::ios::internal, std::ios::adjustfield);
+        
         if (CountInPeerSet(m_HiNodes,p) > 0 )
         {
             ss << "\t| " << centeredUUID << pad << "Demand     |" << std::endl;
@@ -602,7 +635,6 @@ void LBAgent::LoadTable()
         }
     }
     ss << "\t ------------------------------------------------------";
-
     Logger.Status << ss.str() << std::endl;
 }//end LoadTable
 
@@ -618,10 +650,10 @@ void LBAgent::LoadTable()
 void LBAgent::SendDraftRequest()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-
-    if(LBAgent::SUPPLY == m_Status)
+    
+    if (LBAgent::SUPPLY == m_Status)
     {
-        if(m_HiNodes.empty())
+        if (m_HiNodes.empty())
         {
             Logger.Notice << "No known Demand nodes at the moment" <<std::endl;
         }
@@ -632,6 +664,208 @@ void LBAgent::SendDraftRequest()
         }//end else
     }//end if
 }//end SendDraftRequest
+
+
+//-----------------------------------------------------------------------------------------//
+//ICC
+////////////////////////////////////////////////////////////
+/// LeaderICC
+/// @description: Handles the ICC in the leader side
+/// pre: Leader got the total demand and lamdas from other supply nodes
+/// post: Leader update its lamda and send update request and its lamda to the other
+///   supply nodes
+///
+////////////////////////////////////////////////////////////
+void LBAgent::LeaderICC()
+{
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    //update lamda according to equation 12
+    Logger.Status << "------leader ICC------" << std::endl;
+    std::string uuid_;
+    m_preLamda = m_lamda;
+
+    m_lamda = 0;
+    /*
+        //print out network variables
+        for(it = m_collectvar.begin(); it != m_collectvar.end(); it++)
+        {
+            Logger.Status << (*it).first << " -- " << (*it).second << std::endl;
+        }
+    
+        //print out collected lamda
+        for(it = m_collectlamda.begin(); it != m_collectlamda.end(); it++)
+        {
+            Logger.Status << (*it).first << " && " << (*it).second << std::endl;
+        }
+    */
+    //calculate deltaP
+    float PGen_total=0;
+    
+    for (it = m_collectPGen.begin(); it != m_collectPGen.end(); it++)
+    {
+	Logger.Status << "--------" << (*it).second << std::endl;
+        PGen_total += (*it).second;
+    }
+    
+    PGen_total += m_PGen;
+    Logger.Status << "----------Total generation value is" << PGen_total << std::endl;
+
+    m_deltaP = m_PDemand - PGen_total;
+    Logger.Status << "------------DeltaP equals to " << m_deltaP << std::endl;
+    
+    //calculate new lamda
+    BOOST_FOREACH(PeerNodePtr peer_, m_AllPeers | boost::adaptors::map_values)
+    {
+        uuid_ = peer_->GetUUID();
+        m_lamda += (m_collectlamda.find(uuid_)->second)*(m_collectvar.find(uuid_)->second);
+    }
+    m_lamda += m_epsilon*m_deltaP;
+    Logger.Status << "***********the update lamda in leader is **************"
+    << m_lamda << std::endl;
+    //calculate PGen and print out
+    m_PGen = (m_lamda - m_beta)/(2*m_gama);
+    Logger.Status << "***********the update PGen in leader is **************"
+    << m_PGen << std::endl;
+    //clear collectlamda container
+    m_collectlamda.clear();
+    m_collectPGen.clear();
+
+    countlambda = 0;
+
+
+    //insert new one
+    m_collectlamda.insert(std::pair<std::string, float>(GetUUID(), m_lamda));
+/*
+    if (!isEqual(m_preLamda, m_lamda))
+    {
+        //send update lamda out
+        Update(m_lamda, m_PGen);
+        countcycle++;
+    }
+    else 
+    {
+	Logger.Status << "The lamda has been updated  " << countcycle << std::endl;
+    }
+*/
+
+    Update(m_lamda, m_PGen);
+}
+
+////////////////////////////////////////////////////////////
+/// FollowerICC
+/// @description: Handles the ICC in the Follower side
+/// pre: Follower got the request lamdas from other leader
+/// post: Follower update its lamda and print out PGen
+///
+////////////////////////////////////////////////////////////
+void LBAgent::FollowerICC()
+{
+    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    //update lamda according to equation 10
+    std::string uuid_;
+
+    m_preLamda = m_lamda;
+    m_lamda = 0;
+    
+        //print out network variables
+        for(it = m_collectvar.begin(); it != m_collectvar.end(); it++)
+        {
+            Logger.Status << (*it).first << " -- " << (*it).second << std::endl;
+        }
+    
+        //print out collected lamda
+        for(it = m_collectlamda.begin(); it != m_collectlamda.end(); it++)
+        {
+            Logger.Status << (*it).first << " && " << (*it).second << std::endl;
+        }
+    
+
+    //calculate new lamda
+    BOOST_FOREACH(PeerNodePtr peer_, m_AllPeers | boost::adaptors::map_values)
+    {
+        uuid_ = peer_->GetUUID();
+        m_lamda += (m_collectlamda.find(uuid_)->second)*(m_collectvar.find(uuid_)->second);
+    }
+    Logger.Status << "***********the update lamda in follower is **************"
+    << m_lamda << std::endl;
+
+
+    //calculate PGen and print out
+    m_PGen = (m_lamda - m_beta)/(2*m_gama);
+    Logger.Status << "***********the update PGen in follower is **************"
+    << m_PGen << std::endl;
+    //update collectlamda container
+    m_collectlamda.clear();
+    countlambda = 0;
+    m_collectlamda.insert(std::pair<std::string, float>(GetUUID(), m_lamda));
+/*
+    if (!isEqual(m_preLamda, m_lamda))
+    {
+        //send update lamda out
+        Update(m_lamda, m_PGen);
+	countcycle++;
+    }
+    else
+    {
+	Logger.Status << "The lamda in follower has been updated " << countcycle << std::endl;
+    }
+*/
+
+    Update(m_lamda, m_PGen);
+}
+
+
+////////////////////////////////////////////////////////////
+/// Update
+/// @description: send lamda update message out after updating local lamda
+/// pre: just update local lamda
+/// post: send lamda update message out
+/// parameter: float lamda
+////////////////////////////////////////////////////////////
+void LBAgent::Update(float lamda, float PGen)
+{
+    //send lamda update request to other nodes
+    freedm::broker::CMessage m_;
+    //m_.m_submessages.put("lb", "LamdaUpdate");
+    m_.SetHandler("lb.LamdaUpdate");
+    m_.m_submessages.put("lb.source", GetUUID());
+    m_.m_submessages.put("lb.lamda", boost::lexical_cast<std::string>(lamda));
+    //isn't leader, send PGen as well
+    //if(GetUUID() != m_Leader)
+    //{
+    m_.m_submessages.put("lb.PGen", boost::lexical_cast<std::string>(PGen));
+    //}
+    BOOST_FOREACH( PeerNodePtr p_, m_AllPeers | boost::adaptors::map_values)
+    {
+        if (p_->GetUUID() != GetUUID())
+        {
+            try
+            {
+                p_->Send(m_);
+            }
+            catch (boost::system::system_error& e)
+            {
+                Logger.Info << "Couldn't Send Message To Peer" << std::endl;
+            }
+        }
+    }
+}
+
+bool LBAgent::isEqual(float preLamda, float curLamda)
+{
+    Logger.Status << "previous lamda VS current lamda: " << preLamda << " : " << curLamda << std::endl;
+    if ((preLamda - curLamda) > -0.000001 && (preLamda - curLamda) < 0.000001 )
+	return true;
+    else
+	return false;
+}
+
+
+
+//ICC
+//-----------------------------------------------------------------------------------//
+
+
 
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 ////////////////////////////////////////////////////////////
@@ -657,9 +891,9 @@ void LBAgent::HandleAny(MessagePtr msg, PeerNodePtr peer)
     line_ = msg->GetSourceUUID();
     ptree &pt = msg->GetSubMessages();
     Logger.Debug << "Message '" <<pt.get<std::string>("lb","NOEXECPTION")
-                 <<"' received from "<< line_<<std::endl;
-
-    if(msg->GetHandler().find("lb") == 0)
+    <<"' received from "<< line_<<std::endl;
+    
+    if (msg->GetHandler().find("lb") == 0)
     {
         Logger.Error<<"Unhandled Load Balancing Message"<<std::endl;
         msg->Save(Logger.Error);
@@ -678,22 +912,23 @@ void LBAgent::HandlePeerList(MessagePtr msg, PeerNodePtr peer)
     PeerSet temp;
     Logger.Notice << "\nPeer List received from Group Leader: " << peer->GetUUID() <<std::endl;
     m_Leader = peer->GetUUID();
-
-    if(m_Leader == GetUUID())
+    
+    if (m_Leader == GetUUID())
     {
         //Initiate state collection if you are the leader
         //CollectState();
     }
-
+    
     //Update the PeerNode lists accordingly
     //TODO:Not sure if similar loop is needed to erase each peerset
     //individually. peerset.clear() doesn`t work for obvious reasons
     BOOST_FOREACH( PeerNodePtr p_, m_AllPeers | boost::adaptors::map_values)
     {
-        if( p_->GetUUID() == GetUUID())
+        if ( p_->GetUUID() == GetUUID())
         {
             continue;
         }
+        
         EraseInPeerSet(m_AllPeers,p_);
         //Assuming that any node in m_AllPeers exists in one of the following
         EraseInPeerSet(m_HiNodes,p_);
@@ -703,28 +938,150 @@ void LBAgent::HandlePeerList(MessagePtr msg, PeerNodePtr peer)
     temp = gm::GMAgent::ProcessPeerList(msg,GetConnectionManager());
     BOOST_FOREACH( PeerNodePtr p_, temp | boost::adaptors::map_values )
     {
-        if(CountInPeerSet(m_AllPeers,p_) == 0)
+        if (CountInPeerSet(m_AllPeers,p_) == 0)
         {
             AddPeer(p_);
         }
     }
+//ICC
+    //Obtain network topology variables from xml file
+    Logger.Status << "^^^^^^^^^^^^^^NETWORK TOPOLOGY^^^^^^^^^^^^^^^^" << std::endl;
+    boost::property_tree::ptree pt;
+    boost::property_tree::read_xml("config/ICCInit.xml",pt);
+    int peerNum = m_AllPeers.size();
+    Logger.Status << "There are " << peerNum << " nodes in system: " << std::endl;
+    //print out peerlist
+    BOOST_FOREACH( PeerNodePtr p_, m_AllPeers | boost::adaptors::map_values)
+    Logger.Status << p_->GetUUID() << std::endl;
+    //clear network variable container
+    m_var.clear();
+    m_collectvar.clear();
+    //index for network variables
+    int i = 1;
+    float netVar;
+    
+    //the network variables only available for three nodes
+    if (peerNum == 3)
+    {
+        //save network variables to container m_var<int, float>
+        BOOST_FOREACH(ptree::value_type &v, pt.get_child("Init.networkTop.fullCon.threeNodes"))
+        {
+            netVar =  boost::lexical_cast<float>(v.second.data());
+            m_var.insert(std::pair<int, float>(i, netVar));
+            i++;
+        }
+    }
+    else if (peerNum == 5)
+    {
+	if (m_Leader == GetUUID())
+	{
+	    BOOST_FOREACH(ptree::value_type &v, pt.get_child("Init.networkTop.starCon.fiveNodes.leader"))
+	    {
+		netVar = boost::lexical_cast<float>(v.second.data());
+		m_var.insert(std::pair<int, float>(i, netVar));
+		i++;
+	    }
+	}
+	else
+	{
+	    BOOST_FOREACH(ptree::value_type &v, pt.get_child("Init.networkTop.starCon.fiveNodes.follower"))
+	    {
+		netVar = boost::lexical_cast<float>(v.second.data());
+		m_var.insert(std::pair<int, float>(i, netVar));
+		i++;
+	    }
+	}
+    }
+    else
+    {
+	Logger.Status << "Network Topology is not on 3 or 5 nodes" << std::endl;
+    }
+    
+    //save network variables to container m_collectvar<string(UUID), float>
+    if ( !m_var.empty())
+    {
+      if (peerNum == 5)
+      { 
+        //first variable assigned to local node
+	if (m_Leader == GetUUID())
+	{
+            m_collectvar.insert(std::pair<std::string, float>(GetUUID(), m_var.find(1)->second));
+	    i = 2;
+	}
+	else
+	{
+	    m_collectvar.insert(std::pair<std::string, float>(GetUUID(), m_var.find(1)->second));
+	    m_collectvar.insert(std::pair<std::string, float>(m_Leader, m_var.find(2)->second));
+            i = 3;
+	}
+      }
+      else if (peerNum == 3)
+      {
+	m_collectvar.insert(std::pair<std::string, float>(GetUUID(), m_var.find(1)->second));
+	i = 2;
+      }
+        BOOST_FOREACH(PeerNodePtr peer_, m_AllPeers | boost::adaptors::map_values)
+        {
+            if (peer_->GetUUID() != GetUUID())
+            {
+                m_collectvar.insert(std::pair<std::string, float>(peer_->GetUUID(), m_var.find(i)->second));
+                i++;
+            }
+        }
+    }
+    
+    
+    //print out network variables
+    for(it = m_collectvar.begin(); it != m_collectvar.end(); it++)
+    {
+        Logger.Status << (*it).first << " --------- " << (*it).second << std::endl;
+    }
+    
+    countlambda = 0;
+    //if at least three nodes, Initially peer nodes send lamda to leader node and other peers
+    if ( peerNum > 2 && m_Leader != GetUUID())
+    {
+        CMessage m_ = m_locallamda(m_lamda);
+        //attached power generation value
+        m_.m_submessages.put("lb.lPGen", boost::lexical_cast<std::string>(m_PGen));
+
+        BOOST_FOREACH( PeerNodePtr p_, m_AllPeers | boost::adaptors::map_values)
+        {
+            if ( p_->GetUUID() != GetUUID())
+            {
+                try
+                {
+                    p_->Send(m_);
+		    Logger.Status << "---------sending out its lamda" << std::endl;
+                }
+                catch (boost::system::system_error& e)
+                {
+                    Logger.Info << "Couldn't Send Message To Peer" << std::endl;
+                }
+            }
+        }
+    }
+
+    //ICC
+    //--------------------------------------------------------------------------------//
 }
 
 void LBAgent::HandleDemand(MessagePtr msg, PeerNodePtr peer)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    
     // --------------------------------------------------------------
     // You received a Demand message from the source
     // --------------------------------------------------------------
-    if(peer->GetUUID() == GetUUID())
+    if (peer->GetUUID() == GetUUID())
         return;
-
-    if(CountInPeerSet(m_AllPeers,peer) == 0)
+        
+    if (CountInPeerSet(m_AllPeers,peer) == 0)
         return;
-
+        
     ptree &pt = msg->GetSubMessages();
     Logger.Notice << "Demand message received from: "
-                   << pt.get<std::string>("lb.source") <<std::endl;
+    << pt.get<std::string>("lb.source") <<std::endl;
     EraseInPeerSet(m_HiNodes,peer);
     EraseInPeerSet(m_NoNodes,peer);
     EraseInPeerSet(m_LoNodes,peer);
@@ -734,16 +1091,19 @@ void LBAgent::HandleDemand(MessagePtr msg, PeerNodePtr peer)
 void LBAgent::HandleNormal(MessagePtr msg, PeerNodePtr peer)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    if(CountInPeerSet(m_AllPeers,peer) == 0)
+    
+    if (CountInPeerSet(m_AllPeers,peer) == 0)
         return;
-    if(peer->GetUUID() == GetUUID())
+        
+    if (peer->GetUUID() == GetUUID())
         return;
+        
     // --------------------------------------------------------------
     // You received a Load change of source to Normal state
     // --------------------------------------------------------------
     ptree &pt = msg->GetSubMessages();
     Logger.Notice << "Normal message received from: "
-                   << pt.get<std::string>("lb.source") <<std::endl;
+    << pt.get<std::string>("lb.source") <<std::endl;
     EraseInPeerSet(m_NoNodes,peer);
     EraseInPeerSet(m_HiNodes,peer);
     EraseInPeerSet(m_LoNodes,peer);
@@ -753,17 +1113,20 @@ void LBAgent::HandleNormal(MessagePtr msg, PeerNodePtr peer)
 void LBAgent::HandleSupply(MessagePtr msg, PeerNodePtr peer)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    if(CountInPeerSet(m_AllPeers,peer) == 0)
+    
+    if (CountInPeerSet(m_AllPeers,peer) == 0)
         return;
-    if(peer->GetUUID() == GetUUID())
+        
+    if (peer->GetUUID() == GetUUID())
         return;
+        
     // --------------------------------------------------------------
     // You received a message saying the source is in Supply state, which means
     // you are (were, recently) in Demand state; else you would not have received
     // --------------------------------------------------------------
     ptree &pt = msg->GetSubMessages();
     Logger.Notice << "Supply message received from: "
-                   << pt.get<std::string>("lb.source") <<std::endl;
+    << pt.get<std::string>("lb.source") <<std::endl;
     EraseInPeerSet(m_LoNodes,peer);
     EraseInPeerSet(m_HiNodes,peer);
     EraseInPeerSet(m_NoNodes,peer);
@@ -774,13 +1137,16 @@ void LBAgent::HandleSupply(MessagePtr msg, PeerNodePtr peer)
 void LBAgent::HandleRequest(MessagePtr msg, PeerNodePtr peer)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    if(CountInPeerSet(m_AllPeers,peer) == 0)
+    
+    if (CountInPeerSet(m_AllPeers,peer) == 0)
         return;
+        
     // --------------------------------------------------------------
     // You received a draft request
     // --------------------------------------------------------------
-    if(peer->GetUUID() == GetUUID())
+    if (peer->GetUUID() == GetUUID())
         return;
+        
     Logger.Notice << "Request message received from: " << peer->GetUUID() << std::endl;
     // Just not to duplicate the peer, erase the existing entries of it
     EraseInPeerSet(m_LoNodes,peer);
@@ -792,9 +1158,9 @@ void LBAgent::HandleRequest(MessagePtr msg, PeerNodePtr peer)
     CMessage m_;
     m_.m_submessages.put("lb.source", GetUUID());
     std::stringstream ss_;
-
+    
     // If you are in Demand State, accept the request with a 'yes'
-    if(LBAgent::DEMAND == m_Status)
+    if (LBAgent::DEMAND == m_Status)
     {
         ss_.clear();
         ss_.str("yes");
@@ -808,9 +1174,9 @@ void LBAgent::HandleRequest(MessagePtr msg, PeerNodePtr peer)
         ss_.str("no");
         m_.SetHandler("lb."+ ss_.str());
     }
-
+    
     // Send your response
-    if( peer->GetUUID() != GetUUID())
+    if ( peer->GetUUID() != GetUUID())
     {
         try
         {
@@ -826,14 +1192,16 @@ void LBAgent::HandleRequest(MessagePtr msg, PeerNodePtr peer)
 void LBAgent::HandleYes(MessagePtr msg, PeerNodePtr peer)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    
     // --------------------------------------------------------------
     // You received a response from source, to your draft request
     // --------------------------------------------------------------
-    if(CountInPeerSet(m_AllPeers,peer) == 0)
+    if (CountInPeerSet(m_AllPeers,peer) == 0)
         return;
-    if(peer->GetUUID() == GetUUID())
+        
+    if (peer->GetUUID() == GetUUID())
         return;
-
+        
     Logger.Notice << "(Yes) from " << peer->GetUUID() << std::endl;
     //Initiate drafting with a message accordingly
     //TODO: Selection of node that you are drafting with needs to be performed
@@ -844,9 +1212,9 @@ void LBAgent::HandleYes(MessagePtr msg, PeerNodePtr peer)
     ss_.clear();
     ss_.str("drafting");
     m_.SetHandler("lb."+ ss_.str());
-
+    
     //Its better to check your status again before initiating drafting
-    if( peer->GetUUID() != GetUUID() && LBAgent::SUPPLY == m_Status )
+    if ( peer->GetUUID() != GetUUID() && LBAgent::SUPPLY == m_Status )
     {
         try
         {
@@ -862,27 +1230,33 @@ void LBAgent::HandleYes(MessagePtr msg, PeerNodePtr peer)
 void LBAgent::HandleNo(MessagePtr msg, PeerNodePtr peer)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    if(CountInPeerSet(m_AllPeers,peer) == 0)
+    
+    if (CountInPeerSet(m_AllPeers,peer) == 0)
         return;
-    if(peer->GetUUID() == GetUUID())
+        
+    if (peer->GetUUID() == GetUUID())
         return;
+        
     Logger.Notice << "(No) from " << peer->GetUUID() << std::endl;
 }
 
 void LBAgent::HandleDrafting(MessagePtr msg, PeerNodePtr peer)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    
     // --------------------------------------------------------------
     //You received a Drafting message in reponse to your Demand
     //Ackowledge by sending an 'Accept' message
     // --------------------------------------------------------------
-    if(peer->GetUUID() == GetUUID())
+    if (peer->GetUUID() == GetUUID())
         return;
-    if(CountInPeerSet(m_AllPeers,peer) == 0)
+        
+    if (CountInPeerSet(m_AllPeers,peer) == 0)
         return;
+        
     Logger.Notice << "Drafting message received from: " << peer->GetUUID() << std::endl;
-
-    if(LBAgent::DEMAND == m_Status)
+    
+    if (LBAgent::DEMAND == m_Status)
     {
         CMessage m_;
         m_.m_submessages.put("lb.source", GetUUID());
@@ -895,8 +1269,8 @@ void LBAgent::HandleDrafting(MessagePtr msg, PeerNodePtr peer)
         //      that the supply node can select
         ss_ << m_DemandVal;
         m_.m_submessages.put("lb.value", ss_.str());
-
-        if( peer->GetUUID() != GetUUID() && LBAgent::DEMAND == m_Status )
+        
+        if ( peer->GetUUID() != GetUUID() && LBAgent::DEMAND == m_Status )
         {
             try
             {
@@ -906,13 +1280,15 @@ void LBAgent::HandleDrafting(MessagePtr msg, PeerNodePtr peer)
             {
                 Logger.Info << "Couldn't Send Message To Peer" << std::endl;
             }
-
+            
             // Make necessary power setting accordingly to allow power migration
             // !!!NOTE: You may use Step_PStar() or PStar(m_DemandVal) currently
+/*
             if (m_sstExists)
-               Step_PStar();
+                Step_PStar();
             else
-               Desd_PStar();
+                Desd_PStar();
+*/
         }
         else
         {
@@ -924,10 +1300,13 @@ void LBAgent::HandleDrafting(MessagePtr msg, PeerNodePtr peer)
 void LBAgent::HandleAccept(MessagePtr msg, PeerNodePtr peer)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    if(peer->GetUUID() == GetUUID())
+    
+    if (peer->GetUUID() == GetUUID())
         return;
-    if(CountInPeerSet(m_AllPeers,peer) == 0)
+        
+    if (CountInPeerSet(m_AllPeers,peer) == 0)
         return;
+        
     // --------------------------------------------------------------
     // The Demand node you agreed to supply power to, is awaiting migration
     // --------------------------------------------------------------
@@ -937,17 +1316,19 @@ void LBAgent::HandleAccept(MessagePtr msg, PeerNodePtr peer)
     ss_ << pt.get<std::string>("lb.value");
     ss_ >> DemValue;
     Logger.Notice << " Draft Accept message received from: " << peer->GetUUID()
-                   << " with demand of "<< DemValue << std::endl;
-
-    if( LBAgent::SUPPLY == m_Status)
+    << " with demand of "<< DemValue << std::endl;
+    
+    if ( LBAgent::SUPPLY == m_Status)
     {
         // Make necessary power setting accordingly to allow power migration
         Logger.Warn<<"Migrating power on request from: "<< peer->GetUUID() << std::endl;
-	// !!!NOTE: You may use Step_PStar() or PStar(DemandValue) currently
+/*        
+        // !!!NOTE: You may use Step_PStar() or PStar(DemandValue) currently
         if (m_sstExists)
-           Step_PStar();
+            Step_PStar();
         else
-           Desd_PStar();
+            Desd_PStar();
+*/
     }//end if( LBAgent::SUPPLY == m_Status)
     else
     {
@@ -963,8 +1344,20 @@ void LBAgent::HandleCollectedState(MessagePtr msg, PeerNodePtr peer)
     // --------------------------------------------------------------
     int peercount=0;
     double agg_gateway=0;
-
+    double agg_load = 0;
+    double agg_generation = 0;
     ptree &pt = msg->GetSubMessages();
+
+/*
+    BOOST_FOREACH(ptree::value_type &v, pt.get_child("CollectedState.state"))
+    {
+        Logger.Notice << "SC module returned values: "
+        << v.second.data() << std::endl;
+        peercount++;
+        agg_gateway += boost::lexical_cast<double>(v.second.data());
+    }
+*/
+
     if(pt.get_child_optional("CollectedState.gateway"))
     {
 	    BOOST_FOREACH(ptree::value_type &v, pt.get_child("CollectedState.gateway"))
@@ -984,6 +1377,10 @@ void LBAgent::HandleCollectedState(MessagePtr msg, PeerNodePtr peer)
 	    {
 	        Logger.Notice << "SC module returned generation values: "
 			              << v.second.data() << std::endl;
+		if (v.second.data() != "no device")
+		{
+            	    agg_generation += boost::lexical_cast<double>(v.second.data());
+		}
 	    }
     }
     if(pt.get_child_optional("CollectedState.storage"))
@@ -1000,6 +1397,10 @@ void LBAgent::HandleCollectedState(MessagePtr msg, PeerNodePtr peer)
 	    {
 	        Logger.Notice << "SC module returned drain values: "
 			              << v.second.data() << std::endl;
+		if (v.second.data() != "no device")
+		{
+            	    agg_load += boost::lexical_cast<double>(v.second.data());
+		}
 	    }
     }
     if(pt.get_child_optional("CollectedState.state"))
@@ -1010,26 +1411,44 @@ void LBAgent::HandleCollectedState(MessagePtr msg, PeerNodePtr peer)
 				      << v.second.data() << std::endl;
 	    }
     }
+    
     //Consider any intransit "accept" messages in agg_gateway calculation
-    if(pt.get_child_optional("CollectedState.intransit"))
+    if (pt.get_child_optional("CollectedState.intransit"))
     {
         BOOST_FOREACH(ptree::value_type &v, pt.get_child("CollectedState.intransit"))
         {
             Logger.Status << "SC module returned intransit messages: "
+            << v.second.data() << std::endl;
+            
+            if (v.second.data() == "accept")
+            {
+                Logger.Notice << "SC module returned values: "
                 << v.second.data() << std::endl;
-            if(v.second.data() == "accept"){
-	        Logger.Notice << "SC module returned values: "
-			  << v.second.data() << std::endl;
                 agg_gateway += P_Migrate;
-             }
+            }
         }
     }
-    if(peercount != 0)
+    
+    if (peercount != 0)
     {
         m_Normal = agg_gateway/peercount;
         Logger.Info << "Computed Normal: " << m_Normal << std::endl;
         SendNormal(m_Normal);
     }
+    
+    //------------------------------------------------------------------------------------------//
+    //ICC
+    //generate a fake demand
+    //m_PDemand = 850.0;
+    m_PDemand = agg_load;
+    Logger.Status << "Total demand is " << m_PDemand << std::endl;
+    if (GetUUID() == m_Leader && countlambda == m_AllPeers.size()-1)
+    {
+        LeaderICC();
+    }//end if(m_Leader)
+    
+    //ICC
+    //------------------------------------------------------------------------------------------//
 }
 
 void LBAgent::HandleComputedNormal(MessagePtr msg, PeerNodePtr peer)
@@ -1041,9 +1460,72 @@ void LBAgent::HandleComputedNormal(MessagePtr msg, PeerNodePtr peer)
     ptree &pt = msg->GetSubMessages();
     m_Normal = pt.get<double>("lb.cnorm");
     Logger.Notice << "Computed Normal " << m_Normal << " received from "
-                   << pt.get<std::string>("lb.source") << std::endl;
+    << pt.get<std::string>("lb.source") << std::endl;
     LoadTable();
 }
+
+//------------------------------------------------------------------------//
+//ICC
+// --------------------------------------------------------------
+// Leader received a lamda value from the follower (ICC)
+// --------------------------------------------------------------
+//
+void LBAgent::HandleLamda(MessagePtr msg, PeerNodePtr peer)
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    ptree &pt = msg->GetSubMessages();
+    //test
+    Logger.Status << "Are we here?" << std::endl;
+    std::string uuid_ = pt.get<std::string>("lb.source");
+    float val_  = pt.get<float>("lb.llamda");
+    //save lamda with UUID
+    m_collectlamda.insert(std::pair<std::string, float>(uuid_, val_));
+    Logger.Status << "Store another lamda: " << val_ << " from " << uuid_ << std::endl;
+    float PGval_ = pt.get<float>("lb.lPGen");
+    
+    //leader also need PGen
+    m_collectPGen.insert(std::pair<std::string, float>(uuid_, PGval_));
+    Logger.Status << "Store another PGen: " << PGval_ << " from " << uuid_ << std::endl;
+    countlambda++;
+}
+
+
+// --------------------------------------------------------------
+// You received a lamda update message from the source
+// --------------------------------------------------------------
+//
+void LBAgent::HandleUpdate(MessagePtr msg, PeerNodePtr peer)
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    ptree &pt = msg->GetSubMessages();
+    std::string uuid_ = pt.get<std::string>("lb.source");
+    float leaderlamda;
+    leaderlamda = boost::lexical_cast<float>(pt.get<std::string>("lb.lamda"));
+    //insert new leaderlamda in collectlamda
+    m_collectlamda.insert(std::pair<std::string, float>(uuid_, leaderlamda));
+    countlambda ++;
+    if (GetUUID() == m_Leader)
+    {
+        float followerPGen = boost::lexical_cast<float>(pt.get<std::string>("lb.PGen"));
+        m_collectPGen.insert(std::pair<std::string, float>(uuid_, followerPGen));
+    }
+    
+    if (GetUUID() == m_Leader && countlambda == m_AllPeers.size()-1)
+    {
+        LeaderICC();
+    }
+    
+    if (GetUUID() != m_Leader && countlambda == m_AllPeers.size()-1)
+    {
+        FollowerICC();
+    }
+}
+
+//ICC
+//------------------------------------------------------------------------------//
+
+
+
 #pragma GCC diagnostic warning "-Wunused-parameter"
 
 ////////////////////////////////////////////////////////////
@@ -1061,16 +1543,16 @@ void LBAgent::Step_PStar()
     std::multiset<SST::Pointer> SSTContainer;
     std::multiset<SST::Pointer>::iterator it, end;
     SSTContainer = device::CDeviceManager::Instance().GetDevicesOfType<SST>();
-
-    for( it = SSTContainer.begin(), end = SSTContainer.end(); it != end; it++ )
+    
+    for ( it = SSTContainer.begin(), end = SSTContainer.end(); it != end; it++ )
     {
-        if(LBAgent::DEMAND == m_Status)
+        if (LBAgent::DEMAND == m_Status)
         {
             m_PStar = (*it)->GetGateway() - P_Migrate;
             (*it)->StepGateway(-P_Migrate);
             Logger.Notice << "P* = " << m_PStar << std::endl;
         }
-        else if(LBAgent::SUPPLY == m_Status)
+        else if (LBAgent::SUPPLY == m_Status)
         {
             m_PStar = (*it)->GetGateway() + P_Migrate;
             (*it)->StepGateway(P_Migrate);
@@ -1091,7 +1573,7 @@ void LBAgent::Step_PStar()
 /// @pre: Current load state of this node is 'Supply' or 'Demand'
 /// @post: Set command(s) to set SST
 /// @limitations It could be revised based on requirements. Might not be
-///		 necessary after adding the code to handle intransit messages
+///      necessary after adding the code to handle intransit messages
 /////////////////////////////////////////////////////////
 void LBAgent::PStar(device::SignalValue DemandValue)
 {
@@ -1100,18 +1582,18 @@ void LBAgent::PStar(device::SignalValue DemandValue)
     std::multiset<SST::Pointer> SSTContainer;
     std::multiset<SST::Pointer>::iterator it, end;
     SSTContainer = device::CDeviceManager::Instance().GetDevicesOfType<SST>();
-
-    for( it = SSTContainer.begin(), end = SSTContainer.end(); it != end; it++ )
+    
+    for ( it = SSTContainer.begin(), end = SSTContainer.end(); it != end; it++ )
     {
-        if(LBAgent::DEMAND == m_Status)
+        if (LBAgent::DEMAND == m_Status)
         {
             m_PStar = (*it)->GetGateway() - P_Migrate;
             Logger.Notice << "P* = " << m_PStar << std::endl;
             (*it)->StepGateway(-P_Migrate);
         }
-        else if(LBAgent::SUPPLY == m_Status)
+        else if (LBAgent::SUPPLY == m_Status)
         {
-            if( DemandValue <= m_SstGateway + NORMAL_TOLERANCE - m_Normal )
+            if ( DemandValue <= m_SstGateway + NORMAL_TOLERANCE - m_Normal )
             {
                 Logger.Notice << "P* = " << m_SstGateway + DemandValue << std::endl;
                 (*it)->StepGateway(P_Migrate);
@@ -1143,16 +1625,16 @@ void LBAgent::Desd_PStar()
     std::multiset<DESD::Pointer> DESDContainer;
     std::multiset<DESD::Pointer>::iterator it, end;
     DESDContainer = device::CDeviceManager::Instance().GetDevicesOfType<DESD>();
-
-    for( it = DESDContainer.begin(), end = DESDContainer.end(); it != end; it++ )
+    
+    for ( it = DESDContainer.begin(), end = DESDContainer.end(); it != end; it++ )
     {
-        if(LBAgent::DEMAND == m_Status)
+        if (LBAgent::DEMAND == m_Status)
         {
             m_PStar = (*it)->GetStorage() + P_Migrate;
             (*it)->StepStorage(P_Migrate);
             Logger.Notice << "P* (on DESD) = " << m_PStar << std::endl;
         }
-        else if(LBAgent::SUPPLY == m_Status)
+        else if (LBAgent::SUPPLY == m_Status)
         {
             m_PStar = (*it)->GetStorage() - P_Migrate;
             (*it)->StepStorage(-P_Migrate);
@@ -1175,9 +1657,8 @@ void LBAgent::Desd_PStar()
 void LBAgent::StartStateTimer( unsigned int delay )
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-
     m_broker.Schedule(m_StateTimer, boost::posix_time::milliseconds(delay),
-        boost::bind(&LBAgent::HandleStateTimer, this, boost::asio::placeholders::error));
+                      boost::bind(&LBAgent::HandleStateTimer, this, boost::asio::placeholders::error));
 }
 
 ////////////////////////////////////////////////////////////
@@ -1190,13 +1671,13 @@ void LBAgent::StartStateTimer( unsigned int delay )
 void LBAgent::HandleStateTimer( const boost::system::error_code & error )
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-
-    if( !error && (m_Leader == GetUUID()) )
+    
+    if ( !error && (m_Leader == GetUUID()) )
     {
         //Initiate state collection if you are the m_Leader
         CollectState();
     }
-
+    
     StartStateTimer( CTimings::LB_STATE_TIMER );
 }
 
@@ -1205,4 +1686,5 @@ void LBAgent::HandleStateTimer( const boost::system::error_code & error )
 } // namespace broker
 
 } // namespace freedm
+
 

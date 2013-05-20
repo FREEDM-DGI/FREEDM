@@ -64,6 +64,7 @@ CLocalLogger Logger(__FILE__);
 /// @post Constructs a new ARM adapter.
 /// @param service The i/o service for the internal TCP server.
 /// @param p The property tree that specifies the adapter configuration.
+/// @param client The TCP connection to use for this adapter.
 /// @return shared_ptr to the new adapter.
 ///
 /// @limitations None.
@@ -83,6 +84,7 @@ IAdapter::Pointer CPnpAdapter::Create(boost::asio::io_service & service,
 /// @post Registers CPnpAdapter::HandleMessage with m_server.
 /// @param service The i/o service for the TCP server.
 /// @param p The property tree that configures the adapter.
+/// @param client The TCP connection to use for this adapter.
 ///
 /// @limitations None.
 ////////////////////////////////////////////////////////////////////////////////

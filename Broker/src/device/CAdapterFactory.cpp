@@ -119,9 +119,6 @@ void CAdapterFactory::RunService()
     {
         m_ios.run();
     }
-    catch (boost::exception & e)
-    {
-    }
     catch (std::exception & e)
     {
         Logger.Fatal << "Fatal exception in the device ioservice: "

@@ -5,7 +5,7 @@
 ///
 /// @project        FREEDM DGI
 ///
-/// @description    Adapter for plug-and-play devices on an ARM board.
+/// @description    Adapter for plug-and-play devices.
 ///
 /// These source code files were created at Missouri University of Science and
 /// Technology, and are intended for use in teaching or research. They may be
@@ -34,9 +34,9 @@ namespace freedm {
 namespace broker {
 namespace device {
 
-/// ARM adapter that maintains a TCP server for a set of plug-and-play devices.
+/// PNP adapter that maintains a TCP server for a set of plug-and-play devices.
 ////////////////////////////////////////////////////////////////////////////////
-/// The ARM adapter implements the plug-and-play session protocol. An object of
+/// The PNP adapter implements the plug-and-play session protocol. An object of
 /// this class will delete itself on expiration of an internal countdown timer
 /// unless the CPnpAdapter::Heartbeat function is called to refresh the timer.
 /// The adapter calls this function itself whenever it sends or receives data
@@ -53,7 +53,7 @@ public:
     /// Convenience type for a shared pointer to self.
     typedef boost::shared_ptr<CPnpAdapter> Pointer;
 
-    /// Creates a shared instance of the arm adapter.
+    /// Creates a shared instance of the PNP adapter.
     static IAdapter::Pointer Create(boost::asio::io_service & service,
             boost::property_tree::ptree & p, CTcpServer::Connection client);
 
@@ -97,7 +97,7 @@ private:
     /// Unique identifier of this adapter.
     std::string m_identifier;
 
-    /// TCP server for the ARM client.
+    /// TCP server for the PNP client.
     CTcpServer::Connection m_client;
     
     /// Flag for when the adapter is stopped.

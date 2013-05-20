@@ -5,7 +5,7 @@
 ///
 /// @project        FREEDM DGI
 ///
-/// @description    Adapter for plug-and-play devices on an ARM board.
+/// @description    Adapter for plug-and-play devices.
 ///
 /// @functions
 ///     CPnpAdapter::Create
@@ -58,10 +58,10 @@ CLocalLogger Logger(__FILE__);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-/// Creates a new shared instance of the ARM adapter.
+/// Creates a new shared instance of the PNP adapter.
 ///
 /// @pre None.
-/// @post Constructs a new ARM adapter.
+/// @post Constructs a new PNP adapter.
 /// @param service The i/o service for the internal TCP server.
 /// @param p The property tree that specifies the adapter configuration.
 /// @param client The TCP connection to use for this adapter.
@@ -77,7 +77,7 @@ IAdapter::Pointer CPnpAdapter::Create(boost::asio::io_service & service,
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-/// Constructs a new ARM adapter.
+/// Constructs a new PNP adapter.
 ///
 /// @pre The ptree must have the 'identifier' and 'stateport' properties.
 /// @post Creates a new TCP server on the specified 'stateport'.
@@ -101,7 +101,7 @@ CPnpAdapter::CPnpAdapter(boost::asio::io_service & service,
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-/// Destructor for the ARM adapter.
+/// Destructor for the PNP adapter.
 ///
 /// @pre None.
 /// @post Destructs this object.

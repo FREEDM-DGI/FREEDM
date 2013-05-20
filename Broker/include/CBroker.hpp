@@ -68,6 +68,7 @@ public:
     typedef unsigned int TimerHandle;
     typedef std::map<TimerHandle, ModuleIdent> TimerAlloc;
     typedef std::map<TimerHandle, boost::asio::deadline_timer* > TimersMap;
+    typedef std::map<TimerHandle, bool > NextTimeMap;
     typedef std::map<ModuleIdent, std::list< BoundScheduleable > > ReadyMap;
     
     /// Type of a pointer to a Broker.
@@ -175,6 +176,12 @@ private:
 
     ///A list of timers used for scheduling
     TimersMap m_timers;
+
+    ///Maps handle to bool: if a timer handle is set to expire for the next round.
+    NextTimeMap m_nexttime;
+    
+    ///Maps if a specific timer has been cancelled or triggered by end of round
+    NextTimeMap m_ntexpired;
 
     ///A map of jobs that are ready to run as soon as their phase comes up
     ReadyMap m_ready;

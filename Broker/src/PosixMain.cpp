@@ -304,8 +304,8 @@ int main(int argc, char* argv[])
     }
     catch (std::exception & e)
     {
-        Logger.Error << "Exception caught in main during start up: " << e.what() << std::endl;
-        return 0;
+        Logger.Fatal << "Exception caught in main during start up: " << e.what() << std::endl;
+        return 1;
     }
 
     //constructors for initial mapping
@@ -377,7 +377,7 @@ int main(int argc, char* argv[])
     }
     catch (std::exception & e)
     {
-        Logger.Error << "Exception caught in module initialization: " << e.what() << std::endl;
+        Logger.Fatal << "Exception caught in module initialization: " << e.what() << std::endl;
     }
 
     try
@@ -386,7 +386,7 @@ int main(int argc, char* argv[])
     }
     catch (std::exception & e)
     {
-        Logger.Error << "Exception caught in Broker: " << e.what() << std::endl;
+        Logger.Fatal << "Exception caught in Broker: " << e.what() << std::endl;
         broker.Stop();
         ios.run();
     }

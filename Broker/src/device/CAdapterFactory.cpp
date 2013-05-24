@@ -551,7 +551,7 @@ void CAdapterFactory::SessionProtocol()
         }
         if( m_adapter.count(host) > 0 )
         {
-            throw EDuplicateSession("Duplicate session for " + host);
+            throw EDuplicateSession(host);
         }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -635,10 +635,10 @@ void CAdapterFactory::SessionProtocol()
     }
     catch(EDuplicateSession & e)
     {
-        Logger.Warn << "Rejected client: " << e.what() << std::endl;
-        // FIXME sending e.what() to the client is not robust
-        // we need boost exceptions to handle this properly
-        response_stream << "Error\r\n" << e.what() << "\r\n\r\n";
+        Logger.Warn << "Rejected client: duplicate session for host "
+                    << e.what() << std::endl;
+        response_stream << "Error\r\nDuplicate session for "
+                        << e.what() << "\r\n\r\n";
         Logger.Status << "Blocking to send Error to client" << std::endl;
     }
     

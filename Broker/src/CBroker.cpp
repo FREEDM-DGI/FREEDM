@@ -80,7 +80,7 @@ CBroker::CBroker(const std::string& p_address, const std::string& p_port,
       m_newConnection(new CListener(m_ioService, m_connManager, *this, m_conMan.GetUUID())),
       m_phasetimer(m_ios),
       m_synchronizer(*this),
-      m_signals(m_ios,SIGINT)
+      m_signals(m_ios,SIGINT,SIGTERM)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     // Open the acceptor with the option to reuse the address (i.e. SO_REUSEADDR).

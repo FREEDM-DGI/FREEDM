@@ -378,6 +378,7 @@ int main(int argc, char* argv[])
     catch (std::exception & e)
     {
         Logger.Fatal << "Exception caught in module initialization: " << e.what() << std::endl;
+        return 1;
     }
 
     try

@@ -67,7 +67,7 @@ namespace {
 CLocalLogger Logger(__FILE__);
 
 /// UUID of the DGI, currently hostname:port
-std::string generate_uuid(std::string host, std::string port)
+std::string GenerateUuid(std::string host, std::string port)
 {
     boost::algorithm::to_lower(host);
     return host + ":" + port;
@@ -228,7 +228,7 @@ int main(int argc, char* argv[])
         }
 
         hostname = boost::asio::ip::host_name();
-        id = generate_uuid(hostname, port);
+        id = GenerateUuid(hostname, port);
         if (vm.count("uuid"))
         {
             std::cout << id << std::endl;
@@ -358,7 +358,7 @@ int main(int argc, char* argv[])
                 std::string peerhost(s.begin(), s.begin() + idx),
                         peerport(s.begin() + ( idx + 1 ), s.end());
                 // Construct the UUID of the peer
-                std::string peerid = generate_uuid(peerhost, peerport);
+                std::string peerid = GenerateUuid(peerhost, peerport);
                 // Add the UUID to the list of known hosts
                 conManager.PutHostname(peerid, peerhost, peerport);
             }

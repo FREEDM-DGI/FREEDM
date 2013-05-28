@@ -82,7 +82,7 @@ void IReadHandler::HandleRead(MessagePtr msg)
     }
     if(msg->GetHandler() == "")
     {
-        throw std::runtime_error("Message didn't specify a handler");
+        throw EUnhandledMessage("Message didn't specify a handler");
     }
     //Try to find the key in the map, unless its type is any:
     BOOST_FOREACH(SubhandleContainer::value_type f, m_handlers)

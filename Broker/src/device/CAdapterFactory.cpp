@@ -50,6 +50,10 @@
 #include <iostream>
 #include <set>
 
+#include <sys/types.h>
+#include <signal.h>
+#include <unistd.h>
+
 #include <boost/asio.hpp>
 #include <boost/bind.hpp>
 #include <boost/foreach.hpp>
@@ -123,10 +127,9 @@ void CAdapterFactory::RunService()
     {
         Logger.Fatal << "Fatal exception in the device ioservice: "
                 << e.what() << std::endl;
-        // FIXME We ought to pass the exception to the parent thread
-        // and flush the broker's ioservice, but this is not possible without
-        // Boost or C++11.
-        std::exit(1);
+        // It's frankly really hard to get a clean shutdown without
+        // restructuring main quite a bit. This is odd, but works *cleanly*.
+        kill(getpid(), SIGTERM);
     }
 
     Logger.Status << "Started the adapter i/o service." << std::endl;

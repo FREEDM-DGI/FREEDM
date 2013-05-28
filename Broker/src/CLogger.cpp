@@ -161,9 +161,9 @@ void CGlobalLogger::SetInitialLoggerLevels(const std::string loggerCfgFile)
     ifs.open(loggerCfgFile.c_str());
     if (!ifs)
     {
-        Logger.Error << "Unable to load logger config file: "
+        Logger.Warn << "Unable to load logger config file: "
                 << loggerCfgFile << std::endl;
-        std::exit(-1);
+        return;
     }
     else
     {

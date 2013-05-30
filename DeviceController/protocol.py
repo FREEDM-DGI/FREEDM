@@ -63,23 +63,22 @@ def recv_all(socket):
     
     @param socket the connected stream socket to receive from
 
-    @ErrorHandling Will raise a RuntimeError if there is data after \r\n\r\n,
-                   since that delimits the end of a message and the DGI is not
-                   allowed to send multiple messages in a row. Also raises
-                   runtime errors if there is no \r\n\r\n at all in the packet,
-                   or if it doesn't occur at the very end of the packet. Will
-                   raise ConnectionLostError if the DGI times out, or
-                   RuntimeError if the DGI sends a malformed packet.
+    @ErrorHandling Raises ConnectionLostError if the DGI times out, or
+                   RuntimeError if a bad packet is detected.
 
     @return the data that has been read
     """
     msg = socket.recv(1024)
-    while len(msg)%1024 == 0 and len(msg) != 0:
-        msg += socket.recv(1024)
     if len(msg) == 0:
         raise ConnectionLostError('Connection to DGI unexpectedly lost')
-    if msg.find('\r\n\r\n') != len(msg)-4:
-        raise RuntimeError('Malformed message from DGI:\n' + msg)
+    while not msg.endswith('\r\n\r\n'):
+        if '\r\n\r\n' in msg:
+            raise RuntimeError('DGI sent two messages in a row? :\n' + msg)
+        new_msg = socket.recv(1024)
+        if len(new_msg) == 0:
+            raise ConnectionLostError('Connection to DGI unexpectedly lost')
+        else:
+            msg += new_msg
     return msg
 
 

@@ -133,8 +133,8 @@ class Device(object):
         self._protected_signals_lock.release()
         t = threading.Timer(
                 self._protected_state_duration,
-                self._unlock_signal,
-                args=(signal))
+                Device._unlock_signal,
+                args=(self, signal))
         t.start()
 
     def _unlock_signal(self, signal):

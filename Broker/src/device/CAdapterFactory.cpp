@@ -50,9 +50,7 @@
 #include <iostream>
 #include <set>
 
-#include <sys/types.h>
 #include <signal.h>
-#include <unistd.h>
 
 #include <boost/asio.hpp>
 #include <boost/bind.hpp>
@@ -127,9 +125,8 @@ void CAdapterFactory::RunService()
     {
         Logger.Fatal << "Fatal exception in the device ioservice: "
                 << e.what() << std::endl;
-        // It's frankly really hard to get a clean shutdown without
-        // restructuring main quite a bit. This is odd, but works *cleanly*.
-        kill(getpid(), SIGTERM);
+        // required for clean shutdown
+        raise(SIGTERM);
     }
 
     Logger.Status << "Started the adapter i/o service." << std::endl;

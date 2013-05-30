@@ -138,6 +138,7 @@ def receive_commands(adaptersock, devices):
     print 'Awaiting commands from DGI...'
     msg = recv_all(adaptersock)
     print 'Received commands from DGI:\n' + msg.strip()
+    # xxx a BadRequest or PoliteDisconnect here would be a crash
     if msg.find('DeviceCommands\r\n') != 0:
         raise RuntimeError('Malformed command packet:\n' + msg)
     for line in msg.split('\r\n'):

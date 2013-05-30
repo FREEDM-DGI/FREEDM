@@ -266,6 +266,9 @@ def polite_quit(adaptersock, devices, rejected_delay):
 
         if msg.find('BadRequest') == 0:
             handle_bad_request(msg)
+        elif msg.find('Error') == 0:
+            msg = msg.replace('Error', '', 1)
+            print >> sys.stderr, 'Received an error from DGI: ' + msg
 
         msg = msg.split()
         if len(msg) != 2 or msg[0] != 'PoliteDisconnect' or \

@@ -280,7 +280,7 @@ void CRtdsAdapter::EndianSwapIfNeeded(std::vector<SignalValue> & v)
 #if __BYTE_ORDER == __LITTLE_ENDIAN
     for( std::size_t i = 0; i < v.size(); i++ )
     {
-        ReverseBytes((char*)&v[0], sizeof(SignalValue));
+        ReverseBytes((char*)&v[i], sizeof(SignalValue));
     }
     
 #elif __BYTE_ORDER == __BIG_ENDIAN

@@ -169,7 +169,6 @@ def work(adaptersock, devices, delay):
     """
     send_states(adaptersock, devices)
     receive_commands(adaptersock, devices)
-    time.sleep(delay)
 
 
 def connect(devices, config):

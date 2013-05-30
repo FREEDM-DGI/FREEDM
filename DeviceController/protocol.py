@@ -94,22 +94,6 @@ def handle_bad_request(msg):
     raise RuntimeError('Sent bad request to DGI: ' + msg)
 
 
-def handle_dgi_error(msg, delay):
-    """
-    If the DGI reports an error on its end, print the error, wait for the hello
-    timeout, then try to reconnect.
-
-    In the future, we might want this function to be installable.
-
-    @param msg string the message sent by DGI
-    @param delay how long to wait before attempting to reconnect
-    """
-    msg = msg.replace('Error', '', 1)
-    print >> sys.stderr, 'Received an error from DGI: ' + msg
-    time.sleep(delay)
-    return connect(device_types)
-
-
 def send_states(adaptersock, devices):
     """
     Sends updated device states to the DGI.
@@ -238,7 +222,10 @@ def connect(devices, config):
             break
 
     if msg.find('Error') == 0:
-        return handle_dgi_error(msg, config['hello-timeout'])
+        msg = msg.replace('Error', '', 1)
+        print >> sys.stderr, 'Received an error from DGI: ' + msg
+        time.sleep(config['hello-timeout'])
+        return connect(devices, config)
     elif msg.find('BadRequest') == 0:
         handle_bad_request(msg)
     else:

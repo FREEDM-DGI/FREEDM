@@ -127,7 +127,8 @@ def receive_commands(adaptersock, devices):
     * DGI might be operating based on old state info if the state suddenly
       changes sharply based on a command in the dsp simulation script.
       In this case we shall ignore commands on this state for some configurable
-      amount of time (protected-state-duration).
+      amount of time (protected-state-duration). However this is now handled
+      by the Device class; this function is no longer aware of this behavior.
 
     @param adaptersock the connected stream socket to receive commands from
     @param devices set of devices attached to this controller

@@ -369,8 +369,15 @@ void LBAgent::LoadManage()
     // If you are in Supply state
     else if (LBAgent::SUPPLY == m_Status)
     {
-        //initiate draft request
-        SendDraftRequest();
+        using namespace device;
+        std::multiset<CDeviceLogger::Pointer> logger;
+        logger = CDeviceManager::Instance().GetDevicesOfType<CDeviceLogger>();
+
+        if( logger.empty() || (*logger.begin())->IsDgiEnabled() == true )
+        {
+            //initiate draft request
+            SendDraftRequest();
+        }
     }
 }//end LoadManage
 

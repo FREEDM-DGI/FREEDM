@@ -65,6 +65,12 @@ class CGlobalConfiguration : public boost::noncopyable
         void SetFactoryPort(unsigned short port) { m_factory_port = port; }
         /// Set the socket endpoint address
         void SetDevicesEndpoint(std::string e) { m_devicesEndpoint = e; };
+        /// Set the DNP3 device prefix
+        void SetDnp3Prefix(std::string p) { m_dnp3Prefix = p; }
+        /// Set the DNP3 address for the DGI slave
+        void SetDnp3Address(std::string a) { m_dnp3Address = a; }
+        /// Set the DNP3 port number for the DGI slave
+        void SetDnp3Port(unsigned short p) { m_dnp3Port = p; }
         /// Get the hostname
         std::string GetHostname() const { return m_hostname; };
         /// Get the port
@@ -80,6 +86,12 @@ class CGlobalConfiguration : public boost::noncopyable
         unsigned short GetFactoryPort() const { return m_factory_port; }        
         /// Get the socket endpoint address
         std::string GetDevicesEndpoint() const { return m_devicesEndpoint; };
+        /// Get the DNP3 prefix
+        std::string GetDnp3Prefix() const { return m_dnp3Prefix; }
+        /// Get the DNP3 address
+        std::string GetDnp3Address() const { return m_dnp3Address; }
+        /// Get the DNP3 port number
+        unsigned short GetDnp3Port() const { return m_dnp3Port; }
     private:
         std::string m_hostname; /// Node hostname
         std::string m_port; /// Port number
@@ -88,6 +100,9 @@ class CGlobalConfiguration : public boost::noncopyable
         boost::posix_time::time_duration m_clockskew; /// The skew of the clock
         unsigned short m_factory_port; /// Port number for adapter factory
         std::string m_devicesEndpoint; /// Socket endpoint address for devices
+        std::string m_dnp3Prefix; /// Prefix for DNP3 devices
+        std::string m_dnp3Address; /// Address of the DNP3 slave
+        unsigned short m_dnp3Port; /// Port of the DNP3 slave
 };
 
 } // namespace broker

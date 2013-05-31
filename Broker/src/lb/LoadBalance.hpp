@@ -135,6 +135,9 @@ class LBAgent
         /// Returns a pointer to the peer based on its UUID
         PeerNodePtr GetPeer(std::string uuid);
 
+        /// Update the DESD DNP3 status
+        void Dnp3Update(std::string devid, unsigned int index);
+
         // Variables
         /// Calculated Normal
         double m_Normal;

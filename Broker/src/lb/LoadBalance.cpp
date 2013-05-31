@@ -49,6 +49,7 @@
 #include "CDeviceManager.hpp"
 #include "CTimings.hpp"
 #include "dnp3/DNP3Slave.hpp"
+#include "CGlobalConfiguration.hpp"
 
 #include <algorithm>
 #include <cassert>
@@ -424,6 +425,44 @@ void LBAgent::LoadManage( const boost::system::error_code& err )
     }
 }
 
+////////////////////////////////////////////////////////////
+/// Dnp3Update
+/// @description Updates the values for one device using the DNP3Slave
+/// @pre None
+/// @post Updates the buffered values for the device
+/// @param devid The identifier for the device in the device manager
+/// @param index The index for the device in the DNP3 buffer
+/// @limitations The DNP3 buffer is not flushed during this call
+////////////////////////////////////////////////////////////
+void LBAgent::Dnp3Update(std::string devid, unsigned int index)
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+
+    device::IDevice::Pointer dev = device::CDeviceManager::Instance().GetDevice(devid);
+    device::CDeviceDesd::Pointer desd = device::device_cast<device::CDeviceDesd>(dev);
+
+    if( !dev || !desd )
+    {
+        DNP3Slave::Instance().Update(index, 0);
+    }
+    else
+    {
+        DNP3Slave::Instance().Update(index++, 1);
+        DNP3Slave::Instance().Update(index++, desd->GetCurrent());
+        DNP3Slave::Instance().Update(index++, desd->GetV1());
+        DNP3Slave::Instance().Update(index++, desd->GetV2());
+        DNP3Slave::Instance().Update(index++, desd->GetV3());
+        DNP3Slave::Instance().Update(index++, desd->GetV4());
+        DNP3Slave::Instance().Update(index++, desd->GetT1());
+        DNP3Slave::Instance().Update(index++, desd->GetT2());
+        DNP3Slave::Instance().Update(index++, desd->GetT3());
+        DNP3Slave::Instance().Update(index++, desd->GetT4());
+        DNP3Slave::Instance().Update(index++, desd->GetSoc1());
+        DNP3Slave::Instance().Update(index++, desd->GetSoc2());
+        DNP3Slave::Instance().Update(index++, desd->GetSoc3());
+        DNP3Slave::Instance().Update(index++, desd->GetSoc4());
+    }
+}
 
 ////////////////////////////////////////////////////////////
 /// LoadTable
@@ -473,24 +512,11 @@ void LBAgent::LoadTable()
         m_NetGateway = m_Load - m_Gen - m_Storage;
     }
 
-    if( numDESDs > 0 )
-    {
-        CDeviceDesd::Pointer desd = *CDeviceManager::Instance().GetDevicesOfType<CDeviceDesd>().begin();
-        DNP3Slave::Instance().Update(0, desd->GetCurrent());
-        DNP3Slave::Instance().Update(1, desd->GetV1());
-        DNP3Slave::Instance().Update(2, desd->GetV2());
-        DNP3Slave::Instance().Update(3, desd->GetV3());
-        DNP3Slave::Instance().Update(4, desd->GetV4());
-        DNP3Slave::Instance().Update(5, desd->GetT1());
-        DNP3Slave::Instance().Update(6, desd->GetT2());
-        DNP3Slave::Instance().Update(7, desd->GetT3());
-        DNP3Slave::Instance().Update(8, desd->GetT4());
-        DNP3Slave::Instance().Update(9, desd->GetSoc1());
-        DNP3Slave::Instance().Update(10, desd->GetSoc2());
-        DNP3Slave::Instance().Update(11, desd->GetSoc3());
-        DNP3Slave::Instance().Update(12, desd->GetSoc4());
-        DNP3Slave::Instance().Flush();
-    }
+    std::string prefix = CGlobalConfiguration::instance().GetDnp3Prefix();
+    Dnp3Update(prefix+":1", 1);
+    Dnp3Update(prefix+":2", 16);
+    Dnp3Update(prefix+":3", 31);
+    DNP3Slave::Instance().Flush();
 
     typedef CDeviceLogger LOGGER;
     std::multiset<LOGGER::Pointer> LSet;

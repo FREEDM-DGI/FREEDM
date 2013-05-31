@@ -120,8 +120,9 @@ int main(int argc, char* argv[])
     po::variables_map vm;
     std::ifstream ifs;
     std::string cfgFile, loggerCfgFile, timingsFile, adapterCfgFile;
-    std::string listenIP, port, hostname, fport, id;
+    std::string listenIP, port, hostname, fport, id, dnp3Address, dnp3Prefix;
     unsigned int globalVerbosity;
+    unsigned short dnp3Port;
 
     try
     {
@@ -151,6 +152,12 @@ int main(int argc, char* argv[])
                 "port for plug and play session protocol" )
                 ( "adapter-config", po::value<std::string>(&adapterCfgFile),
                 "filename of the adapter specification for physical devices" )
+                ( "dnp3-prefix", po::value<std::string>(&dnp3Prefix),
+                "name for the DNP3 device controller" )
+                ( "dnp3-address", po::value<std::string>(&dnp3Address),
+                "address of this machine known to the DNP3 master" )
+                ( "dnp3-port", po::value<unsigned short>(&dnp3Port),
+                "port number used for the DNP3 communication" )
                 ( "list-loggers", "Print all the available loggers and exit" )
                 ( "logger-config",
                 po::value<std::string > ( &loggerCfgFile )->
@@ -257,6 +264,16 @@ int main(int argc, char* argv[])
             CGlobalConfiguration::instance().SetDevicesEndpoint(
                 vm["devices-endpoint"].as<std::string>() );
         }
+    
+        // configure DNP3
+        if( vm.count("dnp3-address") == 0 || vm.count("dnp3-port") == 0 )
+        {
+            throw std::runtime_error("DNP3 has not been configured");
+        }
+        CGlobalConfiguration::instance().SetDnp3Prefix(dnp3Prefix);
+        CGlobalConfiguration::instance().SetDnp3Address(dnp3Address);
+        CGlobalConfiguration::instance().SetDnp3Port(dnp3Port);
+        DNP3Slave::Instance();
 
         // configure the adapter factory
         if( vm.count("factory-port") == 0 )
@@ -382,7 +399,6 @@ int main(int argc, char* argv[])
 
     try
     {
-        DNP3Slave::Instance();
         broker.Run();
     }
     catch (std::exception & e)

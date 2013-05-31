@@ -40,6 +40,7 @@
 
 #include <vector>
 #include <cstring>
+#include <csignal>
 #include <stdexcept>
 #include <algorithm>
 
@@ -163,10 +164,10 @@ void CRtdsAdapter::Run()
             boost::asio::write(m_socket, boost::asio::buffer(m_txBuffer, 
                     m_txBuffer.size() * sizeof(SignalValue)));
         }
-        catch(std::exception & e)
+        catch(boost::system::system_error & e)
         {
-            throw std::runtime_error("Send to FPGA failed: "
-                    + std::string(e.what()));
+            Logger.Fatal << "Send to FPGA failed: " << e.what();
+            raise(SIGTERM);
         }
         EndianSwapIfNeeded(m_txBuffer);
         
@@ -186,10 +187,10 @@ void CRtdsAdapter::Run()
             boost::asio::read(m_socket, boost::asio::buffer(m_rxBuffer,
                     m_rxBuffer.size() * sizeof(SignalValue)));
         }
-        catch (std::exception & e)
+        catch (boost::system::system_error & e)
         {
-            throw std::runtime_error("Receive from FPGA failed: " 
-                    + std::string(e.what()));
+            Logger.Fatal << "Receive from FPGA failed: " << e.what();
+            raise(SIGTERM);
         }
         EndianSwapIfNeeded(m_rxBuffer);
         

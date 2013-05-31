@@ -352,6 +352,10 @@ void LBAgent::LoadManage()
     //Call LoadTable to update load state of the system as observed by this node
     LoadTable();
 
+    using namespace device;
+    std::multiset<CDeviceLogger::Pointer> logger;
+    logger = CDeviceManager::Instance().GetDevicesOfType<CDeviceLogger>();
+
     //Send Demand message when the current state is Demand
     //NOTE: (changing the original architecture in which Demand broadcast is done
     //only when the Normal->Demand or Demand->Normal cases happen)
@@ -369,14 +373,23 @@ void LBAgent::LoadManage()
     // If you are in Supply state
     else if (LBAgent::SUPPLY == m_Status)
     {
-        using namespace device;
-        std::multiset<CDeviceLogger::Pointer> logger;
-        logger = CDeviceManager::Instance().GetDevicesOfType<CDeviceLogger>();
-
         if( logger.empty() || (*logger.begin())->IsDgiEnabled() == true )
         {
             //initiate draft request
             SendDraftRequest();
+        }
+    }
+
+    if( !logger.empty() && (*logger.begin())->IsDgiEnabled() == false )
+    {
+        typedef device::CDeviceSst SST;
+        std::multiset<SST::Pointer> SSTContainer;
+        std::multiset<SST::Pointer>::iterator it, end;
+        SSTContainer = device::CDeviceManager::Instance().GetDevicesOfType<SST>();
+
+        for( it = SSTContainer.begin(), end = SSTContainer.end(); it != end; it++ )
+        {
+            (*it)->SetGateway(m_NetGateway);
         }
     }
 }//end LoadManage

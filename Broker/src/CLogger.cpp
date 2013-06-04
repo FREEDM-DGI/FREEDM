@@ -168,7 +168,15 @@ void CGlobalLogger::SetInitialLoggerLevels(const std::string loggerCfgFile)
     else
     {
         // Process the config
-        po::store(parse_config_file(ifs, loggerOpts), vm);
+        try
+        {
+            po::store(parse_config_file(ifs, loggerOpts), vm);
+        }
+        catch( po::unknown_option & e)
+        {
+            throw std::runtime_error( "Invalid logger name '" 
+                    + e.get_option_name() + "' in " + loggerCfgFile );
+        }
         po::notify(vm);
         Logger.Info << "Logger config file " << loggerCfgFile <<
                 " successfully loaded." << std::endl;

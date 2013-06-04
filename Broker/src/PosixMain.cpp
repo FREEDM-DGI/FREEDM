@@ -150,7 +150,6 @@ int main(int argc, char* argv[])
                 "port for plug and play session protocol" )
                 ( "adapter-config", po::value<std::string>(&adapterCfgFile),
                 "filename of the adapter specification for physical devices" )
-                ( "list-loggers", "Print all the available loggers and exit" )
                 ( "logger-config",
                 po::value<std::string > ( &loggerCfgFile )->
                 default_value("./config/logger.cfg"),

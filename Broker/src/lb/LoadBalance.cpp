@@ -683,7 +683,7 @@ void LBAgent::LeaderICC()
     Logger.Status << "------leader ICC------" << std::endl;
     std::string uuid_;
     m_preLamda = m_lamda;
-
+    countlambda = 0;
     m_lamda = 0;
     /*
         //print out network variables
@@ -730,9 +730,6 @@ void LBAgent::LeaderICC()
     m_collectlamda.clear();
     m_collectPGen.clear();
 
-    countlambda = 0;
-
-
     //insert new one
     m_collectlamda.insert(std::pair<std::string, float>(GetUUID(), m_lamda));
 /*
@@ -766,19 +763,21 @@ void LBAgent::FollowerICC()
 
     m_preLamda = m_lamda;
     m_lamda = 0;
+    //Logger.Status << "countlambda =======" << countlambda << std::endl;
+    countlambda = 0;
+    /*
+    //print out network variables
+    for(it = m_collectvar.begin(); it != m_collectvar.end(); it++)
+    {
+        Logger.Status << (*it).first << " -- " << (*it).second << std::endl;
+    }
     
-        //print out network variables
-        for(it = m_collectvar.begin(); it != m_collectvar.end(); it++)
-        {
-            Logger.Status << (*it).first << " -- " << (*it).second << std::endl;
-        }
-    
-        //print out collected lamda
-        for(it = m_collectlamda.begin(); it != m_collectlamda.end(); it++)
-        {
-            Logger.Status << (*it).first << " && " << (*it).second << std::endl;
-        }
-    
+    //print out collected lamda
+    for(it = m_collectlamda.begin(); it != m_collectlamda.end(); it++)
+    {
+        Logger.Status << (*it).first << " && " << (*it).second << std::endl;
+    }
+    */
 
     //calculate new lamda
     BOOST_FOREACH(PeerNodePtr peer_, m_AllPeers | boost::adaptors::map_values)
@@ -796,7 +795,7 @@ void LBAgent::FollowerICC()
     << m_PGen << std::endl;
     //update collectlamda container
     m_collectlamda.clear();
-    countlambda = 0;
+
     m_collectlamda.insert(std::pair<std::string, float>(GetUUID(), m_lamda));
 /*
     if (!isEqual(m_preLamda, m_lamda))
@@ -1499,15 +1498,21 @@ void LBAgent::HandleUpdate(MessagePtr msg, PeerNodePtr peer)
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     ptree &pt = msg->GetSubMessages();
     std::string uuid_ = pt.get<std::string>("lb.source");
-    float leaderlamda;
-    leaderlamda = boost::lexical_cast<float>(pt.get<std::string>("lb.lamda"));
-    //insert new leaderlamda in collectlamda
-    m_collectlamda.insert(std::pair<std::string, float>(uuid_, leaderlamda));
-    countlambda ++;
-    if (GetUUID() == m_Leader)
+    float anotherlamda;
+    anotherlamda = boost::lexical_cast<float>(pt.get<std::string>("lb.lamda"));
+    //insert new anotherlamda in collectlamda
+    if (m_collectlamda.find(uuid_) == m_collectlamda.end())
     {
-        float followerPGen = boost::lexical_cast<float>(pt.get<std::string>("lb.PGen"));
-        m_collectPGen.insert(std::pair<std::string, float>(uuid_, followerPGen));
+        m_collectlamda.insert(std::pair<std::string, float>(uuid_, anotherlamda));
+        //Logger.Status << "Insert another Lambda:  " << anotherlamda << " from " << uuid_ <<std::endl;
+        countlambda ++;
+
+	if (GetUUID() == m_Leader)
+	{
+	    float followerPGen = boost::lexical_cast<float>(pt.get<std::string>("lb.PGen"));
+            m_collectPGen.insert(std::pair<std::string, float>(uuid_, followerPGen));
+
+	}
     }
     
     if (GetUUID() == m_Leader && countlambda == m_AllPeers.size()-1)
@@ -1515,7 +1520,7 @@ void LBAgent::HandleUpdate(MessagePtr msg, PeerNodePtr peer)
         LeaderICC();
     }
     
-    if (GetUUID() != m_Leader && countlambda == m_AllPeers.size()-1)
+    else if (GetUUID() != m_Leader && countlambda == m_AllPeers.size()-1)
     {
         FollowerICC();
     }

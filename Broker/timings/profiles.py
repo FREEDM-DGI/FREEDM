@@ -127,3 +127,7 @@ def cs_exchange_time(*args,**kwargs):
 
 def rtds_run_delay(*args, **kwargs):
     return kwargs.get('rtds_run_delay')
+
+def lb_sc_query_time(*args, **kwargs):
+    #This can be magic because the SC query should only generate a local message.
+    return 20

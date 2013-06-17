@@ -115,8 +115,7 @@ class CClockSynchronizer
 
     ///Time for the exchange
     boost::asio::deadline_timer m_exchangetimer;
-    /// The broker
-    CBroker& m_broker;
+
     /// The UUID
     std::string m_uuid;
    

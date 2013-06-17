@@ -141,9 +141,6 @@ class SCAgent : public IReadHandler, public IPeerNode,
         ///all known peers
         PeerSet m_AllPeers;
         
-        ///Timeout Timer
-        CBroker::TimerHandle m_TimeoutTimer;
-        
         /// The broker
         CBroker &m_broker;
 };

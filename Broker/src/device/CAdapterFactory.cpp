@@ -426,7 +426,7 @@ void CAdapterFactory::StartSessionProtocol()
         port        = CGlobalConfiguration::instance().GetFactoryPort();
         handler     = boost::bind(&CAdapterFactory::StartSession, this);
         m_server    = CTcpServer::Create(m_ios, port,
-                CGlobalConfiguration::instance().GetDevicesEndpoint() );
+                CGlobalConfiguration::instance().GetListenAddress() );
         m_server->RegisterHandler(handler);
     }
 }

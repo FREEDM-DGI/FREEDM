@@ -489,7 +489,7 @@ void SCAgent::HandleAny(MessagePtr msg, PeerNodePtr peer)
         Logger.Error<<"Unhandled State Collection Message"<<std::endl;
         msg->Save(Logger.Error);
         Logger.Error<<std::endl;
-        throw std::runtime_error("Unhandled State Collection Message");
+        throw EUnhandledMessage("Unhandled State Collection Message");
     }
 
     intransit = msg->GetHandler() + " from " + line_ + " to " + GetUUID();

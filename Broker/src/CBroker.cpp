@@ -161,14 +161,15 @@ boost::asio::io_service& CBroker::GetIOService()
 /// @pre The ioservice is running and processing tasks.
 /// @post The command to stop the ioservice has been placed in the service's
 ///        task queue.
+/// @param signum positive if called from a signal handler, or 0 otherwise
 ///////////////////////////////////////////////////////////////////////////////
-void CBroker::Stop()
+void CBroker::Stop(unsigned int signum)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     // Post a call to the stop function so that CBroker::stop() is safe to call
     // from any thread.
     m_synchronizer.Stop();
-    m_ioService.post(boost::bind(&CBroker::HandleStop, this));
+    m_ioService.post(boost::bind(&CBroker::HandleStop, this, signum));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -181,8 +182,7 @@ void CBroker::HandleSignal(const boost::system::error_code& error, int parameter
 {
     if(!error)
     {
-        Logger.Fatal<<"Caught signal "<<parameter<<". Shutting Down..."<<std::endl;
-        Stop();
+        Stop(parameter);
     }
 }
 
@@ -192,15 +192,24 @@ void CBroker::HandleSignal(const boost::system::error_code& error, int parameter
 ///              Services.
 /// @pre The ioservice is running.
 /// @post The ioservice is stopped.
+/// @param signum positive if called from a signal handler, or 0 otherwise
 ///////////////////////////////////////////////////////////////////////////////
-void CBroker::HandleStop()
+void CBroker::HandleStop(unsigned int signum)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+
     // The server is stopped by canceling all outstanding asynchronous
     // operations. Once all operations have finished the io_service::run() call
     // will exit.
     m_connManager.StopAll();
-    m_ioService.stop(); 
+    m_ioService.stop();
+
+    if (signum > 0)
+    {
+        Logger.Fatal<<"Caught signal "<<signum<<". Shutting Down..."<<std::endl;
+        m_signals.remove(signum);
+        raise(signum);
+    }
 }
 
 ///////////////////////////////////////////////////////////////////////////////

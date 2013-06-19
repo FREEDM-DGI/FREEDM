@@ -90,13 +90,13 @@ public:
     boost::asio::io_service& GetIOService();
 
     /// Puts the stop request into the ioservice queue.
-    void Stop();
+    void Stop(unsigned int signum = 0);
 
     /// Handle signals
     void HandleSignal(const boost::system::error_code& error, int parameter);
 
     /// Stop the server.
-    void HandleStop();
+    void HandleStop(unsigned int signum = 0);
     
     /// Schedule a task
     void Schedule(TimerHandle h, boost::posix_time::time_duration wait, Scheduleable x);

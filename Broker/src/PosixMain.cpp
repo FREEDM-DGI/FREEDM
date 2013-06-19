@@ -140,14 +140,14 @@ int main(int argc, char* argv[])
                 ( "add-host,H",
                 po::value<std::vector<std::string> >( )->composing(),
                 "hostname:port of a peer" )
+                ( "address",
+                po::value<std::string > ( &listenIP )->default_value("0.0.0.0"),
+                "IP interface to listen for peers on" )
                 ( "port,p",
                 po::value<std::string > ( &port )->default_value("1870"),
                 "TCP port to listen for peers on" )
                 ( "factory-port", po::value<std::string>(&fport),
                 "port for plug and play session protocol" )
-                ( "address",
-                po::value<std::string > ( &listenIP )->default_value("0.0.0.0"),
-                "communicate over the interface specified by this IP" )
                 ( "adapter-config", po::value<std::string>(&adapterCfgFile),
                 "filename of the adapter specification for physical devices" )
                 ( "logger-config",
@@ -161,7 +161,11 @@ int main(int argc, char* argv[])
                 ( "verbose,v",
                 po::value<unsigned int>( &globalVerbosity )->
                 implicit_value(5)->default_value(5),
-                "enable verbose output (optionally specify level)" );
+                "enable verbose output (optionally specify level)" )
+                ( "devices-endpoint",
+                po::value<std::string> (),
+                "restrict the endpoint to use for all network communications "
+                "from the device module to the specified IP");
 
         // Options allowed on command line
         cliOpts.add(genOpts).add(cfgOpts);
@@ -244,6 +248,13 @@ int main(int argc, char* argv[])
         CGlobalConfiguration::instance().SetListenAddress(listenIP);
         CGlobalConfiguration::instance().SetClockSkew(
                 boost::posix_time::milliseconds(0));
+        
+        // Specify socket endpoint address, if provided
+        if( vm.count("devices-endpoint") )
+        {
+            CGlobalConfiguration::instance().SetDevicesEndpoint(
+                vm["devices-endpoint"].as<std::string>() );
+        }
 
         // configure the adapter factory
         if( vm.count("factory-port") == 0 )

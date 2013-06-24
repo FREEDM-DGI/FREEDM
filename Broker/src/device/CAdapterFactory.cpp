@@ -37,7 +37,6 @@
 
 #include "CAdapterFactory.hpp"
 #include "IBufferAdapter.hpp"
-#include "CPscadAdapter.hpp"
 #include "CRtdsAdapter.hpp"
 #include "CPnpAdapter.hpp"
 #include "CDeviceManager.hpp"
@@ -183,11 +182,8 @@ void CAdapterFactory::CreateAdapter(const boost::property_tree::ptree & p)
     }
     
     // create the adapter
-    if( type == "pscad" )
-    {
-        adapter = CPscadAdapter::Create(m_ios, subtree);
-    }
-    else if( type == "rtds" )
+    // FIXME - use plugins or something, this sucks
+    if( type == "rtds" )
     {
         adapter = CRtdsAdapter::Create(m_ios, subtree);
     }

@@ -90,7 +90,7 @@ CBroker::CBroker(const std::string& p_address, const std::string& p_port,
     
     // Listen for connections and create an event to spawn a new connection
     m_newConnection->GetSocket().open(endpoint.protocol());
-    m_newConnection->GetSocket().bind(endpoint);;
+    m_newConnection->GetSocket().bind(endpoint);
     m_connManager.Start(m_newConnection);
     m_busy = false;
     

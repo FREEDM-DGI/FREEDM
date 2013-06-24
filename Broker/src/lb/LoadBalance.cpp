@@ -669,7 +669,7 @@ void LBAgent::HandleAny(MessagePtr msg, PeerNodePtr peer)
         Logger.Error<<"Unhandled Load Balancing Message"<<std::endl;
         msg->Save(Logger.Error);
         Logger.Error<<std::endl;
-        throw std::runtime_error("Unhandled Load Balancing Message");
+        throw EUnhandledMessage("Unhandled Load Balancing Message");
     }
 }
 

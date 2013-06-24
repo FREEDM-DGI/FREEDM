@@ -114,7 +114,11 @@ SignalValue IDevice::Get(const std::string signal) const
                 + ", does not recognize the state signal: " + signal);
     }
     
-    return m_adapter->Get(m_identifier, signal);
+    SignalValue value = m_adapter->Get(m_identifier, signal);
+
+    Logger.Debug << m_identifier << " " << signal << ": " << value << std::endl;
+
+    return value;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

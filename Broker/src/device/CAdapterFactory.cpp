@@ -118,6 +118,7 @@ void CAdapterFactory::RunService()
 
     try
     {
+        Logger.Status << "Starting the adapter i/o service." << std::endl;
         m_ios.run();
     }
     catch (std::exception & e)
@@ -128,7 +129,7 @@ void CAdapterFactory::RunService()
         raise(SIGTERM);
     }
 
-    Logger.Status << "Started the adapter i/o service." << std::endl;
+    Logger.Status << "The adapter i/o service has stopped." << std::endl;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

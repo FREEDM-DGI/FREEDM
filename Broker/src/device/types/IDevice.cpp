@@ -107,13 +107,13 @@ std::string IDevice::GetID() const
 SignalValue IDevice::Get(const std::string signal) const
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    
+
     if( !HasStateSignal(signal) )
     {
         throw std::runtime_error("The device, " + m_identifier
                 + ", does not recognize the state signal: " + signal);
     }
-    
+
     SignalValue value = m_adapter->Get(m_identifier, signal);
 
     Logger.Debug << m_identifier << " " << signal << ": " << value << std::endl;
@@ -138,13 +138,13 @@ SignalValue IDevice::Get(const std::string signal) const
 void IDevice::Set(const std::string signal, const SignalValue value)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    
+
     if( !HasCommandSignal(signal) )
     {
         throw std::runtime_error("The device, " + m_identifier
                 + ", does not recognize the command signal: " + signal);
     }
-    
+
     m_adapter->Set(m_identifier, signal, value);
 }
 

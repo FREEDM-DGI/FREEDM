@@ -25,6 +25,7 @@
 #include "DeviceTable.hpp"
 
 #include <cassert>
+#include <cmath>
 #include <cstddef>
 
 #include <sys/param.h>
@@ -91,7 +92,7 @@ void CRtdsAdapter::HandleConnection()
             writeLock = CTableManager::AsWriter(COMMAND_TABLE);
             for( std::size_t i = 0; i < recvSize; i++ )
             {
-                if( recvBuffer[i] == recvBuffer[i] )
+                if( !isnan(recvBuffer[i]) )
                     writeLock->SetValue(m_CommandDetails[i],recvBuffer[i]);
             }
             writeLock.reset();

@@ -23,6 +23,7 @@ set(
     CTcpServer.cpp
     CPnpAdapter.cpp
     PhysicalDeviceTypes.cpp
+    SynchronousTimeout.cpp
    )
 
 # generate PhysicalDeviceTypes using the generator

@@ -35,6 +35,7 @@
 #include "CRtdsAdapter.hpp"
 #include "CLogger.hpp"
 #include "CTimings.hpp"
+#include "SynchronousTimeout.hpp"
 
 #include <sys/param.h>
 
@@ -160,8 +161,8 @@ void CRtdsAdapter::Run()
         try
         {
             Logger.Debug << "Blocking for a socket write call." << std::endl;
-            boost::asio::write(m_socket, boost::asio::buffer(m_txBuffer, 
-                    m_txBuffer.size() * sizeof(SignalValue)));
+            TimedWrite(m_socket, boost::asio::buffer(m_txBuffer, 
+                    m_txBuffer.size() * sizeof(SignalValue)), 800);
         }
         catch(std::exception & e)
         {
@@ -183,8 +184,8 @@ void CRtdsAdapter::Run()
         try
         {
             Logger.Debug << "Blocking for a socket read call." << std::endl;
-            boost::asio::read(m_socket, boost::asio::buffer(m_rxBuffer,
-                    m_rxBuffer.size() * sizeof(SignalValue)));
+            TimedRead(m_socket, boost::asio::buffer(m_rxBuffer,
+                    m_rxBuffer.size() * sizeof(SignalValue)), 800);
         }
         catch (std::exception & e)
         {

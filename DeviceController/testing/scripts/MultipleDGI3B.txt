@@ -1,0 +1,4 @@
+# Multiple DGI 3 - Script B - Value Change during Convergence
+enable Sst SST2 gateway 4.0
+work forever
+

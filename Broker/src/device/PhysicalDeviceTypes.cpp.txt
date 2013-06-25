@@ -64,6 +64,7 @@ void CAdapterFactory::RegisterDevices()
 std::multiset<IDevice::Pointer> CDeviceManager::GetDevicesOfType(
         std::string type)
 {
+    boost::shared_lock<boost::shared_mutex> lock(m_mutex);
     std::multiset<IDevice::Pointer> result;
     
     for( iterator it = m_devices.begin(); it != m_devices.end(); it++ )

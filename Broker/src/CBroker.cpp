@@ -80,7 +80,7 @@ CBroker::CBroker(const std::string& p_address, const std::string& p_port,
       m_newConnection(new CListener(m_ioService, m_connManager, *this, m_conMan.GetUUID())),
       m_phasetimer(m_ios),
       m_synchronizer(*this),
-      m_signals(m_ios,SIGINT)
+      m_signals(m_ios,SIGINT,SIGTERM)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     // Open the acceptor with the option to reuse the address (i.e. SO_REUSEADDR).
@@ -90,7 +90,7 @@ CBroker::CBroker(const std::string& p_address, const std::string& p_port,
     
     // Listen for connections and create an event to spawn a new connection
     m_newConnection->GetSocket().open(endpoint.protocol());
-    m_newConnection->GetSocket().bind(endpoint);;
+    m_newConnection->GetSocket().bind(endpoint);
     m_connManager.Start(m_newConnection);
     m_busy = false;
     
@@ -100,6 +100,7 @@ CBroker::CBroker(const std::string& p_address, const std::string& p_port,
     now -= boost::posix_time::milliseconds(2*ALIGNMENT_DURATION);
     m_last_alignment = now;
 
+    m_phase = 0;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -160,14 +161,15 @@ boost::asio::io_service& CBroker::GetIOService()
 /// @pre The ioservice is running and processing tasks.
 /// @post The command to stop the ioservice has been placed in the service's
 ///        task queue.
+/// @param signum positive if called from a signal handler, or 0 otherwise
 ///////////////////////////////////////////////////////////////////////////////
-void CBroker::Stop()
+void CBroker::Stop(unsigned int signum)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     // Post a call to the stop function so that CBroker::stop() is safe to call
     // from any thread.
     m_synchronizer.Stop();
-    m_ioService.post(boost::bind(&CBroker::HandleStop, this));
+    m_ioService.post(boost::bind(&CBroker::HandleStop, this, signum));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -180,8 +182,7 @@ void CBroker::HandleSignal(const boost::system::error_code& error, int parameter
 {
     if(!error)
     {
-        Logger.Fatal<<"Caught signal "<<parameter<<". Shutting Down..."<<std::endl;
-        Stop();
+        Stop(parameter);
     }
 }
 
@@ -191,15 +192,24 @@ void CBroker::HandleSignal(const boost::system::error_code& error, int parameter
 ///              Services.
 /// @pre The ioservice is running.
 /// @post The ioservice is stopped.
+/// @param signum positive if called from a signal handler, or 0 otherwise
 ///////////////////////////////////////////////////////////////////////////////
-void CBroker::HandleStop()
+void CBroker::HandleStop(unsigned int signum)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+
     // The server is stopped by canceling all outstanding asynchronous
     // operations. Once all operations have finished the io_service::run() call
     // will exit.
     m_connManager.StopAll();
-    m_ioService.stop(); 
+    m_ioService.stop();
+
+    if (signum > 0)
+    {
+        Logger.Fatal<<"Caught signal "<<signum<<". Shutting Down..."<<std::endl;
+        m_signals.remove(signum);
+        raise(signum);
+    }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -218,7 +228,7 @@ void CBroker::RegisterModule(CBroker::ModuleIdent m, boost::posix_time::time_dur
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     m_schmutex.lock();
     boost::system::error_code err;
-    bool exists;
+    bool exists = false;
     for(unsigned int i=0; i < m_modules.size(); i++)
     {
         if(m_modules[i].first == m)
@@ -258,6 +268,8 @@ CBroker::TimerHandle CBroker::AllocateTimer(CBroker::ModuleIdent module)
     m_handlercounter++;
     m_allocs.insert(CBroker::TimerAlloc::value_type(myhandle,module));
     m_timers.insert(CBroker::TimersMap::value_type(myhandle,t));
+    m_nexttime.insert(CBroker::NextTimeMap::value_type(myhandle,false));
+    m_ntexpired.insert(CBroker::NextTimeMap::value_type(myhandle,false));
     m_schmutex.unlock();
     return myhandle;
 }
@@ -266,8 +278,14 @@ CBroker::TimerHandle CBroker::AllocateTimer(CBroker::ModuleIdent module)
 /// @fn CBroker::Schedule
 /// @description Given a binding to a function that should be run into the
 ///   future, prepares it to be run... in the future.
+/// @param h The handle to the timer being set.
+/// @param wait the amount of the time to wait. If this value is "not_a_date_time"
+///     The wait is converted to positive infinity and the time will expire as 
+///     soon as the module no longer owns the context.
+/// @param x The partially bound function that will be scheduled.
 /// @pre The module is registered
-/// @post A function is scheduled to be called in the future.
+/// @post A function is scheduled to be called in the future. If a next time
+///     function is scheduled, its timer will expire as soon as its round ends.
 ///////////////////////////////////////////////////////////////////////////////
 void CBroker::Schedule(CBroker::TimerHandle h,
     boost::posix_time::time_duration wait, CBroker::Scheduleable x)
@@ -275,6 +293,15 @@ void CBroker::Schedule(CBroker::TimerHandle h,
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     m_schmutex.lock();
     CBroker::Scheduleable s;
+    if(wait.is_not_a_date_time())
+    {
+        wait = boost::posix_time::time_duration(boost::posix_time::pos_infin);
+        m_nexttime[h] = true;
+    }
+    else
+    {
+        m_nexttime[h] = false;
+    }
     m_timers[h]->expires_from_now(wait);
     s = boost::bind(&CBroker::ScheduledTask,this,x,h,boost::asio::placeholders::error);
     Logger.Debug<<"Scheduled task for timer "<<h<<std::endl;
@@ -386,6 +413,22 @@ void CBroker::ChangePhase(const boost::system::error_code &err)
     if(m_phase != oldphase)
     {
         m_connManager.ChangePhase((m_phase==0));
+        std::string oldident = m_modules[oldphase].first;
+        Logger.Notice<<"Changed Phase: expiring next time timers for "<<oldident<<std::endl;
+        // Look through the timers for the module and see if any of them are
+        // set for next time:
+        BOOST_FOREACH(CBroker::TimerAlloc::value_type t, m_allocs)
+        {
+            Logger.Debug<<"Examine timer "<<t.first<<" for module "<<t.second<<" expire nexttime: "
+                        <<m_nexttime[t.first]<<std::endl;
+            if(t.second == oldident && m_nexttime[t.first] == true)
+            {
+                Logger.Notice<<"Scheduling task for next time timer: "<<t.first<<std::endl;
+                m_timers[t.first]->cancel();                
+                m_nexttime[t.first] = false;
+                m_ntexpired[t.first] = true;
+            }   
+        }
     }
     //If the worker isn't going, start him again when you change phases.
     if(!m_busy)
@@ -432,9 +475,18 @@ void CBroker::ScheduledTask(CBroker::Scheduleable x, CBroker::TimerHandle handle
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     m_schmutex.lock();
     ModuleIdent module = m_allocs[handle];
+    boost::system::error_code serr;
+    if(m_ntexpired[handle])
+    {
+        m_ntexpired[handle] = false;
+    }
+    else
+    {
+        serr = err;
+    }
     Logger.Debug<<"Handle finished: "<<handle<<" For module "<<module<<std::endl;
     // First, prepare another bind, which uses the given error
-    CBroker::BoundScheduleable y = boost::bind(x,err);
+    CBroker::BoundScheduleable y = boost::bind(x,serr);
     // Put it into the ready queue
     m_ready[module].push_back(y);
     Logger.Debug<<"Module "<<module<<" now has queue size: "<<m_ready[module].size()<<std::endl;

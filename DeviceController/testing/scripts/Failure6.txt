@@ -1,0 +1,7 @@
+# Failure 6 - Wi-Fi drops before sending states, then recovers
+sendtofactory packets/ValidHello.txt
+sleep 10
+# Kill Wi-Fi now
+enable Sst SST1 gateway 5.0
+# Restore Wi-Fi here
+work forever

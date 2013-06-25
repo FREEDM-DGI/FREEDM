@@ -1,0 +1,7 @@
+# Basic Operation 7 - Removes the Correct Device (B)
+enable Sst SST1 gateway 5.0
+enable Sst SST2 gateway 7.0
+work 5
+disable SST2
+work forever
+

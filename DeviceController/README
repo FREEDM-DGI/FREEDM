@@ -1,0 +1,17 @@
+This is fake code for an ARM device controller. The controller is responsible
+for managing one or multiple physical devices that are connected to it. The
+primary purpose of the controller is to send device state information to DGI and
+send DGI commands to physical devices. To accomplish this, the controller must
+participate in the device session protocol with the DGI.
+
+This fake code exists to trick DGI into thinking that's happening.
+
+How to use:
+
+1) Move controller.cfg and dsp-script.txt from config/samples/ to config/
+
+2) Modify them.
+
+3) Turn on the DGI.
+
+4) Run the controller.

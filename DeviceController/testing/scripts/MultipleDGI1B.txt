@@ -1,0 +1,4 @@
+# Multiple DGI 1 - Script B - Positive Normal Value
+enable Sst SST2 gateway 30.0
+work forever
+

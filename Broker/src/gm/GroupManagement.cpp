@@ -88,10 +88,10 @@ CLocalLogger Logger(__FILE__);
 ///////////////////////////////////////////////////////////////////////////////
 GMAgent::GMAgent(std::string p_uuid, CBroker &broker)
     : IPeerNode(p_uuid,broker.GetConnectionManager()),
-    CHECK_TIMEOUT(boost::posix_time::milliseconds(CTimings::GM_CHECK_TIMEOUT)),
-    TIMEOUT_TIMEOUT(boost::posix_time::milliseconds(CTimings::GM_TIMEOUT_TIMEOUT)),
+    CHECK_TIMEOUT(boost::posix_time::not_a_date_time),
+    TIMEOUT_TIMEOUT(boost::posix_time::not_a_date_time),
     GLOBAL_TIMEOUT(boost::posix_time::milliseconds(CTimings::GM_GLOBAL_TIMEOUT)),
-    FID_TIMEOUT(boost::posix_time::milliseconds(CTimings::GM_FID_TIMEOUT)),
+    FID_TIMEOUT(boost::posix_time::not_a_date_time),
     AYC_RESPONSE_TIMEOUT(boost::posix_time::milliseconds(CTimings::GM_AYC_RESPONSE_TIMEOUT)),
     AYT_RESPONSE_TIMEOUT(boost::posix_time::milliseconds(CTimings::GM_AYT_RESPONSE_TIMEOUT)),
     INVITE_RESPONSE_TIMEOUT(boost::posix_time::milliseconds(CTimings::GM_INVITE_RESPONSE_TIMEOUT)),
@@ -250,7 +250,7 @@ CMessage GMAgent::Accept()
     m_.m_submessages.put("gm.source", GetUUID());
     m_.m_submessages.put("gm.groupid",m_GroupID);
     m_.m_submessages.put("gm.groupleader",m_GroupLeader);
-    m_.SetExpireTimeFromNow(TIMEOUT_TIMEOUT);
+    m_.SetExpireTimeFromNow(GLOBAL_TIMEOUT);
     return m_;
 }
 
@@ -272,7 +272,7 @@ CMessage GMAgent::AreYouThere()
     m_.m_submessages.put("gm.seq",id);
     Logger.Debug<<"Generated AYT : "<<id<<std::endl;
     id++;
-    m_.SetExpireTimeFromNow(TIMEOUT_TIMEOUT);
+    m_.SetExpireTimeFromNow(GLOBAL_TIMEOUT);
     return m_;
 }
 
@@ -562,6 +562,7 @@ void GMAgent::Recovery( const boost::system::error_code& err )
 void GMAgent::Check( const boost::system::error_code& err )
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Debug << "GOT ERROR CODE " << err << std::endl;
     if( !err )
     {
         SystemState();
@@ -991,7 +992,7 @@ void GMAgent::HandleAny(MessagePtr msg, PeerNodePtr peer)
         Logger.Error<<"Unhandled Group Management Message"<<std::endl;
         msg->Save(Logger.Error);
         Logger.Error<<std::endl;
-        throw std::runtime_error("Unhandled Group Management Message");
+        throw EUnhandledMessage("Unhandled Group Management Message");
     }
 }
 #pragma GCC diagnostic warning "-Wunused-parameter"

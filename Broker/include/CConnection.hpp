@@ -44,6 +44,14 @@ namespace freedm {
 
 class IProtocol;
 
+/// Used for errors communicating with peers.
+struct EConnectionError
+    : virtual std::runtime_error
+{
+    EConnectionError(const std::string& what)
+        : std::runtime_error(what) { }
+};
+
 /// Represents a single outgoing connection to a client.
 class CConnection
     : public CReliableConnection

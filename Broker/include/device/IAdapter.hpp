@@ -24,6 +24,7 @@
 #ifndef I_ADAPTER_HPP
 #define	I_ADAPTER_HPP
 
+#include <set>
 #include <string>
 #include <utility>
 
@@ -67,7 +68,16 @@ public:
             const SignalValue value) = 0;
 
     /// Virtual destructor for derived classes.
-    virtual ~IAdapter() { };
+    virtual ~IAdapter();
+
+    /// Register a device name with the adapter.
+    void RegisterDevice(const std::string devid);
+    
+    /// Get the list of registered device names.
+    std::set<std::string> GetDevices() const;
+private:
+    /// Set of registered device names.
+    std::set<std::string> m_devices;
 };
 
 } // namespace device

@@ -2,6 +2,7 @@
 
 #include "CTimings.hpp"
 #include "CLogger.hpp"
+#include "FreedmExceptions.hpp"
 
 #include <fstream>
 
@@ -34,9 +35,7 @@ $parameter_block2
     ifs.open(timingsFile.c_str());
     if (!ifs)
     {
-        Logger.Error << "Unable to timing config file: "
-                << timingsFile << std::endl;
-        std::exit(-1);
+        throw EDgiConfigError("Unable to open timings config " + timingsFile);
     }
     else
     {

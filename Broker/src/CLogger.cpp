@@ -135,7 +135,7 @@ unsigned int CGlobalLogger::GetOutputLevel(const std::string logger) const
     OutputMap::const_iterator it = m_loggers.find(logger);
     if (it == m_loggers.end())
     {
-        throw std::string(
+        throw std::runtime_error(
                 "Requested output level of unregistered logger " + logger);
     }
     return m_loggers.find(logger)->second;
@@ -161,14 +161,22 @@ void CGlobalLogger::SetInitialLoggerLevels(const std::string loggerCfgFile)
     ifs.open(loggerCfgFile.c_str());
     if (!ifs)
     {
-        Logger.Error << "Unable to load logger config file: "
+        Logger.Warn << "Unable to load logger config file: "
                 << loggerCfgFile << std::endl;
-        std::exit(-1);
+        return;
     }
     else
     {
         // Process the config
-        po::store(parse_config_file(ifs, loggerOpts), vm);
+        try
+        {
+            po::store(parse_config_file(ifs, loggerOpts), vm);
+        }
+        catch( po::unknown_option & e)
+        {
+            throw std::runtime_error( "Invalid logger name '" 
+                    + e.get_option_name() + "' in " + loggerCfgFile );
+        }
         po::notify(vm);
         Logger.Info << "Logger config file " << loggerCfgFile <<
                 " successfully loaded." << std::endl;

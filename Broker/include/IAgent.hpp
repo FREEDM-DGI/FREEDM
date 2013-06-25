@@ -110,7 +110,7 @@ public:
         }
 
     /// Provides insert() for a TimedPeerSet
-    static void InsertInTimedPeerSet(TimedPeerSet& tps, 
+    static void InsertInTimedPeerSet(TimedPeerSet& tps,
                                      T m,
                                      boost::posix_time::ptime time)
         {

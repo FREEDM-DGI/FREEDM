@@ -1,0 +1,4 @@
+# Failure 9 - Wi-Fi drops for more than DGI Timeout Value
+enable Sst SST1 gateway 5.0
+# Kill Wi-Fi now, restore after DGI has recycled the adapter
+work forever

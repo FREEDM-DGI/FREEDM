@@ -79,6 +79,7 @@ def stateTransition(state, line):
 
 for line in fileinput.input(): 
     state = stateTransition(state, line)
+    # Could result in lost documentation
     if '@function' in line or '@fn' in line or state == DISCARD_LINE_STATE:
         # if we actually discard the line, we'll mess up line numbering
         sys.stdout.write('\n')

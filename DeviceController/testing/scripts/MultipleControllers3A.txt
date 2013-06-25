@@ -1,0 +1,4 @@
+# Multiple Controllers 3 - Script A - Different Devices
+enable Sst SST1 gateway 5.0
+work forever
+

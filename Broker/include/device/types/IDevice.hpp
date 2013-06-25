@@ -1,13 +1,13 @@
 ////////////////////////////////////////////////////////////////////////////////
-/// @file         IDevice.hpp
+/// @file           IDevice.hpp
 ///
-/// @author       Stephen Jackson <scj7t4@mst.edu>
-/// @author       Thomas Roth <tprfh7@mst.edu>
-/// @author       Michael Catanzaro <michael.catanzaro@mst.edu>
+/// @author         Stephen Jackson <scj7t4@mst.edu>
+/// @author         Thomas Roth <tprfh7@mst.edu>
+/// @author         Michael Catanzaro <michael.catanzaro@mst.edu>
 ///
-/// @project      FREEDM DGI
+/// @project        FREEDM DGI
 ///
-/// @description  Physical device interface with variable implementations.
+/// @description    Physical device interface with variable implementations.
 ///
 /// These source code files were created at Missouri University of Science and
 /// Technology, and are intended for use in teaching or research. They may be
@@ -27,6 +27,9 @@
 
 #include "IAdapter.hpp"
 
+#include <set>
+#include <string>
+
 #include <boost/shared_ptr.hpp>
 #include <boost/noncopyable.hpp>
 
@@ -35,29 +38,29 @@ namespace broker {
 namespace device {
 
 ////////////////////////////////////////////////////////////////////////////////
-/// Attempts to convert a device pointer into the specified device type.
+/// Attempts to convert a device pointer into the target device type.
 ///
-/// @pre TargetType must be the type of some device class.
-/// @pre ObjectType must be a boost::shared_ptr<T> for some T
-/// @param object The boost::shared_ptr<T> to convert to TargetType
+/// @pre TargetType must be some class derived from IDevice.
+/// @pre ObjectType must be a boost::shared_ptr<T> for some T.
+/// @param object The boost::shared_ptr<T> to convert to TargetType.
 /// @return boost::shared_ptr<TargetType> to object if conversion is possible,
-/// and an empty boost::shared_ptr<TargetType> if conversion is impossible.
+/// or an empty boost::shared_ptr<TargetType> if conversion is impossible.
 ///
 /// @limitations None.
 ////////////////////////////////////////////////////////////////////////////////
 template <class TargetType, class ObjectType>
 boost::shared_ptr<TargetType> device_cast(ObjectType object)
 {
-    return boost::dynamic_pointer_cast<TargetType>( object );
+    return boost::dynamic_pointer_cast<TargetType>(object);
 }
 
-/// Physical device with implementation delegated to private member.
+/// Physical device with implementation delegated to a private adapter.
 ////////////////////////////////////////////////////////////////////////////////
-/// The IDevice class provides the public interface used for all devices.  It
-/// it has an associated set of device signals, defined by derived classes,
-/// that can be accessed through the public IDevice::Get and IDevice::Set.
+/// The IDevice class provides the public interface used by devices.  It has an
+/// associated set of device signals, defined by derived classes, which can be
+/// accessed through the public IDevice::Get and IDevice::Set functions.
 ///
-/// @limitations Thread safety must be handled by the adapter member.
+/// @limitations None.
 ////////////////////////////////////////////////////////////////////////////////
 class IDevice
     : private boost::noncopyable
@@ -65,31 +68,53 @@ class IDevice
 public:
     /// Convenience type for a shared pointer to self.
     typedef boost::shared_ptr<IDevice> Pointer;
-
+    
     /// Virtual destructor for derived classes.
     virtual ~IDevice();
-
-    /// Gets the unique device identifier.
+    
+    /// Virtual constructor for derived classes.
+    virtual Pointer Create(const std::string identifier,
+            IAdapter::Pointer adapter) const = 0;
+    
+    /// Gets the device identifier.
     std::string GetID() const;
-
-    /// Gets the value of some signal from the adapter.
+    
+    /// Gets the value of some device signal.
     SignalValue Get(const std::string signal) const;
-
-    /// Sets the value of some signal in the adapter.
+    
+    /// Sets the value of some device signal.
     void Set(const std::string signal, const SignalValue value);
+    
+    /// Gets the set of recognized state signals.
+    std::set<std::string> GetStateSet() const;
+    
+    /// Gets the set of recognized command signals.
+    std::set<std::string> GetCommandSet() const;
+    
+    /// Checks if the device recognizes a state signal.
+    bool HasStateSignal(const std::string signal) const;
+    
+    /// Checks if the device recognizes a command signal.
+    bool HasCommandSignal(const std::string signal) const;
 protected:
-    /// Constructor which takes an identifier and device adapter.
-    IDevice(const std::string device, IAdapter::Pointer adapter);
-
-    /// Unique identifier for the device.
+    /// Constructor for derived classes.
+    IDevice(const std::string identifier, IAdapter::Pointer adapter);
+    
+    /// Unique device identifier.
     std::string m_identifier;
-
-    /// Handles the get and set requests.
+    
+    /// Adapter that implements the get and set functions.
     IAdapter::Pointer m_adapter;
+    
+    /// Set of state signals.
+    std::set<std::string> m_StateSet;
+    
+    /// Set of command signals.
+    std::set<std::string> m_CommandSet;
 };
 
 } // namespace device
 } // namespace broker
 } // namespace freedm
 
-#endif //I_DEVICE_HPP
+#endif // I_DEVICE_HPP

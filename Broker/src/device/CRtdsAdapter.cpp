@@ -273,7 +273,7 @@ void CRtdsAdapter::ReverseBytes( char * buffer, const int numBytes )
 void CRtdsAdapter::EndianSwapIfNeeded(std::vector<SignalValue> & v)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    
+
 // check endianess at compile time.  Middle-Endian not allowed
 // The parameters __BYTE_ORDER, __LITTLE_ENDIAN, __BIG_ENDIAN should
 // automatically be defined and determined in sys/param.h, which exists
@@ -281,7 +281,7 @@ void CRtdsAdapter::EndianSwapIfNeeded(std::vector<SignalValue> & v)
 #if __BYTE_ORDER == __LITTLE_ENDIAN
     for( std::size_t i = 0; i < v.size(); i++ )
     {
-        ReverseBytes((char*)&v[0], sizeof(SignalValue));
+        ReverseBytes((char*)&v[i], sizeof(SignalValue));
     }
     
 #elif __BYTE_ORDER == __BIG_ENDIAN

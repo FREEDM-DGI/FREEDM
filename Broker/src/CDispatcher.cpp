@@ -136,7 +136,6 @@ void CDispatcher::HandleRequest(CBroker &broker, MessagePtr msg)
     catch( boost::property_tree::ptree_bad_path &e )
     {
         Logger.Error
-            << __PRETTY_FUNCTION__ << " (" << __LINE__ << "): "
             << "Malformed message. Does not contain 'submessages'."
             << std::endl << "\t" << e.what() << std::endl;
     }

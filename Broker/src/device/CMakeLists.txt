@@ -1,19 +1,30 @@
+# list the device type source files
+set(
+    DEVICE_TYPES
+    types/CDeviceDesd.cpp
+    types/CDeviceDrer.cpp
+    types/CDeviceFid.cpp
+    types/CDeviceLoad.cpp
+    types/CDeviceLogger.cpp
+    types/CDeviceSst.cpp
+    types/IDevice.cpp
+   )
+
 # list the device source files
 set(
     DEVICE_FILES
     CAdapterFactory.cpp
     CDeviceManager.cpp
     CFakeAdapter.cpp
-    CPscadAdapter.cpp
     CRtdsAdapter.cpp
     IBufferAdapter.cpp
     ITcpAdapter.cpp
+    IAdapter.cpp
+    CTcpServer.cpp
+    CPnpAdapter.cpp
     PhysicalDeviceTypes.cpp
     SynchronousTimeout.cpp
    )
-
-# compile the device type source files
-aux_source_directory(${CMAKE_CURRENT_BINARY_DIR}/types DEVICE_TYPES)
 
 # generate PhysicalDeviceTypes using the generator
 set(

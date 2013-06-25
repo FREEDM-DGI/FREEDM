@@ -52,7 +52,7 @@ for line in hppTemplate:
 for line in cppTemplate: 
     if '##REGISTRATIONS' in line:
         for device in devices:
-            cppSource.write('    REGISTER_DEVICE_CLASS(' + device + ');\n')
+            cppSource.write('    REGISTER_DEVICE_PROTOTYPE(' + device + ');\n')
     elif '##INSERTIONS' in line:
         for device in devices:
             cppSource.write('        if( type == "' + device + 

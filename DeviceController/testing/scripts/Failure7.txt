@@ -1,0 +1,4 @@
+# Failure 7 - Wi-Fi drops after Sending State
+enable Sst SST1 gateway 5.0
+# Kill Wi-Fi now
+work forever

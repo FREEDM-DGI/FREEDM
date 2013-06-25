@@ -46,6 +46,14 @@ namespace broker {
 
 class IPeerNode;
 
+/// Used when the DGI has been misconfigured
+struct EUnhandledMessage
+    : virtual std::runtime_error
+{
+    EUnhandledMessage(const std::string& what)
+        : std::runtime_error(what) { }
+};
+
 ///An interface for an object which can handle recieving incoming messages
 class IReadHandler
 {

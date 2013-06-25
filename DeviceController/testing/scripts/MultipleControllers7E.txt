@@ -1,0 +1,4 @@
+# Multiple Controllers 7 - Script E - Stress Test
+enable Desd BATTERY storage 10.0
+work forever
+

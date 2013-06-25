@@ -43,6 +43,7 @@
 #include "CGlobalConfiguration.hpp"
 #include "CFakeAdapter.hpp"
 #include "PlugNPlayExceptions.hpp"
+#include "SynchronousTimeout.hpp"
 
 #include <cerrno>
 #include <utility>
@@ -641,7 +642,7 @@ void CAdapterFactory::SessionProtocol()
     
     try
     {
-        boost::asio::write(*m_server->GetClient(), response);
+        TimedWrite(*m_server->GetClient(), response, 800);
     }
     catch(std::exception & e)
     {

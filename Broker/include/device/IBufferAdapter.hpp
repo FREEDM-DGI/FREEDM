@@ -89,6 +89,9 @@ protected:
 
     /// Provides synchronization for m_txBuffer.
     mutable boost::shared_mutex m_txMutex;
+
+    /// Flag that indicates whether the buffer is NaN.
+    bool m_buffer_initialized;
 };
 
 } // namespace device

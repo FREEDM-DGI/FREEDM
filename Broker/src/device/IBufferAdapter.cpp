@@ -88,6 +88,8 @@ void IBufferAdapter::Start()
         m_txBuffer.push_back(0.0f/0.0f);
     }
 
+    m_buffer_initialized = false;
+
     stateSize = stateIndices.size();
     commandSize = commandIndices.size();
     

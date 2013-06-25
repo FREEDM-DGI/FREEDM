@@ -321,11 +321,7 @@ void CAdapterFactory::InitializeAdapter(IAdapter::Pointer adapter,
             }
             
             // check if the device recognizes the associated signal
-            IDevice::Pointer dev = CDeviceManager::Instance().GetDevice(name);
-            if( !dev )
-            {
-                throw std::logic_error("Device " + name + " not in manager");
-            }
+            IDevice::Pointer dev = CDeviceManager::Instance().m_hidden_devices.at(name);
             
             if( (i == 0 && !dev->HasStateSignal(signal)) ||
                 (i == 1 && !dev->HasCommandSignal(signal)) )

@@ -78,6 +78,9 @@ public:
 private:
     /// Set of registered device names.
     std::set<std::string> m_devices;
+protected:
+    /// Reveals devices in the device manager.
+    void RevealDevices();
 };
 
 } // namespace device

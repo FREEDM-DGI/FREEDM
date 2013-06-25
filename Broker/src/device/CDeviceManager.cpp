@@ -15,6 +15,7 @@
 ///     CDeviceManager::begin
 ///     CDeviceManager::end
 ///     CDeviceManager::AddDevice
+///     CDeviceManager::RevealDevice
 ///     CDeviceManager::RemoveDevice
 ///     CDeviceManager::DeviceExists
 ///     CDeviceManager::GetDevice
@@ -96,13 +97,42 @@ void CDeviceManager::AddDevice(IDevice::Pointer device)
 
     if( m_devices.count(device->GetID()) > 0 )
     {
-        throw std::runtime_error("The device " + device->GetID()
-                + " is already registered with the device manager.");
+        throw std::runtime_error("Duplicate device ID: " + device->GetID());
     }
-    
-    m_devices[device->GetID()] = device;
-    Logger.Info << "Stored the device " << device->GetID() << " in the device "
-            << "manager." << std::endl;
+    if( m_hidden_devices.count(device->GetID()) > 0 )
+    {
+        throw std::runtime_error("Duplicate device ID: " + device->GetID());
+    }
+
+    m_hidden_devices[device->GetID()] = device;   
+    Logger.Info << "Stored " << device->GetID() << " as hidden device." << std::endl;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+/// Reveals a hidden device.
+///
+/// @ErrorHandling Throws a std::runtime_error if no such device exists.
+/// @pre m_hidden_devices stores the passed identifier.
+/// @post Moves a pointer from m_hidden_devices into m_devices.
+/// @param devid The identifier of the device pointer to move.
+///
+/// @limitations None.
+///////////////////////////////////////////////////////////////////////////////
+void CDeviceManager::RevealDevice(std::string devid)
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+
+    boost::unique_lock<boost::shared_mutex> lock(m_mutex);
+
+    if( m_hidden_devices.count(devid) == 0 )
+    {
+        throw std::runtime_error("Unknown hidden device: " + devid);
+    }
+
+    m_devices[devid] = m_hidden_devices[devid];
+    m_hidden_devices.erase(devid);
+
+    Logger.Info << "Revealed the hidden device " << devid << std::endl;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -121,9 +151,8 @@ bool CDeviceManager::RemoveDevice(std::string devid)
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
     boost::unique_lock<boost::shared_mutex> lock(m_mutex);
-    IDevice::Pointer device = m_devices[devid];
-    
-    if( m_devices.erase(devid) != 1 )
+ 
+    if( m_devices.erase(devid) != 1 && m_hidden_devices.erase(devid) != 1 )
     {
         Logger.Warn << "Could not remove the device " << devid << " from the "
                 << " device manager: no such device exists." << std::endl;

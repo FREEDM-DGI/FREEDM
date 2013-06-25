@@ -115,17 +115,26 @@ private:
     /// CAdapterFactory can add/remove devices.
     friend class CAdapterFactory;
 
+    /// IAdapter can reveal devices.
+    friend class IAdapter;
+
     /// Private constructor.
     CDeviceManager();
 
-    /// Add the specified device to the manager.
+    /// Add a pointer to the hidden device set.
     void AddDevice(IDevice::Pointer device);
+
+    /// Move a pointer to the visible device set.
+    void RevealDevice(std::string devid);
 
     /// Remove a device by its identifier.
     bool RemoveDevice(std::string devid);
     
     /// Mapping from identifiers to device pointers.
     PhysicalDeviceSet m_devices;
+
+    /// Set of uninitialized device objects.
+    PhysicalDeviceSet m_hidden_devices;
 
     /// Mutex for the device map.
     mutable boost::shared_mutex m_mutex;

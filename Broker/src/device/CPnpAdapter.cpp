@@ -250,6 +250,11 @@ void CPnpAdapter::HandleRead(const boost::system::error_code & e)
                 try
                 {
                     ReadStatePacket(data);
+                    if( m_buffer_initialized == false )
+                    {
+                        RevealDevices();
+                        m_buffer_initialized = true;
+                    }
                     packet << GetCommandPacket();
                 }
                 catch(boost::bad_lexical_cast &)

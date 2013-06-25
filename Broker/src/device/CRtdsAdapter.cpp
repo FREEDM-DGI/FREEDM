@@ -38,12 +38,14 @@
 
 #include <sys/param.h>
 
+#include <cmath>
 #include <vector>
 #include <cstring>
 #include <stdexcept>
 #include <algorithm>
 
 #include <boost/asio.hpp>
+#include <boost/foreach.hpp>
 #include <boost/thread/mutex.hpp>
 #include <boost/thread/locks.hpp>
 #include <boost/static_assert.hpp>
@@ -192,6 +194,23 @@ void CRtdsAdapter::Run()
                     + std::string(e.what()));
         }
         EndianSwapIfNeeded(m_rxBuffer);
+
+        if( m_buffer_initialized == false )
+        {
+            m_buffer_initialized = true;
+
+            for( unsigned int i = 0; i < m_rxBuffer.size(); i++ )
+            {
+                if( isnan(m_rxBuffer[i]) )
+                {
+                    m_buffer_initialized = false;
+                }
+            }
+            if( m_buffer_initialized )
+            {
+                RevealDevices();
+            }
+        }
         
         Logger.Debug << "Releasing the rxBuffer mutex." << std::endl;
     }

@@ -153,7 +153,10 @@ void CRtdsAdapter::Run(const boost::system::error_code & e)
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
     if( e )
-        return;    
+    {
+        Logger.Alert << "Quitting permanently: " << e.message() << std::endl;
+        return;
+    }
 
     // Always send data to FPGA first
     if( !m_txBuffer.empty() )

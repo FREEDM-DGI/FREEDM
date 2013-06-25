@@ -91,7 +91,7 @@ void CRtdsAdapter::HandleConnection()
             writeLock = CTableManager::AsWriter(COMMAND_TABLE);
             for( std::size_t i = 0; i < recvSize; i++ )
             {
-                if( recvBuffer[i] != 0.0 )
+                if( recvBuffer[i] == recvBuffer[i] )
                     writeLock->SetValue(m_CommandDetails[i],recvBuffer[i]);
             }
             writeLock.reset();
@@ -163,7 +163,7 @@ void CRtdsAdapter::EndianSwapIfNeeded( char * buffer, std::size_t numBytes )
 #if __BYTE_ORDER == __LITTLE_ENDIAN
     for( std::size_t i = 0; i < numBytes; i += sizeof( TSignalValue ) )
     {
-        ReverseBytes( buffer, sizeof( TSignalValue ) );
+        ReverseBytes( buffer+i, sizeof( TSignalValue ) );
     }
     
 #elif __BYTE_ORDER == __BIG_ENDIAN

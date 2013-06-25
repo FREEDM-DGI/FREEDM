@@ -79,7 +79,7 @@ void IBufferAdapter::Start()
     BOOST_FOREACH( std::size_t i, m_stateInfo | boost::adaptors::map_values )
     {
         stateIndices.insert(i);
-        m_rxBuffer.push_back(0.0f);
+        m_rxBuffer.push_back(0.0f/0.0f);
     }
     
     BOOST_FOREACH( std::size_t i, m_commandInfo | boost::adaptors::map_values )
@@ -184,7 +184,11 @@ SignalValue IBufferAdapter::Get(const std::string device,
                 + "," + signal + ") that does not exist.");
     }
 
-    return m_rxBuffer.at(m_stateInfo.find(devsig)->second);
+    SignalValue value = m_rxBuffer.at(m_stateInfo.find(devsig)->second);
+
+    Logger.Debug << device << " " << signal << ": " << value << std::endl;
+
+    return value;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

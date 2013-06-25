@@ -992,7 +992,7 @@ void GMAgent::HandleAny(MessagePtr msg, PeerNodePtr peer)
         Logger.Error<<"Unhandled Group Management Message"<<std::endl;
         msg->Save(Logger.Error);
         Logger.Error<<std::endl;
-        throw std::runtime_error("Unhandled Group Management Message");
+        throw EUnhandledMessage("Unhandled Group Management Message");
     }
 }
 #pragma GCC diagnostic warning "-Wunused-parameter"

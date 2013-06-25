@@ -16,7 +16,6 @@ set(
     CAdapterFactory.cpp
     CDeviceManager.cpp
     CFakeAdapter.cpp
-    CPscadAdapter.cpp
     CRtdsAdapter.cpp
     IBufferAdapter.cpp
     ITcpAdapter.cpp

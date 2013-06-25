@@ -135,7 +135,7 @@ unsigned int CGlobalLogger::GetOutputLevel(const std::string logger) const
     OutputMap::const_iterator it = m_loggers.find(logger);
     if (it == m_loggers.end())
     {
-        throw std::string(
+        throw std::runtime_error(
                 "Requested output level of unregistered logger " + logger);
     }
     return m_loggers.find(logger)->second;

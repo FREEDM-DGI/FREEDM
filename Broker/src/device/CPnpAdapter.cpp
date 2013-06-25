@@ -366,6 +366,11 @@ void CPnpAdapter::ReadStatePacket(const std::string packet)
         }
     }
 
+    if( temp.size() != m_rxBuffer.size() )
+    {
+        throw EBadRequest("Incomplete device state specification.");
+    }
+
     // critical section
     {
         boost::unique_lock<boost::shared_mutex> lock(m_rxMutex);

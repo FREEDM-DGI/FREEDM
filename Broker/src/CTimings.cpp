@@ -2,6 +2,7 @@
 
 #include "CTimings.hpp"
 #include "CLogger.hpp"
+#include "FreedmExceptions.hpp"
 
 #include <fstream>
 
@@ -202,9 +203,7 @@ void CTimings::SetTimings(const std::string timingsFile)
     ifs.open(timingsFile.c_str());
     if (!ifs)
     {
-        Logger.Error << "Unable to timing config file: "
-                << timingsFile << std::endl;
-        std::exit(-1);
+        throw EDgiConfigError("Unable to open timings config " + timingsFile);
     }
     else
     {
@@ -222,7 +221,7 @@ void CTimings::SetTimings(const std::string timingsFile)
     }
     catch (boost::bad_any_cast& e)
     {
-        throw std::runtime_error(
+        throw EDgiConfigError(
                 "GM_PHASE_TIME is missing, please check your timings config");
     }
 
@@ -232,7 +231,7 @@ void CTimings::SetTimings(const std::string timingsFile)
     }
     catch (boost::bad_any_cast& e)
     {
-        throw std::runtime_error(
+        throw EDgiConfigError(
                 "GM_FID_TIMEOUT is missing, please check your timings config");
     }
 
@@ -242,7 +241,7 @@ void CTimings::SetTimings(const std::string timingsFile)
     }
     catch (boost::bad_any_cast& e)
     {
-        throw std::runtime_error(
+        throw EDgiConfigError(
                 "SC_PHASE_TIME is missing, please check your timings config");
     }
 
@@ -252,7 +251,7 @@ void CTimings::SetTimings(const std::string timingsFile)
     }
     catch (boost::bad_any_cast& e)
     {
-        throw std::runtime_error(
+        throw EDgiConfigError(
                 "RTDS_RUN_DELAY is missing, please check your timings config");
     }
 
@@ -262,7 +261,7 @@ void CTimings::SetTimings(const std::string timingsFile)
     }
     catch (boost::bad_any_cast& e)
     {
-        throw std::runtime_error(
+        throw EDgiConfigError(
                 "GM_AYC_RESPONSE_TIMEOUT is missing, please check your timings config");
     }
 
@@ -272,7 +271,7 @@ void CTimings::SetTimings(const std::string timingsFile)
     }
     catch (boost::bad_any_cast& e)
     {
-        throw std::runtime_error(
+        throw EDgiConfigError(
                 "GM_AYT_RESPONSE_TIMEOUT is missing, please check your timings config");
     }
 
@@ -282,7 +281,7 @@ void CTimings::SetTimings(const std::string timingsFile)
     }
     catch (boost::bad_any_cast& e)
     {
-        throw std::runtime_error(
+        throw EDgiConfigError(
                 "CS_EXCHANGE_TIME is missing, please check your timings config");
     }
 
@@ -292,7 +291,7 @@ void CTimings::SetTimings(const std::string timingsFile)
     }
     catch (boost::bad_any_cast& e)
     {
-        throw std::runtime_error(
+        throw EDgiConfigError(
                 "GM_GLOBAL_TIMEOUT is missing, please check your timings config");
     }
 
@@ -302,7 +301,7 @@ void CTimings::SetTimings(const std::string timingsFile)
     }
     catch (boost::bad_any_cast& e)
     {
-        throw std::runtime_error(
+        throw EDgiConfigError(
                 "LB_GLOBAL_TIMER is missing, please check your timings config");
     }
 
@@ -312,7 +311,7 @@ void CTimings::SetTimings(const std::string timingsFile)
     }
     catch (boost::bad_any_cast& e)
     {
-        throw std::runtime_error(
+        throw EDgiConfigError(
                 "GM_PREMERGE_MAX_TIMEOUT is missing, please check your timings config");
     }
 
@@ -322,7 +321,7 @@ void CTimings::SetTimings(const std::string timingsFile)
     }
     catch (boost::bad_any_cast& e)
     {
-        throw std::runtime_error(
+        throw EDgiConfigError(
                 "CSRC_RESEND_TIME is missing, please check your timings config");
     }
 
@@ -332,7 +331,7 @@ void CTimings::SetTimings(const std::string timingsFile)
     }
     catch (boost::bad_any_cast& e)
     {
-        throw std::runtime_error(
+        throw EDgiConfigError(
                 "GM_INVITE_RESPONSE_TIMEOUT is missing, please check your timings config");
     }
 
@@ -342,7 +341,7 @@ void CTimings::SetTimings(const std::string timingsFile)
     }
     catch (boost::bad_any_cast& e)
     {
-        throw std::runtime_error(
+        throw EDgiConfigError(
                 "GM_PREMERGE_GRANULARITY is missing, please check your timings config");
     }
 
@@ -352,7 +351,7 @@ void CTimings::SetTimings(const std::string timingsFile)
     }
     catch (boost::bad_any_cast& e)
     {
-        throw std::runtime_error(
+        throw EDgiConfigError(
                 "GM_PREMERGE_MIN_TIMEOUT is missing, please check your timings config");
     }
 
@@ -362,7 +361,7 @@ void CTimings::SetTimings(const std::string timingsFile)
     }
     catch (boost::bad_any_cast& e)
     {
-        throw std::runtime_error(
+        throw EDgiConfigError(
                 "LB_STATE_TIMER is missing, please check your timings config");
     }
 
@@ -372,7 +371,7 @@ void CTimings::SetTimings(const std::string timingsFile)
     }
     catch (boost::bad_any_cast& e)
     {
-        throw std::runtime_error(
+        throw EDgiConfigError(
                 "GM_CHECK_TIMEOUT is missing, please check your timings config");
     }
 
@@ -382,7 +381,7 @@ void CTimings::SetTimings(const std::string timingsFile)
     }
     catch (boost::bad_any_cast& e)
     {
-        throw std::runtime_error(
+        throw EDgiConfigError(
                 "LB_SC_QUERY_TIME is missing, please check your timings config");
     }
 
@@ -392,7 +391,7 @@ void CTimings::SetTimings(const std::string timingsFile)
     }
     catch (boost::bad_any_cast& e)
     {
-        throw std::runtime_error(
+        throw EDgiConfigError(
                 "CSUC_RESEND_TIME is missing, please check your timings config");
     }
 
@@ -402,7 +401,7 @@ void CTimings::SetTimings(const std::string timingsFile)
     }
     catch (boost::bad_any_cast& e)
     {
-        throw std::runtime_error(
+        throw EDgiConfigError(
                 "GM_TIMEOUT_TIMEOUT is missing, please check your timings config");
     }
 
@@ -412,7 +411,7 @@ void CTimings::SetTimings(const std::string timingsFile)
     }
     catch (boost::bad_any_cast& e)
     {
-        throw std::runtime_error(
+        throw EDgiConfigError(
                 "CSRC_DEFAULT_TIMEOUT is missing, please check your timings config");
     }
 
@@ -422,7 +421,7 @@ void CTimings::SetTimings(const std::string timingsFile)
     }
     catch (boost::bad_any_cast& e)
     {
-        throw std::runtime_error(
+        throw EDgiConfigError(
                 "LB_PHASE_TIME is missing, please check your timings config");
     }
 

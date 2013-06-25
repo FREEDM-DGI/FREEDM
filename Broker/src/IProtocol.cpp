@@ -61,7 +61,7 @@ void IProtocol::Write(CMessage msg)
     catch( std::exception &e )
     {
         Logger.Error<<"Couldn't write message to string stream."<<std::endl;
-        throw e;
+        throw;
     }
     raw = oss.str();
     /// Check to make sure it isn't goint to overfill our message packet:
@@ -69,7 +69,7 @@ void IProtocol::Write(CMessage msg)
     {
         Logger.Info << "Message too long for buffer" << std::endl;
         Logger.Info << raw << std::endl;
-        throw std::logic_error("Outgoing message is to long for buffer"); 
+        throw std::runtime_error("Outgoing message is to long for buffer");
     }
     /// If that looks good, lets write it into our buffer.    
     it = m_buffer.begin();

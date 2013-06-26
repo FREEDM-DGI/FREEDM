@@ -54,7 +54,7 @@ void SetResult(boost::shared_ptr<OptionalError> status,
         const boost::system::error_code & error)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    status->reset(error);
+    *status = error;
 }
 
 } // namespace device

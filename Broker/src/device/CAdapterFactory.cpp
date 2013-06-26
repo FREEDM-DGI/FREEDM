@@ -43,10 +43,12 @@
 #include "CGlobalConfiguration.hpp"
 #include "CFakeAdapter.hpp"
 #include "PlugNPlayExceptions.hpp"
+#include "SynchronousTimeout.hpp"
 
 #include <cerrno>
 #include <utility>
 #include <iostream>
+#include <map>
 #include <set>
 
 #include <signal.h>
@@ -265,7 +267,7 @@ void CAdapterFactory::InitializeAdapter(IAdapter::Pointer adapter,
     
     boost::property_tree::ptree subtree;
     IBufferAdapter::Pointer buffer;
-    std::set<std::string> devices;
+    std::map<std::string, std::string> devices;
     
     std::string type, name, signal;
     std::size_t index;
@@ -317,7 +319,14 @@ void CAdapterFactory::InitializeAdapter(IAdapter::Pointer adapter,
             {
                 CreateDevice(name, type, adapter);
                 adapter->RegisterDevice(name);
-                devices.insert(name);
+                devices[name] = type;
+            }
+
+            if( devices[name] != type )
+            {
+                std::string what = "Failed to create adapter: Multiple "
+                        + std::string(" devices share the name: ") + name;
+                throw EDgiConfigError(what);
             }
             
             // check if the device recognizes the associated signal
@@ -641,7 +650,7 @@ void CAdapterFactory::SessionProtocol()
     
     try
     {
-        boost::asio::write(*m_server->GetClient(), response);
+        TimedWrite(*m_server->GetClient(), response, 800);
     }
     catch(std::exception & e)
     {

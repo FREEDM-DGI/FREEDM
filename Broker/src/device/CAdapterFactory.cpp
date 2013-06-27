@@ -325,7 +325,7 @@ void CAdapterFactory::InitializeAdapter(IAdapter::Pointer adapter,
             if( devices[name] != type )
             {
                 std::string what = "Failed to create adapter: Multiple "
-                        + std::string(" devices share the name: ") + name;
+                        + std::string("devices share the name: ") + name;
                 throw EDgiConfigError(what);
             }
             

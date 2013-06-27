@@ -295,6 +295,11 @@ int main(int argc, char* argv[])
                     device::CAdapterFactory::Instance().CreateAdapter(t.second);
                 }
             }
+            catch(boost::property_tree::xml_parser_error & e)
+            {
+                throw std::runtime_error("Failed to create device adapters: "
+                        + std::string(e.what()));
+            }
             catch(std::exception & e)
             {
                 throw std::runtime_error(adapterCfgFile+": "+e.what());

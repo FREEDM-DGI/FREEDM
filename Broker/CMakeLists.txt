@@ -47,7 +47,7 @@ endif(WARNINGS)
 
 # Run -DCMAKE_BUILD_TYPE=DEBUG if you need debugging -g
 # Don't use -DCMAKE_BUILD_TYPE=RELEASE - it makes things not work =/
-set(CMAKE_CXX_FLAGS "-pedantic -std=c++98 -pthread ${WARNING_FLAGS}")
+set(CMAKE_CXX_FLAGS "-pedantic -O3 -std=c++98 -pthread ${WARNING_FLAGS}")
 
 # generate the configuration file
 CONFIGURE_FILE(

@@ -22,10 +22,12 @@
 
 #include "CLogger.hpp"
 #include "CMessage.hpp"
+#include "ptreepacker.hpp"
 
 #include <boost/functional/hash.hpp>
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/info_parser.hpp>
+
 
 using boost::property_tree::ptree;
 
@@ -352,7 +354,11 @@ bool CMessage::Load( std::istream &p_is )
     // An exception is thrown if reading fails.  This is propagated
     // up to distinguish between successful parse and valid
     // message from below
-    read_info( p_is, pt );
+    //read_info( p_is, pt );
+    
+    std::string dump;
+    while(p_is >> dump);
+    pt = decode_tree(dump); 
 
     // If the message is complete but doesn't have a source or
     // submessage identifier, then the message is malformed,
@@ -389,12 +395,13 @@ void CMessage::Save( std::ostream &p_os ) const
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     using boost::property_tree::ptree;
-    ptree pt;
-
-    pt = static_cast< ptree >( *this );
+    ptree pt = static_cast< ptree >( *this );
 
     // Write the property tree to xml on the stream
-    write_info( p_os, pt );
+    //write_info( p_os, pt );
+    std::string encoded = encode_tree(pt);
+    //Logger.Error << encoded << std::endl;
+    p_os << encoded;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -1,0 +1,86 @@
+\documentclass{article}
+
+% landscape orientation
+\usepackage[landscape]{geometry}
+
+% table spans pages
+\usepackage{longtable}
+
+% pass / fail colors
+\usepackage{color}
+\usepackage[dvipsnames]{xcolor}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newcommand{\testerName}{}
+\newcommand{\commitHash}{}
+
+% \pass and \fail{text} definitions
+\newcommand{\pass}{\textcolor{OliveGreen}{PASS}}
+\newcommand{\fail}[1]{\textcolor{BrickRed}{FAIL}\footnote{#1}}
+
+% no new page for title
+\let\endtitlepage\relax
+
+% more space between table entries
+\renewcommand{\arraystretch}{2.8}
+
+\begin{document}
+
+\begin{titlepage}
+\begin{center}
+\textsc{\huge DGI Adapter Specification Test Results} \\ [0.25cm]
+\Large Performed on \today \\ [0.5cm]
+
+\begin{minipage}[t]{0.4\textwidth}
+\large \emph{Tester:} \\ \testerName
+\end{minipage}
+\begin{minipage}[t]{0.4\textwidth}
+\raggedleft\large\emph{Commit:} \\ \commitHash
+\end{minipage}
+
+\vspace{0.5cm}\hrule
+
+\end{center}
+\end{titlepage}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{center}
+\begin{footnotesize}
+\begin{longtable}{|p{3cm}|p{4cm}|p{10cm}|c|}
+    \hline
+    Test Prefix & Description & Expected Result & Result \\ \hline \endhead \hline \endfoot
+    BadXml1 & Attempt to use an adapter of invalid type & Unregistered adapter type: golbat & \\
+    BadXml2 & Attempt to use an adapter that has no state tag & Failed to create adapter: No such node (state) & \\
+    BadXml3 & Attempt to use an adapter that has no command tag & Failed to create adapter: No such node (command) & \\
+    BadXml4 & Attempt to use an adapter with nonconsecutive state table indices & The state indices are not consecutive. & \\
+    BadXml5 & Attempt to use an adapter with nonconsecutive command table indices & The command indices are not consecutive. & \\
+    BadXml6 & Attempt to use an adapter with two devices of the same name and type in the state table & The device signal (SST1,gateway) is already registered as state information. & \\
+    BadXml7 & Attempt to use an adapter with two devices of the same name and type in the command table & The device signal (SST1,gateway) is already registered as command information. & \\
+    BadXml8 & Attempt to use an adapter with two devices of the same name and different type in the state table & Failed to create adapter: Multiple devices share the name: SST1 & \\
+    BadXml9 & Attempt to use an adapter with two devices of the same name and different type in the command table & Failed to create adapter: Multiple devices share the name: SST1 & \\
+    BadXml10 & Attempt to use an adapter with a device with no signals in the state table & Failed to create adapter: No such node (signal) & \\
+    BadXml11 & Attempt to use an adapter with a device with no signals in the state table & Failed to create adapter: No such node (signal) & \\
+    BadXml12 & Attempt to use an adapter with a device with an unrecognized signal & Failed to create adapter: The Sst device, SST1, does not recognize the signal: generation & \\
+    BadXml13 & Attempt to use an adapter with a device of unrecognized type & Unrecognized device type: Golbat & \\
+    BadXml14 & Attempt to use an adapter with two devices with the same index in the state table & Detected duplicate state index 1 & \\
+    BadXml15 & Attempt to use an adapter with two devices with the same index in the command table & Detected duplicate command index 1 & \\
+    BadXml16 & Attempt to use an adapter with an unclosed XML tag & unexpected end of data & \\
+    BadXml17 & Attempt to use an adapter with an incorrectly-specified host tag & resolve: Host not found (authoritative) & \\
+    BadXml18 & Attempt to use an adapter with an incorrectly-specified port tag & Failed to connect to localhost:40001 because: Connection refused & \\
+    BadXml19 & Attempt to use an adapter with an incorrectly-specified port tag corresponding to the port on which the PSCAD interface is listening for connections from PSCAD & Receive from FPGA failed: Synchronous Read Timeout & \\
+    BadXml20 & Attempt to use an adapter with one SST in the state table (but not in the command table) & Receive from FPGA failed: Synchronous Read Timeout & \\
+    BadXml21 & Attempt to use an adapter with one SST in the command table (but not in the state table) & Attempted to get a device signal (SST1,gateway) that does not exist. & \\
+    BadXml22 & Attempt to use an adapter with two state tables & & \\
+    BadXml23 & Attempt to use an adapter with two command tables & & \\
+    SingleDgi1 & Use an adapter with one SST & SST Gateway (01): 111.11 & \\
+    SingleDgi2 & Use an adapter with one SST and one DESD & Net DESD (01): 1111.11, SST Gateway (01): 111.11 & \\
+    SingleDgi3 & Use an adapter with one SST and another adapter with one DESD & Net DESD (01): 1111.11, SST Gateway (01): 111.11 & \\
+\end{longtable}
+\end{footnotesize}
+\end{center}
+
+\end{document}

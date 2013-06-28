@@ -126,7 +126,7 @@ void CListener::HandleRead(const boost::system::error_code& e,
         try
         {
             Logger.Debug<<"Loading xml:"<<std::endl;
-            m_message->Load(iss);
+            m_message->Load(iss.str());
         }
         catch(std::exception &e)
         {

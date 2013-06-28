@@ -27,7 +27,6 @@
 #include "CLogger.hpp"
 #include "CMessage.hpp"
 #include "CReliableConnection.hpp"
-#include "RequestParser.hpp"
 
 #include <vector>
 

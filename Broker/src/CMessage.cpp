@@ -339,7 +339,7 @@ size_t CMessage::GetHash() const
 ///   corrupt.
 /// @param p_is A stream to read the message from.
 ///////////////////////////////////////////////////////////////////////////////
-bool CMessage::Load( std::istream &p_is )
+bool CMessage::Load( const std::string &inmsg )
     throw ( boost::property_tree::file_parser_error )
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
@@ -356,9 +356,7 @@ bool CMessage::Load( std::istream &p_is )
     // message from below
     //read_info( p_is, pt );
     
-    std::string dump;
-    while(p_is >> dump);
-    pt = decode_tree(dump); 
+    pt = decode_tree(inmsg); 
 
     // If the message is complete but doesn't have a source or
     // submessage identifier, then the message is malformed,

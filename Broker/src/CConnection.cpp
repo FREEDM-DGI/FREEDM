@@ -31,7 +31,6 @@
 #include "CSRConnection.hpp"
 #include "CSUConnection.hpp"
 #include "CSRSWConnection.hpp"
-#include "RequestParser.hpp"
 
 #include <vector>
 

@@ -157,7 +157,7 @@ public:
     CMessage& operator = ( const CMessage &p_m );
     
     /// Parse CMessage from string.
-    virtual bool Load( std::istream &p_is )
+    virtual bool Load( const std::string &inmsg )
         throw ( boost::property_tree::file_parser_error );
     
     /// Put CMessage to a stream.

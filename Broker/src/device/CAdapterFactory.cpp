@@ -650,7 +650,7 @@ void CAdapterFactory::SessionProtocol()
     
     try
     {
-        TimedWrite(*m_server->GetClient(), response, 800);
+        TimedWrite(*m_server->GetClient(), response);
     }
     catch(std::exception & e)
     {

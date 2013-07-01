@@ -162,7 +162,7 @@ void CRtdsAdapter::Run()
         {
             Logger.Debug << "Blocking for a socket write call." << std::endl;
             TimedWrite(m_socket, boost::asio::buffer(m_txBuffer, 
-                    m_txBuffer.size() * sizeof(SignalValue)), 800);
+                    m_txBuffer.size() * sizeof(SignalValue)));
         }
         catch(std::exception & e)
         {
@@ -185,7 +185,7 @@ void CRtdsAdapter::Run()
         {
             Logger.Debug << "Blocking for a socket read call." << std::endl;
             TimedRead(m_socket, boost::asio::buffer(m_rxBuffer,
-                    m_rxBuffer.size() * sizeof(SignalValue)), 800);
+                    m_rxBuffer.size() * sizeof(SignalValue)));
         }
         catch (std::exception & e)
         {

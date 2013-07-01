@@ -3,7 +3,7 @@
     <adapter name = "HappyTestAdapter" type = "rtds">
         <info>
             <host>localhost</host>
-            <port>50001</port>
+            <port>50002</port>
         </info>
         <state>
             <entry index = "1">
@@ -16,13 +16,6 @@
             <entry index = "1">
                 <type>Sst</type>
                 <device>SST1</device>
-                <signal>gateway</signal>
-            </entry>
-        </command>
-        <command>
-            <entry index = "1">
-                <type>Sst</type>
-                <device>SST2</device>
                 <signal>gateway</signal>
             </entry>
         </command>

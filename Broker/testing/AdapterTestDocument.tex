@@ -76,9 +76,16 @@
     BadXml21 & Attempt to use an adapter with one SST in the command table (but not in the state table) & Attempted to get a device signal (SST1,gateway) that does not exist. & \\
     BadXml22 & Attempt to use an adapter with two state tables & & \\
     BadXml23 & Attempt to use an adapter with two command tables & & \\
+    BadXml24 & Attempt to use an adapter that contains a device with two types & \\
+    BadXml25 & Attempt to use two adapters with the same name & Multiple adapters share the name: HappyTestAdapter & \\
+    BadXml26 & Attempt to use two adapters with the same device name in each adapter & The device SST1 already exists. & \\
+    BadXml27 & Attempt to use two adapters with the same host and port & & \\
     SingleDgi1 & Use an adapter with one SST & SST Gateway (01): 111.11 & \\
     SingleDgi2 & Use an adapter with one SST and one DESD & Net DESD (01): 1111.11, SST Gateway (01): 111.11 & \\
     SingleDgi3 & Use an adapter with one SST and another adapter with one DESD & Net DESD (01): 1111.11, SST Gateway (01): 111.11 & \\
+    MultipleDgi1 & Five DGI each have an SST. Ensure that normal is computed correctly. & Normal: 30.00 & \\
+    MultipleDgi2 & Five DGI each have some number of SSTs. Ensure that normal is computed correctly. & Normal: 30.00 & \\
+    MultipleDgi3 & Five DGI each have an SST but two have active FIDs. Ensure that normal is computed correctly among the non-isolated DGI. & Normal: 30.00 & \\
 \end{longtable}
 \end{footnotesize}
 \end{center}

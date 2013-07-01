@@ -54,7 +54,7 @@ void SetResult(boost::shared_ptr<OptionalError> status,
         const boost::system::error_code & error);
 
 /// ms, default timeout for I/O operations if none is specified.
-const unsigned int SYNC_IO_DEFAULT_TIMEOUT = 800;
+const int SYNC_IO_DEFAULT_TIMEOUT = 800;
 
 ////////////////////////////////////////////////////////////////////////////////
 /// A read that blocks until the buffer is full or a time duration expires.
@@ -71,8 +71,7 @@ const unsigned int SYNC_IO_DEFAULT_TIMEOUT = 800;
 /// @limitations None.
 ////////////////////////////////////////////////////////////////////////////////
 template <typename ReadStream, typename BufferSequence>
-void TimedRead(ReadStream & stream, const BufferSequence & buffer,
-        unsigned int duration = SYNC_IO_DEFAULT_TIMEOUT)
+void TimedRead(ReadStream & stream, const BufferSequence & buffer, int duration = SYNC_IO_DEFAULT_TIMEOUT)
 {
     SyncTimeoutLogger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
@@ -125,8 +124,7 @@ void TimedRead(ReadStream & stream, const BufferSequence & buffer,
 template <typename ReadStream, typename Allocator>
 void TimedReadUntil(ReadStream & stream,
         boost::asio::basic_streambuf<Allocator> & buffer,
-        const std::string & delim,
-        unsigned int duration = SYNC_IO_DEFAULT_TIMEOUT)
+        const std::string & delim, int duration = SYNC_IO_DEFAULT_TIMEOUT)
 {
     SyncTimeoutLogger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
@@ -176,7 +174,7 @@ void TimedReadUntil(ReadStream & stream,
 ////////////////////////////////////////////////////////////////////////////////
 template <typename WriteStream, typename BufferSequence>
 void TimedWrite(WriteStream & stream, const BufferSequence & buffer,
-        unsigned int duration = SYNC_IO_DEFAULT_TIMEOUT)
+        int duration = SYNC_IO_DEFAULT_TIMEOUT)
 {
     SyncTimeoutLogger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
@@ -227,7 +225,7 @@ void TimedWrite(WriteStream & stream, const BufferSequence & buffer,
 template <typename WriteStream, typename Allocator>
 void TimedWrite(WriteStream & stream,
         boost::asio::basic_streambuf<Allocator> & buffer,
-        unsigned int duration = SYNC_IO_DEFAULT_TIMEOUT)
+        int duration = SYNC_IO_DEFAULT_TIMEOUT)
 {
     SyncTimeoutLogger.Trace << __PRETTY_FUNCTION__ << std::endl;
 

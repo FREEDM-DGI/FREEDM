@@ -25,6 +25,7 @@
 #include "CGlobalConfiguration.hpp"
 
 #include <boost/program_options/options_description.hpp>
+#include <boost/thread/mutex.hpp>
 
 using namespace boost::posix_time;
 
@@ -36,6 +37,9 @@ namespace {
 
 /// This file's logger.
 CLocalLogger Logger(__FILE__);
+
+/// Only one logger can write at a time.
+boost::mutex mutex;
 
 }
 
@@ -58,10 +62,11 @@ std::streamsize CLog::write(const char* const s, std::streamsize n)
 {
     if (GetOutputLevel() >= m_level)
     {
+        mutex.lock();
         *m_ostream << microsec_clock::local_time() + CGlobalConfiguration::instance().GetClockSkew() << " : "
                 << m_name << "(" << m_level << "):\n\t";
         boost::iostreams::write(*m_ostream, s, n);
-        //*m_ostream << std::endl;
+        mutex.unlock();
     }
     return n;
 }

@@ -307,6 +307,7 @@ int main(int argc, char* argv[])
     catch (std::exception & e)
     {
         Logger.Fatal << "Exception caught in main during start up: " << e.what() << std::endl;
+        device::CAdapterFactory::Instance().Stop();
         return 1;
     }
 
@@ -380,6 +381,7 @@ int main(int argc, char* argv[])
     catch (std::exception & e)
     {
         Logger.Fatal << "Exception caught in module initialization: " << e.what() << std::endl;
+        device::CAdapterFactory::Instance().Stop();
         return 1;
     }
 
@@ -389,6 +391,7 @@ int main(int argc, char* argv[])
     }
     catch (std::exception & e)
     {
+        device::CAdapterFactory::Instance().Stop();
         Logger.Fatal << "Exception caught in Broker: " << e.what() << std::endl;
         broker.Stop();
         ios.run();

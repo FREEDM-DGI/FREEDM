@@ -30,6 +30,7 @@
 /// Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
 ////////////////////////////////////////////////////////////////////////////////
 
+#include "CAdapterFactory.hpp"
 #include "CBroker.hpp"
 #include "CLogger.hpp"
 #include "CGlobalPeerList.hpp"
@@ -170,6 +171,8 @@ void CBroker::Stop(unsigned int signum)
     // from any thread.
     m_synchronizer.Stop();
     m_ioService.post(boost::bind(&CBroker::HandleStop, this, signum));
+    // Unrelated to our ioservice, but must be done.
+    device::CAdapterFactory::Instance().Stop();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -128,11 +128,24 @@ void CAdapterFactory::RunService()
         Logger.Fatal << "Fatal exception in the device ioservice: "
                 << e.what() << std::endl;
         // required for clean shutdown
-        m_ios.stop();
+        Stop();
         raise(SIGTERM);
     }
 
     Logger.Status << "The adapter i/o service has stopped." << std::endl;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+/// Stops the i/o service
+///
+/// @pre None (though it'd make sense to start it first)
+/// @post ioservice will stop as soon as possible
+///
+/// @limitations Doesn't block
+///////////////////////////////////////////////////////////////////////////////
+void CAdapterFactory::Stop()
+{
+    m_ios.stop();
 }
 
 ////////////////////////////////////////////////////////////////////////////////

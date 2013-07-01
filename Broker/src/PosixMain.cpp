@@ -21,8 +21,6 @@
 /// Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
 ////////////////////////////////////////////////////////////////////////////////
 
-#ifdef __unix__
-
 #include "CBroker.hpp"
 #include "CConnectionManager.hpp"
 #include "CDispatcher.hpp"
@@ -399,4 +397,3 @@ int main(int argc, char* argv[])
     return 0;
 }
 
-#endif // __unix__

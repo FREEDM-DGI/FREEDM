@@ -128,6 +128,7 @@ void CAdapterFactory::RunService()
         Logger.Fatal << "Fatal exception in the device ioservice: "
                 << e.what() << std::endl;
         // required for clean shutdown
+        m_ios.stop();
         raise(SIGTERM);
     }
 

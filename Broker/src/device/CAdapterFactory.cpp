@@ -276,6 +276,14 @@ void CAdapterFactory::InitializeAdapter(IAdapter::Pointer adapter,
     {
         throw std::logic_error("Received a null IAdapter::Pointer.");
     }
+    if( p.count("state") > 1 )
+    {
+        throw EDgiConfigError("XML contains multiple state tags");
+    }
+    if( p.count("command") > 1 )
+    {
+        throw EDgiConfigError("XML contains multiple command tags");
+    }
 
     buffer = boost::dynamic_pointer_cast<IBufferAdapter>(adapter);
     
@@ -304,6 +312,14 @@ void CAdapterFactory::InitializeAdapter(IAdapter::Pointer adapter,
                 name    = child.second.get<std::string>("device");
                 signal  = child.second.get<std::string>("signal");
                 index   = child.second.get<std::size_t>("<xmlattr>.index");
+
+                if( child.second.size() != 4 )
+                {
+                    std::stringstream ss;
+                    ss << "Invalid entry at " << (i == 0 ? "state" : "command")
+                            << " index = " << index << ": too many subtags";
+                    throw std::runtime_error(ss.str());
+                }
             }
             catch( std::exception & e )
             {

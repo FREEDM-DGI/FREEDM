@@ -54,5 +54,7 @@ VARIABLES = {
     # CS VARIABLES
     'CS_EXCHANGE_TIME': cs_exchange_time,
     # DEV VARIABLES
-    'RTDS_RUN_DELAY': rtds_run_delay,
+    'DEV_RTDS_DELAY': dev_rtds_delay,
+    'DEV_PNP_HEARTBEAT': dev_pnp_heartbeat,
+    'DEV_SOCKET_TIMEOUT': dev_socket_timeout,
 }

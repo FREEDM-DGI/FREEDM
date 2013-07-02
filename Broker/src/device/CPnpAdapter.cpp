@@ -37,6 +37,7 @@
 #include "CLogger.hpp"
 #include "CGlobalConfiguration.hpp"
 #include "PlugNPlayExceptions.hpp"
+#include "CTimings.hpp"
 
 #include <map>
 #include <sstream>
@@ -127,8 +128,8 @@ void CPnpAdapter::Start()
 
     IBufferAdapter::Start();
 
-    // TODO: this fella should be configurable
-    m_countdown.expires_from_now(boost::posix_time::seconds(5));
+    m_countdown.expires_from_now(boost::posix_time::seconds(
+            CTimings::DEV_PNP_HEARTBEAT));
     m_countdown.async_wait(boost::bind(&CPnpAdapter::Timeout, this, _1));
 }
 
@@ -144,8 +145,8 @@ void CPnpAdapter::Heartbeat()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
-    // TODO: hello configurable option
-    if( m_countdown.expires_from_now(boost::posix_time::seconds(5)) != 0 )
+    if( m_countdown.expires_from_now(boost::posix_time::seconds(
+            CTimings::DEV_PNP_HEARTBEAT)) != 0 )
     {
         Logger.Debug << "Reset an adapter heartbeat timer." << std::endl;
         m_countdown.async_wait(boost::bind(&CPnpAdapter::Timeout, this, _1));

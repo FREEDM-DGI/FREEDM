@@ -282,7 +282,12 @@ void CAdapterFactory::InitializeAdapter(IAdapter::Pointer adapter,
     
     boost::property_tree::ptree subtree;
     IBufferAdapter::Pointer buffer;
-    std::map<std::string, std::string> devices;
+    IDevice::Pointer device;
+
+    std::map<std::string, std::string> devtype;
+    std::map<std::string, unsigned int> states;
+    std::map<std::string, unsigned int> commands;
+    std::map<std::string, unsigned int>::iterator it;
     
     std::string type, name, signal;
     std::size_t index;
@@ -346,14 +351,16 @@ void CAdapterFactory::InitializeAdapter(IAdapter::Pointer adapter,
                     << name << "," << signal << ")." << std::endl;
             
             // create the device when first seen
-            if( devices.count(name) == 0 )
+            if( devtype.count(name) == 0 )
             {
                 CreateDevice(name, type, adapter);
                 adapter->RegisterDevice(name);
-                devices[name] = type;
+                devtype[name]  = type;
+                states[name]   = 0;
+                commands[name] = 0;
             }
 
-            if( devices[name] != type )
+            if( devtype[name] != type )
             {
                 std::string what = "Failed to create adapter: Multiple "
                         + std::string("devices share the name: ") + name;
@@ -361,14 +368,21 @@ void CAdapterFactory::InitializeAdapter(IAdapter::Pointer adapter,
             }
             
             // check if the device recognizes the associated signal
-            IDevice::Pointer dev = CDeviceManager::Instance().GetDevice(name);
-            if( !dev )
+            device = CDeviceManager::Instance().GetDevice(name);
+            if( !device )
             {
                 throw std::logic_error("Device " + name + " not in manager");
             }
             
-            if( (i == 0 && !dev->HasStateSignal(signal)) ||
-                (i == 1 && !dev->HasCommandSignal(signal)) )
+            if( i == 0 && device->HasStateSignal(signal) )
+            {
+                ++states[name];
+            }
+            else if( i == 1 && device->HasCommandSignal(signal) )
+            {
+                ++commands[name];
+            }
+            else
             {
                 std::string what = "Failed to create adapter: The "
                         + type + " device, " + name
@@ -395,6 +409,50 @@ void CAdapterFactory::InitializeAdapter(IAdapter::Pointer adapter,
             }
         }
     }
+
+    for( it = states.begin(); it != states.end(); it++ )
+    {
+        device = CDeviceManager::Instance().GetDevice(it->first);
+        if( !device )
+        {
+            throw std::logic_error("Device " + it->first + " not in manager");
+        }
+        if( device->GetStateSet().size() != it->second )
+        {
+            std::string what = "Failed to create adapter: The device "
+                    + it->first + " is missing at least one state.";
+            if (boost::dynamic_pointer_cast<CPnpAdapter>(adapter) != 0)
+            {
+                throw EBadRequest(what);
+            }
+            else
+            {
+                throw EDgiConfigError(what);
+            }
+        }
+    }
+    for( it = commands.begin(); it != commands.end(); it++ )
+    {
+        device = CDeviceManager::Instance().GetDevice(it->first);
+        if( !device )
+        {
+            throw std::logic_error("Device " + it->first + " not in manager");
+        }
+        if( device->GetCommandSet().size() != it->second )
+        {
+            std::string what = "Failed to create adapter: The device "
+                    + it->first + " is missing at least one command.";
+            if (boost::dynamic_pointer_cast<CPnpAdapter>(adapter) != 0)
+            {
+                throw EBadRequest(what);
+            }
+            else
+            {
+                throw EDgiConfigError(what);
+            }
+        }
+    }
+
     Logger.Debug << "Initialized the device adapter." << std::endl;
 }
 

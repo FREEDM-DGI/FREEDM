@@ -27,15 +27,17 @@ set(
    )
 
 # generate PhysicalDeviceTypes using the generator
-set(
-    GENERATOR_OUTPUT
+set(GENERATOR_OUTPUT
     ${CMAKE_BINARY_DIR}/include/device/PhysicalDeviceTypes.hpp
     ${CMAKE_CURRENT_BINARY_DIR}/PhysicalDeviceTypes.cpp
    )
 
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/DeviceRegistrationGenerator.py.cmake
+     ${CMAKE_CURRENT_BINARY_DIR}/DeviceRegistrationGenerator.py)
+
 add_custom_command(
     OUTPUT ${GENERATOR_OUTPUT}
-    COMMAND ./DeviceRegistrationGenerator.py
+    COMMAND ${CMAKE_CURRENT_BINARY_DIR}/DeviceRegistrationGenerator.py
     DEPENDS ${DEVICE_TYPES} )
 
 add_custom_target( GeneratedPhysicalDeviceTypes DEPENDS ${GENERATOR_OUTPUT} )

@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 2.6)
 project(Broker)
 
 # Build Versioning
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/")
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/CMakeModules/")
 include(GetGitRevisionDescription)
 get_git_head_revision(GIT_REFSPEC GIT_SHA1)
 
@@ -42,10 +42,14 @@ set(CMAKE_CXX_FLAGS "-pedantic -std=c++98 -pthread ${WARNING_FLAGS}")
 
 # generate the configuration file
 CONFIGURE_FILE(
-    ${CMAKE_BINARY_DIR}/include/config.hpp.cmake
+    ${CMAKE_SOURCE_DIR}/include/config.hpp.cmake
     ${CMAKE_BINARY_DIR}/include/config.hpp )
 
 # include project source directories
+include_directories("${CMAKE_SOURCE_DIR}/include")
+include_directories("${CMAKE_SOURCE_DIR}/include/device")
+include_directories("${CMAKE_SOURCE_DIR}/include/device/types")
+include_directories("${CMAKE_SOURCE_DIR}/src")
 include_directories("${CMAKE_BINARY_DIR}/include")
 include_directories("${CMAKE_BINARY_DIR}/include/device")
 include_directories("${CMAKE_BINARY_DIR}/include/device/types")
@@ -76,5 +80,5 @@ target_link_libraries(
 
 # run Doxygen
 if(DOXYGEN)
-    add_custom_command(TARGET PosixBroker POST_BUILD COMMAND ./builddocs.sh)
+    add_custom_command(TARGET PosixBroker POST_BUILD COMMAND ${CMAKE_SOURCE_DIR}/builddocs.sh)
 endif()

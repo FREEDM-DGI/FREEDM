@@ -17,11 +17,6 @@ option(DATAGRAM "for UDP Datagram service w/o sequencing" OFF)
 option(WARNINGS "warnings displayed during project compile" ON)
 option(DOXYGEN "run Doxygen after project compile" ON)
 
-# Check for a variety of conditions that should generate an error.
-if(!LINUX)
-    message(FATAL_ERROR "Broker must be compiled on GNU/Linux.")
-endif(!LINUX)
-
 if(!Boost_FOUND)
     message(FATAL_ERROR "Boost was not found on your system.")
 endif(!Boost_FOUND)

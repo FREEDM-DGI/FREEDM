@@ -17,10 +17,6 @@ option(DATAGRAM "for UDP Datagram service w/o sequencing" OFF)
 option(DOXYGEN "run Doxygen after project compile" ON)
 option(WARNINGS "warnings displayed during project compile" ON)
 
-if(!Boost_FOUND)
-    message(FATAL_ERROR "Boost was not found on your system.")
-endif()
-
 # Everything checks out, let's start.
 message("This project uses custom CMake settings:"
     "\n\tView the available settings with cmake -LH"

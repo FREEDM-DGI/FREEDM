@@ -125,9 +125,15 @@ def cs_exchange_time(*args,**kwargs):
     rounds_per_sync = kwargs.get('rounds_per_sync')
     return rounds_per_sync * (gm_phase_time(*args, **kwargs) + sc_phase_time(*args,**kwargs) + lb_phase_time(*args,**kwargs))
 
-def rtds_run_delay(*args, **kwargs):
-    return kwargs.get('rtds_run_delay')
+def dev_rtds_delay(*args, **kwargs):
+    return 50
 
 def lb_sc_query_time(*args, **kwargs):
     #This can be magic because the SC query should only generate a local message.
     return 20
+
+def dev_socket_timeout(*args, **kwargs):
+    return 1000
+
+def dev_pnp_heartbeat(*args, **kwargs):
+    return 2000

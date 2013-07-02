@@ -44,6 +44,7 @@
 #include "CFakeAdapter.hpp"
 #include "PlugNPlayExceptions.hpp"
 #include "SynchronousTimeout.hpp"
+#include "CTimings.hpp"
 
 #include <cerrno>
 #include <utility>
@@ -680,7 +681,8 @@ void CAdapterFactory::SessionProtocol()
     
     try
     {
-        TimedWrite(*m_server->GetClient(), response);
+        TimedWrite(*m_server->GetClient(), response,
+                CTimings::DEV_SOCKET_TIMEOUT);
     }
     catch(std::exception & e)
     {

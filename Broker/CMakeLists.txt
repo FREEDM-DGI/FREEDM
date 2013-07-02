@@ -14,8 +14,8 @@ get_git_head_revision(GIT_REFSPEC GIT_SHA1)
 #   activate / deactivate the option as described in the message below
 option(CUSTOMNETWORK "for network.xml support" OFF)
 option(DATAGRAM "for UDP Datagram service w/o sequencing" OFF)
-option(WARNINGS "warnings displayed during project compile" ON)
 option(DOXYGEN "run Doxygen after project compile" ON)
+option(WARNINGS "warnings displayed during project compile" ON)
 
 if(!Boost_FOUND)
     message(FATAL_ERROR "Boost was not found on your system.")

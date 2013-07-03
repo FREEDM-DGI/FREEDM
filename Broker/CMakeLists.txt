@@ -85,7 +85,11 @@ target_link_libraries(PosixBroker
                       ${Boost_DATE_TIME_LIBRARY}
                      )
 
-# run Doxygen
 if(DOXYGEN)
-    add_custom_command(TARGET PosixBroker POST_BUILD COMMAND ${CMAKE_SOURCE_DIR}/builddocs.sh)
+    find_package(Doxygen MODULE)
+    if(DOXYGEN_FOUND)
+        add_custom_command(TARGET PosixBroker POST_BUILD
+                           COMMAND ${CMAKE_SOURCE_DIR}/builddocs.sh
+                          )
+    endif()
 endif()

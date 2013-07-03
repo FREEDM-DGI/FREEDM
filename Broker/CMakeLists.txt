@@ -1,11 +1,11 @@
 cmake_minimum_required(VERSION 2.8.8)
 
+project(Broker)
+
 # Support build versioning for development builds
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/CMakeModules/")
+list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/CMakeModules/")
 include(GetGitRevisionDescription)
 get_git_head_revision(GIT_REFSPEC GIT_SHA1)
-
-project(Broker)
 
 # ${GIT_SHA1} for development builds. Set to an appropriate string for releases.
 set(BROKER_VERSION ${GIT_SHA1})
@@ -42,19 +42,19 @@ if(TRACK_HANDLERS)
 endif()
 
 # generate the configuration file
-configure_file(${CMAKE_SOURCE_DIR}/include/config.hpp.cmake
-               ${CMAKE_BINARY_DIR}/include/config.hpp
+configure_file(${PROJECT_SOURCE_DIR}/include/config.hpp.cmake
+               ${PROJECT_BINARY_DIR}/include/config.hpp
               )
 
 # include project source directories
-include_directories("${CMAKE_SOURCE_DIR}/include")
-include_directories("${CMAKE_SOURCE_DIR}/include/device")
-include_directories("${CMAKE_SOURCE_DIR}/include/device/types")
-include_directories("${CMAKE_SOURCE_DIR}/src")
-include_directories("${CMAKE_BINARY_DIR}/include")
-include_directories("${CMAKE_BINARY_DIR}/include/device")
-include_directories("${CMAKE_BINARY_DIR}/include/device/types")
-include_directories("${CMAKE_BINARY_DIR}/src")
+include_directories("${PROJECT_SOURCE_DIR}/include")
+include_directories("${PROJECT_SOURCE_DIR}/include/device")
+include_directories("${PROJECT_SOURCE_DIR}/include/device/types")
+include_directories("${PROJECT_SOURCE_DIR}/src")
+include_directories("${PROJECT_BINARY_DIR}/include")
+include_directories("${PROJECT_BINARY_DIR}/include/device")
+include_directories("${PROJECT_BINARY_DIR}/include/device/types")
+include_directories("${PROJECT_BINARY_DIR}/src")
 
 # goto src/CMakeLists.txt
 add_subdirectory(src)
@@ -79,7 +79,7 @@ if(DOXYGEN)
     find_package(Doxygen MODULE)
     if(DOXYGEN_FOUND)
         add_custom_command(TARGET PosixBroker POST_BUILD
-                           COMMAND ${CMAKE_SOURCE_DIR}/builddocs.sh
+                           COMMAND ${PROJECT_SOURCE_DIR}/builddocs.sh
                           )
     endif()
 endif()

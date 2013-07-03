@@ -25,8 +25,8 @@ message("This project uses custom CMake settings:"
        )
 
 # find the required boost libraries
-find_package(Boost REQUIRED COMPONENTS
-             date_time program_options serialization system thread
+find_package(Boost 1.47 REQUIRED
+             COMPONENTS date_time program_options serialization system thread
             )
 
 # add the boost libraries to the project

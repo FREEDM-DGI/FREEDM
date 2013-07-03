@@ -1,6 +1,5 @@
 # list the source files for the project
-set(
-    BROKER_FILES
+set(BROKER_FILES
     CBroker.cpp
     CConnection.cpp
     CConnectionManager.cpp

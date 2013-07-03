@@ -20,12 +20,14 @@ option(WARNINGS "warnings displayed during project compile" ON)
 
 # Everything checks out, let's start.
 message("This project uses custom CMake settings:"
-    "\n\tView the available settings with cmake -LH"
-    "\n\tChange a setting with -DSETTING=ON/OFF")
+        "\n\tView the available settings with cmake -LH"
+        "\n\tChange a setting with -DSETTING=ON/OFF"
+       )
 
 # find the required boost libraries
-find_package(Boost REQUIRED COMPONENTS system thread program_options 
-             serialization date_time)
+find_package(Boost REQUIRED COMPONENTS
+             date_time program_options serialization system thread
+            )
 
 # add the boost libraries to the project
 include_directories(SYSTEM ${Boost_INCLUDE_DIRS})
@@ -46,9 +48,9 @@ if(TRACK_HANDLERS)
 endif()
 
 # generate the configuration file
-configure_file(
-    ${CMAKE_SOURCE_DIR}/include/config.hpp.cmake
-    ${CMAKE_BINARY_DIR}/include/config.hpp )
+configure_file(${CMAKE_SOURCE_DIR}/include/config.hpp.cmake
+               ${CMAKE_BINARY_DIR}/include/config.hpp
+              )
 
 # include project source directories
 include_directories("${CMAKE_SOURCE_DIR}/include")
@@ -61,10 +63,10 @@ include_directories("${CMAKE_BINARY_DIR}/include/device/types")
 include_directories("${CMAKE_BINARY_DIR}/src")
 
 # goto src/device/CMakeLists.txt
-add_subdirectory( src/device )
+add_subdirectory(src/device)
 
 # goto src/CMakeLists.txt
-add_subdirectory( src )
+add_subdirectory(src)
 
 add_executable(PosixBroker src/PosixMain.cpp)
 
@@ -72,16 +74,15 @@ add_executable(PosixBroker src/PosixMain.cpp)
 add_dependencies(PosixBroker GeneratedPhysicalDeviceTypes)
 
 # link the executable to its dependencies
-target_link_libraries(
-    PosixBroker
-    broker
-    device
-    ${Boost_THREAD_LIBRARY}
-    ${Boost_SYSTEM_LIBRARY}
-    ${Boost_SERIALIZATION_LIBRARY}
-    ${Boost_PROGRAM_OPTIONS_LIBRARY}
-    ${Boost_DATE_TIME_LIBRARY}
-)
+target_link_libraries(PosixBroker
+                      broker
+                      device
+                      ${Boost_THREAD_LIBRARY}
+                      ${Boost_SYSTEM_LIBRARY}
+                      ${Boost_SERIALIZATION_LIBRARY}
+                      ${Boost_PROGRAM_OPTIONS_LIBRARY}
+                      ${Boost_DATE_TIME_LIBRARY}
+                     )
 
 # run Doxygen
 if(DOXYGEN)

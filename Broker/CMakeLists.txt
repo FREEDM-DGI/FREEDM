@@ -1,5 +1,5 @@
 # cmake specification for FREEDM Broker
-cmake_minimum_required(VERSION 2.6)
+cmake_minimum_required(VERSION 2.8.8)
 project(Broker)
 
 # Build Versioning
@@ -25,7 +25,7 @@ message("This project uses custom CMake settings:"
        )
 
 # find the required boost libraries
-find_package(Boost 1.47 REQUIRED
+find_package(Boost 1.47 REQUIRED MODULE
              COMPONENTS date_time program_options serialization system thread
             )
 

@@ -46,7 +46,7 @@ if(TRACK_HANDLERS)
 endif()
 
 # generate the configuration file
-CONFIGURE_FILE(
+configure_file(
     ${CMAKE_SOURCE_DIR}/include/config.hpp.cmake
     ${CMAKE_BINARY_DIR}/include/config.hpp )
 

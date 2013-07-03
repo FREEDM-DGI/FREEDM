@@ -34,9 +34,10 @@ include_directories(SYSTEM ${Boost_INCLUDE_DIRS})
 link_directories(${Boost_LIBRARY_DIRS})
 
 # set C++ compiler flags
-set(WARNING_FLAGS "-w")
 if(WARNINGS)
     set(WARNING_FLAGS "-Wall -Wextra")
+else()
+    set(WARNING_FLAGS "-w")
 endif()
 
 # Run -DCMAKE_BUILD_TYPE=DEBUG if you need debugging -g

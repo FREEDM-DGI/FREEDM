@@ -1,3 +1,6 @@
+# goto src/device/CMakeLists.txt
+add_subdirectory(device)
+
 # list the source files for the project
 set(BROKER_FILES
     CBroker.cpp

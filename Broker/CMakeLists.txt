@@ -62,9 +62,6 @@ include_directories("${CMAKE_BINARY_DIR}/include/device")
 include_directories("${CMAKE_BINARY_DIR}/include/device/types")
 include_directories("${CMAKE_BINARY_DIR}/src")
 
-# goto src/device/CMakeLists.txt
-add_subdirectory(src/device)
-
 # goto src/CMakeLists.txt
 add_subdirectory(src)
 

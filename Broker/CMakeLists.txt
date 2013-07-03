@@ -10,7 +10,7 @@ get_git_head_revision(GIT_REFSPEC GIT_SHA1)
 # ${GIT_SHA1} for development builds. Set to an appropriate string for releases.
 set(BROKER_VERSION ${GIT_SHA1})
 
-# All the build options go here
+# Options go here; be sure to edit config.hpp.cmake if they're needed for build
 option(CUSTOMNETWORK "for network.xml support" OFF)
 option(DATAGRAM "for UDP Datagram service w/o sequencing" OFF)
 option(DOXYGEN "run Doxygen after project compile" ON)

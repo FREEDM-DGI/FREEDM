@@ -119,7 +119,7 @@ LBAgent::LBAgent(std::string uuid_, CBroker &broker):
     RegisterSubhandle("lb.CollectedState",boost::bind(&LBAgent::HandleCollectedState, this, _1, _2));
     RegisterSubhandle("lb.ComputedNormal",boost::bind(&LBAgent::HandleComputedNormal, this, _1, _2));
     //always register message handler before "any"
-    RegisterSubhandle("lb.lamda", boost::bind(&LBAgent::HandleLamda, this, _1, _2));
+
     RegisterSubhandle("lb.LamdaUpdate", boost::bind(&LBAgent::HandleUpdate, this, _1, _2));
     RegisterSubhandle("any", boost::bind(&LBAgent::HandleAny, this, _1, _2));
     m_sstExists = false;
@@ -158,13 +158,14 @@ int LBAgent::Run()
     m_gama = pt.get<float>("Init.costVar.gama");
     m_epsilon = pt.get<float>("Init.costVar.epsilon");
     m_PGen = pt.get<float>("Init.costVar.PGen");
+    m_index = pt.get<int>("Init.costVar.num");
     Logger.Status << "ICC cost variables are obtained from xml are: "
                   << m_lamda << ", " << m_alpha << ", "
                   << m_beta << ", " << m_gama << ", "
                   << m_epsilon << ", " << m_PGen << std::endl;
     //Initially nodes save local lamda into container(ICC)
     Logger.Status << "Save local lamda into local container" << std::endl;
-    m_collectlamda.insert(std::pair<std::string, float>(GetUUID(), m_lamda));
+    m_collectlamda.insert(std::pair<int, float>(m_index, m_lamda));
     //ICC
     //---------------------------------------------------------------------------------//
     LoadManage();
@@ -208,9 +209,9 @@ LBAgent::PeerNodePtr LBAgent::GetPeer(std::string uuid)
 }
 
 //-----------------------------------------------------------------------------//
-//ICC
+//LICC
 ///////////////////////////////////////////////////////////////////////////////
-/// m_locallamda (ICC)
+/// m_locallamda (LICC)
 /// @description: Creates a message containing local lamda from this node.
 /// @pre: This node has a local lamda.
 /// @post: No Change.
@@ -220,12 +221,12 @@ LBAgent::PeerNodePtr LBAgent::GetPeer(std::string uuid)
 CMessage LBAgent::m_locallamda(float lamda)
 {
     freedm::broker::CMessage m_;
-    m_.SetHandler("lb.lamda");
+    m_.SetHandler("lb.UpdateLamda");
     m_.m_submessages.put("lb.source", GetUUID());
-    m_.m_submessages.put("lb.llamda", boost::lexical_cast<std::string>(lamda));
+    m_.m_submessages.put("lb.lamda", boost::lexical_cast<std::string>(lamda));
     return m_;
 }
-//ICC
+//LICC
 //-----------------------------------------------------------------------------//
 
 ////////////////////////////////////////////////////////////
@@ -666,204 +667,6 @@ void LBAgent::SendDraftRequest()
 }//end SendDraftRequest
 
 
-//-----------------------------------------------------------------------------------------//
-//ICC
-////////////////////////////////////////////////////////////
-/// LeaderICC
-/// @description: Handles the ICC in the leader side
-/// pre: Leader got the total demand and lamdas from other supply nodes
-/// post: Leader update its lamda and send update request and its lamda to the other
-///   supply nodes
-///
-////////////////////////////////////////////////////////////
-void LBAgent::LeaderICC()
-{
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
-    //update lamda according to equation 12
-    Logger.Status << "------leader ICC------" << std::endl;
-    std::string uuid_;
-    m_preLamda = m_lamda;
-    countlambda = 0;
-    m_lamda = 0;
-    /*
-        //print out network variables
-        for(it = m_collectvar.begin(); it != m_collectvar.end(); it++)
-        {
-            Logger.Status << (*it).first << " -- " << (*it).second << std::endl;
-        }
-    
-        //print out collected lamda
-        for(it = m_collectlamda.begin(); it != m_collectlamda.end(); it++)
-        {
-            Logger.Status << (*it).first << " && " << (*it).second << std::endl;
-        }
-    */
-    //calculate deltaP
-    float PGen_total=0;
-    
-    for (it = m_collectPGen.begin(); it != m_collectPGen.end(); it++)
-    {
-	Logger.Status << "--------" << (*it).second << std::endl;
-        PGen_total += (*it).second;
-    }
-    
-    PGen_total += m_PGen;
-    Logger.Status << "----------Total generation value is" << PGen_total << std::endl;
-
-    m_deltaP = m_PDemand - PGen_total;
-    Logger.Status << "------------DeltaP equals to " << m_deltaP << std::endl;
-    
-    //calculate new lamda
-    BOOST_FOREACH(PeerNodePtr peer_, m_AllPeers | boost::adaptors::map_values)
-    {
-        uuid_ = peer_->GetUUID();
-        m_lamda += (m_collectlamda.find(uuid_)->second)*(m_collectvar.find(uuid_)->second);
-    }
-    m_lamda += m_epsilon*m_deltaP;
-    Logger.Status << "***********the update lamda in leader is **************"
-    << m_lamda << std::endl;
-    //calculate PGen and print out
-    m_PGen = (m_lamda - m_beta)/(2*m_gama);
-    Logger.Status << "***********the update PGen in leader is **************"
-    << m_PGen << std::endl;
-    //clear collectlamda container
-    m_collectlamda.clear();
-    m_collectPGen.clear();
-
-    //insert new one
-    m_collectlamda.insert(std::pair<std::string, float>(GetUUID(), m_lamda));
-/*
-    if (!isEqual(m_preLamda, m_lamda))
-    {
-        //send update lamda out
-        Update(m_lamda, m_PGen);
-        countcycle++;
-    }
-    else 
-    {
-	Logger.Status << "The lamda has been updated  " << countcycle << std::endl;
-    }
-*/
-
-    Update(m_lamda, m_PGen);
-}
-
-////////////////////////////////////////////////////////////
-/// FollowerICC
-/// @description: Handles the ICC in the Follower side
-/// pre: Follower got the request lamdas from other leader
-/// post: Follower update its lamda and print out PGen
-///
-////////////////////////////////////////////////////////////
-void LBAgent::FollowerICC()
-{
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
-    //update lamda according to equation 10
-    std::string uuid_;
-
-    m_preLamda = m_lamda;
-    m_lamda = 0;
-    //Logger.Status << "countlambda =======" << countlambda << std::endl;
-    countlambda = 0;
-    /*
-    //print out network variables
-    for(it = m_collectvar.begin(); it != m_collectvar.end(); it++)
-    {
-        Logger.Status << (*it).first << " -- " << (*it).second << std::endl;
-    }
-    
-    //print out collected lamda
-    for(it = m_collectlamda.begin(); it != m_collectlamda.end(); it++)
-    {
-        Logger.Status << (*it).first << " && " << (*it).second << std::endl;
-    }
-    */
-
-    //calculate new lamda
-    BOOST_FOREACH(PeerNodePtr peer_, m_AllPeers | boost::adaptors::map_values)
-    {
-        uuid_ = peer_->GetUUID();
-        m_lamda += (m_collectlamda.find(uuid_)->second)*(m_collectvar.find(uuid_)->second);
-    }
-    Logger.Status << "***********the update lamda in follower is **************"
-    << m_lamda << std::endl;
-
-
-    //calculate PGen and print out
-    m_PGen = (m_lamda - m_beta)/(2*m_gama);
-    Logger.Status << "***********the update PGen in follower is **************"
-    << m_PGen << std::endl;
-    //update collectlamda container
-    m_collectlamda.clear();
-
-    m_collectlamda.insert(std::pair<std::string, float>(GetUUID(), m_lamda));
-/*
-    if (!isEqual(m_preLamda, m_lamda))
-    {
-        //send update lamda out
-        Update(m_lamda, m_PGen);
-	countcycle++;
-    }
-    else
-    {
-	Logger.Status << "The lamda in follower has been updated " << countcycle << std::endl;
-    }
-*/
-
-    Update(m_lamda, m_PGen);
-}
-
-
-////////////////////////////////////////////////////////////
-/// Update
-/// @description: send lamda update message out after updating local lamda
-/// pre: just update local lamda
-/// post: send lamda update message out
-/// parameter: float lamda
-////////////////////////////////////////////////////////////
-void LBAgent::Update(float lamda, float PGen)
-{
-    //send lamda update request to other nodes
-    freedm::broker::CMessage m_;
-    //m_.m_submessages.put("lb", "LamdaUpdate");
-    m_.SetHandler("lb.LamdaUpdate");
-    m_.m_submessages.put("lb.source", GetUUID());
-    m_.m_submessages.put("lb.lamda", boost::lexical_cast<std::string>(lamda));
-    //isn't leader, send PGen as well
-    //if(GetUUID() != m_Leader)
-    //{
-    m_.m_submessages.put("lb.PGen", boost::lexical_cast<std::string>(PGen));
-    //}
-    BOOST_FOREACH( PeerNodePtr p_, m_AllPeers | boost::adaptors::map_values)
-    {
-        if (p_->GetUUID() != GetUUID())
-        {
-            try
-            {
-                p_->Send(m_);
-            }
-            catch (boost::system::system_error& e)
-            {
-                Logger.Info << "Couldn't Send Message To Peer" << std::endl;
-            }
-        }
-    }
-}
-
-bool LBAgent::isEqual(float preLamda, float curLamda)
-{
-    Logger.Status << "previous lamda VS current lamda: " << preLamda << " : " << curLamda << std::endl;
-    if ((preLamda - curLamda) > -0.000001 && (preLamda - curLamda) < 0.000001 )
-	return true;
-    else
-	return false;
-}
-
-
-
-//ICC
-//-----------------------------------------------------------------------------------//
-
 
 
 #pragma GCC diagnostic ignored "-Wunused-parameter"
@@ -942,7 +745,7 @@ void LBAgent::HandlePeerList(MessagePtr msg, PeerNodePtr peer)
             AddPeer(p_);
         }
     }
-//ICC
+//LICC
     //Obtain network topology variables from xml file
     Logger.Status << "^^^^^^^^^^^^^^NETWORK TOPOLOGY^^^^^^^^^^^^^^^^" << std::endl;
     boost::property_tree::ptree pt;
@@ -952,117 +755,45 @@ void LBAgent::HandlePeerList(MessagePtr msg, PeerNodePtr peer)
     //print out peerlist
     BOOST_FOREACH( PeerNodePtr p_, m_AllPeers | boost::adaptors::map_values)
     Logger.Status << p_->GetUUID() << std::endl;
+
     //clear network variable container
     m_var.clear();
-    m_collectvar.clear();
+ 
     //index for network variables
     int i = 1;
     float netVar;
-    
-    //the network variables only available for three nodes
-    if (peerNum == 3)
-    {
-        //save network variables to container m_var<int, float>
-        BOOST_FOREACH(ptree::value_type &v, pt.get_child("Init.networkTop.fullCon.threeNodes"))
-        {
-            netVar =  boost::lexical_cast<float>(v.second.data());
-            m_var.insert(std::pair<int, float>(i, netVar));
-            i++;
-        }
-    }
-    else if (peerNum == 5)
-    {
-	if (m_Leader == GetUUID())
-	{
-	    BOOST_FOREACH(ptree::value_type &v, pt.get_child("Init.networkTop.starCon.fiveNodes.leader"))
-	    {
-		netVar = boost::lexical_cast<float>(v.second.data());
-		m_var.insert(std::pair<int, float>(i, netVar));
-		i++;
-	    }
-	}
-	else
-	{
-	    BOOST_FOREACH(ptree::value_type &v, pt.get_child("Init.networkTop.starCon.fiveNodes.follower"))
-	    {
-		netVar = boost::lexical_cast<float>(v.second.data());
-		m_var.insert(std::pair<int, float>(i, netVar));
-		i++;
-	    }
-	}
-    }
-    else
-    {
-	Logger.Status << "Network Topology is not on 3 or 5 nodes" << std::endl;
-    }
-    
-    //save network variables to container m_collectvar<string(UUID), float>
-    if ( !m_var.empty())
-    {
-      if (peerNum == 5)
-      { 
-        //first variable assigned to local node
-	if (m_Leader == GetUUID())
-	{
-            m_collectvar.insert(std::pair<std::string, float>(GetUUID(), m_var.find(1)->second));
-	    i = 2;
-	}
-	else
-	{
-	    m_collectvar.insert(std::pair<std::string, float>(GetUUID(), m_var.find(1)->second));
-	    m_collectvar.insert(std::pair<std::string, float>(m_Leader, m_var.find(2)->second));
-            i = 3;
-	}
-      }
-      else if (peerNum == 3)
-      {
-	m_collectvar.insert(std::pair<std::string, float>(GetUUID(), m_var.find(1)->second));
-	i = 2;
-      }
-        BOOST_FOREACH(PeerNodePtr peer_, m_AllPeers | boost::adaptors::map_values)
-        {
-            if (peer_->GetUUID() != GetUUID())
-            {
-                m_collectvar.insert(std::pair<std::string, float>(peer_->GetUUID(), m_var.find(i)->second));
-                i++;
-            }
-        }
-    }
-    
-    
-    //print out network variables
-    for(it = m_collectvar.begin(); it != m_collectvar.end(); it++)
-    {
-        Logger.Status << (*it).first << " --------- " << (*it).second << std::endl;
-    }
-    
-    countlambda = 0;
-    //if at least three nodes, Initially peer nodes send lamda to leader node and other peers
-    if ( peerNum > 2 && m_Leader != GetUUID())
-    {
-        CMessage m_ = m_locallamda(m_lamda);
-        //attached power generation value
-        m_.m_submessages.put("lb.lPGen", boost::lexical_cast<std::string>(m_PGen));
 
-        BOOST_FOREACH( PeerNodePtr p_, m_AllPeers | boost::adaptors::map_values)
+    // save network topology variables in a map contatiner
+    BOOST_FOREACH(ptree::value_type &v, pt.get_child("Init.networkTop.chainCon.fiveNodes"))   
+    {
+	netVar = boost::lexical_cast<float>(v.second.data());
+	m_var.insert(std::pair<int, float>(i, netVar));
+	i++;
+    } 
+
+    //Send initial lamda to other nodes
+    CMessage m_;
+    m_.SetHandler("lb.LamdaUpdate");
+    m_.m_submessages.put("lb.source", GetUUID());
+    m_.m_submessages.put("lb.lamda", boost::lexical_cast<std::string>(m_lamda));
+    m_.m_submessages.put("lb.index", boost::lexical_cast<std::string>(m_index));
+
+    BOOST_FOREACH( PeerNodePtr p_, m_AllPeers | boost::adaptors::map_values)
+    {
+        if ( p_->GetUUID() != GetUUID())
         {
-            if ( p_->GetUUID() != GetUUID())
+            try
             {
-                try
-                {
-                    p_->Send(m_);
-		    Logger.Status << "---------sending out its lamda" << std::endl;
-                }
-                catch (boost::system::system_error& e)
-                {
-                    Logger.Info << "Couldn't Send Message To Peer" << std::endl;
-                }
+                p_->Send(m_);
+                Logger.Status << "---------sending out its lamda" << std::endl;
+            }
+            catch (boost::system::system_error& e)
+            {
+                Logger.Info << "Couldn't Send Message To Peer" << std::endl;
             }
         }
     }
 
-    //ICC
-    //--------------------------------------------------------------------------------//
 }
 
 void LBAgent::HandleDemand(MessagePtr msg, PeerNodePtr peer)
@@ -1435,19 +1166,6 @@ void LBAgent::HandleCollectedState(MessagePtr msg, PeerNodePtr peer)
         SendNormal(m_Normal);
     }
     
-    //------------------------------------------------------------------------------------------//
-    //ICC
-    //generate a fake demand
-    //m_PDemand = 850.0;
-    m_PDemand = agg_load;
-    Logger.Status << "Total demand is " << m_PDemand << std::endl;
-    if (GetUUID() == m_Leader && countlambda == m_AllPeers.size()-1)
-    {
-        LeaderICC();
-    }//end if(m_Leader)
-    
-    //ICC
-    //------------------------------------------------------------------------------------------//
 }
 
 void LBAgent::HandleComputedNormal(MessagePtr msg, PeerNodePtr peer)
@@ -1464,72 +1182,103 @@ void LBAgent::HandleComputedNormal(MessagePtr msg, PeerNodePtr peer)
 }
 
 //------------------------------------------------------------------------//
-//ICC
-// --------------------------------------------------------------
-// Leader received a lamda value from the follower (ICC)
-// --------------------------------------------------------------
-//
-void LBAgent::HandleLamda(MessagePtr msg, PeerNodePtr peer)
-{
-    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    ptree &pt = msg->GetSubMessages();
-    //test
-    Logger.Status << "Are we here?" << std::endl;
-    std::string uuid_ = pt.get<std::string>("lb.source");
-    float val_  = pt.get<float>("lb.llamda");
-    //save lamda with UUID
-    m_collectlamda.insert(std::pair<std::string, float>(uuid_, val_));
-    Logger.Status << "Store another lamda: " << val_ << " from " << uuid_ << std::endl;
-    float PGval_ = pt.get<float>("lb.lPGen");
-    
-    //leader also need PGen
-    m_collectPGen.insert(std::pair<std::string, float>(uuid_, PGval_));
-    Logger.Status << "Store another PGen: " << PGval_ << " from " << uuid_ << std::endl;
-    countlambda++;
-}
+//LICC
 
-
-// --------------------------------------------------------------
-// You received a lamda update message from the source
-// --------------------------------------------------------------
-//
 void LBAgent::HandleUpdate(MessagePtr msg, PeerNodePtr peer)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     ptree &pt = msg->GetSubMessages();
     std::string uuid_ = pt.get<std::string>("lb.source");
+    unsigned int index = boost::lexical_cast<int>(pt.get<std::string>("lb.index"));
     float anotherlamda;
     anotherlamda = boost::lexical_cast<float>(pt.get<std::string>("lb.lamda"));
     //insert new anotherlamda in collectlamda
-    if (m_collectlamda.find(uuid_) == m_collectlamda.end())
+    if (m_collectlamda.find(index) == m_collectlamda.end())
     {
-        m_collectlamda.insert(std::pair<std::string, float>(uuid_, anotherlamda));
+        m_collectlamda.insert(std::pair<int, float>(index, anotherlamda));
         //Logger.Status << "Insert another Lambda:  " << anotherlamda << " from " << uuid_ <<std::endl;
         countlambda ++;
 
-	if (GetUUID() == m_Leader)
+	float Disdemand = boost::lexical_cast<float>(pt.get<std::string>("lb.demand", 0));
+        m_collectDemand.insert(std::pair<int, float>(index, Disdemand));
+    }
+    
+    if (countlambda == m_AllPeers.size()-1)
+    {
+        LICC();
+    }
+    
+    //clean lamda container and demand container
+    m_collectlamda.clear();
+    m_collectDemand.clear();
+    countlambda = 0;
+    
+    //send out its updated lamda
+    CMessage m_;
+    m_.SetHandler("lb.LamdaUpdate");
+    m_.m_submessages.put("lb.source", GetUUID());
+    m_.m_submessages.put("lb.index", m_index);
+    m_.m_submessages.put("lb.lamda", boost::lexical_cast<std::string>(m_preLamda));
+    m_.m_submessages.put("lb.demand", boost::lexical_cast<std::string>(m_preDemand));
+    
+    BOOST_FOREACH(PeerNodePtr p_, m_AllPeers | boost::adaptors::map_values)
+    {
+	if (p_->GetUUID() != GetUUID())
 	{
-	    float followerPGen = boost::lexical_cast<float>(pt.get<std::string>("lb.PGen"));
-            m_collectPGen.insert(std::pair<std::string, float>(uuid_, followerPGen));
-
+                try
+                {
+                    p_->Send(m_);
+                    Logger.Status << "---------sending out its lamda" << std::endl;
+                }
+                catch (boost::system::system_error& e)
+                {
+                    Logger.Info << "Couldn't Send Message To Peer" << std::endl;
+                }
+	    
 	}
-    }
-    
-    if (GetUUID() == m_Leader && countlambda == m_AllPeers.size()-1)
-    {
-        LeaderICC();
-    }
-    
-    else if (GetUUID() != m_Leader && countlambda == m_AllPeers.size()-1)
-    {
-        FollowerICC();
     }
 }
 
-//ICC
+//LICC
 //------------------------------------------------------------------------------//
 
+void LBAgent::LICC()
+{
+    unsigned int number;
+    float preLocal = 0;
+    float curLocal = 0;
+    float preDis = 0;
+    //calculate next local demand
+    float nextLocal = m_Load - (m_lamda - m_beta)/(2*m_gama);
 
+    //calculate next distributed demand
+    float nextDis;
+    for (it = m_collectDemand.begin(); it != m_collectDemand.end(); it++)
+    {
+        number = (*it).first;
+	nextDis += (m_var.find(number)->second)*((*it).second);
+    }
+    nextDis += curLocal - preLocal;
+    preLocal = curLocal;
+    curLocal = nextLocal;
+
+    //calculate next lamda
+    float nextLamda;
+    for (it = m_collectlamda.begin(); it != m_collectlamda.end(); it++)
+    {
+        number = (*it).first;
+        nextLamda += (m_var.find(number)->second)*((*it).second);
+    }
+    nextLamda += m_scalar*preDis;
+    
+    preDis = nextDis;
+
+    //assign next lamda and next distributed demand
+    m_preLamda = nextLamda;
+    m_preDemand = nextDis;
+    Logger.Status << "-----------The update lambda is " << m_preLamda << std::endl;
+   
+}
 
 #pragma GCC diagnostic warning "-Wunused-parameter"
 

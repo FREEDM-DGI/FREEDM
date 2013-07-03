@@ -130,8 +130,7 @@ class LBAgent
         void HandleAccept(MessagePtr msg, PeerNodePtr peer); 
         void HandleCollectedState(MessagePtr msg, PeerNodePtr peer); 
         void HandleComputedNormal(MessagePtr msg, PeerNodePtr peer); 
-        /// ICC handlers
-	void HandleLamda(MessagePtr msg, PeerNodePtr peer);
+        /// LICC handler
 	void HandleUpdate(MessagePtr msg, PeerNodePtr peer);
  
         /// Adds a new peer by a pointer
@@ -163,7 +162,7 @@ class LBAgent
         /// Previous demand state of this node before state change
         EStatus   m_prevStatus;  
   
-	//ICC
+	//LICC
 	CMessage m_locallamda(float lamda);
 	/// Incremental Cost Consensus Algorithm
 	float m_lamda;
@@ -173,9 +172,14 @@ class LBAgent
 	float m_PGen;
 	float m_deltaP;
 	float m_epsilon;
+	float m_scalar;
+	unsigned int m_index;
 
 	/// Previous lamda
 	float m_preLamda;
+
+	/// Previous local demand
+	float m_preDemand; 
 
 	/// number of lamda received
 	unsigned int countlambda;
@@ -191,13 +195,14 @@ class LBAgent
 
 	//network topology parameters (three nodes with fully connected)
  	std::map<int, float> m_var;
- 	std::map<int, float>::iterator itt;
-	//container to save lamda and UUID
-	std::map<std::string, float> m_collectlamda;
-	std::map<std::string, float> m_collectvar;
-	std::map<std::string, float>::iterator it;
-	std::map<std::string, float> m_collectPGen;
-	float m_PDemand;
+	//container to save lamda and demand
+
+	//LICC
+	void LICC();
+        std::map<int, float> m_collectlamda;
+	std::map<int, float> m_collectDemand;
+	std::map<int, float>::iterator it;
+	
  	
         // Peer lists
         /// Set of known peers in Demand State

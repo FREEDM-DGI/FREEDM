@@ -32,7 +32,6 @@
 #include "gm/GroupManagement.hpp"
 #include "lb/LoadBalance.hpp"
 #include "sc/StateCollection.hpp"
-#include "version.h"
 #include "CTimings.hpp"
 
 #include <iostream>

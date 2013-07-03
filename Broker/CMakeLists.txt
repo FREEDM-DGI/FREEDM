@@ -1,11 +1,14 @@
-# cmake specification for FREEDM Broker
 cmake_minimum_required(VERSION 2.8.8)
-project(Broker)
 
-# Build Versioning
+# Support build versioning for development builds
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/CMakeModules/")
 include(GetGitRevisionDescription)
 get_git_head_revision(GIT_REFSPEC GIT_SHA1)
+
+project(Broker)
+
+# ${GIT_SHA1} for development builds. Set to an appropriate string for releases.
+set(BROKER_VERSION ${GIT_SHA1})
 
 # configurable project options
 # TUTORIAL on how to add a new option:

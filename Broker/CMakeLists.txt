@@ -15,6 +15,7 @@ get_git_head_revision(GIT_REFSPEC GIT_SHA1)
 option(CUSTOMNETWORK "for network.xml support" OFF)
 option(DATAGRAM "for UDP Datagram service w/o sequencing" OFF)
 option(DOXYGEN "run Doxygen after project compile" ON)
+option(TRACK_HANDLERS "enable Boost.Asio handler tracking" OFF)
 option(WARNINGS "warnings displayed during project compile" ON)
 
 # Everything checks out, let's start.
@@ -39,6 +40,10 @@ endif()
 # Run -DCMAKE_BUILD_TYPE=DEBUG if you need debugging -g
 # Don't use -DCMAKE_BUILD_TYPE=RELEASE - it makes things not work =/
 set(CMAKE_CXX_FLAGS "-pedantic -std=c++98 -pthread ${WARNING_FLAGS}")
+
+if(TRACK_HANDLERS)
+    add_definitions(-DBOOST_ASIO_ENABLE_HANDLER_TRACKING)
+endif()
 
 # generate the configuration file
 CONFIGURE_FILE(

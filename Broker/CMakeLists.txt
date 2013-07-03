@@ -10,22 +10,12 @@ project(Broker)
 # ${GIT_SHA1} for development builds. Set to an appropriate string for releases.
 set(BROKER_VERSION ${GIT_SHA1})
 
-# configurable project options
-# TUTORIAL on how to add a new option:
-#   add the option below with a help message defaulted to OFF
-#   add the option to Broker/include/config.hpp.cmake as #cmakedefine OPTION
-#   activate / deactivate the option as described in the message below
+# All the build options go here
 option(CUSTOMNETWORK "for network.xml support" OFF)
 option(DATAGRAM "for UDP Datagram service w/o sequencing" OFF)
 option(DOXYGEN "run Doxygen after project compile" ON)
 option(TRACK_HANDLERS "enable Boost.Asio handler tracking" OFF)
 option(WARNINGS "warnings displayed during project compile" ON)
-
-# Everything checks out, let's start.
-message("This project uses custom CMake settings:"
-        "\n\tView the available settings with cmake -LH"
-        "\n\tChange a setting with -DSETTING=ON/OFF"
-       )
 
 # find the required boost libraries
 find_package(Boost 1.47 REQUIRED MODULE

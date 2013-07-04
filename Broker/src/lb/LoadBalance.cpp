@@ -159,6 +159,7 @@ int LBAgent::Run()
     m_epsilon = pt.get<float>("Init.costVar.epsilon");
     m_PGen = pt.get<float>("Init.costVar.PGen");
     m_index = pt.get<int>("Init.costVar.num");
+    m_scalar = pt.get<float>("Init.costVar.scalar");
     Logger.Status << "ICC cost variables are obtained from xml are: "
                   << m_lamda << ", " << m_alpha << ", "
                   << m_beta << ", " << m_gama << ", "
@@ -1206,13 +1207,14 @@ void LBAgent::HandleUpdate(MessagePtr msg, PeerNodePtr peer)
     if (countlambda == m_AllPeers.size()-1)
     {
         LICC();
+        //clean lamda container and demand container
+        m_collectlamda.clear();
+        m_collectDemand.clear();
+        countlambda = 0;
+ 
     }
     
-    //clean lamda container and demand container
-    m_collectlamda.clear();
-    m_collectDemand.clear();
-    countlambda = 0;
-    
+   
     //send out its updated lamda
     CMessage m_;
     m_.SetHandler("lb.LamdaUpdate");

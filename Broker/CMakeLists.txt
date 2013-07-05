@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8.8)
+cmake_minimum_required(VERSION 2.6)
 
 project(Broker)
 
@@ -18,7 +18,7 @@ option(TRACK_HANDLERS "enable Boost.Asio handler tracking" OFF)
 option(WARNINGS "warnings displayed during project compile" ON)
 
 # find the required boost libraries
-find_package(Boost 1.47 REQUIRED MODULE
+find_package(Boost 1.47 REQUIRED
              COMPONENTS date_time program_options serialization system thread
             )
 
@@ -76,7 +76,7 @@ target_link_libraries(PosixBroker
                      )
 
 if(DOXYGEN)
-    find_package(Doxygen MODULE)
+    find_package(Doxygen)
     if(DOXYGEN_FOUND)
         add_custom_command(TARGET PosixBroker POST_BUILD
                            COMMAND ${PROJECT_SOURCE_DIR}/builddocs.sh

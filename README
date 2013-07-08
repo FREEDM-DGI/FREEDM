@@ -30,4 +30,5 @@ and invoke `cmake .` This will prepare the makefile.
 3. Call `make` and wait for the FREEDM project to build.
 
 4. Refer to the FREEDM Wiki at https://github.com/scj7t4/FREEDM/wiki for
-information on configuration.
+information on configuration parameters to CMake. cmake -LH lists configuration
+options with help descriptions, and cmake -D allows you to set an option.

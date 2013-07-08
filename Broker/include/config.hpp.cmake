@@ -21,6 +21,8 @@
 #ifndef CONFIG_HPP
 #define CONFIG_HPP
 
+#define BROKER_VERSION "@BROKER_VERSION@"
+
 #cmakedefine DATAGRAM
 #cmakedefine CUSTOMNETWORK
 

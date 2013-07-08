@@ -130,7 +130,8 @@ void CPnpAdapter::Start()
 
     m_countdown.expires_from_now(boost::posix_time::seconds(
             CTimings::DEV_PNP_HEARTBEAT));
-    m_countdown.async_wait(boost::bind(&CPnpAdapter::Timeout, this, _1));
+    m_countdown.async_wait(boost::bind(&CPnpAdapter::Timeout, this,
+            boost::asio::placeholders::error));
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -149,7 +150,8 @@ void CPnpAdapter::Heartbeat()
             CTimings::DEV_PNP_HEARTBEAT)) != 0 )
     {
         Logger.Debug << "Reset an adapter heartbeat timer." << std::endl;
-        m_countdown.async_wait(boost::bind(&CPnpAdapter::Timeout, this, _1));
+        m_countdown.async_wait(boost::bind(&CPnpAdapter::Timeout, this,
+                boost::asio::placeholders::error));
     }
     else
     {

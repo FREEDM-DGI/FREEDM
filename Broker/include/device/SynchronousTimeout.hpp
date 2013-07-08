@@ -81,9 +81,10 @@ void TimedRead(ReadStream & stream, const BufferSequence & buffer,
     SyncTimeoutLogger.Info << "Blocking for synchronous read." << std::endl;
 
     boost::asio::async_read(stream, buffer,
-            boost::bind(SetResult, result, _1));
+            boost::bind(SetResult, result, boost::asio::placeholders::error));
     timer.expires_from_now(boost::posix_time::milliseconds(duration));
-    timer.async_wait(boost::bind(SetResult, timeout, _1));
+    timer.async_wait(boost::bind(SetResult, timeout,
+            boost::asio::placeholders::error));
 
     while( !(*result) && !(*timeout) )
     {
@@ -135,9 +136,10 @@ void TimedReadUntil(ReadStream & stream,
     SyncTimeoutLogger.Info << "Blocking for synchronous read." << std::endl;
 
     boost::asio::async_read_until(stream, buffer, delim,
-            boost::bind(SetResult, result, _1));
+            boost::bind(SetResult, result, boost::asio::placeholders::error));
     timer.expires_from_now(boost::posix_time::milliseconds(duration));
-    timer.async_wait(boost::bind(SetResult, timeout, _1));
+    timer.async_wait(boost::bind(SetResult, timeout,
+            boost::asio::placeholders::error));
 
     while( !(*result) && !(*timeout) )
     {
@@ -185,9 +187,10 @@ void TimedWrite(WriteStream & stream, const BufferSequence & buffer,
     SyncTimeoutLogger.Info << "Blocking for synchronous write." << std::endl;
 
     boost::asio::async_write(stream, buffer,
-            boost::bind(SetResult, result, _1));
+            boost::bind(SetResult, result, boost::asio::placeholders::error));
     timer.expires_from_now(boost::posix_time::milliseconds(duration));
-    timer.async_wait(boost::bind(SetResult, timeout, _1));
+    timer.async_wait(boost::bind(SetResult, timeout,
+            boost::asio::placeholders::error));
 
     while( !(*result) && !(*timeout) )
     {
@@ -236,9 +239,10 @@ void TimedWrite(WriteStream & stream,
     SyncTimeoutLogger.Info << "Blocking for synchronous write." << std::endl;
 
     boost::asio::async_write(stream, buffer,
-            boost::bind(SetResult, result, _1));
+            boost::bind(SetResult, result, boost::asio::placeholders::error));
     timer.expires_from_now(boost::posix_time::milliseconds(duration));
-    timer.async_wait(boost::bind(SetResult, timeout, _1));
+    timer.async_wait(boost::bind(SetResult, timeout,
+            boost::asio::placeholders::error));
 
     while( !(*result) && !(*timeout) )
     {

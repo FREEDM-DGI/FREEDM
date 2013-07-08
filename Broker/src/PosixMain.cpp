@@ -185,7 +185,7 @@ int main(int argc, char* argv[])
         else
         {
             // Process the config
-            po::store(parse_config_file(ifs, cfgOpts), vm);
+            po::store(po::parse_config_file(ifs, cfgOpts), vm);
             po::notify(vm);
 
             if (!vm.count("help") && !vm.count("version") &&

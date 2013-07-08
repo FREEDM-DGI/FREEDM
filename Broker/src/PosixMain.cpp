@@ -104,7 +104,7 @@ unsigned short GetPort(const std::string str)
         throw std::runtime_error("reserved port number: " + str);
     }
 
-    return boost::lexical_cast<unsigned short>(port);
+    return static_cast<unsigned short>(port);
 }
 
 /// Broker entry point

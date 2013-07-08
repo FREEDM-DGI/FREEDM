@@ -22,6 +22,10 @@
 
 #include <stdexcept>
 
+namespace freedm {
+namespace broker {
+namespace device {
+
 /// Used when a device controller sends a bad packet
 struct EBadRequest
     : virtual std::runtime_error
@@ -46,3 +50,6 @@ struct EDuplicateSession
         : std::runtime_error(what) { }
 };
 
+} // namespace device
+} // namespace broker
+} // namespace freedm

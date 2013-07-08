@@ -21,8 +21,6 @@
 /// Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
 ////////////////////////////////////////////////////////////////////////////////
 
-#ifdef __unix__
-
 #include "CBroker.hpp"
 #include "CConnectionManager.hpp"
 #include "CDispatcher.hpp"
@@ -106,7 +104,7 @@ unsigned short GetPort(const std::string str)
         throw std::runtime_error("reserved port number: " + str);
     }
 
-    return boost::lexical_cast<unsigned short>(port);
+    return static_cast<unsigned short>(port);
 }
 
 /// Broker entry point
@@ -295,6 +293,11 @@ int main(int argc, char* argv[])
                     device::CAdapterFactory::Instance().CreateAdapter(t.second);
                 }
             }
+            catch(boost::property_tree::xml_parser_error & e)
+            {
+                throw std::runtime_error("Failed to create device adapters: "
+                        + std::string(e.what()));
+            }
             catch(std::exception & e)
             {
                 throw std::runtime_error(adapterCfgFile+": "+e.what());
@@ -304,6 +307,7 @@ int main(int argc, char* argv[])
     catch (std::exception & e)
     {
         Logger.Fatal << "Exception caught in main during start up: " << e.what() << std::endl;
+        device::CAdapterFactory::Instance().Stop();
         return 1;
     }
 
@@ -377,6 +381,7 @@ int main(int argc, char* argv[])
     catch (std::exception & e)
     {
         Logger.Fatal << "Exception caught in module initialization: " << e.what() << std::endl;
+        device::CAdapterFactory::Instance().Stop();
         return 1;
     }
 
@@ -386,6 +391,7 @@ int main(int argc, char* argv[])
     }
     catch (std::exception & e)
     {
+        device::CAdapterFactory::Instance().Stop();
         Logger.Fatal << "Exception caught in Broker: " << e.what() << std::endl;
         broker.Stop();
         ios.run();
@@ -394,4 +400,3 @@ int main(int argc, char* argv[])
     return 0;
 }
 
-#endif // __unix__

@@ -79,6 +79,9 @@ public:
 
     /// Removes an adapter and its associated devices.
     void RemoveAdapter(const std::string identifier);
+
+    /// The Stop function is a sign the AdapterFactory has become too powerful.
+    void Stop();
 private:
     /// Constructs the factory.
     CAdapterFactory();

@@ -43,10 +43,13 @@
 #include "CGlobalConfiguration.hpp"
 #include "CFakeAdapter.hpp"
 #include "PlugNPlayExceptions.hpp"
+#include "SynchronousTimeout.hpp"
+#include "CTimings.hpp"
 
 #include <cerrno>
 #include <utility>
 #include <iostream>
+#include <map>
 #include <set>
 
 #include <signal.h>
@@ -126,10 +129,24 @@ void CAdapterFactory::RunService()
         Logger.Fatal << "Fatal exception in the device ioservice: "
                 << e.what() << std::endl;
         // required for clean shutdown
+        Stop();
         raise(SIGTERM);
     }
 
     Logger.Status << "The adapter i/o service has stopped." << std::endl;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+/// Stops the i/o service
+///
+/// @pre None (though it'd make sense to start it first)
+/// @post ioservice will stop as soon as possible
+///
+/// @limitations Doesn't block
+///////////////////////////////////////////////////////////////////////////////
+void CAdapterFactory::Stop()
+{
+    m_ios.stop();
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -265,7 +282,12 @@ void CAdapterFactory::InitializeAdapter(IAdapter::Pointer adapter,
     
     boost::property_tree::ptree subtree;
     IBufferAdapter::Pointer buffer;
-    std::set<std::string> devices;
+    IDevice::Pointer device;
+
+    std::map<std::string, std::string> devtype;
+    std::map<std::string, unsigned int> states;
+    std::map<std::string, unsigned int> commands;
+    std::map<std::string, unsigned int>::iterator it;
     
     std::string type, name, signal;
     std::size_t index;
@@ -273,6 +295,14 @@ void CAdapterFactory::InitializeAdapter(IAdapter::Pointer adapter,
     if( !adapter )
     {
         throw std::logic_error("Received a null IAdapter::Pointer.");
+    }
+    if( p.count("state") > 1 )
+    {
+        throw EDgiConfigError("XML contains multiple state tags");
+    }
+    if( p.count("command") > 1 )
+    {
+        throw EDgiConfigError("XML contains multiple command tags");
     }
 
     buffer = boost::dynamic_pointer_cast<IBufferAdapter>(adapter);
@@ -302,6 +332,14 @@ void CAdapterFactory::InitializeAdapter(IAdapter::Pointer adapter,
                 name    = child.second.get<std::string>("device");
                 signal  = child.second.get<std::string>("signal");
                 index   = child.second.get<std::size_t>("<xmlattr>.index");
+
+                if( child.second.size() != 4 )
+                {
+                    std::stringstream ss;
+                    ss << "Invalid entry at " << (i == 0 ? "state" : "command")
+                            << " index = " << index << ": too many subtags";
+                    throw std::runtime_error(ss.str());
+                }
             }
             catch( std::exception & e )
             {
@@ -313,18 +351,34 @@ void CAdapterFactory::InitializeAdapter(IAdapter::Pointer adapter,
                     << name << "," << signal << ")." << std::endl;
             
             // create the device when first seen
-            if( devices.count(name) == 0 )
+            if( devtype.count(name) == 0 )
             {
                 CreateDevice(name, type, adapter);
                 adapter->RegisterDevice(name);
-                devices.insert(name);
+                devtype[name]  = type;
+                states[name]   = 0;
+                commands[name] = 0;
+            }
+
+            if( devtype[name] != type )
+            {
+                std::string what = "Failed to create adapter: Multiple "
+                        + std::string("devices share the name: ") + name;
+                throw EDgiConfigError(what);
             }
             
             // check if the device recognizes the associated signal
-            IDevice::Pointer dev = CDeviceManager::Instance().m_hidden_devices.at(name);
+            device = CDeviceManager::Instance().m_hidden_devices.at(name);
             
-            if( (i == 0 && !dev->HasStateSignal(signal)) ||
-                (i == 1 && !dev->HasCommandSignal(signal)) )
+            if( i == 0 && device->HasStateSignal(signal) )
+            {
+                ++states[name];
+            }
+            else if( i == 1 && device->HasCommandSignal(signal) )
+            {
+                ++commands[name];
+            }
+            else
             {
                 std::string what = "Failed to create adapter: The "
                         + type + " device, " + name
@@ -351,6 +405,44 @@ void CAdapterFactory::InitializeAdapter(IAdapter::Pointer adapter,
             }
         }
     }
+
+    for( it = states.begin(); it != states.end(); it++ )
+    {
+        device = CDeviceManager::Instance().m_hidden_devices.at(it->first);
+
+        if( device->GetStateSet().size() != it->second )
+        {
+            std::string what = "Failed to create adapter: The device "
+                    + it->first + " is missing at least one state.";
+            if (boost::dynamic_pointer_cast<CPnpAdapter>(adapter) != 0)
+            {
+                throw EBadRequest(what);
+            }
+            else
+            {
+                throw EDgiConfigError(what);
+            }
+        }
+    }
+    for( it = commands.begin(); it != commands.end(); it++ )
+    {
+        device = CDeviceManager::Instance().m_hidden_devices.at(name);
+
+        if( device->GetCommandSet().size() != it->second )
+        {
+            std::string what = "Failed to create adapter: The device "
+                    + it->first + " is missing at least one command.";
+            if (boost::dynamic_pointer_cast<CPnpAdapter>(adapter) != 0)
+            {
+                throw EBadRequest(what);
+            }
+            else
+            {
+                throw EDgiConfigError(what);
+            }
+        }
+    }
+
     Logger.Debug << "Initialized the device adapter." << std::endl;
 }
 
@@ -637,7 +729,8 @@ void CAdapterFactory::SessionProtocol()
     
     try
     {
-        boost::asio::write(*m_server->GetClient(), response);
+        TimedWrite(*m_server->GetClient(), response,
+                CTimings::DEV_SOCKET_TIMEOUT);
     }
     catch(std::exception & e)
     {

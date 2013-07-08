@@ -30,6 +30,7 @@
 /// Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
 ////////////////////////////////////////////////////////////////////////////////
 
+#include "CAdapterFactory.hpp"
 #include "CBroker.hpp"
 #include "CLogger.hpp"
 #include "CGlobalPeerList.hpp"
@@ -133,10 +134,6 @@ CBroker::~CBroker()
 void CBroker::Run()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    // The io_service::run() call will block until all asynchronous operations
-    // have finished. While the server is running, there is always at least one
-    // asynchronous operation outstanding: the asynchronous accept call waiting
-    // for new incoming connections.
     m_signals.async_wait(boost::bind(&CBroker::HandleSignal, this,_1,_2));
     m_synchronizer.Run();
     m_ioService.run();
@@ -170,6 +167,8 @@ void CBroker::Stop(unsigned int signum)
     // from any thread.
     m_synchronizer.Stop();
     m_ioService.post(boost::bind(&CBroker::HandleStop, this, signum));
+    // Unrelated to our ioservice, but must be done.
+    device::CAdapterFactory::Instance().Stop();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

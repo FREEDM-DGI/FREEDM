@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="us-ascii" ?>
 <root>
-    <adapter name = "PSCADSimulation" type = "rtds">
+    <adapter name = "simulation" type = "rtds">
         <info>
             <host>galvantula.freedm</host>
             <port>8001</port>

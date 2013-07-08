@@ -14,17 +14,12 @@ get_git_head_revision(GIT_REFSPEC GIT_SHA1)
 #   activate / deactivate the option as described in the message below
 option(CUSTOMNETWORK "for network.xml support" OFF)
 option(DATAGRAM "for UDP Datagram service w/o sequencing" OFF)
-option(WARNINGS "warnings displayed during project compile" ON)
 option(DOXYGEN "run Doxygen after project compile" ON)
-
-# Check for a variety of conditions that should generate an error.
-if(!LINUX)
-    message(FATAL_ERROR "Broker must be compiled on GNU/Linux.")
-endif(!LINUX)
+option(WARNINGS "warnings displayed during project compile" ON)
 
 if(!Boost_FOUND)
     message(FATAL_ERROR "Boost was not found on your system.")
-endif(!Boost_FOUND)
+endif()
 
 # Everything checks out, let's start.
 message("This project uses custom CMake settings:"
@@ -43,7 +38,7 @@ link_directories(${Boost_LIBRARY_DIRS})
 set(WARNING_FLAGS "-w")
 if(WARNINGS)
     set(WARNING_FLAGS "-Wall -Wextra")
-endif(WARNINGS)
+endif()
 
 # Run -DCMAKE_BUILD_TYPE=DEBUG if you need debugging -g
 # Don't use -DCMAKE_BUILD_TYPE=RELEASE - it makes things not work =/
@@ -86,4 +81,4 @@ target_link_libraries(
 # run Doxygen
 if(DOXYGEN)
     add_custom_command(TARGET PosixBroker POST_BUILD COMMAND ./builddocs.sh)
-endif(DOXYGEN)
+endif()

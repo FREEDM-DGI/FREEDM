@@ -11,6 +11,7 @@
 ///     IAdapter::~IAdapter
 ///     IAdapter::RegisterDevice
 ///     IAdapter::GetDevices
+///     IAdapter::RevealDevices
 ///
 /// These source code files were created at Missouri University of Science and
 /// Technology, and are intended for use in teaching or research. They may be
@@ -27,6 +28,9 @@
 
 #include "IAdapter.hpp"
 #include "CLogger.hpp"
+#include "CDeviceManager.hpp"
+
+#include <boost/foreach.hpp>
 
 namespace freedm {
 namespace broker {
@@ -78,6 +82,24 @@ std::set<std::string> IAdapter::GetDevices() const
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     return m_devices;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/// Reveals the associated devices in the device manager.
+///
+/// @pre No prior call has been made to this function.
+/// @post Calls CDeviceManger::RevealDevice for each known device.
+///
+/// @limitations This function can be called at most once.
+////////////////////////////////////////////////////////////////////////////////
+void IAdapter::RevealDevices()
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+
+    BOOST_FOREACH(std::string devid, m_devices)
+    {
+        CDeviceManager::Instance().RevealDevice(devid);
+    }
 }
 
 } // namespace freedm

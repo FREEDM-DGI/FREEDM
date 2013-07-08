@@ -368,11 +368,7 @@ void CAdapterFactory::InitializeAdapter(IAdapter::Pointer adapter,
             }
             
             // check if the device recognizes the associated signal
-            device = CDeviceManager::Instance().GetDevice(name);
-            if( !device )
-            {
-                throw std::logic_error("Device " + name + " not in manager");
-            }
+            device = CDeviceManager::Instance().m_hidden_devices.at(name);
             
             if( i == 0 && device->HasStateSignal(signal) )
             {
@@ -412,11 +408,8 @@ void CAdapterFactory::InitializeAdapter(IAdapter::Pointer adapter,
 
     for( it = states.begin(); it != states.end(); it++ )
     {
-        device = CDeviceManager::Instance().GetDevice(it->first);
-        if( !device )
-        {
-            throw std::logic_error("Device " + it->first + " not in manager");
-        }
+        device = CDeviceManager::Instance().m_hidden_devices.at(it->first);
+
         if( device->GetStateSet().size() != it->second )
         {
             std::string what = "Failed to create adapter: The device "
@@ -433,11 +426,8 @@ void CAdapterFactory::InitializeAdapter(IAdapter::Pointer adapter,
     }
     for( it = commands.begin(); it != commands.end(); it++ )
     {
-        device = CDeviceManager::Instance().GetDevice(it->first);
-        if( !device )
-        {
-            throw std::logic_error("Device " + it->first + " not in manager");
-        }
+        device = CDeviceManager::Instance().m_hidden_devices.at(name);
+
         if( device->GetCommandSet().size() != it->second )
         {
             std::string what = "Failed to create adapter: The device "

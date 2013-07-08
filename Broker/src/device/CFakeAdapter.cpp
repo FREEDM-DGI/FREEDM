@@ -21,7 +21,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 #include "CLogger.hpp"
-#include "device/CFakeAdapter.hpp"
+#include "CFakeAdapter.hpp"
 
 namespace freedm {
 namespace broker {
@@ -51,6 +51,7 @@ CFakeAdapter::Pointer CFakeAdapter::Create()
 void CFakeAdapter::Start()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    RevealDevices();
     return /*nothing*/;
 }
 

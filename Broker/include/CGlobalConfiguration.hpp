@@ -65,6 +65,8 @@ class CGlobalConfiguration : public boost::noncopyable
         void SetFactoryPort(unsigned short port) { m_factory_port = port; }
         /// Set the socket endpoint address
         void SetDevicesEndpoint(std::string e) { m_devicesEndpoint = e; };
+        /// Set the path to the adapter configuration file
+        void SetAdapterConfigPath(std::string ac) { m_adapterConfigPath = ac; };
         /// Get the hostname
         std::string GetHostname() const { return m_hostname; };
         /// Get the port
@@ -80,6 +82,8 @@ class CGlobalConfiguration : public boost::noncopyable
         unsigned short GetFactoryPort() const { return m_factory_port; }        
         /// Get the socket endpoint address
         std::string GetDevicesEndpoint() const { return m_devicesEndpoint; };
+        /// Get the path to the adapter configuration file
+        std::string GetAdapterConfigPath() const { return m_adapterConfigPath; };
     private:
         std::string m_hostname; /// Node hostname
         std::string m_port; /// Port number
@@ -88,6 +92,7 @@ class CGlobalConfiguration : public boost::noncopyable
         boost::posix_time::time_duration m_clockskew; /// The skew of the clock
         unsigned short m_factory_port; /// Port number for adapter factory
         std::string m_devicesEndpoint; /// Socket endpoint address for devices
+        std::string m_adapterConfigPath; /// Path to the adapter configuration
 };
 
 } // namespace broker

@@ -86,7 +86,54 @@ CAdapterFactory::CAdapterFactory()
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
     RegisterDevices();
+
     m_thread = boost::thread(boost::bind(&CAdapterFactory::RunService, this));
+
+    unsigned short factoryPort =
+        CGlobalConfiguration::instance().GetFactoryPort();
+
+    if( factoryPort )
+    {
+        Logger.Status << "Plug and play devices enabled." << std::endl;
+        StartSessionProtocol(factoryPort);
+    }
+    else
+    {
+        Logger.Status << "Plug and play devices disabled." << std::endl;
+    }
+
+    std::string adapterCfgFile =
+        CGlobalConfiguration::instance().GetAdapterConfigPath();
+
+    if( adapterCfgFile.empty() )
+    {
+        Logger.Status << "System will start without adapters." << std::endl;
+    }
+    else
+    {
+        Logger.Status << "Using devices in " << adapterCfgFile << std::endl;
+
+        try
+        {
+            boost::property_tree::ptree adapterList;
+            boost::property_tree::read_xml(adapterCfgFile, adapterList);
+
+            BOOST_FOREACH(boost::property_tree::ptree::value_type & t,
+                    adapterList.get_child("root"))
+            {
+                CreateAdapter(t.second);
+            }
+        }
+        catch(boost::property_tree::xml_parser_error & e)
+        {
+            throw std::runtime_error("Failed to create device adapters: "
+                    + std::string(e.what()));
+        }
+        catch(std::exception & e)
+        {
+            throw std::runtime_error(adapterCfgFile+": "+e.what());
+        }
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -489,6 +536,8 @@ void CAdapterFactory::CreateDevice(const std::string name,
 ////////////////////////////////////////////////////////////////////////////////
 /// Initializes the plug and play session protocol.
 ///
+/// @param port the port over which to run the session protocol
+///
 /// @ErrorHandling Throws a std::logic_error if the session protoocl has been
 /// initialized through a prior call to this function.
 /// @pre m_server must not be initialized by a prior call to this function.
@@ -496,10 +545,9 @@ void CAdapterFactory::CreateDevice(const std::string name,
 ///
 /// @limitations This function must be called at most once.
 ////////////////////////////////////////////////////////////////////////////////
-void CAdapterFactory::StartSessionProtocol()
+void CAdapterFactory::StartSessionProtocol(unsigned short port)
 {
     CTcpServer::ConnectionHandler handler;
-    unsigned short port;
 
     if( m_server )
     {
@@ -508,7 +556,6 @@ void CAdapterFactory::StartSessionProtocol()
     else
     {
         // initialize the TCP variant of the session layer protocol
-        port        = CGlobalConfiguration::instance().GetFactoryPort();
         handler     = boost::bind(&CAdapterFactory::StartSession, this);
         m_server    = CTcpServer::Create(m_ios, port,
                 CGlobalConfiguration::instance().GetDevicesEndpoint() );

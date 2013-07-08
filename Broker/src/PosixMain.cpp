@@ -27,7 +27,6 @@
 #include "CGlobalConfiguration.hpp"
 #include "CLogger.hpp"
 #include "config.hpp"
-#include "CAdapterFactory.hpp"
 #include "PhysicalDeviceTypes.hpp"
 #include "gm/GroupManagement.hpp"
 #include "lb/LoadBalance.hpp"
@@ -253,60 +252,28 @@ int main(int argc, char* argv[])
                 vm["devices-endpoint"].as<std::string>() );
         }
 
-        // configure the adapter factory
-        if( vm.count("factory-port") == 0 )
+        if (vm.count("factory-port"))
         {
-            Logger.Status << "Plug and play devices disabled." << std::endl;
+            CGlobalConfiguration::instance().SetFactoryPort(GetPort(fport));
         }
         else
         {
-            Logger.Status << "Plug and play devices enabled." << std::endl;
-
-            try
-            {
-                CGlobalConfiguration::instance().SetFactoryPort(GetPort(fport));
-            }
-            catch(std::exception & e)
-            {
-                throw std::runtime_error("factory-port="+fport+": "+e.what());
-            }
-            device::CAdapterFactory::Instance().StartSessionProtocol();
+            CGlobalConfiguration::instance().SetFactoryPort(0);
         }
 
-        if( vm.count("adapter-config") == 0 )
+        if (vm.count("adapter-config"))
         {
-            Logger.Status << "System will start without adapters." << std::endl;
+            CGlobalConfiguration::instance().SetAdapterConfigPath(
+                adapterCfgFile);
         }
         else
         {
-            Logger.Status << "Using devices in " << adapterCfgFile << std::endl;
-            
-            try
-            {
-                boost::property_tree::ptree adapterList;
-                boost::property_tree::read_xml(adapterCfgFile, adapterList);
-                
-                BOOST_FOREACH(boost::property_tree::ptree::value_type & t,
-                        adapterList.get_child("root"))
-                {
-                    device::CAdapterFactory::Instance().CreateAdapter(t.second);
-                }
-            }
-            catch(boost::property_tree::xml_parser_error & e)
-            {
-                throw std::runtime_error("Failed to create device adapters: "
-                        + std::string(e.what()));
-            }
-            catch(std::exception & e)
-            {
-                throw std::runtime_error(adapterCfgFile+": "+e.what());
-            }
+            CGlobalConfiguration::instance().SetAdapterConfigPath("");
         }
     }
     catch (std::exception & e)
     {
         Logger.Fatal << "Exception caught in main during start up: " << e.what() << std::endl;
-        device::CAdapterFactory::Instance().Stop();
         return 1;
     }
 
@@ -380,7 +347,6 @@ int main(int argc, char* argv[])
     catch (std::exception & e)
     {
         Logger.Fatal << "Exception caught in module initialization: " << e.what() << std::endl;
-        device::CAdapterFactory::Instance().Stop();
         return 1;
     }
 
@@ -390,12 +356,11 @@ int main(int argc, char* argv[])
     }
     catch (std::exception & e)
     {
-        device::CAdapterFactory::Instance().Stop();
         Logger.Fatal << "Exception caught in Broker: " << e.what() << std::endl;
         broker.Stop();
         ios.run();
     }
 
-    return 0;
+    return 1;
 }
 

@@ -135,6 +135,7 @@ void CBroker::Run()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     m_signals.async_wait(boost::bind(&CBroker::HandleSignal, this,_1,_2));
+    device::CAdapterFactory::Instance(); // create it
     m_synchronizer.Run();
     m_ioService.run();
 }
@@ -167,7 +168,6 @@ void CBroker::Stop(unsigned int signum)
     // from any thread.
     m_synchronizer.Stop();
     m_ioService.post(boost::bind(&CBroker::HandleStop, this, signum));
-    // Unrelated to our ioservice, but must be done.
     device::CAdapterFactory::Instance().Stop();
 }
 

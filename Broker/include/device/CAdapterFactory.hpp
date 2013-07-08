@@ -72,7 +72,7 @@ public:
     static CAdapterFactory & Instance();
 
     /// Starts the session TCP server.
-    void StartSessionProtocol();
+    void StartSessionProtocol(unsigned short port);
     
     /// Creates a new adapter and its associated devices.
     void CreateAdapter(const boost::property_tree::ptree & p);

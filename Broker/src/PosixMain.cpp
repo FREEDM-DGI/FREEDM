@@ -364,7 +364,7 @@ int main(int argc, char* argv[])
 
     // There are two ways the broker might stop. First is due to an
     // exception; those are handled above. The second way is to catch
-    // a signal, in which case broker.Run() will never complete.
-    // Control should never reach here.
+    // a signal, in which case broker.Run() will never complete. (Broker may
+    // choose to handle it.) Regardless, control should never reach here.
     assert(false);
 }

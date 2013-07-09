@@ -33,6 +33,7 @@
 #include "sc/StateCollection.hpp"
 #include "CTimings.hpp"
 
+#include <cassert>
 #include <iostream>
 #include <set>
 #include <sstream>
@@ -358,9 +359,12 @@ int main(int argc, char* argv[])
     {
         Logger.Fatal << "Exception caught in Broker: " << e.what() << std::endl;
         broker.Stop();
-        ios.run();
+        return 1;
     }
 
-    return 1;
+    // There are two ways the broker might stop. First is due to an
+    // exception; those are handled above. The second way is to catch
+    // a signal, in which case broker.Run() will never complete.
+    // Control should never reach here.
+    assert(false);
 }
-

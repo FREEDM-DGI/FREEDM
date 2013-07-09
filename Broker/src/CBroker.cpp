@@ -124,12 +124,13 @@ CBroker::~CBroker()
 ///////////////////////////////////////////////////////////////////////////////
 /// @fn CBroker::Run()
 /// @description Calls the ioservice run (initializing the ioservice thread)
-///               and then blocks until the ioservice runs out of work.
+///              and then blocks until the ioservice runs out of work.
+///              (That should only happen if a signal is received.)
 /// @pre  The ioservice has not been allocated a thread to operate on and has
 ///       some schedule of jobs waiting to be performed (so it doesn't exit
 ///       immediately.)
 /// @post The ioservice has terminated.
-/// @return none
+/// @ErrorHandling Could raise arbitrary exceptions from anywhere in the DGI.
 ///////////////////////////////////////////////////////////////////////////////
 void CBroker::Run()
 {
@@ -164,44 +165,60 @@ boost::asio::io_service& CBroker::GetIOService()
 void CBroker::Stop(unsigned int signum)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    // Post a call to the stop function so that CBroker::stop() is safe to call
-    // from any thread.
-    m_synchronizer.Stop();
+
+    // FIXME add code here to stop lb, gm, and sc
+    // (IAgent should get a virtual Stop function)
+
+    /* Run agents' previously-posted handlers before shutting down. */
     m_ioService.post(boost::bind(&CBroker::HandleStop, this, signum));
-    device::CAdapterFactory::Instance().Stop();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 /// @fn CBroker::HandleSignal
-/// @description Handle signals from signal
+/// @description Handle signals that terminate the program. (These are the
+///              only signals that we catch.)
 /// @pre None
-/// @post The broker winds down
+/// @post The broker is scheduled to be stopped.
 ///////////////////////////////////////////////////////////////////////////////
-void CBroker::HandleSignal(const boost::system::error_code& error, int parameter)
+void CBroker::HandleSignal(const boost::system::error_code& error, int signum)
 {
+    // It appears that the limitations of POSIX signal handlers apply here.
+    // Don't do anything here unless you're sure it's safe to do from a
+    // signal handler in a multithreaded program.
+    //
+    // E.g. our logger is synchronized, so using it here could cause deadlock.
+    // An unsynchronized iostream could be corrupted, so don't do that either.
     if(!error)
     {
-        Stop(parameter);
+        // Stop is not safe to use within signal handlers. Call it later.
+        m_ioService.post(boost::bind(&CBroker::Stop, this, signum));
     }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 /// @fn CBroker::HandleStop
 /// @description Handles closing all the sockets connection managers and
-///              Services.
-/// @pre The ioservice is running.
-/// @post The ioservice is stopped.
+///              Services. Should probably only be called by CBroker::Stop().
 /// @param signum positive if called from a signal handler, or 0 otherwise
+/// @pre The ioservice is running but all agents have been stopped.
+/// @post The Broker has been cleanly shut down.
+/// @post The devices subsystem has been cleanly shut down.
 ///////////////////////////////////////////////////////////////////////////////
 void CBroker::HandleStop(unsigned int signum)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
-    // The server is stopped by canceling all outstanding asynchronous
-    // operations. Once all operations have finished the io_service::run() call
-    // will exit.
+    m_synchronizer.Stop();
     m_connManager.StopAll();
+
+    // The server is stopped by canceling all outstanding asynchronous
+    // operations. Once all operations have been canceled, the call to
+    // m_ioService.run() from CBroker::Run() will exit.
     m_ioService.stop();
+
+    // We must also ensure the devices have been shut down. That's all we know.
+    // The devices have their own ioservice and will handle this themselves.
+    device::CAdapterFactory::Instance().Stop();
 
     if (signum > 0)
     {

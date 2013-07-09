@@ -204,7 +204,7 @@ void CAdapterFactory::Stop()
 
         m_ios.stop();
 
-        if (boost::this_thread::get_id() == m_thread.get_id())
+        if (boost::this_thread::get_id() != m_thread.get_id())
         {
             m_thread.join();
         }

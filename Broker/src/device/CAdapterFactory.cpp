@@ -175,7 +175,7 @@ void CAdapterFactory::RunService()
     {
         Logger.Fatal << "Fatal exception in the device ioservice: "
                 << e.what() << std::endl;
-        Stop();
+        // The Broker will stop us.
         raise(SIGTERM);
     }
 

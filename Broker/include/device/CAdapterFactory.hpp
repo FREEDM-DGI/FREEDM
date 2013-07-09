@@ -120,7 +120,7 @@ private:
     std::map<std::string, IDevice::Pointer> m_prototype;
     
     /// Set of device adapters managed by the factory.
-    std::map<std::string, IAdapter::Pointer> m_adapter;
+    std::map<std::string, IAdapter::Pointer> m_adapters;
     
     /// I/O service shared by the adapters.
     boost::asio::io_service m_ios;

@@ -197,7 +197,7 @@ void CAdapterFactory::Stop()
     try
     {
         typedef std::pair<const std::string, IAdapter::Pointer> HackAround;
-        BOOST_FOREACH (HackAround entry, m_adapter)
+        BOOST_FOREACH (HackAround entry, m_adapters)
         {
             RemoveAdapter(entry.first);
         }
@@ -261,7 +261,7 @@ void CAdapterFactory::CreateAdapter(const boost::property_tree::ptree & p)
     {
         throw EDgiConfigError("Tried to create an unnamed adapter.");
     }
-    else if( m_adapter.count(name) > 0 )
+    else if( m_adapters.count(name) > 0 )
     {
         throw EDgiConfigError("Multiple adapters share the name: " + name);
     }
@@ -287,7 +287,7 @@ void CAdapterFactory::CreateAdapter(const boost::property_tree::ptree & p)
     
     // store the adapter; note that InitializeAdapter can throw EBadRequest
     InitializeAdapter(adapter, p);
-    m_adapter[name] = adapter;
+    m_adapters[name] = adapter;
     Logger.Info << "Created the " << type << " adapter " << name << std::endl;
     
     // signal construction complete
@@ -299,7 +299,7 @@ void CAdapterFactory::CreateAdapter(const boost::property_tree::ptree & p)
 ///
 /// @ErrorHandling Throws a std::runtime_error if no such adapter exists.
 /// @pre An adapter must exist with the provided identifier.
-/// @post Removes the specified adapter from m_adapter.
+/// @post Removes the specified adapter from m_adapters.
 /// @post Removes the adapter's devices from the device manager.
 /// @param identifier The identifier of the adapter to remove.
 ///
@@ -312,15 +312,15 @@ void CAdapterFactory::RemoveAdapter(const std::string identifier)
     std::set<std::string> devices;
     CPnpAdapter::Pointer pnp;
     
-    if( m_adapter.count(identifier) == 0 )
+    if( m_adapters.count(identifier) == 0 )
     {
         throw std::runtime_error("No such adapter: " + identifier);
     }
     
-    devices = m_adapter[identifier]->GetDevices();
-    pnp = boost::dynamic_pointer_cast<CPnpAdapter>(m_adapter[identifier]);
+    devices = m_adapters[identifier]->GetDevices();
+    pnp = boost::dynamic_pointer_cast<CPnpAdapter>(m_adapters[identifier]);
     
-    m_adapter.erase(identifier);
+    m_adapters.erase(identifier);
     Logger.Info << "Removed the adapter: " << identifier << std::endl;
     
     BOOST_FOREACH(std::string device, devices)
@@ -701,7 +701,7 @@ void CAdapterFactory::SessionProtocol()
         {
             throw EBadRequest("Expected 'Hello' message: " + header);
         }
-        if( m_adapter.count(host) > 0 )
+        if( m_adapters.count(host) > 0 )
         {
             throw EDuplicateSession(host);
         }

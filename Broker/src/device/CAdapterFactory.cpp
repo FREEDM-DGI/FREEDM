@@ -183,26 +183,33 @@ void CAdapterFactory::RunService()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// Stops the i/o service removes all devices from the device manager. Blocks
-/// until these operations have successfully completed.
+/// Stops the i/o service and removes all devices from the device manager.
+/// If called from outside the devices thread, blocks until the thread is done.
 ///
 /// @pre None
-/// @post ioservice will stop as soon as possible
+/// @post All the devices of every adapter in the system are removed.
+/// @post The IOService has stopped.
+/// @post The devices thread is detatched and stopped (unless called from it).
 /// @ErrorHandling Guaranteed not to throw. Errors are only logged.
-/// @limitations None
 ///////////////////////////////////////////////////////////////////////////////
 void CAdapterFactory::Stop()
 {
     try
     {
-        m_ios.stop();
-        while (!m_ios.stopped());
-        BOOST_FOREACH (m_adapter::value_type entry, m_adapter)
+        typedef std::pair<const std::string, IAdapter::Pointer> HackAround;
+        BOOST_FOREACH (HackAround entry, m_adapter)
         {
-            m_adapter.RemoveAdapter(entry.first);
+            RemoveAdapter(entry.first);
+        }
+
+        m_ios.stop();
+
+        if (boost::this_thread::get_id() == m_thread.get_id())
+        {
+            m_thread.join();
         }
     }
-    catch (std::exception & e))
+    catch (std::exception & e)
     {
         Logger.Error << "Caught exception when stopping AdapterFactory: "
                 << e.what() << std::endl;

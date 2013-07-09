@@ -175,7 +175,6 @@ void CAdapterFactory::RunService()
     {
         Logger.Fatal << "Fatal exception in the device ioservice: "
                 << e.what() << std::endl;
-        // required for clean shutdown
         Stop();
         raise(SIGTERM);
     }
@@ -184,16 +183,30 @@ void CAdapterFactory::RunService()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// Stops the i/o service
+/// Stops the i/o service removes all devices from the device manager. Blocks
+/// until these operations have successfully completed.
 ///
-/// @pre None (though it'd make sense to start it first)
+/// @pre None
 /// @post ioservice will stop as soon as possible
-///
-/// @limitations Doesn't block
+/// @ErrorHandling Guaranteed not to throw. Errors are only logged.
+/// @limitations None
 ///////////////////////////////////////////////////////////////////////////////
 void CAdapterFactory::Stop()
 {
-    m_ios.stop();
+    try
+    {
+        m_ios.stop();
+        while (!m_ios.stopped());
+        BOOST_FOREACH (m_adapter::value_type entry, m_adapter)
+        {
+            m_adapter.RemoveAdapter(entry.first);
+        }
+    }
+    catch (std::exception & e))
+    {
+        Logger.Error << "Caught exception when stopping AdapterFactory: "
+                << e.what() << std::endl;
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////

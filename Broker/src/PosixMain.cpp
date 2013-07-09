@@ -281,12 +281,11 @@ int main(int argc, char* argv[])
     //constructors for initial mapping
     CConnectionManager conManager;
     ConnectionPtr newConnection;
-    boost::asio::io_service ios;
 
     // Instantiate Dispatcher for message delivery
     CDispatcher dispatch;
     // Run server in background thread
-    CBroker broker(listenIP, port, dispatch, ios, conManager);
+    CBroker broker(dispatch, conManager);
 
     // Initialize modules
     gm::GMAgent GM(id, broker);

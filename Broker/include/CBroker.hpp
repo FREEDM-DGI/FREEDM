@@ -75,10 +75,8 @@ public:
     typedef boost::shared_ptr<CBroker> BrokerPtr;
 
 
-    /// Initialize the broker and begin accepting connections and messages 
-    CBroker(const std::string& address, const std::string& port,
-                   CDispatcher& p_dispatch, boost::asio::io_service &m_ios,
-                   freedm::broker::CConnectionManager &m_conMan);
+    /// Initialize the broker and begin accepting connections and messages
+    CBroker(CDispatcher& dispatcher, freedm::broker::CConnectionManager &conMan);
 
     /// Terminate the timers since they are pointers.
     ~CBroker();
@@ -130,7 +128,7 @@ private:
     void HandleAccept(const boost::system::error_code& e);
 
     /// The io_service used to perform asynchronous operations.
-    boost::asio::io_service &m_ioService;
+    boost::asio::io_service m_ioService;
 
     /// The connection manager which owns all live connections.
     CConnectionManager &m_connManager;

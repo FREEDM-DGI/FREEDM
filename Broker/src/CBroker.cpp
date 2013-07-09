@@ -65,28 +65,26 @@ CLocalLogger Logger(__FILE__);
 /// @pre The port is free to be bound to.
 /// @post An acceptor socket is bound on the freedm port awaiting connections
 ///       from other nodes.
-/// @param p_address The address to bind the listening socket to.
-/// @param p_port The port to bind the listening socket to.
-/// @param p_dispatch The message dispatcher associated with this Broker
-/// @param m_ios The ioservice used by this broker to perform socket operations
-/// @param m_conMan The connection manager used by this broker.
+/// @param dispatcher The message dispatcher associated with this Broker
+/// @param conMan The connection manager used by this broker.
 /// @limitations Fails if the port is already in use.
 ///////////////////////////////////////////////////////////////////////////////
-CBroker::CBroker(const std::string& p_address, const std::string& p_port,
-    CDispatcher &p_dispatch, boost::asio::io_service &m_ios,
-    freedm::broker::CConnectionManager &m_conMan)
-    : m_ioService(m_ios),
-      m_connManager(m_conMan),
-      m_dispatch(p_dispatch),
-      m_newConnection(new CListener(m_ioService, m_connManager, *this, m_conMan.GetUUID())),
-      m_phasetimer(m_ios),
+CBroker::CBroker(CDispatcher &dispatcher, freedm::broker::CConnectionManager &conMan)
+    : m_ioService(),
+      m_connManager(conMan),
+      m_dispatch(dispatcher),
+      m_newConnection(new CListener(m_ioService, conMan, *this, conMan.GetUUID())),
+      m_phasetimer(m_ioService),
       m_synchronizer(*this),
-      m_signals(m_ios,SIGINT,SIGTERM)
+      m_signals(m_ioService, SIGINT, SIGTERM)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     // Open the acceptor with the option to reuse the address (i.e. SO_REUSEADDR).
     boost::asio::ip::udp::resolver resolver(m_ioService);
-    boost::asio::ip::udp::resolver::query query( p_address, p_port);
+    boost::asio::ip::udp::resolver::query query(
+        CGlobalConfiguration::instance().GetListenAddress(),
+        CGlobalConfiguration::instance().GetListenPort()
+    );
     boost::asio::ip::udp::endpoint endpoint = *resolver.resolve( query );
     
     // Listen for connections and create an event to spawn a new connection

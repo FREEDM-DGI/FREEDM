@@ -411,7 +411,7 @@ void GMAgent::SystemState()
 
     nodestatus<<"FID state: "<<device::CDeviceManager::Instance().
             GetNetValue("Fid", "state");
-    nodestatus<<std::endl<<"Current Skew: "<<CGlobalConfiguration::instance().GetClockSkew();
+    nodestatus<<std::endl<<"Current Skew: "<<CGlobalConfiguration::Instance().GetClockSkew();
     nodestatus<<std::endl<<"Time left in phase: "<<m_broker.TimeRemaining()<<std::endl;
     Logger.Status<<nodestatus.str()<<std::endl;
 }

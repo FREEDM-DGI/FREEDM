@@ -82,8 +82,8 @@ CBroker::CBroker(CDispatcher &dispatcher, freedm::broker::CConnectionManager &co
     // Open the acceptor with the option to reuse the address (i.e. SO_REUSEADDR).
     boost::asio::ip::udp::resolver resolver(m_ioService);
     boost::asio::ip::udp::resolver::query query(
-        CGlobalConfiguration::instance().GetListenAddress(),
-        CGlobalConfiguration::instance().GetListenPort()
+        CGlobalConfiguration::Instance().GetListenAddress(),
+        CGlobalConfiguration::Instance().GetListenPort()
     );
     boost::asio::ip::udp::endpoint endpoint = *resolver.resolve( query );
     
@@ -95,7 +95,7 @@ CBroker::CBroker(CDispatcher &dispatcher, freedm::broker::CConnectionManager &co
     
     // Try to align on the first phase change
     boost::posix_time::ptime now = boost::posix_time::microsec_clock::universal_time();
-    now += CGlobalConfiguration::instance().GetClockSkew();
+    now += CGlobalConfiguration::Instance().GetClockSkew();
     now -= boost::posix_time::milliseconds(2*ALIGNMENT_DURATION);
     m_last_alignment = now;
 
@@ -378,7 +378,7 @@ void CBroker::ChangePhase(const boost::system::error_code &err)
     // Generate a clock beacon
     boost::posix_time::ptime now = boost::posix_time::microsec_clock::universal_time();
     boost::posix_time::time_duration time = now.time_of_day();
-    time += CGlobalConfiguration::instance().GetClockSkew();
+    time += CGlobalConfiguration::Instance().GetClockSkew();
 
     if(m_phase >= m_modules.size())
     {
@@ -422,7 +422,7 @@ void CBroker::ChangePhase(const boost::system::error_code &err)
     }
     if(m_modules.size() > 0)
     {
-        Logger.Notice<<"Phase: "<<m_modules[m_phase].first<<" for "<<sched_duration<<"ms "<<"offset "<<CGlobalConfiguration::instance().GetClockSkew()<<std::endl;
+        Logger.Notice<<"Phase: "<<m_modules[m_phase].first<<" for "<<sched_duration<<"ms "<<"offset "<<CGlobalConfiguration::Instance().GetClockSkew()<<std::endl;
     }
     if(m_phase != oldphase)
     {

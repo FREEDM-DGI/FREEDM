@@ -51,9 +51,9 @@ CLocalLogger Logger(__FILE__);
 CConnectionManager::CConnectionManager()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    m_uuid = CGlobalConfiguration::instance().GetUUID();
-    m_hostname.hostname = CGlobalConfiguration::instance().GetHostname();
-    m_hostname.port = CGlobalConfiguration::instance().GetListenPort();
+    m_uuid = CGlobalConfiguration::Instance().GetUUID();
+    m_hostname.hostname = CGlobalConfiguration::Instance().GetHostname();
+    m_hostname.port = CGlobalConfiguration::Instance().GetListenPort();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

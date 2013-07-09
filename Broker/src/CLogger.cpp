@@ -64,7 +64,7 @@ std::streamsize CLog::write(const char* const s, std::streamsize n)
     if (GetOutputLevel() >= m_level)
     {
         boost::lock_guard<boost::mutex> lock(mutex);
-        *m_ostream << microsec_clock::local_time() + CGlobalConfiguration::instance().GetClockSkew() << " : "
+        *m_ostream << microsec_clock::local_time() + CGlobalConfiguration::Instance().GetClockSkew() << " : "
                 << m_name << "(" << m_level << "):\n\t";
         boost::iostreams::write(*m_ostream, s, n);
     }

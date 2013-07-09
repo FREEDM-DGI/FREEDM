@@ -239,37 +239,37 @@ int main(int argc, char* argv[])
         CTimings::SetTimings(timingsFile);
 
         /// Prepare the global Configuration
-        CGlobalConfiguration::instance().SetHostname(hostname);
-        CGlobalConfiguration::instance().SetUUID(id);
-        CGlobalConfiguration::instance().SetListenPort(port);
-        CGlobalConfiguration::instance().SetListenAddress(listenIP);
-        CGlobalConfiguration::instance().SetClockSkew(
+        CGlobalConfiguration::Instance().SetHostname(hostname);
+        CGlobalConfiguration::Instance().SetUUID(id);
+        CGlobalConfiguration::Instance().SetListenPort(port);
+        CGlobalConfiguration::Instance().SetListenAddress(listenIP);
+        CGlobalConfiguration::Instance().SetClockSkew(
                 boost::posix_time::milliseconds(0));
         
         // Specify socket endpoint address, if provided
         if( vm.count("devices-endpoint") )
         {
-            CGlobalConfiguration::instance().SetDevicesEndpoint(
+            CGlobalConfiguration::Instance().SetDevicesEndpoint(
                 vm["devices-endpoint"].as<std::string>() );
         }
 
         if (vm.count("factory-port"))
         {
-            CGlobalConfiguration::instance().SetFactoryPort(GetPort(fport));
+            CGlobalConfiguration::Instance().SetFactoryPort(GetPort(fport));
         }
         else
         {
-            CGlobalConfiguration::instance().SetFactoryPort(0);
+            CGlobalConfiguration::Instance().SetFactoryPort(0);
         }
 
         if (vm.count("adapter-config"))
         {
-            CGlobalConfiguration::instance().SetAdapterConfigPath(
+            CGlobalConfiguration::Instance().SetAdapterConfigPath(
                 adapterCfgFile);
         }
         else
         {
-            CGlobalConfiguration::instance().SetAdapterConfigPath("");
+            CGlobalConfiguration::Instance().SetAdapterConfigPath("");
         }
     }
     catch (std::exception & e)

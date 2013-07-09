@@ -45,7 +45,7 @@ class CGlobalConfiguration : public boost::noncopyable
 {
     public:
         /// Returns the singleton instance of the global configuration.
-        static CGlobalConfiguration& instance()
+        static CGlobalConfiguration& Instance()
         {
             static CGlobalConfiguration instance;
             return instance;

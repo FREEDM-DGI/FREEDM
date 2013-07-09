@@ -90,7 +90,7 @@ CAdapterFactory::CAdapterFactory()
     m_thread = boost::thread(boost::bind(&CAdapterFactory::RunService, this));
 
     unsigned short factoryPort =
-        CGlobalConfiguration::instance().GetFactoryPort();
+        CGlobalConfiguration::Instance().GetFactoryPort();
 
     if( factoryPort )
     {
@@ -103,7 +103,7 @@ CAdapterFactory::CAdapterFactory()
     }
 
     std::string adapterCfgFile =
-        CGlobalConfiguration::instance().GetAdapterConfigPath();
+        CGlobalConfiguration::Instance().GetAdapterConfigPath();
 
     if( adapterCfgFile.empty() )
     {
@@ -576,7 +576,7 @@ void CAdapterFactory::StartSessionProtocol(unsigned short port)
         // initialize the TCP variant of the session layer protocol
         handler     = boost::bind(&CAdapterFactory::StartSession, this);
         m_server    = CTcpServer::Create(m_ios, port,
-                CGlobalConfiguration::instance().GetDevicesEndpoint() );
+                CGlobalConfiguration::Instance().GetDevicesEndpoint() );
         m_server->RegisterHandler(handler);
     }
 }

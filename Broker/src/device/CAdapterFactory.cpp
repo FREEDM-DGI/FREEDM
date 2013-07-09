@@ -310,7 +310,6 @@ void CAdapterFactory::RemoveAdapter(const std::string identifier)
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     
     std::set<std::string> devices;
-    CPnpAdapter::Pointer pnp;
     
     if( m_adapters.count(identifier) == 0 )
     {
@@ -318,7 +317,6 @@ void CAdapterFactory::RemoveAdapter(const std::string identifier)
     }
     
     devices = m_adapters[identifier]->GetDevices();
-    pnp = boost::dynamic_pointer_cast<CPnpAdapter>(m_adapters[identifier]);
     
     m_adapters.erase(identifier);
     Logger.Info << "Removed the adapter: " << identifier << std::endl;

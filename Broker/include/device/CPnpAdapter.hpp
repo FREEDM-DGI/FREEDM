@@ -64,7 +64,7 @@ public:
     void Heartbeat();
 
     /// Destructs the object.
-    virtual ~CPnpAdapter();
+    ~CPnpAdapter();
 private:
     /// Initializes the TCP server and internal storage.
     CPnpAdapter(boost::asio::io_service & service,

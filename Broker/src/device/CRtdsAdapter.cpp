@@ -42,6 +42,7 @@
 #include <cmath>
 #include <vector>
 #include <cstring>
+#include <csignal>
 #include <stdexcept>
 #include <algorithm>
 
@@ -123,7 +124,10 @@ void CRtdsAdapter::Start()
     
     IBufferAdapter::Start();
     ITcpAdapter::Connect();
-    Run();
+    m_runTimer.expires_from_now(
+            boost::posix_time::milliseconds(CTimings::DEV_RTDS_DELAY));
+    m_runTimer.async_wait(boost::bind(&CRtdsAdapter::Run, this,
+            boost::asio::placeholders::error));
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -149,10 +153,16 @@ void CRtdsAdapter::Start()
 ///
 /// @limitations This function uses synchronous communication.
 ////////////////////////////////////////////////////////////////////////////////
-void CRtdsAdapter::Run()
+void CRtdsAdapter::Run(const boost::system::error_code & e)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    
+
+    if( e )
+    {
+        Logger.Alert << "Quitting permanently: " << e.message() << std::endl;
+        return;
+    }
+
     // Always send data to FPGA first
     if( !m_txBuffer.empty() )
     {
@@ -167,10 +177,10 @@ void CRtdsAdapter::Run()
                     m_txBuffer.size() * sizeof(SignalValue)),
                     CTimings::DEV_SOCKET_TIMEOUT);
         }
-        catch(std::exception & e)
+        catch(boost::system::system_error & e)
         {
-            throw std::runtime_error("Send to FPGA failed: "
-                    + std::string(e.what()));
+            Logger.Fatal << "Send to FPGA failed: " << e.what();
+            raise(SIGTERM);
         }
         EndianSwapIfNeeded(m_txBuffer);
         
@@ -191,10 +201,10 @@ void CRtdsAdapter::Run()
                     m_rxBuffer.size() * sizeof(SignalValue)),
                     CTimings::DEV_SOCKET_TIMEOUT);
         }
-        catch (std::exception & e)
+        catch (boost::system::system_error & e)
         {
-            throw std::runtime_error("Receive from FPGA failed: " 
-                    + std::string(e.what()));
+            Logger.Fatal << "Receive from FPGA failed: " << e.what();
+            raise(SIGTERM);
         }
         EndianSwapIfNeeded(m_rxBuffer);
 
@@ -220,8 +230,9 @@ void CRtdsAdapter::Run()
 
     // Start the timer; on timeout, this function is called again
     m_runTimer.expires_from_now(
-            boost::posix_time::milliseconds(CTimings::DEV_RTDS_DELAY));
-    m_runTimer.async_wait(boost::bind(&CRtdsAdapter::Run, this));
+    boost::posix_time::milliseconds(CTimings::DEV_RTDS_DELAY));
+    m_runTimer.async_wait(boost::bind(&CRtdsAdapter::Run, this,
+            boost::asio::placeholders::error));
 }
 
 ////////////////////////////////////////////////////////////////////////////

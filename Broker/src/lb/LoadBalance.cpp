@@ -323,7 +323,7 @@ void LBAgent::CollectState()
     try
     {
        GetPeer(GetUUID())->Send(m_cs);
-       Logger.Status << "LB module requested State Collection" << std::endl;
+       Logger.Notice << "LB module requested State Collection" << std::endl;
     }
     catch (boost::system::system_error& e)
     {

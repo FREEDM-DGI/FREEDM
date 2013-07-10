@@ -33,9 +33,8 @@ else()
     set(WARNING_FLAGS "-w")
 endif()
 
-# Run -DCMAKE_BUILD_TYPE=DEBUG if you need debugging -g
-# Don't use -DCMAKE_BUILD_TYPE=RELEASE - it makes things not work =/
-set(CMAKE_CXX_FLAGS "-pedantic -std=c++98 -pthread ${WARNING_FLAGS}")
+# Use -DCMAKE_BUILD_TYPE to control optimization and debugging
+set(CMAKE_CXX_FLAGS "-pedantic -std=c++98 -pthread ${WARNING_FLAGS} ${CMAKE_CXX_FLAGS}")
 
 if(TRACK_HANDLERS)
     add_definitions(-DBOOST_ASIO_ENABLE_HANDLER_TRACKING)

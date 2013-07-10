@@ -159,8 +159,8 @@ void CRtdsAdapter::Run(const boost::system::error_code & e)
 
     if( e )
     {
-        Logger.Alert << "Quitting permanently: " << e.message() << std::endl;
-        return;
+        Logger.Fatal << "Run called with error: " << e.message() << std::endl;
+        throw boost::system::system_error(e);
     }
 
     // Always send data to FPGA first
@@ -180,7 +180,7 @@ void CRtdsAdapter::Run(const boost::system::error_code & e)
         catch(boost::system::system_error & e)
         {
             Logger.Fatal << "Send to FPGA failed: " << e.what();
-            raise(SIGTERM);
+            throw;
         }
         EndianSwapIfNeeded(m_txBuffer);
         
@@ -204,7 +204,7 @@ void CRtdsAdapter::Run(const boost::system::error_code & e)
         catch (boost::system::system_error & e)
         {
             Logger.Fatal << "Receive from FPGA failed: " << e.what();
-            raise(SIGTERM);
+            throw;
         }
         EndianSwapIfNeeded(m_rxBuffer);
 
@@ -246,7 +246,11 @@ void CRtdsAdapter::Run(const boost::system::error_code & e)
 void CRtdsAdapter::Quit()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    m_socket.close();
+
+    if( m_socket.is_open() )
+    {
+        m_socket.close();
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////
@@ -260,12 +264,6 @@ void CRtdsAdapter::Quit()
 CRtdsAdapter::~CRtdsAdapter()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    
-    if( m_socket.is_open() )
-    {
-        Quit();
-    }
-
 }
 
 ////////////////////////////////////////////////////////////////////////////////

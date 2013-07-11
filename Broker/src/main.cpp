@@ -323,9 +323,8 @@ int main(int argc, char* argv[])
 
                 if (idx == std::string::npos)
                 { // Not found!
-                    std::cerr << "Incorrectly formatted host in config file: "
-                              << s << std::endl;
-                    continue;
+                    throw std::runtime_error(
+                            "Incorrectly formatted host in config file: " + s);
                 }
 
                 std::string peerhost(s.begin(), s.begin() + idx),

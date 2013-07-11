@@ -28,6 +28,7 @@
 #include <map>
 #include <string>
 
+#include <boost/thread.hpp>
 #include <boost/property_tree/ptree_fwd.hpp>
 
 namespace freedm {
@@ -51,7 +52,7 @@ public:
     typedef boost::shared_ptr<CFakeAdapter> Pointer;
     
     /// Creates a new fake adapter.
-    static Pointer Create();
+    static Pointer Create(boost::asio::io_service& service);
 
     /// Start the fake adapter.
     void Start();
@@ -68,7 +69,7 @@ public:
 
 private:
     /// Constructor
-    CFakeAdapter();
+    CFakeAdapter(boost::asio::io_service& service);
 
     /// Map of device setting keys to values.
     typedef std::map<std::string, SignalValue> KeyMap;
@@ -81,6 +82,9 @@ private:
 
     /// Is the adapter stopped?
     bool m_stopped;
+
+    /// Protects m_stopped
+    boost::mutex m_stopMutex;
 };
 
 } // namespace device

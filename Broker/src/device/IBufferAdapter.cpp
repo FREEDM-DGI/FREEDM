@@ -49,6 +49,15 @@ CLocalLogger Logger(__FILE__);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+/// Constructor
+///
+/// @param service the adapter's ioservice
+///////////////////////////////////////////////////////////////////////////////
+IBufferAdapter::IBufferAdapter(boost::asio::io_service & service)
+    : IAdapter(service)
+    { }
+
+///////////////////////////////////////////////////////////////////////////////
 /// Called when "starting" the adapter, after all devices have been added.
 /// Allocates send and receive buffers and performs error-checking on the
 /// device specification.
@@ -89,7 +98,7 @@ void IBufferAdapter::Start()
     }
 
     m_buffer_initialized = false;
-
+    
     stateSize = stateIndices.size();
     commandSize = commandIndices.size();
     

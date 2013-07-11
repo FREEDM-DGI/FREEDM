@@ -72,6 +72,9 @@ public:
     /// Virtual destructor for derived classes.
     virtual ~IBufferAdapter();
 protected:    
+    /// Constructor
+    IBufferAdapter(boost::asio::io_service& service);
+
     /// Translates a device signal into its rxBuffer (state) index
     std::map<const DeviceSignal, const std::size_t> m_stateInfo;
     

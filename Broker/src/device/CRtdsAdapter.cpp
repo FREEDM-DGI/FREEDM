@@ -47,9 +47,8 @@
 #include <algorithm>
 
 #include <boost/asio.hpp>
+#include <boost/thread.hpp>
 #include <boost/foreach.hpp>
-#include <boost/thread/mutex.hpp>
-#include <boost/thread/locks.hpp>
 #include <boost/static_assert.hpp>
 #include <boost/property_tree/ptree.hpp>
 
@@ -104,7 +103,9 @@ IAdapter::Pointer CRtdsAdapter::Create(boost::asio::io_service & service,
 ////////////////////////////////////////////////////////////////////////////////
 CRtdsAdapter::CRtdsAdapter(boost::asio::io_service & service,
         const boost::property_tree::ptree & ptree)
-    : ITcpAdapter(service, ptree)
+    : IAdapter(service)
+    , ITcpAdapter(service, ptree)
+    , IBufferAdapter(service)
     , m_runTimer(service)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
@@ -236,10 +237,10 @@ void CRtdsAdapter::Run(const boost::system::error_code & e)
 }
 
 ////////////////////////////////////////////////////////////////////////////
-/// Closes the socket connection to the FPGA.  Thread-safe.
+/// Stops the adapter; blocks until completed. Thread-safe.
 ///
 /// @pre None.
-/// @post Closes m_socket.
+/// @post Adapter is stopped and can be freed
 ///
 /// @limitations None.
 ////////////////////////////////////////////////////////////////////////////
@@ -247,10 +248,36 @@ void CRtdsAdapter::Stop()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
+    m_ios.post(boost::bind(&CRtdsAdapter::HandleStop, this));
+
+    WaitUntilStopped();
+}
+
+////////////////////////////////////////////////////////////////////////////
+/// Handle stopping everything, posted from CRtdsAdapter::Stop()
+///
+/// @pre None
+/// @post Adapter is stopped
+///
+/// @limitations Must be called from the thread the ioservice is running on
+////////////////////////////////////////////////////////////////////////////
+void CRtdsAdapter::HandleStop()
+{
+    try
+    {
+        m_runTimer.cancel();
+    }
+    catch( boost::system::system_error& e)
+    {
+        Logger.Error << "Error cancelling timer: " << e.what() << std::endl;
+    }
+
     if( m_socket.is_open() )
     {
         m_socket.close();
     }
+
+    Stopped();
 }
 
 ////////////////////////////////////////////////////////////////////////////

@@ -280,7 +280,7 @@ void CAdapterFactory::CreateAdapter(const boost::property_tree::ptree & p)
     }
     else if( type == "fake" )
     {
-        adapter = CFakeAdapter::Create();
+        adapter = CFakeAdapter::Create(m_ios);
     }
     else
     {

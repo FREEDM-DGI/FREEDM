@@ -28,8 +28,10 @@
 #include <string>
 #include <utility>
 
+#include <boost/asio/io_service.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/noncopyable.hpp>
+#include <boost/thread.hpp>
 
 namespace freedm {
 namespace broker {
@@ -87,12 +89,35 @@ public:
     
     /// Get the list of registered device names.
     std::set<std::string> GetDevices() const;
+
+protected:
+    /// Constructor
+    IAdapter(boost::asio::io_service& service);
+
+    /// Reveals devices in the device manager.
+    void RevealDevices();
+
+    /// Blocks until Stopped() is called.
+    void WaitUntilStopped();
+
+    /// Indicates to WaitUntilStopped that the adapter has been stopped.
+    void Stopped();
+
+    /// The ioservice that runs this adapter.
+    boost::asio::io_service& m_ios;
+
 private:
     /// Set of registered device names.
     std::set<std::string> m_devices;
-protected:
-    /// Reveals devices in the device manager.
-    void RevealDevices();
+
+    /// Protects access to m_stopped
+    boost::condition_variable m_stopCondition;
+
+    /// Signifies that the adapter has stopped
+    bool m_stopped;
+
+    /// Protects access to m_stopped
+    boost::mutex m_stoppedMutex;
 };
 
 } // namespace device

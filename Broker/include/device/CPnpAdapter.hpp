@@ -27,6 +27,7 @@
 #include "CTcpServer.hpp"
 
 #include <boost/asio.hpp>
+#include <boost/thread.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/property_tree/ptree_fwd.hpp>
 
@@ -48,7 +49,6 @@ namespace device {
 ////////////////////////////////////////////////////////////////////////////////
 class CPnpAdapter
     : public IBufferAdapter
-    , public boost::enable_shared_from_this<CPnpAdapter>
 {
 public:
     /// Convenience type for a shared pointer to self.
@@ -106,12 +106,15 @@ private:
 
     /// TCP server for the PNP client.
     CTcpServer::Connection m_client;
-    
-    /// Flag for when the adapter is stopped.
-    bool m_stop;
 
     /// Stream used to send and receive data.
     boost::asio::streambuf m_buffer;
+
+    /// Signifies that the adapter is to stop.
+    bool m_stopping;
+
+    /// Protects access to m_stopping
+    boost::mutex m_stoppingMutex;
 };
 
 } // namespace device

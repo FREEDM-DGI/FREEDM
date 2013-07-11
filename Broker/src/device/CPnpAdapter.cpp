@@ -46,9 +46,8 @@
 #include <stdexcept>
 
 #include <boost/bind.hpp>
+#include <boost/thread.hpp>
 #include <boost/lexical_cast.hpp>
-#include <boost/thread/mutex.hpp>
-#include <boost/thread/locks.hpp>
 #include <boost/property_tree/ptree.hpp>
 
 namespace freedm {
@@ -93,10 +92,12 @@ IAdapter::Pointer CPnpAdapter::Create(boost::asio::io_service & service,
 ////////////////////////////////////////////////////////////////////////////////
 CPnpAdapter::CPnpAdapter(boost::asio::io_service & service,
         boost::property_tree::ptree & p, CTcpServer::Connection client)
-    : m_countdown(new boost::asio::deadline_timer(service))
+    : IAdapter(service)
+    , IBufferAdapter(service)
+    , m_countdown(new boost::asio::deadline_timer(service))
     , m_ios(service)
     , m_client(client)
-    , m_stop(false)
+    , m_stopping(false)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
@@ -133,7 +134,7 @@ void CPnpAdapter::Start()
     m_countdown->expires_from_now(boost::posix_time::seconds(
             CTimings::DEV_PNP_HEARTBEAT));
     m_countdown->async_wait(boost::bind(&CPnpAdapter::Timeout,
-            shared_from_this(), boost::asio::placeholders::error));
+            this, boost::asio::placeholders::error));
 
     StartRead();
 }
@@ -155,7 +156,7 @@ void CPnpAdapter::Heartbeat()
     {
         Logger.Debug << "Reset an adapter heartbeat timer." << std::endl;
         m_countdown->async_wait(boost::bind(&CPnpAdapter::Timeout,
-                shared_from_this(), boost::asio::placeholders::error));
+                this, boost::asio::placeholders::error));
     }
     else
     {
@@ -164,12 +165,7 @@ void CPnpAdapter::Heartbeat()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// Stops the adapter.  It is safe to delete your reference to the PnpAdapter
-/// after calling this function.  It is possible that the ioservice still has
-/// handlers that reference this adapter (i.e. this function does not block
-/// until after the adapter has actually stopped), but they have reffed the
-/// adapter and will be executed harmlessly.  This function is safe to call
-/// from any thread.
+/// Blocks until the adapter is stopped. Thread-safe.
 ///
 /// @pre Adapter is started.
 /// @post Adapter is stopped.
@@ -185,10 +181,19 @@ void CPnpAdapter::Stop()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
-    m_stop = true;
-
     // The timer is not thread safe; it must be stopped from the device thread.
     m_ios.post(boost::bind(&boost::asio::deadline_timer::cancel, m_countdown));
+
+    {
+        boost::lock_guard<boost::mutex> stoppingLock(m_stoppingMutex);
+        m_stopping = true;
+    }
+
+    // All of our other handlers will have executed before this runs
+    m_ios.post(boost::bind(&CPnpAdapter::Stopped, this));
+
+    // Block
+    WaitUntilStopped();
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -225,7 +230,7 @@ void CPnpAdapter::StartRead()
     Heartbeat();
     m_buffer.consume(m_buffer.size());
     boost::asio::async_read_until(*m_client, m_buffer, "\r\n\r\n",
-            boost::bind(&CPnpAdapter::HandleRead, shared_from_this(),
+            boost::bind(&CPnpAdapter::HandleRead, this,
             boost::asio::placeholders::error));
 }
 
@@ -244,7 +249,7 @@ void CPnpAdapter::StartWrite()
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     Heartbeat();
     boost::asio::async_write(*m_client, m_buffer,
-            boost::bind(&CPnpAdapter::AfterWrite, shared_from_this(),
+            boost::bind(&CPnpAdapter::AfterWrite, this,
             boost::asio::placeholders::error));
 }
 
@@ -263,11 +268,14 @@ void CPnpAdapter::HandleRead(const boost::system::error_code & e)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
-    if( m_stop || e )
     {
-        Logger.Debug << "HandleRead giving up : "
-                << (m_stop ? "received stop" : e.message()) << std::endl;
-        return;
+        boost::lock_guard<boost::mutex> lock(m_stoppingMutex);
+        if( m_stopping || e )
+        {
+            Logger.Debug << "HandleRead giving up : "
+                << (m_stopping ? "received stop" : e.message()) << std::endl;
+            return;
+        }
     }
 
     std::istreambuf_iterator<char> end;
@@ -312,7 +320,10 @@ void CPnpAdapter::HandleRead(const boost::system::error_code & e)
             Logger.Info << "Polite Disconnect Accepted" << std::endl;
             packet << "PoliteDisconnect\r\nAccepted\r\n\r\n";
             m_countdown->cancel();
-            m_stop = true;
+            {
+                boost::lock_guard<boost::mutex> lock(m_stoppingMutex);
+                m_stopping = true;
+            }
             CAdapterFactory::Instance().RemoveAdapter(m_identifier);
         }
         else
@@ -334,7 +345,7 @@ void CPnpAdapter::HandleRead(const boost::system::error_code & e)
 /// Prepares the next read operation after a successful write.
 ///
 /// @pre None.
-/// @post If the m_stop flag has been raised, stops the adapter.
+/// @post If the m_stopping flag has been raised, stops the adapter.
 /// @post Otherwise, prepares the next read with CPnpAdapter::StartRead.
 /// @param e The error code associated with the last write operation.
 ///
@@ -344,7 +355,8 @@ void CPnpAdapter::AfterWrite(const boost::system::error_code & e)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
-    if( !m_stop && !e )
+    boost::lock_guard<boost::mutex> lock(m_stoppingMutex);
+    if( !m_stopping && !e )
     {
         Heartbeat();
         StartRead();
@@ -352,7 +364,7 @@ void CPnpAdapter::AfterWrite(const boost::system::error_code & e)
     else
     {
         Logger.Debug << "AfterWrite giving up: "
-                << (m_stop ? "stop received" : e.message()) << std::endl;
+                << (m_stopping ? "stop received" : e.message()) << std::endl;
     }
 }
 

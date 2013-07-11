@@ -67,7 +67,7 @@ void CFakeAdapter::Start()
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-/// Stops the fake adapter. Makes sets fail.
+/// Stops the fake adapter.  Makes sets fail.  Thread-safe.
 ///
 /// @pre adapter is started
 /// @post adapter is stopped

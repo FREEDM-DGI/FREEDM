@@ -236,7 +236,7 @@ void CRtdsAdapter::Run(const boost::system::error_code & e)
 }
 
 ////////////////////////////////////////////////////////////////////////////
-/// Closes the socket connection to the FPGA.
+/// Closes the socket connection to the FPGA.  Thread-safe.
 ///
 /// @pre None.
 /// @post Closes m_socket.

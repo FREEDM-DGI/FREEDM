@@ -68,7 +68,7 @@ public:
     /// Starts the adapter.
     virtual void Start() = 0;
 
-    /// Stops the adapter.
+    /// Stops the adapter.  Guaranteed to be thread-safe.
     virtual void Stop() = 0;
     
     /// Retrieves a value from a device.

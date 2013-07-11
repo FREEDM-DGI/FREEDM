@@ -168,7 +168,8 @@ void CPnpAdapter::Heartbeat()
 /// after calling this function.  It is possible that the ioservice still has
 /// handlers that reference this adapter (i.e. this function does not block
 /// until after the adapter has actually stopped), but they have reffed the
-/// adapter and will be executed harmlessly.
+/// adapter and will be executed harmlessly.  This function is safe to call
+/// from any thread.
 ///
 /// @pre Adapter is started.
 /// @post Adapter is stopped.

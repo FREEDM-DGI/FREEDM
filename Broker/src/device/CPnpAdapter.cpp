@@ -182,7 +182,8 @@ void CPnpAdapter::Stop()
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
     // The timer is not thread safe; it must be stopped from the device thread.
-    m_ios.post(boost::bind(&boost::asio::deadline_timer::cancel, m_countdown));
+    m_ios.post(boost::bind(&boost::asio::deadline_timer::cancel, m_countdown,
+            boost::system::error_code()));
 
     {
         boost::lock_guard<boost::mutex> stoppingLock(m_stoppingMutex);

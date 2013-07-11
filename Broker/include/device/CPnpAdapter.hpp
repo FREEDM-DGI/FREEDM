@@ -95,9 +95,6 @@ private:
     /// Sends device commands to the current client.
     std::string GetCommandPacket();
 
-    /// Tell the adapter factory to remove this adapter
-    void SessionEnded();
-
     /// Countdown until the object destroys itself.
     boost::shared_ptr<boost::asio::deadline_timer> m_countdown;
 

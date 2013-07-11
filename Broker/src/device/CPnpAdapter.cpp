@@ -15,7 +15,9 @@
 ///     CPnpAdapter::Heartbeat
 ///     CPnpAdapter::GetPortNumber
 ///     CPnpAdapter::Timeout
-///     CPnpAdapter::HandleMessage
+///     CPnpAdapter::HandleRead
+///     CPnpAdapter::AfterWrite
+///     CPnpAdapter::Stop
 ///     CPnpAdapter::ReadStatePacket
 ///     CPnpAdapter::SendCommandPacket
 ///
@@ -91,14 +93,14 @@ IAdapter::Pointer CPnpAdapter::Create(boost::asio::io_service & service,
 ////////////////////////////////////////////////////////////////////////////////
 CPnpAdapter::CPnpAdapter(boost::asio::io_service & service,
         boost::property_tree::ptree & p, CTcpServer::Connection client)
-    : m_countdown(service)
+    : m_countdown(new boost::asio::deadline_timer(service))
+    , m_ios(service)
     , m_client(client)
     , m_stop(false)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
     m_identifier = p.get<std::string>("identifier");
-    StartRead();
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -128,10 +130,12 @@ void CPnpAdapter::Start()
 
     IBufferAdapter::Start();
 
-    m_countdown.expires_from_now(boost::posix_time::seconds(
+    m_countdown->expires_from_now(boost::posix_time::seconds(
             CTimings::DEV_PNP_HEARTBEAT));
-    m_countdown.async_wait(boost::bind(&CPnpAdapter::Timeout, this,
-            boost::asio::placeholders::error));
+    m_countdown->async_wait(boost::bind(&CPnpAdapter::Timeout,
+            shared_from_this(), boost::asio::placeholders::error));
+
+    StartRead();
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -146,12 +150,12 @@ void CPnpAdapter::Heartbeat()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
-    if( m_countdown.expires_from_now(boost::posix_time::seconds(
+    if( m_countdown->expires_from_now(boost::posix_time::seconds(
             CTimings::DEV_PNP_HEARTBEAT)) != 0 )
     {
         Logger.Debug << "Reset an adapter heartbeat timer." << std::endl;
-        m_countdown.async_wait(boost::bind(&CPnpAdapter::Timeout, this,
-                boost::asio::placeholders::error));
+        m_countdown->async_wait(boost::bind(&CPnpAdapter::Timeout,
+                shared_from_this(), boost::asio::placeholders::error));
     }
     else
     {
@@ -159,15 +163,39 @@ void CPnpAdapter::Heartbeat()
     }
 }
 
+///////////////////////////////////////////////////////////////////////////////
+/// Stops the adapter.  It is safe to delete your reference to the PnpAdapter
+/// after calling this function.  It is possible that the ioservice still has
+/// handlers that reference this adapter (i.e. this function does not block
+/// until after the adapter has actually stopped), but they have reffed the
+/// adapter and will be executed harmlessly.
+///
+/// @pre Adapter is started.
+/// @post Adapter is stopped.
+///
+/// @limitations This is NOT the way to stop the plug and play protocol from
+///              within the CPnpAdapter class.  From within CPnpAdapter, you
+///              must instead call CAdapterFactory::RemoveAdapter, which
+///              calls this function.  Otherwise, a reference to the adapter
+///              will exist forever and its devices will not be properly
+///              removed from the device manager.
+///////////////////////////////////////////////////////////////////////////////
+void CPnpAdapter::Stop()
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+
+    m_stop = true;
+
+    // The timer is not thread safe; it must be stopped from the device thread.
+    m_ios.post(boost::bind(&boost::asio::deadline_timer::cancel, m_countdown));
+}
+
 ////////////////////////////////////////////////////////////////////////////////
-/// Attempts to destroy the adapter due to timeout.
+/// Stops the adapter due to timeout.
 ///
 /// @pre None.
 /// @post Calls CAdapterFactory::RemoveAdapter if the timer was not reset.
 /// @param e The error code that signals if the timeout has been canceled.
-///
-/// @limitations This function will not work as intended if the shared pointer
-/// to the calling object has a reference outside of CAdapterFactory.
 ////////////////////////////////////////////////////////////////////////////////
 void CPnpAdapter::Timeout(const boost::system::error_code & e)
 {
@@ -196,7 +224,7 @@ void CPnpAdapter::StartRead()
     Heartbeat();
     m_buffer.consume(m_buffer.size());
     boost::asio::async_read_until(*m_client, m_buffer, "\r\n\r\n",
-            boost::bind(&CPnpAdapter::HandleRead, this,
+            boost::bind(&CPnpAdapter::HandleRead, shared_from_this(),
             boost::asio::placeholders::error));
 }
 
@@ -215,7 +243,7 @@ void CPnpAdapter::StartWrite()
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     Heartbeat();
     boost::asio::async_write(*m_client, m_buffer,
-            boost::bind(&CPnpAdapter::HandleWrite, this,
+            boost::bind(&CPnpAdapter::AfterWrite, shared_from_this(),
             boost::asio::placeholders::error));
 }
 
@@ -233,65 +261,71 @@ void CPnpAdapter::StartWrite()
 void CPnpAdapter::HandleRead(const boost::system::error_code & e)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    if( !e )
+
+    if( m_stop || e )
     {
-        std::istreambuf_iterator<char> end;
-        std::iostream packet(&m_buffer);
-        std::string data, header;
+        Logger.Debug << "HandleRead giving up : "
+                << (m_stop ? "received stop" : e.message()) << std::endl;
+        return;
+    }
 
-        try
+    std::istreambuf_iterator<char> end;
+    std::iostream packet(&m_buffer);
+    std::string data, header;
+
+    try
+    {
+        Heartbeat();
+
+        packet >> header;
+        data = std::string(std::istreambuf_iterator<char>(packet), end);
+        Logger.Debug << "Received " << header << " packet." << std::endl;
+
+        m_buffer.consume(m_buffer.size());
+        if( header == "DeviceStates" )
         {
-            Heartbeat();
-
-            packet >> header;
-            data = std::string(std::istreambuf_iterator<char>(packet), end);
-            Logger.Debug << "Received " << header << " packet." << std::endl;
-
-            m_buffer.consume(m_buffer.size());
-            if( header == "DeviceStates" )
+            try
             {
-                try
+                ReadStatePacket(data);
+                if( m_buffer_initialized == false )
                 {
-                    ReadStatePacket(data);
-                    if( m_buffer_initialized == false )
-                    {
-                        RevealDevices();
-                        m_buffer_initialized = true;
-                    }
-                    packet << GetCommandPacket();
+                    RevealDevices();
+                    m_buffer_initialized = true;
                 }
-                catch(boost::bad_lexical_cast &)
-                {
-                    std::string str = "received non-numeric value";
-                    Logger.Warn << "Corrupt state: " << str << std::endl;
-                    packet << "BadRequest\r\n" << str << "\r\n\r\n";
-                }
-                catch(EBadRequest & e)
-                {
-                    Logger.Warn << "Corrupt state: " << e.what() << std::endl;
-                    packet << "BadRequest\r\n" << e.what() << "\r\n\r\n";
-                }
+                packet << GetCommandPacket();
             }
-            else if( header == "PoliteDisconnect" )
+            catch(boost::bad_lexical_cast &)
             {
-                Logger.Debug << "Polite Disconnect Accepted" << std::endl;
-                packet << "PoliteDisconnect\r\nAccepted\r\n\r\n";
-                m_stop = true;
+                std::string str = "received non-numeric value";
+                Logger.Warn << "Corrupt state: " << str << std::endl;
+                packet << "BadRequest\r\n" << str << "\r\n\r\n";
             }
-            else
+            catch(EBadRequest & e)
             {
-                Logger.Warn << "Unknown header: " << header << std::endl;
-                packet << "BadRequest\r\n\r\n";
-                m_stop = true;
+                Logger.Warn << "Corrupt state: " << e.what() << std::endl;
+                packet << "BadRequest\r\n" << e.what() << "\r\n\r\n";
             }
-            StartWrite();
         }
-        catch(std::exception & e)
+        else if( header == "PoliteDisconnect" )
         {
-            Logger.Info << m_identifier << " communication failed."
-                    << std::endl;
-            Logger.Debug << "Reason: " << e.what() << std::endl;
+            Logger.Info << "Polite Disconnect Accepted" << std::endl;
+            packet << "PoliteDisconnect\r\nAccepted\r\n\r\n";
+            m_countdown->cancel();
+            m_stop = true;
+            CAdapterFactory::Instance().RemoveAdapter(m_identifier);
         }
+        else
+        {
+            Logger.Warn << "Unknown header: " << header << std::endl;
+            packet << "BadRequest\r\n\r\n";
+        }
+        StartWrite();
+    }
+    catch(std::exception & e)
+    {
+        Logger.Info << m_identifier << " communication failed."
+                << std::endl;
+        Logger.Debug << "Reason: " << e.what() << std::endl;
     }
 }
 
@@ -305,20 +339,19 @@ void CPnpAdapter::HandleRead(const boost::system::error_code & e)
 ///
 /// @limitations None.
 ////////////////////////////////////////////////////////////////////////////////
-void CPnpAdapter::HandleWrite(const boost::system::error_code & e)
+void CPnpAdapter::AfterWrite(const boost::system::error_code & e)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    if( m_stop )
-    {
-	    boost::system::error_code null;
 
-        m_countdown.cancel();
-        Timeout(null);
-    }
-    else if( !e )
+    if( !m_stop && !e )
     {
         Heartbeat();
         StartRead();
+    }
+    else
+    {
+        Logger.Debug << "AfterWrite giving up: "
+                << (m_stop ? "stop received" : e.message()) << std::endl;
     }
 }
 

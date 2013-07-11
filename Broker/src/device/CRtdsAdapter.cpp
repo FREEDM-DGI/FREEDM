@@ -243,7 +243,7 @@ void CRtdsAdapter::Run(const boost::system::error_code & e)
 ///
 /// @limitations None.
 ////////////////////////////////////////////////////////////////////////////
-void CRtdsAdapter::Quit()
+void CRtdsAdapter::Stop()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 

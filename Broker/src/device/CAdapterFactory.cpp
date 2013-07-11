@@ -196,10 +196,12 @@ void CAdapterFactory::Stop()
 {
     try
     {
-        typedef std::pair<const std::string, IAdapter::Pointer> HackAround;
-        BOOST_FOREACH (HackAround entry, m_adapters)
-        {
-            RemoveAdapter(entry.first);
+        {   // Cannot have a comma in the typename
+            typedef std::pair<const std::string, IAdapter::Pointer> HackAround;
+            BOOST_FOREACH (HackAround entry, m_adapters)
+            {
+                RemoveAdapter(entry.first);
+            }
         }
 
         m_ios.stop();

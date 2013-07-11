@@ -53,8 +53,11 @@ public:
     /// Creates a new fake adapter.
     static Pointer Create();
 
-    /// "Start" the fake adapter. Actually does nothing.
+    /// Start the fake adapter.
     void Start();
+
+    /// Stop the fake adapter.
+    void Stop();
     
     /// Retrieves a value from a device.
     SignalValue Get(const std::string device, const std::string key) const;
@@ -64,6 +67,9 @@ public:
         const SignalValue value);
 
 private:
+    /// Constructor
+    CFakeAdapter();
+
     /// Map of device setting keys to values.
     typedef std::map<std::string, SignalValue> KeyMap;
     
@@ -72,6 +78,9 @@ private:
 
     /// Registry of device keys and values.
     mutable DeviceMap m_registry;
+
+    /// Is the adapter stopped?
+    bool m_stopped;
 };
 
 } // namespace device

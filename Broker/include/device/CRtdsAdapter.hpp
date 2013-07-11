@@ -66,6 +66,9 @@ public:
     
     /// Starts the adapter.
     void Start();
+
+    /// Shut down communication to FPGA.
+    void Stop();
     
     /// Destructor.
     ~CRtdsAdapter();
@@ -77,9 +80,6 @@ private:
 
     /// Continuous loop for sending and receiving to/from RTDS.
     void Run(const boost::system::error_code & e);
-
-    /// Shut down communication to FPGA.
-    void Quit();
 
     /// Reverses all of the bytes in a buffer.    
     void ReverseBytes( char * buffer, const int numBytes );

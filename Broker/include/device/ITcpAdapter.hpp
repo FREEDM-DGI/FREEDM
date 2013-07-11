@@ -61,9 +61,6 @@ protected:
 
     /// Creates a socket connection to the given hostname and port number.
     void Connect();
-
-    /// Closes the connection.
-    virtual void Quit() = 0;
     
     /// Constructor to initialize the socket.
     ITcpAdapter(boost::asio::io_service & service);

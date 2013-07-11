@@ -61,7 +61,8 @@ CLocalLogger DeviceManagerLogger(__FILE__);
 ///
 /// Devices are "stored" here after they are constructed by CAdapterFactory.
 ///
-/// @limitations It's a singleton... you can only access it with Instance()
+/// @limitations None directly, but be aware of the important limitations
+///              specificed in the IDevice class.
 ///////////////////////////////////////////////////////////////////////////////
 class CDeviceManager
     : private boost::noncopyable

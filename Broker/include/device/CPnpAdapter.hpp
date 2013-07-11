@@ -48,6 +48,7 @@ namespace device {
 ////////////////////////////////////////////////////////////////////////////////
 class CPnpAdapter
     : public IBufferAdapter
+    , public boost::enable_shared_from_this<CPnpAdapter>
 {
 public:
     /// Convenience type for a shared pointer to self.
@@ -59,6 +60,9 @@ public:
 
     /// Starts the internal countdown timer.
     void Start();
+
+    /// Stops the adapter.
+    void Stop();
 
     /// Refreshes the internal countdown timer.
     void Heartbeat();
@@ -83,7 +87,7 @@ private:
     void HandleRead(const boost::system::error_code & e);
 
     /// Handles when a packet has been sent to the device.
-    void HandleWrite(const boost::system::error_code & e);
+    void AfterWrite(const boost::system::error_code & e);
 
     /// Parses a state packet received from the client.
     void ReadStatePacket(const std::string packet);
@@ -91,8 +95,14 @@ private:
     /// Sends device commands to the current client.
     std::string GetCommandPacket();
 
+    /// Tell the adapter factory to remove this adapter
+    void SessionEnded();
+
     /// Countdown until the object destroys itself.
-    boost::asio::deadline_timer m_countdown;
+    boost::shared_ptr<boost::asio::deadline_timer> m_countdown;
+
+    /// The ioservice running this adapter
+    boost::asio::io_service& m_ios;
 
     /// Unique identifier of this adapter.
     std::string m_identifier;

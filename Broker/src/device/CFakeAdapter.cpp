@@ -35,6 +35,14 @@ CLocalLogger Logger(__FILE__);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+/// Constructor
+////////////////////////////////////////////////////////////////////////////////
+CFakeAdapter::CFakeAdapter()
+    : m_registry()
+    , m_stopped(false)
+    { }
+   
+////////////////////////////////////////////////////////////////////////////////
 /// Creates a new fake device adapter adapter.
 ///
 /// @return a smart pointer to the new device adapter.
@@ -46,13 +54,29 @@ CFakeAdapter::Pointer CFakeAdapter::Create()
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-/// Starts the fake adapter. Actually does nothing.
+/// Starts the fake adapter.  Reveals the adapter's devices to the device
+/// manager.
+///
+/// @pre adapter is stopped
+/// @post adapter is started
 ////////////////////////////////////////////////////////////////////////////////
 void CFakeAdapter::Start()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     RevealDevices();
-    return /*nothing*/;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/// Stops the fake adapter. Makes sets fail.
+///
+/// @pre adapter is started
+/// @post adapter is stopped
+////////////////////////////////////////////////////////////////////////////////
+void CFakeAdapter::Stop()
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+
+    m_stopped = true;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -101,7 +125,13 @@ void CFakeAdapter::Set(const std::string device, const std::string key,
                        const SignalValue value)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    m_registry[device][key] = value;
+
+    // Per the documentation of IAdapter, the Set is required to fail if Stop
+    // has been called.
+    if (!m_stopped)
+    {
+        m_registry[device][key] = value;
+    }
 }
 
 } // namespace device

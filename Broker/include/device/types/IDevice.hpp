@@ -60,7 +60,20 @@ boost::shared_ptr<TargetType> device_cast(ObjectType object)
 /// associated set of device signals, defined by derived classes, which can be
 /// accessed through the public IDevice::Get and IDevice::Set functions.
 ///
-/// @limitations None.
+/// @limitations Devices may be invalidated at any time as they enter or leave
+///              the system.  Currently there is no way of determining whether
+///              a device is valid or not.  It would be easy to add this
+///              functionality, but have instead decided to spare clients the
+///              pain of checking for this by making the assumption that
+///              clients will retain references to devices for only a short
+///              period of time, and that it is not a significant error if
+///              operations performed on these devices fail.  (We may revise
+///              this decision in the future if need be.)  Therefore, you
+///              should never store a reference to an IDevice (or a child
+///              instance) for long.  Your module should regularly renew its
+///              understanding of the devices in the system with the device
+///              manager.  Gets on an invalid device always return the last
+///              valid value; Sets silently fail.
 ////////////////////////////////////////////////////////////////////////////////
 class IDevice
     : private boost::noncopyable

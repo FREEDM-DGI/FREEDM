@@ -47,7 +47,16 @@ typedef std::pair<const std::string, const std::string> DeviceSignal;
 /// concrete adapter is responsible for implementation of both Get and Set
 /// functions.
 ///
-/// @limitations None.
+/// The adapter class is intended to be private to the device subsystem.  If
+/// you want to access it from outside devices, you are doing something wrong.
+///
+/// @limitations Adapters must be shut down via IAdapter::Stop() exactly once
+///              before they are destructed in order to ensure correct behavior.
+///              An adapter that has been shut down while references to it still
+///              exist is basically an empty shell: IAdapter::Get() is
+///              guaranteed to return the same value that it did before the
+///              adapter was stopped, and IAdapter::Set() is guaranteed to
+///              silently fail.
 ////////////////////////////////////////////////////////////////////////////////
 class IAdapter
     : private boost::noncopyable
@@ -58,6 +67,9 @@ public:
 
     /// Starts the adapter.
     virtual void Start() = 0;
+
+    /// Stops the adapter.
+    virtual void Stop() = 0;
     
     /// Retrieves a value from a device.
     virtual SignalValue Get(const std::string device,

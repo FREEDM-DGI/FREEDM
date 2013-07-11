@@ -63,17 +63,15 @@ namespace {
 /// This file's logger.
 CLocalLogger Logger(__FILE__);
 
+/// The copyright year for this DGI release.
+const unsigned int COPYRIGHT_YEAR = 2013;
+
 /// UUID of the DGI, currently hostname:port
 std::string GenerateUuid(std::string host, std::string port)
 {
     boost::algorithm::to_lower(host);
     return host + ":" + port;
 }
-
-}
-
-/// The copyright year for this DGI release.
-const unsigned int COPYRIGHT_YEAR = 2013;
 
 /// Converts a string into a valid port number.
 unsigned short GetPort(const std::string str)
@@ -105,6 +103,8 @@ unsigned short GetPort(const std::string str)
 
     return static_cast<unsigned short>(port);
 }
+
+} // unnamed namespace
 
 /// Broker entry point
 int main(int argc, char* argv[])

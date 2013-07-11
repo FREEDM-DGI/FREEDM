@@ -252,6 +252,10 @@ int main(int argc, char* argv[])
             CGlobalConfiguration::Instance().SetDevicesEndpoint(
                 vm["devices-endpoint"].as<std::string>() );
         }
+        else
+        {
+            CGlobalConfiguration::Instance().SetDevicesEndpoint("");
+        }
 
         if (vm.count("factory-port"))
         {

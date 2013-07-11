@@ -173,13 +173,17 @@ class LBAgent
 	float m_deltaP;
 	float m_epsilon;
 	float m_scalar;
+	float m_Demand;
 	unsigned int m_index;
 
-	/// Previous lamda
-	float m_preLamda;
+	/// Previous distributed demand
+	float m_preDemand; 
 
 	/// Previous local demand
-	float m_preDemand; 
+        float preLocal;
+
+	/// Current local demand
+	float curLocal;
 
 	/// number of lamda received
 	unsigned int countlambda;
@@ -188,15 +192,12 @@ class LBAgent
 	unsigned int countcycle;	
 
 	//functions
-	void LeaderICC();
-	void FollowerICC();
 	void Update(float lamda, float PGen);
-	bool isEqual(float preLamda, float curLamda);
 
-	//network topology parameters (three nodes with fully connected)
+	//network topology parameters 
  	std::map<int, float> m_var;
-	//container to save lamda and demand
 
+	//container to save lamda and demand
 	//LICC
 	void LICC();
         std::map<int, float> m_collectlamda;

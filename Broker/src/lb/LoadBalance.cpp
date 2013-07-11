@@ -160,13 +160,16 @@ int LBAgent::Run()
     m_PGen = pt.get<float>("Init.costVar.PGen");
     m_index = pt.get<int>("Init.costVar.num");
     m_scalar = pt.get<float>("Init.costVar.scalar");
+    m_Demand = pt.get<float>("Init.costVar.load");
     Logger.Status << "ICC cost variables are obtained from xml are: "
                   << m_lamda << ", " << m_alpha << ", "
                   << m_beta << ", " << m_gama << ", "
                   << m_epsilon << ", " << m_PGen << std::endl;
     //Initially nodes save local lamda into container(ICC)
     Logger.Status << "Save local lamda into local container" << std::endl;
+    
     m_collectlamda.insert(std::pair<int, float>(m_index, m_lamda));
+    m_collectDemand.insert(std::pair<int, float>(m_index, 0));
     //ICC
     //---------------------------------------------------------------------------------//
     LoadManage();
@@ -756,7 +759,12 @@ void LBAgent::HandlePeerList(MessagePtr msg, PeerNodePtr peer)
     //print out peerlist
     BOOST_FOREACH( PeerNodePtr p_, m_AllPeers | boost::adaptors::map_values)
     Logger.Status << p_->GetUUID() << std::endl;
-
+    countlambda = 0;
+    m_preDemand = 0;
+    preLocal = 0;
+    curLocal = 0;
+ if (peerNum == 5)
+{
     //clear network variable container
     m_var.clear();
  
@@ -778,6 +786,7 @@ void LBAgent::HandlePeerList(MessagePtr msg, PeerNodePtr peer)
     m_.m_submessages.put("lb.source", GetUUID());
     m_.m_submessages.put("lb.lamda", boost::lexical_cast<std::string>(m_lamda));
     m_.m_submessages.put("lb.index", boost::lexical_cast<std::string>(m_index));
+    m_.m_submessages.put("lb.demand", boost::lexical_cast<std::string>(m_preDemand));
 
     BOOST_FOREACH( PeerNodePtr p_, m_AllPeers | boost::adaptors::map_values)
     {
@@ -786,7 +795,7 @@ void LBAgent::HandlePeerList(MessagePtr msg, PeerNodePtr peer)
             try
             {
                 p_->Send(m_);
-                Logger.Status << "---------sending out its lamda" << std::endl;
+                Logger.Info << "---------sending out its lamda" << std::endl;
             }
             catch (boost::system::system_error& e)
             {
@@ -794,7 +803,7 @@ void LBAgent::HandlePeerList(MessagePtr msg, PeerNodePtr peer)
             }
         }
     }
-
+}
 }
 
 void LBAgent::HandleDemand(MessagePtr msg, PeerNodePtr peer)
@@ -1194,16 +1203,19 @@ void LBAgent::HandleUpdate(MessagePtr msg, PeerNodePtr peer)
     float anotherlamda;
     anotherlamda = boost::lexical_cast<float>(pt.get<std::string>("lb.lamda"));
     //insert new anotherlamda in collectlamda
+    
     if (m_collectlamda.find(index) == m_collectlamda.end())
     {
         m_collectlamda.insert(std::pair<int, float>(index, anotherlamda));
-        //Logger.Status << "Insert another Lambda:  " << anotherlamda << " from " << uuid_ <<std::endl;
+        Logger.Status << "Insert another Lambda:  " << anotherlamda << " from " << uuid_ <<std::endl;
         countlambda ++;
-
-	float Disdemand = boost::lexical_cast<float>(pt.get<std::string>("lb.demand", 0));
+        float Disdemand;
+	Disdemand = boost::lexical_cast<float>(pt.get<std::string>("lb.demand"));
+	//Logger.Status << "--------" << Disdemand << std::endl;
         m_collectDemand.insert(std::pair<int, float>(index, Disdemand));
     }
-    
+   
+    Logger.Info << "The number of lamda is " << countlambda << std::endl;
     if (countlambda == m_AllPeers.size()-1)
     {
         LICC();
@@ -1212,7 +1224,8 @@ void LBAgent::HandleUpdate(MessagePtr msg, PeerNodePtr peer)
         m_collectDemand.clear();
         countlambda = 0;
  
-    }
+	m_collectlamda.insert(std::pair<int, float>(m_index, m_lamda));
+  	m_collectDemand.insert(std::pair<int, float>(m_index, m_preDemand));    
     
    
     //send out its updated lamda
@@ -1220,7 +1233,7 @@ void LBAgent::HandleUpdate(MessagePtr msg, PeerNodePtr peer)
     m_.SetHandler("lb.LamdaUpdate");
     m_.m_submessages.put("lb.source", GetUUID());
     m_.m_submessages.put("lb.index", m_index);
-    m_.m_submessages.put("lb.lamda", boost::lexical_cast<std::string>(m_preLamda));
+    m_.m_submessages.put("lb.lamda", boost::lexical_cast<std::string>(m_lamda));
     m_.m_submessages.put("lb.demand", boost::lexical_cast<std::string>(m_preDemand));
     
     BOOST_FOREACH(PeerNodePtr p_, m_AllPeers | boost::adaptors::map_values)
@@ -1230,7 +1243,7 @@ void LBAgent::HandleUpdate(MessagePtr msg, PeerNodePtr peer)
                 try
                 {
                     p_->Send(m_);
-                    Logger.Status << "---------sending out its lamda" << std::endl;
+                    Logger.Info << "---------sending out its lamda" << std::endl;
                 }
                 catch (boost::system::system_error& e)
                 {
@@ -1238,6 +1251,7 @@ void LBAgent::HandleUpdate(MessagePtr msg, PeerNodePtr peer)
                 }
 	    
 	}
+    }
     }
 }
 
@@ -1247,38 +1261,46 @@ void LBAgent::HandleUpdate(MessagePtr msg, PeerNodePtr peer)
 void LBAgent::LICC()
 {
     unsigned int number;
-    float preLocal = 0;
-    float curLocal = 0;
+    //float preLocal = 0;
+    //float curLocal = 0;
     float preDis = 0;
     //calculate next local demand
-    float nextLocal = m_Load - (m_lamda - m_beta)/(2*m_gama);
-
+    Logger.Status << "-------demand is " << m_Demand << std::endl;
+    float nextLocal = m_Demand - (m_lamda - m_beta)/(2*m_gama);
+    Logger.Status << "---------next local demand is " << nextLocal << std::endl;
     //calculate next distributed demand
-    float nextDis;
+    float nextDis = 0;
     for (it = m_collectDemand.begin(); it != m_collectDemand.end(); it++)
     {
         number = (*it).first;
+        Logger.Status << "--------" << number << " demand : " << m_var.find(number)->second 
+			<< " and " << (*it).second << std::endl;
 	nextDis += (m_var.find(number)->second)*((*it).second);
     }
     nextDis += curLocal - preLocal;
     preLocal = curLocal;
     curLocal = nextLocal;
-
+    Logger.Status << "--------previous local" << preLocal << " and current local " 
+			<< curLocal << std::endl;
+    //nextDis += curLocal - preLocal;
     //calculate next lamda
-    float nextLamda;
+    float nextLamda=0;
     for (it = m_collectlamda.begin(); it != m_collectlamda.end(); it++)
     {
         number = (*it).first;
+        Logger.Status << "-----------" << number << " lamda : " << m_var.find(number)->second
+			<< " and " << (*it).second  << std::endl;
         nextLamda += (m_var.find(number)->second)*((*it).second);
     }
+    preDis = nextDis;
     nextLamda += m_scalar*preDis;
     
-    preDis = nextDis;
+    //preDis = nextDis;
 
     //assign next lamda and next distributed demand
-    m_preLamda = nextLamda;
+    m_lamda = nextLamda;
     m_preDemand = nextDis;
-    Logger.Status << "-----------The update lambda is " << m_preLamda << std::endl;
+    Logger.Status << "-----------The update lambda is " << m_lamda << std::endl;
    
 }
 

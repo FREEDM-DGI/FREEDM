@@ -61,6 +61,7 @@ class CBroker : private boost::noncopyable
 public:
     typedef boost::function<void (boost::system::error_code)> Scheduleable;
     typedef boost::function<void ()> BoundScheduleable;
+    typedef boost::function<void ()> ModuleQuitFunction;
     typedef std::string ModuleIdent;
     typedef std::pair<ModuleIdent, boost::posix_time::time_duration> PhaseTuple;
     typedef std::vector< PhaseTuple > ModuleVector;
@@ -113,9 +114,11 @@ public:
     
     /// Access The dispatcher
     CDispatcher& GetDispatcher() { return m_dispatch; };
-    
+
     /// Registers a module for the scheduler
-    void RegisterModule(ModuleIdent m, boost::posix_time::time_duration phase);
+    void RegisterModule(ModuleIdent m,
+                        boost::posix_time::time_duration phase,
+                        ModuleQuitFunction q = boost::function<void ()>());
 
     /// Returns how much time the current module has left in its round
     boost::posix_time::time_duration TimeRemaining();
@@ -156,6 +159,9 @@ private:
 
     ///List of modules for the scheduler
     ModuleVector m_modules;
+
+    /// Functions to call when the broker shuts down
+    std::vector<ModuleQuitFunction> m_quitFunctions;
     
     ///Whose turn is it for round robin.
     PhaseMarker m_phase;

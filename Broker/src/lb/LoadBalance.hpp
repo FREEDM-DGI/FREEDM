@@ -91,6 +91,9 @@ class LBAgent
         /// Main loop of the algorithm called from PosixBroker
         int Run();
 
+        /// Shut down the module.
+        void Quit();
+
     private:
         enum EStatus { SUPPLY, NORM, DEMAND }; 
          // Routines

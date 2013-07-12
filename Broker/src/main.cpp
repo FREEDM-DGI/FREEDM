@@ -299,14 +299,20 @@ int main(int argc, char* argv[])
     try
     {
         // Instantiate and register the group management module
-        broker.RegisterModule("gm",boost::posix_time::milliseconds(CTimings::GM_PHASE_TIME));
+        broker.RegisterModule("gm",
+                              boost::posix_time::milliseconds(CTimings::GM_PHASE_TIME),
+                              boost::bind(&gm::GMAgent::Quit, &GM)
+                             );
         dispatch.RegisterReadHandler("gm", "any", &GM);
         // Instantiate and register the state collection module
         broker.RegisterModule("lbq",boost::posix_time::milliseconds(CTimings::LB_SC_QUERY_TIME));
         broker.RegisterModule("sc",boost::posix_time::milliseconds(CTimings::SC_PHASE_TIME));
         dispatch.RegisterReadHandler("sc", "any", &SC);
         // Instantiate and register the power management module
-        broker.RegisterModule("lb",boost::posix_time::milliseconds(CTimings::LB_PHASE_TIME));
+        broker.RegisterModule("lb",
+                              boost::posix_time::milliseconds(CTimings::LB_PHASE_TIME),
+                              boost::bind(&lb::LBAgent::Quit, &LB)
+                             );
         dispatch.RegisterReadHandler("lb", "lb", &LB);
 
         // The peerlist should be passed into constructors as references or

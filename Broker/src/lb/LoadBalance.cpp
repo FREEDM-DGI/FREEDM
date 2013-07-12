@@ -154,6 +154,11 @@ int LBAgent::Run()
     return 0;
 }
 
+void LBAgent::Quit()
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+}
+
 ////////////////////////////////////////////////////////////
 /// AddPeer
 /// @description Adds the peer to the set of all peers

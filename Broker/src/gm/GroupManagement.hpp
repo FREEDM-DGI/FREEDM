@@ -148,6 +148,9 @@ class GMAgent
     /// Called to start the system
     int	Run();
 
+    /// Shut down the module.
+    void Quit();
+
     //Peer Set Manipulation
     /// Adds a peer to the peer set from UUID
     PeerNodePtr AddPeer(std::string uuid);

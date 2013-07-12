@@ -641,6 +641,9 @@ void LBAgent::LoadTable()
     }
     ss << "\t ------------------------------------------------------";
     Logger.Status << ss.str() << std::endl;
+
+    //For step load
+    m_Demand += m_Load;
 }//end LoadTable
 
 
@@ -763,6 +766,13 @@ void LBAgent::HandlePeerList(MessagePtr msg, PeerNodePtr peer)
     m_preDemand = 0;
     preLocal = 0;
     curLocal = 0;
+
+    //clear container for lambda and demand
+    m_collectlamda.clear();
+    m_collectDemand.clear();
+    //insert its own value
+    m_collectlamda.insert(std::pair<int, float>(m_index, m_lamda));
+    m_collectDemand.insert(std::pair<int, float>(m_index, 0));
  if (peerNum == 5)
 {
     //clear network variable container
@@ -1261,13 +1271,11 @@ void LBAgent::HandleUpdate(MessagePtr msg, PeerNodePtr peer)
 void LBAgent::LICC()
 {
     unsigned int number;
-    //float preLocal = 0;
-    //float curLocal = 0;
     float preDis = 0;
     //calculate next local demand
     Logger.Status << "-------demand is " << m_Demand << std::endl;
     float nextLocal = m_Demand - (m_lamda - m_beta)/(2*m_gama);
-    Logger.Status << "---------next local demand is " << nextLocal << std::endl;
+    Logger.Info << "---------next local demand is " << nextLocal << std::endl;
     //calculate next distributed demand
     float nextDis = 0;
     for (it = m_collectDemand.begin(); it != m_collectDemand.end(); it++)
@@ -1280,9 +1288,9 @@ void LBAgent::LICC()
     nextDis += curLocal - preLocal;
     preLocal = curLocal;
     curLocal = nextLocal;
-    Logger.Status << "--------previous local" << preLocal << " and current local " 
+    Logger.Info << "--------previous local" << preLocal << " and current local " 
 			<< curLocal << std::endl;
-    //nextDis += curLocal - preLocal;
+    
     //calculate next lamda
     float nextLamda=0;
     for (it = m_collectlamda.begin(); it != m_collectlamda.end(); it++)
@@ -1294,8 +1302,6 @@ void LBAgent::LICC()
     }
     preDis = nextDis;
     nextLamda += m_scalar*preDis;
-    
-    //preDis = nextDis;
 
     //assign next lamda and next distributed demand
     m_lamda = nextLamda;

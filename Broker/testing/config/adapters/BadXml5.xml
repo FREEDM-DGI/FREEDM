@@ -11,6 +11,11 @@
                 <device>SST1</device>
                 <signal>gateway</signal>
             </entry>
+            <entry index = "3">
+                <type>Sst</type>
+                <device>SST2</device>
+                <signal>gateway</signal>
+            </entry>
         </state>
         <command>
             <entry index = "1">

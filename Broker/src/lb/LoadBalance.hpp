@@ -183,6 +183,9 @@ class LBAgent
         CBroker &m_broker;
 
         bool m_sstExists;
+
+        /// Flag to indicate the module is now stopping
+        bool m_stopping;
 };
 
 } // namespace lb

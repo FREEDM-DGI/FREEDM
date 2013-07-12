@@ -57,8 +57,8 @@ CLocalLogger Logger(__FILE__);
         
 ///////////////////////////////////////////////////////////////////////////////
 /// @fn CBroker::CBroker
-/// @description The constructor for the broker, providing the initial acceptor
-/// @io provides and acceptor socket for incoming network connecitons.
+/// @description The constructor for the broker
+/// @io provide an acceptor socket for incoming network connections.
 /// @peers any node running the broker architecture.
 /// @sharedmemory The dispatcher and connection manager are shared with the
 ///               modules.
@@ -121,13 +121,11 @@ CBroker::~CBroker()
 
 ///////////////////////////////////////////////////////////////////////////////
 /// @fn CBroker::Run()
-/// @description Calls the ioservice run (initializing the ioservice thread)
-///              and then blocks until the ioservice runs out of work.
-///              (That should only happen if a signal is received.)
-/// @pre  The ioservice has not been allocated a thread to operate on and has
-///       some schedule of jobs waiting to be performed (so it doesn't exit
-///       immediately.)
-/// @post The ioservice has terminated.
+/// @description Runs the ioservice until it is out of work. (That should only
+///              happen if a signal is received.)
+/// @pre  The ioservice has some schedule of jobs waiting to be performed (so
+///       it doesn't exit immediately)
+/// @post The ioservice has stopped.
 /// @ErrorHandling Could raise arbitrary exceptions from anywhere in the DGI.
 ///////////////////////////////////////////////////////////////////////////////
 void CBroker::Run()

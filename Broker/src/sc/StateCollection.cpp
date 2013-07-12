@@ -124,6 +124,7 @@ SCAgent::SCAgent(std::string uuid, CBroker &broker):
     RegisterSubhandle("any",boost::bind(&SCAgent::HandleAny,this,_1,_2));
 }
 
+
 ///////////////////////////////////////////////////////////////////////////////
 /// Marker
 /// @description create a marker message
@@ -247,62 +248,64 @@ void SCAgent::StateResponse()
                                   << sub_pt.get<std::string>("signal") << " : "
                                   << sub_pt.get<std::string>("value")<< std::endl;
                     if (sub_pt.get<std::string>("type") == "Sst")
-		    {
-			if(sub_pt.get<int>("count")>0)
-			{
+                    {
+                        if(sub_pt.get<int>("count")>0)
+                        {
                             m_.m_submessages.add("CollectedState.gateway.value", sub_pt.get<std::string>("value"));
-			}
-			else
-			{
-			    m_.m_submessages.add("CollectedState.gateway.value", "no device");
-			}
-		    }
+                        }
+                        else
+                        {
+                            m_.m_submessages.add("CollectedState.gateway.value", "no device");
+                        }
+                    }
                     else if (sub_pt.get<std::string>("type") == "Drer")
-		    {
-			if(sub_pt.get<int>("count")>0)
-			{
+                    {
+                        if(sub_pt.get<int>("count")>0)
+                        {
                             m_.m_submessages.add("CollectedState.generation.value", sub_pt.get<std::string>("value"));
-			}
-			else
-			{
-			    m_.m_submessages.add("CollectedState.generation.value", "no device");
-			}
-		    }
+                        }
+                        else
+                        {
+                            m_.m_submessages.add("CollectedState.generation.value", "no device");
+                        }
+                    }
                     else if (sub_pt.get<std::string>("type") == "Desd")
-		    {
-			if(sub_pt.get<int>("count")>0)
-			{
+                    {
+                        if(sub_pt.get<int>("count")>0)
+                        {
                             m_.m_submessages.add("CollectedState.storage.value", sub_pt.get<std::string>("value"));
-			}
-			else
-			{
-			    m_.m_submessages.add("CollectedState.storage.value", "no device");
-			}
-   		    }
+                        }
+                        else
+                        {
+                            m_.m_submessages.add("CollectedState.storage.value", "no device");
+                        }
+                    }
                     else if (sub_pt.get<std::string>("type") == "Load")
-		    {
-			if(sub_pt.get<int>("count")>0)
-			{
+                    {
+                        if(sub_pt.get<int>("count")>0)
+                        {
                             m_.m_submessages.add("CollectedState.drain.value", sub_pt.get<std::string>("value"));
-			}
-			else
-			{
-			    m_.m_submessages.add("CollectedState.drain.value", "no device");
-			}
-		    }
-		    else if (sub_pt.get<std::string>("type") == "Fid")
-		    {
-			if(sub_pt.get<int>("count")>0)
-		        {
-			    m_.m_submessages.add("CollectedState.state.value", sub_pt.get<std::string>("value"));
-			}
-			else
-			{
-			    m_.m_submessages.add("CollectedState.state.value", "no device");
-			}
-		    }
+                        }
+                        else
+                        {
+                            m_.m_submessages.add("CollectedState.drain.value", "no device");
+                        }
+                    }
+                    else if (sub_pt.get<std::string>("type") == "Fid")
+                    {
+                        if(sub_pt.get<int>("count")>0)
+                        {
+                            m_.m_submessages.add("CollectedState.state.value", sub_pt.get<std::string>("value"));
+                        }
+                        else
+                        {
+                            m_.m_submessages.add("CollectedState.state.value", "no device");
+                        }
+                    }
                     else if (sub_pt.get<std::string>("type") == "Message")
+                    {
                         m_.m_submessages.add("CollectedState.intransit.value", sub_pt.get<std::string>("value"));
+                    }
                 }
             }
         }//end for

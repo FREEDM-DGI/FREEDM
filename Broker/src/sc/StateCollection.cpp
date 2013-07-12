@@ -135,6 +135,7 @@ SCAgent::SCAgent(std::string uuid, CBroker &broker):
 
 CMessage SCAgent::marker()
 {
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     CMessage m_;
     m_.SetHandler("sc.marker");
     m_.m_submessages.put("sc.source", GetUUID());
@@ -366,7 +367,7 @@ void SCAgent::TakeSnapshot(const std::vector<std::string>& devicelist)
 {
     //For multidevices state collection
 
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     device::SignalValue PowerValue;
 
     CMessage m_;
@@ -415,7 +416,7 @@ void SCAgent::TakeSnapshot(const std::vector<std::string>& devicelist)
 //////////////////////////////////////////////////////////////////
 void SCAgent::SendStateBack()
 {
-    Logger.Debug << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     //Peer send collected states to initiator
     //for each in collectstate, extract ptree as a message then send to initiator
     CMessage m_;
@@ -476,6 +477,7 @@ void SCAgent::SendStateBack()
 //////////////////////////////////////////////////////////////////
 void SCAgent::SaveForward(StateVersion latest, CMessage msg)
 {
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     collectstate.clear();
     //assign latest marker version to current version
     m_curversion = latest;
@@ -657,6 +659,8 @@ void SCAgent::HandlePeerList(MessagePtr msg, PeerNodePtr peer)
 //////////////////////////////////////////////////////////////////
 void SCAgent::HandleRequest(MessagePtr msg, PeerNodePtr peer)
 {
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+
     //For multidevices state collection
     //clear m_device
     m_device.clear();
@@ -863,6 +867,7 @@ SCAgent::PeerNodePtr SCAgent::AddPeer(PeerNodePtr peer)
 /////////////////////////////////////////////////////////
 SCAgent::PeerNodePtr SCAgent::GetPeer(std::string uuid)
 {
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     PeerSet::iterator it = m_AllPeers.find(uuid);
 
     if (it != m_AllPeers.end())

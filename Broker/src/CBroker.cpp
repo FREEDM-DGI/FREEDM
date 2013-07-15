@@ -308,7 +308,8 @@ CBroker::TimerHandle CBroker::AllocateTimer(CBroker::ModuleIdent module)
 ///////////////////////////////////////////////////////////////////////////////
 /// @fn CBroker::Schedule
 /// @description Given a binding to a function that should be run into the
-///   future, prepares it to be run... in the future.
+///   future, prepares it to be run... in the future. If the Broker is
+///   stopping, this function does nothing.
 /// @param h The handle to the timer being set.
 /// @param wait the amount of the time to wait. If this value is "not_a_date_time"
 ///     The wait is converted to positive infinity and the time will expire as 
@@ -317,14 +318,15 @@ CBroker::TimerHandle CBroker::AllocateTimer(CBroker::ModuleIdent module)
 /// @pre The module is registered
 /// @post A function is scheduled to be called in the future. If a next time
 ///     function is scheduled, its timer will expire as soon as its round ends.
+/// @return 0 on success, or negative if the Broker is stopping.
 ///////////////////////////////////////////////////////////////////////////////
-void CBroker::Schedule(CBroker::TimerHandle h,
+int CBroker::Schedule(CBroker::TimerHandle h,
     boost::posix_time::time_duration wait, CBroker::Scheduleable x)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     if (m_stopping)
     {
-        throw std::logic_error("CBroker::Schedule called after CBroker::Stop");
+        return -1;
     }
     m_schmutex.lock();
     CBroker::Scheduleable s;
@@ -342,6 +344,7 @@ void CBroker::Schedule(CBroker::TimerHandle h,
     Logger.Debug<<"Scheduled task for timer "<<h<<std::endl;
     m_timers[h]->async_wait(s);
     m_schmutex.unlock();
+    return 0;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

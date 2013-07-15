@@ -195,6 +195,8 @@ void CAdapterFactory::RunService()
 ///////////////////////////////////////////////////////////////////////////////
 void CAdapterFactory::Stop()
 {
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+
     try
     {
         for (std::map<std::string, IAdapter::Pointer>::iterator i = m_adapters.begin();

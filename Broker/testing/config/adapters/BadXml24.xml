@@ -8,7 +8,6 @@
         <state>
             <entry index = "1">
                 <type>Sst</type>
-                <type>Desd</type>
                 <device>SST1</device>
                 <signal>gateway</signal>
             </entry>
@@ -17,6 +16,26 @@
             <entry index = "1">
                 <type>Sst</type>
                 <device>SST1</device>
+                <signal>gateway</signal>
+            </entry>
+        </command>
+    </adapter>
+    <adapter name = "HappyTestAdapter" type = "rtds">
+        <info>
+            <host>localhost</host>
+            <port>50002</port>
+        </info>
+        <state>
+            <entry index = "1">
+                <type>Sst</type>
+                <device>SST2</device>
+                <signal>gateway</signal>
+            </entry>
+        </state>
+        <command>
+            <entry index = "1">
+                <type>Sst</type>
+                <device>SST2</device>
                 <signal>gateway</signal>
             </entry>
         </command>

@@ -87,8 +87,6 @@ CAdapterFactory::CAdapterFactory()
 
     RegisterDevices();
 
-    m_thread = boost::thread(boost::bind(&CAdapterFactory::RunService, this));
-
     unsigned short factoryPort =
         CGlobalConfiguration::Instance().GetFactoryPort();
 
@@ -134,6 +132,9 @@ CAdapterFactory::CAdapterFactory()
             throw std::runtime_error(adapterCfgFile+": "+e.what());
         }
     }
+
+    // Last because we don't want this thread to run if construction fails.
+    m_thread = boost::thread(boost::bind(&CAdapterFactory::RunService, this));
 }
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -350,8 +350,7 @@ int CBroker::Schedule(CBroker::TimerHandle h,
 ///////////////////////////////////////////////////////////////////////////////
 /// @fn CBroker::Schedule
 /// @description Given a module and a bound schedulable, enter that schedulable
-///     into that modules job queue. If the Broker is stopping, this function
-///     does nothing.
+///     into that modules job queue.
 /// @pre The module is registered.
 /// @post The task is placed in the work queue for the module m. If the
 ///     start_worker parameter is set to true, the module's worker will be
@@ -361,15 +360,10 @@ int CBroker::Schedule(CBroker::TimerHandle h,
 /// @param start_worker tells the worker to begin processing again, if it is
 ///     currently idle [The worker will be idle if the work queue is empty; this
 ///     can be useful to defer an activity to the next round if the node is not busy
-/// @return 0 on success, or -1 if the Broker is stopping
 ///////////////////////////////////////////////////////////////////////////////
-int CBroker::Schedule(ModuleIdent m, BoundScheduleable x, bool start_worker)
+void CBroker::Schedule(ModuleIdent m, BoundScheduleable x, bool start_worker)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    if (m_stopping)
-    {
-        return -1;
-    }
     m_schmutex.lock();
     m_ready[m].push_back(x);
     if(!m_busy && start_worker)
@@ -381,7 +375,6 @@ int CBroker::Schedule(ModuleIdent m, BoundScheduleable x, bool start_worker)
     Logger.Debug<<"Module "<<m<<" now has queue size: "<<m_ready[m].size()<<std::endl;
     Logger.Debug<<"Scheduled task (NODELAY) for "<<m<<std::endl;
     m_schmutex.unlock();
-    return 0;
 }
 
 #pragma GCC diagnostic ignored "-Wunused-parameter"

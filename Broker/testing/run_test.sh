@@ -52,7 +52,7 @@ case $1 in
             ;;
             "SingleDgi")
                 $exec -v3 -c config/freedm.cfg --adapter-config config/adapters/$2.xml &
-                sleep 3
+                sleep 5
                 killall PosixBroker
             ;;
             "MultipleDgi")

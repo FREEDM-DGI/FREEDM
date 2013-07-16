@@ -82,6 +82,8 @@
     SingleDgi1 & Use an adapter with one SST & SST Gateway (01): 111.11 & \\
     SingleDgi2 & Use an adapter with one SST and one DESD & Net DESD (01): 1111.11, SST Gateway (01): 111.11 & \\
     SingleDgi3 & Use an adapter with one SST and another adapter with one DESD & Net DESD (01): 1111.11, SST Gateway (01): 111.11 & \\
+    SingleDgi4 & Use an adapter with a device that correctly contains an empty state table & System runs correctly & \\
+    SingleDgi5 & Use an adapter with a device that correctly contains an empty command table & System runs correctly & \fail{No such device currently exists in the system, so this cannot be tested.} \\
     MultipleDgi1 & Five DGI each have an SST. Ensure that normal is computed correctly. & Normal: 30.00 & \\
     MultipleDgi2 & Five DGI each have some number of SSTs. Ensure that normal is computed correctly. & Normal: 30.00 & \\
     MultipleDgi3 & Five DGI each have an SST but two have active FIDs. Ensure that normal is computed correctly among the non-isolated DGI. & Normal: 30.00 & \\

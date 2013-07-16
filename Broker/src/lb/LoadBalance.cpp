@@ -93,8 +93,7 @@ CLocalLogger Logger(__FILE__);
 ///////////////////////////////////////////////////////////////////////////////
 LBAgent::LBAgent(std::string uuid_, CBroker &broker):
     IPeerNode(uuid_, broker.GetConnectionManager()),
-    m_broker(broker),
-    m_stopping(false)
+    m_broker(broker)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     PeerNodePtr self_ = CGlobalPeerList::instance().GetPeer(uuid_);
@@ -124,7 +123,6 @@ LBAgent::LBAgent(std::string uuid_, CBroker &broker):
 /// @description Main function which initiates the algorithm
 /// @pre: Posix Main should invoke this function
 /// @post: Triggers the drafting algorithm by calling LoadManage()
-/// @return: Useless value since it can never be checked. FIXME
 /// @limitations None
 /////////////////////////////////////////////////////////
 int LBAgent::Run()
@@ -133,10 +131,6 @@ int LBAgent::Run()
     // responsible for calling state collection immediately before state
     // collection starts.
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    if (m_stopping)
-    {
-        return 1;
-    }
     // This initializes the algorithm
     boost::system::error_code e;
     HandleStateTimer(e);
@@ -150,16 +144,9 @@ int LBAgent::Run()
     return 0;
 }
 
-////////////////////////////////////////////////////////////
-/// This function tells LBAgent it's done. It will now stop scheduling.
-///
-/// @pre None (but it's expected that LBAgent is scheduled to run)
-/// @post LBAgent will no longer schedule anything
-/////////////////////////////////////////////////////////
 void LBAgent::Quit()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    m_stopping = true;
 }
 
 ////////////////////////////////////////////////////////////
@@ -354,11 +341,6 @@ void LBAgent::CollectState()
 void LBAgent::LoadManage()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-
-    if (m_stopping)
-    {
-        return;
-    }
 
     // Schedule the NEXT LB before starting this one. So ensure that after this
     // LB completes, there's still time to run another before scheduling it.
@@ -1197,11 +1179,6 @@ void LBAgent::Desd_PStar()
 void LBAgent::HandleStateTimer( const boost::system::error_code & error )
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-
-    if (m_stopping)
-    {
-        return;
-    }
 
     if( !error && (m_Leader == GetUUID()) )
     {

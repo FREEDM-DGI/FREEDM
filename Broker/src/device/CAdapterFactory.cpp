@@ -199,8 +199,10 @@ void CAdapterFactory::Stop()
 
     try
     {
-        for (std::map<std::string, IAdapter::Pointer>::iterator i = m_adapters.begin();
-             i != m_adapters.end(); i++)
+        // Remove every adapter without using an invalid iterator
+        for (std::map<std::string, IAdapter::Pointer>::iterator i =
+                    m_adapters.begin();
+             i != m_adapters.end(); i = m_adapters.begin())
         {
             RemoveAdapter(i->first);
         }

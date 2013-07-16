@@ -100,7 +100,7 @@ public:
     void HandleStop(unsigned int signum = 0);
     
     /// Schedule a task
-    int Schedule(TimerHandle h, boost::posix_time::time_duration wait, Scheduleable x);
+    void Schedule(TimerHandle h, boost::posix_time::time_duration wait, Scheduleable x);
     
     /// Schedule a task
     void Schedule(ModuleIdent m, BoundScheduleable x, bool start_worker=true);

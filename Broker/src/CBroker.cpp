@@ -162,13 +162,8 @@ void CBroker::Stop(unsigned int signum)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
-    BOOST_FOREACH (ModuleQuitFunction q, m_quitFunctions)
-    {
-        if (q)
-        {
-            q();
-        }
-    }
+    // FIXME add code here to stop lb, gm, and sc
+    // (IAgent should get a virtual Stop function)
 
     /* Run agents' previously-posted handlers before shutting down. */
     m_ioService.post(boost::bind(&CBroker::HandleStop, this, signum));
@@ -245,11 +240,8 @@ void CBroker::HandleStop(unsigned int signum)
 ///   parameter phase.
 /// @param m the identifier for the module.
 /// @param phase the duration of the phase.
-/// @param q the function to call to shut down the module, optional
 ///////////////////////////////////////////////////////////////////////////////
-void CBroker::RegisterModule(CBroker::ModuleIdent m,
-                             boost::posix_time::time_duration phase,
-                             CBroker::ModuleQuitFunction q)
+void CBroker::RegisterModule(CBroker::ModuleIdent m, boost::posix_time::time_duration phase)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     m_schmutex.lock();
@@ -274,7 +266,6 @@ void CBroker::RegisterModule(CBroker::ModuleIdent m,
         }
     }
     m_schmutex.unlock();
-    m_quitFunctions.push_back(q);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

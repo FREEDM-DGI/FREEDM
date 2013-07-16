@@ -1403,11 +1403,6 @@ int GMAgent::Run()
     return 0;
 }
 
-void GMAgent::Quit()
-{
-    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-}
-
 /////////////////////////////////////////////////////////////
 /// @fn GMAgent::GetStatus
 /// @description returns the status stored in the node as an

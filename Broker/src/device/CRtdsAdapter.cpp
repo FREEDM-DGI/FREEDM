@@ -160,8 +160,16 @@ void CRtdsAdapter::Run(const boost::system::error_code & e)
 
     if( e )
     {
-        Logger.Fatal << "Run called with error: " << e.message() << std::endl;
-        throw boost::system::system_error(e);
+        if (e == boost::asio::error::operation_aborted)
+        {
+            return;
+        }
+        else
+        {
+            Logger.Fatal << "Run called with error: " << e.message()
+                    << std::endl;
+            throw boost::system::system_error(e);
+        }
     }
 
     // Always send data to FPGA first

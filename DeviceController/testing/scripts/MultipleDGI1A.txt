@@ -1,4 +1,4 @@
-# Multiple DGI 1 - Script A - Positive Normal Value
+# Positive Normal Value
 enable Sst SST1 gateway 10.0
 work forever
 

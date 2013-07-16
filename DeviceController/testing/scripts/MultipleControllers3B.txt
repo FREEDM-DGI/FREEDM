@@ -1,4 +1,4 @@
-# Multiple Controllers 3 - Script B - Different Devices
+# Different Devices
 enable Load TOASTER drain 42.0
 work forever
 

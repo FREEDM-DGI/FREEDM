@@ -1,4 +1,3 @@
-# Unexpected Error 7
 # The DGI adapter receives a packet with a header it does not recognize
 enable Sst SST1 gateway 5.0
 sendtoadapter packets/UnrecognizedHeader.txt

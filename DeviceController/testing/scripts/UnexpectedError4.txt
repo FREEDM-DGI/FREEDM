@@ -1,3 +1,3 @@
-# Unexpected Error 4 - Duplicate Device Names
+#Duplicate Device Names
 sendtofactory packets/Factory-DoubleDevice.txt
 

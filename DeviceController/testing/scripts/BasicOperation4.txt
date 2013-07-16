@@ -1,4 +1,4 @@
-# Basic Operation 4 - Detects Two of the Same Device
+# Detects Two of the Same Device
 enable Sst SST1 gateway 5.0
 enable Sst SST2 gateway 7.0
 work forever

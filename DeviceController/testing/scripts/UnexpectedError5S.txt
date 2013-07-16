@@ -1,3 +1,3 @@
-# Unexpected Error 5 - Script S - Multiple Simultaneous Sessions
+# Multiple Simultaneous Sessions
 enable Sst SST1 gateway 5.0
 work forever

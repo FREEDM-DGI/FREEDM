@@ -1,4 +1,4 @@
-# Failure 3 - Device Fails for less than DGI Timeout Value
+# Device Fails for less than DGI Timeout Value
 enable Sst SST1 gateway 5.0
 work 5
 sleep 1

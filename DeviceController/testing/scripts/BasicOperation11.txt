@@ -1,4 +1,4 @@
-# Basic Operation 11 - Device Stress Test
+# Device Stress Test
 enable Sst SST1 gateway 5.0
 enable Sst SST2 gateway 7.0
 enable Load TOASTER drain 42.0

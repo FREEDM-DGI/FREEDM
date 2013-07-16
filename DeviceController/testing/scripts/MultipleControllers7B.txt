@@ -1,4 +1,4 @@
-# Multiple Controllers 7 - Script B - Stress Test
+# Stress Test
 enable Sst SST2 gateway 7.0
 work forever
 

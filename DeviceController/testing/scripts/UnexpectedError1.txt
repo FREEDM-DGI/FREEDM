@@ -1,4 +1,4 @@
-# Unexpected Error 1 - Invalid Device Type
+# Invalid Device Type
 enable SST SST1 gateway 5.0
 work forever
 

@@ -1,4 +1,4 @@
-# Multiple DGI 3 - Script A - Value Change during Convergence
+# Value Change during Convergence
 enable Sst SST1 gateway -10.0
 work 20
 change SST1 gateway -9.0

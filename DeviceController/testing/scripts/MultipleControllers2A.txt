@@ -1,4 +1,4 @@
-# Multiple Controllers 2 - Script A - Same Device with the Same Name
+# Same Device with the Same Name
 enable Sst SST1 gateway 5.0
 work forever
 

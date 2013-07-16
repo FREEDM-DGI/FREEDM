@@ -496,7 +496,7 @@ void CAdapterFactory::InitializeAdapter(IAdapter::Pointer adapter,
     }
     for( it = commands.begin(); it != commands.end(); it++ )
     {
-        device = CDeviceManager::Instance().m_hidden_devices.at(name);
+        device = CDeviceManager::Instance().m_hidden_devices.at(it->first);
 
         if( device->GetCommandSet().size() != it->second )
         {

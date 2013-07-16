@@ -56,8 +56,6 @@ const unsigned int ALIGNMENT_DURATION = 250;
 const unsigned int BEACON_FREQUENCY = 2000;
 
 /// Central monolith of the Broker Architecture.
-/// @limitations NOT thread-safe. Access to the scheduler is synchronized, but
-/// this is silly since other stuff will break bad with multiple threads.
 class CBroker : private boost::noncopyable
 {
 public:
@@ -197,9 +195,6 @@ private:
 
     ///The magical clock synchronizer
     CClockSynchronizer m_synchronizer;
-
-    /// Flag to indicate the Broker is stopping.
-    bool m_stopping;
 
     ///The register for signal handling.
     boost::asio::signal_set m_signals;

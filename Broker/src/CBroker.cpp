@@ -76,7 +76,6 @@ CBroker::CBroker(CDispatcher &dispatcher, freedm::broker::CConnectionManager &co
       m_newConnection(new CListener(m_ioService, conMan, *this, conMan.GetUUID())),
       m_phasetimer(m_ioService),
       m_synchronizer(*this),
-      m_stopping(false),
       m_signals(m_ioService, SIGINT, SIGTERM)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
@@ -162,9 +161,6 @@ boost::asio::io_service& CBroker::GetIOService()
 void CBroker::Stop(unsigned int signum)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-
-    // Since we run in one thread, no handlers are executing right now.
-    m_stopping = true;
 
     BOOST_FOREACH (ModuleQuitFunction q, m_quitFunctions)
     {
@@ -322,10 +318,6 @@ void CBroker::Schedule(CBroker::TimerHandle h,
     boost::posix_time::time_duration wait, CBroker::Scheduleable x)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    if (m_stopping)
-    {
-        throw std::logic_error("CBroker::Schedule called after CBroker::Stop");
-    }
     m_schmutex.lock();
     CBroker::Scheduleable s;
     if(wait.is_not_a_date_time())

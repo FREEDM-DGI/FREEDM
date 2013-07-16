@@ -7,20 +7,11 @@
             <signal>gateway</signal>
             <value>111.11</value>
         </entry>
-        <entry index="2">
-            <device>DESD1</device>
-            <signal>storage</signal>
-            <value>1111.111</value>
-        </entry>
     </state>
     <command>
         <entry index="1">
             <device>SST1</device>
             <signal>gateway</signal>
-        </entry>
-        <entry index="2">
-            <device>DESD1</device>
-            <signal>storage</signal>
         </entry>
     </command>
 </adapter>

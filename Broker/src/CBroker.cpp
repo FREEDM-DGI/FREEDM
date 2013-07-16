@@ -76,7 +76,8 @@ CBroker::CBroker(CDispatcher &dispatcher, freedm::broker::CConnectionManager &co
       m_newConnection(new CListener(m_ioService, conMan, *this, conMan.GetUUID())),
       m_phasetimer(m_ioService),
       m_synchronizer(*this),
-      m_signals(m_ioService, SIGINT, SIGTERM)
+      m_signals(m_ioService, SIGINT, SIGTERM),
+      m_stopping(false)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     // Open the acceptor with the option to reuse the address (i.e. SO_REUSEADDR).
@@ -164,6 +165,7 @@ void CBroker::Stop(unsigned int signum)
 
     // FIXME add code here to stop lb, gm, and sc
     // (IAgent should get a virtual Stop function)
+    m_stopping = true;
 
     /* Run agents' previously-posted handlers before shutting down. */
     m_ioService.post(boost::bind(&CBroker::HandleStop, this, signum));
@@ -309,6 +311,10 @@ void CBroker::Schedule(CBroker::TimerHandle h,
     boost::posix_time::time_duration wait, CBroker::Scheduleable x)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    if (m_stopping)
+    {
+        return;
+    }
     m_schmutex.lock();
     CBroker::Scheduleable s;
     if(wait.is_not_a_date_time())
@@ -344,6 +350,10 @@ void CBroker::Schedule(CBroker::TimerHandle h,
 void CBroker::Schedule(ModuleIdent m, BoundScheduleable x, bool start_worker)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    if (m_stopping)
+    {
+        return;
+    }
     m_schmutex.lock();
     m_ready[m].push_back(x);
     if(!m_busy && start_worker)

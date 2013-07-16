@@ -192,6 +192,9 @@ private:
 
     ///The register for signal handling.
     boost::asio::signal_set m_signals;
+
+    ///Flag to prevent modules from scheduling
+    bool m_stopping;
 };
 
     } // namespace broker

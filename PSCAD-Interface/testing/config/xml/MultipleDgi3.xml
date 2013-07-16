@@ -30,7 +30,7 @@
         <entry index="2">
             <device>FID2</device>
             <signal>state</signal>
-            <value>1</value>
+            <value>0</value>
         </entry>
     </state>
     <command>
@@ -90,7 +90,7 @@
         <entry index="2">
             <device>FID5</device>
             <signal>state</signal>
-            <value>0</value>
+            <value>1</value>
         </entry>
     </state>
     <command>

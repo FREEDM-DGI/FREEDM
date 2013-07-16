@@ -185,14 +185,13 @@ void CAdapterFactory::RunService()
 
 ///////////////////////////////////////////////////////////////////////////////
 /// Stops the i/o service and removes all devices from the device manager.
-/// Blocks until the thread is done.
+/// If called from outside the devices thread, blocks until the thread is done.
 ///
 /// @pre None
 /// @post All the devices of every adapter in the system are removed.
 /// @post The IOService has stopped.
 /// @post The devices thread is detatched and stopped (unless called from it).
 /// @ErrorHandling Guaranteed not to throw. Errors are only logged.
-/// @limitations Must must must be called from OUTSIDE the devices thread.
 ///////////////////////////////////////////////////////////////////////////////
 void CAdapterFactory::Stop()
 {
@@ -211,11 +210,6 @@ void CAdapterFactory::Stop()
         if (boost::this_thread::get_id() != m_thread.get_id())
         {
             m_thread.join();
-        }
-        else
-        {
-            Logger.Error << "Stop called from devices thread. This is UNSAFE."
-                    << std::endl;
         }
     }
     catch (std::exception & e)

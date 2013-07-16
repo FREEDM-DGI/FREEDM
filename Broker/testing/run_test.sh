@@ -1,6 +1,16 @@
 #!/bin/sh -e
 
 host=`hostname`
+exec='../PosixBroker'
+
+if [ $# -gt 3 ] || [ $# -lt 2 ]; then
+    echo "Incorrect number of arguments! Tee-hee!"
+    exit
+fi
+
+if [ $# -eq 3 ]; then
+    exec=$3
+fi
 
 case $1 in
     "pnp")
@@ -27,7 +37,7 @@ case $1 in
                 ../PosixBroker -c config/freedm.cfg --port 51871 --factory-port 56000 --add-host "$host:1870"
                 ;;
             "default")
-                ../PosixBroker -c config/freedm.cfg --factory-port 53000
+                $exec -c config/freedm.cfg --factory-port 53000
                 ;;
             *)
                 echo "Invalid test case: $2"

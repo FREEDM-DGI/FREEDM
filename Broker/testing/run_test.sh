@@ -52,8 +52,9 @@ case $1 in
             ;;
             "SingleDgi")
                 $exec -v3 -c config/freedm.cfg --adapter-config config/adapters/$2.xml &
-                sleep 5
+                sleep 8
                 killall PosixBroker
+                sleep 1
             ;;
             "MultipleDgi")
                 $exec -v3 -c config/freedm.cfg --adapter-config config/adapters/"$2"A.xml --port 51870 --add-host "$host:51871" --add-host "$host:51872" --add-host "$host:51873" --add-host "$host:51874" &

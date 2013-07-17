@@ -38,7 +38,6 @@
 
 #include <boost/asio/io_service.hpp>
 #include <boost/bind.hpp>
-#include <boost/range/adaptor/map.hpp>
 #include <boost/foreach.hpp>
 
 #include <map>

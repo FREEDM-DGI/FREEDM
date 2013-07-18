@@ -195,6 +195,9 @@ private:
 
     ///Flag to prevent modules from scheduling
     bool m_stopping;
+
+    ///Lock for m_stopping
+    boost::mutex m_stoppingMutex;
 };
 
     } // namespace broker

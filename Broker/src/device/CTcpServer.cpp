@@ -126,6 +126,7 @@ CTcpServer::Pointer CTcpServer::Create(boost::asio::io_service & ios,
 ///
 /// @pre None.
 /// @post m_acceptor and m_socket are closed.
+/// @ErrorHandling throws boost::system::system_error if it fails
 ///
 /// @limitations None.
 ////////////////////////////////////////////////////////////////////////////////

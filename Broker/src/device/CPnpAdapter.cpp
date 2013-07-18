@@ -131,7 +131,7 @@ void CPnpAdapter::Start()
 
     IBufferAdapter::Start();
 
-    m_countdown->expires_from_now(boost::posix_time::seconds(
+    m_countdown->expires_from_now(boost::posix_time::milliseconds(
             CTimings::DEV_PNP_HEARTBEAT));
     m_countdown->async_wait(boost::bind(&CPnpAdapter::Timeout,
             shared_from_this(), boost::asio::placeholders::error));

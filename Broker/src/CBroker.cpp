@@ -165,7 +165,11 @@ void CBroker::Stop(unsigned int signum)
 
     // FIXME add code here to stop lb, gm, and sc
     // (IAgent should get a virtual Stop function)
-    m_stopping = true;
+
+    {
+        boost::unique_lock<boost::mutex> lock(m_stoppingMutex);
+        m_stopping = true;
+    }
 
     /* Run agents' previously-posted handlers before shutting down. */
     m_ioService.post(boost::bind(&CBroker::HandleStop, this, signum));
@@ -311,9 +315,12 @@ void CBroker::Schedule(CBroker::TimerHandle h,
     boost::posix_time::time_duration wait, CBroker::Scheduleable x)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    if (m_stopping)
     {
-        return;
+        boost::unique_lock<boost::mutex> lock(m_stoppingMutex);
+        if (m_stopping)
+        {
+            return;
+        }
     }
     m_schmutex.lock();
     CBroker::Scheduleable s;
@@ -350,9 +357,12 @@ void CBroker::Schedule(CBroker::TimerHandle h,
 void CBroker::Schedule(ModuleIdent m, BoundScheduleable x, bool start_worker)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    if (m_stopping)
     {
-        return;
+        boost::unique_lock<boost::mutex> lock(m_stoppingMutex);
+        if (m_stopping)
+        {
+            return;
+        }
     }
     m_schmutex.lock();
     m_ready[m].push_back(x);

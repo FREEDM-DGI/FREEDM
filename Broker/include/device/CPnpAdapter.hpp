@@ -49,6 +49,7 @@ namespace device {
 ////////////////////////////////////////////////////////////////////////////////
 class CPnpAdapter
     : public IBufferAdapter
+    , public boost::enable_shared_from_this<CPnpAdapter>
 {
 public:
     /// Convenience type for a shared pointer to self.

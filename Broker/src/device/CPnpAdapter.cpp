@@ -131,10 +131,10 @@ void CPnpAdapter::Start()
 
     IBufferAdapter::Start();
 
-    m_countdown->expires_from_now(boost::posix_time::seconds(
+    m_countdown->expires_from_now(boost::posix_time::milliseconds(
             CTimings::DEV_PNP_HEARTBEAT));
     m_countdown->async_wait(boost::bind(&CPnpAdapter::Timeout,
-            this, boost::asio::placeholders::error));
+            shared_from_this(), boost::asio::placeholders::error));
 
     StartRead();
 }
@@ -151,12 +151,12 @@ void CPnpAdapter::Heartbeat()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
-    if( m_countdown->expires_from_now(boost::posix_time::seconds(
+    if( m_countdown->expires_from_now(boost::posix_time::milliseconds(
             CTimings::DEV_PNP_HEARTBEAT)) != 0 )
     {
         Logger.Debug << "Reset an adapter heartbeat timer." << std::endl;
         m_countdown->async_wait(boost::bind(&CPnpAdapter::Timeout,
-                this, boost::asio::placeholders::error));
+                shared_from_this(), boost::asio::placeholders::error));
     }
     else
     {
@@ -191,7 +191,7 @@ void CPnpAdapter::Stop()
     }
 
     // All of our other handlers will have executed before this runs
-    m_ios.post(boost::bind(&CPnpAdapter::Stopped, this));
+    m_ios.post(boost::bind(&CPnpAdapter::Stopped, shared_from_this()));
 
     // Block
     WaitUntilStopped();
@@ -231,7 +231,7 @@ void CPnpAdapter::StartRead()
     Heartbeat();
     m_buffer.consume(m_buffer.size());
     boost::asio::async_read_until(*m_client, m_buffer, "\r\n\r\n",
-            boost::bind(&CPnpAdapter::HandleRead, this,
+            boost::bind(&CPnpAdapter::HandleRead, shared_from_this(),
             boost::asio::placeholders::error));
 }
 
@@ -249,8 +249,9 @@ void CPnpAdapter::StartWrite()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     Heartbeat();
+
     boost::asio::async_write(*m_client, m_buffer,
-            boost::bind(&CPnpAdapter::AfterWrite, this,
+            boost::bind(&CPnpAdapter::AfterWrite, shared_from_this(),
             boost::asio::placeholders::error));
 }
 

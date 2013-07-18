@@ -11,7 +11,8 @@
 /// @functions
 ///     CAdapterFactory::CAdapterFactory
 ///     CAdapterFactory::Instance
-///     CAdapterFactory::RunService    
+///     CAdapterFactory::RunService
+///     CAdapterFactory::Stop
 ///     CAdapterFactory::CreateAdapter
 ///     CAdapterFactory::RemoveAdapter
 ///     CAdapterFactory::InitializeAdapter
@@ -199,6 +200,11 @@ void CAdapterFactory::Stop()
 
     try
     {
+        if (m_server)
+        {
+            m_server->Stop();
+        }
+
         // Remove every adapter without using an invalid iterator
         for (std::map<std::string, IAdapter::Pointer>::iterator i =
                     m_adapters.begin();

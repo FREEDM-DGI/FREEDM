@@ -11,7 +11,8 @@
 /// @functions
 ///     CAdapterFactory::CAdapterFactory
 ///     CAdapterFactory::Instance
-///     CAdapterFactory::RunService    
+///     CAdapterFactory::RunService
+///     CAdapterFactory::Stop
 ///     CAdapterFactory::CreateAdapter
 ///     CAdapterFactory::RemoveAdapter
 ///     CAdapterFactory::InitializeAdapter

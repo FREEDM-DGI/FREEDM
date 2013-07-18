@@ -31,10 +31,10 @@ case $1 in
                 $exec -c config/freedm.cfg
                 ;;
             "dgi1")
-                $exec -c config/freedm.cfg --port 51870 --factory-port 53000 --add-host "$host:1871"
+                $exec -c config/freedm.cfg --port 51870 --factory-port 53000 --add-host "$host:51871"
                 ;;
             "dgi2")
-                $exec -c config/freedm.cfg --port 51871 --factory-port 56000 --add-host "$host:1870"
+                $exec -c config/freedm.cfg --port 51871 --factory-port 56000 --add-host "$host:51870"
                 ;;
             "default")
                 $exec -c config/freedm.cfg --factory-port 53000

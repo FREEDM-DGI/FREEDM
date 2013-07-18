@@ -642,7 +642,7 @@ void CAdapterFactory::HandleRead(const boost::system::error_code & e)
     }
     else if( e == boost::asio::error::operation_aborted )
     {
-        Logger.Info << "Closed client connection due to timeout." << std::endl;
+        Logger.Info << "Factory connection timeout aborted." << std::endl;
     }
 }
 

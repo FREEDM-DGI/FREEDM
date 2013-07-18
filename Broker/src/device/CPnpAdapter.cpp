@@ -151,7 +151,7 @@ void CPnpAdapter::Heartbeat()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
-    if( m_countdown->expires_from_now(boost::posix_time::seconds(
+    if( m_countdown->expires_from_now(boost::posix_time::milliseconds(
             CTimings::DEV_PNP_HEARTBEAT)) != 0 )
     {
         Logger.Debug << "Reset an adapter heartbeat timer." << std::endl;

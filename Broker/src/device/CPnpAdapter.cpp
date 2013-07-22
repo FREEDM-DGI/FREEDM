@@ -40,6 +40,7 @@
 #include "CGlobalConfiguration.hpp"
 #include "PlugNPlayExceptions.hpp"
 #include "CTimings.hpp"
+#include "SynchronousTimeout.hpp"
 
 #include <map>
 #include <sstream>
@@ -211,6 +212,19 @@ void CPnpAdapter::Timeout(const boost::system::error_code & e)
     if( !e )
     {
         Logger.Status << "Removing an adapter due to timeout." << std::endl;
+
+        try
+        {
+            std::string msg;
+            msg = "Error\r\nConnection closed due to timeout.\r\n\r\n";
+            TimedWrite(*m_client, boost::asio::buffer(msg),
+                    CTimings::DEV_SOCKET_TIMEOUT);
+        }
+        catch(std::exception & e)
+        {
+            Logger.Info << "Failed to tell client about timeout." << std::endl;
+        }
+
         CAdapterFactory::Instance().RemoveAdapter(m_identifier);
     }
 }

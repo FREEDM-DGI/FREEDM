@@ -92,9 +92,7 @@ IAdapter::Pointer CPnpAdapter::Create(boost::asio::io_service & service,
 ////////////////////////////////////////////////////////////////////////////////
 CPnpAdapter::CPnpAdapter(boost::asio::io_service & service,
         boost::property_tree::ptree & p, CTcpServer::Connection client)
-    : IAdapter(service)
-    , IBufferAdapter(service)
-    , m_countdown(new boost::asio::deadline_timer(service))
+    : m_countdown(new boost::asio::deadline_timer(service))
     , m_ios(service)
     , m_client(client)
     , m_stopping(false)
@@ -165,7 +163,7 @@ void CPnpAdapter::Heartbeat()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// Blocks until the adapter is stopped. Thread-safe.
+/// Stops the adapter. Thread-safe.
 ///
 /// @pre Adapter is started.
 /// @post Adapter is stopped.
@@ -189,12 +187,6 @@ void CPnpAdapter::Stop()
         boost::lock_guard<boost::mutex> stoppingLock(m_stoppingMutex);
         m_stopping = true;
     }
-
-    // All of our other handlers will have executed before this runs
-    m_ios.post(boost::bind(&CPnpAdapter::Stopped, shared_from_this()));
-
-    // Block
-    WaitUntilStopped();
 }
 
 ////////////////////////////////////////////////////////////////////////////////

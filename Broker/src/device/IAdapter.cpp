@@ -43,12 +43,8 @@ CLocalLogger Logger(__FILE__);
 
 ////////////////////////////////////////////////////////////////////////////////
 /// Constructor
-///
-/// @param service the adapter's ioservice
 ////////////////////////////////////////////////////////////////////////////////
-IAdapter::IAdapter(boost::asio::io_service& service)
-    : m_ios(service)
-    , m_stopped(false)
+IAdapter::IAdapter()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 }
@@ -112,40 +108,6 @@ void IAdapter::RevealDevices()
     {
         CDeviceManager::Instance().RevealDevice(devid);
     }
-}
-
-////////////////////////////////////////////////////////////////////////////////
-/// Children should call this from their Stop() implementations.  This function
-/// will block until Stopped() is called.
-///
-/// @pre Adapter is running
-/// @post Adapter is not running
-///
-/// @limitations Cannot be called from the thread the devices ioservice runs on
-////////////////////////////////////////////////////////////////////////////////
-void IAdapter::WaitUntilStopped()
-{
-    boost::unique_lock<boost::mutex> stoppedLock(m_stoppedMutex);
-    while(!m_stopped)
-    {
-        m_stopCondition.wait(stoppedLock);
-    }
-}
-
-////////////////////////////////////////////////////////////////////////////////
-/// Children should call this after they have fully stopped, to unblock a call
-/// to WaitUntilStopped()
-///
-/// @pre WaitUntilStopped has been called from another thread
-/// @post WaitUntilStopped is notified to continue
-///
-/// @limitations Should be called from the thread the devices ioservice runs on
-////////////////////////////////////////////////////////////////////////////////
-void IAdapter::Stopped()
-{
-    boost::lock_guard<boost::mutex> lock(m_stoppedMutex);
-    m_stopped = true;
-    m_stopCondition.notify_one();
 }
 
 } // namespace freedm

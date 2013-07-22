@@ -92,19 +92,10 @@ public:
 
 protected:
     /// Constructor
-    IAdapter(boost::asio::io_service& service);
+    IAdapter();
 
     /// Reveals devices in the device manager.
     void RevealDevices();
-
-    /// Blocks until Stopped() is called.
-    void WaitUntilStopped();
-
-    /// Indicates to WaitUntilStopped that the adapter has been stopped.
-    void Stopped();
-
-    /// The ioservice that runs this adapter.
-    boost::asio::io_service& m_ios;
 
 private:
     /// Set of registered device names.
@@ -112,12 +103,6 @@ private:
 
     /// Protects access to m_stopped
     boost::condition_variable m_stopCondition;
-
-    /// Signifies that the adapter has stopped
-    bool m_stopped;
-
-    /// Protects access to m_stopped
-    boost::mutex m_stoppedMutex;
 };
 
 } // namespace device

@@ -223,7 +223,7 @@ void CTcpServer::HandleAccept(const boost::system::error_code & error)
         }
         m_handler();
     }
-    else
+    else if( error != boost::asio::error::operation_aborted )
     {
         Logger.Warn << hdr() << "Failed to accept a client." << std::endl;
     }

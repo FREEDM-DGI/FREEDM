@@ -166,7 +166,7 @@ void CAdapterFactory::RunService()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
-    boost::asio::io_service::work runner(m_ios);
+    m_iosWorkload = new boost::asio::io_service::work(m_ios);
 
     try
     {
@@ -186,17 +186,20 @@ void CAdapterFactory::RunService()
 
 ///////////////////////////////////////////////////////////////////////////////
 /// Stops the i/o service and removes all devices from the device manager.
-/// If called from outside the devices thread, blocks until the thread is done.
+/// This function must be called from outside the devices thread.
 ///
 /// @pre None
 /// @post All the devices of every adapter in the system are removed.
 /// @post The IOService has stopped.
 /// @post The devices thread is detatched and stopped (unless called from it).
 /// @ErrorHandling Guaranteed not to throw. Errors are only logged.
+/// @limitations MUST be called from outside the devices thread.
 ///////////////////////////////////////////////////////////////////////////////
 void CAdapterFactory::Stop()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+
+    assert(boost::this_thread::get_id() != m_thread.get_id());
 
     try
     {
@@ -213,12 +216,13 @@ void CAdapterFactory::Stop()
             RemoveAdapter(i->first);
         }
 
-        m_ios.stop();
+        // This allows Run to end once it is out of work.  Has to be explicit
+        // because the io_service could stop at any point after m_server->Stop,
+        // but can't be allowed to stop until RemoveAdapter has been called.
+        delete m_iosWorkload;
 
-        if (boost::this_thread::get_id() != m_thread.get_id())
-        {
-            m_thread.join();
-        }
+        while (!m_ios.stopped());
+        m_thread.join();
     }
     catch (std::exception & e)
     {
@@ -289,7 +293,7 @@ void CAdapterFactory::CreateAdapter(const boost::property_tree::ptree & p)
     }
     else if( type == "fake" )
     {
-        adapter = CFakeAdapter::Create(m_ios);
+        adapter = CFakeAdapter::Create();
     }
     else
     {

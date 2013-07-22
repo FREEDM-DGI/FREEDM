@@ -52,7 +52,7 @@ public:
     typedef boost::shared_ptr<CFakeAdapter> Pointer;
     
     /// Creates a new fake adapter.
-    static Pointer Create(boost::asio::io_service& service);
+    static Pointer Create();
 
     /// Start the fake adapter.
     void Start();
@@ -69,7 +69,7 @@ public:
 
 private:
     /// Constructor
-    CFakeAdapter(boost::asio::io_service& service);
+    CFakeAdapter();
 
     /// Map of device setting keys to values.
     typedef std::map<std::string, SignalValue> KeyMap;

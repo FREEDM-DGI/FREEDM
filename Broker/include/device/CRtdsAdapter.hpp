@@ -55,6 +55,7 @@ namespace device {
 class CRtdsAdapter
      : public ITcpAdapter
      , public IBufferAdapter
+     , public boost::enable_shared_from_this<CRtdsAdapter>
 {
 public:
     /// Pointer to an CRtdsAdapter object.
@@ -80,9 +81,6 @@ private:
 
     /// Continuous loop for sending and receiving to/from RTDS.
     void Run(const boost::system::error_code & e);
-
-    /// Handles shutting down the adapter
-    void HandleStop();
 
     /// Reverses all of the bytes in a buffer.    
     void ReverseBytes( char * buffer, const int numBytes );

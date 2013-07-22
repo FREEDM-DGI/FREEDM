@@ -329,7 +329,7 @@ void CAdapterFactory::RemoveAdapter(const std::string identifier)
     
     devices = m_adapters[identifier]->GetDevices();
 
-    m_adapters[identifier].Stop();
+    m_adapters[identifier]->Stop();
     m_adapters.erase(identifier);
     Logger.Info << "Removed the adapter: " << identifier << std::endl;
     

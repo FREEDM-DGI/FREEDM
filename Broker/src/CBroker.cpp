@@ -214,7 +214,7 @@ void CBroker::HandleStop(unsigned int signum)
     {
         Logger.Fatal<<"Caught signal "<<signum<<". Shutting Down..."<<std::endl;
         // Remove the signal handler now to prevent possible infinite loops
-        // (e.f. if a function that throws is posted to the devices' ioservice)
+        // (e.g. if a function that throws is posted to the devices' ioservice)
         m_signals.remove(signum);
     }
 

@@ -100,9 +100,6 @@ protected:
 private:
     /// Set of registered device names.
     std::set<std::string> m_devices;
-
-    /// Protects access to m_stopped
-    boost::condition_variable m_stopCondition;
 };
 
 } // namespace device

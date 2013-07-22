@@ -1,4 +1,4 @@
 # Invalid Signal Value
-enable Sst SST1 gateway 5,0
-work forever
+enable Sst SST1 gateway 5.0
+sendtoadapter packets/Adapter-NonsenseState.txt
 

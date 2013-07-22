@@ -6,7 +6,7 @@ if [ -z $1 ]; then
     exit
 fi
 
-for i in $1.txt $1[A-Z].txt; do
+for i in scripts/$1.txt $1[A-Z].txt; do
     if [ -f $i ]; then
         CTR=${i%.txt}
         CTR=${CTR#$1}

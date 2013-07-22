@@ -662,6 +662,19 @@ void CAdapterFactory::Timeout(const boost::system::error_code & e)
     if( !e ) 
     {
         Logger.Info << "Connection closed due to timeout." << std::endl;
+
+        try
+        {
+            std::string msg;
+            msg = "Error\r\nConnection closed due to timeout.\r\n\r\n";
+            TimedWrite(*m_server->GetClient(), boost::asio::buffer(msg),
+                    CTimings::DEV_SOCKET_TIMEOUT);
+        }
+        catch(std::exception & e)
+        {
+            Logger.Info << "Failed to tell client about timeout." << std::endl;
+        }
+
         m_server->GetClient()->cancel();
         m_server->StartAccept();
     }
@@ -712,7 +725,7 @@ void CAdapterFactory::SessionProtocol()
         }
         if( m_adapters.count(host) > 0 )
         {
-            throw EDuplicateSession(host);
+            throw EDuplicateSession("Duplicate session for " + host);
         }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -721,6 +734,8 @@ void CAdapterFactory::SessionProtocol()
         config.put("<xmlattr>.name", host);
         config.put("<xmlattr>.type", "pnp");
         config.put("info.identifier", host);
+        config.put("state", "");
+        config.put("command", "");
 
         for( int i = 0; packet >> type >> name; i++ )
         {
@@ -737,18 +752,18 @@ void CAdapterFactory::SessionProtocol()
             commands = m_prototype[type]->GetCommandSet();
             Logger.Debug << "Using adapter name " << name << std::endl;
             
-            config.put("state", "");
-            config.put("command", "");
-            
             BOOST_FOREACH(std::string signal, states)
             {
                 Logger.Debug << "Adding state for " << signal << std::endl;
-                
+
+                boost::property_tree::ptree temp;
+                temp.put("type", type);
+                temp.put("device", name);
+                temp.put("signal", signal);
+                temp.put("<xmlattr>.index", sindex);
+
                 entry = name + signal;
-                config.put("state." + entry + ".type", type);
-                config.put("state." + entry + ".device", name);
-                config.put("state." + entry + ".signal", signal);
-                config.put("state." + entry + ".<xmlattr>.index", sindex);
+                config.add_child("state." + entry, temp);
 
                 sindex++;
             }
@@ -756,12 +771,15 @@ void CAdapterFactory::SessionProtocol()
             BOOST_FOREACH(std::string signal, commands)
             {
                 Logger.Debug << "Adding command for " << signal << std::endl;
+
+                boost::property_tree::ptree temp;
+                temp.put("type", type);
+                temp.put("device", name);
+                temp.put("signal", signal);
+                temp.put("<xmlattr>.index", cindex);
                 
                 entry = name + signal;
-                config.put("command." + entry + ".type", type);
-                config.put("command." + entry + ".device", name);
-                config.put("command." + entry + ".signal", signal);
-                config.put("command." + entry + ".<xmlattr>.index", cindex);
+                config.add_child("command." + entry, temp);
 
                 cindex++;
             }
@@ -794,12 +812,10 @@ void CAdapterFactory::SessionProtocol()
 
         Logger.Status << "Blocking to send BadRequest to client" << std::endl;
     }
-    catch(EDuplicateSession & e)
+    catch(std::exception & e)
     {
-        Logger.Warn << "Rejected client: duplicate session for host "
-                    << e.what() << std::endl;
-        response_stream << "Error\r\nDuplicate session for "
-                        << e.what() << "\r\n\r\n";
+        Logger.Warn << "Rejected client: " << e.what() << std::endl;
+        response_stream << "Error\r\n" << e.what() << "\r\n\r\n";
         Logger.Status << "Blocking to send Error to client" << std::endl;
     }
     

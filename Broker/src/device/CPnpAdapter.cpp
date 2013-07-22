@@ -330,8 +330,9 @@ void CPnpAdapter::HandleRead(const boost::system::error_code & e)
         }
         else
         {
-            Logger.Warn << "Unknown header: " << header << std::endl;
-            packet << "BadRequest\r\n\r\n";
+            std::string msg = "Unknown header: " + header;
+            packet << "BadRequest\r\n" << msg << "\r\n\r\n";
+            Logger.Warn << msg << std::endl;
         }
         StartWrite();
     }

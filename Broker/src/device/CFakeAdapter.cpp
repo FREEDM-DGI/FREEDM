@@ -39,22 +39,18 @@ CLocalLogger Logger(__FILE__);
 ////////////////////////////////////////////////////////////////////////////////
 /// Constructor
 ////////////////////////////////////////////////////////////////////////////////
-CFakeAdapter::CFakeAdapter(boost::asio::io_service& service)
-    : IAdapter(service)
-    , m_registry()
-    , m_stopped(false)
-    , m_stopMutex()
-    { }
+CFakeAdapter::CFakeAdapter()
+    : m_stopped(false) { }
    
 ////////////////////////////////////////////////////////////////////////////////
 /// Creates a new fake device adapter adapter.
 ///
 /// @return a smart pointer to the new device adapter.
 ////////////////////////////////////////////////////////////////////////////////
-CFakeAdapter::Pointer CFakeAdapter::Create(boost::asio::io_service& service)
+CFakeAdapter::Pointer CFakeAdapter::Create()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    return Pointer(new CFakeAdapter(service));
+    return CFakeAdapter::Pointer(new CFakeAdapter());
 }
 
 ////////////////////////////////////////////////////////////////////////////////

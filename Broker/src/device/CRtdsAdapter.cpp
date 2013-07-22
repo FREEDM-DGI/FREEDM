@@ -103,9 +103,7 @@ IAdapter::Pointer CRtdsAdapter::Create(boost::asio::io_service & service,
 ////////////////////////////////////////////////////////////////////////////////
 CRtdsAdapter::CRtdsAdapter(boost::asio::io_service & service,
         const boost::property_tree::ptree & ptree)
-    : IAdapter(service)
-    , ITcpAdapter(service, ptree)
-    , IBufferAdapter(service)
+    : ITcpAdapter(service, ptree)
     , m_runTimer(service)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
@@ -127,7 +125,7 @@ void CRtdsAdapter::Start()
     ITcpAdapter::Connect();
     m_runTimer.expires_from_now(
             boost::posix_time::milliseconds(CTimings::DEV_RTDS_DELAY));
-    m_runTimer.async_wait(boost::bind(&CRtdsAdapter::Run, this,
+    m_runTimer.async_wait(boost::bind(&CRtdsAdapter::Run, shared_from_this(),
             boost::asio::placeholders::error));
 }
 
@@ -240,12 +238,12 @@ void CRtdsAdapter::Run(const boost::system::error_code & e)
     // Start the timer; on timeout, this function is called again
     m_runTimer.expires_from_now(
     boost::posix_time::milliseconds(CTimings::DEV_RTDS_DELAY));
-    m_runTimer.async_wait(boost::bind(&CRtdsAdapter::Run, this,
+    m_runTimer.async_wait(boost::bind(&CRtdsAdapter::Run, shared_from_this(),
             boost::asio::placeholders::error));
 }
 
 ////////////////////////////////////////////////////////////////////////////
-/// Stops the adapter; blocks until completed. Thread-safe.
+/// Stops the adapter. Thread-safe.
 ///
 /// @pre None.
 /// @post Adapter is stopped and can be freed
@@ -256,21 +254,6 @@ void CRtdsAdapter::Stop()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
-    m_ios.post(boost::bind(&CRtdsAdapter::HandleStop, this));
-
-    WaitUntilStopped();
-}
-
-////////////////////////////////////////////////////////////////////////////
-/// Handle stopping everything, posted from CRtdsAdapter::Stop()
-///
-/// @pre None
-/// @post Adapter is stopped
-///
-/// @limitations Must be called from the thread the ioservice is running on
-////////////////////////////////////////////////////////////////////////////
-void CRtdsAdapter::HandleStop()
-{
     try
     {
         m_runTimer.cancel();
@@ -284,8 +267,6 @@ void CRtdsAdapter::HandleStop()
     {
         m_socket.close();
     }
-
-    Stopped();
 }
 
 ////////////////////////////////////////////////////////////////////////////

@@ -40,6 +40,7 @@
 #include "CGlobalConfiguration.hpp"
 #include "PlugNPlayExceptions.hpp"
 #include "CTimings.hpp"
+#include "SynchronousTimeout.hpp"
 
 #include <map>
 #include <sstream>
@@ -92,9 +93,7 @@ IAdapter::Pointer CPnpAdapter::Create(boost::asio::io_service & service,
 ////////////////////////////////////////////////////////////////////////////////
 CPnpAdapter::CPnpAdapter(boost::asio::io_service & service,
         boost::property_tree::ptree & p, CTcpServer::Connection client)
-    : IAdapter(service)
-    , IBufferAdapter(service)
-    , m_countdown(new boost::asio::deadline_timer(service))
+    : m_countdown(new boost::asio::deadline_timer(service))
     , m_ios(service)
     , m_client(client)
     , m_stopping(false)
@@ -165,7 +164,7 @@ void CPnpAdapter::Heartbeat()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// Blocks until the adapter is stopped. Thread-safe.
+/// Stops the adapter. Thread-safe.
 ///
 /// @pre Adapter is started.
 /// @post Adapter is stopped.
@@ -189,12 +188,6 @@ void CPnpAdapter::Stop()
         boost::lock_guard<boost::mutex> stoppingLock(m_stoppingMutex);
         m_stopping = true;
     }
-
-    // All of our other handlers will have executed before this runs
-    m_ios.post(boost::bind(&CPnpAdapter::Stopped, shared_from_this()));
-
-    // Block
-    WaitUntilStopped();
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -211,6 +204,19 @@ void CPnpAdapter::Timeout(const boost::system::error_code & e)
     if( !e )
     {
         Logger.Status << "Removing an adapter due to timeout." << std::endl;
+
+        try
+        {
+            std::string msg;
+            msg = "Error\r\nConnection closed due to timeout.\r\n\r\n";
+            TimedWrite(*m_client, boost::asio::buffer(msg),
+                    CTimings::DEV_SOCKET_TIMEOUT);
+        }
+        catch(std::exception & e)
+        {
+            Logger.Info << "Failed to tell client about timeout." << std::endl;
+        }
+
         CAdapterFactory::Instance().RemoveAdapter(m_identifier);
     }
 }
@@ -330,8 +336,9 @@ void CPnpAdapter::HandleRead(const boost::system::error_code & e)
         }
         else
         {
-            Logger.Warn << "Unknown header: " << header << std::endl;
-            packet << "BadRequest\r\n\r\n";
+            std::string msg = "Unknown header: " + header;
+            packet << "BadRequest\r\n" << msg << "\r\n\r\n";
+            Logger.Warn << msg << std::endl;
         }
         StartWrite();
     }

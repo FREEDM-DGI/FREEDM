@@ -107,8 +107,7 @@ ITcpAdapter::~ITcpAdapter()
 ////////////////////////////////////////////////////////////////////////////////
 ITcpAdapter::ITcpAdapter(boost::asio::io_service & service,
         const boost::property_tree::ptree & ptree)
-     : IAdapter(service)
-     , m_socket(service)
+    : m_socket(service)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 

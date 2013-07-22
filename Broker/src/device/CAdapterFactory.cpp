@@ -166,7 +166,7 @@ void CAdapterFactory::RunService()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
-    boost::asio::io_service::work runner(m_ios);
+    m_iosWorkload = new boost::asio::io_service::work(m_ios);
 
     try
     {
@@ -186,17 +186,20 @@ void CAdapterFactory::RunService()
 
 ///////////////////////////////////////////////////////////////////////////////
 /// Stops the i/o service and removes all devices from the device manager.
-/// If called from outside the devices thread, blocks until the thread is done.
+/// This function must be called from outside the devices thread.
 ///
 /// @pre None
 /// @post All the devices of every adapter in the system are removed.
 /// @post The IOService has stopped.
 /// @post The devices thread is detatched and stopped (unless called from it).
 /// @ErrorHandling Guaranteed not to throw. Errors are only logged.
+/// @limitations MUST be called from outside the devices thread.
 ///////////////////////////////////////////////////////////////////////////////
 void CAdapterFactory::Stop()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+
+    assert(boost::this_thread::get_id() != m_thread.get_id());
 
     try
     {
@@ -213,12 +216,13 @@ void CAdapterFactory::Stop()
             RemoveAdapter(i->first);
         }
 
-        m_ios.stop();
+        // This allows Run to end once it is out of work.  Has to be explicit
+        // because the io_service could stop at any point after m_server->Stop,
+        // but can't be allowed to stop until RemoveAdapter has been called.
+        delete m_iosWorkload;
 
-        if (boost::this_thread::get_id() != m_thread.get_id())
-        {
-            m_thread.join();
-        }
+        while (!m_ios.stopped());
+        m_thread.join();
     }
     catch (std::exception & e)
     {
@@ -289,7 +293,7 @@ void CAdapterFactory::CreateAdapter(const boost::property_tree::ptree & p)
     }
     else if( type == "fake" )
     {
-        adapter = CFakeAdapter::Create(m_ios);
+        adapter = CFakeAdapter::Create();
     }
     else
     {
@@ -328,7 +332,8 @@ void CAdapterFactory::RemoveAdapter(const std::string identifier)
     }
     
     devices = m_adapters[identifier]->GetDevices();
-    
+
+    m_adapters[identifier]->Stop();
     m_adapters.erase(identifier);
     Logger.Info << "Removed the adapter: " << identifier << std::endl;
     
@@ -637,12 +642,12 @@ void CAdapterFactory::HandleRead(const boost::system::error_code & e)
         }
         else
         {
-            Logger.Info << "Dropped packet due to timeout." << std::endl;
+            Logger.Notice << "Dropped packet due to timeout." << std::endl;
         }
     }
     else if( e == boost::asio::error::operation_aborted )
     {
-        Logger.Info << "Factory connection timeout aborted." << std::endl;
+        Logger.Notice << "Controller failed to send valid Hello." << std::endl;
     }
 }
 
@@ -661,17 +666,30 @@ void CAdapterFactory::Timeout(const boost::system::error_code & e)
     
     if( !e ) 
     {
-        Logger.Info << "Connection closed due to timeout." << std::endl;
+        Logger.Notice << "Connection closed due to timeout." << std::endl;
+
+        try
+        {
+            std::string msg;
+            msg = "Error\r\nConnection closed due to timeout.\r\n\r\n";
+            TimedWrite(*m_server->GetClient(), boost::asio::buffer(msg),
+                    CTimings::DEV_SOCKET_TIMEOUT);
+        }
+        catch(std::exception & e)
+        {
+            Logger.Info << "Failed to tell client about timeout." << std::endl;
+        }
+
         m_server->GetClient()->cancel();
         m_server->StartAccept();
     }
     else if( e == boost::asio::error::operation_aborted )
     {
-        Logger.Info << "Factory connection timeout aborted." << std::endl;
+        // Timeout was cancelled. Hopefully a good Hello was received!
     }
     else
     {
-        Logger.Warn << "Connection closed due to error." << std::endl;
+        Logger.Warn << "Connection closed: " << e.message() << std::endl;
         m_server->GetClient()->cancel();
         m_server->StartAccept();
     }
@@ -712,7 +730,7 @@ void CAdapterFactory::SessionProtocol()
         }
         if( m_adapters.count(host) > 0 )
         {
-            throw EDuplicateSession(host);
+            throw EDuplicateSession("Duplicate session for " + host);
         }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -721,6 +739,8 @@ void CAdapterFactory::SessionProtocol()
         config.put("<xmlattr>.name", host);
         config.put("<xmlattr>.type", "pnp");
         config.put("info.identifier", host);
+        config.put("state", "");
+        config.put("command", "");
 
         for( int i = 0; packet >> type >> name; i++ )
         {
@@ -737,18 +757,18 @@ void CAdapterFactory::SessionProtocol()
             commands = m_prototype[type]->GetCommandSet();
             Logger.Debug << "Using adapter name " << name << std::endl;
             
-            config.put("state", "");
-            config.put("command", "");
-            
             BOOST_FOREACH(std::string signal, states)
             {
                 Logger.Debug << "Adding state for " << signal << std::endl;
-                
+
+                boost::property_tree::ptree temp;
+                temp.put("type", type);
+                temp.put("device", name);
+                temp.put("signal", signal);
+                temp.put("<xmlattr>.index", sindex);
+
                 entry = name + signal;
-                config.put("state." + entry + ".type", type);
-                config.put("state." + entry + ".device", name);
-                config.put("state." + entry + ".signal", signal);
-                config.put("state." + entry + ".<xmlattr>.index", sindex);
+                config.add_child("state." + entry, temp);
 
                 sindex++;
             }
@@ -756,12 +776,15 @@ void CAdapterFactory::SessionProtocol()
             BOOST_FOREACH(std::string signal, commands)
             {
                 Logger.Debug << "Adding command for " << signal << std::endl;
+
+                boost::property_tree::ptree temp;
+                temp.put("type", type);
+                temp.put("device", name);
+                temp.put("signal", signal);
+                temp.put("<xmlattr>.index", cindex);
                 
                 entry = name + signal;
-                config.put("command." + entry + ".type", type);
-                config.put("command." + entry + ".device", name);
-                config.put("command." + entry + ".signal", signal);
-                config.put("command." + entry + ".<xmlattr>.index", cindex);
+                config.add_child("command." + entry, temp);
 
                 cindex++;
             }
@@ -794,12 +817,10 @@ void CAdapterFactory::SessionProtocol()
 
         Logger.Status << "Blocking to send BadRequest to client" << std::endl;
     }
-    catch(EDuplicateSession & e)
+    catch(std::exception & e)
     {
-        Logger.Warn << "Rejected client: duplicate session for host "
-                    << e.what() << std::endl;
-        response_stream << "Error\r\nDuplicate session for "
-                        << e.what() << "\r\n\r\n";
+        Logger.Warn << "Rejected client: " << e.what() << std::endl;
+        response_stream << "Error\r\n" << e.what() << "\r\n\r\n";
         Logger.Status << "Blocking to send Error to client" << std::endl;
     }
     

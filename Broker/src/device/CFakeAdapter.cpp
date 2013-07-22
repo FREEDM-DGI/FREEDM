@@ -50,7 +50,7 @@ CFakeAdapter::CFakeAdapter()
 CFakeAdapter::Pointer CFakeAdapter::Create()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    return CFakeAdapter::Pointer(new CFakeAdapter());
+    return Pointer(new CFakeAdapter());
 }
 
 ////////////////////////////////////////////////////////////////////////////////

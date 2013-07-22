@@ -47,7 +47,6 @@
 #include "SynchronousTimeout.hpp"
 #include "CTimings.hpp"
 
-#include <cerrno>
 #include <utility>
 #include <iostream>
 #include <map>

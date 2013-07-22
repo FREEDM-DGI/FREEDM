@@ -638,12 +638,12 @@ void CAdapterFactory::HandleRead(const boost::system::error_code & e)
         }
         else
         {
-            Logger.Info << "Dropped packet due to timeout." << std::endl;
+            Logger.Notice << "Dropped packet due to timeout." << std::endl;
         }
     }
     else if( e == boost::asio::error::operation_aborted )
     {
-        Logger.Info << "Factory connection timeout aborted." << std::endl;
+        Logger.Notice << "Controller failed to send valid Hello." << std::endl;
     }
 }
 
@@ -662,17 +662,17 @@ void CAdapterFactory::Timeout(const boost::system::error_code & e)
     
     if( !e ) 
     {
-        Logger.Info << "Connection closed due to timeout." << std::endl;
+        Logger.Notice << "Connection closed due to timeout." << std::endl;
         m_server->GetClient()->cancel();
         m_server->StartAccept();
     }
     else if( e == boost::asio::error::operation_aborted )
     {
-        Logger.Info << "Factory connection timeout aborted." << std::endl;
+        // Timeout was cancelled. Hopefully a good Hello was received!
     }
     else
     {
-        Logger.Warn << "Connection closed due to error." << std::endl;
+        Logger.Warn << "Connection closed: " << e.message() << std::endl;
         m_server->GetClient()->cancel();
         m_server->StartAccept();
     }

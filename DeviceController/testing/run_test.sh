@@ -1,12 +1,14 @@
 #!/bin/bash
 trap "kill 0" SIGINT
 
+PREFIX=scripts
+
 if [ -z $1 ]; then
     echo "Usage: $0 <TestPrefix>"
     exit
 fi
 
-for i in scripts/$1.txt $1[A-Z].txt; do
+for i in $PREFIX/$1.txt $PREFIX/$1[A-Z].txt; do
     if [ -f $i ]; then
         CTR=${i%.txt}
         CTR=${CTR#$1}

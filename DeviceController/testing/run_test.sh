@@ -21,8 +21,16 @@ for i in $PREFIX/$1.txt $PREFIX/$1[A-Z].txt; do
             PORT=56000
         fi
 
-        echo "Starting controller $CTR on port $PORT using script $i..."
-        ../fake_controller.py -c config/controller.cfg -s $i -n $CTR -p $PORT &
+        DUPLICATES=1
+        if [ $i = "UnexpectedError5" ]; then
+            DUPLICATES=2
+        fi
+
+        for j in { 1..$DUPLICATES }; do
+            echo "Starting controller $CTR on port $PORT using script $i..."
+            ../fake_controller.py -c config/controller.cfg -s $i -n $CTR -p $PORT &
+            PORT=$(($PORT + 1))
+        done
     fi
 done
 

@@ -941,7 +941,7 @@ void LBAgent::HandleAccept(MessagePtr msg, PeerNodePtr peer)
     if( LBAgent::SUPPLY == m_Status)
     {
         // Make necessary power setting accordingly to allow power migration
-        Logger.Warn<<"Migrating power on request from: "<< peer->GetUUID() << std::endl;
+        Logger.Notice<<"Migrating power on request from: "<< peer->GetUUID() << std::endl;
 	// !!!NOTE: You may use Step_PStar() or PStar(DemandValue) currently
         if (m_sstExists)
            Step_PStar();

@@ -11,22 +11,22 @@ fi
 for i in $PREFIX/$1.txt $PREFIX/$1[A-Z].txt; do
     if [ -f $i ]; then
         CTR=${i%.txt}
-        CTR=${CTR#$1}
+        CTR=${CTR#*[[:digit:]]}
         if [ -z $CTR ]; then
             CTR="TestController"
         fi
-    
+
         PORT=53000
         if [[ $1 == MultipleDGI* ]] && [ $CTR == "B" ]; then
             PORT=56000
         fi
 
         DUPLICATES=1
-        if [ $i = "UnexpectedError5" ]; then
+        if [ $1 == "UnexpectedError5" ]; then
             DUPLICATES=2
         fi
 
-        for j in { 1..$DUPLICATES }; do
+        for (( j=1; j<=DUPLICATES; j++ )); do
             echo "Starting controller $CTR on port $PORT using script $i..."
             ../fake_controller.py -c config/controller.cfg -s $i -n $CTR -p $PORT &
             PORT=$(($PORT + 1))

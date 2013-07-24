@@ -1,5 +1,5 @@
 # Value Change during Convergence
-enable Sst SST1 gateway -10.0
+enable Sst SST1 gateway -8.0
 work 20
 change SST1 gateway -9.0
 work forever

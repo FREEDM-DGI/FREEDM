@@ -190,7 +190,7 @@ void CClockSynchronizer::HandleExchangeResponse(MessagePtr msg, PeerNodePtr peer
         }
     }
     double lag = (TDToDouble(sumlag))/rlist.size();
-    Logger.Warn<<"Computed lag ("<<sender<<"): "<<lag<<std::endl;
+    Logger.Notice<<"Computed lag ("<<sender<<"): "<<lag<<std::endl;
     double dxbar = TDToDouble(sumx)/rlist.size();
     double dybar = TDToDouble(sumy)/rlist.size();
     boost::posix_time::time_duration xbar = DoubleToTD(dxbar);

@@ -98,9 +98,17 @@ class Device(object):
 
     def command_signal(self, signal, value):
         """
-        Set the signal to the specified value, unless it has recently changed
-        independently of a command from DGI or is NaN. Call this when the state
-        of a signal needs to change due to a command by DGI.
+        Call this when the state of a signal needs to change due to a command by
+        DGI. We're basically the best controller ever since we generally satify
+        the DGI instantanously. But sometimes we ignore the DGI:
+
+        * The DGI will send a NaN command initially (when it doesn't yet know
+          our state) to indicate we should ignore the command.
+
+        * DGI might be operating based on old state info if the state suddenly
+          changes sharply based on a command in the dsp simulation script.
+          In this case we shall ignore commands on this state for some
+          configurable amount of time (protected-state-duration).
 
         @param signal string name of the signal to command
         @param value float the new value of this signal

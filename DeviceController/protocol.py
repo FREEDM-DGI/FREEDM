@@ -118,17 +118,7 @@ def send_states(adaptersock, devices):
 def receive_commands(adaptersock, devices):
     """
     Receives new commands from the DGI and then implements them by modifying
-    the devices map. We're basically the best controller ever since we
-    generally satify the DGI instantanously. But sometimes we ignore the DGI:
-
-    * The DGI will send a NaN command initially (when it doesn't yet know our
-      state) to indicate we should ignore the command.
-
-    * DGI might be operating based on old state info if the state suddenly
-      changes sharply based on a command in the dsp simulation script.
-      In this case we shall ignore commands on this state for some configurable
-      amount of time (protected-state-duration). However this is now handled
-      by the Device class; this function is no longer aware of this behavior.
+    the devices map.
 
     @param adaptersock the connected stream socket to receive commands from
     @param devices set of devices attached to this controller

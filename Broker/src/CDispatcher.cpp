@@ -248,8 +248,7 @@ void CDispatcher::RegisterReadHandler(const std::string &module, const std::stri
 ///   should be touched.
 /// @param p_handler The module that will be invoked to perform the touch
 ///////////////////////////////////////////////////////////////////////////////
-#pragma GCC diagnostic ignored "-Wunused-parameter"
-void CDispatcher::RegisterWriteHandler(const std::string &module, const std::string &p_type,
+void CDispatcher::RegisterWriteHandler(const std::string & /*module*/, const std::string &p_type,
         IWriteHandler *p_handler )
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
@@ -262,7 +261,6 @@ void CDispatcher::RegisterWriteHandler(const std::string &module, const std::str
         );
     }
 }
-#pragma GCC diagnostic warning "-Wunused-parameter"
 
     } //namespace broker
 } // namespace freedm

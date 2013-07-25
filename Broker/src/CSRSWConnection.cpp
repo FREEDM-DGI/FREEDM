@@ -69,15 +69,13 @@ CSRSWConnection::CSRSWConnection(CConnection *  conn)
     m_outsync = false;
 }
 
-#pragma GCC diagnostic ignored "-Wunused-parameter"
-void CSRSWConnection::ChangePhase(bool newround)
+void CSRSWConnection::ChangePhase(bool /*newround*/)
 {
     //m_outseq = 0;
     m_outsync = false;
     m_window.clear();
     m_outstandingwindow.clear();
 }
-#pragma GCC diagnostic warning "-Wunused-parameter"
 
 ///////////////////////////////////////////////////////////////////////////////
 /// CSRSWConnection::CSRSWConnection

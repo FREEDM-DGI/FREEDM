@@ -108,8 +108,8 @@ class Device(object):
         if signal in self._protected_signals.keys():
             print 'Not updating ({0}, {1}): signal has {2} lock(s)'.format(
                         self._name, signal, self._protected_signals[signal])
-        elif math.isnan(value):
-            print 'Not updating ({0}, {1}): received NaN command'.format(
+        elif value == float(10**8): # indicates a command to be dropped
+            print 'Not updating ({0}, {1}): received null command'.format(
                         self._name, signal)            
         else:
             self._signals[signal] = value

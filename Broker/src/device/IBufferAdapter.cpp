@@ -84,13 +84,13 @@ void IBufferAdapter::Start()
     BOOST_FOREACH( std::size_t i, m_stateInfo | boost::adaptors::map_values )
     {
         stateIndices.insert(i);
-        m_rxBuffer.push_back(0.0f/0.0f);
+        m_rxBuffer.push_back(NULL_COMMAND);
     }
     
     BOOST_FOREACH( std::size_t i, m_commandInfo | boost::adaptors::map_values )
     {
         commandIndices.insert(i);
-        m_txBuffer.push_back(0.0f/0.0f);
+        m_txBuffer.push_back(NULL_COMMAND);
     }
 
     m_buffer_initialized = false;

@@ -221,7 +221,7 @@ void CRtdsAdapter::Run(const boost::system::error_code & e)
 
             for( unsigned int i = 0; i < m_rxBuffer.size(); i++ )
             {
-                if( isnan(m_rxBuffer[i]) )
+                if( m_rxBuffer[i] == NULL_COMMAND )
                 {
                     m_buffer_initialized = false;
                 }

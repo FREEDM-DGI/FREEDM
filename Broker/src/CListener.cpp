@@ -110,7 +110,6 @@ void CListener::Stop()
 ///   their appropriate places by the dispatcher. The incoming sequence number
 ///   for the source UUID has been incremented appropriately.
 ///////////////////////////////////////////////////////////////////////////////
-#pragma GCC diagnostic ignored "-Wunused-label"
 void CListener::HandleRead(const boost::system::error_code& e, 
                            std::size_t bytes_transferred)
 {
@@ -180,7 +179,9 @@ void CListener::HandleRead(const boost::system::error_code& e,
             Logger.Debug<<"Rejected message "<<m_message->GetHash()<<":"
                           <<m_message->GetSequenceNumber()<<std::endl;
         }
+#ifdef CUSTOMNETWORK
 listen:
+#endif
         Logger.Debug<<"Listening for next message"<<std::endl;
         GetSocket().async_receive_from(boost::asio::buffer(m_buffer, CReliableConnection::MAX_PACKET_SIZE),
                 m_endpoint, boost::bind(&CListener::HandleRead, this,
@@ -192,7 +193,6 @@ listen:
         GetConnectionManager().Stop(CListener::ConnectionPtr(this));	
     }
 }
-#pragma GCC diagnostic warning "-Wunused-label"
 
     } // namespace broker
 } // namespace freedm

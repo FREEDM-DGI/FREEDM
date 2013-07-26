@@ -220,7 +220,13 @@ void CAdapterFactory::Stop()
         // but can't be allowed to stop until RemoveAdapter has been called.
         delete m_iosWorkload;
 
-        while (!m_ios.stopped());
+        // If an exception was thrown from the ioservice, it might still be
+        // "not stopped" even though it's not running.
+        if (!m_ios.stopped())
+        {
+            m_ios.stop();
+        }
+
         m_thread.join();
     }
     catch (std::exception & e)

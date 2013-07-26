@@ -67,7 +67,7 @@
     BasicOperation7 & Remove the second of two SST devices. & SST (0) $\rightarrow$ 0.0 \newline SST (2) $\rightarrow$ 12.0 \newline SST (1) $\rightarrow$ 5.0 & \\
     BasicOperation8 & Remove a device other than the SST. & LOAD (0) $\rightarrow$ 0.0 ; SST (0) $\rightarrow$ 0.0 \newline LOAD (1) $\rightarrow$ 42.0 ; SST (1) $\rightarrow$ 5.0 \newline LOAD (0) $\rightarrow$ 0.0 ; SST (1) $\rightarrow$ 5.0 & \\
     BasicOperation9 & Change the value of one of several SST devices. & SST (0) $\rightarrow$ 0.0 \newline SST (2) $\rightarrow$ 12.0 \newline SST (2) $\rightarrow$ 17.0 & \\
-    BasicOperation10 & Change the value of the a non-SST device. & LOAD (0) $\rightarrow$ 0.0 ; SST (0) $\rightarrow$ 0.0 \newline LOAD (1) $\rightarrow$ 42.0 ; SST (1) $\rightarrow$ 5.0 \newline LOAD (1) $\rightarrow$ 24.0 ; SST (1) $\rightarrow$ 5.0 & \\
+    BasicOperation10 & Change the value of a non-SST device. & LOAD (0) $\rightarrow$ 0.0 ; SST (0) $\rightarrow$ 0.0 \newline LOAD (1) $\rightarrow$ 42.0 ; SST (1) $\rightarrow$ 5.0 \newline LOAD (1) $\rightarrow$ 24.0 ; SST (1) $\rightarrow$ 5.0 & \\
     BasicOperation11 & Handle a large number of devices at once. & DRER (0) $\rightarrow$ 0.0 ; DESD (0) $\rightarrow$ 0.0 ; LOAD (0) $\rightarrow$ 0.0 ; SST (0) $\rightarrow$ 0.0 \newline DRER (3) $\rightarrow$ 111.0 ; DESD (1) $\rightarrow$ 10.0 ; LOAD (1) $\rightarrow$ 42.0 ; SST (2) $\rightarrow$ 12.0 & \\
     BasicOperation12 & Change the value of a large number of devices. & DRER (0) $\rightarrow$ 0.0 ; DESD (0) $\rightarrow$ 0.0 ; LOAD (0) $\rightarrow$ 0.0 ; SST (0) $\rightarrow$ 0.0 \newline DRER (2) $\rightarrow$ 39.0 ; DESD (1) $\rightarrow$ 10.0 ; LOAD (1) $\rightarrow$ 42.0 ; SST (1) $\rightarrow$ 5.0 \newline DRER (2) $\rightarrow$ 49.0 ; DESD (1) $\rightarrow$ 10.0; LOAD (1) $\rightarrow$ 42.0 ; SST (1) $\rightarrow$ 10.0 & \\
     Failure1 & Fail before sending the DGI device states. & Removing an adapter due to timeout & \\
@@ -87,7 +87,7 @@
     UnexpectedError1 & Send an unrecognized device type to the DGI. & Rejected client: Unknown device type: SST & \\
     UnexpectedError2 & Send an unrecognized signal type to the DGI. & Unknown device signal: scripts/UnexpectedError2:SST1 gateawy & \\
     UnexpectedError3 & Send a corrupt state value to the DGI. & Corrupt state: received non-numeric value & \\
-    UnexpectedError4 & Have the same controller specify the same device twice. & Rejected client: The device ControllerA:SST1 already exists. & \\
+    UnexpectedError4 & Have the same controller specify the same device twice. & Duplicate device ID: VeryUnfortunateController:Sst1 or The device signal (VeryUnfortunateController:Sst1,gateway) is already registered as state information. & \\
     UnexpectedError5 & Have the same controller start two simultaneous sessions. & Rejected client: Duplicate session for ControllerA & \\
     UnexpectedError6 & The DGI adapter factory receives a packet with a header it does not recognize & Expected 'Hello' message: BadPacket & \\
     UnexpectedError7 & The DGI adapter receives a packet with a header it does not recognize & Unknown header: BadPacket & \\

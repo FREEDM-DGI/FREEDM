@@ -221,12 +221,9 @@ void CAdapterFactory::Stop()
         delete m_iosWorkload;
 
         // If an exception was thrown from the ioservice, it might still be
-        // "not stopped" even though it's not running.
-        if (!m_ios.stopped())
-        {
-            m_ios.stop();
-        }
-
+        // "not stopped" even though it's not running, so we can't call
+        // m_ios.stopped to see if it's working.  Rather, just wait until
+        // RunService exits.
         m_thread.join();
     }
     catch (std::exception & e)

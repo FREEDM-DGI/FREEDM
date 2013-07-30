@@ -58,7 +58,7 @@ include_directories("${PROJECT_BINARY_DIR}/src")
 # goto src/CMakeLists.txt
 add_subdirectory(src)
 
-add_executable(PosixBroker src/main.cpp)
+add_executable(PosixBroker src/PosixMain.cpp)
 
 # don't compile PosixBroker until codegen has run
 add_dependencies(PosixBroker GeneratedPhysicalDeviceTypes)

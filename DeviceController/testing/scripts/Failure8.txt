@@ -1,5 +1,4 @@
-# Wi-Fi drops for less than DGI Timeout Value
+# Wi-Fi drops for more than DGI Timeout Value
 enable Sst SST1 gateway 5.0
-# Kill Wi-Fi and immediately restore it while working.
-# May need to increase timeouts if this can't be done quickly enough
+# Kill Wi-Fi now, restore after DGI has recycled the adapter
 work forever

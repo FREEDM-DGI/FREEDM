@@ -80,10 +80,12 @@
     Failure6B & Controller loses Wi-Fi before sending states and then regains it. & SST (0) $\rightarrow$ 0.0 \newline SST (1) $\rightarrow$ 5.0 & \\
     Failure7A & DGI loses Wi-Fi after receiving device states. & SST (0) $\rightarrow$ 0.0 \newline SST (1) $\rightarrow$ 5.0 \newline SST (0) $\rightarrow$ 0.0 & \\
     Failure7B & Controller loses Wi-Fi after sending the DGI device states. & SST (0) $\rightarrow$ 0.0 \newline SST (1) $\rightarrow$ 5.0 \newline SST (0) $\rightarrow$ 0.0 & \\
-    Failure8A & DGI loses Wi-Fi after receiving device states and regains it instantly. & SST (0) $\rightarrow$ 0.0 \newline SST (1) $\rightarrow$ 5.0 & \\
-    Failure8B & Controller loses Wi-Fi after sending device states and regains it instantly. & SST (0) $\rightarrow$ 0.0 \newline SST (1) $\rightarrow$ 5.0 & \\
-    Failure9A & DGI loses Wi-Fi after receiving device states and regains it after a delay. & SST (0) $\rightarrow$ 0.0 \newline SST (1) $\rightarrow$ 5.0 \newline SST (0) $\rightarrow$ 0.0 \newline SST (1) $\rightarrow$ 5.0 & \\
-    Failure9B & Controller loses Wi-Fi after sending device states and regains it after a delay. & SST (0) $\rightarrow$ 0.0 \newline SST (1) $\rightarrow$ 5.0 \newline SST (0) $\rightarrow$ 0.0 \newline SST (1) $\rightarrow$ 5.0 & \\
+    Failure8A & DGI loses Wi-Fi after receiving device states and regains it after a delay. & SST (0) $\rightarrow$ 0.0 \newline SST (1) $\rightarrow$ 5.0 \newline SST (0) $\rightarrow$ 0.0 \newline SST (1) $\rightarrow$ 5.0 & \\
+    Failure8B & Controller loses Wi-Fi after sending device states and regains it after a delay. & SST (0) $\rightarrow$ 0.0 \newline SST (1) $\rightarrow$ 5.0 \newline SST (0) $\rightarrow$ 0.0 \newline SST (1) $\rightarrow$ 5.0 & \\
+    Failure9A & DGI leaves range of Wi-Fi during operation. & SST (0) $\rightarrow$ 0.0 \newline SST (1) $\rightarrow$ 5.0 \newline SST (0) $\rightarrow$ 0.0 & \\
+    Failure9B & Controller leaves range of Wi-Fi during operation. & SST (0) $\rightarrow$ 0.0 \newline SST (1) $\rightarrow$ 5.0 \newline SST (0) $\rightarrow$ 0.0 & \\
+    Failure10A & DGI leaves range of Wi-Fi during operation, then returns within range after a delay. & SST (0) $\rightarrow$ 0.0 \newline SST (1) $\rightarrow$ 5.0 \newline SST (0) $\rightarrow$ 0.0 \newline SST (1) $\rightarrow$ 5.0 & \\
+    Failure10B & Controller leaves range of Wi-Fi during operation, then returns within range after a delay. & SST (0) $\rightarrow$ 0.0 \newline SST (1) $\rightarrow$ 5.0 \newline SST (0) $\rightarrow$ 0.0 \newline SST (1) $\rightarrow$ 5.0 & \\
     UnexpectedError1 & Send an unrecognized device type to the DGI. & Rejected client: Unknown device type: SST & \\
     UnexpectedError2 & Send an unrecognized signal type to the DGI. & Unknown device signal: scripts/UnexpectedError2:SST1 gateawy & \\
     UnexpectedError3 & Send a corrupt state value to the DGI. & Corrupt state: received non-numeric value & \\

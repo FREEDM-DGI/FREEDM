@@ -71,19 +71,18 @@ for general_config in config_files:
     for adapter_config in adapter_files:
         for timings_config in timings_files:
             for logger_config in logger_files:
-                null_fd = open('/dev/null')
                 simserv = subprocess.Popen(['../../PSCAD-Interface/driver',
                         '--xml', '../../PSCAD-Interface/config/samples/' + 
                         adapter_files[adapter_config], '--config',
                         '../../PSCAD-Interface/config/samples/simserv.cfg',
                         '--logger',
-                        '../../PSCAD-Interface/config/samples/logger.cfg'],
-                        stderr=null_fd)
+                        '../../PSCAD-Interface/config/samples/logger.cfg',
+                        '--verbose', '0'])
                 dgi = subprocess.Popen(['../PosixBroker', '--config',
                         SAMPLES_PATH + general_config, '--adapter-config',
                         SAMPLES_PATH + adapter_config, '--timings-config',
                         SAMPLES_PATH + timings_config, '--logger-config',
-                        SAMPLES_PATH + logger_config], stderr=null_fd)
+                        SAMPLES_PATH + logger_config, '--verbose', '0'])
                 time.sleep(SUCCESS_AFTER_SECONDS)
                 if dgi.poll() != None:
                     fails += 1

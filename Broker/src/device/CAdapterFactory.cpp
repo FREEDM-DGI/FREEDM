@@ -225,6 +225,7 @@ void CAdapterFactory::Stop()
         if (!m_ios.stopped())
         {
             m_ios.stop();
+            while (!m_ios.stopped());
         }
 
         m_thread.join();

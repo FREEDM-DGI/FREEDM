@@ -309,6 +309,12 @@ void LBAgent::CollectState()
     subPtree4.add("deviceType", "Fid");
     subPtree4.add("valueType", "state");
     m_cs.m_submessages.add_child("sc.devices.device", subPtree4);
+
+    //DESD device
+    ptree subPtree5;
+    subPtree5.add("deviceType", "Desd");
+    subPtree5.add("valueType", "storage");
+    m_cs.m_submessages.add_child("sc.devices.device", subPtree5);
 	
     try
     {

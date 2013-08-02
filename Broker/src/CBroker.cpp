@@ -300,7 +300,8 @@ CBroker::TimerHandle CBroker::AllocateTimer(CBroker::ModuleIdent module)
 ///////////////////////////////////////////////////////////////////////////////
 /// @fn CBroker::Schedule
 /// @description Given a binding to a function that should be run into the
-///   future, prepares it to be run... in the future.
+///   future, prepares it to be run... in the future. The attempt to schedule
+///   may be rejected if the Broker is stopping.
 /// @param h The handle to the timer being set.
 /// @param wait the amount of the time to wait. If this value is "not_a_date_time"
 ///     The wait is converted to positive infinity and the time will expire as 
@@ -309,8 +310,9 @@ CBroker::TimerHandle CBroker::AllocateTimer(CBroker::ModuleIdent module)
 /// @pre The module is registered
 /// @post A function is scheduled to be called in the future. If a next time
 ///     function is scheduled, its timer will expire as soon as its round ends.
+/// @return 0 on success, -1 if rejected
 ///////////////////////////////////////////////////////////////////////////////
-void CBroker::Schedule(CBroker::TimerHandle h,
+int CBroker::Schedule(CBroker::TimerHandle h,
     boost::posix_time::time_duration wait, CBroker::Scheduleable x)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
@@ -318,7 +320,7 @@ void CBroker::Schedule(CBroker::TimerHandle h,
         boost::unique_lock<boost::mutex> lock(m_stoppingMutex);
         if (m_stopping)
         {
-            return;
+            return -1;
         }
     }
     m_schmutex.lock();
@@ -337,12 +339,14 @@ void CBroker::Schedule(CBroker::TimerHandle h,
     Logger.Debug<<"Scheduled task for timer "<<h<<std::endl;
     m_timers[h]->async_wait(s);
     m_schmutex.unlock();
+    return 0;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 /// @fn CBroker::Schedule
 /// @description Given a module and a bound schedulable, enter that schedulable
-///     into that modules job queue.
+///     into that modules job queue. The attempt to schedule may be rejected if
+///     the Broker is stopping.
 /// @pre The module is registered.
 /// @post The task is placed in the work queue for the module m. If the
 ///     start_worker parameter is set to true, the module's worker will be
@@ -352,15 +356,16 @@ void CBroker::Schedule(CBroker::TimerHandle h,
 /// @param start_worker tells the worker to begin processing again, if it is
 ///     currently idle [The worker will be idle if the work queue is empty; this
 ///     can be useful to defer an activity to the next round if the node is not busy
+/// @return 0 on success, -1 if rejected
 ///////////////////////////////////////////////////////////////////////////////
-void CBroker::Schedule(ModuleIdent m, BoundScheduleable x, bool start_worker)
+int CBroker::Schedule(ModuleIdent m, BoundScheduleable x, bool start_worker)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     {
         boost::unique_lock<boost::mutex> lock(m_stoppingMutex);
         if (m_stopping)
         {
-            return;
+            return -1;
         }
     }
     m_schmutex.lock();
@@ -374,6 +379,7 @@ void CBroker::Schedule(ModuleIdent m, BoundScheduleable x, bool start_worker)
     Logger.Debug<<"Module "<<m<<" now has queue size: "<<m_ready[m].size()<<std::endl;
     Logger.Debug<<"Scheduled task (NODELAY) for "<<m<<std::endl;
     m_schmutex.unlock();
+    return 0;
 }
 
 #pragma GCC diagnostic ignored "-Wunused-parameter"

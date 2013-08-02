@@ -97,10 +97,10 @@ public:
     void HandleStop(unsigned int signum = 0);
     
     /// Schedule a task
-    void Schedule(TimerHandle h, boost::posix_time::time_duration wait, Scheduleable x);
+    int Schedule(TimerHandle h, boost::posix_time::time_duration wait, Scheduleable x);
     
     /// Schedule a task
-    void Schedule(ModuleIdent m, BoundScheduleable x, bool start_worker=true);
+    int Schedule(ModuleIdent m, BoundScheduleable x, bool start_worker=true);
 
     /// Allocate a timer
     TimerHandle AllocateTimer(ModuleIdent module);

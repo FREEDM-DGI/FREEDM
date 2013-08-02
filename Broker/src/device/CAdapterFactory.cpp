@@ -165,7 +165,7 @@ void CAdapterFactory::RunService()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
-    m_iosWorkload = new boost::asio::io_service::work(m_ios);
+    boost::asio::io_service::work workload(m_ios);
 
     try
     {
@@ -215,18 +215,7 @@ void CAdapterFactory::Stop()
             RemoveAdapter(i->first);
         }
 
-        // This allows Run to end once it is out of work.  Has to be explicit
-        // because the io_service could stop at any point after m_server->Stop,
-        // but can't be allowed to stop until RemoveAdapter has been called.
-        delete m_iosWorkload;
-
-        // If an exception was thrown from the ioservice, it might still be
-        // "not stopped" even though it's not running.
-        if (!m_ios.stopped())
-        {
-            m_ios.stop();
-        }
-
+        m_ios.stop();
         m_thread.join();
     }
     catch (std::exception & e)

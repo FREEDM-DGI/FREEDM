@@ -124,9 +124,6 @@ private:
     
     /// I/O service shared by the adapters.
     boost::asio::io_service m_ios;
-
-    /// Points to the io_service's infinite workload.
-    boost::asio::io_service::work *m_iosWorkload;
     
     /// TCP server to accept plug-and-play devices.
     CTcpServer::Pointer m_server;

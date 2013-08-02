@@ -192,6 +192,9 @@ void CBroker::HandleSignal(const boost::system::error_code& error, int signum)
     // An unsynchronized iostream could be corrupted, so don't do that either.
     if(!error)
     {
+        // If we get a signal twice, use the default handler to stop right away.
+        m_signals.remove(signum);
+
         // Stop is not safe to use within signal handlers. Call it later.
         m_ioService.post(boost::bind(&CBroker::Stop, this, signum));
     }

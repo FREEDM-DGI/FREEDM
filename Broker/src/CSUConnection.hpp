@@ -49,9 +49,9 @@ class CSUConnection : public IProtocol
         /// Public facing send function that sends a message
         void Send(CMessage msg);
         /// Public facing function that handles marking down ACKs for sent messages
-        void RecieveACK(const CMessage &msg);
+        void ReceiveACK(const CMessage &msg);
         /// deterimines if a  messageshould be given to the dispatcher
-        bool Recieve(const CMessage &msg);
+        bool Receive(const CMessage &msg);
         /// Handles Writing an ack for the input message to the channel
         void SendACK(const CMessage &msg);
         /// Stops the timers

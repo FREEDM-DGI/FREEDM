@@ -84,7 +84,7 @@ void CSRSWConnection::ChangePhase(bool newround)
 /// @description Send function for the CSRSWConnection. Sending using this
 ///   protocol involves an alternating bit scheme. Messages can expire and 
 ///   delivery won't be attempted after the deadline is passed. Killed messages
-///   are noted in the next outgoing message. The reciever tracks the killed
+///   are noted in the next outgoing message. The receiver tracks the killed
 ///   messages and uses them to help maintain ordering.
 /// @pre The protocol is intialized.
 /// @post At least one message is in the channel and actively being resent.
@@ -171,8 +171,8 @@ void CSRSWConnection::Resend(const boost::system::error_code& err)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// CSRSWConnection::RecieveACK
-/// @description Marks a message as acknowledged by the reciever and moves to
+/// CSRSWConnection::ReceiveACK
+/// @description Marks a message as acknowledged by the receiver and moves to
 ///     transmit the next message.
 /// @pre A message has been sent.
 /// @post If the ACK corresponds to the head of window by a match of sequence
@@ -182,7 +182,7 @@ void CSRSWConnection::Resend(const boost::system::error_code& err)
 ///       If the there is still an message in the window to send, the
 ///       resend function is called.
 ///////////////////////////////////////////////////////////////////////////////
-void CSRSWConnection::RecieveACK(const CMessage &msg)
+void CSRSWConnection::ReceiveACK(const CMessage &msg)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     unsigned int seq = msg.GetSequenceNumber();
@@ -194,7 +194,7 @@ void CSRSWConnection::RecieveACK(const CMessage &msg)
         unsigned int boundb = (fseq+OUTSTANDING_WINDOW)%SEQUENCE_MODULO;
         // Assuming hash collisions are small, we will check the hash
         // of the front message. On hit, we can accept the acknowledge.
-        Logger.Debug<<"Recieved ACK "<<seq<<" expecting ACK "<<fseq<<std::endl;
+        Logger.Debug<<"Received ACK "<<seq<<" expecting ACK "<<fseq<<std::endl;
         if(bounda <= seq || (seq < boundb and boundb < bounda))
         {
             m_outstandingwindow.pop_front();
@@ -217,7 +217,7 @@ void CSRSWConnection::RecieveACK(const CMessage &msg)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// CSRSWConnection::Recieve
+/// CSRSWConnection::Receive
 /// @description Accepts a message into the protocol, if that message should
 ///   be accepted. If this function returns true, the message is passed to
 ///   the dispatcher. Since this message accepts SYNs there might be times
@@ -225,15 +225,15 @@ void CSRSWConnection::RecieveACK(const CMessage &msg)
 ///   this is normal.
 /// @pre Accept logic can be complicated, there are several scenarios that
 ///      should be addressed.
-///      1) A bad request has been recieved
-///      2) A SYN message is recieved for the first time
-///      3) A SYN message is recieved as a duplicate.
-///      4) A Message has been recieved before the connection has been synced.
-///      5) A Message has been recieved with the expected sequenceno with or
+///      1) A bad request has been received
+///      2) A SYN message is received for the first time
+///      3) A SYN message is received as a duplicate.
+///      4) A Message has been received before the connection has been synced.
+///      5) A Message has been received with the expected sequenceno with or
 ///         without a kill flag.
-///      6) A message has been recieved with a kill flag. The kill is greater
+///      6) A message has been received with a kill flag. The kill is greater
 ///         than the expected sequence number
-///      7) A message has been recieved with a kill flag. The kill is less than
+///      7) A message has been received with a kill flag. The kill is less than
 ///         the expected sequence number. However, the message's number is less
 ///         than the expected sequence number
 ///      8) A message has been received with a kill flag. The kill is less than
@@ -254,7 +254,7 @@ void CSRSWConnection::RecieveACK(const CMessage &msg)
 ///         in the gap of sequence numbers.
 /// @return True if the message is accepted, false otherwise.
 ///////////////////////////////////////////////////////////////////////////////
-bool CSRSWConnection::Recieve(const CMessage &msg)
+bool CSRSWConnection::Receive(const CMessage &msg)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     if(msg.GetStatus() == freedm::broker::CMessage::BadRequest)

@@ -75,11 +75,11 @@ public:
     /// Puts a CMessage into the channel.
     void Send(CMessage & p_mesg);
 
-    /// Handles Notification of an acknowledment being recieved
-    void RecieveACK(const CMessage &msg);
+    /// Handles Notification of an acknowledment being received
+    void ReceiveACK(const CMessage &msg);
 
     /// Handler that calls the correct protocol for accept logic
-    bool Recieve(const CMessage &msg);
+    bool Receive(const CMessage &msg);
 
     /// Change Phase Event
     void ChangePhase(bool newround);

@@ -52,9 +52,9 @@ class IProtocol
         /// Public write to channel function
         virtual void Send(CMessage msg) = 0;
         /// Public facing function that handles marking ACKS
-        virtual void RecieveACK(const CMessage &msg) = 0;
+        virtual void ReceiveACK(const CMessage &msg) = 0;
         /// Function that determines if a message should dispatched
-        virtual bool Recieve(const CMessage &msg) = 0;
+        virtual bool Receive(const CMessage &msg) = 0;
         /// Handles Writing an ack for the input message to the channel
         virtual void SendACK(const CMessage &msg) = 0;
         /// Handles Stopping the timers etc

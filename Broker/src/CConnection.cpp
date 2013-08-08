@@ -78,7 +78,7 @@ CConnection::CConnection(boost::asio::io_service& p_ioService,
 
 ///////////////////////////////////////////////////////////////////////////////
 /// @fn CConnection::Start
-/// @description Starts the recieve routine which causes this socket to behave
+/// @description Starts the receive routine which causes this socket to behave
 ///   as a listener.
 /// @pre The object is initialized.
 /// @post The connection is asynchronously waiting for messages.
@@ -145,7 +145,7 @@ void CConnection::Send(CMessage & p_mesg)
 
     // If the UUID of the reciepient (The value stored by GetUUID of this
     // object) is the same as the this node's uuid (As stored by the
-    // Connection manager) place the message directly into the recieved
+    // Connection manager) place the message directly into the received
     // Queue.
     if(GetUUID() == GetConnectionManager().GetUUID())
     {
@@ -168,7 +168,7 @@ void CConnection::Send(CMessage & p_mesg)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// @fn CConnection::RecieveACK
+/// @fn CConnection::ReceiveACK
 /// @description Handler for recieving acknowledgments from a sender.
 /// @pre Initialized connection.
 /// @post The message with sequence number has been acknowledged and all
@@ -176,33 +176,33 @@ void CConnection::Send(CMessage & p_mesg)
 ///   well.
 /// @param msg The message to consider as acknnowledged
 ///////////////////////////////////////////////////////////////////////////////
-void CConnection::RecieveACK(const CMessage &msg)
+void CConnection::ReceiveACK(const CMessage &msg)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     std::string protocol = msg.GetProtocol();
     ProtocolMap::iterator sit = m_protocols.find(protocol);
     if(sit != m_protocols.end())
     {
-        (*sit).second->RecieveACK(msg);
+        (*sit).second->ReceiveACK(msg);
     }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// @fn CConnection::Recieve
-/// @description Handler for determineing if a recieved message should be ACKd
+/// @fn CConnection::Receive
+/// @description Handler for determineing if a received message should be ACKd
 /// @pre Initialized connection.
 /// @post The message with sequence number has been acknowledged and all
 ///   messages sent before that message have been considered acknowledged as
 ///   well.
 /// @param msg The message to consider as acknnowledged
 ///////////////////////////////////////////////////////////////////////////////
-bool CConnection::Recieve(const CMessage &msg)
+bool CConnection::Receive(const CMessage &msg)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     ProtocolMap::iterator sit = m_protocols.find(msg.GetProtocol());
     if(sit != m_protocols.end())
     {
-        bool x = (*sit).second->Recieve(msg);
+        bool x = (*sit).second->Receive(msg);
         if(x)
         {
             (*sit).second->SendACK(msg);

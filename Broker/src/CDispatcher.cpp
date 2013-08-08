@@ -217,8 +217,8 @@ void CDispatcher::HandleWrite( ptree &p_mesg )
 /// @post A module is registered with a read handler.
 /// @param module The module name that the handler is on behalf of.
 /// @param p_type the tree key used to identify which messages the module
-///   would like to recieve.
-/// @param p_handler The module which will be called to recieve the message.
+///   would like to receive.
+/// @param p_handler The module which will be called to receive the message.
 ///////////////////////////////////////////////////////////////////////////////
 void CDispatcher::RegisterReadHandler(const std::string &module, const std::string &p_type,
         IReadHandler *p_handler)

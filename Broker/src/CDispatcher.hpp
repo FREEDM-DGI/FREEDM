@@ -56,9 +56,6 @@ class CDispatcher
   : private boost::noncopyable
 {
 public:
-    /// Constructor for the dispatcher
-    CDispatcher();
-
     /// Called upon incoming message
     void HandleRequest(CBroker &broker, MessagePtr msg );
 

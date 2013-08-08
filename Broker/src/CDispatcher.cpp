@@ -38,18 +38,6 @@ CLocalLogger Logger(__FILE__);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// @fn CDispatcher::CDispatcher
-/// @description Dispatcher constructor
-/// @pre None
-/// @post None
-///////////////////////////////////////////////////////////////////////////////
-CDispatcher::CDispatcher()
-{
-    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-
-}
-
-///////////////////////////////////////////////////////////////////////////////
 /// @fn CDispatcher::HandleRequest
 /// @description Given an input property tree determine which handlers should
 ///   be given the message out of a pool of modules and deliever the message

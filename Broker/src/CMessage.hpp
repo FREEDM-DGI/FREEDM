@@ -150,12 +150,6 @@ public:
     /// Initialize a new CMessage with a status type.
     CMessage( CMessage::StatusType p_stat = CMessage::OK );
 
-    /// Copy Constructor
-    CMessage( const CMessage &p_m );
-
-    /// Cmessage Equals operator
-    CMessage& operator = ( const CMessage &p_m );
-    
     /// Parse CMessage from string.
     virtual bool Load( std::istream &p_is )
         throw ( boost::property_tree::file_parser_error );

@@ -128,40 +128,6 @@ CMessage::CMessage( CMessage::StatusType p_stat)
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 }
 
-/// Copy Constructor
-CMessage::CMessage( const CMessage &p_m ) :
-    m_submessages( p_m.m_submessages ),
-    m_remotehost( p_m.m_remotehost ),
-    m_sequenceno( p_m.m_sequenceno ),
-    m_srcUUID( p_m.m_srcUUID ),
-    m_status( p_m.m_status ),
-    m_properties( p_m.m_properties ),
-    m_protocol( p_m.m_protocol ),
-    m_never_expires( p_m.m_never_expires ),
-    m_sendtime( p_m.m_sendtime ),
-    m_expiretime( p_m.m_expiretime ),
-    m_handler( p_m.m_handler )
-{
-    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-}
-
-/// Cmessage Equals operator
-CMessage& CMessage::operator = ( const CMessage &p_m )
-{
-    this->m_srcUUID = p_m.m_srcUUID;
-    this->m_status = p_m.m_status;
-    this->m_submessages = p_m.m_submessages;
-    this->m_remotehost = p_m.m_remotehost;
-    this->m_sequenceno = p_m.m_sequenceno;
-    this->m_properties = p_m.m_properties;
-    this->m_protocol = p_m.m_protocol;
-    this->m_sendtime = p_m.m_sendtime;
-    this->m_expiretime = p_m.m_expiretime;
-    this->m_never_expires = p_m.m_never_expires;
-    this->m_handler = p_m.m_handler;
-    return *this;
-}
-
 //Accessors and Junk
 
 /// Accessor for uuid

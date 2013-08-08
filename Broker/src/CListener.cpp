@@ -22,6 +22,7 @@
 /// Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
 ////////////////////////////////////////////////////////////////////////////////
 
+#include "CConnection.hpp"
 #include "CConnectionManager.hpp"
 #include "CDispatcher.hpp"
 #include "CListener.hpp"

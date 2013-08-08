@@ -24,9 +24,6 @@
 #ifndef CRELIABLECONNECTION_HPP
 #define CRELIABLECONNECTION_HPP
 
-#include "CBroker.hpp"
-#include "CMessage.hpp"
-
 #include <iomanip>
 
 #include <boost/array.hpp>

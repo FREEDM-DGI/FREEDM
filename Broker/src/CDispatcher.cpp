@@ -25,6 +25,7 @@
 
 #include "CDispatcher.hpp"
 #include "CLogger.hpp"
+#include "IHandler.hpp"
 
 namespace freedm {
     namespace broker {

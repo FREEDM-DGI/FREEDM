@@ -25,10 +25,8 @@
 #ifndef CONNECTIONMANAGER_HPP
 #define CONNECTIONMANAGER_HPP
 
-#include "CConnection.hpp"
 #include "CGlobalConfiguration.hpp"
 #include "CListener.hpp"
-#include "CReliableConnection.hpp"
 #include "IHandler.hpp"
 #include "SRemoteHost.hpp"
 

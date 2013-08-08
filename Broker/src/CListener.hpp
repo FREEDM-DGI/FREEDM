@@ -24,10 +24,8 @@
 #ifndef CLISTENER_HPP
 #define CLISTENER_HPP
 
-#include "CBroker.hpp"
 #include "CMessage.hpp"
 #include "CReliableConnection.hpp"
-#include "SRemoteHost.hpp"
 
 #include <iomanip>
 

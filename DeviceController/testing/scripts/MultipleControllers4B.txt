@@ -1,0 +1,4 @@
+# Removes Correct Adapter
+enable Load TOASTER drain 42.0
+work forever
+

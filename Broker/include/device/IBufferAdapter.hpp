@@ -26,6 +26,7 @@
 
 #include "IAdapter.hpp"
 
+#include <cmath>
 #include <map>
 #include <string>
 #include <vector>
@@ -36,6 +37,9 @@
 namespace freedm {
 namespace broker {
 namespace device {
+
+/// Sent by the DGI to indicate it knows nothing about the state of a device.
+const float NULL_COMMAND = std::pow(10, 8);
 
 /// Buffer adapter device interface.
 ///////////////////////////////////////////////////////////////////////////////
@@ -72,6 +76,9 @@ public:
     /// Virtual destructor for derived classes.
     virtual ~IBufferAdapter();
 protected:    
+    /// Constructor
+    IBufferAdapter();
+
     /// Translates a device signal into its rxBuffer (state) index
     std::map<const DeviceSignal, const std::size_t> m_stateInfo;
     
@@ -89,6 +96,9 @@ protected:
 
     /// Provides synchronization for m_txBuffer.
     mutable boost::shared_mutex m_txMutex;
+
+    /// Flag that indicates whether the buffer is NaN.
+    bool m_buffer_initialized;
 };
 
 } // namespace device

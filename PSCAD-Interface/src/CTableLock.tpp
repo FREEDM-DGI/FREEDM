@@ -72,7 +72,8 @@ void CTableLock<TLock>::InsertDeviceSignal( const CDeviceSignal & devsig )
 {
     CTLLogger.Trace << __PRETTY_FUNCTION__ << std::endl;
     
-    if( m_lock.GetTable().insert(TDeviceTable::value_type(devsig,0)).second )
+    if( m_lock.GetTable().insert(
+        TDeviceTable::value_type(devsig, NULL_COMMAND)).second )
     {
         CTLLogger.Info << devsig << " inserted into the " << m_name
                        << " table." << std::endl;

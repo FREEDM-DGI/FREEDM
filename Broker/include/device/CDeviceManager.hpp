@@ -41,6 +41,8 @@
 #include <boost/function.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/noncopyable.hpp>
+#include <boost/thread/locks.hpp>
+#include <boost/thread/shared_mutex.hpp>
 
 namespace freedm {
 namespace broker {
@@ -59,30 +61,15 @@ CLocalLogger DeviceManagerLogger(__FILE__);
 ///
 /// Devices are "stored" here after they are constructed by CAdapterFactory.
 ///
-/// @limitations It's a singleton... you can only access it with Instance()
+/// @limitations None directly, but be aware of the important limitations
+///              specificed in the IDevice class.
 ///////////////////////////////////////////////////////////////////////////////
 class CDeviceManager
     : private boost::noncopyable
 {
-private:
-    /// A typedef for the mapping of identifier to device pointers.
-    typedef std::map<std::string, IDevice::Pointer> PhysicalDeviceSet;
-
 public:
-    /// A typedef providing an iterator for this object.
-    typedef PhysicalDeviceSet::iterator iterator;
-
-    /// A typedef providing a const iterator for this object.
-    typedef PhysicalDeviceSet::const_iterator const_iterator;
-    
     /// Gets the instance of the device manager.
     static CDeviceManager & Instance();
-    
-    /// Iterator to the first managed device.
-    iterator begin();
-
-    /// Iterator past the last managed device.
-    iterator end();
 
     /// Tests to see if a device exists.
     bool DeviceExists(std::string devid) const;
@@ -117,20 +104,41 @@ public:
     SignalValue GetNetValue(SignalValue (DeviceType::*getter)() const) const;
 
 private:
+    /// A typedef for the mapping of identifier to device pointers.
+    typedef std::map<std::string, IDevice::Pointer> PhysicalDeviceSet;
+
+    /// A typedef providing an iterator for this object.
+    typedef PhysicalDeviceSet::iterator iterator;
+
+    /// A typedef providing a const iterator for this object.
+    typedef PhysicalDeviceSet::const_iterator const_iterator;
+
     /// CAdapterFactory can add/remove devices.
     friend class CAdapterFactory;
+
+    /// IAdapter can reveal devices.
+    friend class IAdapter;
 
     /// Private constructor.
     CDeviceManager();
 
-    /// Add the specified device to the manager.
+    /// Add a pointer to the hidden device set.
     void AddDevice(IDevice::Pointer device);
+
+    /// Move a pointer to the visible device set.
+    void RevealDevice(std::string devid);
 
     /// Remove a device by its identifier.
     bool RemoveDevice(std::string devid);
     
     /// Mapping from identifiers to device pointers.
     PhysicalDeviceSet m_devices;
+
+    /// Set of uninitialized device objects.
+    PhysicalDeviceSet m_hidden_devices;
+
+    /// Mutex for the device map.
+    mutable boost::shared_mutex m_mutex;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -147,6 +155,7 @@ std::multiset<typename DeviceType::Pointer> CDeviceManager::GetDevicesOfType()
 {
     DeviceManagerLogger.Trace << __PRETTY_FUNCTION__ << std::endl;
     
+    boost::shared_lock<boost::shared_mutex> lock(m_mutex);
     std::multiset<typename DeviceType::Pointer> result;
     typename DeviceType::Pointer next_device;
 
@@ -178,8 +187,9 @@ std::multiset<SignalValue> CDeviceManager::GetValues(
 {
     DeviceManagerLogger.Trace << __PRETTY_FUNCTION__ << std::endl;
     
-    std::multiset<SignalValue> result;
+    boost::shared_lock<boost::shared_mutex> lock(m_mutex);
     typename DeviceType::Pointer next_device;
+    std::multiset<SignalValue> result;
 
     for( const_iterator it = m_devices.begin(); it != m_devices.end(); it++ )
     {
@@ -209,8 +219,9 @@ SignalValue CDeviceManager::GetNetValue(
 {
     DeviceManagerLogger.Trace << __PRETTY_FUNCTION__ << std::endl;
     
-    SignalValue result = 0;
+    boost::shared_lock<boost::shared_mutex> lock(m_mutex);
     typename DeviceType::Pointer next_device;
+    SignalValue result = 0;
 
     for( const_iterator it = m_devices.begin(); it != m_devices.end(); it++ )
     {

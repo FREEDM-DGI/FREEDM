@@ -118,16 +118,6 @@ LBAgent::LBAgent(std::string uuid_, CBroker &broker):
     m_sstExists = false;
 }
 
-///////////////////////////////////////////////////////////////////////////////
-/// ~LBAgent
-/// @description: Class desctructor
-/// @pre: None
-/// @post: The object is ready to be destroyed.
-///////////////////////////////////////////////////////////////////////////////
-LBAgent::~LBAgent()
-{
-}
-
 ////////////////////////////////////////////////////////////
 /// LB
 /// @description Main function which initiates the algorithm
@@ -285,10 +275,47 @@ void LBAgent::CollectState()
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     CMessage m_cs;
     m_cs.SetHandler("sc.request");
-    m_cs.m_submessages.put("sc.deviceType", "Sst");
-    m_cs.m_submessages.put("sc.valueType", "gateway");
     m_cs.m_submessages.put("sc.source", GetUUID());
     m_cs.m_submessages.put("sc.module", "lb");
+
+/*
+    //for only one device
+    m_cs.m_submessages.put("sc.deviceType", "Sst");
+    m_cs.m_submessages.put("sc.valueType", "gateway");
+*/
+
+    //for multiple devices
+    m_cs.m_submessages.put("sc.deviceNum", 4);
+    //SST device
+    ptree subPtree1;
+    subPtree1.add("deviceType", "Sst");
+    subPtree1.add("valueType", "gateway");
+    m_cs.m_submessages.add_child("sc.devices.device", subPtree1);
+
+    //DRER device
+    ptree subPtree2;
+    subPtree2.add("deviceType", "Drer");
+    subPtree2.add("valueType", "generation");
+    m_cs.m_submessages.add_child("sc.devices.device", subPtree2);
+
+    //LOAD device
+    ptree subPtree3;
+    subPtree3.add("deviceType", "Load");
+    subPtree3.add("valueType", "drain");
+    m_cs.m_submessages.add_child("sc.devices.device", subPtree3);
+    
+    //FID device
+    ptree subPtree4;
+    subPtree4.add("deviceType", "Fid");
+    subPtree4.add("valueType", "state");
+    m_cs.m_submessages.add_child("sc.devices.device", subPtree4);
+
+    //DESD device
+    ptree subPtree5;
+    subPtree5.add("deviceType", "Desd");
+    subPtree5.add("valueType", "storage");
+    m_cs.m_submessages.add_child("sc.devices.device", subPtree5);
+	
     try
     {
        GetPeer(GetUUID())->Send(m_cs);
@@ -428,6 +455,7 @@ void LBAgent::LoadTable()
     int numDESDs = CDeviceManager::Instance().GetDevicesOfType<DESD>().size();
     int numLOADs = CDeviceManager::Instance().GetDevicesOfType<LOAD>().size();
     int numSSTs = CDeviceManager::Instance().GetDevicesOfType<SST>().size();
+    int numDevices = CDeviceManager::Instance().DeviceCount();
 
     m_Gen = CDeviceManager::Instance().GetNetValue<DRER>(&DRER::GetGeneration);
     m_Storage = CDeviceManager::Instance().GetNetValue<DESD>(&DESD::GetStorage);
@@ -445,6 +473,16 @@ void LBAgent::LoadTable()
         m_sstExists = false;
         // FIXME should consider Gateway
         m_NetGateway = m_Load - m_Gen - m_Storage;
+    }
+
+    typedef CDeviceLogger LOGGER;
+    std::multiset<LOGGER::Pointer> LSet;
+    LSet = device::CDeviceManager::Instance().GetDevicesOfType<LOGGER>();
+    
+    if( !LSet.empty() )
+    {
+        (*LSet.begin())->SetGateway(m_NetGateway);
+        (*LSet.begin())->SetDeviceCount(numDevices);
     }
 
     // used to ensure three digits before the decimal, two after
@@ -489,12 +527,14 @@ void LBAgent::LoadTable()
     ss << "\t| " << std::setw(20) << "----" << std::setw(27) << "-----"
             << std::setw(7) << "|" << std::endl;
 
+    bool isActive = (m_sstExists || numDESDs > 0);
+
     //Compute the Load state based on the current gateway value and Normal
-    if(m_NetGateway < m_Normal - NORMAL_TOLERANCE)
+    if(isActive && m_NetGateway < m_Normal - NORMAL_TOLERANCE)
     {
         m_Status = LBAgent::SUPPLY;
     }
-    else if(m_NetGateway > m_Normal + NORMAL_TOLERANCE)
+    else if(isActive && m_NetGateway > m_Normal + NORMAL_TOLERANCE)
     {
         m_Status = LBAgent::DEMAND;
         m_DemandVal = m_SstGateway-m_Normal;
@@ -922,18 +962,56 @@ void LBAgent::HandleCollectedState(MessagePtr msg, PeerNodePtr peer)
     // --------------------------------------------------------------
     // You received the collected global state in response to your SC Request
     // --------------------------------------------------------------
-    int peercount=0;
+    int peercount=0; // number of peers *with devices*
     double agg_gateway=0;
-    ptree &pt = msg->GetSubMessages();
-	BOOST_FOREACH(ptree::value_type &v, pt.get_child("CollectedState.state"))
-	{
-	    Logger.Notice << "SC module returned values: "
-			  << v.second.data() << std::endl;
- 	    peercount++;
-            agg_gateway += boost::lexical_cast<double>(v.second.data());
-	}
 
-	//Consider any intransit "accept" messages in agg_gateway calculation
+    ptree &pt = msg->GetSubMessages();
+    if(pt.get_child_optional("CollectedState.gateway"))
+    {
+	    BOOST_FOREACH(ptree::value_type &v, pt.get_child("CollectedState.gateway"))
+	    {
+	        Logger.Notice << "SC module returned gateway values: "
+			              << v.second.data() << std::endl;
+		    if (v.second.data() != "no device")
+		    {
+     	            peercount++;
+                	    agg_gateway += boost::lexical_cast<double>(v.second.data());
+		    }
+	    }
+    }
+    if(pt.get_child_optional("CollectedState.generation"))
+    {
+	    BOOST_FOREACH(ptree::value_type &v, pt.get_child("CollectedState.generation"))
+	    {
+	        Logger.Notice << "SC module returned generation values: "
+			              << v.second.data() << std::endl;
+	    }
+    }
+    if(pt.get_child_optional("CollectedState.storage"))
+    {
+	    BOOST_FOREACH(ptree::value_type &v, pt.get_child("CollectedState.storage"))
+	    {
+	        Logger.Notice << "SC module returned storage values: "
+			              << v.second.data() << std::endl;
+	    }
+    }
+    if(pt.get_child_optional("CollectedState.drain"))
+    {
+	    BOOST_FOREACH(ptree::value_type &v, pt.get_child("CollectedState.drain"))
+	    {
+	        Logger.Notice << "SC module returned drain values: "
+			              << v.second.data() << std::endl;
+	    }
+    }
+    if(pt.get_child_optional("CollectedState.state"))
+    {
+	    BOOST_FOREACH(ptree::value_type &v, pt.get_child("CollectedState.state"))
+	    {
+		Logger.Notice << "SC module returned state values: "
+				      << v.second.data() << std::endl;
+	    }
+    }
+    //Consider any intransit "accept" messages in agg_gateway calculation
     if(pt.get_child_optional("CollectedState.intransit"))
     {
         BOOST_FOREACH(ptree::value_type &v, pt.get_child("CollectedState.intransit"))
@@ -941,7 +1019,7 @@ void LBAgent::HandleCollectedState(MessagePtr msg, PeerNodePtr peer)
             Logger.Status << "SC module returned intransit messages: "
                 << v.second.data() << std::endl;
             if(v.second.data() == "accept"){
-	    Logger.Notice << "SC module returned values: "
+	        Logger.Notice << "SC module returned values: "
 			  << v.second.data() << std::endl;
                 agg_gateway += P_Migrate;
              }
@@ -951,8 +1029,12 @@ void LBAgent::HandleCollectedState(MessagePtr msg, PeerNodePtr peer)
     {
         m_Normal = agg_gateway/peercount;
         Logger.Info << "Computed Normal: " << m_Normal << std::endl;
-        SendNormal(m_Normal);
     }
+    else
+    {
+        m_Normal = 0;
+    }
+    SendNormal(m_Normal);
 }
 
 void LBAgent::HandleComputedNormal(MessagePtr msg, PeerNodePtr peer)

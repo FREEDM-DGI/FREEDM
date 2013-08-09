@@ -1,0 +1,10 @@
+# Device Stress Test
+enable Sst SST1 gateway 5.0
+enable Sst SST2 gateway 7.0
+enable Load TOASTER drain 42.0
+enable Drer SOLAR generation 15.0
+enable Drer WIND generation 24.0
+enable Drer HAMPSTER generation 72.0
+enable Desd BATTERY storage 10.0
+work forever
+

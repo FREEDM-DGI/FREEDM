@@ -25,6 +25,7 @@
 
 #include "CDeviceSignal.hpp"
 
+#include <cmath>
 #include <map>
 #include <string>
 
@@ -33,6 +34,9 @@
 
 namespace freedm {
 namespace simulation {
+
+/// A command that indicates the DGI doesn't know what to do
+const double NULL_COMMAND = std::pow(10, 8);
 
 /// type for simulation state variables
 typedef double TSignalValue;

@@ -1,15 +1,15 @@
 ////////////////////////////////////////////////////////////////////////////////
-/// @file         CAdapterFactory.hpp
+/// @file           CAdapterFactory.hpp
 ///
-/// @author       Thomas Roth <tprfh7@mst.edu>
-/// @author       Michael Catanzaro <michael.catanzaro@mst.edu>
+/// @author         Thomas Roth <tprfh7@mst.edu>
+/// @author         Michael Catanzaro <michael.catanzaro@mst.edu>
 ///
-/// @project      FREEDM DGI
+/// @project        FREEDM DGI
 ///
-/// @description  Handles the creation of device adapters.
+/// @description    Handles the creation of device adapters.
 ///
 /// @functions
-///     CAdapterFactory::CreateDevice
+///     CAdapterFactory::RegisterDevicePrototype
 ///
 /// These source code files were created at Missouri University of Science and
 /// Technology, and are intended for use in teaching or research. They may be
@@ -28,16 +28,21 @@
 #define C_ADAPTER_FACTORY_HPP
 
 #include "CLogger.hpp"
+#include "IDevice.hpp"
 #include "IAdapter.hpp"
-#include "CDeviceManager.hpp"
+#include "CTcpServer.hpp"
 
 #include <map>
+#include <set>
 #include <string>
+#include <iostream>
 #include <stdexcept>
 
 #include <boost/thread.hpp>
 #include <boost/noncopyable.hpp>
+#include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/io_service.hpp>
+#include <boost/asio/deadline_timer.hpp>
 #include <boost/property_tree/ptree_fwd.hpp>
 
 namespace freedm {
@@ -49,9 +54,9 @@ namespace {
 CLocalLogger AdapterFactoryLogger(__FILE__);
 }
 
-/// Converts a string identifier into a templated function call.
-#define REGISTER_DEVICE_CLASS(SUFFIX) \
-RegisterDeviceClass(#SUFFIX, &CAdapterFactory::CreateDevice<CDevice##SUFFIX>)
+/// Converts a preprocessor token into a templated function call.
+#define REGISTER_DEVICE_PROTOTYPE(SUFFIX) \
+RegisterDevicePrototype<CDevice##SUFFIX>(#SUFFIX)
 
 /// Handles the creation of adapters and their associated devices.
 ////////////////////////////////////////////////////////////////////////////////
@@ -65,82 +70,103 @@ class CAdapterFactory
 public:
     /// Gets the static instance of the factory.
     static CAdapterFactory & Instance();
+
+    /// Starts the session TCP server.
+    void StartSessionProtocol(unsigned short port);
     
     /// Creates a new adapter and its associated devices.
     void CreateAdapter(const boost::property_tree::ptree & p);
-    
-    /// Destructs the factory.
-    ~CAdapterFactory();
+
+    /// Removes an adapter and its associated devices.
+    void RemoveAdapter(const std::string identifier);
+
+    /// Stop everything!
+    void Stop();
 private:
-    /// Type of the functions used to create new devices.
-    typedef void (CAdapterFactory::*FactoryFunction)
-            (std::string, IAdapter::Pointer adapter);
-     
     /// Constructs the factory.
     CAdapterFactory();
 
-    /// Runs the factory I/O service
+    /// Runs the adapter i/o service.
     void RunService();
-    
+
     /// Registers compiled device classes with the factory.
     void RegisterDevices();
     
-    /// Registers a single device class with the factory.
-    void RegisterDeviceClass(std::string key, FactoryFunction function);
+    /// Creates an instance of a device to use as a prototype.
+    template <class DeviceType>
+    void RegisterDevicePrototype(const std::string identifier);
+    
+    /// Clones a device prototype and registers it with the system.
+    void CreateDevice(const std::string name, const std::string type, 
+            IAdapter::Pointer adapter);
     
     /// Initializes the devices stored on an adapter.
     void InitializeAdapter(IAdapter::Pointer adapter,
             const boost::property_tree::ptree & p);
-    
-    /// Creates a device and registers it with the system.
-    void CreateDevice(std::string name, std::string type, 
-            IAdapter::Pointer adapter);
-    
-    /// Creates a device and registers it with the system.
-    template <class DeviceType>
-    void CreateDevice(std::string name, IAdapter::Pointer adapter);
-    
-    /// Set of adapters created by the factory.
-    std::map<std::string, IAdapter::Pointer> m_adapter;
 
-    /// Set of device classes registered by the factory.
-    std::map<std::string, FactoryFunction> m_registry;
+    /// Session layer protocol for plug-and-play devices.
+    void SessionProtocol();
+
+    /// Handles one plug and play device session.
+    void StartSession();   
+
+    /// Handles plug and play devices that send a session packet.
+    void HandleRead(const boost::system::error_code & e);
+
+    /// Disconnects plug and play devices that timeout.
+    void Timeout(const boost::system::error_code & e);
+    
+    /// Set of device prototypes managed by the factory.
+    std::map<std::string, IDevice::Pointer> m_prototype;
+    
+    /// Set of device adapters managed by the factory.
+    std::map<std::string, IAdapter::Pointer> m_adapters;
     
     /// I/O service shared by the adapters.
     boost::asio::io_service m_ios;
     
-    /// Thread to run the i/o service
+    /// TCP server to accept plug-and-play devices.
+    CTcpServer::Pointer m_server;
+
+    /// Thread for the adapter i/o service.
     boost::thread m_thread;
+
+    /// Packet received from plug and play device.
+    boost::asio::streambuf m_buffer;
+
+    /// Timer for bad plug and play sessions.
+    boost::asio::deadline_timer m_timeout;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
-/// Creates a device of DeviceType with the given name and registers it with
-/// the factory's device manager.  The device is constructed to access the
-/// passed adapter.
+/// Creates a new device of DeviceType and stores it as a prototype using the
+/// provided string identifier.
 ///
-/// @ErrorHandling Throws a std::runtime_error if a device has the given name.
-/// @pre The provided adapter must not be null.
-/// @post The new device is registered with the device manager.
-/// @post The provided adapter is registered with the new device.
-/// @param name The unique identifier for the device to be created.
-/// @param adapter The adapter the new device should access its data through.
+/// @ErrorHandling Throws a std::runtime_error if the string identifier has
+/// been used to register another device type.
+/// @pre The identifier must not already be registered with the factory.
+/// @post A device is created using a null adapter and stored in m_prototype.
+/// @param identifier The string identifier to associate with the prototype.
 ///
 /// @limitations None.
 ////////////////////////////////////////////////////////////////////////////////
 template <class DeviceType>
-void CAdapterFactory::CreateDevice(std::string name, IAdapter::Pointer adapter)
+void CAdapterFactory::RegisterDevicePrototype(const std::string identifier)
 {
     AdapterFactoryLogger.Trace << __PRETTY_FUNCTION__ << std::endl;
+
+    IAdapter::Pointer null;
+    IDevice::Pointer dev;
     
-    if( CDeviceManager::Instance().DeviceExists(name) )
+    if( m_prototype.count(identifier) > 0 )
     {
-        throw std::runtime_error("The device " + name + " already exists.");
+        throw std::runtime_error("Duplicate factory prototype: " + identifier);
     }
-    
-    IDevice::Pointer device(new DeviceType(name, adapter));
-    CDeviceManager::Instance().AddDevice(device);
-    
-    AdapterFactoryLogger.Info << "Created new device: " << name << std::endl;
+
+    dev = IDevice::Pointer(new DeviceType("prototype-" + identifier, null));
+    m_prototype.insert(std::make_pair(identifier, dev));
+
+    AdapterFactoryLogger.Info << "Added prototype " << identifier << std::endl;
 }
 
 } // namespace device

@@ -73,11 +73,9 @@ class SCAgent : public IReadHandler, public IPeerNode,
     public:
         ///Constructor
         SCAgent(std::string uuid, CBroker &broker);
-        ///Destructor
-        ~SCAgent();
         //Handler
         ///Handle receiving messages
-        virtual void HandleAny(MessagePtr msg, PeerNodePtr peer);
+        void HandleAny(MessagePtr msg, PeerNodePtr peer);
         void HandlePeerList(MessagePtr msg, PeerNodePtr peer);
         void HandleRequest(MessagePtr msg, PeerNodePtr peer);
         void HandleMarker(MessagePtr msg, PeerNodePtr peer);
@@ -91,7 +89,8 @@ class SCAgent : public IReadHandler, public IPeerNode,
         ///Initiator starts state collection
         void    Initiate();
         ///Save local state
-        void    TakeSnapshot(std::string deviceType, std::string valueType);
+        //void    TakeSnapshot(std::string deviceType, std::string valueType);
+        void    TakeSnapshot(const std::vector<std::string>& devicelist);
         ///Peer sends collected states back to the initiator
         void    SendStateBack();
         ///Initiator sends collected states back to the request module
@@ -128,10 +127,16 @@ class SCAgent : public IReadHandler, public IPeerNode,
         
         ///module that request state collection
         std::string m_module;
-        
+
+        ///number of requested device
+        unsigned int m_deviceNum; 
+ 
+        //For multidevices state collection the following variables have to be changed
+        std::vector<std::string> m_device;  
+    
         ///type of device and value
-        std::string m_deviceType;
-        std::string m_valueType;
+        //std::string m_deviceType;
+        //std::string m_valueType;
         
         ///current version of marker
         StateVersion        m_curversion;

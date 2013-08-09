@@ -1,0 +1,4 @@
+# Value Change during Convergence
+enable Sst SST2 gateway 2.0
+work forever
+

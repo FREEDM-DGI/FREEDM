@@ -75,10 +75,8 @@ public:
     typedef boost::shared_ptr<CBroker> BrokerPtr;
 
 
-    /// Initialize the broker and begin accepting connections and messages 
-    CBroker(const std::string& address, const std::string& port,
-                   CDispatcher& p_dispatch, boost::asio::io_service &m_ios,
-                   freedm::broker::CConnectionManager &m_conMan);
+    /// Initialize the broker and begin accepting connections and messages
+    CBroker(CDispatcher& dispatcher, freedm::broker::CConnectionManager &conMan);
 
     /// Terminate the timers since they are pointers.
     ~CBroker();
@@ -90,19 +88,19 @@ public:
     boost::asio::io_service& GetIOService();
 
     /// Puts the stop request into the ioservice queue.
-    void Stop();
+    void Stop(unsigned int signum = 0);
 
     /// Handle signals
     void HandleSignal(const boost::system::error_code& error, int parameter);
 
     /// Stop the server.
-    void HandleStop();
+    void HandleStop(unsigned int signum = 0);
     
     /// Schedule a task
-    void Schedule(TimerHandle h, boost::posix_time::time_duration wait, Scheduleable x);
+    int Schedule(TimerHandle h, boost::posix_time::time_duration wait, Scheduleable x);
     
     /// Schedule a task
-    void Schedule(ModuleIdent m, BoundScheduleable x, bool start_worker=true);
+    int Schedule(ModuleIdent m, BoundScheduleable x, bool start_worker=true);
 
     /// Allocate a timer
     TimerHandle AllocateTimer(ModuleIdent module);
@@ -130,7 +128,7 @@ private:
     void HandleAccept(const boost::system::error_code& e);
 
     /// The io_service used to perform asynchronous operations.
-    boost::asio::io_service &m_ioService;
+    boost::asio::io_service m_ioService;
 
     /// The connection manager which owns all live connections.
     CConnectionManager &m_connManager;
@@ -194,6 +192,12 @@ private:
 
     ///The register for signal handling.
     boost::asio::signal_set m_signals;
+
+    ///Flag to prevent modules from scheduling
+    bool m_stopping;
+
+    ///Lock for m_stopping
+    boost::mutex m_stoppingMutex;
 };
 
     } // namespace broker

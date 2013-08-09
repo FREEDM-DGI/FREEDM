@@ -11,5 +11,6 @@ Makefile
 */#*
 */*~
 PosixBroker
-/nbproject/
 *.[oa]
+build/
+install/

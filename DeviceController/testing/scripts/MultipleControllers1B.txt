@@ -1,0 +1,4 @@
+# Same Device with Different Names
+enable Sst SST2 gateway 7.0
+work forever
+

@@ -1,16 +1,17 @@
 ////////////////////////////////////////////////////////////////////////////////
-/// @file         CDeviceDrer.cpp
+/// @file           CDeviceDrer.cpp
 ///
-/// @author       Michael Catanzaro <michael.catanzaro@mst.edu>
-/// @author       Thomas Roth <tprfh7@mst.edu>
+/// @author         Michael Catanzaro <michael.catanzaro@mst.edu>
+/// @author         Thomas Roth <tprfh7@mst.edu>
 ///
-/// @project      FREEDM DGI
+/// @project        FREEDM DGI
 ///
-/// @description  Represents a distributed renewable energy resource.
+/// @description    Represents a distributed renewable energy resource.
 ///
 /// @functions
 ///     CDeviceDrer::CDeviceDrer
 ///     CDeviceDrer::~CDeviceDrer
+///     CDeviceDrer::Create
 ///     CDeviceDrer::GetGeneration
 ///     CDeviceDrer::StepGeneration
 ///
@@ -44,15 +45,19 @@ CLocalLogger Logger(__FILE__);
 ///
 /// @pre None.
 /// @post Constructs a new device.
-/// @param device The unique identifier for the device.
+/// @param identifier The unique identifier for the device.
 /// @param adapter The adapter that implements operations for this device.
 ///
 /// @limitations None.
 ////////////////////////////////////////////////////////////////////////////////
-CDeviceDrer::CDeviceDrer(std::string device, IAdapter::Pointer adapter)
-    : IDevice(device, adapter)
+CDeviceDrer::CDeviceDrer(const std::string identifier,
+        IAdapter::Pointer adapter)
+    : IDevice(identifier, adapter)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+
+    m_StateSet.insert("generation");
+    m_CommandSet.insert("generation");
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -66,6 +71,24 @@ CDeviceDrer::CDeviceDrer(std::string device, IAdapter::Pointer adapter)
 CDeviceDrer::~CDeviceDrer()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/// Constructs another DRER.
+///
+/// @pre None.
+/// @post Constructs a new device.
+/// @param identifier The unique identifier for the device.
+/// @param adapter The adapter that implements operations for the device.
+/// @return shared pointer to the new device.
+///
+/// @limitations None.
+////////////////////////////////////////////////////////////////////////////////
+IDevice::Pointer CDeviceDrer::Create(const std::string identifier,
+        IAdapter::Pointer adapter) const
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    return IDevice::Pointer(new CDeviceDrer(identifier, adapter));
 }
 
 ////////////////////////////////////////////////////////////////////////////////

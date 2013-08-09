@@ -21,22 +21,19 @@
 /// Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
 ////////////////////////////////////////////////////////////////////////////////
 
-#ifdef __unix__
-
 #include "CBroker.hpp"
 #include "CConnectionManager.hpp"
 #include "CDispatcher.hpp"
 #include "CGlobalConfiguration.hpp"
 #include "CLogger.hpp"
 #include "config.hpp"
-#include "CAdapterFactory.hpp"
 #include "PhysicalDeviceTypes.hpp"
 #include "gm/GroupManagement.hpp"
 #include "lb/LoadBalance.hpp"
 #include "sc/StateCollection.hpp"
-#include "version.h"
 #include "CTimings.hpp"
 
+#include <cassert>
 #include <iostream>
 #include <set>
 #include <sstream>
@@ -66,17 +63,48 @@ namespace {
 /// This file's logger.
 CLocalLogger Logger(__FILE__);
 
+/// The copyright year for this DGI release.
+const unsigned int COPYRIGHT_YEAR = 2013;
+
 /// UUID of the DGI, currently hostname:port
-std::string generate_uuid(std::string host, std::string port)
+std::string GenerateUuid(std::string host, std::string port)
 {
     boost::algorithm::to_lower(host);
     return host + ":" + port;
 }
 
+/// Converts a string into a valid port number.
+unsigned short GetPort(const std::string str)
+{
+    long port;
+
+    if( str.empty() )
+    {
+        throw std::runtime_error("received empty string for a port number");
+    }
+
+    try
+    {
+        port = boost::lexical_cast<long>(str);
+        if( port < 0 || port > 65535 )
+        {
+            throw 0;
+        }
+    }
+    catch(...)
+    {
+        throw std::runtime_error("invalid port number: " + str);
+    }
+
+    if( port < 1024 )
+    {
+        throw std::runtime_error("reserved port number: " + str);
+    }
+
+    return static_cast<unsigned short>(port);
 }
 
-/// The copyright year for this DGI release.
-const unsigned int COPYRIGHT_YEAR = 2013;
+} // unnamed namespace
 
 /// Broker entry point
 int main(int argc, char* argv[])
@@ -88,7 +116,7 @@ int main(int argc, char* argv[])
     po::variables_map vm;
     std::ifstream ifs;
     std::string cfgFile, loggerCfgFile, timingsFile, adapterCfgFile;
-    std::string listenIP, port, hostname, id;
+    std::string listenIP, port, hostname, fport, id;
     unsigned int globalVerbosity;
 
     try
@@ -115,8 +143,10 @@ int main(int argc, char* argv[])
                 ( "port,p",
                 po::value<std::string > ( &port )->default_value("1870"),
                 "TCP port to listen for peers on" )
-                ( "adapter-config", po::value<std::string>( &adapterCfgFile ),
-                "filename of the adapter specification" )
+                ( "factory-port", po::value<std::string>(&fport),
+                "port for plug and play session protocol" )
+                ( "adapter-config", po::value<std::string>(&adapterCfgFile),
+                "filename of the adapter specification for physical devices" )
                 ( "logger-config",
                 po::value<std::string > ( &loggerCfgFile )->
                 default_value("./config/logger.cfg"),
@@ -128,7 +158,11 @@ int main(int argc, char* argv[])
                 ( "verbose,v",
                 po::value<unsigned int>( &globalVerbosity )->
                 implicit_value(5)->default_value(5),
-                "enable verbose output (optionally specify level)" );
+                "enable verbose output (optionally specify level)" )
+                ( "devices-endpoint",
+                po::value<std::string> (),
+                "restrict the endpoint to use for all network communications "
+                "from the device module to the specified IP");
 
         // Options allowed on command line
         cliOpts.add(genOpts).add(cfgOpts);
@@ -151,7 +185,7 @@ int main(int argc, char* argv[])
         else
         {
             // Process the config
-            po::store(parse_config_file(ifs, cfgOpts), vm);
+            po::store(po::parse_config_file(ifs, cfgOpts), vm);
             po::notify(vm);
 
             if (!vm.count("help") && !vm.count("version") &&
@@ -190,7 +224,7 @@ int main(int argc, char* argv[])
         }
 
         hostname = boost::asio::ip::host_name();
-        id = generate_uuid(hostname, port);
+        id = GenerateUuid(hostname, port);
         if (vm.count("uuid"))
         {
             std::cout << id << std::endl;
@@ -205,63 +239,63 @@ int main(int argc, char* argv[])
         CTimings::SetTimings(timingsFile);
 
         /// Prepare the global Configuration
-        CGlobalConfiguration::instance().SetHostname(hostname);
-        CGlobalConfiguration::instance().SetUUID(id);
-        CGlobalConfiguration::instance().SetListenPort(port);
-        CGlobalConfiguration::instance().SetListenAddress(listenIP);
-        CGlobalConfiguration::instance().SetClockSkew(
+        CGlobalConfiguration::Instance().SetHostname(hostname);
+        CGlobalConfiguration::Instance().SetUUID(id);
+        CGlobalConfiguration::Instance().SetListenPort(port);
+        CGlobalConfiguration::Instance().SetListenAddress(listenIP);
+        CGlobalConfiguration::Instance().SetClockSkew(
                 boost::posix_time::milliseconds(0));
-
-        // configure the adapter factory
-        if( vm.count("adapter-config") > 0 )
+        
+        // Specify socket endpoint address, if provided
+        if( vm.count("devices-endpoint") )
         {
-            Logger.Notice << "Reading the file " << adapterCfgFile
-                          << " to initialize the adapter factory." << std::endl;
-            try
-            {
-                boost::property_tree::ptree adapterList;
-                boost::property_tree::read_xml(adapterCfgFile, adapterList);
-                
-                BOOST_FOREACH(boost::property_tree::ptree::value_type & t,
-                        adapterList.get_child("root"))
-                {
-                    device::CAdapterFactory::Instance().CreateAdapter(t.second);
-                }
-            }
-            catch( std::exception & e )
-            {
-                std::stringstream ss;
-                ss << "Failed to configure the adapter factory: " << e.what();
-                throw std::runtime_error(ss.str());
-            }
-            Logger.Notice << "Initialized the adapter factory." << std::endl;
+            CGlobalConfiguration::Instance().SetDevicesEndpoint(
+                vm["devices-endpoint"].as<std::string>() );
         }
         else
         {
-            Logger.Notice << "No adapters specified." << std::endl;
+            CGlobalConfiguration::Instance().SetDevicesEndpoint("");
+        }
+
+        if (vm.count("factory-port"))
+        {
+            CGlobalConfiguration::Instance().SetFactoryPort(GetPort(fport));
+        }
+        else
+        {
+            CGlobalConfiguration::Instance().SetFactoryPort(0);
+        }
+
+        if (vm.count("adapter-config"))
+        {
+            CGlobalConfiguration::Instance().SetAdapterConfigPath(
+                adapterCfgFile);
+        }
+        else
+        {
+            CGlobalConfiguration::Instance().SetAdapterConfigPath("");
         }
     }
     catch (std::exception & e)
     {
-        Logger.Error << "Exception caught in main during start up: " << e.what() << std::endl;
-        return 0;
+        Logger.Fatal << "Exception caught in main during start up: " << e.what() << std::endl;
+        return 1;
     }
-    
+
     //constructors for initial mapping
     CConnectionManager conManager;
     ConnectionPtr newConnection;
-    boost::asio::io_service ios;
 
     // Instantiate Dispatcher for message delivery
     CDispatcher dispatch;
     // Run server in background thread
-    CBroker broker(listenIP, port, dispatch, ios, conManager);
-    
+    CBroker broker(dispatch, conManager);
+
     // Initialize modules
     gm::GMAgent GM(id, broker);
     sc::SCAgent SC(id, broker);
     lb::LBAgent LB(id, broker);
-        
+
     try
     {
         // Instantiate and register the group management module
@@ -289,15 +323,14 @@ int main(int argc, char* argv[])
 
                 if (idx == std::string::npos)
                 { // Not found!
-                    std::cerr << "Incorrectly formatted host in config file: "
-                              << s << std::endl;
-                    continue;
+                    throw std::runtime_error(
+                            "Incorrectly formatted host in config file: " + s);
                 }
 
                 std::string peerhost(s.begin(), s.begin() + idx),
                         peerport(s.begin() + ( idx + 1 ), s.end());
                 // Construct the UUID of the peer
-                std::string peerid = generate_uuid(peerhost, peerport);
+                std::string peerid = GenerateUuid(peerhost, peerport);
                 // Add the UUID to the list of known hosts
                 conManager.PutHostname(peerid, peerhost, peerport);
             }
@@ -316,21 +349,24 @@ int main(int argc, char* argv[])
     }
     catch (std::exception & e)
     {
-        Logger.Error << "Exception caught in module initialization: " << e.what() << std::endl;
+        Logger.Fatal << "Exception caught in module initialization: " << e.what() << std::endl;
+        return 1;
     }
-    
+
     try
     {
         broker.Run();
     }
     catch (std::exception & e)
     {
-        Logger.Error << "Exception caught in Broker: " << e.what() << std::endl;
+        Logger.Fatal << "Exception caught in Broker: " << e.what() << std::endl;
         broker.Stop();
-        ios.run();
+        return 1;
     }
 
-    return 0;
+    // There are two ways the broker might stop. First is due to an
+    // exception; those are handled above. The second way is to catch
+    // a signal, in which case broker.Run() will never complete. (Broker may
+    // choose to handle it.) Regardless, control should never reach here.
+    assert(false);
 }
-
-#endif // __unix__

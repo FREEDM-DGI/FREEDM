@@ -1,0 +1,2 @@
+# The DGI adapter factory receives a packet containing a lone Hello command with the wrong delimiter
+sendtofactory packets/Factory-WrongDelimiter-Lone.txt

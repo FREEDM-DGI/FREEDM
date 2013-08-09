@@ -62,12 +62,6 @@ protected:
     /// Creates a socket connection to the given hostname and port number.
     void Connect();
 
-    /// Closes the connection.
-    virtual void Quit() = 0;
-    
-    /// Constructor to initialize the socket.
-    ITcpAdapter(boost::asio::io_service & service);
-
     /// Socket to use for the TCP connection.
     mutable boost::asio::ip::tcp::socket m_socket;
 

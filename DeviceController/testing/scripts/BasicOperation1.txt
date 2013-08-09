@@ -1,0 +1,3 @@
+# Detects a Single Device
+enable Sst SST1 gateway 5.0
+work forever

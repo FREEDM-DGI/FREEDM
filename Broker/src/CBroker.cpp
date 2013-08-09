@@ -30,6 +30,7 @@
 /// Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
 ////////////////////////////////////////////////////////////////////////////////
 
+#include "CAdapterFactory.hpp"
 #include "CBroker.hpp"
 #include "CLogger.hpp"
 #include "CGlobalPeerList.hpp"
@@ -56,36 +57,35 @@ CLocalLogger Logger(__FILE__);
         
 ///////////////////////////////////////////////////////////////////////////////
 /// @fn CBroker::CBroker
-/// @description The constructor for the broker, providing the initial acceptor
-/// @io provides and acceptor socket for incoming network connecitons.
+/// @description The constructor for the broker
+/// @io provide an acceptor socket for incoming network connections.
 /// @peers any node running the broker architecture.
 /// @sharedmemory The dispatcher and connection manager are shared with the
 ///               modules.
 /// @pre The port is free to be bound to.
 /// @post An acceptor socket is bound on the freedm port awaiting connections
 ///       from other nodes.
-/// @param p_address The address to bind the listening socket to.
-/// @param p_port The port to bind the listening socket to.
-/// @param p_dispatch The message dispatcher associated with this Broker
-/// @param m_ios The ioservice used by this broker to perform socket operations
-/// @param m_conMan The connection manager used by this broker.
+/// @param dispatcher The message dispatcher associated with this Broker
+/// @param conMan The connection manager used by this broker.
 /// @limitations Fails if the port is already in use.
 ///////////////////////////////////////////////////////////////////////////////
-CBroker::CBroker(const std::string& p_address, const std::string& p_port,
-    CDispatcher &p_dispatch, boost::asio::io_service &m_ios,
-    freedm::broker::CConnectionManager &m_conMan)
-    : m_ioService(m_ios),
-      m_connManager(m_conMan),
-      m_dispatch(p_dispatch),
-      m_newConnection(new CListener(m_ioService, m_connManager, *this, m_conMan.GetUUID())),
-      m_phasetimer(m_ios),
+CBroker::CBroker(CDispatcher &dispatcher, freedm::broker::CConnectionManager &conMan)
+    : m_ioService(),
+      m_connManager(conMan),
+      m_dispatch(dispatcher),
+      m_newConnection(new CListener(m_ioService, conMan, *this, conMan.GetUUID())),
+      m_phasetimer(m_ioService),
       m_synchronizer(*this),
-      m_signals(m_ios,SIGINT)
+      m_signals(m_ioService, SIGINT, SIGTERM),
+      m_stopping(false)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     // Open the acceptor with the option to reuse the address (i.e. SO_REUSEADDR).
     boost::asio::ip::udp::resolver resolver(m_ioService);
-    boost::asio::ip::udp::resolver::query query( p_address, p_port);
+    boost::asio::ip::udp::resolver::query query(
+        CGlobalConfiguration::Instance().GetListenAddress(),
+        CGlobalConfiguration::Instance().GetListenPort()
+    );
     boost::asio::ip::udp::endpoint endpoint = *resolver.resolve( query );
     
     // Listen for connections and create an event to spawn a new connection
@@ -96,7 +96,7 @@ CBroker::CBroker(const std::string& p_address, const std::string& p_port,
     
     // Try to align on the first phase change
     boost::posix_time::ptime now = boost::posix_time::microsec_clock::universal_time();
-    now += CGlobalConfiguration::instance().GetClockSkew();
+    now += CGlobalConfiguration::Instance().GetClockSkew();
     now -= boost::posix_time::milliseconds(2*ALIGNMENT_DURATION);
     m_last_alignment = now;
 
@@ -122,22 +122,18 @@ CBroker::~CBroker()
 
 ///////////////////////////////////////////////////////////////////////////////
 /// @fn CBroker::Run()
-/// @description Calls the ioservice run (initializing the ioservice thread)
-///               and then blocks until the ioservice runs out of work.
-/// @pre  The ioservice has not been allocated a thread to operate on and has
-///       some schedule of jobs waiting to be performed (so it doesn't exit
-///       immediately.)
-/// @post The ioservice has terminated.
-/// @return none
+/// @description Runs the ioservice until it is out of work. (That should only
+///              happen if a signal is received.)
+/// @pre  The ioservice has some schedule of jobs waiting to be performed (so
+///       it doesn't exit immediately)
+/// @post The ioservice has stopped.
+/// @ErrorHandling Could raise arbitrary exceptions from anywhere in the DGI.
 ///////////////////////////////////////////////////////////////////////////////
 void CBroker::Run()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    // The io_service::run() call will block until all asynchronous operations
-    // have finished. While the server is running, there is always at least one
-    // asynchronous operation outstanding: the asynchronous accept call waiting
-    // for new incoming connections.
     m_signals.async_wait(boost::bind(&CBroker::HandleSignal, this,_1,_2));
+    device::CAdapterFactory::Instance(); // create it
     m_synchronizer.Run();
     m_ioService.run();
 }
@@ -161,46 +157,85 @@ boost::asio::io_service& CBroker::GetIOService()
 /// @pre The ioservice is running and processing tasks.
 /// @post The command to stop the ioservice has been placed in the service's
 ///        task queue.
+/// @param signum positive if called from a signal handler, or 0 otherwise
 ///////////////////////////////////////////////////////////////////////////////
-void CBroker::Stop()
+void CBroker::Stop(unsigned int signum)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    // Post a call to the stop function so that CBroker::stop() is safe to call
-    // from any thread.
-    m_synchronizer.Stop();
-    m_ioService.post(boost::bind(&CBroker::HandleStop, this));
+
+    // FIXME add code here to stop lb, gm, and sc
+    // (IAgent should get a virtual Stop function)
+
+    {
+        boost::unique_lock<boost::mutex> lock(m_stoppingMutex);
+        m_stopping = true;
+    }
+
+    /* Run agents' previously-posted handlers before shutting down. */
+    m_ioService.post(boost::bind(&CBroker::HandleStop, this, signum));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 /// @fn CBroker::HandleSignal
-/// @description Handle signals from signal
+/// @description Handle signals that terminate the program. (These are the
+///              only signals that we catch.)
 /// @pre None
-/// @post The broker winds down
+/// @post The broker is scheduled to be stopped.
 ///////////////////////////////////////////////////////////////////////////////
-void CBroker::HandleSignal(const boost::system::error_code& error, int parameter)
+void CBroker::HandleSignal(const boost::system::error_code& error, int signum)
 {
+    // It appears that the limitations of POSIX signal handlers apply here.
+    // Don't do anything here unless you're sure it's safe to do from a
+    // signal handler in a multithreaded program.
+    //
+    // E.g. our logger is synchronized, so using it here could cause deadlock.
+    // An unsynchronized iostream could be corrupted, so don't do that either.
     if(!error)
     {
-        Logger.Fatal<<"Caught signal "<<parameter<<". Shutting Down..."<<std::endl;
-        Stop();
+        // If we get a signal twice, use the default handler to stop right away.
+        m_signals.remove(signum);
+
+        // Stop is not safe to use within signal handlers. Call it later.
+        m_ioService.post(boost::bind(&CBroker::Stop, this, signum));
     }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 /// @fn CBroker::HandleStop
 /// @description Handles closing all the sockets connection managers and
-///              Services.
-/// @pre The ioservice is running.
-/// @post The ioservice is stopped.
+///              Services. Should probably only be called by CBroker::Stop().
+/// @param signum positive if called from a signal handler, or 0 otherwise
+/// @pre The ioservice is running but all agents have been stopped.
+/// @post The Broker has been cleanly shut down.
+/// @post The devices subsystem has been cleanly shut down.
 ///////////////////////////////////////////////////////////////////////////////
-void CBroker::HandleStop()
+void CBroker::HandleStop(unsigned int signum)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    // The server is stopped by canceling all outstanding asynchronous
-    // operations. Once all operations have finished the io_service::run() call
-    // will exit.
+
+    if (signum > 0)
+    {
+        Logger.Fatal<<"Caught signal "<<signum<<". Shutting Down..."<<std::endl;
+        // If we get another signal at this point, really stop right away
+        m_signals.clear();
+    }
+
+    m_synchronizer.Stop();
     m_connManager.StopAll();
-    m_ioService.stop(); 
+
+    // The server is stopped by canceling all outstanding asynchronous
+    // operations. Once all operations have been canceled, the call to
+    // m_ioService.run() from CBroker::Run() will exit.
+    m_ioService.stop();
+
+    // We must also ensure the devices have been shut down. That's all we know.
+    // The devices have their own ioservice and will handle this themselves.
+    device::CAdapterFactory::Instance().Stop();
+
+    if (signum > 0)
+    {
+        raise(signum);
+    }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -268,7 +303,8 @@ CBroker::TimerHandle CBroker::AllocateTimer(CBroker::ModuleIdent module)
 ///////////////////////////////////////////////////////////////////////////////
 /// @fn CBroker::Schedule
 /// @description Given a binding to a function that should be run into the
-///   future, prepares it to be run... in the future.
+///   future, prepares it to be run... in the future. The attempt to schedule
+///   may be rejected if the Broker is stopping.
 /// @param h The handle to the timer being set.
 /// @param wait the amount of the time to wait. If this value is "not_a_date_time"
 ///     The wait is converted to positive infinity and the time will expire as 
@@ -277,11 +313,19 @@ CBroker::TimerHandle CBroker::AllocateTimer(CBroker::ModuleIdent module)
 /// @pre The module is registered
 /// @post A function is scheduled to be called in the future. If a next time
 ///     function is scheduled, its timer will expire as soon as its round ends.
+/// @return 0 on success, -1 if rejected
 ///////////////////////////////////////////////////////////////////////////////
-void CBroker::Schedule(CBroker::TimerHandle h,
+int CBroker::Schedule(CBroker::TimerHandle h,
     boost::posix_time::time_duration wait, CBroker::Scheduleable x)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    {
+        boost::unique_lock<boost::mutex> lock(m_stoppingMutex);
+        if (m_stopping)
+        {
+            return -1;
+        }
+    }
     m_schmutex.lock();
     CBroker::Scheduleable s;
     if(wait.is_not_a_date_time())
@@ -298,12 +342,14 @@ void CBroker::Schedule(CBroker::TimerHandle h,
     Logger.Debug<<"Scheduled task for timer "<<h<<std::endl;
     m_timers[h]->async_wait(s);
     m_schmutex.unlock();
+    return 0;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 /// @fn CBroker::Schedule
 /// @description Given a module and a bound schedulable, enter that schedulable
-///     into that modules job queue.
+///     into that modules job queue. The attempt to schedule may be rejected if
+///     the Broker is stopping.
 /// @pre The module is registered.
 /// @post The task is placed in the work queue for the module m. If the
 ///     start_worker parameter is set to true, the module's worker will be
@@ -313,10 +359,18 @@ void CBroker::Schedule(CBroker::TimerHandle h,
 /// @param start_worker tells the worker to begin processing again, if it is
 ///     currently idle [The worker will be idle if the work queue is empty; this
 ///     can be useful to defer an activity to the next round if the node is not busy
+/// @return 0 on success, -1 if rejected
 ///////////////////////////////////////////////////////////////////////////////
-void CBroker::Schedule(ModuleIdent m, BoundScheduleable x, bool start_worker)
+int CBroker::Schedule(ModuleIdent m, BoundScheduleable x, bool start_worker)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    {
+        boost::unique_lock<boost::mutex> lock(m_stoppingMutex);
+        if (m_stopping)
+        {
+            return -1;
+        }
+    }
     m_schmutex.lock();
     m_ready[m].push_back(x);
     if(!m_busy && start_worker)
@@ -328,6 +382,7 @@ void CBroker::Schedule(ModuleIdent m, BoundScheduleable x, bool start_worker)
     Logger.Debug<<"Module "<<m<<" now has queue size: "<<m_ready[m].size()<<std::endl;
     Logger.Debug<<"Scheduled task (NODELAY) for "<<m<<std::endl;
     m_schmutex.unlock();
+    return 0;
 }
 
 #pragma GCC diagnostic ignored "-Wunused-parameter"
@@ -355,7 +410,7 @@ void CBroker::ChangePhase(const boost::system::error_code &err)
     // Generate a clock beacon
     boost::posix_time::ptime now = boost::posix_time::microsec_clock::universal_time();
     boost::posix_time::time_duration time = now.time_of_day();
-    time += CGlobalConfiguration::instance().GetClockSkew();
+    time += CGlobalConfiguration::Instance().GetClockSkew();
 
     if(m_phase >= m_modules.size())
     {
@@ -399,7 +454,7 @@ void CBroker::ChangePhase(const boost::system::error_code &err)
     }
     if(m_modules.size() > 0)
     {
-        Logger.Notice<<"Phase: "<<m_modules[m_phase].first<<" for "<<sched_duration<<"ms "<<"offset "<<CGlobalConfiguration::instance().GetClockSkew()<<std::endl;
+        Logger.Notice<<"Phase: "<<m_modules[m_phase].first<<" for "<<sched_duration<<"ms "<<"offset "<<CGlobalConfiguration::Instance().GetClockSkew()<<std::endl;
     }
     if(m_phase != oldphase)
     {

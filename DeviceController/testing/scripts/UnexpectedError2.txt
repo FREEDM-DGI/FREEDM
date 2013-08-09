@@ -1,0 +1,4 @@
+# Invalid Signal Identifier
+enable Sst SST1 gateawy 5.0
+work forever
+

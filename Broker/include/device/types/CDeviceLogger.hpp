@@ -46,6 +46,10 @@ public:
     /// Convenience type for a shared pointer to self.
     typedef boost::shared_ptr<CDeviceLogger> Pointer;
 
+    /// Virtual constructor for another device of the same type.
+    IDevice::Pointer Create(const std::string identifier,
+            IAdapter::Pointer adapter) const;
+
     /// Constructor which takes an identifier and internal structure.
     CDeviceLogger(std::string device, IAdapter::Pointer adapter);
 
@@ -54,6 +58,12 @@ public:
     
     /// Sets the group status for this peer.
     void SetGroupStatus(const SignalValue status);
+
+    /// Sets the current gateway for this peer.
+    void SetGateway(const SignalValue gateway);
+
+    /// Sets the number of devices for this peer.
+    void SetDeviceCount(const SignalValue gateway);
 private:
     /// redefine base accessor as private
     using IDevice::Get;

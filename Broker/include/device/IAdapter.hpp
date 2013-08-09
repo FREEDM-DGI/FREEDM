@@ -24,11 +24,14 @@
 #ifndef I_ADAPTER_HPP
 #define	I_ADAPTER_HPP
 
+#include <set>
 #include <string>
 #include <utility>
 
+#include <boost/asio/io_service.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/noncopyable.hpp>
+#include <boost/thread.hpp>
 
 namespace freedm {
 namespace broker {
@@ -46,7 +49,16 @@ typedef std::pair<const std::string, const std::string> DeviceSignal;
 /// concrete adapter is responsible for implementation of both Get and Set
 /// functions.
 ///
-/// @limitations None.
+/// The adapter class is intended to be private to the device subsystem.  If
+/// you want to access it from outside devices, you are doing something wrong.
+///
+/// @limitations Adapters must be shut down via IAdapter::Stop() exactly once
+///              before they are destructed in order to ensure correct behavior.
+///              An adapter that has been shut down while references to it still
+///              exist is basically an empty shell: IAdapter::Get() is
+///              guaranteed to return the same value that it did before the
+///              adapter was stopped, and IAdapter::Set() is guaranteed to
+///              silently fail.
 ////////////////////////////////////////////////////////////////////////////////
 class IAdapter
     : private boost::noncopyable
@@ -57,6 +69,9 @@ public:
 
     /// Starts the adapter.
     virtual void Start() = 0;
+
+    /// Stops the adapter.  Guaranteed to be thread-safe.
+    virtual void Stop() = 0;
     
     /// Retrieves a value from a device.
     virtual SignalValue Get(const std::string device,
@@ -67,7 +82,24 @@ public:
             const SignalValue value) = 0;
 
     /// Virtual destructor for derived classes.
-    virtual ~IAdapter() { };
+    virtual ~IAdapter();
+
+    /// Register a device name with the adapter.
+    void RegisterDevice(const std::string devid);
+    
+    /// Get the list of registered device names.
+    std::set<std::string> GetDevices() const;
+
+protected:
+    /// Constructor
+    IAdapter();
+
+    /// Reveals devices in the device manager.
+    void RevealDevices();
+
+private:
+    /// Set of registered device names.
+    std::set<std::string> m_devices;
 };
 
 } // namespace device

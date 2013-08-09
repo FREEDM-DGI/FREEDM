@@ -69,7 +69,6 @@ namespace broker {
 namespace lb {
 
 const double NORMAL_TOLERANCE = 0.5;
-
 //////////////////////////////////////////////////////////
 /// class LBAgent
 ///
@@ -82,12 +81,8 @@ class LBAgent
       public IAgent< boost::shared_ptr<IPeerNode> >
 {
     public:
-        /// Default constructor
-        LBAgent();
         /// Constructor for using this object as a module
         LBAgent(std::string uuid_, CBroker &broker);
-        /// Destructor for the module  
-        ~LBAgent();
 
         /// Main loop of the algorithm called from PosixBroker
         int Run();

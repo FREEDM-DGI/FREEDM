@@ -1,0 +1,4 @@
+# Stress Test
+enable Drer HAMTARO generation 72.0
+work forever
+

@@ -35,6 +35,4 @@ PARAMETERS = {
     'rounds_per_sync': 10,
     # The number of load balancings that can be attempted per round
     'lb_per_phase': 10,
-    # The delay in ms between running the RTDS
-    'rtds_run_delay': 50,
 }

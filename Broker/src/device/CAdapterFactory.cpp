@@ -1,22 +1,27 @@
-///////////////////////////////////////////////////////////////////////////////
-/// @file         CAdapterFactory.cpp
+////////////////////////////////////////////////////////////////////////////////
+/// @file           CAdapterFactory.cpp
 ///
-/// @author       Thomas Roth <tprfh7@mst.edu>
-/// @author       Michael Catanzaro <michael.catanzaro@mst.edu>
+/// @author         Thomas Roth <tprfh7@mst.edu>
+/// @author         Michael Catanzaro <michael.catanzaro@mst.edu>
 ///
-/// @project      FREEDM DGI
+/// @project        FREEDM DGI
 ///
-/// @description  Handles the creation of device adapters.
+/// @description    Handles the creation of device adapters.
 ///
 /// @functions
 ///     CAdapterFactory::CAdapterFactory
-///     CAdapterFactory::~CAdapterFactory
-///     CAdapterFactory::RunService
 ///     CAdapterFactory::Instance
+///     CAdapterFactory::RunService
+///     CAdapterFactory::Stop
 ///     CAdapterFactory::CreateAdapter
-///     CAdapterFactory::RegisterDeviceClass
-///     CAdapterFactory::InitializeBuffer
+///     CAdapterFactory::RemoveAdapter
+///     CAdapterFactory::InitializeAdapter
 ///     CAdapterFactory::CreateDevice
+///     CAdapterFactory::StartSessionProtocol
+///     CAdapterFactory::StartSession
+///     CAdapterFactory::HandleRead
+///     CAdapterFactory::Timeout
+///     CAdapterFactory::SessionProtocol
 ///
 /// These source code files were created at Missouri University of Science and
 /// Technology, and are intended for use in teaching or research. They may be
@@ -29,20 +34,33 @@
 /// Suggested modifications or questions about these files can be directed to
 /// Dr. Bruce McMillin, Department of Computer Science, Missouri University of
 /// Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 
 #include "CAdapterFactory.hpp"
 #include "IBufferAdapter.hpp"
-#include "CPscadAdapter.hpp"
 #include "CRtdsAdapter.hpp"
+#include "CPnpAdapter.hpp"
+#include "CDeviceManager.hpp"
+#include "CGlobalConfiguration.hpp"
 #include "CFakeAdapter.hpp"
+#include "PlugNPlayExceptions.hpp"
+#include "SynchronousTimeout.hpp"
+#include "CTimings.hpp"
 
-#include <set>
 #include <utility>
+#include <iostream>
+#include <map>
+#include <set>
 
+#include <signal.h>
+
+#include <boost/asio.hpp>
 #include <boost/bind.hpp>
 #include <boost/foreach.hpp>
 #include <boost/property_tree/ptree.hpp>
+#include <boost/system/system_error.hpp>
+#include <boost/algorithm/string/regex.hpp>
+#include <boost/property_tree/xml_parser.hpp>
 
 namespace freedm {
 namespace broker {
@@ -53,40 +71,86 @@ namespace {
 CLocalLogger Logger(__FILE__);
 }
 
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 /// Constructs an uninitialized factory.
 ///
 /// @pre None.
-/// @post Registers the recognized device classes.
-/// @post Launches an i/o service on a separate thread.
+/// @post Registers the known device classes.
+/// @post Initializes the session protocol TCP server.
 ///
 /// @limitations None.
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 CAdapterFactory::CAdapterFactory()
+    : m_timeout(m_ios)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    
+
     RegisterDevices();
+
+    unsigned short factoryPort =
+        CGlobalConfiguration::Instance().GetFactoryPort();
+
+    if( factoryPort )
+    {
+        Logger.Status << "Plug and play devices enabled." << std::endl;
+        StartSessionProtocol(factoryPort);
+    }
+    else
+    {
+        Logger.Status << "Plug and play devices disabled." << std::endl;
+    }
+
+    std::string adapterCfgFile =
+        CGlobalConfiguration::Instance().GetAdapterConfigPath();
+
+    if( adapterCfgFile.empty() )
+    {
+        Logger.Status << "System will start without adapters." << std::endl;
+    }
+    else
+    {
+        Logger.Status << "Using devices in " << adapterCfgFile << std::endl;
+
+        try
+        {
+            boost::property_tree::ptree adapterList;
+            boost::property_tree::read_xml(adapterCfgFile, adapterList);
+
+            BOOST_FOREACH(boost::property_tree::ptree::value_type & t,
+                    adapterList.get_child("root"))
+            {
+                CreateAdapter(t.second);
+            }
+        }
+        catch(boost::property_tree::xml_parser_error & e)
+        {
+            throw std::runtime_error("Failed to create device adapters: "
+                    + std::string(e.what()));
+        }
+        catch(std::exception & e)
+        {
+            throw std::runtime_error(adapterCfgFile+": "+e.what());
+        }
+    }
+
+    // Last because we don't want this thread to run if construction fails.
     m_thread = boost::thread(boost::bind(&CAdapterFactory::RunService, this));
 }
 
-///////////////////////////////////////////////////////////////////////////////
-/// Stops the i/o service and waits for its thread to complete.
+////////////////////////////////////////////////////////////////////////////////
+/// Retrieves the singleton factory instance.
 ///
 /// @pre None.
-/// @post m_ios is stopped and the object is destroyed.
+/// @post Creates a new factory on the first call.
+/// @return The global instance of CAdapterFactory.
 ///
 /// @limitations None.
-///////////////////////////////////////////////////////////////////////////////
-CAdapterFactory::~CAdapterFactory()
+////////////////////////////////////////////////////////////////////////////////
+CAdapterFactory & CAdapterFactory::Instance()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    
-    m_ios.stop();
-    Logger.Status << "Stopped the adapter i/o service." << std::endl;
-    
-    Logger.Notice << "Blocking until thread finishes execution." << std::endl;
-    m_thread.join();
+    static CAdapterFactory instance;
+    return instance;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -101,43 +165,83 @@ void CAdapterFactory::RunService()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
-    boost::asio::io_service::work runner(m_ios);
-    m_ios.run();
+    boost::asio::io_service::work workload(m_ios);
 
-    Logger.Status << "Started the adapter i/o service." << std::endl;
+    try
+    {
+        Logger.Status << "Starting the adapter i/o service." << std::endl;
+        m_ios.run();
+    }
+    catch (std::exception & e)
+    {
+        Logger.Fatal << "Fatal exception in the device ioservice: "
+                << e.what() << std::endl;
+        // The Broker will stop us.
+        raise(SIGTERM);
+    }
+
+    Logger.Status << "The adapter i/o service has stopped." << std::endl;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// Retrieves the singleton factory instance.
+/// Stops the i/o service and removes all devices from the device manager.
+/// This function must be called from outside the devices thread.
 ///
-/// @pre None.
-/// @post Creates a new factory on the first call.
-/// @return The global instance of CAdapterFactory.
-///
-/// @limitations None.
+/// @pre None
+/// @post All the devices of every adapter in the system are removed.
+/// @post The IOService has stopped.
+/// @post The devices thread is detatched and stopped (unless called from it).
+/// @ErrorHandling Guaranteed not to throw. Errors are only logged.
+/// @limitations MUST be called from outside the devices thread.
 ///////////////////////////////////////////////////////////////////////////////
-CAdapterFactory & CAdapterFactory::Instance()
+void CAdapterFactory::Stop()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    static CAdapterFactory instance;
-    return instance;
+
+    assert(boost::this_thread::get_id() != m_thread.get_id());
+
+    try
+    {
+        if (m_server)
+        {
+            m_server->Stop();
+        }
+
+        // Remove every adapter without using an invalid iterator
+        for (std::map<std::string, IAdapter::Pointer>::iterator i =
+                    m_adapters.begin();
+             i != m_adapters.end(); i = m_adapters.begin())
+        {
+            RemoveAdapter(i->first);
+        }
+
+        m_ios.stop();
+        m_thread.join();
+    }
+    catch (std::exception & e)
+    {
+        Logger.Error << "Caught exception when stopping AdapterFactory: "
+                << e.what() << std::endl;
+    }
 }
 
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 /// Creates a new adapter and all of its devices.  The adapter is registered
-/// with each device, and each device is registered with the stored device
+/// with each device, and each device is registered with the global device
 /// manager.  The adapter is configured to recognize its own device signals,
 /// and started when the configuration is complete.
 ///
-/// @ErrorHandling Throws a std::runtime_error if the property tree is bad.
+/// @ErrorHandling Throws an EDgiConfigError if the property tree is bad, or
+/// EBadRequest if a PnP controller has assigned an unexpected signal to a
+/// device (which would be an EDgiConfigError otherwise)
 /// @pre The adapter must not begin work until IAdapter::Start.
 /// @pre The adapter's devices must not be specified in other adapters.
-/// @post Calls CAdapterFactory::CreateDevice to create each device.
+/// @post Calls CAdapterFactory::InitializeAdapter to create devices.
 /// @post Starts the adapter through IAdapter::Start.
 /// @param p The property tree that specifies a single adapter.
 ///
 /// @limitations None.
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 void CAdapterFactory::CreateAdapter(const boost::property_tree::ptree & p)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
@@ -155,7 +259,7 @@ void CAdapterFactory::CreateAdapter(const boost::property_tree::ptree & p)
     }
     catch( std::exception & e )
     {
-        throw std::runtime_error("Failed to create adapter: "
+        throw EDgiConfigError("Failed to create adapter: "
                 + std::string(e.what()));
     }
     
@@ -164,21 +268,22 @@ void CAdapterFactory::CreateAdapter(const boost::property_tree::ptree & p)
     // range check the properties
     if( name.empty() )
     {
-        throw std::runtime_error("Tried to create an adapter without a name.");
+        throw EDgiConfigError("Tried to create an unnamed adapter.");
     }
-    else if( m_adapter.count(name) > 0 )
+    else if( m_adapters.count(name) > 0 )
     {
-        throw std::runtime_error("Multiple adapters share name " + name);
+        throw EDgiConfigError("Multiple adapters share the name: " + name);
     }
     
     // create the adapter
-    if( type == "pscad" )
-    {
-        adapter = CPscadAdapter::Create(m_ios, subtree);
-    }
-    else if( type == "rtds" )
+    // FIXME - use plugins or something, this sucks
+    if( type == "rtds" )
     {
         adapter = CRtdsAdapter::Create(m_ios, subtree);
+    }
+    else if( type == "pnp" )
+    {
+        adapter = CPnpAdapter::Create(m_ios, subtree, m_server->GetClient());
     }
     else if( type == "fake" )
     {
@@ -186,56 +291,65 @@ void CAdapterFactory::CreateAdapter(const boost::property_tree::ptree & p)
     }
     else
     {
-         throw std::runtime_error("Attempted to create adapter of an "
-            + std::string("unrecognized type: ") + type);
+        throw EDgiConfigError("Unregistered adapter type: " + type);
     }
     
-    // store the adapter
+    // store the adapter; note that InitializeAdapter can throw EBadRequest
     InitializeAdapter(adapter, p);
-    m_adapter[name] = adapter;
+    m_adapters[name] = adapter;
     Logger.Info << "Created the " << type << " adapter " << name << std::endl;
     
     // signal construction complete
     adapter->Start();
 }
 
-///////////////////////////////////////////////////////////////////////////////
-/// Registers a create device function with the factory for the given key.
+////////////////////////////////////////////////////////////////////////////////
+/// Removes an adapter and all of its associated devices.
 ///
-/// @ErrorHandling Throws a std::runtime_error if the key already exists.
-/// @pre The key should not already be registered with the factory.
-/// @post Stores the function in m_registry for internal use.
-/// @param key The unique identifier associated with the function.
-/// @param function The function to register with the factory.
+/// @ErrorHandling Throws a std::runtime_error if no such adapter exists.
+/// @pre An adapter must exist with the provided identifier.
+/// @post Removes the specified adapter from m_adapters.
+/// @post Removes the adapter's devices from the device manager.
+/// @param identifier The identifier of the adapter to remove.
 ///
 /// @limitations None.
-///////////////////////////////////////////////////////////////////////////////
-void CAdapterFactory::RegisterDeviceClass(std::string key,
-        FactoryFunction function)
+////////////////////////////////////////////////////////////////////////////////
+void CAdapterFactory::RemoveAdapter(const std::string identifier)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-
-    if( m_registry.count(key) > 0 )
+    
+    std::set<std::string> devices;
+    
+    if( m_adapters.count(identifier) == 0 )
     {
-        throw std::runtime_error("Device type " + key + " already registered.");
+        throw std::runtime_error("No such adapter: " + identifier);
     }
+    
+    devices = m_adapters[identifier]->GetDevices();
 
-    m_registry.insert(std::make_pair(key, function));
-    Logger.Info << "Registered the device class " << key << "." << std::endl;
+    m_adapters[identifier]->Stop();
+    m_adapters.erase(identifier);
+    Logger.Info << "Removed the adapter: " << identifier << std::endl;
+    
+    BOOST_FOREACH(std::string device, devices)
+    {
+        CDeviceManager::Instance().RemoveDevice(device);
+    }
 }
 
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 /// Initializes an adapter to contain a set of device signals.
 ///
-/// @ErrorHandling Throws a std::runtime_error if the adapter is empty or the
-/// property tree has a bad specification format.
+/// @ErrorHandling Throws EDgiConfigError if the property tree has a bad
+/// specification format. Could also throw EBadRequest if the adapter is a
+/// CPnpAdapter and the Hello message assigns an unexpected signal to a device.
 /// @pre The property tree must contain an adapter specification.
 /// @post Associates a set of device signals with the passed adapter.
 /// @param adapter The adapter to initialize.
 /// @param p The property tree that contains the buffer data.
 ///
 /// @limitations None.
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 void CAdapterFactory::InitializeAdapter(IAdapter::Pointer adapter,
         const boost::property_tree::ptree & p)
 {
@@ -243,14 +357,27 @@ void CAdapterFactory::InitializeAdapter(IAdapter::Pointer adapter,
     
     boost::property_tree::ptree subtree;
     IBufferAdapter::Pointer buffer;
-    std::set<std::string> devices;
+    IDevice::Pointer device;
+
+    std::map<std::string, std::string> devtype;
+    std::map<std::string, unsigned int> states;
+    std::map<std::string, unsigned int> commands;
+    std::map<std::string, unsigned int>::iterator it;
     
     std::string type, name, signal;
     std::size_t index;
     
     if( !adapter )
     {
-        throw std::runtime_error("Received an empty IAdapter::Pointer.");
+        throw std::logic_error("Received a null IAdapter::Pointer.");
+    }
+    if( p.count("state") > 1 )
+    {
+        throw EDgiConfigError("XML contains multiple state tags");
+    }
+    if( p.count("command") > 1 )
+    {
+        throw EDgiConfigError("XML contains multiple command tags");
     }
 
     buffer = boost::dynamic_pointer_cast<IBufferAdapter>(adapter);
@@ -268,7 +395,7 @@ void CAdapterFactory::InitializeAdapter(IAdapter::Pointer adapter,
         }
         catch( std::exception & e )
         {
-            throw std::runtime_error("Failed to create adapter: "
+            throw EDgiConfigError("Failed to create adapter: "
                     + std::string(e.what()));
         }
         
@@ -280,10 +407,18 @@ void CAdapterFactory::InitializeAdapter(IAdapter::Pointer adapter,
                 name    = child.second.get<std::string>("device");
                 signal  = child.second.get<std::string>("signal");
                 index   = child.second.get<std::size_t>("<xmlattr>.index");
+
+                if( child.second.size() != 4 )
+                {
+                    std::stringstream ss;
+                    ss << "Invalid entry at " << (i == 0 ? "state" : "command")
+                            << " index = " << index << ": too many subtags";
+                    throw std::runtime_error(ss.str());
+                }
             }
             catch( std::exception & e )
             {
-                throw std::runtime_error("Failed to create adapter: "
+                throw EDgiConfigError("Failed to create adapter: "
                         + std::string(e.what()));
             }
             
@@ -291,10 +426,46 @@ void CAdapterFactory::InitializeAdapter(IAdapter::Pointer adapter,
                     << name << "," << signal << ")." << std::endl;
             
             // create the device when first seen
-            if( devices.count(name) == 0 )
+            if( devtype.count(name) == 0 )
             {
                 CreateDevice(name, type, adapter);
-                devices.insert(name);
+                adapter->RegisterDevice(name);
+                devtype[name]  = type;
+                states[name]   = 0;
+                commands[name] = 0;
+            }
+
+            if( devtype[name] != type )
+            {
+                std::string what = "Failed to create adapter: Multiple "
+                        + std::string("devices share the name: ") + name;
+                throw EDgiConfigError(what);
+            }
+            
+            // check if the device recognizes the associated signal
+            device = CDeviceManager::Instance().m_hidden_devices.at(name);
+            
+            if( i == 0 && device->HasStateSignal(signal) )
+            {
+                ++states[name];
+            }
+            else if( i == 1 && device->HasCommandSignal(signal) )
+            {
+                ++commands[name];
+            }
+            else
+            {
+                std::string what = "Failed to create adapter: The "
+                        + type + " device, " + name
+                        + ", does not recognize the signal: " + signal;
+                if (boost::dynamic_pointer_cast<CPnpAdapter>(adapter) != 0)
+                {
+                    throw EBadRequest(what);
+                }
+                else
+                {
+                    throw EDgiConfigError(what);
+                }
             }
 
             if( buffer && i == 0 )
@@ -309,33 +480,355 @@ void CAdapterFactory::InitializeAdapter(IAdapter::Pointer adapter,
             }
         }
     }
+
+    for( it = states.begin(); it != states.end(); it++ )
+    {
+        device = CDeviceManager::Instance().m_hidden_devices.at(it->first);
+
+        if( device->GetStateSet().size() != it->second )
+        {
+            std::string what = "Failed to create adapter: The device "
+                    + it->first + " is missing at least one state.";
+            if (boost::dynamic_pointer_cast<CPnpAdapter>(adapter) != 0)
+            {
+                throw EBadRequest(what);
+            }
+            else
+            {
+                throw EDgiConfigError(what);
+            }
+        }
+    }
+    for( it = commands.begin(); it != commands.end(); it++ )
+    {
+        device = CDeviceManager::Instance().m_hidden_devices.at(it->first);
+
+        if( device->GetCommandSet().size() != it->second )
+        {
+            std::string what = "Failed to create adapter: The device "
+                    + it->first + " is missing at least one command.";
+            if (boost::dynamic_pointer_cast<CPnpAdapter>(adapter) != 0)
+            {
+                throw EBadRequest(what);
+            }
+            else
+            {
+                throw EDgiConfigError(what);
+            }
+        }
+    }
+
     Logger.Debug << "Initialized the device adapter." << std::endl;
 }
 
-///////////////////////////////////////////////////////////////////////////////
-/// Calls a registered function to create a new device of the given type.
+////////////////////////////////////////////////////////////////////////////////
+/// Creates a new device and registers it with the device manager.
 ///
-/// @ErrorHandling Throws a std::runtime_error if type is not registered with
-/// the factory.
-/// @pre The type must be registered with CAdapterFactory::RegisterDeviceClass.
-/// @post Redirects the call to the templated CAdapterFactory::CreateDevice.
+/// @ErrorHandling Throws a std::runtime_error if the name is already in use,
+/// the type is not recognized, or the adapter is null.
+/// @pre Type must be registered with CAdapterFactory::RegisterDevicePrototype.
+/// @post Creates a new device using m_prototype[type].
+/// @post Adds the new device to the device manager.
 /// @param name The unique identifier for the device to be created.
-/// @param type The type of device to create.
+/// @param type The string identifier for the type of device to create.
 /// @param adapter The adapter that will handle the data of the new device.
 ///
 /// @limitations The device types must be registered prior to this call.
-///////////////////////////////////////////////////////////////////////////////
-void CAdapterFactory::CreateDevice(std::string name, std::string type,
-        IAdapter::Pointer adapter)
+////////////////////////////////////////////////////////////////////////////////
+void CAdapterFactory::CreateDevice(const std::string name,
+        const std::string type, IAdapter::Pointer adapter)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     
-    if( m_registry.count(type) == 0 )
+    if( CDeviceManager::Instance().DeviceExists(name) )
     {
-        throw std::runtime_error("Device type " + type + " is not registered.");
+        throw std::runtime_error("The device " + name + " already exists.");
     }
     
-    (this->*m_registry[type])(name, adapter);
+    if( m_prototype.count(type) == 0 )
+    {
+        throw std::runtime_error("Unrecognized device type: " + type);
+    }
+    
+    if( !adapter )
+    {
+        throw std::runtime_error("Tried to create device using null adapter.");
+    }
+    
+    IDevice::Pointer device = m_prototype[type]->Create(name, adapter);
+    CDeviceManager::Instance().AddDevice(device);
+    
+    Logger.Info << "Created new device: " << name << std::endl;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/// Initializes the plug and play session protocol.
+///
+/// @param port the port over which to run the session protocol
+///
+/// @ErrorHandling Throws a std::logic_error if the session protoocl has been
+/// initialized through a prior call to this function.
+/// @pre m_server must not be initialized by a prior call to this function.
+/// @post m_server is created to accept connections from plug and play devices.
+///
+/// @limitations This function must be called at most once.
+////////////////////////////////////////////////////////////////////////////////
+void CAdapterFactory::StartSessionProtocol(unsigned short port)
+{
+    CTcpServer::ConnectionHandler handler;
+
+    if( m_server )
+    {
+        throw std::logic_error("Session protocol already started.");
+    }
+    else
+    {
+        // initialize the TCP variant of the session layer protocol
+        handler     = boost::bind(&CAdapterFactory::StartSession, this);
+        m_server    = CTcpServer::Create(m_ios, port,
+                CGlobalConfiguration::Instance().GetDevicesEndpoint() );
+        m_server->RegisterHandler(handler);
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/// Prepares to read the hello message from a new plug and play device.
+///
+/// @pre m_server must be connected to a remote endpoint.
+/// @post m_timeout is started to disconnect the device if it does not respond.
+/// @post Schedules a read into m_buffer from the current m_server connection.
+///
+/// @limitations This function must only be called by m_server.
+////////////////////////////////////////////////////////////////////////////////
+void CAdapterFactory::StartSession()
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+
+    Logger.Notice << "A wild client appears!" << std::endl;
+    m_timeout.expires_from_now(boost::posix_time::seconds(2));
+    m_timeout.async_wait(boost::bind(&CAdapterFactory::Timeout, this,
+            boost::asio::placeholders::error));
+
+    m_buffer.consume(m_buffer.size());
+    boost::asio::async_read_until(*m_server->GetClient(), m_buffer, "\r\n\r\n",
+            boost::bind(&CAdapterFactory::HandleRead, this,
+            boost::asio::placeholders::error));
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/// Starts the session protocol after a successful read from a device.
+///
+/// @pre None.
+/// @post If a successful read, calls CAdapterFactory::SessionProtocol.
+/// @param e The error code associated with the last read operation.
+///
+/// @limitations None.
+////////////////////////////////////////////////////////////////////////////////
+void CAdapterFactory::HandleRead(const boost::system::error_code & e)
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+
+    if( !e )
+    {
+        if( m_timeout.cancel() == 1 )
+        {
+            SessionProtocol();
+        }
+        else
+        {
+            Logger.Notice << "Dropped packet due to timeout." << std::endl;
+        }
+    }
+    else if( e == boost::asio::error::operation_aborted )
+    {
+        Logger.Notice << "Controller failed to send valid Hello." << std::endl;
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/// Closes a plug and play connection if it does not send a well-formed packet.
+///
+/// @pre None.
+/// @post If timeout or error, closes the current m_server connection.
+/// @param e The error code associated with the timer.
+///
+/// @limitations None.
+////////////////////////////////////////////////////////////////////////////////
+void CAdapterFactory::Timeout(const boost::system::error_code & e)
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    
+    if( !e ) 
+    {
+        Logger.Notice << "Connection closed due to timeout." << std::endl;
+
+        try
+        {
+            std::string msg;
+            msg = "Error\r\nConnection closed due to timeout.\r\n\r\n";
+            TimedWrite(*m_server->GetClient(), boost::asio::buffer(msg),
+                    CTimings::DEV_SOCKET_TIMEOUT);
+        }
+        catch(std::exception & e)
+        {
+            Logger.Info << "Failed to tell client about timeout." << std::endl;
+        }
+
+        m_server->GetClient()->cancel();
+        m_server->StartAccept();
+    }
+    else if( e == boost::asio::error::operation_aborted )
+    {
+        // Timeout was cancelled. Hopefully a good Hello was received!
+    }
+    else
+    {
+        Logger.Warn << "Connection closed: " << e.message() << std::endl;
+        m_server->GetClient()->cancel();
+        m_server->StartAccept();
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/// Handles the hello message for the plug and play session protoocl.
+///
+/// @pre m_buffer must contain the device hello packet.
+/// @post If the packet is well-formed, creates a new adapter and responds to
+/// the plug and play connection with a start packet.
+/// @post Otherwise, responds with a bad request that indicates the error.
+///
+/// @limitations None.
+////////////////////////////////////////////////////////////////////////////////
+void CAdapterFactory::SessionProtocol()
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+   
+    std::istream packet(&m_buffer); 
+    boost::asio::streambuf response;
+    std::ostream response_stream(&response);
+    
+    boost::property_tree::ptree config;
+    
+    std::set<std::string> states, commands;
+    std::string host, header, type, name, entry;
+    int sindex = 1, cindex = 1;
+
+    try
+    {
+        packet >> header >> host;
+        Logger.Info << "Received " << header << " from " << host << std::endl;
+        
+        if( header != "Hello" )
+        {
+            throw EBadRequest("Expected 'Hello' message: " + header);
+        }
+        if( m_adapters.count(host) > 0 )
+        {
+            throw EDuplicateSession("Duplicate session for " + host);
+        }
+
+////////////////////////////////////////////////////////////////////////////////
+/// Reformat the packet as a property tree that can be used with CreateAdapter.
+////////////////////////////////////////////////////////////////////////////////
+        config.put("<xmlattr>.name", host);
+        config.put("<xmlattr>.type", "pnp");
+        config.put("info.identifier", host);
+        config.put("state", "");
+        config.put("command", "");
+
+        for( int i = 0; packet >> type >> name; i++ )
+        {
+            Logger.Debug << "Processing " << type << ":" << name << std::endl;
+            
+            if( m_prototype.count(type) == 0 )
+            {
+                throw EBadRequest("Unknown device type: " + type);
+            }
+            
+            name = host + ":" + name;
+            boost::replace_all(name, ".", ":");
+            states = m_prototype[type]->GetStateSet();
+            commands = m_prototype[type]->GetCommandSet();
+            Logger.Debug << "Using adapter name " << name << std::endl;
+            
+            BOOST_FOREACH(std::string signal, states)
+            {
+                Logger.Debug << "Adding state for " << signal << std::endl;
+
+                boost::property_tree::ptree temp;
+                temp.put("type", type);
+                temp.put("device", name);
+                temp.put("signal", signal);
+                temp.put("<xmlattr>.index", sindex);
+
+                entry = name + signal;
+                config.add_child("state." + entry, temp);
+
+                sindex++;
+            }
+
+            BOOST_FOREACH(std::string signal, commands)
+            {
+                Logger.Debug << "Adding command for " << signal << std::endl;
+
+                boost::property_tree::ptree temp;
+                temp.put("type", type);
+                temp.put("device", name);
+                temp.put("signal", signal);
+                temp.put("<xmlattr>.index", cindex);
+                
+                entry = name + signal;
+                config.add_child("command." + entry, temp);
+
+                cindex++;
+            }
+        }
+////////////////////////////////////////////////////////////////////////////////
+/// The config property tree now contains a valid adapter specification.
+////////////////////////////////////////////////////////////////////////////////
+        
+        try
+        {
+            CreateAdapter(config);
+        }
+        catch(EDgiConfigError & e)
+        {
+            throw std::logic_error("Caught EDgiConfigError from "
+                    "CAdapterFactory::CreateAdapter; note this makes no "
+                    "sense for a plug and play adapter; what: "
+                    + std::string(e.what()));
+        }
+        
+        response_stream << "Start\r\n\r\n";
+        Logger.Status << "Blocking to send Start to client" << std::endl;
+    }
+    catch(EBadRequest & e)
+    {
+        Logger.Warn << "Rejected client: " << e.what() << std::endl;
+        
+        response_stream << "BadRequest\r\n";
+        response_stream << e.what() << "\r\n\r\n";
+
+        Logger.Status << "Blocking to send BadRequest to client" << std::endl;
+    }
+    catch(std::exception & e)
+    {
+        Logger.Warn << "Rejected client: " << e.what() << std::endl;
+        response_stream << "Error\r\n" << e.what() << "\r\n\r\n";
+        Logger.Status << "Blocking to send Error to client" << std::endl;
+    }
+    
+    try
+    {
+        TimedWrite(*m_server->GetClient(), response,
+                CTimings::DEV_SOCKET_TIMEOUT);
+    }
+    catch(std::exception & e)
+    {
+        Logger.Warn << "Failed to respond to client: " << e.what() << std::endl; 
+    }
+
+    m_server->StartAccept();
 }
 
 } // namespace device

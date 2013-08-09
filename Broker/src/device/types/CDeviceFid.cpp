@@ -1,16 +1,17 @@
 ////////////////////////////////////////////////////////////////////////////////
-/// @file         CDeviceFid.cpp
+/// @file           CDeviceFid.cpp
 ///
-/// @author       Michael Catanzaro <michael.catanzaro@mst.edu>
-/// @author       Thomas Roth <tprfh7@mst.edu>
+/// @author         Michael Catanzaro <michael.catanzaro@mst.edu>
+/// @author         Thomas Roth <tprfh7@mst.edu>
 ///
-/// @project      FREEDM DGI
+/// @project        FREEDM DGI
 ///
-/// @description  Represents a fault interruption device.
+/// @description    Represents a fault interruption device.
 ///
 /// @functions
 ///     CDeviceFid::CDeviceFid
 ///     CDeviceFid::~CDeviceFid
+///     CDeviceFid::Create
 ///     CDeviceFid::IsActive
 ///
 /// These source code files were created at Missouri University of Science and
@@ -43,15 +44,17 @@ CLocalLogger Logger(__FILE__);
 ///
 /// @pre None.
 /// @post Constructs a new device.
-/// @param device The unique identifier for the device.
+/// @param identifier The unique identifier for the device.
 /// @param adapter The adapter that implements operations for this device.
 ///
 /// @limitations None.
 ////////////////////////////////////////////////////////////////////////////////
-CDeviceFid::CDeviceFid(std::string device, IAdapter::Pointer adapter)
-    : IDevice(device, adapter)
+CDeviceFid::CDeviceFid(const std::string identifier, IAdapter::Pointer adapter)
+    : IDevice(identifier, adapter)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+
+    m_StateSet.insert("state");
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -65,6 +68,24 @@ CDeviceFid::CDeviceFid(std::string device, IAdapter::Pointer adapter)
 CDeviceFid::~CDeviceFid()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/// Constructs another FID.
+///
+/// @pre None.
+/// @post Constructs a new device.
+/// @param identifier The unique identifier for the device.
+/// @param adapter The adapter that implements operations for the device.
+/// @return shared pointer to the new device.
+///
+/// @limitations None.
+////////////////////////////////////////////////////////////////////////////////
+IDevice::Pointer CDeviceFid::Create(const std::string identifier,
+        IAdapter::Pointer adapter) const
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    return IDevice::Pointer(new CDeviceFid(identifier, adapter));
 }
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -1,0 +1,2 @@
+# The DGI adapter factory receives a packet with a header it does not recognize
+sendtofactory packets/UnrecognizedHeader.txt

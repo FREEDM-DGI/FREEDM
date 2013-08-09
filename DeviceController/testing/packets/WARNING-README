@@ -1,0 +1,9 @@
+Be VERY VERY SUPER CAREFUL when editing the packets in this folder.
+
+0x000D is a carriage return. 0x000A is a line feed. Unless you really really
+know what you're doing, try something like
+
+cat file | xxd
+
+before and after editing to make sure these remain as intended. Some editors (e.g. vim) like to delete 0x000D and that will break everything!
+

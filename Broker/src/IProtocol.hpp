@@ -71,7 +71,7 @@ class IProtocol
         CConnection* GetConnection() { return m_conn; };
     protected:
         /// Initializes the protocol with the underlying connection
-        IProtocol(CConnection * conn) : m_conn(conn), m_stopped(false) { };
+        explicit IProtocol(CConnection * conn) : m_conn(conn), m_stopped(false) { };
         /// Callback for when a write completes.
         virtual void WriteCallback(const boost::system::error_code& e) { }
         /// Handles writing the message to the underlying connection

@@ -53,7 +53,7 @@ public:
     /// The Listener Shared pointer type
     typedef boost::shared_ptr<CListener> ConnectionPtr;
     /// Construct a CConnection with the given io_service.
-    explicit CListener(boost::asio::io_service& p_ioService,
+    CListener(boost::asio::io_service& p_ioService,
             CConnectionManager& p_manager, CBroker& p_broker,
             std::string uuid);
 

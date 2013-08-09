@@ -52,7 +52,7 @@ public:
     typedef boost::shared_ptr<CReliableConnection> ConnectionPtr;
 
     /// Construct a CConnection with the given io_service.
-    explicit CReliableConnection(boost::asio::io_service& p_ioService,
+    CReliableConnection(boost::asio::io_service& p_ioService,
             CConnectionManager& p_manager, CBroker& p_broker,
             std::string uuid);
 

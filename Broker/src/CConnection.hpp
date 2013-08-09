@@ -48,7 +48,7 @@ class IProtocol;
 struct EConnectionError
     : virtual std::runtime_error
 {
-    EConnectionError(const std::string& what)
+    explicit EConnectionError(const std::string& what)
         : std::runtime_error(what) { }
 };
 

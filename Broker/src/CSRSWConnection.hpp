@@ -48,7 +48,7 @@ class CSRSWConnection : public IProtocol
 {
     public:
         /// Initializes the protocol with the underlying connection
-        CSRSWConnection(CConnection * conn);
+        explicit CSRSWConnection(CConnection * conn);
         /// Destructor
         virtual ~CSRSWConnection() { };
         /// Public facing send function that sends a message

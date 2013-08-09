@@ -70,10 +70,6 @@ public:
     typedef std::map<TimerHandle, boost::asio::deadline_timer* > TimersMap;
     typedef std::map<TimerHandle, bool > NextTimeMap;
     typedef std::map<ModuleIdent, std::list< BoundScheduleable > > ReadyMap;
-    
-    /// Type of a pointer to a Broker.
-    typedef boost::shared_ptr<CBroker> BrokerPtr;
-
 
     /// Initialize the broker and begin accepting connections and messages
     CBroker(CDispatcher& dispatcher, freedm::broker::CConnectionManager &conMan);

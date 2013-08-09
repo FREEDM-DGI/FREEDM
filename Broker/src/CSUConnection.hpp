@@ -45,7 +45,7 @@ class CSUConnection : public IProtocol
 {
     public:
         /// Initializes the protocol with the underlying connection
-        CSUConnection(CConnection * conn);
+        explicit CSUConnection(CConnection * conn);
         /// Destructor
         virtual ~CSUConnection() { };
         /// Public facing send function that sends a message

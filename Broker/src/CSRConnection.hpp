@@ -48,7 +48,7 @@ class CSRConnection : public IProtocol
 {
     public:
         /// Initializes the protocol with the underlying connection
-        CSRConnection(CConnection * conn);
+        explicit CSRConnection(CConnection * conn);
         /// Destructor
         virtual ~CSRConnection() { };
         /// Public facing send function that sends a message

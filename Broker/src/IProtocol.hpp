@@ -47,8 +47,6 @@ class IProtocol
 {
 #pragma GCC diagnostic ignored "-Wunused-parameter"
     public:
-        /// Initializes the protocol with the underlying connection
-        IProtocol(CConnection * conn) : m_conn(conn), m_stopped(false) { };
         /// Destroy all humans
         virtual ~IProtocol() { };
         /// Public write to channel function
@@ -72,6 +70,8 @@ class IProtocol
         /// Returns a pointer to the underlying connection.
         CConnection* GetConnection() { return m_conn; };
     protected:
+        /// Initializes the protocol with the underlying connection
+        IProtocol(CConnection * conn) : m_conn(conn), m_stopped(false) { };
         /// Callback for when a write completes.
         virtual void WriteCallback(const boost::system::error_code& e) { }
         /// Handles writing the message to the underlying connection

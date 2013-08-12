@@ -17,6 +17,7 @@ class CDeviceBuilder
 public:
     CDeviceBuilder() {}
     CDeviceBuilder(std::string filename);
+    CDevice::Pointer CreateDevice(std::string id, std::string type, IAdapter::Pointer adapter);
 private:
     struct BuildVars
     {

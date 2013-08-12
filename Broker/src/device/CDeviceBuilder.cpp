@@ -207,6 +207,18 @@ void CDeviceBuilder::ExpandInfo(std::string target, std::set<std::string> path, 
     Logger.Debug << "Processed " << target << std::endl;
 }
 
+CDevice::Pointer CDeviceBuilder::CreateDevice(std::string id, std::string type, IAdapter::Pointer adapter)
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+
+    if( m_type_to_info.count(type) == 0 )
+    {
+        throw std::runtime_error("no such type");
+    }
+
+    return CDevice::Pointer(new CDevice(id, m_type_to_info[type], adapter));
+}
+
 } // namespace device
 } // namespace broker
 } // namespace freedm

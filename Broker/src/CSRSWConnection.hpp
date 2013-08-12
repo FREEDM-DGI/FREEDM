@@ -49,8 +49,6 @@ class CSRSWConnection : public IProtocol
     public:
         /// Initializes the protocol with the underlying connection
         explicit CSRSWConnection(CConnection * conn);
-        /// Destructor
-        virtual ~CSRSWConnection() { };
         /// Public facing send function that sends a message
         void Send(CMessage msg);
         /// Public facing function that handles marking down ACKs for sent messages

@@ -46,8 +46,6 @@ class CSUConnection : public IProtocol
     public:
         /// Initializes the protocol with the underlying connection
         explicit CSUConnection(CConnection * conn);
-        /// Destructor
-        virtual ~CSUConnection() { };
         /// Public facing send function that sends a message
         void Send(CMessage msg);
         /// Public facing function that handles marking down ACKs for sent messages

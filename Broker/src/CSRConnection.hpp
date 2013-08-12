@@ -49,8 +49,6 @@ class CSRConnection : public IProtocol
     public:
         /// Initializes the protocol with the underlying connection
         explicit CSRConnection(CConnection * conn);
-        /// Destructor
-        virtual ~CSRConnection() { };
         /// Public facing send function that sends a message
         void Send(CMessage msg);
         /// Public facing function that handles marking down ACKs for sent messages

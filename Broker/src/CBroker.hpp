@@ -181,7 +181,7 @@ private:
     ReadyMap m_ready;
 
     ///Lock for the scheduler.
-    boost::shared_mutex m_schmutex;
+    boost::mutex m_schmutex;
 
     ///The magical clock synchronizer
     CClockSynchronizer m_synchronizer;

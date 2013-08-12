@@ -15,6 +15,7 @@ namespace device {
 class CDeviceBuilder
 {
 public:
+    CDeviceBuilder() {}
     CDeviceBuilder(std::string filename);
 private:
     struct BuildVars

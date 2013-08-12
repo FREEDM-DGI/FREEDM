@@ -67,6 +67,8 @@ class CGlobalConfiguration : public boost::noncopyable
         void SetDevicesEndpoint(std::string e) { m_devicesEndpoint = e; };
         /// Set the path to the adapter configuration file
         void SetAdapterConfigPath(std::string ac) { m_adapterConfigPath = ac; };
+        /// Set the path to the device class XML specification file
+        void SetDeviceConfigPath(std::string p) { m_deviceConfigPath = p; }
         /// Get the hostname
         std::string GetHostname() const { return m_hostname; };
         /// Get the port
@@ -84,6 +86,8 @@ class CGlobalConfiguration : public boost::noncopyable
         std::string GetDevicesEndpoint() const { return m_devicesEndpoint; };
         /// Get the path to the adapter configuration file
         std::string GetAdapterConfigPath() const { return m_adapterConfigPath; };
+        /// Get the path to the device class XML specification file
+        std::string GetDeviceConfigPath() const { return m_deviceConfigPath; }
     private:
         std::string m_hostname; /// Node hostname
         std::string m_port; /// Port number
@@ -93,6 +97,7 @@ class CGlobalConfiguration : public boost::noncopyable
         unsigned short m_factory_port; /// Port number for adapter factory
         std::string m_devicesEndpoint; /// Socket endpoint address for devices
         std::string m_adapterConfigPath; /// Path to the adapter configuration
+        std::string m_deviceConfigPath; /// Path to the device class config
 };
 
 } // namespace broker

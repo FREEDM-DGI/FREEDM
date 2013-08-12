@@ -133,6 +133,18 @@ CAdapterFactory::CAdapterFactory()
         }
     }
 
+    std::string deviceCfgFile =
+        CGlobalConfiguration::Instance().GetDeviceConfigPath();
+
+    if( deviceCfgFile.empty() )
+    {
+        Logger.Status << "System will start no device classes." << std::endl;
+    }
+    else
+    {
+        m_builder = CDeviceBuilder(deviceCfgFile);
+    }
+
     // Last because we don't want this thread to run if construction fails.
     m_thread = boost::thread(boost::bind(&CAdapterFactory::RunService, this));
 }

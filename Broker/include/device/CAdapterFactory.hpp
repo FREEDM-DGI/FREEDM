@@ -31,6 +31,7 @@
 #include "IDevice.hpp"
 #include "IAdapter.hpp"
 #include "CTcpServer.hpp"
+#include "CDeviceBuilder.hpp"
 
 #include <map>
 #include <set>
@@ -136,6 +137,9 @@ private:
 
     /// Timer for bad plug and play sessions.
     boost::asio::deadline_timer m_timeout;
+
+    /// Constructs the structure of devices.
+    CDeviceBuilder m_builder;
 };
 
 ////////////////////////////////////////////////////////////////////////////////

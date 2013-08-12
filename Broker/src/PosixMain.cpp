@@ -27,7 +27,6 @@
 #include "CGlobalConfiguration.hpp"
 #include "CLogger.hpp"
 #include "config.hpp"
-#include "PhysicalDeviceTypes.hpp"
 #include "gm/GroupManagement.hpp"
 #include "lb/LoadBalance.hpp"
 #include "sc/StateCollection.hpp"
@@ -116,7 +115,7 @@ int main(int argc, char* argv[])
     po::variables_map vm;
     std::ifstream ifs;
     std::string cfgFile, loggerCfgFile, timingsFile, adapterCfgFile;
-    std::string listenIP, port, hostname, fport, id;
+    std::string deviceCfgFile, listenIP, port, hostname, fport, id;
     unsigned int globalVerbosity;
 
     try
@@ -145,6 +144,9 @@ int main(int argc, char* argv[])
                 "TCP port to listen for peers on" )
                 ( "factory-port", po::value<std::string>(&fport),
                 "port for plug and play session protocol" )
+                ( "device-config",
+                po::value<std::string>(&deviceCfgFile)->default_value(""),
+                "filename of the XML device class specification" )
                 ( "adapter-config", po::value<std::string>(&adapterCfgFile),
                 "filename of the adapter specification for physical devices" )
                 ( "logger-config",
@@ -275,6 +277,8 @@ int main(int argc, char* argv[])
         {
             CGlobalConfiguration::Instance().SetAdapterConfigPath("");
         }
+
+        CGlobalConfiguration::Instance().SetDeviceConfigPath(deviceCfgFile);
     }
     catch (std::exception & e)
     {

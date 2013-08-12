@@ -25,6 +25,7 @@
 #define	I_ADAPTER_HPP
 
 #include <set>
+#include <cmath>
 #include <string>
 #include <utility>
 
@@ -39,6 +40,9 @@ namespace device {
 
 /// Type of the value for device signals.
 typedef float SignalValue;
+
+/// Sent by the DGI to indicate it knows nothing about the state of a device.
+const SignalValue NULL_COMMAND = std::pow(10, 8);
 
 /// Type of the unique identifier for device values.
 typedef std::pair<const std::string, const std::string> DeviceSignal;

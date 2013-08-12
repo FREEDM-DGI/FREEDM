@@ -1,6 +1,8 @@
 #ifndef C_DEVICE_BUILDER_HPP
 #define C_DEVICE_BUILDER_HPP
 
+#include "CDevice.hpp"
+
 #include <map>
 #include <set>
 #include <string>
@@ -9,13 +11,6 @@
 namespace freedm {
 namespace broker {
 namespace device {
-
-struct DeviceInfo
-{
-    std::set<std::string> s_type;
-    std::set<std::string> s_state;
-    std::set<std::string> s_command;
-};
 
 class CDeviceBuilder
 {

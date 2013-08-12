@@ -26,7 +26,6 @@
 
 #include "IAdapter.hpp"
 
-#include <cmath>
 #include <map>
 #include <string>
 #include <vector>
@@ -37,9 +36,6 @@
 namespace freedm {
 namespace broker {
 namespace device {
-
-/// Sent by the DGI to indicate it knows nothing about the state of a device.
-const float NULL_COMMAND = std::pow(10, 8);
 
 /// Buffer adapter device interface.
 ///////////////////////////////////////////////////////////////////////////////

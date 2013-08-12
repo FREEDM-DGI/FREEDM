@@ -1103,14 +1103,14 @@ void LBAgent::PStar(device::SignalValue DemandValue)
         {
             m_PStar = (*it)->GetState("gateway") - P_Migrate;
             Logger.Notice << "P* = " << m_PStar << std::endl;
-            (*it)->SetCommand("gateway", -P_Migrate);
+            (*it)->SetCommand("gateway", m_PStar);
         }
         else if(LBAgent::SUPPLY == m_Status)
         {
             if( DemandValue <= m_SstGateway + NORMAL_TOLERANCE - m_Normal )
             {
                 Logger.Notice << "P* = " << m_SstGateway + DemandValue << std::endl;
-                (*it)->SetCommand("gateway", P_Migrate);
+                (*it)->SetCommand("gateway", m_PStar);
             }
             else
             {

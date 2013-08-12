@@ -445,22 +445,16 @@ void LBAgent::LoadTable()
 
     using namespace device;
     
-    // device typedef for convenience
-    typedef CDeviceDrer DRER;
-    typedef CDeviceDesd DESD;
-    typedef CDeviceLoad LOAD;
-    typedef CDeviceSst SST;
-
-    int numDRERs = CDeviceManager::Instance().GetDevicesOfType<DRER>().size();
-    int numDESDs = CDeviceManager::Instance().GetDevicesOfType<DESD>().size();
-    int numLOADs = CDeviceManager::Instance().GetDevicesOfType<LOAD>().size();
-    int numSSTs = CDeviceManager::Instance().GetDevicesOfType<SST>().size();
+    int numDRERs = CDeviceManager::Instance().GetDevicesOfType("drer").size();
+    int numDESDs = CDeviceManager::Instance().GetDevicesOfType("desd").size();
+    int numLOADs = CDeviceManager::Instance().GetDevicesOfType("load").size();
+    int numSSTs  = CDeviceManager::Instance().GetDevicesOfType("sst").size();
     int numDevices = CDeviceManager::Instance().DeviceCount();
 
-    m_Gen = CDeviceManager::Instance().GetNetValue<DRER>(&DRER::GetGeneration);
-    m_Storage = CDeviceManager::Instance().GetNetValue<DESD>(&DESD::GetStorage);
-    m_Load = CDeviceManager::Instance().GetNetValue<LOAD>(&LOAD::GetLoad);
-    m_SstGateway = CDeviceManager::Instance().GetNetValue<SST>(&SST::GetGateway);
+    m_Gen = CDeviceManager::Instance().GetNetValue("drer", "generation");
+    m_Storage = CDeviceManager::Instance().GetNetValue("desd", "storage");
+    m_Load = CDeviceManager::Instance().GetNetValue("load", "drain");
+    m_SstGateway = CDeviceManager::Instance().GetNetValue("sst", "gateway");
 
     if (numSSTs >= 1)
     {
@@ -475,14 +469,13 @@ void LBAgent::LoadTable()
         m_NetGateway = m_Load - m_Gen - m_Storage;
     }
 
-    typedef CDeviceLogger LOGGER;
-    std::multiset<LOGGER::Pointer> LSet;
-    LSet = device::CDeviceManager::Instance().GetDevicesOfType<LOGGER>();
+    std::set<device::CDevice::Pointer> LSet;
+    LSet = device::CDeviceManager::Instance().GetDevicesOfType("logger");
     
     if( !LSet.empty() )
     {
-        (*LSet.begin())->SetGateway(m_NetGateway);
-        (*LSet.begin())->SetDeviceCount(numDevices);
+        (*LSet.begin())->SetCommand("gateway", m_NetGateway);
+        (*LSet.begin())->SetCommand("devcount", numDevices);
     }
 
     // used to ensure three digits before the decimal, two after
@@ -1062,23 +1055,22 @@ void LBAgent::HandleComputedNormal(MessagePtr msg, PeerNodePtr peer)
 void LBAgent::Step_PStar()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    typedef device::CDeviceSst SST;
-    std::multiset<SST::Pointer> SSTContainer;
-    std::multiset<SST::Pointer>::iterator it, end;
-    SSTContainer = device::CDeviceManager::Instance().GetDevicesOfType<SST>();
+    std::set<device::CDevice::Pointer> SSTContainer;
+    std::set<device::CDevice::Pointer>::iterator it, end;
+    SSTContainer = device::CDeviceManager::Instance().GetDevicesOfType("sst");
 
     for( it = SSTContainer.begin(), end = SSTContainer.end(); it != end; it++ )
     {
         if(LBAgent::DEMAND == m_Status)
         {
-            m_PStar = (*it)->GetGateway() - P_Migrate;
-            (*it)->StepGateway(-P_Migrate);
+            m_PStar = (*it)->GetState("gateway") - P_Migrate;
+            (*it)->SetCommand("gateway", m_PStar);
             Logger.Notice << "P* = " << m_PStar << std::endl;
         }
         else if(LBAgent::SUPPLY == m_Status)
         {
-            m_PStar = (*it)->GetGateway() + P_Migrate;
-            (*it)->StepGateway(P_Migrate);
+            m_PStar = (*it)->GetState("gateway") + P_Migrate;
+            (*it)->SetCommand("gateway", m_PStar);
             Logger.Notice << "P* = " << m_PStar << std::endl;
         }
         else
@@ -1101,25 +1093,24 @@ void LBAgent::Step_PStar()
 void LBAgent::PStar(device::SignalValue DemandValue)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    typedef device::CDeviceSst SST;
-    std::multiset<SST::Pointer> SSTContainer;
-    std::multiset<SST::Pointer>::iterator it, end;
-    SSTContainer = device::CDeviceManager::Instance().GetDevicesOfType<SST>();
+    std::set<device::CDevice::Pointer> SSTContainer;
+    std::set<device::CDevice::Pointer>::iterator it, end;
+    SSTContainer = device::CDeviceManager::Instance().GetDevicesOfType("sst");
 
     for( it = SSTContainer.begin(), end = SSTContainer.end(); it != end; it++ )
     {
         if(LBAgent::DEMAND == m_Status)
         {
-            m_PStar = (*it)->GetGateway() - P_Migrate;
+            m_PStar = (*it)->GetState("gateway") - P_Migrate;
             Logger.Notice << "P* = " << m_PStar << std::endl;
-            (*it)->StepGateway(-P_Migrate);
+            (*it)->SetCommand("gateway", -P_Migrate);
         }
         else if(LBAgent::SUPPLY == m_Status)
         {
             if( DemandValue <= m_SstGateway + NORMAL_TOLERANCE - m_Normal )
             {
                 Logger.Notice << "P* = " << m_SstGateway + DemandValue << std::endl;
-                (*it)->StepGateway(P_Migrate);
+                (*it)->SetCommand("gateway", P_Migrate);
             }
             else
             {
@@ -1144,23 +1135,22 @@ void LBAgent::PStar(device::SignalValue DemandValue)
 void LBAgent::Desd_PStar()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    typedef device::CDeviceDesd DESD;
-    std::multiset<DESD::Pointer> DESDContainer;
-    std::multiset<DESD::Pointer>::iterator it, end;
-    DESDContainer = device::CDeviceManager::Instance().GetDevicesOfType<DESD>();
+    std::set<device::CDevice::Pointer> DESDContainer;
+    std::set<device::CDevice::Pointer>::iterator it, end;
+    DESDContainer = device::CDeviceManager::Instance().GetDevicesOfType("desd");
 
     for( it = DESDContainer.begin(), end = DESDContainer.end(); it != end; it++ )
     {
         if(LBAgent::DEMAND == m_Status)
         {
-            m_PStar = (*it)->GetStorage() + P_Migrate;
-            (*it)->StepStorage(P_Migrate);
+            m_PStar = (*it)->GetState("storage") + P_Migrate;
+            (*it)->SetCommand("storage", m_PStar);
             Logger.Notice << "P* (on DESD) = " << m_PStar << std::endl;
         }
         else if(LBAgent::SUPPLY == m_Status)
         {
-            m_PStar = (*it)->GetStorage() - P_Migrate;
-            (*it)->StepStorage(-P_Migrate);
+            m_PStar = (*it)->GetState("storage") - P_Migrate;
+            (*it)->SetCommand("storage", m_PStar);
             Logger.Notice << "P* (on DESD) = " << m_PStar << std::endl;
         }
         else

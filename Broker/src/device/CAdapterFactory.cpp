@@ -85,8 +85,6 @@ CAdapterFactory::CAdapterFactory()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
-    RegisterDevices();
-
     unsigned short factoryPort =
         CGlobalConfiguration::Instance().GetFactoryPort();
 
@@ -369,7 +367,7 @@ void CAdapterFactory::InitializeAdapter(IAdapter::Pointer adapter,
     
     boost::property_tree::ptree subtree;
     IBufferAdapter::Pointer buffer;
-    IDevice::Pointer device;
+    CDevice::Pointer device;
 
     std::map<std::string, std::string> devtype;
     std::map<std::string, unsigned int> states;
@@ -457,11 +455,11 @@ void CAdapterFactory::InitializeAdapter(IAdapter::Pointer adapter,
             // check if the device recognizes the associated signal
             device = CDeviceManager::Instance().m_hidden_devices.at(name);
             
-            if( i == 0 && device->HasStateSignal(signal) )
+            if( i == 0 && device->HasState(signal) )
             {
                 ++states[name];
             }
-            else if( i == 1 && device->HasCommandSignal(signal) )
+            else if( i == 1 && device->HasCommand(signal) )
             {
                 ++commands[name];
             }
@@ -557,17 +555,12 @@ void CAdapterFactory::CreateDevice(const std::string name,
         throw std::runtime_error("The device " + name + " already exists.");
     }
     
-    if( m_prototype.count(type) == 0 )
-    {
-        throw std::runtime_error("Unrecognized device type: " + type);
-    }
-    
     if( !adapter )
     {
         throw std::runtime_error("Tried to create device using null adapter.");
     }
-    
-    IDevice::Pointer device = m_prototype[type]->Create(name, adapter);
+   
+    CDevice::Pointer device = m_builder.CreateDevice(name, type, adapter);
     CDeviceManager::Instance().AddDevice(device);
     
     Logger.Info << "Created new device: " << name << std::endl;
@@ -720,6 +713,8 @@ void CAdapterFactory::SessionProtocol()
     std::ostream response_stream(&response);
     
     boost::property_tree::ptree config;
+    CFakeAdapter::Pointer fake = CFakeAdapter::Create();
+    CDevice::Pointer nil;
     
     std::set<std::string> states, commands;
     std::string host, header, type, name, entry;
@@ -752,15 +747,19 @@ void CAdapterFactory::SessionProtocol()
         {
             Logger.Debug << "Processing " << type << ":" << name << std::endl;
             
-            if( m_prototype.count(type) == 0 )
+            try
+            {
+                nil = m_builder.CreateDevice("test", type, fake);
+            }
+            catch(std::exception & e)
             {
                 throw EBadRequest("Unknown device type: " + type);
             }
             
             name = host + ":" + name;
             boost::replace_all(name, ".", ":");
-            states = m_prototype[type]->GetStateSet();
-            commands = m_prototype[type]->GetCommandSet();
+            states = nil->GetStateSet();
+            commands = nil->GetCommandSet();
             Logger.Debug << "Using adapter name " << name << std::endl;
             
             BOOST_FOREACH(std::string signal, states)

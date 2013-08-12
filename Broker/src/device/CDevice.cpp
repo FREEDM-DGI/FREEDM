@@ -77,6 +77,18 @@ SignalValue CDevice::GetCommand(std::string signal, bool override) const
 */
 }
 
+std::set<std::string> CDevice::GetStateSet() const
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    return m_devinfo.s_command;
+}
+
+std::set<std::string> CDevice::GetCommandSet() const
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    return m_devinfo.s_state;
+}
+
 void CDevice::SetCommand(std::string signal, SignalValue value)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;

@@ -37,6 +37,9 @@ public:
     SignalValue GetState(std::string signal) const;
     SignalValue GetCommand(std::string signal, bool override = false) const;
 
+    std::set<std::string> GetStateSet() const;
+    std::set<std::string> GetCommandSet() const;
+
     void SetCommand(std::string signal, SignalValue value);
 
     void ClearCommands();

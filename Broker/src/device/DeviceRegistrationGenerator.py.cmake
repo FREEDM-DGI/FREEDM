@@ -26,18 +26,15 @@ import glob
 import os
 
 # the templates for the generation
-hppTemplate = open('${CMAKE_SOURCE_DIR}/include/device/PhysicalDeviceTypes.hpp.txt', 'r')
+hppTemplate = open('${CMAKE_CURRENT_SOURCE_DIR}/PhysicalDeviceTypes.hpp.txt', 'r')
 cppTemplate = open('${CMAKE_CURRENT_SOURCE_DIR}/PhysicalDeviceTypes.cpp.txt', 'r')
 
-if not os.path.exists('${CMAKE_BINARY_DIR}/include/device/'):
-    os.makedirs('${CMAKE_BINARY_DIR}/include/device/')
-
 # the files to be generated
-hppSource = open('${CMAKE_BINARY_DIR}/include/device/PhysicalDeviceTypes.hpp', 'w')
+hppSource = open('${CMAKE_CURRENT_BINARY_DIR}/PhysicalDeviceTypes.hpp', 'w')
 cppSource = open('${CMAKE_CURRENT_BINARY_DIR}/PhysicalDeviceTypes.cpp', 'w')
 
 # get our list of devices
-devices = glob.glob('${CMAKE_SOURCE_DIR}/include/device/types/CDevice*.hpp')
+devices = glob.glob('${CMAKE_CURRENT_SOURCE_DIR}/types/CDevice*.hpp')
 
 # get just the suffix identifier
 devices = [os.path.basename(device) for device in devices]

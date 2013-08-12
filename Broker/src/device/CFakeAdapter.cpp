@@ -91,7 +91,7 @@ void CFakeAdapter::Stop()
 ///
 /// @return the value of the requested setting.
 ////////////////////////////////////////////////////////////////////////////////
-SignalValue CFakeAdapter::Get(const std::string device,
+SignalValue CFakeAdapter::GetState(const std::string device,
                               const std::string key) const
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
@@ -116,6 +116,12 @@ SignalValue CFakeAdapter::Get(const std::string device,
     return keyIter->second;
 }
 
+SignalValue CFakeAdapter::GetCommand(const std::string device, const std::string key) const
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    return GetState(device, key);
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 /// Sets the value of a device's setting.  The set occurs immediately.  If the
 /// adapter has been stopped, nothing happens.
@@ -124,7 +130,7 @@ SignalValue CFakeAdapter::Get(const std::string device,
 /// @param key the desired setting on the target device.
 /// @param value the new value for the setting to take.
 ////////////////////////////////////////////////////////////////////////////////
-void CFakeAdapter::Set(const std::string device, const std::string key,
+void CFakeAdapter::SetCommand(const std::string device, const std::string key,
                        const SignalValue value)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;

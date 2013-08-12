@@ -52,11 +52,13 @@ public:
     typedef boost::shared_ptr<IBufferAdapter> Pointer;
 
     /// Set data in txBuffer.
-    void Set(const std::string device, const std::string signal,
+    void SetCommand(const std::string device, const std::string signal,
             const SignalValue value);
 
     /// Retrieve data from rxBuffer.
-    SignalValue Get(const std::string device, const std::string signal) const;
+    SignalValue GetState(const std::string device, const std::string signal) const;
+
+    SignalValue GetCommand(const std::string device, const std::string signal) const;
     
     /// Registers a new device signal with the physical adapter.
     void RegisterStateInfo(const std::string device, const std::string signal,

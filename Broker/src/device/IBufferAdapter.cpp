@@ -144,7 +144,7 @@ void IBufferAdapter::Start()
 ///
 /// @limitations None.
 ////////////////////////////////////////////////////////////////////////////
-void IBufferAdapter::Set(const std::string device, const std::string signal,
+void IBufferAdapter::SetCommand(const std::string device, const std::string signal,
         const SignalValue value)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
@@ -177,7 +177,7 @@ void IBufferAdapter::Set(const std::string device, const std::string signal,
 ///
 /// @limitations None.
 ////////////////////////////////////////////////////////////////////////////
-SignalValue IBufferAdapter::Get(const std::string device, 
+SignalValue IBufferAdapter::GetState(const std::string device, 
         const std::string signal) const
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
@@ -196,6 +196,20 @@ SignalValue IBufferAdapter::Get(const std::string device,
     Logger.Debug << device << " " << signal << ": " << value << std::endl;
 
     return value;
+}
+
+SignalValue IBufferAdapter::GetCommand(const std::string device, const std::string signal) const
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+
+    const DeviceSignal devsig(device, signal);
+    boost::shared_lock<boost::shared_mutex> readLock(m_txMutex);
+
+    if( m_commandInfo.count(devsig) != 1 )
+    {
+        throw std::runtime_error("bad command");
+    }
+    return m_txBuffer.at(m_commandInfo.find(devsig)->second);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

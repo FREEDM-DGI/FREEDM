@@ -54,7 +54,7 @@ SignalValue CDevice::GetState(std::string signal) const
         throw std::runtime_error("bad state signal");
     }
 
-    //return m_adapter->GetState(m_devid, signal);
+    return m_adapter->GetState(m_devid, signal);
 }
 
 SignalValue CDevice::GetCommand(std::string signal, bool override) const
@@ -66,7 +66,6 @@ SignalValue CDevice::GetCommand(std::string signal, bool override) const
         throw std::runtime_error("bad command signal");
     }
 
-/*
     SignalValue result = m_adapter->GetCommand(m_devid, signal);
     
     if( override && HasState(signal) && result == NULL_COMMAND )
@@ -74,7 +73,6 @@ SignalValue CDevice::GetCommand(std::string signal, bool override) const
         result = m_adapter->GetState(m_devid, signal);
     }
     return result;
-*/
 }
 
 std::set<std::string> CDevice::GetStateSet() const
@@ -98,7 +96,7 @@ void CDevice::SetCommand(std::string signal, SignalValue value)
         throw std::runtime_error("bad command signal");
     }
 
-    //m_adapter->SetCommand(m_devid, signal, value);
+    m_adapter->SetCommand(m_devid, signal, value);
 }
 
 void CDevice::ClearCommands()
@@ -107,7 +105,7 @@ void CDevice::ClearCommands()
 
     BOOST_FOREACH(std::string signal, m_devinfo.s_command)
     {
-        //m_adapter->SetCommand(m_devid, signal, NULL_COMMAND);
+        m_adapter->SetCommand(m_devid, signal, NULL_COMMAND);
     }
 }
 

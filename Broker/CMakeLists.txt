@@ -19,7 +19,7 @@ option(WARNINGS "warnings displayed during project compile" ON)
 
 # find the required boost libraries
 find_package(Boost 1.47 REQUIRED
-             COMPONENTS date_time program_options serialization system thread
+             COMPONENTS date_time program_options system thread
             )
 
 # add the boost libraries to the project
@@ -63,7 +63,6 @@ target_link_libraries(PosixBroker
                       device
                       ${Boost_THREAD_LIBRARY}
                       ${Boost_SYSTEM_LIBRARY}
-                      ${Boost_SERIALIZATION_LIBRARY}
                       ${Boost_PROGRAM_OPTIONS_LIBRARY}
                       ${Boost_DATE_TIME_LIBRARY}
                      )

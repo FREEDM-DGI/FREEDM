@@ -66,19 +66,6 @@ CClockSynchronizer::CClockSynchronizer(CBroker &broker)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// CClockSynchronizer::~CClockSynchronizer
-/// @description Destructs the synchronizer object
-/// @limitations none
-/// @pre None
-/// @post Everything is stopped
-///////////////////////////////////////////////////////////////////////////////
-CClockSynchronizer::~CClockSynchronizer()
-{
-    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    //empty
-}
-
-///////////////////////////////////////////////////////////////////////////////
 /// CClockSynchronizer::Run()
 /// @description Starts the timer that handles most of the processing
 /// @limitations none

@@ -22,6 +22,7 @@ set(DEVICE_FILES
     CPnpAdapter.cpp
     PhysicalDeviceTypes.cpp
     SynchronousTimeout.cpp
+    CDeviceBuilder.cpp
    )
 
 # generate PhysicalDeviceTypes using the generator

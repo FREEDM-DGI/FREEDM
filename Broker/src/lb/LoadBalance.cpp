@@ -445,16 +445,16 @@ void LBAgent::LoadTable()
 
     using namespace device;
     
-    int numDRERs = CDeviceManager::Instance().GetDevicesOfType("drer").size();
-    int numDESDs = CDeviceManager::Instance().GetDevicesOfType("desd").size();
-    int numLOADs = CDeviceManager::Instance().GetDevicesOfType("load").size();
-    int numSSTs  = CDeviceManager::Instance().GetDevicesOfType("sst").size();
+    int numDRERs = CDeviceManager::Instance().GetDevicesOfType("Drer").size();
+    int numDESDs = CDeviceManager::Instance().GetDevicesOfType("Desd").size();
+    int numLOADs = CDeviceManager::Instance().GetDevicesOfType("Load").size();
+    int numSSTs  = CDeviceManager::Instance().GetDevicesOfType("Sst").size();
     int numDevices = CDeviceManager::Instance().DeviceCount();
 
-    m_Gen = CDeviceManager::Instance().GetNetValue("drer", "generation");
-    m_Storage = CDeviceManager::Instance().GetNetValue("desd", "storage");
-    m_Load = CDeviceManager::Instance().GetNetValue("load", "drain");
-    m_SstGateway = CDeviceManager::Instance().GetNetValue("sst", "gateway");
+    m_Gen = CDeviceManager::Instance().GetNetValue("Drer", "generation");
+    m_Storage = CDeviceManager::Instance().GetNetValue("Desd", "storage");
+    m_Load = CDeviceManager::Instance().GetNetValue("Load", "drain");
+    m_SstGateway = CDeviceManager::Instance().GetNetValue("Sst", "gateway");
 
     if (numSSTs >= 1)
     {
@@ -470,7 +470,7 @@ void LBAgent::LoadTable()
     }
 
     std::set<device::CDevice::Pointer> LSet;
-    LSet = device::CDeviceManager::Instance().GetDevicesOfType("logger");
+    LSet = device::CDeviceManager::Instance().GetDevicesOfType("Logger");
     
     if( !LSet.empty() )
     {
@@ -1057,7 +1057,7 @@ void LBAgent::Step_PStar()
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     std::set<device::CDevice::Pointer> SSTContainer;
     std::set<device::CDevice::Pointer>::iterator it, end;
-    SSTContainer = device::CDeviceManager::Instance().GetDevicesOfType("sst");
+    SSTContainer = device::CDeviceManager::Instance().GetDevicesOfType("Sst");
 
     for( it = SSTContainer.begin(), end = SSTContainer.end(); it != end; it++ )
     {
@@ -1095,7 +1095,7 @@ void LBAgent::PStar(device::SignalValue DemandValue)
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     std::set<device::CDevice::Pointer> SSTContainer;
     std::set<device::CDevice::Pointer>::iterator it, end;
-    SSTContainer = device::CDeviceManager::Instance().GetDevicesOfType("sst");
+    SSTContainer = device::CDeviceManager::Instance().GetDevicesOfType("Sst");
 
     for( it = SSTContainer.begin(), end = SSTContainer.end(); it != end; it++ )
     {
@@ -1137,7 +1137,7 @@ void LBAgent::Desd_PStar()
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     std::set<device::CDevice::Pointer> DESDContainer;
     std::set<device::CDevice::Pointer>::iterator it, end;
-    DESDContainer = device::CDeviceManager::Instance().GetDevicesOfType("desd");
+    DESDContainer = device::CDeviceManager::Instance().GetDevicesOfType("Desd");
 
     for( it = DESDContainer.begin(), end = DESDContainer.end(); it != end; it++ )
     {

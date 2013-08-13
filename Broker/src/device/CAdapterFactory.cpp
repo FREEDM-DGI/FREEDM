@@ -85,6 +85,18 @@ CAdapterFactory::CAdapterFactory()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
+    std::string deviceCfgFile =
+        CGlobalConfiguration::Instance().GetDeviceConfigPath();
+
+    if( deviceCfgFile.empty() )
+    {
+        Logger.Status << "System will start no device classes." << std::endl;
+    }
+    else
+    {
+        m_builder = CDeviceBuilder(deviceCfgFile);
+    }
+
     unsigned short factoryPort =
         CGlobalConfiguration::Instance().GetFactoryPort();
 
@@ -129,18 +141,6 @@ CAdapterFactory::CAdapterFactory()
         {
             throw std::runtime_error(adapterCfgFile+": "+e.what());
         }
-    }
-
-    std::string deviceCfgFile =
-        CGlobalConfiguration::Instance().GetDeviceConfigPath();
-
-    if( deviceCfgFile.empty() )
-    {
-        Logger.Status << "System will start no device classes." << std::endl;
-    }
-    else
-    {
-        m_builder = CDeviceBuilder(deviceCfgFile);
     }
 
     // Last because we don't want this thread to run if construction fails.
@@ -454,7 +454,7 @@ void CAdapterFactory::InitializeAdapter(IAdapter::Pointer adapter,
             
             // check if the device recognizes the associated signal
             device = CDeviceManager::Instance().m_hidden_devices.at(name);
-            
+
             if( i == 0 && device->HasState(signal) )
             {
                 ++states[name];

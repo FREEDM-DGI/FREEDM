@@ -403,7 +403,7 @@ void GMAgent::SystemState()
     Logger.Status<<"Group Float : "<< *groupfloat << std::endl;
    
     std::set<device::CDevice::Pointer> devset;
-    devset = device::CDeviceManager::Instance().GetDevicesOfType("logger");
+    devset = device::CDeviceManager::Instance().GetDevicesOfType("Logger");
     if( !devset.empty() )
     {
         (*devset.begin())->SetCommand("groupStatus", *groupfloat);
@@ -490,9 +490,9 @@ void GMAgent::FIDCheck( const boost::system::error_code& err)
     if(!err)
     {
         int attachedFIDs = device::CDeviceManager::Instance().
-                GetDevicesOfType("fid").size();
+                GetDevicesOfType("Fid").size();
         unsigned int FIDState = device::CDeviceManager::Instance().
-                GetNetValue("fid", "state");
+                GetNetValue("Fid", "state");
         if(m_fidsclosed == true && attachedFIDs  > 0 && FIDState == 0)
         {
             Logger.Status<<"All FIDs offline. Entering Recovery State"<<std::endl;

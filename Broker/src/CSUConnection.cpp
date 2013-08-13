@@ -124,7 +124,7 @@ void CSUConnection::Resend(const boost::system::error_code& err)
     }
 }
 
-void CSUConnection::RecieveACK(const CMessage &msg)
+void CSUConnection::ReceiveACK(const CMessage &msg)
 {
     unsigned int seq = msg.GetSequenceNumber();
     while(m_window.size() > 0)
@@ -148,7 +148,7 @@ void CSUConnection::RecieveACK(const CMessage &msg)
     }
 }
 
-bool CSUConnection::Recieve(const CMessage &msg)
+bool CSUConnection::Receive(const CMessage &msg)
 {
     //Consider the window you expect to see
     unsigned int bounda = m_inseq;

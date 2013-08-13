@@ -19,7 +19,7 @@ option(WARNINGS "warnings displayed during project compile" ON)
 
 # find the required boost libraries
 find_package(Boost 1.47 REQUIRED
-             COMPONENTS date_time program_options serialization system thread
+             COMPONENTS date_time program_options system thread
             )
 
 # add the boost libraries to the project
@@ -40,20 +40,14 @@ if(TRACK_HANDLERS)
     add_definitions(-DBOOST_ASIO_ENABLE_HANDLER_TRACKING)
 endif()
 
-# generate the configuration file
-configure_file(${PROJECT_SOURCE_DIR}/include/config.hpp.cmake
-               ${PROJECT_BINARY_DIR}/include/config.hpp
-              )
-
 # include project source directories
-include_directories("${PROJECT_SOURCE_DIR}/include")
-include_directories("${PROJECT_SOURCE_DIR}/include/device")
-include_directories("${PROJECT_SOURCE_DIR}/include/device/types")
+# probably would be better to require source files to use relative paths...
 include_directories("${PROJECT_SOURCE_DIR}/src")
-include_directories("${PROJECT_BINARY_DIR}/include")
-include_directories("${PROJECT_BINARY_DIR}/include/device")
-include_directories("${PROJECT_BINARY_DIR}/include/device/types")
 include_directories("${PROJECT_BINARY_DIR}/src")
+include_directories("${PROJECT_SOURCE_DIR}/src/device")
+include_directories("${PROJECT_BINARY_DIR}/src/device")
+include_directories("${PROJECT_SOURCE_DIR}/src/device/types")
+include_directories("${PROJECT_BINARY_DIR}/src/device/types")
 
 # goto src/CMakeLists.txt
 add_subdirectory(src)
@@ -69,7 +63,6 @@ target_link_libraries(PosixBroker
                       device
                       ${Boost_THREAD_LIBRARY}
                       ${Boost_SYSTEM_LIBRARY}
-                      ${Boost_SERIALIZATION_LIBRARY}
                       ${Boost_PROGRAM_OPTIONS_LIBRARY}
                       ${Boost_DATE_TIME_LIBRARY}
                      )

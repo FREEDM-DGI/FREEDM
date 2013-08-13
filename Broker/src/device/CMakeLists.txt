@@ -26,7 +26,7 @@ set(DEVICE_FILES
 
 # generate PhysicalDeviceTypes using the generator
 set(GENERATOR_OUTPUT
-    ${PROJECT_BINARY_DIR}/include/device/PhysicalDeviceTypes.hpp
+    ${CMAKE_CURRENT_BINARY_DIR}/PhysicalDeviceTypes.hpp
     ${CMAKE_CURRENT_BINARY_DIR}/PhysicalDeviceTypes.cpp
    )
 

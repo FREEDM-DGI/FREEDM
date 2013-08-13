@@ -66,19 +66,6 @@ CClockSynchronizer::CClockSynchronizer(CBroker &broker)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// CClockSynchronizer::~CClockSynchronizer
-/// @description Destructs the synchronizer object
-/// @limitations none
-/// @pre None
-/// @post Everything is stopped
-///////////////////////////////////////////////////////////////////////////////
-CClockSynchronizer::~CClockSynchronizer()
-{
-    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    //empty
-}
-
-///////////////////////////////////////////////////////////////////////////////
 /// CClockSynchronizer::Run()
 /// @description Starts the timer that handles most of the processing
 /// @limitations none
@@ -203,7 +190,14 @@ void CClockSynchronizer::HandleExchangeResponse(MessagePtr msg, PeerNodePtr peer
         }
     }
     double lag = (TDToDouble(sumlag))/rlist.size();
-    Logger.Warn<<"Computed lag ("<<sender<<"): "<<lag<<std::endl;
+    if(lag < 0.015)
+    {
+        Logger.Notice<<"Computed lag ("<<sender<<"): "<<lag<<std::endl;
+    }
+    else
+    {
+        Logger.Warn<<"Computed lag ("<<sender<<"): "<<lag<<std::endl;
+    }
     double dxbar = TDToDouble(sumx)/rlist.size();
     double dybar = TDToDouble(sumy)/rlist.size();
     boost::posix_time::time_duration xbar = DoubleToTD(dxbar);

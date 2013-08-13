@@ -49,16 +49,11 @@ using boost::property_tree::ptree;
 namespace freedm {
     namespace broker {
 
-class CMessage;
-
 /// Handles applying read and write handlers to incoming messages
 class CDispatcher
   : private boost::noncopyable
 {
 public:
-    /// Constructor for the dispatcher
-    CDispatcher();
-
     /// Called upon incoming message
     void HandleRequest(CBroker &broker, MessagePtr msg );
 

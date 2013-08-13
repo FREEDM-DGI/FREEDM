@@ -50,7 +50,7 @@ class IPeerNode;
 struct EUnhandledMessage
     : virtual std::runtime_error
 {
-    EUnhandledMessage(const std::string& what)
+    explicit EUnhandledMessage(const std::string& what)
         : std::runtime_error(what) { }
 };
 

@@ -1,12 +1,12 @@
 ////////////////////////////////////////////////////////////////////////////////
-/// @file         CConnection.hpp
+/// @file         CListener.hpp
 ///
 /// @author       Derek Ditch <derek.ditch@mst.edu>
 /// @author       Stephen Jackson <scj7t4@mst.edu>
-/// 
+///
 /// @project      FREEDM DGI
 ///
-/// @description  Declare CConnection class
+/// @description  Declare the CListener class
 ///
 /// These source code files were created at Missouri University of Science and
 /// Technology, and are intended for use in teaching or research. They may be
@@ -21,20 +21,17 @@
 /// Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
 ////////////////////////////////////////////////////////////////////////////////
 
-#ifndef CCONNECTION_HPP
-#define CCONNECTION_HPP
+#ifndef CLISTENER_HPP
+#define CLISTENER_HPP
 
-#include "CDispatcher.hpp"
 #include "CMessage.hpp"
 #include "CReliableConnection.hpp"
-#include "SRemoteHost.hpp"
 
-#include <deque>
 #include <iomanip>
-#include <set>
 
-#include <boost/array.hpp>
 #include <boost/asio.hpp>
+#include <boost/array.hpp>
+#include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/enable_shared_from_this.hpp>
 #include <boost/noncopyable.hpp>
 #include <boost/shared_ptr.hpp>
@@ -42,27 +39,19 @@
 namespace freedm {
     namespace broker {
 
-class IProtocol;
+class CConnectionManager;
+class CBroker;
 
-/// Used for errors communicating with peers.
-struct EConnectionError
-    : virtual std::runtime_error
-{
-    EConnectionError(const std::string& what)
-        : std::runtime_error(what) { }
-};
-
-/// Represents a single outgoing connection to a client.
-class CConnection
+/// Represents a single CListener from a client.
+class CListener
     : public CReliableConnection
 {
 
 public:
-    /// ConnectionPtr Typedef
-    typedef boost::shared_ptr<CConnection> ConnectionPtr;
-
+    /// The Listener Shared pointer type
+    typedef boost::shared_ptr<CListener> ConnectionPtr;
     /// Construct a CConnection with the given io_service.
-    explicit CConnection(boost::asio::io_service& p_ioService,
+    CListener(boost::asio::io_service& p_ioService,
             CConnectionManager& p_manager, CBroker& p_broker,
             std::string uuid);
 
@@ -72,28 +61,25 @@ public:
     /// Stop all asynchronous operations associated with the CConnection.
     void Stop();
 
-    /// Puts a CMessage into the channel.
-    void Send(CMessage & p_mesg);
-
-    /// Handles Notification of an acknowledment being recieved
-    void RecieveACK(const CMessage &msg);
-
-    /// Handler that calls the correct protocol for accept logic
-    bool Recieve(const CMessage &msg);
-
-    /// Change Phase Event
-    void ChangePhase(bool newround);
+    /// Get Remote UUID
+    std::string GetUUID() { return m_uuid; };
 private:
-    typedef boost::shared_ptr<IProtocol> ProtocolPtr;
-    typedef std::map<std::string,ProtocolPtr> ProtocolMap;
-    /// Protocol Handler Map
-    ProtocolMap m_protocols;
+    /// Handle completion of a read operation.
+    void HandleRead(const boost::system::error_code& e, std::size_t bytes_transferred);
+
+    /// Variable used for tracking the remote endpoint of incoming messages.
+    boost::asio::ip::udp::endpoint m_endpoint;
+
+    /// Buffer for incoming data.
+    boost::array<char, CReliableConnection::MAX_PACKET_SIZE> m_buffer;
     
-    /// Default protocol
-    std::string m_defaultprotocol;
+    /// The incoming request.
+    MessagePtr m_message;
+
+    /// The UUID of the remote endpoint for the connection
+    std::string m_uuid;
 };
 
-typedef boost::shared_ptr<CConnection> ConnectionPtr;
 
     } // namespace broker
 } // namespace freedm

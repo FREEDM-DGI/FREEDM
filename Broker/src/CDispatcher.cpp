@@ -25,6 +25,7 @@
 
 #include "CDispatcher.hpp"
 #include "CLogger.hpp"
+#include "IHandler.hpp"
 
 namespace freedm {
     namespace broker {
@@ -33,18 +34,6 @@ namespace {
 
 /// This file's logger.
 CLocalLogger Logger(__FILE__);
-
-}
-
-///////////////////////////////////////////////////////////////////////////////
-/// @fn CDispatcher::CDispatcher
-/// @description Dispatcher constructor
-/// @pre None
-/// @post None
-///////////////////////////////////////////////////////////////////////////////
-CDispatcher::CDispatcher()
-{
-    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
 }
 
@@ -228,8 +217,8 @@ void CDispatcher::HandleWrite( ptree &p_mesg )
 /// @post A module is registered with a read handler.
 /// @param module The module name that the handler is on behalf of.
 /// @param p_type the tree key used to identify which messages the module
-///   would like to recieve.
-/// @param p_handler The module which will be called to recieve the message.
+///   would like to receive.
+/// @param p_handler The module which will be called to receive the message.
 ///////////////////////////////////////////////////////////////////////////////
 void CDispatcher::RegisterReadHandler(const std::string &module, const std::string &p_type,
         IReadHandler *p_handler)
@@ -259,8 +248,7 @@ void CDispatcher::RegisterReadHandler(const std::string &module, const std::stri
 ///   should be touched.
 /// @param p_handler The module that will be invoked to perform the touch
 ///////////////////////////////////////////////////////////////////////////////
-#pragma GCC diagnostic ignored "-Wunused-parameter"
-void CDispatcher::RegisterWriteHandler(const std::string &module, const std::string &p_type,
+void CDispatcher::RegisterWriteHandler(const std::string & /*module*/, const std::string &p_type,
         IWriteHandler *p_handler )
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
@@ -273,7 +261,6 @@ void CDispatcher::RegisterWriteHandler(const std::string &module, const std::str
         );
     }
 }
-#pragma GCC diagnostic warning "-Wunused-parameter"
 
     } //namespace broker
 } // namespace freedm

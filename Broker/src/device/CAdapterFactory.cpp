@@ -57,6 +57,7 @@
 #include <boost/asio.hpp>
 #include <boost/bind.hpp>
 #include <boost/foreach.hpp>
+#include <boost/optional.hpp>
 #include <boost/property_tree/ptree.hpp>
 #include <boost/system/system_error.hpp>
 #include <boost/algorithm/string/regex.hpp>
@@ -366,7 +367,7 @@ void CAdapterFactory::InitializeAdapter(IAdapter::Pointer adapter,
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     
     boost::property_tree::ptree subtree;
-    IBufferAdapter::Pointer buffer;
+    boost::optional<SignalValue> value;
     CDevice::Pointer device;
 
     std::map<std::string, std::string> devtype;
@@ -390,7 +391,10 @@ void CAdapterFactory::InitializeAdapter(IAdapter::Pointer adapter,
         throw EDgiConfigError("XML contains multiple command tags");
     }
 
-    buffer = boost::dynamic_pointer_cast<IBufferAdapter>(adapter);
+    IBufferAdapter::Pointer buffer =
+            boost::dynamic_pointer_cast<IBufferAdapter>(adapter);
+    CFakeAdapter::Pointer fake =
+            boost::dynamic_pointer_cast<CFakeAdapter>(adapter);
     
     // i = 0 parses state information
     // i = 1 parses command information
@@ -416,9 +420,10 @@ void CAdapterFactory::InitializeAdapter(IAdapter::Pointer adapter,
                 type    = child.second.get<std::string>("type");
                 name    = child.second.get<std::string>("device");
                 signal  = child.second.get<std::string>("signal");
+                value   = child.second.get_optional<SignalValue>("value");
                 index   = child.second.get<std::size_t>("<xmlattr>.index");
 
-                if( child.second.size() != 4 )
+                if( child.second.size() > 5 )
                 {
                     std::stringstream ss;
                     ss << "Invalid entry at " << (i == 0 ? "state" : "command")
@@ -487,6 +492,15 @@ void CAdapterFactory::InitializeAdapter(IAdapter::Pointer adapter,
             {
                 Logger.Debug << "Registering command info." << std::endl;
                 buffer->RegisterCommandInfo(name, signal, index);
+            }
+            else if( fake && value )
+            {
+                SignalValue oldval = fake->Get(name, signal);
+                if( oldval != SignalValue() && oldval != value.get() )
+                {
+                    throw std::runtime_error("Duplicate Initial Value");
+                }
+                fake->Set(name, signal, value.get());
             }
         }
     }

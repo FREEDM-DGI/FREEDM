@@ -58,9 +58,6 @@
 #include <boost/functional/hash.hpp>
 #include <boost/property_tree/ptree.hpp>
 #include <boost/range/adaptor/map.hpp>
-#include <boost/serialization/string.hpp>
-#include <boost/serialization/vector.hpp>
-#include <boost/serialization/shared_ptr.hpp>
 
 using boost::property_tree::ptree;
 
@@ -815,7 +812,7 @@ void GMAgent::InviteGroupNodes( const boost::system::error_code& err, PeerSet p_
 /// @description Organizes the members of the group and prepares them to do
 ///                             their much needed work!
 /// @pre The node is a leader of group.
-/// @post The group has recieved work assignments, ready messages have been
+/// @post The group has received work assignments, ready messages have been
 ///                sent out, and this node enters the NORMAL state.
 /// @citation Group Management Reorganize
 /////////////////////////////////////////////////////////////////////////////// 
@@ -977,14 +974,12 @@ void GMAgent::Prehandler(SubhandleFunctor f,MessagePtr msg, PeerNodePtr peer)
     f(msg,peer);
 }
  
-#pragma GCC diagnostic ignored "-Wunused-parameter"
 ///////////////////////////////////////////////////////////////////////////////
 /// GMAgent::HandleAny
 /// @description This function collects all incoming messages for the purpose
 ///     of determining peer status.
 ///////////////////////////////////////////////////////////////////////////////
-#pragma GCC diagnostic ignored "-Wunused-parameter"
-void GMAgent::HandleAny(MessagePtr msg, PeerNodePtr peer)
+void GMAgent::HandleAny(MessagePtr msg, PeerNodePtr /*peer*/)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     if(msg->GetHandler().find("gm") == 0)
@@ -995,11 +990,10 @@ void GMAgent::HandleAny(MessagePtr msg, PeerNodePtr peer)
         throw EUnhandledMessage("Unhandled Group Management Message");
     }
 }
-#pragma GCC diagnostic warning "-Wunused-parameter"
 
 ///////////////////////////////////////////////////////////////////////////////
 /// GMAgent::HandlePeerList
-/// @description Handles recieveing the peerlist.
+/// @description Handles receiveing the peerlist.
 /// @key any.PeerList
 /// @pre The node is in the reorganization or normal state
 /// @post The node's peerlist is updated to match that of the incoming message
@@ -1043,12 +1037,12 @@ void GMAgent::HandlePeerList(MessagePtr msg, PeerNodePtr peer)
 
 ///////////////////////////////////////////////////////////////////////////////
 /// GMAgent::HandleAccept
-/// @description Handles recieveing the invite accept
+/// @description Handles receiveing the invite accept
 /// @key gm.Accept
 /// @pre In an election, and invites have been sent out.
 /// @post The sender is added to the tenative list of accepted peers for the group,
 ///     if the accept messag is for the correct group identifier.
-/// @peers Any node which has recieved an invite. (This can be any selection of
+/// @peers Any node which has received an invite. (This can be any selection of
 ///     the global peerlist, not just the ones this specific node sent the message
 ///     to.)
 ///////////////////////////////////////////////////////////////////////////////
@@ -1074,11 +1068,11 @@ void GMAgent::HandleAccept(MessagePtr msg, PeerNodePtr peer)
     
 ///////////////////////////////////////////////////////////////////////////////
 /// GMAgent::HandleAreYouCoordinator
-/// @description Handles recieveing the AYC message
+/// @description Handles receiveing the AYC message
 /// @key gm.AreYouCoordinator
 /// @pre None
 /// @post The node responds yes or no to the request.
-/// @peers Any node in the system is eligible to recieve this at any time.
+/// @peers Any node in the system is eligible to receive this at any time.
 ///////////////////////////////////////////////////////////////////////////////
 void GMAgent::HandleAreYouCoordinator(MessagePtr msg, PeerNodePtr peer)
 {
@@ -1107,7 +1101,7 @@ void GMAgent::HandleAreYouCoordinator(MessagePtr msg, PeerNodePtr peer)
 /// @key gm.AreYouThere
 /// @pre None
 /// @post The node responds yes or no to the request.
-/// @peers Any node in the system is eligible to recieve this message at any time.
+/// @peers Any node in the system is eligible to receive this message at any time.
 ///////////////////////////////////////////////////////////////////////////////
 void GMAgent::HandleAreYouThere(MessagePtr msg, PeerNodePtr peer)
 {

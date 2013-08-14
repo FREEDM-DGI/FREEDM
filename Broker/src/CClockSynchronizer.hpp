@@ -46,12 +46,10 @@ class CClockSynchronizer
     /// PeerNodePtr
     typedef boost::shared_ptr<IPeerNode> PeerNodePtr; 
     /// Initialize module
-    CClockSynchronizer(CBroker &broker);
-    /// Destructor for module
-    ~CClockSynchronizer();
-    /// Reciever
+    explicit CClockSynchronizer(CBroker &broker);
+    /// Receiver
     void HandleExchangeResponse(MessagePtr msg, PeerNodePtr peer);
-    /// Reciever
+    /// Receiver
     void HandleExchange(MessagePtr msg, PeerNodePtr peer);
     /// Broadcaster    
     void Exchange(const boost::system::error_code& err );    

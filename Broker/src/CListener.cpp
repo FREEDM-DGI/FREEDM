@@ -22,6 +22,7 @@
 /// Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
 ////////////////////////////////////////////////////////////////////////////////
 
+#include "CConnection.hpp"
 #include "CConnectionManager.hpp"
 #include "CDispatcher.hpp"
 #include "CListener.hpp"
@@ -103,13 +104,12 @@ void CListener::Stop()
 /// @param e The errorcode if any associated.
 /// @param bytes_transferred The size of the datagram being read.
 /// @pre The connection has had start called and some message has been placed
-///   in the buffer by the recieve call.
+///   in the buffer by the receive call.
 /// @post The message has been delivered. This means that write connections
 ///   have been notified of ACK and standard messages have been redirected to
 ///   their appropriate places by the dispatcher. The incoming sequence number
 ///   for the source UUID has been incremented appropriately.
 ///////////////////////////////////////////////////////////////////////////////
-#pragma GCC diagnostic ignored "-Wunused-label"
 void CListener::HandleRead(const boost::system::error_code& e, 
                            std::size_t bytes_transferred)
 {
@@ -159,16 +159,16 @@ void CListener::HandleRead(const boost::system::error_code& e,
             Logger.Debug<<"Processing Accept Message"<<std::endl;
             ptree pp = m_message->GetProtocolProperties();
             size_t hash = pp.get<size_t>("src.hash");
-            Logger.Debug<<"Recieved ACK"<<hash<<":"
+            Logger.Debug<<"Received ACK"<<hash<<":"
                             <<m_message->GetSequenceNumber()<<std::endl;
-            conn->RecieveACK(*m_message);
+            conn->ReceiveACK(*m_message);
         }
-        else if(m_message->GetStatus() == freedm::broker::CMessage::ClockReading && conn->Recieve(*m_message))
+        else if(m_message->GetStatus() == freedm::broker::CMessage::ClockReading && conn->Receive(*m_message))
         {
             Logger.Debug<<"Got A clock message"<<std::endl;
             GetBroker().GetClockSynchronizer().HandleRead(m_message);
         }
-        else if(conn->Recieve(*m_message))
+        else if(conn->Receive(*m_message))
         {
             Logger.Debug<<"Accepted message "<<m_message->GetHash()<<":"
                           <<m_message->GetSequenceNumber()<<std::endl;
@@ -179,7 +179,9 @@ void CListener::HandleRead(const boost::system::error_code& e,
             Logger.Debug<<"Rejected message "<<m_message->GetHash()<<":"
                           <<m_message->GetSequenceNumber()<<std::endl;
         }
+#ifdef CUSTOMNETWORK
 listen:
+#endif
         Logger.Debug<<"Listening for next message"<<std::endl;
         GetSocket().async_receive_from(boost::asio::buffer(m_buffer, CReliableConnection::MAX_PACKET_SIZE),
                 m_endpoint, boost::bind(&CListener::HandleRead, this,
@@ -191,7 +193,6 @@ listen:
         GetConnectionManager().Stop(CListener::ConnectionPtr(this));	
     }
 }
-#pragma GCC diagnostic warning "-Wunused-label"
 
     } // namespace broker
 } // namespace freedm

@@ -631,7 +631,6 @@ void LBAgent::SendDraftRequest()
     }//end if
 }//end SendDraftRequest
 
-#pragma GCC diagnostic ignored "-Wunused-parameter"
 ////////////////////////////////////////////////////////////
 /// HandleRead
 /// @description: Handles the incoming messages meant for lb module and performs
@@ -645,7 +644,7 @@ void LBAgent::SendDraftRequest()
 /// @peers The members of the group or a subset of, from whom message was received
 /// @limitations:
 /////////////////////////////////////////////////////////
-void LBAgent::HandleAny(MessagePtr msg, PeerNodePtr peer)
+void LBAgent::HandleAny(MessagePtr msg, PeerNodePtr /*peer*/)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     PeerSet tempSet_;
@@ -764,8 +763,7 @@ void LBAgent::HandleSupply(MessagePtr msg, PeerNodePtr peer)
     InsertInPeerSet(m_LoNodes,peer);
 }
 
-#pragma GCC diagnostic ignored "-Wunused-parameter"
-void LBAgent::HandleRequest(MessagePtr msg, PeerNodePtr peer)
+void LBAgent::HandleRequest(MessagePtr /*msg*/, PeerNodePtr peer)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     if(CountInPeerSet(m_AllPeers,peer) == 0)
@@ -817,7 +815,7 @@ void LBAgent::HandleRequest(MessagePtr msg, PeerNodePtr peer)
     }
 }
 
-void LBAgent::HandleYes(MessagePtr msg, PeerNodePtr peer)
+void LBAgent::HandleYes(MessagePtr /*msg*/, PeerNodePtr peer)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     // --------------------------------------------------------------
@@ -853,7 +851,7 @@ void LBAgent::HandleYes(MessagePtr msg, PeerNodePtr peer)
     }
 }
 
-void LBAgent::HandleNo(MessagePtr msg, PeerNodePtr peer)
+void LBAgent::HandleNo(MessagePtr /*msg*/, PeerNodePtr peer)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     if(CountInPeerSet(m_AllPeers,peer) == 0)
@@ -863,7 +861,7 @@ void LBAgent::HandleNo(MessagePtr msg, PeerNodePtr peer)
     Logger.Notice << "(No) from " << peer->GetUUID() << std::endl;
 }
 
-void LBAgent::HandleDrafting(MessagePtr msg, PeerNodePtr peer)
+void LBAgent::HandleDrafting(MessagePtr /*msg*/, PeerNodePtr peer)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     // --------------------------------------------------------------
@@ -936,7 +934,7 @@ void LBAgent::HandleAccept(MessagePtr msg, PeerNodePtr peer)
     if( LBAgent::SUPPLY == m_Status)
     {
         // Make necessary power setting accordingly to allow power migration
-        Logger.Warn<<"Migrating power on request from: "<< peer->GetUUID() << std::endl;
+        Logger.Notice<<"Migrating power on request from: "<< peer->GetUUID() << std::endl;
 	// !!!NOTE: You may use Step_PStar() or PStar(DemandValue) currently
         if (m_sstExists)
            Step_PStar();
@@ -949,7 +947,7 @@ void LBAgent::HandleAccept(MessagePtr msg, PeerNodePtr peer)
     }
 }
 
-void LBAgent::HandleCollectedState(MessagePtr msg, PeerNodePtr peer)
+void LBAgent::HandleCollectedState(MessagePtr msg, PeerNodePtr /*peer*/)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     // --------------------------------------------------------------
@@ -1030,7 +1028,7 @@ void LBAgent::HandleCollectedState(MessagePtr msg, PeerNodePtr peer)
     SendNormal(m_Normal);
 }
 
-void LBAgent::HandleComputedNormal(MessagePtr msg, PeerNodePtr peer)
+void LBAgent::HandleComputedNormal(MessagePtr msg, PeerNodePtr /*peer*/)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     // --------------------------------------------------------------

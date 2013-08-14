@@ -34,7 +34,7 @@ namespace broker {
 struct EDgiConfigError
     : virtual std::runtime_error
 {
-    EDgiConfigError(const std::string& what)
+    explicit EDgiConfigError(const std::string& what)
         : std::runtime_error(what) { }
 };
 

@@ -25,6 +25,11 @@ set(BROKER_FILES
     sc/StateCollection.cpp
    )
 
+# generate the configuration file
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/config.hpp.cmake
+               ${CMAKE_CURRENT_BINARY_DIR}/config.hpp
+              )
+
 add_library(broker ${BROKER_FILES})
 
 # don't compile broker until codegen has run

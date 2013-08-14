@@ -57,7 +57,7 @@ void IReadHandler::RegisterSubhandle(std::string key, SubhandleFunctor f)
 /// IReadHandler::HandleRead
 /// @description Does some processing on the message before sending to the
 /// functor
-/// @param msg The CMessage Recieved.
+/// @param msg The CMessage Received.
 ///////////////////////////////////////////////////////////////////////////////
 void IReadHandler::HandleRead(MessagePtr msg)
 {

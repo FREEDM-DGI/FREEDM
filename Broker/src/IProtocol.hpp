@@ -45,24 +45,21 @@ namespace freedm {
 class IProtocol
     : public boost::noncopyable
 {
-#pragma GCC diagnostic ignored "-Wunused-parameter"
     public:
-        /// Initializes the protocol with the underlying connection
-        IProtocol(CConnection * conn) : m_conn(conn), m_stopped(false) { };
         /// Destroy all humans
         virtual ~IProtocol() { };
         /// Public write to channel function
         virtual void Send(CMessage msg) = 0;
         /// Public facing function that handles marking ACKS
-        virtual void RecieveACK(const CMessage &msg) = 0;
+        virtual void ReceiveACK(const CMessage &msg) = 0;
         /// Function that determines if a message should dispatched
-        virtual bool Recieve(const CMessage &msg) = 0;
+        virtual bool Receive(const CMessage &msg) = 0;
         /// Handles Writing an ack for the input message to the channel
         virtual void SendACK(const CMessage &msg) = 0;
         /// Handles Stopping the timers etc
         virtual void Stop() = 0;
         /// Handles the change phase even
-        virtual void ChangePhase(bool newround) { };
+        virtual void ChangePhase(bool) { };
         /// Handles checking to see if the connection is stopped
         bool GetStopped() { return m_stopped; };
         /// Handles setting the stopped variable
@@ -72,8 +69,10 @@ class IProtocol
         /// Returns a pointer to the underlying connection.
         CConnection* GetConnection() { return m_conn; };
     protected:
+        /// Initializes the protocol with the underlying connection
+        explicit IProtocol(CConnection * conn) : m_conn(conn), m_stopped(false) { };
         /// Callback for when a write completes.
-        virtual void WriteCallback(const boost::system::error_code& e) { }
+        virtual void WriteCallback(const boost::system::error_code&) { }
         /// Handles writing the message to the underlying connection
         virtual void Write(CMessage msg);
     private:
@@ -83,7 +82,6 @@ class IProtocol
         CConnection * m_conn;
         /// Tracker for the stoppedness of the connection
         bool m_stopped;
-#pragma GCC diagnostic warning "-Wunused-parameter"
 };
 
     }

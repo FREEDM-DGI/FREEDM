@@ -30,7 +30,7 @@ namespace device {
 struct EBadRequest
     : virtual std::runtime_error
 {
-    EBadRequest(const std::string& what)
+    explicit EBadRequest(const std::string& what)
         : std::runtime_error(what) { }
 };
 
@@ -38,7 +38,7 @@ struct EBadRequest
 struct EDgiConfigError
     : virtual std::runtime_error
 {
-    EDgiConfigError(const std::string& what)
+    explicit EDgiConfigError(const std::string& what)
         : std::runtime_error(what) { }
 };
 
@@ -46,7 +46,7 @@ struct EDgiConfigError
 struct EDuplicateSession
     : virtual std::runtime_error
 {
-    EDuplicateSession(const std::string& what)
+    explicit EDuplicateSession(const std::string& what)
         : std::runtime_error(what) { }
 };
 

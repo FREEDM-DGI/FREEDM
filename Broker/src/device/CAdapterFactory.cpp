@@ -495,12 +495,12 @@ void CAdapterFactory::InitializeAdapter(IAdapter::Pointer adapter,
             }
             else if( fake && value )
             {
-                SignalValue oldval = fake->Get(name, signal);
+                SignalValue oldval = fake->GetState(name, signal);
                 if( oldval != SignalValue() && oldval != value.get() )
                 {
                     throw std::runtime_error("Duplicate Initial Value");
                 }
-                fake->Set(name, signal, value.get());
+                fake->SetCommand(name, signal, value.get());
             }
         }
     }

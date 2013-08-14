@@ -46,8 +46,6 @@ include_directories("${PROJECT_SOURCE_DIR}/src")
 include_directories("${PROJECT_BINARY_DIR}/src")
 include_directories("${PROJECT_SOURCE_DIR}/src/device")
 include_directories("${PROJECT_BINARY_DIR}/src/device")
-include_directories("${PROJECT_SOURCE_DIR}/src/device/types")
-include_directories("${PROJECT_BINARY_DIR}/src/device/types")
 
 # goto src/CMakeLists.txt
 add_subdirectory(src)

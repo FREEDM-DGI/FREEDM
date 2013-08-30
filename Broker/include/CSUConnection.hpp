@@ -72,7 +72,7 @@ class CSUConnection : public IProtocol
         /// Returns the identifier for this protocol.
         static std::string Identifier() { return "SUC"; };
         /// The refire time in ms
-        const static unsigned int REFIRE_TIME = 200;
+        const static unsigned int REFIRE_TIME = 100;
     private:
         /// Resend outstanding messages
         void Resend(const boost::system::error_code& err);

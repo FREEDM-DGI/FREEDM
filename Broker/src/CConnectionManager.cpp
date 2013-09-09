@@ -261,15 +261,15 @@ ConnectionPtr CConnectionManager::GetConnectionByUUID(std::string uuid_)
     {
         it = resolver.resolve(query);
         boost::asio::connect(c_->GetSocket(), it);
+        Logger.Info<<"Resolved: "<<static_cast<boost::asio::ip::udp::endpoint>(*it)<<std::endl;
     }
     catch (boost::system::system_error& e)
     {
         std::stringstream ss;
         ss<<"Error connecting to host "<<s_<<":"<<port<<": "<< e.what();
-        throw EConnectionError(ss.str());
+        //throw EConnectionError(ss.str());
+        c_->GetSocket().close();
     }
-    // *it is safe only if we get here
-    Logger.Info<<"Resolved: "<<static_cast<boost::asio::ip::udp::endpoint>(*it)<<std::endl;
 
     //Once the connection is built, connection manager gets a call back to register it.    
     Logger.Debug<<"Inserting connection"<<std::endl;

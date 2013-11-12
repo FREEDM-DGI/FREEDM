@@ -59,6 +59,7 @@
 
 #include <boost/asio.hpp>
 #include <boost/bind.hpp>
+#include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/date_time/posix_time/posix_time_types.hpp>
 #include <boost/foreach.hpp>
 #include <boost/function.hpp>
@@ -74,6 +75,11 @@ namespace broker {
 namespace lb {
 
 const int P_Migrate = 1;
+
+//const variables for scheduling invariants
+const int RESPONSE_TIME_MARGIN = 250;
+const int MAX_BETTER_OBSERVED_RTT = 3;
+const int KMAX = 26;
 
 namespace {
 
@@ -101,6 +107,8 @@ LBAgent::LBAgent(std::string uuid_, CBroker &broker):
     m_Leader = GetUUID();
     m_Normal = 0;
     m_GlobalTimer = broker.AllocateTimer("lb");
+    //for scheduling invariant
+    m_DeadlineTimer = broker.AllocateTimer("lb");
     // Bound to lbq so it resolves before the state collection round
     m_StateTimer = broker.AllocateTimer("lbq");
     RegisterSubhandle("any.PeerList",boost::bind(&LBAgent::HandlePeerList, this, _1, _2));
@@ -116,8 +124,10 @@ LBAgent::LBAgent(std::string uuid_, CBroker &broker):
     RegisterSubhandle("lb.ComputedNormal",boost::bind(&LBAgent::HandleComputedNormal, this, _1, _2));
     RegisterSubhandle("any",boost::bind(&LBAgent::HandleAny, this, _1, _2));
     m_sstExists = false;
+    //first time flag to obtain expected RTT
+    First_Time = true;
 }
-
+ 
 ////////////////////////////////////////////////////////////
 /// LB
 /// @description Main function which initiates the algorithm
@@ -243,6 +253,8 @@ void LBAgent::SendNormal(double Normal)
         m_.m_submessages.put("lb.source", GetUUID());
         m_.SetHandler("lb.ComputedNormal");
         m_.m_submessages.put("lb.cnorm", boost::lexical_cast<std::string>(Normal));
+	//for scheduling invariant
+	m_.m_submessages.put("lb.kmaxlocal", boost::lexical_cast<std::string>(Kmaxlocal));
         BOOST_FOREACH( PeerNodePtr peer, m_AllPeers | boost::adaptors::map_values)
         {
             try
@@ -634,6 +646,8 @@ void LBAgent::SendDraftRequest()
         {
             //Create new request and send it to all DEMAND nodes
             SendMsg("request", m_HiNodes);
+	    //for scheduling invariant
+	    microsecT1 = boost::posix_time::microsec_clock::local_time();
         }//end else
     }//end if
 }//end SendDraftRequest
@@ -748,6 +762,9 @@ void LBAgent::HandleNormal(MessagePtr msg, PeerNodePtr peer)
     EraseInPeerSet(m_HiNodes,peer);
     EraseInPeerSet(m_LoNodes,peer);
     InsertInPeerSet(m_NoNodes,peer);
+
+    //for scheduling invariant
+    Kmaxlocal =boost::lexical_cast<int>(pt.get<std::string>("lb.kmaxlocal"));
 }
 
 void LBAgent::HandleSupply(MessagePtr msg, PeerNodePtr peer)
@@ -832,6 +849,22 @@ void LBAgent::HandleYes(MessagePtr /*msg*/, PeerNodePtr peer)
         return;
     if(peer->GetUUID() == GetUUID())
         return;
+    //for scheduling invariant
+    microsecT2 = boost::posix_time::microsec_clock::local_time();
+    //expected RTT
+    Obs_Avg_RTT = microsecT2-microsecT1;
+    if First_Time == true )
+    {
+	First_Time = false;
+    	Curr_RTT = Obs_Avg_RTT;
+	Curr_K = 0;
+	Better_RTT_Obs_Counter = 0;
+	Last_Time_Sent = 0;	
+    	Curr_Relative_Deadline = Curr_RTT + RESPONSE_TIME_MARGIN;
+	Update_Period();
+
+    }
+
 
     Logger.Notice << "(Yes) from " << peer->GetUUID() << std::endl;
     //Initiate drafting with a message accordingly
@@ -845,11 +878,15 @@ void LBAgent::HandleYes(MessagePtr /*msg*/, PeerNodePtr peer)
     m_.SetHandler("lb."+ ss_.str());
 
     //Its better to check your status again before initiating drafting
-    if( peer->GetUUID() != GetUUID() && LBAgent::SUPPLY == m_Status )
+    if( peer->GetUUID() != GetUUID() && LBAgent::SUPPLY == m_Status && Invariant_Check())
     {
         try
         {
             peer->Send(m_);
+	    //for scheduling invariant
+	    Last_Time_Sent  = boost::posix_time::microsec_clock::local_time();
+	    Curr_K++;
+	    
         }
         catch (boost::system::system_error& e)
         {
@@ -857,6 +894,55 @@ void LBAgent::HandleYes(MessagePtr /*msg*/, PeerNodePtr peer)
         }
     }
 }
+
+//fore scheduling invariant
+bool LBAgent::Invariant_Check()
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    microsecT3 = boost::posix_time::microsec_clock::local_time();  
+    Deadline = microsecT3 + Curr_Relative_Deadline;
+    int DEADLINE_TIMEOUT = boost::lexical_cast<int>(Deadline);
+    //Start  the timer, on timeout, deadline_miss will be called
+    m_broker.Schedule(m_DeadlineTimer, boost::posix_time::milliseconds(DEADLINE_TIMEOUT),
+		      boost::bing(&LBAgent::Deadline_Miss, this, boost::asio::placeholders::error));
+
+    bool Ik_Invariant;
+    bool Ip_Invariant;
+    bool Ic_Invariant;
+    if (Curr_K < (Kmaxlocal-1))
+	Ik_Invariant = true;
+    else
+	Ik_Invariant = false;
+
+    if (Deadline < Phase_Time)
+	Ic_Invariant = true;
+    else
+	Ic_Invariant = false;
+
+    if (microsecT3 - Laste_Time_Sent > Curr_Period)
+	Ip_Invariant = true;
+    else 
+	Ip_Invariant = false;
+    return Ik_Invariant*Ic_Invariant*Ip_Invariant;
+}
+
+void LBAgent::Deadline_Miss()
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    Curr_RTT = Curr_RTT + RESPONSE_TIME_MARGIN;
+    Curr_Relative_Deadline = Curr_RTT + RESPONSE_TIME_MARGIN;
+    Update_Period();    
+}
+
+void LBAgent::Update_Period()
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    if(Curr_K == Kmaxlocal)
+	Curr_Period = Curr_RTT;
+    else
+	Curr_Period = Curr_Relative_Deadline/(Kmaxlocal-Curr_K);
+}
+
 
 void LBAgent::HandleNo(MessagePtr /*msg*/, PeerNodePtr peer)
 {
@@ -866,6 +952,9 @@ void LBAgent::HandleNo(MessagePtr /*msg*/, PeerNodePtr peer)
     if(peer->GetUUID() == GetUUID())
         return;
     Logger.Notice << "(No) from " << peer->GetUUID() << std::endl;
+
+    //for scheduling invariant
+    microsecT2 = boost::posix_time::microsec_clock::local_time();
 }
 
 void LBAgent::HandleDrafting(MessagePtr /*msg*/, PeerNodePtr peer)
@@ -927,6 +1016,10 @@ void LBAgent::HandleAccept(MessagePtr msg, PeerNodePtr peer)
         return;
     if(CountInPeerSet(m_AllPeers,peer) == 0)
         return;
+
+    //for scheduling invariant
+    Msg_Ack_Received();
+
     // --------------------------------------------------------------
     // The Demand node you agreed to supply power to, is awaiting migration
     // --------------------------------------------------------------
@@ -952,6 +1045,89 @@ void LBAgent::HandleAccept(MessagePtr msg, PeerNodePtr peer)
     {
         Logger.Warn << "Unexpected Accept message" << std::endl;
     }
+}
+
+void LBAgent::Msg_Ack_Received()
+{
+    //for scheduling invariant
+    microsecT4 = boost::posix_time::microsec_clock::local_time();
+    temp_MsgRTT = microsecT4 - Last_Time_Sent;
+    Curr_K--;
+
+    if(Deadline > microsecT4)
+    {
+	Deadline_Met(_MsgID);
+    }
+    else
+    {
+	if( (temp_MsgRTT > Curr_Relative_Deadline)
+	{
+	    Curr_RTT = temp_MsgRTT;
+	    Curr_Relative_Deadline = Curr_RTT + RESPONSE_TIME_MARGIN;
+	    Update_Period();
+	}
+    }
+}
+
+void LBAgent::Deadline_Met()
+{
+	// check for Better RTT
+	if( temp_MsgRTT < Curr_RTT )
+	{
+		if( (Curr_RTT - temp_MsgRTT) > RESPONSE_TIME_MARGIN )
+		{
+			Better_RTT_Obs_Counter++;
+
+			if(Obs_Avg_RTT <=1)
+				Obs_Avg_RTT = temp_MsgRTT;
+
+			Obs_Avg_RTT = (temp_MsgRTT + Obs_Avg_RTT) / 2;
+
+			if(Better_RTT_Obs_Counter == MAX_BETTER_OBS_RTT_COUNT)
+			{
+				Ack_Recv_Is_Better();
+				// reset Obs_Avg_RTT to accumulate next
+				// MAX_BETTER_OBS_RTT_COUNT averages
+				Obs_Avg_RTT = 0;
+				Better_RTT_Obs_Counter = 0;
+			}
+		}
+		else
+		{
+			// we need continuous good RTT's to adapt
+			Better_RTT_Obs_Counter = 0;
+			Obs_Avg_RTT = 0;
+		}
+	}
+}
+
+
+// this function gets triggered when observed RTT
+// is good MAX_BETTER_OBSERVED_RTT number of times
+void LBAgent::Ack_Recv_Is_Better()
+{
+
+#ifdef ENABLE_ECN
+	if(Max_Better_Obs_RTT_Count_ECN==MAX_BETTER_OBS_RTT_COUNT)
+#endif
+	{
+		cout << ", ack is better";
+	// reset counter for next Better_RTT
+	Better_RTT_Obs_Counter = 0;
+
+#ifdef ENABLE_ECN
+	Curr_RTT =  Curr_RTT - RESPONSE_TIME_MARGIN;
+	Curr_Relative_Deadline = Curr_RTT + RESPONSE_TIME_MARGIN;
+#else
+	Curr_RTT = Obs_Avg_RTT + RESPONSE_TIME_MARGIN;
+	Curr_Relative_Deadline = Obs_Avg_RTT + RESPONSE_TIME_MARGIN;
+#endif
+
+	cout<<"  Curr_RTT: "<<Curr_RTT<<"\n";
+	Update_Period();
+
+	}
+
 }
 
 void LBAgent::HandleCollectedState(MessagePtr msg, PeerNodePtr /*peer*/)
@@ -1027,11 +1203,16 @@ void LBAgent::HandleCollectedState(MessagePtr msg, PeerNodePtr /*peer*/)
     {
         m_Normal = agg_gateway/peercount;
         Logger.Info << "Computed Normal: " << m_Normal << std::endl;
+        //for scheduleing invariant
+	//equally distributed KMAX
+   	Kmaxlocal = KMAX/peercournt;
     }
     else
     {
         m_Normal = 0;
     }
+ 
+
     SendNormal(m_Normal);
 }
 
@@ -1183,6 +1364,7 @@ void LBAgent::HandleStateTimer( const boost::system::error_code & error )
     {
         //Initiate state collection if you are the m_Leader
         CollectState();
+	Phase_Time = boost::posix_time::microsec_clock::local_time() + LB_STATE_TIMER;
     }
 
     m_broker.Schedule(m_StateTimer, boost::posix_time::milliseconds(CTimings::LB_STATE_TIMER),
@@ -1194,4 +1376,5 @@ void LBAgent::HandleStateTimer( const boost::system::error_code & error )
 } // namespace broker
 
 } // namespace freedm
+
 

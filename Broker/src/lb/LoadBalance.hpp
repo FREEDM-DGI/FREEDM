@@ -180,6 +180,38 @@ class LBAgent
         CBroker &m_broker;
 
         bool m_sstExists;
+
+	//for scheduling invariant
+	//Kmaxlocal
+	int Kmaxlocal;
+	float Curr_Period;
+	int Curr_K;
+	int Better_RTT_Obs_Counter;
+	bool First_Time;
+
+	//time variables
+	boost::posix_time::ptime microsecT1;
+	boost::posix_time::ptime microsecT2;
+	boost::posix_time::time_duration Obs_Avg_RTT;
+
+	boost::posix_time::ptime microsecT3;
+	boost::posix_time::ptime microsecT4;
+	
+	boost::posix_time::ptime Last_Time_Sent;
+	boost::posix_time::time_duration Curr_RTT;
+	boost::posix_time::time_duration Curr_Relative_Deadline;
+	boost::posix_time::ptime Deadline;
+	boost::posix_time::ptime Phase_Time;
+
+	//scheduling invariant function
+	bool Invariant_Check();
+	void Msg_Ack_Received();
+	void Ack_Recv_Is_Better();
+	void Deadline_Met();
+	void Deadline_Miss();
+	void Update_Period();
+	//timer	until dealine miss is triggered
+	CBroker::TimerHandle m_DeadlineTimer;
 };
 
 } // namespace lb
@@ -189,4 +221,5 @@ class LBAgent
 } // namespace freedm
 
 #endif
+
 

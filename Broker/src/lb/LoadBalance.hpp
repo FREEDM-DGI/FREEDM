@@ -175,7 +175,9 @@ class LBAgent
 	float m_scalar;
 	float m_Demand;
 	unsigned int m_index;
-
+        
+	///for control step load
+	unsigned int m_count;
 	/// Previous distributed demand
 	float m_preDemand; 
 

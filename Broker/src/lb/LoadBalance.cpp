@@ -124,6 +124,7 @@ LBAgent::LBAgent(std::string uuid_, CBroker &broker):
     RegisterSubhandle("any", boost::bind(&LBAgent::HandleAny, this, _1, _2));
     m_sstExists = false;
     countcycle = 0;
+    m_count = 0;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -490,6 +491,9 @@ void LBAgent::LoadTable()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     using namespace device;
+    // for step load
+    m_count ++;
+
     // device typedef for convenience
     typedef CDeviceDrer DRER;
     typedef CDeviceDesd DESD;
@@ -643,7 +647,10 @@ void LBAgent::LoadTable()
     Logger.Status << ss.str() << std::endl;
 
     //For step load
-    m_Demand += m_Load;
+    if (m_count == 3)
+    {
+	m_Demand += m_Load;
+    }
 }//end LoadTable
 
 

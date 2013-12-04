@@ -80,6 +80,7 @@ const int P_Migrate = 1;
 const int RESPONSE_TIME_MARGIN = 250;
 const int MAX_BETTER_OBSERVED_RTT = 3;
 const int KMAX = 26;
+bool static ECN_Status = true;
 
 namespace {
 
@@ -109,6 +110,7 @@ LBAgent::LBAgent(std::string uuid_, CBroker &broker):
     m_GlobalTimer = broker.AllocateTimer("lb");
     //for scheduling invariant
     m_DeadlineTimer = broker.AllocateTimer("lb");
+    
     // Bound to lbq so it resolves before the state collection round
     m_StateTimer = broker.AllocateTimer("lbq");
     RegisterSubhandle("any.PeerList",boost::bind(&LBAgent::HandlePeerList, this, _1, _2));
@@ -900,8 +902,10 @@ bool LBAgent::Invariant_Check()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     microsecT3 = boost::posix_time::microsec_clock::local_time();  
-    Deadline = microsecT3 + Curr_Relative_Deadline;
-    int DEADLINE_TIMEOUT = boost::lexical_cast<int>(Deadline);
+//    Deadline = microsecT3 + Curr_Relative_Deadline;
+//    int DEADLINE_TIMEOUT = boost::lexical_cast<int>(Deadline);
+
+    int DEADLINE_TIMEOUT = boost::lexical_cast<int>(Curr_Relative_Deadline);
     //Start  the timer, on timeout, deadline_miss will be called
     m_broker.Schedule(m_DeadlineTimer, boost::posix_time::milliseconds(DEADLINE_TIMEOUT),
 		      boost::bing(&LBAgent::Deadline_Miss, this, boost::asio::placeholders::error));
@@ -1056,17 +1060,29 @@ void LBAgent::Msg_Ack_Received()
 
     if(Deadline > microsecT4)
     {
-	Deadline_Met(_MsgID);
+	    Deadline_Met(_MsgID);
     }
     else
     {
-	if( (temp_MsgRTT > Curr_Relative_Deadline)
-	{
-	    Curr_RTT = temp_MsgRTT;
-	    Curr_Relative_Deadline = Curr_RTT + RESPONSE_TIME_MARGIN;
-	    Update_Period();
-	}
+	    if( (temp_MsgRTT > Curr_Relative_Deadline)
+	    {
+	        Curr_RTT = temp_MsgRTT;
+	        Curr_Relative_Deadline = Curr_RTT + RESPONSE_TIME_MARGIN;
+	        Update_Period();
+	    }
     }
+
+#ifdef ENABLE_ECN
+    int _ECN;
+    //ECN
+    if (_ECN >= 11)
+    {   
+        Detected_ECN_CE();
+        ECN = true;
+    }
+    else
+        ECN = false;
+#endif
 }
 
 void LBAgent::Deadline_Met()
@@ -1107,11 +1123,7 @@ void LBAgent::Deadline_Met()
 void LBAgent::Ack_Recv_Is_Better()
 {
 
-#ifdef ENABLE_ECN
-	if(Max_Better_Obs_RTT_Count_ECN==MAX_BETTER_OBS_RTT_COUNT)
-#endif
-	{
-		cout << ", ack is better";
+	Logger.Notice << ", ack is better" << std::endl;
 	// reset counter for next Better_RTT
 	Better_RTT_Obs_Counter = 0;
 
@@ -1123,12 +1135,43 @@ void LBAgent::Ack_Recv_Is_Better()
 	Curr_Relative_Deadline = Obs_Avg_RTT + RESPONSE_TIME_MARGIN;
 #endif
 
-	cout<<"  Curr_RTT: "<<Curr_RTT<<"\n";
+	Logger.Notice <<"  Curr_RTT: "<<Curr_RTT<<std::endl;
 	Update_Period();
 
 	}
-
 }
+
+void LBAgent::Detected_ECN_CE()
+{
+    if(ECN_Status)
+    {
+        Max_Better_Obs_RTT_Count_ECN = Calculate_ECN_Counter();
+
+	    Curr_RTT = Curr_RTT + Curr_K * RESPONSE_TIME_MARGIN;
+	    Curr_Relative_Deadline = Curr_RTT + RESPONSE_TIME_MARGIN;
+    
+        Update_Period();
+        
+        ECN_Status = false;
+        int DEADLINE_TIMEOUT = boost::lexical_cast<int>(Curr_RTT);
+       //Start  the timer, on timeout, deadline_miss will be called
+       m_broker.Schedule(m_ECNTimer, boost::posix_time::milliseconds(DEADLINE_TIMEOUT),
+		      boost::bing(&LBAgent::ECN_Active, this, boost::asio::placeholders::error));       
+
+    }
+}
+
+void LBAgent::Calculate_ECN_Counter()
+{   
+    return Curr_K*2;
+}
+
+
+void LBAgent::ECN_Active()
+{
+    ECN_Status = true;
+}
+
 
 void LBAgent::HandleCollectedState(MessagePtr msg, PeerNodePtr /*peer*/)
 {

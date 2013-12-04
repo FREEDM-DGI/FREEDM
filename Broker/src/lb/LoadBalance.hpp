@@ -41,6 +41,8 @@
 #ifndef LOADBALANCE_HPP_
 #define LOADBALANCE_HPP_
 
+#define ENABLE_ECN
+
 #include "CConnectionManager.hpp"
 #include "CDispatcher.hpp"
 #include "CMessage.hpp"
@@ -210,8 +212,17 @@ class LBAgent
 	void Deadline_Met();
 	void Deadline_Miss();
 	void Update_Period();
+    //ECN
+    void Detected_ECN_CE();
+    int Max_Better_Obs_RTT_Count_ECN;
+    bool ECN;
+    int Calculate_ECN_Counter();
+    void ECN_Active();
+
 	//timer	until dealine miss is triggered
 	CBroker::TimerHandle m_DeadlineTimer;
+    //ECN timer
+    CBroker::TimerHandle m_ECNTimer;
 };
 
 } // namespace lb

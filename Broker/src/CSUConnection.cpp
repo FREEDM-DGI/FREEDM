@@ -39,7 +39,7 @@
 
 namespace freedm {
     namespace broker {
-        
+
 namespace {
 
 /// This file's logger.
@@ -60,7 +60,7 @@ void CSUConnection::Send(CMessage msg)
 {
     unsigned int msgseq;
 
-    
+
     msgseq = m_outseq;
     msg.SetSequenceNumber(msgseq);
     m_outseq = (m_outseq+1) % SEQUENCE_MODULO;
@@ -77,14 +77,14 @@ void CSUConnection::Send(CMessage msg)
     q.msg = msg;
 
     m_window.push_back(q);
-    
+
     if(m_window.size() < WINDOW_SIZE)
     {
         Write(msg);
         m_timeout.cancel();
         m_timeout.expires_from_now(boost::posix_time::milliseconds(CTimings::CSUC_RESEND_TIME));
         m_timeout.async_wait(boost::bind(&CSUConnection::Resend,this,
-            boost::asio::placeholders::error)); 
+            boost::asio::placeholders::error));
     }
 }
 
@@ -99,7 +99,7 @@ void CSUConnection::Resend(const boost::system::error_code& err)
             QueueItem f = m_window.front();
             m_window.pop_front();
             if(f.ret > 0 && writes < static_cast<int>(WINDOW_SIZE))
-            {        
+            {
                 Write(f.msg);
                 writes++;
                 f.ret--;
@@ -172,7 +172,7 @@ void CSUConnection::SendACK(const CMessage &msg)
 {
     unsigned int seq = msg.GetSequenceNumber();
     freedm::broker::CMessage outmsg;
-    // Presumably, if we are here, the connection is registered 
+    // Presumably, if we are here, the connection is registered
     outmsg.SetSourceUUID(GetConnection()->GetConnectionManager().GetUUID());
     outmsg.SetSourceHostname(GetConnection()->GetConnectionManager().GetHostname());
     outmsg.SetStatus(freedm::broker::CMessage::Accepted);

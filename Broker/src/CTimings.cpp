@@ -69,7 +69,7 @@ unsigned int CTimings::LB_STATE_TIMER;
 
 
 void CTimings::SetTimings(const std::string timingsFile)
-{ 
+{
     std::ifstream ifs;
 
     po::options_description loggerOpts("Timing Parameters");

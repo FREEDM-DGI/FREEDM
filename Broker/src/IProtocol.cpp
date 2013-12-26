@@ -31,7 +31,7 @@
 
 namespace freedm {
     namespace broker {
-        
+
 namespace {
 
 /// This file's logger.
@@ -71,15 +71,15 @@ void IProtocol::Write(CMessage msg)
         Logger.Info << raw << std::endl;
         throw std::runtime_error("Outgoing message is to long for buffer");
     }
-    /// If that looks good, lets write it into our buffer.    
+    /// If that looks good, lets write it into our buffer.
     it = m_buffer.begin();
     /// Use std::copy to copy the string into the buffer starting at it.
     it = std::copy(raw.begin(),raw.end(),it);
-    
+
     Logger.Debug<<"Writing "<<raw.length()<<" bytes to channel"<<std::endl;
 
     #ifdef CUSTOMNETWORK
-    if((rand()%100) >= GetConnection()->GetReliability()) 
+    if((rand()%100) >= GetConnection()->GetReliability())
     {
         Logger.Info<<"Outgoing Packet Dropped ("<<GetConnection()->GetReliability()
                       <<") -> "<<GetConnection()->GetUUID()<<std::endl;
@@ -95,7 +95,7 @@ void IProtocol::Write(CMessage msg)
     catch(boost::system::system_error &e)
     {
         Logger.Debug << "Writing Failed: " << e.what() << std::endl;
-        GetConnection()->Stop(); 
+        GetConnection()->Stop();
     }
 }
 

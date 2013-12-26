@@ -11,7 +11,7 @@
 ///               Lionel Ni, Chong Xu, Thomas Gendreau, IEEE Transactions on
 ///               Software Engineering, 1985
 ///
-/// @functions  
+/// @functions
 ///	LBAgent
 ///     Run
 ///     AddPeer
@@ -303,7 +303,7 @@ void LBAgent::CollectState()
     subPtree3.add("deviceType", "Load");
     subPtree3.add("valueType", "drain");
     m_cs.m_submessages.add_child("sc.devices.device", subPtree3);
-    
+
     //FID device
     ptree subPtree4;
     subPtree4.add("deviceType", "Fid");
@@ -315,7 +315,7 @@ void LBAgent::CollectState()
     subPtree5.add("deviceType", "Desd");
     subPtree5.add("valueType", "storage");
     m_cs.m_submessages.add_child("sc.devices.device", subPtree5);
-	
+
     try
     {
        GetPeer(GetUUID())->Send(m_cs);
@@ -444,7 +444,7 @@ void LBAgent::LoadTable()
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
     using namespace device;
-    
+
     // device typedef for convenience
     typedef CDeviceDrer DRER;
     typedef CDeviceDesd DESD;
@@ -478,7 +478,7 @@ void LBAgent::LoadTable()
     typedef CDeviceLogger LOGGER;
     std::multiset<LOGGER::Pointer> LSet;
     LSet = device::CDeviceManager::Instance().GetDevicesOfType<LOGGER>();
-    
+
     if( !LSet.empty() )
     {
         (*LSet.begin())->SetGateway(m_NetGateway);
@@ -499,7 +499,7 @@ void LBAgent::LoadTable()
     ss << std::setprecision(2) << std::fixed;
     ss << " ----------- LOAD TABLE (Power Management) ------------"
             << std::endl;
-    ss << "\t| " << "Net DRER (" << std::setfill('0') << std::setw(2) 
+    ss << "\t| " << "Net DRER (" << std::setfill('0') << std::setw(2)
             << numDRERs << "): " << extraGenSpace << std::setfill(' ')
             << std::setw(genWidth) << m_Gen << "     Net DESD    ("
             << std::setfill('0') << std::setw(2) << numDESDs << "): "
@@ -508,7 +508,7 @@ void LBAgent::LoadTable()
     ss << "\t| " << "Net Load (" << std::setfill('0') << std::setw(2)
             << numLOADs << "): " << extraLoadSpace << std::setfill(' ')
             << std::setw(loadWidth) << m_Load << "     SST Gateway ("
-            << std::setfill('0') << std::setw(2) << numSSTs << "): " 
+            << std::setfill('0') << std::setw(2) << numSSTs << "): "
             << extraSstSpace << std::setfill(' ') << std::setw(sstGateWidth)
             << m_SstGateway << " |" << std::endl;
 //

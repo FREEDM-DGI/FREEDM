@@ -23,7 +23,7 @@ CLocalLogger Logger(__FILE__);
 $parameter_block
 
 void CTimings::SetTimings(const std::string timingsFile)
-{ 
+{
     std::ifstream ifs;
 
     po::options_description loggerOpts("Timing Parameters");

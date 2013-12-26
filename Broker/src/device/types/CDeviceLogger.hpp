@@ -55,7 +55,7 @@ public:
 
     /// Virtual destructor for derived classes.
     virtual ~CDeviceLogger();
-    
+
     /// Sets the group status for this peer.
     void SetGroupStatus(const SignalValue status);
 

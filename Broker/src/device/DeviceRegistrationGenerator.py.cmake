@@ -41,7 +41,7 @@ devices = [os.path.basename(device) for device in devices]
 devices = [device[len('CDevice'):-len('.hpp')] for device in devices]
 
 # generate PhysicalDeviceTypes.hpp
-for line in hppTemplate: 
+for line in hppTemplate:
     if '##INCLUDES' in line:
         for device in devices:
             hppSource.write('#include "types/CDevice' + device + '.hpp"\n')
@@ -49,17 +49,17 @@ for line in hppTemplate:
         hppSource.write(line)
 
 # generate PhysicalDeviceTypes.cpp
-for line in cppTemplate: 
+for line in cppTemplate:
     if '##REGISTRATIONS' in line:
         for device in devices:
             cppSource.write('    REGISTER_DEVICE_PROTOTYPE(' + device + ');\n')
     elif '##INSERTIONS' in line:
         for device in devices:
-            cppSource.write('        if( type == "' + device + 
+            cppSource.write('        if( type == "' + device +
                 '" && device_cast<CDevice' + device + '>(it->second) )\n')
             cppSource.write('        {\n')
             cppSource.write('            result.insert(it->second);\n')
-            cppSource.write('        }\n')    
+            cppSource.write('        }\n')
     else:
         cppSource.write(line)
 

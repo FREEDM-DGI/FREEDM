@@ -3,7 +3,7 @@
 ///
 /// @author       Derek Ditch <derek.ditch@mst.edu>
 /// @author       Stephen Jackson <scj7t4@mst.edu>
-/// 
+///
 /// @project      FREEDM DGI
 ///
 /// @description  Declare CConnection class
@@ -88,7 +88,7 @@ private:
     typedef std::map<std::string,ProtocolPtr> ProtocolMap;
     /// Protocol Handler Map
     ProtocolMap m_protocols;
-    
+
     /// Default protocol
     std::string m_defaultprotocol;
 };

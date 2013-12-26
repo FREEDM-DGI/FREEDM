@@ -80,11 +80,11 @@ class SCAgent : public IReadHandler, public IPeerNode,
         void HandleRequest(MessagePtr msg, PeerNodePtr peer);
         void HandleMarker(MessagePtr msg, PeerNodePtr peer);
         void HandleState(MessagePtr msg, PeerNodePtr peer);
-        
+
     private:
         //Marker structure
         typedef std::pair< std::string, int >  StateVersion;
-        
+
         //Internal
         ///Initiator starts state collection
         void    Initiate();
@@ -97,55 +97,55 @@ class SCAgent : public IReadHandler, public IPeerNode,
         void    StateResponse();
         ///Peer save local state and forward maker
         void    SaveForward(StateVersion latest, CMessage msg);
-        
+
         // Messages
         ///Create a marker message
         CMessage marker();
-        
+
         //Peer set operations
         ///Add a peer to peer set from a pointer to a peer node object
         PeerNodePtr AddPeer(PeerNodePtr peer);
         ///Get a pointer to a peer from UUID
         PeerNodePtr GetPeer(std::string uuid);
-        
+
         ///collect states container and its iterator
         std::multimap<StateVersion, ptree> collectstate;
         std::multimap<StateVersion, ptree>::iterator it;
-        
+
         ///count number of states
         unsigned int m_countstate;
         ///count number of marker
         unsigned int m_countmarker;
         ///count number of "Done" messages
         unsigned int m_countdone;
-        
+
         ///save leader
         std::string m_scleader;
-        
+
         ///flag to indicate save channel message
         bool m_NotifyToSave;
-        
+
         ///module that request state collection
         std::string m_module;
 
         ///number of requested device
-        unsigned int m_deviceNum; 
- 
+        unsigned int m_deviceNum;
+
         //For multidevices state collection the following variables have to be changed
-        std::vector<std::string> m_device;  
-    
+        std::vector<std::string> m_device;
+
         ///type of device and value
         //std::string m_deviceType;
         //std::string m_valueType;
-        
+
         ///current version of marker
         StateVersion        m_curversion;
         ///current state
         ptree               m_curstate;
-        
+
         ///all known peers
         PeerSet m_AllPeers;
-        
+
         /// The broker
         CBroker &m_broker;
 };

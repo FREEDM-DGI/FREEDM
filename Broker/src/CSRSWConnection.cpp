@@ -37,7 +37,7 @@
 
 namespace freedm {
     namespace broker {
-        
+
 namespace {
 
 /// This file's logger.
@@ -53,9 +53,9 @@ CLocalLogger Logger(__FILE__);
 ///       marked as unsynced, It won't be sending kill statuses. Its first
 ///       message will be numbered as 0 for outgoing and the timer is not set.
 /// @param conn The underlying connection object this protocol writes to
-/////////////////////////////////////////////////////////////////////////////// 
+///////////////////////////////////////////////////////////////////////////////
 CSRSWConnection::CSRSWConnection(CConnection *  conn)
-    : IProtocol(conn), 
+    : IProtocol(conn),
       m_timeout(conn->GetSocket().get_io_service())
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
@@ -80,21 +80,21 @@ void CSRSWConnection::ChangePhase(bool /*newround*/)
 ///////////////////////////////////////////////////////////////////////////////
 /// CSRSWConnection::CSRSWConnection
 /// @description Send function for the CSRSWConnection. Sending using this
-///   protocol involves an alternating bit scheme. Messages can expire and 
+///   protocol involves an alternating bit scheme. Messages can expire and
 ///   delivery won't be attempted after the deadline is passed. Killed messages
 ///   are noted in the next outgoing message. The receiver tracks the killed
 ///   messages and uses them to help maintain ordering.
 /// @pre The protocol is intialized.
 /// @post At least one message is in the channel and actively being resent.
 ///     The send window is greater than or equal to one. The timer for the
-///     resend is freshly set or is currently running for a resend. 
+///     resend is freshly set or is currently running for a resend.
 ///     If a message is written to the channel, the m_killable flag is set.
 /// @param msg The message to write to the channel.
 ///////////////////////////////////////////////////////////////////////////////
 void CSRSWConnection::Send(CMessage msg)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    
+
     unsigned int msgseq;
 
     if(m_outsync == false)
@@ -102,7 +102,7 @@ void CSRSWConnection::Send(CMessage msg)
         SendSYN();
     }
 
-    
+
     msgseq = m_outseq;
     msg.SetSequenceNumber(msgseq);
     m_outseq = (m_outseq+1) % SEQUENCE_MODULO;
@@ -111,7 +111,7 @@ void CSRSWConnection::Send(CMessage msg)
     msg.SetSourceHostname(GetConnection()->GetConnectionManager().GetHostname());
     msg.SetProtocol(GetIdentifier());
     msg.SetSendTimestampNow();
-    
+
     if(m_outstandingwindow.size() < OUTSTANDING_WINDOW)
     {
         Write(msg);
@@ -129,7 +129,7 @@ void CSRSWConnection::Send(CMessage msg)
 /// CSRSWConnection::CSRSWConnection
 /// @description Handles refiring ACKs and Sent Messages.
 /// @pre The connection has received or sent at least one message.
-/// @post One of the following conditions or combination of states is 
+/// @post One of the following conditions or combination of states is
 ///       upheld:
 ///       1) An ack for a message that has not yet expired has been resent and
 ///          a timer to call resend has been set.
@@ -295,7 +295,7 @@ bool CSRSWConnection::Receive(const CMessage &msg)
         //If the connection hasn't been synchronized, we want to
         //tell them it is a bad request so they know they need to sync.
         freedm::broker::CMessage outmsg;
-        // Presumably, if we are here, the connection is registered 
+        // Presumably, if we are here, the connection is registered
         outmsg.SetSourceUUID(GetConnection()->GetConnectionManager().GetUUID());
         outmsg.SetSourceHostname(GetConnection()->GetConnectionManager().GetHostname());
         outmsg.SetStatus(freedm::broker::CMessage::BadRequest);
@@ -306,7 +306,7 @@ bool CSRSWConnection::Receive(const CMessage &msg)
         return false;
     }
     // See if the message contains kill data. If it does, read it and mark
-    // we should use it. 
+    // we should use it.
     // Consider the window you expect to see
     unsigned int seq = msg.GetSequenceNumber();
     if(m_inseq == seq)
@@ -334,7 +334,7 @@ void CSRSWConnection::SendACK(const CMessage &msg)
     freedm::broker::CMessage outmsg;
     ptree pp;
     pp.put("src.hash",msg.GetHash());
-    // Presumably, if we are here, the connection is registered 
+    // Presumably, if we are here, the connection is registered
     outmsg.SetSourceUUID(GetConnection()->GetConnectionManager().GetUUID());
     outmsg.SetSourceHostname(GetConnection()->GetConnectionManager().GetHostname());
     outmsg.SetStatus(freedm::broker::CMessage::Accepted);
@@ -388,7 +388,7 @@ void CSRSWConnection::SendSYN()
             seq--;
         }
     }
-    // Presumably, if we are here, the connection is registered 
+    // Presumably, if we are here, the connection is registered
     outmsg.SetSourceUUID(GetConnection()->GetConnectionManager().GetUUID());
     outmsg.SetSourceHostname(GetConnection()->GetConnectionManager().GetHostname());
     outmsg.SetStatus(freedm::broker::CMessage::Created);

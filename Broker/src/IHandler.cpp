@@ -6,7 +6,7 @@
 ///
 /// @project      FREEDM DGI
 ///
-/// @description  Provides handlers for module read/write operations 
+/// @description  Provides handlers for module read/write operations
 ///
 /// These source code files were created at Missouri University of Science and
 /// Technology, and are intended for use in teaching or research. They may be
@@ -68,7 +68,7 @@ void IReadHandler::HandleRead(MessagePtr msg)
     try
     {
         peer = CGlobalPeerList::instance().GetPeer(source);
-    } 
+    }
     catch(std::runtime_error &e)
     {
         if(CGlobalPeerList::instance().begin() == CGlobalPeerList::instance().end())

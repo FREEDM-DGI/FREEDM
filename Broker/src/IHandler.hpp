@@ -6,7 +6,7 @@
 ///
 /// @project      FREEDM DGI
 ///
-/// @description  Provides handlers for module read/write operations 
+/// @description  Provides handlers for module read/write operations
 ///
 /// These source code files were created at Missouri University of Science and
 /// Technology, and are intended for use in teaching or research. They may be
@@ -70,10 +70,10 @@ public:
     /// The signature for the functor bindings for the subhandlers
     typedef boost::function<void (MessagePtr,boost::shared_ptr<IPeerNode> )> SubhandleFunctor;
     typedef boost::function<void (SubhandleFunctor,MessagePtr,boost::shared_ptr<IPeerNode> )> PrehandleFunctor;
-    
+
     /// The type of the map the functors are stored in
     typedef std::list< std::pair<std::string, SubhandleFunctor> > SubhandleContainer;
-    
+
     /// Destructor for the read handler
     virtual ~IReadHandler(){}
 

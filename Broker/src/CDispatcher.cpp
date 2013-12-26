@@ -29,7 +29,7 @@
 
 namespace freedm {
     namespace broker {
-        
+
 namespace {
 
 /// This file's logger.
@@ -72,17 +72,17 @@ void CDispatcher::HandleRequest(CBroker &broker, MessagePtr msg)
             broker.Schedule(m_handlerToModule[mapIt_->second],x);
             processed = true;
         }
-	        
+
 	    // Loop through all submessages of this message to call its
         // handler
         std::string handler = msg->GetHandler();
-        
+
         Logger.Debug << "Processing " << handler << std::endl;
 
         // Special keyword any which gives the submessage to all modules.
         if(handler.find("any") == 0)
         {
-            for( mapIt_ =  m_readHandlers.begin(); 
+            for( mapIt_ =  m_readHandlers.begin();
                  mapIt_ != m_readHandlers.end();
                  ++mapIt_)
             {
@@ -111,7 +111,7 @@ void CDispatcher::HandleRequest(CBroker &broker, MessagePtr msg)
                 }
             }
         }
-        // XXX Should anything be done if the message didn't have any submessages? 
+        // XXX Should anything be done if the message didn't have any submessages?
         if( sub_.begin() == sub_.end() )
         {
             // Just log this for now
@@ -165,7 +165,7 @@ void CDispatcher::HandleWrite( ptree &p_mesg )
                 mapIt_ != m_writeHandlers.upper_bound( "any" );
                 ++mapIt_ )
         {
-           Logger.Debug << "Processing 'any'" << std::endl;  
+           Logger.Debug << "Processing 'any'" << std::endl;
 	  (mapIt_->second)->HandleWrite( p_mesg );
         }
 
@@ -190,7 +190,7 @@ void CDispatcher::HandleWrite( ptree &p_mesg )
 
             // XXX Should anything be done if the message didn't
             // have a handler?
-            if( m_writeHandlers.lower_bound( key_ ) == 
+            if( m_writeHandlers.lower_bound( key_ ) ==
                 m_writeHandlers.upper_bound( key_)     )
             {
                 // Just log this for now
@@ -244,7 +244,7 @@ void CDispatcher::RegisterReadHandler(const std::string &module, const std::stri
 /// @post The module will be registered to touch outgoing messages that contain
 ///   the p_type key.
 /// @param module The module the read handler is on behalf of.
-/// @param p_type A ptree key that will be used to identify which messages 
+/// @param p_type A ptree key that will be used to identify which messages
 ///   should be touched.
 /// @param p_handler The module that will be invoked to perform the touch
 ///////////////////////////////////////////////////////////////////////////////

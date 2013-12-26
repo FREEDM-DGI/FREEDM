@@ -41,7 +41,7 @@ CLocalLogger Logger(__FILE__);
 ////////////////////////////////////////////////////////////////////////////////
 CFakeAdapter::CFakeAdapter()
     : m_stopped(false) { }
-   
+
 ////////////////////////////////////////////////////////////////////////////////
 /// Creates a new fake device adapter adapter.
 ///
@@ -95,24 +95,24 @@ SignalValue CFakeAdapter::Get(const std::string device,
                               const std::string key) const
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    
+
     // Get a map of keys/values from the map of devices/maps.
     // Then look up the value in that map.
     DeviceMap::iterator deviceIter = m_registry.find(device);
-    
+
     if (deviceIter == m_registry.end()) {
         KeyMap km;
         km.insert(std::make_pair(key, 0.0));
         m_registry.insert(std::make_pair(device, km));
         return 0.0;
     }
-    
+
     KeyMap::iterator keyIter = deviceIter->second.find(key);
     if (keyIter == deviceIter->second.end()) {
         m_registry[device].insert(std::make_pair(key, 0.0));
         return 0.0;
     }
-    
+
     return keyIter->second;
 }
 

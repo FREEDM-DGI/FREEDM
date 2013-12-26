@@ -73,13 +73,13 @@ public:
 
     /// Get the dispatcher
     CDispatcher& GetDispatcher();
-    
+
     /// Get the ioservice
     boost::asio::io_service& GetIOService();
-    
+
     /// Set the connection reliability for DCUSTOMNETWORK
     void SetReliability(int r);
-    
+
     /// Get the connection reliability for DCUSTOMNETWORK
     int GetReliability();
 
@@ -94,7 +94,7 @@ private:
 
     /// The dispatcher used to process the incoming request.
     CBroker& m_broker;
- 
+
     /// The UUID of the remote endpoint for the connection
     std::string m_uuid;
 

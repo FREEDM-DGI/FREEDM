@@ -53,7 +53,7 @@ namespace {
 CLocalLogger Logger(__FILE__);
 
 }
-        
+
 ///////////////////////////////////////////////////////////////////////////////
 /// @fn CBroker::CBroker
 /// @description The constructor for the broker
@@ -86,13 +86,13 @@ CBroker::CBroker(CDispatcher &dispatcher, freedm::broker::CConnectionManager &co
         CGlobalConfiguration::Instance().GetListenPort()
     );
     boost::asio::ip::udp::endpoint endpoint = *resolver.resolve( query );
-    
+
     // Listen for connections and create an event to spawn a new connection
     m_newConnection->GetSocket().open(endpoint.protocol());
     m_newConnection->GetSocket().bind(endpoint);
     m_connManager.Start(m_newConnection);
     m_busy = false;
-    
+
     // Try to align on the first phase change
     boost::posix_time::ptime now = boost::posix_time::microsec_clock::universal_time();
     now += CGlobalConfiguration::Instance().GetClockSkew();
@@ -260,7 +260,7 @@ void CBroker::RegisterModule(CBroker::ModuleIdent m, boost::posix_time::time_dur
         {
             exists = true;
             break;
-        } 
+        }
     }
     if(!exists)
     {
@@ -285,7 +285,7 @@ void CBroker::RegisterModule(CBroker::ModuleIdent m, boost::posix_time::time_dur
 CBroker::TimerHandle CBroker::AllocateTimer(CBroker::ModuleIdent module)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    
+
     boost::mutex::scoped_lock schlock(m_schmutex);
     CBroker::TimerHandle myhandle;
     boost::asio::deadline_timer* t = new boost::asio::deadline_timer(m_ioService);
@@ -305,7 +305,7 @@ CBroker::TimerHandle CBroker::AllocateTimer(CBroker::ModuleIdent module)
 ///   may be rejected if the Broker is stopping.
 /// @param h The handle to the timer being set.
 /// @param wait the amount of the time to wait. If this value is "not_a_date_time"
-///     The wait is converted to positive infinity and the time will expire as 
+///     The wait is converted to positive infinity and the time will expire as
 ///     soon as the module no longer owns the context.
 /// @param x The partially bound function that will be scheduled.
 /// @pre The module is registered
@@ -428,7 +428,7 @@ void CBroker::ChangePhase(const boost::system::error_code & /*err*/)
     //  completing that phase would go beyod the amount of time in the
     //  round so far (considering all the time that would be used by other phases up
     //  to that point) then that phase is the current one.
-    // Post: CPhase should be the current phase and tmp should be 
+    // Post: CPhase should be the current phase and tmp should be
     while(cphase < m_modules.size() && tmp < intoround)
     {
         cphase++;
@@ -445,7 +445,7 @@ void CBroker::ChangePhase(const boost::system::error_code & /*err*/)
         Logger.Notice<<"Aligned phase to "<<cphase<<" (was "<<m_phase<<") for "
                    <<remaining<<" ms"<<std::endl;
 
-        
+
         m_phase = cphase;
         m_last_alignment = now;
         sched_duration = remaining;
@@ -468,10 +468,10 @@ void CBroker::ChangePhase(const boost::system::error_code & /*err*/)
             if(t.second == oldident && m_nexttime[t.first] == true)
             {
                 Logger.Notice<<"Scheduling task for next time timer: "<<t.first<<std::endl;
-                m_timers[t.first]->cancel();                
+                m_timers[t.first]->cancel();
                 m_nexttime[t.first] = false;
                 m_ntexpired[t.first] = true;
-            }   
+            }
         }
     }
     //If the worker isn't going, start him again when you change phases.
@@ -492,7 +492,7 @@ void CBroker::ChangePhase(const boost::system::error_code & /*err*/)
 /// @fn CBroker::TimeRemaining
 /// @description Shows how much time is remaining in the current pgase
 /// @pre The Change Phase function has been called at least once. This should
-///     have occured by the time the first module is ready to look at the 
+///     have occured by the time the first module is ready to look at the
 ///     remaining time.
 /// @post no change
 /// @return A time_duration describing the amount of time remaining in the
@@ -509,7 +509,7 @@ boost::posix_time::time_duration CBroker::TimeRemaining()
 ///     timer is removed from the timers list. Then Execute is called to keep
 ///     the work queue going.
 /// @pre A task is scheduled for execution
-/// @post The task is entered into th ready queue. 
+/// @post The task is entered into th ready queue.
 ///////////////////////////////////////////////////////////////////////////////
 void CBroker::ScheduledTask(CBroker::Scheduleable x, CBroker::TimerHandle handle,
     const boost::system::error_code &err)
@@ -542,7 +542,7 @@ void CBroker::ScheduledTask(CBroker::Scheduleable x, CBroker::TimerHandle handle
 ///////////////////////////////////////////////////////////////////////////////
 /// @fn CBroker::Worker
 /// @description Reads the current phase and if the phase is correct, queues
-///     all the tasks for that phase to the ioservice. If m_busy is set, the 
+///     all the tasks for that phase to the ioservice. If m_busy is set, the
 ///     worker is still working on clearing the queue. If it's set to false,
 ///     the worker needs to be started when the scheduled task is called
 /// @pre None

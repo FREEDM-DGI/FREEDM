@@ -56,7 +56,7 @@ CClockSynchronizer::CClockSynchronizer(CBroker &broker)
     MapIndex ii(m_uuid,m_uuid);
     m_offsets[ii] = boost::posix_time::milliseconds(0);
     SetWeight(ii, 1.0);
-    m_skews[ii] = 0.0; 
+    m_skews[ii] = 0.0;
     m_lastinteraction = boost::posix_time::microsec_clock::universal_time();
     m_kcounter = 0;
     m_myoffset = boost::posix_time::milliseconds(0);
@@ -122,7 +122,7 @@ void CClockSynchronizer::HandleExchange(MessagePtr msg, PeerNodePtr peer)
 /// @param peer The remote node.
 ///////////////////////////////////////////////////////////////////////////////
 void CClockSynchronizer::HandleExchangeResponse(MessagePtr msg, PeerNodePtr peer)
-{ 
+{
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     std::string sender = peer->GetUUID();
     MapIndex ij(m_uuid,sender);
@@ -232,7 +232,7 @@ void CClockSynchronizer::HandleExchangeResponse(MessagePtr msg, PeerNodePtr peer
     m_skews[ij] = fij-1;
     // we help spread information by loading a table of j's known nodes.
     //msg.Save(Logger.Debug);
-    //Logger.Debug<<std::endl; 
+    //Logger.Debug<<std::endl;
     BOOST_FOREACH(ptree::value_type &v, pt.get_child("clk.table"))
     {
         ptree sub_pt = v.second;
@@ -274,7 +274,7 @@ void CClockSynchronizer::Exchange(const boost::system::error_code& err)
     // Loop through the peers and send them beacons
     std::deque< boost::shared_ptr<IPeerNode> > tmplist;
     std::deque< boost::shared_ptr<IPeerNode> > tmplist2;
-    bool flop = false; 
+    bool flop = false;
     BOOST_FOREACH(boost::shared_ptr<IPeerNode> peer, CGlobalPeerList::instance().PeerList() | boost::adaptors::map_values)
     {
         if(peer->GetUUID() == m_uuid)
@@ -301,7 +301,7 @@ void CClockSynchronizer::Exchange(const boost::system::error_code& err)
     //make sure the self referential entries stay sane.
     MapIndex ii(m_uuid,m_uuid);
     m_offsets[ii] = boost::posix_time::milliseconds(0);
-    SetWeight(ii, 1.0); 
+    SetWeight(ii, 1.0);
     m_skews[ii] = 0.0;
     //First, we compute our personal offset and skew:
     double tmp1 = 0.0;
@@ -332,7 +332,7 @@ void CClockSynchronizer::Exchange(const boost::system::error_code& err)
     }
     */
     m_offsets[ii] = boost::posix_time::milliseconds(0);
-    SetWeight(ii, 1.0); 
+    SetWeight(ii, 1.0);
     m_skews[ii] = 0.0;
 }
 
@@ -400,7 +400,7 @@ CMessage CClockSynchronizer::ExchangeResponse(unsigned int k)
 /// @return The adjusted time.
 ///////////////////////////////////////////////////////////////////////////////
 boost::posix_time::ptime CClockSynchronizer::GetSynchronizedTime()
-{ 
+{
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     boost::posix_time::ptime now = boost::posix_time::microsec_clock::universal_time();
     return now + CGlobalConfiguration::Instance().GetClockSkew();
@@ -471,7 +471,7 @@ boost::posix_time::time_duration CClockSynchronizer::DoubleToTD(double td)
     tmp = modf(td, &seconds);
     tmp *= 1000000; // Shift out to the microseconds
     modf(tmp, &fractional);
-    return boost::posix_time::seconds(seconds) + boost::posix_time::microseconds(fractional);    
+    return boost::posix_time::seconds(seconds) + boost::posix_time::microseconds(fractional);
 }
 
 }

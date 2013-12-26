@@ -79,7 +79,7 @@ public:
 
     /// Run the Server's io_service loop.
     void Run();
- 
+
     /// Return a reference to the IO Service
     boost::asio::io_service& GetIOService();
 
@@ -91,10 +91,10 @@ public:
 
     /// Stop the server.
     void HandleStop(unsigned int signum = 0);
-    
+
     /// Schedule a task
     int Schedule(TimerHandle h, boost::posix_time::time_duration wait, Scheduleable x);
-    
+
     /// Schedule a task
     int Schedule(ModuleIdent m, BoundScheduleable x, bool start_worker=true);
 
@@ -106,10 +106,10 @@ public:
 
     /// Access the connection manager
     CConnectionManager& GetConnectionManager() { return m_connManager; };
-    
+
     /// Access The dispatcher
     CDispatcher& GetDispatcher() { return m_dispatch; };
-    
+
     /// Registers a module for the scheduler
     void RegisterModule(ModuleIdent m, boost::posix_time::time_duration phase);
 
@@ -118,7 +118,7 @@ public:
 
     /// Returns the synchronizer
     CClockSynchronizer& GetClockSynchronizer();
-    
+
 private:
     /// Handle completion of an asynchronous accept operation.
     void HandleAccept(const boost::system::error_code& e);
@@ -146,13 +146,13 @@ private:
 
     ///Flag for if the executer is scheduled to run again.
     bool m_busy;
-    
+
     ///The last time the phases were aligned
     boost::posix_time::ptime m_last_alignment;
 
     ///List of modules for the scheduler
     ModuleVector m_modules;
-    
+
     ///Whose turn is it for round robin.
     PhaseMarker m_phase;
 
@@ -161,19 +161,19 @@ private:
 
     ///Time for the phases
     boost::asio::deadline_timer m_phasetimer;
-    
+
     ///The current counter for the time handlers
     TimerHandle m_handlercounter;
 
     ///How the timers are allocated.
-    TimerAlloc m_allocs;    
+    TimerAlloc m_allocs;
 
     ///A list of timers used for scheduling
     TimersMap m_timers;
 
     ///Maps handle to bool: if a timer handle is set to expire for the next round.
     NextTimeMap m_nexttime;
-    
+
     ///Maps if a specific timer has been cancelled or triggered by end of round
     NextTimeMap m_ntexpired;
 

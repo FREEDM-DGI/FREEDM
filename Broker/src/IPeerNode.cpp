@@ -3,7 +3,7 @@
 ///
 /// @author       Derek Ditch <dpdm85@mst.edu>
 /// @author       Ravi Akella <rcaq5c@mst.edu>
-/// @author       Stephen Jackson <scj7t4@mst.edu>    
+/// @author       Stephen Jackson <scj7t4@mst.edu>
 ///
 /// @project      FREEDM DGI
 ///
@@ -37,7 +37,7 @@
 namespace freedm {
 
 namespace broker {
-        
+
 namespace {
 
 /// This file's logger.
@@ -76,7 +76,7 @@ std::string IPeerNode::GetUUID() const
 ///              string
 /////////////////////////////////////////////////////////////
 std::string IPeerNode::GetHostname() const
-{ 
+{
     return m_connmgr.GetHostnameByUUID(GetUUID()).hostname;
 }
 ////////////////////////////////////////////////////////////
@@ -103,7 +103,7 @@ ConnManagerPtr IPeerNode::GetConnectionManager()
 /// @description Uses the connection manager to attempt to
 ///   get a connection pointer to this node.
 /// @pre None
-/// @post If enough is known about the uuid, a connection 
+/// @post If enough is known about the uuid, a connection
 ///   will exist with the connection manager.
 /// @return A ConnectionPtr for the connection to this peer.
 /////////////////////////////////////////////////////////////
@@ -121,7 +121,7 @@ broker::ConnectionPtr IPeerNode::GetConnection()
 ///   now, we use UDP and it doesn't matter.
 /// @pre None
 /// @post A message is sent to the peer represented by this
-///   object 
+///   object
 /// @param msg The message to write to channel
 /// @return True if the message was sent.
 /////////////////////////////////////////////////////////////

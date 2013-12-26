@@ -7,7 +7,7 @@
 ///
 /// @project      FREEDM DGI
 ///
-/// @description  ConnectionManager implemented based on a boost example 
+/// @description  ConnectionManager implemented based on a boost example
 ///
 /// These source code files were created at Missouri University of Science and
 /// Technology, and are intended for use in teaching or research. They may be
@@ -35,7 +35,7 @@
 
 namespace freedm {
 namespace broker {
-    
+
 namespace {
 
 /// This file's logger.
@@ -67,7 +67,7 @@ void CConnectionManager::Start (CListener::ConnectionPtr c)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     c->Start();
-    m_inchannel = c; 
+    m_inchannel = c;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -81,10 +81,10 @@ void CConnectionManager::Start (CListener::ConnectionPtr c)
 void CConnectionManager::PutConnection(std::string uuid, ConnectionPtr c)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    {  
+    {
         boost::lock_guard< boost::mutex > scopedLock_( m_Mutex );
         m_connections.insert(connectionmap::value_type(uuid,c));
-    }   
+    }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -94,17 +94,17 @@ void CConnectionManager::PutConnection(std::string uuid, ConnectionPtr c)
 /// @post The hostname is registered with the uuid to hostname map.
 /// @param u_ the uuid to enter into the map.
 /// @param host_ The hostname to enter into the map.
-/// @param port The port the remote host listens on. 
+/// @param port The port the remote host listens on.
 ///////////////////////////////////////////////////////////////////////////////
 void CConnectionManager::PutHostname(std::string u_, std::string host_, std::string port)
 {
-    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;  
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     {
         boost::lock_guard< boost::mutex > scopedLock_( m_Mutex );
         SRemoteHost x;
         x.hostname = host_;
         x.port = port;
-        m_hostnames.insert(std::pair<std::string, SRemoteHost>(u_, x));  
+        m_hostnames.insert(std::pair<std::string, SRemoteHost>(u_, x));
     }
 }
 
@@ -119,10 +119,10 @@ void CConnectionManager::PutHostname(std::string u_, std::string host_, std::str
 ///////////////////////////////////////////////////////////////////////////////
 void CConnectionManager::PutHostname(std::string u_, SRemoteHost host_)
 {
-    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;  
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     {
         boost::lock_guard< boost::mutex > scopedLock_( m_Mutex );
-        m_hostnames.insert(std::pair<std::string, SRemoteHost>(u_, host_));  
+        m_hostnames.insert(std::pair<std::string, SRemoteHost>(u_, host_));
     }
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -233,7 +233,7 @@ ConnectionPtr CConnectionManager::GetConnectionByUUID(std::string uuid_)
             //should stop it.
             Stop(m_connections.left.at(uuid_));
         }
-    }  
+    }
 
     Logger.Info << "Making Fresh Connection to " << uuid_ << std::endl;
 
@@ -248,10 +248,10 @@ ConnectionPtr CConnectionManager::GetConnectionByUUID(std::string uuid_)
     s_ = mapIt_->second.hostname;
     port = mapIt_->second.port;
 
-    // Create a new CConnection object for this host	
+    // Create a new CConnection object for this host
     Logger.Debug<<"Constructing CConnection"<<std::endl;
     ConnectionPtr c_(new CConnection(m_inchannel->GetIOService(), *this, m_inchannel->GetBroker(), uuid_));
-   
+
     // Initiate the UDP connection
     Logger.Debug<<"Computing remote endpoint"<<std::endl;
     boost::asio::ip::udp::resolver resolver(m_inchannel->GetIOService());
@@ -271,7 +271,7 @@ ConnectionPtr CConnectionManager::GetConnectionByUUID(std::string uuid_)
     // *it is safe only if we get here
     Logger.Info<<"Resolved: "<<static_cast<boost::asio::ip::udp::endpoint>(*it)<<std::endl;
 
-    //Once the connection is built, connection manager gets a call back to register it.    
+    //Once the connection is built, connection manager gets a call back to register it.
     Logger.Debug<<"Inserting connection"<<std::endl;
     PutConnection(uuid_,c_);
     #ifdef CUSTOMNETWORK
@@ -293,7 +293,7 @@ void CConnectionManager::ChangePhase(bool newround)
     for(it = m_connections.left.begin(); it != m_connections.left.end(); it++)
     {
         it->second->ChangePhase(newround);
-    }    
+    }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -308,9 +308,9 @@ void CConnectionManager::LoadNetworkConfig()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     boost::property_tree::ptree pt;
-    boost::property_tree::read_xml("network.xml",pt);    
+    boost::property_tree::read_xml("network.xml",pt);
     int inreliability = pt.get("network.incoming.reliability",100);
-    m_inchannel->SetReliability(inreliability); 
+    m_inchannel->SetReliability(inreliability);
     BOOST_FOREACH(ptree::value_type & child, pt.get_child("network.outgoing"))
     {
         std::string uuid = child.second.get<std::string>("<xmlattr>.uuid");
@@ -319,7 +319,7 @@ void CConnectionManager::LoadNetworkConfig()
         {
             m_connections.left.at(uuid)->SetReliability(reliability);
         }
-    }  
+    }
 }
 
 } // namespace broker

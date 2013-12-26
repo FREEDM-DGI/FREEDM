@@ -93,7 +93,7 @@ IDevice::Pointer CDeviceFid::Create(const std::string identifier,
 ///
 /// @pre None.
 /// @post Calls IAdapter::Get with the signal "state".
-/// @return True if this FID is active (good), or false otherwise (bad). 
+/// @return True if this FID is active (good), or false otherwise (bad).
 ///
 /// @limitations None.
 ////////////////////////////////////////////////////////////////////////////////

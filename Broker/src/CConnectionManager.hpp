@@ -52,11 +52,11 @@ class CConnectionManager
 public:
     /// ConnectionPtr Typedef
     typedef boost::shared_ptr<CConnection> ConnectionPtr;
-    
+
     /// Typedef for the map which handles uuid to hostname
     typedef std::map<std::string, SRemoteHost> hostnamemap;
-    
-    /// Typedef for the map which handles uuid to connection 
+
+    /// Typedef for the map which handles uuid to connection
     typedef boost::bimap<std::string, ConnectionPtr> connectionmap;
 
     /// Initialize the connection manager with the uuid from global configuation
@@ -64,19 +64,19 @@ public:
 
     /// Add the specified connection to the manager and start it.
     void Start(CListener::ConnectionPtr c);
- 
+
     /// Place a hostname and uuid into the hostname / uuid map.
     void PutHostname(std::string u_, std::string host_, std::string port);
-   
+
     /// Place a hostname and uuid into the hostname / uuid map.
     void PutHostname(std::string u_, SRemoteHost host_);
- 
+
     /// Register a connection with the manager once it has been built.
     void PutConnection(std::string uuid, ConnectionPtr c);
 
     /// Stop the specified connection.
     void Stop(ConnectionPtr c);
-    
+
     /// Stop the specified connection
     void Stop(CListener::ConnectionPtr c);
 
@@ -91,9 +91,9 @@ public:
 
     /// Get The Hostname
     SRemoteHost GetHostname() { return m_hostname; };
-    
+
     /// Get the hostname from the UUID.
-    SRemoteHost GetHostnameByUUID( std::string uuid ) const; 
+    SRemoteHost GetHostnameByUUID( std::string uuid ) const;
 
     /// Fetch a connection pointer via UUID
     ConnectionPtr GetConnectionByUUID( std::string uuid_ );
@@ -112,7 +112,7 @@ public:
 
     /// Iterator to the end of the connections map.
     connectionmap::iterator GetConnectionsEnd() { return m_connections.end(); };
-    
+
     // Transient Network Simulation
     /// Load a network configuration & apply it.
     void LoadNetworkConfig();
@@ -129,7 +129,7 @@ private:
     /// Node UUID
     std::string m_uuid;
     /// Mutex for protecting the handler maps above
-    boost::mutex m_Mutex;       
+    boost::mutex m_Mutex;
 };
 
 } // namespace broker

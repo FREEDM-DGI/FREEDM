@@ -72,7 +72,7 @@ public:
 
     /// Stops the adapter.  Guaranteed to be thread-safe.
     virtual void Stop() = 0;
-    
+
     /// Retrieves a value from a device.
     virtual SignalValue Get(const std::string device,
             const std::string signal) const = 0;
@@ -86,7 +86,7 @@ public:
 
     /// Register a device name with the adapter.
     void RegisterDevice(const std::string devid);
-    
+
     /// Get the list of registered device names.
     std::set<std::string> GetDevices() const;
 

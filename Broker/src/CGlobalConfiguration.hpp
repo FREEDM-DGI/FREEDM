@@ -59,7 +59,7 @@ class CGlobalConfiguration : public boost::noncopyable
         /// Set the address to on
         void SetListenAddress(std::string a) { m_address = a; };
         /// Set the clock skew
-        void SetClockSkew(boost::posix_time::time_duration t) 
+        void SetClockSkew(boost::posix_time::time_duration t)
                 { m_clockskew = t; };
         /// Set the plug-and-play port number
         void SetFactoryPort(unsigned short port) { m_factory_port = port; }
@@ -76,10 +76,10 @@ class CGlobalConfiguration : public boost::noncopyable
         /// Get the address
         std::string GetListenAddress() const { return m_address; };
         /// Get the Skew of the local clock
-        boost::posix_time::time_duration GetClockSkew() const 
+        boost::posix_time::time_duration GetClockSkew() const
                 { return m_clockskew; };
         /// Get the plug-and-play port number
-        unsigned short GetFactoryPort() const { return m_factory_port; }        
+        unsigned short GetFactoryPort() const { return m_factory_port; }
         /// Get the socket endpoint address
         std::string GetDevicesEndpoint() const { return m_devicesEndpoint; };
         /// Get the path to the adapter configuration file

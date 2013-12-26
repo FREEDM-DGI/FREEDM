@@ -43,7 +43,7 @@ boost::tuple<boost::tribool, InputIterator> Parse(CMessage &req,
     std::copy( begin, end, ss_buf );
     boost::tribool result = boost::tribool::indeterminate_value;
 
-    try 
+    try
     {
         RPLogger.Debug << "Loading xml: " << std::endl
                 << ss_.str() << std::endl;

@@ -40,14 +40,14 @@ using boost::property_tree::ptree;
 
 namespace freedm {
     namespace broker {
-        
+
 namespace {
 
 /// This file's logger.
 CLocalLogger Logger(__FILE__);
 
 }
-        
+
 ///////////////////////////////////////////////////////////////////////////////
 /// @fn CListener::CListener
 /// @description Constructor for the CConnection object. Since the change to
@@ -97,7 +97,7 @@ void CListener::Stop()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 }
- 
+
 ///////////////////////////////////////////////////////////////////////////////
 /// @fn CListener::HandleRead
 /// @description The callback which accepts messages from the remote sender.
@@ -110,10 +110,10 @@ void CListener::Stop()
 ///   their appropriate places by the dispatcher. The incoming sequence number
 ///   for the source UUID has been incremented appropriately.
 ///////////////////////////////////////////////////////////////////////////////
-void CListener::HandleRead(const boost::system::error_code& e, 
+void CListener::HandleRead(const boost::system::error_code& e,
                            std::size_t bytes_transferred)
 {
-    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;       
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     if (!e)
     {
         /// I'm removing request parser because it is an appalling heap of junk
@@ -121,8 +121,8 @@ void CListener::HandleRead(const boost::system::error_code& e,
         std::ostreambuf_iterator<char> iss_it(iss);
         std::copy(m_buffer.begin(), m_buffer.begin()+bytes_transferred, iss_it);
         // Create a new CMessage pointer
-        m_message = MessagePtr(new CMessage); 
-        
+        m_message = MessagePtr(new CMessage);
+
         try
         {
             Logger.Debug<<"Loading xml:"<<std::endl;
@@ -141,7 +141,7 @@ void CListener::HandleRead(const boost::system::error_code& e,
         std::string uuid = m_message->GetSourceUUID();
         SRemoteHost hostname = m_message->GetSourceHostname();
         ///Make sure the hostname is registered:
-        GetConnectionManager().PutHostname(uuid,hostname);                        
+        GetConnectionManager().PutHostname(uuid,hostname);
         ///Get the pointer to the connection:
         CConnection::ConnectionPtr conn;
         conn = GetConnectionManager().GetConnectionByUUID(uuid);
@@ -190,7 +190,7 @@ listen:
     }
     else
     {
-        GetConnectionManager().Stop(CListener::ConnectionPtr(this));	
+        GetConnectionManager().Stop(CListener::ConnectionPtr(this));
     }
 }
 

@@ -47,23 +47,23 @@ public:
 
     /// Convenient type for the client socket.
     typedef boost::shared_ptr<boost::asio::ip::tcp::socket> Connection;
-    
+
     /// Type of the callback function for client connections.
     typedef boost::function<void ()> ConnectionHandler;
-    
+
     /// Virtual destructor for derived classes.
     virtual ~CTcpServer();
-    
+
     /// Creates a new TCP server on the specified port number.
     static Pointer Create(boost::asio::io_service & ios, unsigned short port,
         const std::string address="");
 
     /// Registers a callback function for client connections.
     void RegisterHandler(ConnectionHandler h);
-    
+
     /// Stops the TCP server.
     void Stop();
-    
+
     /// Prepares to accept the next client.
     void StartAccept();
 
@@ -73,19 +73,19 @@ private:
     /// Constructs the TCP server on the specified port number.
     CTcpServer(boost::asio::io_service & ios, unsigned short port,
         const std::string address="");
-    
+
     /// Handles an accepted client connection.
     void HandleAccept(const boost::system::error_code & error);
-    
+
     /// Gets a log header.
     std::string hdr() const;
-    
+
     /// Acceptor for new client connections.
     boost::asio::ip::tcp::acceptor m_acceptor;
-    
+
     /// Port number of the server.
     unsigned short m_port;
-    
+
     /// Callback function to handle clients.
     ConnectionHandler m_handler;
 protected:

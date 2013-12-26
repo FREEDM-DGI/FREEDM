@@ -44,15 +44,15 @@ class CClockSynchronizer
 {
     public:
     /// PeerNodePtr
-    typedef boost::shared_ptr<IPeerNode> PeerNodePtr; 
+    typedef boost::shared_ptr<IPeerNode> PeerNodePtr;
     /// Initialize module
     explicit CClockSynchronizer(CBroker &broker);
     /// Receiver
     void HandleExchangeResponse(MessagePtr msg, PeerNodePtr peer);
     /// Receiver
     void HandleExchange(MessagePtr msg, PeerNodePtr peer);
-    /// Broadcaster    
-    void Exchange(const boost::system::error_code& err );    
+    /// Broadcaster
+    void Exchange(const boost::system::error_code& err );
     /// Generate the exchange message
     CMessage ExchangeMessage(unsigned int k);
     /// Generate the exchange response message
@@ -116,13 +116,13 @@ class CClockSynchronizer
 
     /// The UUID
     std::string m_uuid;
-   
-    /// Gets the weight with a decay 
+
+    /// Gets the weight with a decay
     double GetWeight(MapIndex i);
-    
+
     /// Sets the weight
     void SetWeight(MapIndex i, double w);
-    
+
     ///Turn a time duration into a double
     double TDToDouble(boost::posix_time::time_duration td);
 

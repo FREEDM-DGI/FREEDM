@@ -64,16 +64,16 @@ public:
     /// Create a CRtdsAdapter object and returns a pointer to it.
     static IAdapter::Pointer Create(boost::asio::io_service & service,
             const boost::property_tree::ptree & ptree);
-    
+
     /// Starts the adapter.
     void Start();
 
     /// Shut down communication to FPGA.
     void Stop();
-    
+
     /// Destructor.
     ~CRtdsAdapter();
-    
+
 private:
     /// Constructor.
     CRtdsAdapter(boost::asio::io_service & service,
@@ -82,9 +82,9 @@ private:
     /// Continuous loop for sending and receiving to/from RTDS.
     void Run(const boost::system::error_code & e);
 
-    /// Reverses all of the bytes in a buffer.    
+    /// Reverses all of the bytes in a buffer.
     void ReverseBytes( char * buffer, const int numBytes );
-    
+
     /// Swaps the endianness of all SignalValues in a vector.
     void EndianSwapIfNeeded(std::vector<SignalValue> & v);
 

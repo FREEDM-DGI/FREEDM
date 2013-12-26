@@ -72,7 +72,7 @@ for general_config in config_files:
         for timings_config in timings_files:
             for logger_config in logger_files:
                 simserv = subprocess.Popen(['../../PSCAD-Interface/driver',
-                        '--xml', '../../PSCAD-Interface/config/samples/' + 
+                        '--xml', '../../PSCAD-Interface/config/samples/' +
                         adapter_files[adapter_config], '--config',
                         '../../PSCAD-Interface/config/samples/simserv.cfg',
                         '--logger',

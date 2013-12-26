@@ -42,14 +42,14 @@ using boost::property_tree::ptree;
 
 namespace freedm {
 namespace broker {
-        
+
 namespace {
 
 /// This file's logger.
 CLocalLogger Logger(__FILE__);
 
 }
-        
+
 ///////////////////////////////////////////////////////////////////////////////
 /// @fn CConnection::CConnection
 /// @description Constructor for the CConnection object. Since the change to
@@ -104,7 +104,7 @@ void CConnection::Stop()
     for(sit = m_protocols.begin(); sit != m_protocols.end(); sit++)
     {
         (*sit).second->Stop();
-    }   
+    }
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     GetSocket().close();
 }
@@ -126,7 +126,7 @@ void CConnection::ChangePhase(bool newround)
         it->second->ChangePhase(newround);
     }
 }
- 
+
 ///////////////////////////////////////////////////////////////////////////////
 /// @fn CConnection::Send
 /// @description Given a message and wether or not it should be sequenced,
@@ -158,8 +158,8 @@ void CConnection::Send(CMessage & p_mesg)
         return;
     }
 
-    ProtocolMap::iterator sit = m_protocols.find(p_mesg.GetProtocol());    
-    
+    ProtocolMap::iterator sit = m_protocols.find(p_mesg.GetProtocol());
+
     if(sit == m_protocols.end())
     {
         sit = m_protocols.find(m_defaultprotocol);

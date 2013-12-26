@@ -92,7 +92,7 @@ CDeviceManager::CDeviceManager()
 void CDeviceManager::AddDevice(IDevice::Pointer device)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    
+
     boost::unique_lock<boost::shared_mutex> lock(m_mutex);
 
     if( m_devices.count(device->GetID()) > 0 )
@@ -104,7 +104,7 @@ void CDeviceManager::AddDevice(IDevice::Pointer device)
         throw std::runtime_error("Duplicate device ID: " + device->GetID());
     }
 
-    m_hidden_devices[device->GetID()] = device;   
+    m_hidden_devices[device->GetID()] = device;
     Logger.Info << "Stored " << device->GetID() << " as hidden device." << std::endl;
 }
 
@@ -151,7 +151,7 @@ bool CDeviceManager::RemoveDevice(std::string devid)
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
     boost::unique_lock<boost::shared_mutex> lock(m_mutex);
- 
+
     if( m_devices.erase(devid) != 1 && m_hidden_devices.erase(devid) != 1 )
     {
         Logger.Warn << "Could not remove the device " << devid << " from the "
@@ -195,7 +195,7 @@ bool CDeviceManager::DeviceExists(std::string devid) const
 IDevice::Pointer CDeviceManager::GetDevice(std::string devid)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    
+
     boost::shared_lock<boost::shared_mutex> lock(m_mutex);
     iterator it = m_devices.find(devid);
     if( it != m_devices.end() )
@@ -241,7 +241,7 @@ std::multiset<SignalValue> CDeviceManager::GetValues(std::string type,
         std::string signal)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    
+
     std::multiset<SignalValue> result;
 
     std::multiset<IDevice::Pointer> devices = GetDevicesOfType(type);
@@ -269,7 +269,7 @@ std::multiset<SignalValue> CDeviceManager::GetValues(std::string type,
 SignalValue CDeviceManager::GetNetValue(std::string type, std::string signal)
 {
     DeviceManagerLogger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    
+
     SignalValue result = 0;
 
     std::multiset<IDevice::Pointer> devices = GetDevicesOfType(type);

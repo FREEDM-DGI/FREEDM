@@ -71,13 +71,13 @@ public:
 private:
     /// Making the handler calls bindable
     void ReadHandlerCallback(IReadHandler *h, MessagePtr msg);
-    
+
     /// All the registered read handlers.
     std::multimap< const std::string, IReadHandler *> m_readHandlers;
 
     /// All the registered write handlers.
     std::map< const std::string, IWriteHandler *> m_writeHandlers;
- 
+
     /// Reverse map to get the calling module from the handler pointer.
     std::map< IReadHandler *, const std::string > m_handlerToModule;
 

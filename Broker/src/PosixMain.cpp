@@ -245,7 +245,7 @@ int main(int argc, char* argv[])
         CGlobalConfiguration::Instance().SetListenAddress(listenIP);
         CGlobalConfiguration::Instance().SetClockSkew(
                 boost::posix_time::milliseconds(0));
-        
+
         // Specify socket endpoint address, if provided
         if( vm.count("devices-endpoint") )
         {

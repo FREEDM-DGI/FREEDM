@@ -45,7 +45,7 @@ namespace {
 CLocalLogger Logger(__FILE__);
 
 }
-        
+
 ///////////////////////////////////////////////////////////////////////////////
 /// @fn CReliableConnection::CReliableConnection
 /// @description: Constructor for the CGenericConnection object.

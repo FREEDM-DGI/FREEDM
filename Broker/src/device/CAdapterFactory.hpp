@@ -73,7 +73,7 @@ public:
 
     /// Starts the session TCP server.
     void StartSessionProtocol(unsigned short port);
-    
+
     /// Creates a new adapter and its associated devices.
     void CreateAdapter(const boost::property_tree::ptree & p);
 
@@ -91,15 +91,15 @@ private:
 
     /// Registers compiled device classes with the factory.
     void RegisterDevices();
-    
+
     /// Creates an instance of a device to use as a prototype.
     template <class DeviceType>
     void RegisterDevicePrototype(const std::string identifier);
-    
+
     /// Clones a device prototype and registers it with the system.
-    void CreateDevice(const std::string name, const std::string type, 
+    void CreateDevice(const std::string name, const std::string type,
             IAdapter::Pointer adapter);
-    
+
     /// Initializes the devices stored on an adapter.
     void InitializeAdapter(IAdapter::Pointer adapter,
             const boost::property_tree::ptree & p);
@@ -108,23 +108,23 @@ private:
     void SessionProtocol();
 
     /// Handles one plug and play device session.
-    void StartSession();   
+    void StartSession();
 
     /// Handles plug and play devices that send a session packet.
     void HandleRead(const boost::system::error_code & e);
 
     /// Disconnects plug and play devices that timeout.
     void Timeout(const boost::system::error_code & e);
-    
+
     /// Set of device prototypes managed by the factory.
     std::map<std::string, IDevice::Pointer> m_prototype;
-    
+
     /// Set of device adapters managed by the factory.
     std::map<std::string, IAdapter::Pointer> m_adapters;
-    
+
     /// I/O service shared by the adapters.
     boost::asio::io_service m_ios;
-    
+
     /// TCP server to accept plug-and-play devices.
     CTcpServer::Pointer m_server;
 
@@ -157,7 +157,7 @@ void CAdapterFactory::RegisterDevicePrototype(const std::string identifier)
 
     IAdapter::Pointer null;
     IDevice::Pointer dev;
-    
+
     if( m_prototype.count(identifier) > 0 )
     {
         throw std::runtime_error("Duplicate factory prototype: " + identifier);

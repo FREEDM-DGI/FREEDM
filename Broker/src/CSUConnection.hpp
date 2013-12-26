@@ -70,7 +70,7 @@ class CSUConnection : public IProtocol
         /// The next number to assign to an outgoing message
         unsigned int m_outseq;
         /// The modifier for how wide of a window the protocol should accept
-        unsigned int m_acceptmod; 
+        unsigned int m_acceptmod;
         /// The number of retries
         const static unsigned int MAX_RETRIES = 100;
         /// The window size

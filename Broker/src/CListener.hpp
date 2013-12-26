@@ -72,7 +72,7 @@ private:
 
     /// Buffer for incoming data.
     boost::array<char, CReliableConnection::MAX_PACKET_SIZE> m_buffer;
-    
+
     /// The incoming request.
     MessagePtr m_message;
 

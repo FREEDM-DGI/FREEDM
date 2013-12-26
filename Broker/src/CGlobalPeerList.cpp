@@ -42,7 +42,7 @@ CGlobalPeerList::PeerNodePtr CGlobalPeerList::GetPeer(std::string uuid)
         ss << "Peer "<<uuid<<" was not found in the global table."<<std::endl;
         throw std::runtime_error(ss.str());
     }
-    return (*pst).second;    
+    return (*pst).second;
 }
 ////////////////////////////////////////////////////////
 /// CGlobalPeerList::Count

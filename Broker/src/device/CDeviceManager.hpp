@@ -73,20 +73,20 @@ public:
 
     /// Tests to see if a device exists.
     bool DeviceExists(std::string devid) const;
-    
+
     /// Gets a device by its identifier.
     IDevice::Pointer GetDevice(std::string devid);
-    
+
     /// Counts the number of managed devices.
     std::size_t DeviceCount() const;
-    
+
     /// Retrieves all the stored devices of a specified type.
     std::multiset<IDevice::Pointer> GetDevicesOfType(std::string type);
-    
+
     /// Retrieves a multiset of stored values for the given device signal.
     std::multiset<SignalValue> GetValues(std::string type,
             std::string signal);
-    
+
     /// Retrieves all the stored devices of a specified type.
     template <class DeviceType>
     std::multiset<typename DeviceType::Pointer> GetDevicesOfType();
@@ -95,10 +95,10 @@ public:
     template <class DeviceType>
     std::multiset<SignalValue> GetValues(
             SignalValue (DeviceType::*getter)() const) const;
-    
+
     /// Returns the result of a binary operation on a set of device signals.
     SignalValue GetNetValue(std::string type, std::string signal);
-    
+
     /// Returns the result of a binary operation on a set of device signals.
     template <class DeviceType>
     SignalValue GetNetValue(SignalValue (DeviceType::*getter)() const) const;
@@ -130,7 +130,7 @@ private:
 
     /// Remove a device by its identifier.
     bool RemoveDevice(std::string devid);
-    
+
     /// Mapping from identifiers to device pointers.
     PhysicalDeviceSet m_devices;
 
@@ -154,7 +154,7 @@ template <class DeviceType>
 std::multiset<typename DeviceType::Pointer> CDeviceManager::GetDevicesOfType()
 {
     DeviceManagerLogger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    
+
     boost::shared_lock<boost::shared_mutex> lock(m_mutex);
     std::multiset<typename DeviceType::Pointer> result;
     typename DeviceType::Pointer next_device;
@@ -186,7 +186,7 @@ std::multiset<SignalValue> CDeviceManager::GetValues(
         SignalValue(DeviceType::*getter)() const) const
 {
     DeviceManagerLogger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    
+
     boost::shared_lock<boost::shared_mutex> lock(m_mutex);
     typename DeviceType::Pointer next_device;
     std::multiset<SignalValue> result;
@@ -218,7 +218,7 @@ SignalValue CDeviceManager::GetNetValue(
     SignalValue (DeviceType::*getter)() const) const
 {
     DeviceManagerLogger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    
+
     boost::shared_lock<boost::shared_mutex> lock(m_mutex);
     typename DeviceType::Pointer next_device;
     SignalValue result = 0;

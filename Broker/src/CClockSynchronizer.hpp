@@ -58,7 +58,7 @@ class CClockSynchronizer
     /// Generate the exchange response message
     CMessage ExchangeResponse(unsigned int k);
     /// Returns the synchronized time
-    boost::posix_time::ptime GetSynchronizedTime();
+    boost::posix_time::ptime GetSynchronizedTime() const;
     /// Starts the stuff.
     void Run();
     /// Stops the stuff
@@ -117,8 +117,8 @@ class CClockSynchronizer
     /// The UUID
     std::string m_uuid;
 
-    /// Gets the weight with a decay
-    double GetWeight(MapIndex i);
+    /// Gets the weight with a decay 
+    double GetWeight(MapIndex i) const;
 
     /// Sets the weight
     void SetWeight(MapIndex i, double w);

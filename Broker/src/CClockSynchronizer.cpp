@@ -399,7 +399,7 @@ CMessage CClockSynchronizer::ExchangeResponse(unsigned int k)
 /// @post None
 /// @return The adjusted time.
 ///////////////////////////////////////////////////////////////////////////////
-boost::posix_time::ptime CClockSynchronizer::GetSynchronizedTime()
+boost::posix_time::ptime CClockSynchronizer::GetSynchronizedTime() const
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     boost::posix_time::ptime now = boost::posix_time::microsec_clock::universal_time();
@@ -414,16 +414,16 @@ boost::posix_time::ptime CClockSynchronizer::GetSynchronizedTime()
 /// @post None
 /// @return The weight
 ///////////////////////////////////////////////////////////////////////////////
-double CClockSynchronizer::GetWeight(MapIndex i)
+double CClockSynchronizer::GetWeight(MapIndex i) const
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    WeightMap::iterator it = m_weights.find(i);
+    WeightMap::const_iterator it = m_weights.find(i);
     boost::posix_time::ptime set;
     if(i == MapIndex(m_uuid,m_uuid))
         return 1.0;
     if(it == m_weights.end())
         throw std::runtime_error("Can't find that index in the weights table");
-    return it->second.first * pow(SYNCHRONIZER_LAMBDA,m_kcounter-m_lastresponse[i]);
+    return it->second.first * pow(SYNCHRONIZER_LAMBDA,m_kcounter-m_lastresponse.find(i)->second);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

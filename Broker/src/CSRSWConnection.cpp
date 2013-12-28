@@ -108,7 +108,7 @@ void CSRSWConnection::Send(CMessage msg)
     m_outseq = (m_outseq+1) % SEQUENCE_MODULO;
 
     msg.SetSourceUUID(GetConnection()->GetConnectionManager().GetUUID());
-    msg.SetSourceHostname(GetConnection()->GetConnectionManager().GetHostname());
+    msg.SetSourceHostname(GetConnection()->GetConnectionManager().GetHost());
     msg.SetProtocol(GetIdentifier());
     msg.SetSendTimestampNow();
     
@@ -297,7 +297,7 @@ bool CSRSWConnection::Receive(const CMessage &msg)
         freedm::broker::CMessage outmsg;
         // Presumably, if we are here, the connection is registered 
         outmsg.SetSourceUUID(GetConnection()->GetConnectionManager().GetUUID());
-        outmsg.SetSourceHostname(GetConnection()->GetConnectionManager().GetHostname());
+        outmsg.SetSourceHostname(GetConnection()->GetConnectionManager().GetHost());
         outmsg.SetStatus(freedm::broker::CMessage::BadRequest);
         outmsg.SetSequenceNumber(m_inresyncs%SEQUENCE_MODULO);
         outmsg.SetSendTimestamp(msg.GetSendTimestamp());
@@ -336,7 +336,7 @@ void CSRSWConnection::SendACK(const CMessage &msg)
     pp.put("src.hash",msg.GetHash());
     // Presumably, if we are here, the connection is registered 
     outmsg.SetSourceUUID(GetConnection()->GetConnectionManager().GetUUID());
-    outmsg.SetSourceHostname(GetConnection()->GetConnectionManager().GetHostname());
+    outmsg.SetSourceHostname(GetConnection()->GetConnectionManager().GetHost());
     outmsg.SetStatus(freedm::broker::CMessage::Accepted);
     outmsg.SetSequenceNumber(seq);
     outmsg.SetSendTimestampNow();
@@ -390,7 +390,7 @@ void CSRSWConnection::SendSYN()
     }
     // Presumably, if we are here, the connection is registered 
     outmsg.SetSourceUUID(GetConnection()->GetConnectionManager().GetUUID());
-    outmsg.SetSourceHostname(GetConnection()->GetConnectionManager().GetHostname());
+    outmsg.SetSourceHostname(GetConnection()->GetConnectionManager().GetHost());
     outmsg.SetStatus(freedm::broker::CMessage::Created);
     outmsg.SetSequenceNumber(seq);
     outmsg.SetSendTimestampNow();

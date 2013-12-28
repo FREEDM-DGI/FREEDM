@@ -52,8 +52,8 @@ CConnectionManager::CConnectionManager()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     m_uuid = CGlobalConfiguration::Instance().GetUUID();
-    m_hostname.hostname = CGlobalConfiguration::Instance().GetHostname();
-    m_hostname.port = CGlobalConfiguration::Instance().GetListenPort();
+    m_host.hostname = CGlobalConfiguration::Instance().GetHostname();
+    m_host.port = CGlobalConfiguration::Instance().GetListenPort();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -88,7 +88,7 @@ void CConnectionManager::PutConnection(std::string uuid, ConnectionPtr c)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// @fn CConnectionManager::PutHostname
+/// @fn CConnectionManager::PutHost
 /// @description Registers a hostname with the uuid to hostname map.
 /// @pre None
 /// @post The hostname is registered with the uuid to hostname map.
@@ -96,7 +96,7 @@ void CConnectionManager::PutConnection(std::string uuid, ConnectionPtr c)
 /// @param host The hostname to enter into the map.
 /// @param port The port the remote host listens on. 
 ///////////////////////////////////////////////////////////////////////////////
-void CConnectionManager::PutHostname(std::string u, std::string host, std::string port)
+void CConnectionManager::PutHost(std::string u, std::string host, std::string port)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;  
     {
@@ -104,25 +104,25 @@ void CConnectionManager::PutHostname(std::string u, std::string host, std::strin
         SRemoteHost x;
         x.hostname = host;
         x.port = port;
-        m_hostnames.insert(std::pair<std::string, SRemoteHost>(u, x));
+        m_hosts.insert(std::pair<std::string, SRemoteHost>(u, x));
     }
 }
 
 
 ///////////////////////////////////////////////////////////////////////////////
-/// @fn CConnectionManager::PutHostname
+/// @fn CConnectionManager::PutHost
 /// @description Registers a hostname with the uuid to hostname map.
 /// @pre None
 /// @post The hostname is registered with the uuid to hostname map.
 /// @param u the uuid to enter into the map.
 /// @param host The hostname to enter into the map.
 ///////////////////////////////////////////////////////////////////////////////
-void CConnectionManager::PutHostname(std::string u, SRemoteHost host)
+void CConnectionManager::PutHost(std::string u, SRemoteHost host)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;  
     {
         boost::lock_guard< boost::mutex > scopedLock_( m_Mutex );
-        m_hostnames.insert(std::pair<std::string, SRemoteHost>(u, host));
+        m_hosts.insert(std::pair<std::string, SRemoteHost>(u, host));
     }
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -177,7 +177,7 @@ void CConnectionManager::StopAll ()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// @fn CConnectionManager::GetHostnameByUUID
+/// @fn CConnectionManager::GetHostByUUID
 /// @description Tries to fetch the hostname of a given uuid from the hostnames
 ///              table.
 /// @param uuid The uuid to look up.
@@ -185,11 +185,11 @@ void CConnectionManager::StopAll ()
 /// @post No change.
 /// @return The hostname of the node with that uuid or an empty string.
 ///////////////////////////////////////////////////////////////////////////////
-SRemoteHost CConnectionManager::GetHostnameByUUID(std::string uuid) const
+SRemoteHost CConnectionManager::GetHostByUUID(std::string uuid) const
 {
-    if(m_hostnames.count(uuid))
+    if(m_hosts.count(uuid))
     {
-        return m_hostnames.find(uuid)->second;
+        return m_hosts.find(uuid)->second;
     }
     else
     {
@@ -239,8 +239,8 @@ ConnectionPtr CConnectionManager::GetConnectionByUUID(std::string uuid)
 
     // Find the requested host from the list of known hosts
     std::map<std::string, SRemoteHost>::iterator mapIt;
-    mapIt = m_hostnames.find(uuid);
-    if(mapIt == m_hostnames.end())
+    mapIt = m_hosts.find(uuid);
+    if(mapIt == m_hosts.end())
     {
         Logger.Warn<<"Couldn't find peer in host list"<<std::endl;
         return ConnectionPtr();

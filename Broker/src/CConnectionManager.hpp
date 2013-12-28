@@ -66,10 +66,10 @@ public:
     void Start(CListener::ConnectionPtr c);
  
     /// Place a hostname and uuid into the hostname / uuid map.
-    void PutHostname(std::string u_, std::string host_, std::string port);
+    void PutHostname(std::string u, std::string host, std::string port);
    
     /// Place a hostname and uuid into the hostname / uuid map.
-    void PutHostname(std::string u_, SRemoteHost host_);
+    void PutHostname(std::string u, SRemoteHost host);
  
     /// Register a connection with the manager once it has been built.
     void PutConnection(std::string uuid, ConnectionPtr c);

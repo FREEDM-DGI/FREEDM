@@ -117,7 +117,7 @@ class CClockSynchronizer
     /// The UUID
     std::string m_uuid;
 
-    /// Gets the weight with a decay 
+    /// Gets the weight with a decay
     double GetWeight(MapIndex i) const;
 
     /// Sets the weight
@@ -128,7 +128,6 @@ class CClockSynchronizer
 
     ///Turn a double into a time duration
     static boost::posix_time::time_duration DoubleToTD(double td);
-
 };
 
 

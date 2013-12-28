@@ -87,10 +87,10 @@ public:
     void ChangePhase(bool newround);
 
     /// Get The UUID
-    std::string GetUUID() { return m_uuid; };
+    std::string GetUUID() const { return m_uuid; };
 
     /// Get The Host
-    SRemoteHost GetHost() { return m_host; };
+    SRemoteHost GetHost() const { return m_host; };
     
     /// Get the host from the UUID.
     SRemoteHost GetHostByUUID( std::string uuid ) const;

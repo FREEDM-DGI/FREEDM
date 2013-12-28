@@ -141,7 +141,7 @@ void CListener::HandleRead(const boost::system::error_code& e,
         std::string uuid = m_message->GetSourceUUID();
         SRemoteHost hostname = m_message->GetSourceHostname();
         ///Make sure the hostname is registered:
-        GetConnectionManager().PutHostname(uuid,hostname);
+        GetConnectionManager().PutHost(uuid,hostname);
         ///Get the pointer to the connection:
         CConnection::ConnectionPtr conn;
         conn = GetConnectionManager().GetConnectionByUUID(uuid);

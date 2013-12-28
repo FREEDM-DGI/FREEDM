@@ -150,7 +150,7 @@ void CConnection::Send(CMessage & p_mesg)
     if(GetUUID() == GetConnectionManager().GetUUID())
     {
         p_mesg.SetSourceUUID(GetConnectionManager().GetUUID());
-        p_mesg.SetSourceHostname(GetConnectionManager().GetHostname());
+        p_mesg.SetSourceHostname(GetConnectionManager().GetHost());
         p_mesg.SetSendTimestampNow();
         MessagePtr local(new CMessage);
         *local = p_mesg;

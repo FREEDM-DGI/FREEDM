@@ -124,10 +124,10 @@ class CClockSynchronizer
     void SetWeight(MapIndex i, double w);
     
     ///Turn a time duration into a double
-    double TDToDouble(boost::posix_time::time_duration td);
+    static double TDToDouble(boost::posix_time::time_duration td);
 
     ///Turn a double into a time duration
-    boost::posix_time::time_duration DoubleToTD(double td);
+    static boost::posix_time::time_duration DoubleToTD(double td);
 
 };
 

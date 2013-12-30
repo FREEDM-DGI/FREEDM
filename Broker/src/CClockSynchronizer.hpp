@@ -42,7 +42,7 @@ class CClockSynchronizer
     : public IReadHandler
     , private boost::noncopyable
 {
-    public:
+public:
     /// PeerNodePtr
     typedef boost::shared_ptr<IPeerNode> PeerNodePtr;
     /// Initialize module
@@ -64,7 +64,7 @@ class CClockSynchronizer
     /// Stops the stuff
     void Stop();
 
-    private:
+private:
     /// Does the i,j referencing
     typedef std::pair<std::string,std::string> MapIndex;
     /// Stores the relative offsets

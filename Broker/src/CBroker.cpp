@@ -112,10 +112,9 @@ CBroker::CBroker(CDispatcher &dispatcher, freedm::broker::CConnectionManager &co
 ///////////////////////////////////////////////////////////////////////////////
 CBroker::~CBroker()
 {
-    TimersMap::iterator it;
-    for(it=m_timers.begin(); it!=m_timers.end(); it++)
+    for(TimersMap::iterator it=m_timers.begin(); it!=m_timers.end(); it++)
     {
-        delete (*it).second;
+        delete it->second;
     }
 }
 

@@ -77,7 +77,7 @@ std::string IPeerNode::GetUUID() const
 /////////////////////////////////////////////////////////////
 std::string IPeerNode::GetHostname() const
 { 
-    return m_connmgr.GetHostnameByUUID(GetUUID()).hostname;
+    return m_connmgr.GetHostByUUID(GetUUID()).hostname;
 }
 ////////////////////////////////////////////////////////////
 /// IPeerNode::GetPort
@@ -85,7 +85,7 @@ std::string IPeerNode::GetHostname() const
 ////////////////////////////////////////////////////////////
 std::string IPeerNode::GetPort() const
 {
-    return m_connmgr.GetHostnameByUUID(GetUUID()).port;
+    return m_connmgr.GetHostByUUID(GetUUID()).port;
 }
 
 /////////////////////////////////////////////////////////////

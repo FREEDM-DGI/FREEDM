@@ -52,8 +52,8 @@ CConnectionManager::CConnectionManager()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     m_uuid = CGlobalConfiguration::Instance().GetUUID();
-    m_hostname.hostname = CGlobalConfiguration::Instance().GetHostname();
-    m_hostname.port = CGlobalConfiguration::Instance().GetListenPort();
+    m_host.hostname = CGlobalConfiguration::Instance().GetHostname();
+    m_host.port = CGlobalConfiguration::Instance().GetListenPort();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -88,41 +88,41 @@ void CConnectionManager::PutConnection(std::string uuid, ConnectionPtr c)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// @fn CConnectionManager::PutHostname
+/// @fn CConnectionManager::PutHost
 /// @description Registers a hostname with the uuid to hostname map.
 /// @pre None
 /// @post The hostname is registered with the uuid to hostname map.
-/// @param u_ the uuid to enter into the map.
-/// @param host_ The hostname to enter into the map.
+/// @param u the uuid to enter into the map.
+/// @param host The hostname to enter into the map.
 /// @param port The port the remote host listens on. 
 ///////////////////////////////////////////////////////////////////////////////
-void CConnectionManager::PutHostname(std::string u_, std::string host_, std::string port)
+void CConnectionManager::PutHost(std::string u, std::string host, std::string port)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;  
     {
         boost::lock_guard< boost::mutex > scopedLock_( m_Mutex );
         SRemoteHost x;
-        x.hostname = host_;
+        x.hostname = host;
         x.port = port;
-        m_hostnames.insert(std::pair<std::string, SRemoteHost>(u_, x));  
+        m_hosts.insert(std::pair<std::string, SRemoteHost>(u, x));
     }
 }
 
 
 ///////////////////////////////////////////////////////////////////////////////
-/// @fn CConnectionManager::PutHostname
+/// @fn CConnectionManager::PutHost
 /// @description Registers a hostname with the uuid to hostname map.
 /// @pre None
 /// @post The hostname is registered with the uuid to hostname map.
-/// @param u_ the uuid to enter into the map.
-/// @param host_ The hostname to enter into the map.
+/// @param u the uuid to enter into the map.
+/// @param host The hostname to enter into the map.
 ///////////////////////////////////////////////////////////////////////////////
-void CConnectionManager::PutHostname(std::string u_, SRemoteHost host_)
+void CConnectionManager::PutHost(std::string u, SRemoteHost host)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;  
     {
         boost::lock_guard< boost::mutex > scopedLock_( m_Mutex );
-        m_hostnames.insert(std::pair<std::string, SRemoteHost>(u_, host_));  
+        m_hosts.insert(std::pair<std::string, SRemoteHost>(u, host));
     }
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -177,7 +177,7 @@ void CConnectionManager::StopAll ()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// @fn CConnectionManager::GetHostnameByUUID
+/// @fn CConnectionManager::GetHostByUUID
 /// @description Tries to fetch the hostname of a given uuid from the hostnames
 ///              table.
 /// @param uuid The uuid to look up.
@@ -185,11 +185,11 @@ void CConnectionManager::StopAll ()
 /// @post No change.
 /// @return The hostname of the node with that uuid or an empty string.
 ///////////////////////////////////////////////////////////////////////////////
-SRemoteHost CConnectionManager::GetHostnameByUUID(std::string uuid) const
+SRemoteHost CConnectionManager::GetHostByUUID(std::string uuid) const
 {
-    if(m_hostnames.count(uuid))
+    if(m_hosts.count(uuid))
     {
-        return m_hostnames.find(uuid)->second;
+        return m_hosts.find(uuid)->second;
     }
     else
     {
@@ -202,7 +202,7 @@ SRemoteHost CConnectionManager::GetHostnameByUUID(std::string uuid) const
 /// @fn CConnectionManager::GetConnectionByUUID
 /// @description Constructs or retrieves from cache a connection to a specific
 ///              UUID.
-/// @param uuid_ The uuid to construct a connection to
+/// @param uuid The uuid to construct a connection to
 /// @pre None
 /// @post If a connection has been constructed it will be put in the
 ///        connections table and has been started. If the connection is not
@@ -210,62 +210,62 @@ SRemoteHost CConnectionManager::GetHostnameByUUID(std::string uuid) const
 /// @return A pointer to the connection, or NULL if construction failed for
 ///         some reason.
 ///////////////////////////////////////////////////////////////////////////////
-ConnectionPtr CConnectionManager::GetConnectionByUUID(std::string uuid_)
+ConnectionPtr CConnectionManager::GetConnectionByUUID(std::string uuid)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
-    std::string s_,port;
+    std::string s,port;
 
     // See if there is a connection in the open connections already
-    if(m_connections.left.count(uuid_))
+    if(m_connections.left.count(uuid))
     {
-        if(m_connections.left.at(uuid_)->GetSocket().is_open())
+        if(m_connections.left.at(uuid)->GetSocket().is_open())
         {
             #ifdef CUSTOMNETWORK
             LoadNetworkConfig();
             #endif
-            return m_connections.left.at(uuid_);
+            return m_connections.left.at(uuid);
         }
         else
         {
-            Logger.Warn <<"Connection to " << uuid_ << " has gone stale " << std::endl;
+            Logger.Warn <<"Connection to " << uuid << " has gone stale " << std::endl;
             //The socket is not marked as open anymore, we
             //should stop it.
-            Stop(m_connections.left.at(uuid_));
+            Stop(m_connections.left.at(uuid));
         }
     }  
 
-    Logger.Info << "Making Fresh Connection to " << uuid_ << std::endl;
+    Logger.Info << "Making Fresh Connection to " << uuid << std::endl;
 
     // Find the requested host from the list of known hosts
-    std::map<std::string, SRemoteHost>::iterator mapIt_;
-    mapIt_ = m_hostnames.find(uuid_);
-    if(mapIt_ == m_hostnames.end())
+    std::map<std::string, SRemoteHost>::iterator mapIt;
+    mapIt = m_hosts.find(uuid);
+    if(mapIt == m_hosts.end())
     {
         Logger.Warn<<"Couldn't find peer in host list"<<std::endl;
         return ConnectionPtr();
     }
-    s_ = mapIt_->second.hostname;
-    port = mapIt_->second.port;
+    s = mapIt->second.hostname;
+    port = mapIt->second.port;
 
     // Create a new CConnection object for this host	
     Logger.Debug<<"Constructing CConnection"<<std::endl;
-    ConnectionPtr c_(new CConnection(m_inchannel->GetIOService(), *this, m_inchannel->GetBroker(), uuid_));
+    ConnectionPtr c(new CConnection(m_inchannel->GetIOService(), *this, m_inchannel->GetBroker(), uuid));
    
     // Initiate the UDP connection
     Logger.Debug<<"Computing remote endpoint"<<std::endl;
     boost::asio::ip::udp::resolver resolver(m_inchannel->GetIOService());
-    boost::asio::ip::udp::resolver::query query( s_, port);
+    boost::asio::ip::udp::resolver::query query( s, port);
     boost::asio::ip::udp::resolver::iterator it;
     try
     {
         it = resolver.resolve(query);
-        boost::asio::connect(c_->GetSocket(), it);
+        boost::asio::connect(c->GetSocket(), it);
     }
     catch (boost::system::system_error& e)
     {
         std::stringstream ss;
-        ss<<"Error connecting to host "<<s_<<":"<<port<<": "<< e.what();
+        ss<<"Error connecting to host "<<s<<":"<<port<<": "<< e.what();
         throw EConnectionError(ss.str());
     }
     // *it is safe only if we get here
@@ -273,11 +273,11 @@ ConnectionPtr CConnectionManager::GetConnectionByUUID(std::string uuid_)
 
     //Once the connection is built, connection manager gets a call back to register it.    
     Logger.Debug<<"Inserting connection"<<std::endl;
-    PutConnection(uuid_,c_);
+    PutConnection(uuid,c);
     #ifdef CUSTOMNETWORK
     LoadNetworkConfig();
     #endif
-    return c_;
+    return c;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -943,7 +943,7 @@ GMAgent::PeerSet GMAgent::ProcessPeerList(MessagePtr msg, CConnectionManager& co
         {
             //Logger.Debug<<"I don't recognize this peer"<<std::endl;
             //If you don't already know about the peer, make sure it is in the connection manager
-            connmgr.PutHostname(nuuid, nhost, nport);
+            connmgr.PutHost(nuuid, nhost, nport);
             p = CGlobalPeerList::instance().Create(nuuid,connmgr);
         }
         InsertInPeerSet(tmp,p);
@@ -1182,7 +1182,7 @@ void GMAgent::HandleInvite(MessagePtr msg, PeerNodePtr peer)
             std::string nport = pt.get<std::string>("gm.groupleaderport");
             Logger.Debug<<"I don't recognize this peer"<<std::endl;
             //If you don't already know about the peer, make sure it is in the connection manager
-            GetConnectionManager().PutHostname(m_GroupLeader, nhost, nport);
+            GetConnectionManager().PutHost(m_GroupLeader, nhost, nport);
             p = CGlobalPeerList::instance().Create(m_GroupLeader,GetConnectionManager());
         }
         SendToPeer(p,m_);
@@ -1244,7 +1244,7 @@ void GMAgent::HandleResponseAYC(MessagePtr msg, PeerNodePtr peer)
         std::string nuuid = pt.get<std::string>("gm.ldruuid");
         std::string nhost = pt.get<std::string>("gm.ldrhost");
         std::string nport = pt.get<std::string>("gm.ldrport");
-        GetConnectionManager().PutHostname(nuuid, nhost, nport);
+        GetConnectionManager().PutHost(nuuid, nhost, nport);
         AddPeer(nuuid);
         EraseInPeerSet(m_Coordinators,peer);
     }
@@ -1374,8 +1374,8 @@ int GMAgent::Run()
 
     std::map<std::string, SRemoteHost>::iterator mapIt_;
 
-    for( mapIt_ = GetConnectionManager().GetHostnamesBegin();
-        mapIt_ != GetConnectionManager().GetHostnamesEnd(); ++mapIt_ )
+    for( mapIt_ = GetConnectionManager().GetHostsBegin();
+        mapIt_ != GetConnectionManager().GetHostsEnd(); ++mapIt_ )
     {
         std::string host_ = mapIt_->first;
         Logger.Notice<<"Registering peer "<<mapIt_->first<<std::endl;

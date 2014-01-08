@@ -478,7 +478,6 @@ void LBAgent::LoadTable()
     int numDESDs = CDeviceManager::Instance().GetDevicesOfType<DESD>().size();
     int numLOADs = CDeviceManager::Instance().GetDevicesOfType<LOAD>().size();
     int numSSTs = CDeviceManager::Instance().GetDevicesOfType<SST>().size();
-    int numDevices = CDeviceManager::Instance().DeviceCount();
 
     m_Gen = CDeviceManager::Instance().GetNetValue<DRER>(&DRER::GetGeneration);
     m_Storage = CDeviceManager::Instance().GetNetValue<DESD>(&DESD::GetStorage);

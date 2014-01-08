@@ -268,9 +268,6 @@ ConnectionPtr CConnectionManager::GetConnectionByUUID(std::string uuid_)
     }
     if(connected == false)
     {
-        std::stringstream ss;
-        ss<<"Error connecting to host "<<s_<<":"<<port<<": "<< e.what();
-        //throw EConnectionError(ss.str());
         c_->GetSocket().close();
     }
 

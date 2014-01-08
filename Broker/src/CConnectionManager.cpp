@@ -257,13 +257,16 @@ ConnectionPtr CConnectionManager::GetConnectionByUUID(std::string uuid_)
     boost::asio::ip::udp::resolver resolver(m_inchannel->GetIOService());
     boost::asio::ip::udp::resolver::query query( s_, port);
     boost::asio::ip::udp::resolver::iterator it;
-    try
+    boost::asio::ip::udp::resolver::iterator end;
+    bool connected = false;
+    it = resolver.resolve(query);
+    while(it != end)
     {
         it = resolver.resolve(query);
         boost::asio::connect(c_->GetSocket(), it);
         Logger.Info<<"Resolved: "<<static_cast<boost::asio::ip::udp::endpoint>(*it)<<std::endl;
     }
-    catch (boost::system::system_error& e)
+    if(connected == false)
     {
         std::stringstream ss;
         ss<<"Error connecting to host "<<s_<<":"<<port<<": "<< e.what();

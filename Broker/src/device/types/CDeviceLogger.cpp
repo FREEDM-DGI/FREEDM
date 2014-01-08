@@ -71,6 +71,7 @@ CDeviceLogger::~CDeviceLogger()
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+<<<<<<< HEAD
 /// Constructs another CDeviceLogger.
 ///
 /// @pre None.
@@ -86,6 +87,35 @@ IDevice::Pointer CDeviceLogger::Create(const std::string identifier,
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     return IDevice::Pointer(new CDeviceLogger(identifier, adapter));
+}
+///////////////////////////////////////////////////////////////////////////////
+/// Checks if the RTDS simulation is receiving DGI commands.
+///
+/// @pre None.
+/// @post Returns whether the simulation will respond to a command.
+/// @return True if the simulation is using DGI commands.
+///
+/// @limitations None.
+////////////////////////////////////////////////////////////////////////////////
+bool CDeviceLogger::IsDgiEnabled() const
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    return Get("dgiEnable") == 1;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/// Returns the approximate time of a concurrent simulation.
+///
+/// @pre None.
+/// @post Returns the last simulation time received by the DGI.
+/// @return The simulation time if a simulation is running, nan otherwise.
+///
+/// @limitations None.
+////////////////////////////////////////////////////////////////////////////////
+SignalValue CDeviceLogger::GetSimulationTime() const
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    return Get("simulationTime");
 }
 
 ////////////////////////////////////////////////////////////////////////////////

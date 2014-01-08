@@ -180,6 +180,9 @@ class LBAgent
         CBroker &m_broker;
 
         bool m_sstExists;
+        /// Set to true for the first get gateway call to indicate they should
+        /// Actually read the value.
+        bool m_actuallyread;
 };
 
 } // namespace lb

@@ -73,7 +73,7 @@ namespace broker {
 
 namespace lb {
 
-const int P_Migrate = 1;
+const float P_Migrate = 1;
 
 namespace {
 
@@ -116,6 +116,7 @@ LBAgent::LBAgent(std::string uuid_, CBroker &broker):
     RegisterSubhandle("lb.ComputedNormal",boost::bind(&LBAgent::HandleComputedNormal, this, _1, _2));
     RegisterSubhandle("any",boost::bind(&LBAgent::HandleAny, this, _1, _2));
     m_sstExists = false;
+    m_actuallyread = true;
 }
 
 ////////////////////////////////////////////////////////////
@@ -349,6 +350,7 @@ void LBAgent::LoadManage()
     if (m_broker.TimeRemaining() >
         boost::posix_time::milliseconds(2*CTimings::LB_GLOBAL_TIMER))
     {
+        m_actuallyread = false;
         m_broker.Schedule(m_GlobalTimer,
                           boost::posix_time::milliseconds(
                               CTimings::LB_GLOBAL_TIMER),
@@ -369,12 +371,17 @@ void LBAgent::LoadManage()
                                       boost::asio::placeholders::error));
         Logger.Info << "Won't run over phase, scheduling another LoadManage in "
                     << "next round" << std::endl;
+        m_actuallyread = true;
     }
 
     //Remember previous load before computing current load
     m_prevStatus = m_Status;
     //Call LoadTable to update load state of the system as observed by this node
     LoadTable();
+
+    using namespace device;
+    std::multiset<CDeviceLogger::Pointer> logger;
+    logger = CDeviceManager::Instance().GetDevicesOfType<CDeviceLogger>();
 
     //Send Demand message when the current state is Demand
     //NOTE: (changing the original architecture in which Demand broadcast is done
@@ -393,8 +400,24 @@ void LBAgent::LoadManage()
     // If you are in Supply state
     else if (LBAgent::SUPPLY == m_Status)
     {
-        //initiate draft request
-        SendDraftRequest();
+        if( logger.empty() || (*logger.begin())->IsDgiEnabled() == true )
+        {
+            //initiate draft request
+            SendDraftRequest();
+        }
+    }
+
+    if( !logger.empty() && (*logger.begin())->IsDgiEnabled() == false )
+    {
+        typedef device::CDeviceSst SST;
+        std::multiset<SST::Pointer> SSTContainer;
+        std::multiset<SST::Pointer>::iterator it, end;
+        SSTContainer = device::CDeviceManager::Instance().GetDevicesOfType<SST>();
+
+        for( it = SSTContainer.begin(), end = SSTContainer.end(); it != end; it++ )
+        {
+            (*it)->SetGateway(m_NetGateway);
+        }
     }
 }//end LoadManage
 
@@ -411,7 +434,7 @@ void LBAgent::LoadManage( const boost::system::error_code& err )
 
     if(!err)
     {
-        LoadManage();
+        m_broker.Schedule("lb", boost::bind(&LBAgent::LoadManage, this), true);
     }
     else if(boost::asio::error::operation_aborted == err )
     {
@@ -461,28 +484,21 @@ void LBAgent::LoadTable()
     m_Storage = CDeviceManager::Instance().GetNetValue<DESD>(&DESD::GetStorage);
     m_Load = CDeviceManager::Instance().GetNetValue<LOAD>(&LOAD::GetLoad);
     m_SstGateway = CDeviceManager::Instance().GetNetValue<SST>(&SST::GetGateway);
-
-    if (numSSTs >= 1)
-    {
-        m_sstExists = true;
-        // FIXME should consider other devices
-        m_NetGateway = m_SstGateway;
-    }
-    else
-    {
-        m_sstExists = false;
-        // FIXME should consider Gateway
-        m_NetGateway = m_Load - m_Gen - m_Storage;
-    }
-
-    typedef CDeviceLogger LOGGER;
-    std::multiset<LOGGER::Pointer> LSet;
-    LSet = device::CDeviceManager::Instance().GetDevicesOfType<LOGGER>();
     
-    if( !LSet.empty() )
+    if(m_actuallyread)
     {
-        (*LSet.begin())->SetGateway(m_NetGateway);
-        (*LSet.begin())->SetDeviceCount(numDevices);
+        if (numSSTs >= 1)
+        {
+            m_sstExists = true;
+            // FIXME should consider other devices
+            m_NetGateway = m_SstGateway;
+        }
+        else
+        {
+            m_sstExists = false;
+            // FIXME should consider Gateway
+            m_NetGateway = m_Load - m_Gen - m_Storage;
+        }
     }
 
     // used to ensure three digits before the decimal, two after
@@ -511,6 +527,8 @@ void LBAgent::LoadTable()
             << std::setfill('0') << std::setw(2) << numSSTs << "): " 
             << extraSstSpace << std::setfill(' ') << std::setw(sstGateWidth)
             << m_SstGateway << " |" << std::endl;
+    ss << "\t| " << "Net Gateway : " << m_NetGateway << std::endl;
+
 //
 // We will hide Overall Gateway for the time being as it is useless until
 // we properly support multiple device LBs.
@@ -1069,14 +1087,14 @@ void LBAgent::Step_PStar()
     {
         if(LBAgent::DEMAND == m_Status)
         {
-            m_PStar = (*it)->GetGateway() - P_Migrate;
-            (*it)->StepGateway(-P_Migrate);
+            m_NetGateway -= P_Migrate;
+            (*it)->SetGateway(m_NetGateway);
             Logger.Notice << "P* = " << m_PStar << std::endl;
         }
         else if(LBAgent::SUPPLY == m_Status)
         {
-            m_PStar = (*it)->GetGateway() + P_Migrate;
-            (*it)->StepGateway(P_Migrate);
+            m_NetGateway += P_Migrate;
+            (*it)->SetGateway(m_NetGateway);
             Logger.Notice << "P* = " << m_PStar << std::endl;
         }
         else
@@ -1110,14 +1128,14 @@ void LBAgent::PStar(device::SignalValue DemandValue)
         {
             m_PStar = (*it)->GetGateway() - P_Migrate;
             Logger.Notice << "P* = " << m_PStar << std::endl;
-            (*it)->StepGateway(-P_Migrate);
+            (*it)->SetGateway(-P_Migrate);
         }
         else if(LBAgent::SUPPLY == m_Status)
         {
             if( DemandValue <= m_SstGateway + NORMAL_TOLERANCE - m_Normal )
             {
                 Logger.Notice << "P* = " << m_SstGateway + DemandValue << std::endl;
-                (*it)->StepGateway(P_Migrate);
+                (*it)->SetGateway(P_Migrate);
             }
             else
             {

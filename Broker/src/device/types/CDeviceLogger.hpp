@@ -55,7 +55,13 @@ public:
 
     /// Virtual destructor for derived classes.
     virtual ~CDeviceLogger();
-    
+
+    /// Checks if the simulation is receiving DGI commands.
+    bool IsDgiEnabled() const;
+
+    /// Get the current simulation time (nan if not running).
+    SignalValue GetSimulationTime() const;    
+
     /// Sets the group status for this peer.
     void SetGroupStatus(const SignalValue status);
 

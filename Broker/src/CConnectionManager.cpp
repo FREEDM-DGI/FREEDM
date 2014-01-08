@@ -266,6 +266,8 @@ ConnectionPtr CConnectionManager::GetConnectionByUUID(std::string uuid_)
     {
         std::stringstream ss;
         ss<<"Error connecting to host "<<s_<<":"<<port<<": "<< e.what();
+        PutConnection(uuid_,c_);
+        return c_;
         //throw EConnectionError(ss.str());
     }
     // *it is safe only if we get here

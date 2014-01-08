@@ -284,7 +284,6 @@ int main(int argc, char* argv[])
 
     //constructors for initial mapping
     CConnectionManager conManager;
-    ConnectionPtr newConnection;
 
     // Instantiate Dispatcher for message delivery
     CDispatcher dispatch;

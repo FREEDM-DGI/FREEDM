@@ -71,6 +71,15 @@ void CConnectionManager::Start (CListener::ConnectionPtr c)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+/// Access the singleton instance of the connection manager
+///////////////////////////////////////////////////////////////////////////////
+CConnectionManager& CConnectionManager::Instance()
+{
+    static CConnectionManager connectionManager;
+    return connectionManager;
+}
+
+///////////////////////////////////////////////////////////////////////////////
 /// @fn CConnectionManager::PutConnection
 /// @description Inserts a connection into the connection map.
 /// @param uuid The uuid of the node the connection is to.

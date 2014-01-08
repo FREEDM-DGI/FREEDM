@@ -42,6 +42,7 @@
 
 #include "LoadBalance.hpp"
 
+#include "CConnectionManager.hpp"
 #include "CLogger.hpp"
 #include "CMessage.hpp"
 #include "gm/GroupManagement.hpp"
@@ -92,7 +93,7 @@ CLocalLogger Logger(__FILE__);
 /// @limitations: None
 ///////////////////////////////////////////////////////////////////////////////
 LBAgent::LBAgent(std::string uuid_, CBroker &broker):
-    IPeerNode(uuid_, broker.GetConnectionManager()),
+    IPeerNode(uuid_, CConnectionManager::Instance()),
     m_broker(broker)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;

@@ -34,7 +34,6 @@
 #define FREEDM_BROKER_HPP
 
 #include "CListener.hpp"
-#include "CConnectionManager.hpp"
 #include "CClockSynchronizer.hpp"
 
 #include <list>
@@ -72,7 +71,7 @@ public:
     typedef std::map<ModuleIdent, std::list< BoundScheduleable > > ReadyMap;
 
     /// Initialize the broker and begin accepting connections and messages
-    CBroker(CDispatcher& dispatcher, freedm::broker::CConnectionManager &conMan);
+    CBroker(CDispatcher& dispatcher);
 
     /// Terminate the timers since they are pointers.
     ~CBroker();
@@ -104,9 +103,6 @@ public:
     /// Mark that you should try and cancel some timer
     void CancelTimer(ModuleIdent handle);
 
-    /// Access the connection manager
-    CConnectionManager& GetConnectionManager() { return m_connManager; };
-
     /// Access The dispatcher
     CDispatcher& GetDispatcher() { return m_dispatch; };
 
@@ -125,9 +121,6 @@ private:
 
     /// The io_service used to perform asynchronous operations.
     boost::asio::io_service m_ioService;
-
-    /// The connection manager which owns all live connections.
-    CConnectionManager &m_connManager;
 
     /// The handler for all incoming requests.
     CDispatcher &m_dispatch;

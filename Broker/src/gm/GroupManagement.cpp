@@ -30,6 +30,7 @@
 
 #include "CBroker.hpp"
 #include "CConnection.hpp"
+#include "CConnectionManager.hpp"
 #include "CLogger.hpp"
 #include "CMessage.hpp"
 #include "SRemoteHost.hpp"
@@ -84,7 +85,7 @@ CLocalLogger Logger(__FILE__);
 /// @param broker: The broker that schedules the message delivery.
 ///////////////////////////////////////////////////////////////////////////////
 GMAgent::GMAgent(std::string p_uuid, CBroker &broker)
-    : IPeerNode(p_uuid,broker.GetConnectionManager()),
+    : IPeerNode(p_uuid,CConnectionManager::Instance()),
     CHECK_TIMEOUT(boost::posix_time::not_a_date_time),
     TIMEOUT_TIMEOUT(boost::posix_time::not_a_date_time),
     GLOBAL_TIMEOUT(boost::posix_time::milliseconds(CTimings::GM_GLOBAL_TIMEOUT)),

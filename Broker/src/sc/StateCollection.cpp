@@ -39,6 +39,7 @@
 
 #include "CBroker.hpp"
 #include "CConnection.hpp"
+#include "CConnectionManager.hpp"
 #include "CLogger.hpp"
 #include "CMessage.hpp"
 #include "gm/GroupManagement.hpp"
@@ -106,7 +107,7 @@ CLocalLogger Logger(__FILE__);
 ///////////////////////////////////////////////////////////////////////////////
 
 SCAgent::SCAgent(std::string uuid, CBroker &broker):
-        IPeerNode(uuid, broker.GetConnectionManager()),
+        IPeerNode(uuid, CConnectionManager::Instance()),
         m_countstate(0),
         m_NotifyToSave(false),
         m_curversion("default", 0),

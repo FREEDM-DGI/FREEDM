@@ -59,11 +59,11 @@ public:
     /// Typedef for the map which handles uuid to connection
     typedef boost::bimap<std::string, ConnectionPtr> connectionmap;
 
-    /// Initialize the connection manager with the uuid from global configuation
-    CConnectionManager();
-
     /// Add the specified connection to the manager and start it.
     void Start(CListener::ConnectionPtr c);
+
+    /// Access the singleton instance of the connection manager
+    static CConnectionManager& Instance();
 
     /// Place a host/port and uuid into the host / uuid map.
     void PutHost(std::string u, std::string host, std::string port);
@@ -118,6 +118,8 @@ public:
     void LoadNetworkConfig();
 
 private:
+    /// Private constructor for the singleton instance
+    CConnectionManager();
     /// Mapping from uuid to host.
     hostnamemap m_hosts;
     /// Host/port of this node.

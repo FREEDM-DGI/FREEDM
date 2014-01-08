@@ -282,13 +282,10 @@ int main(int argc, char* argv[])
         return 1;
     }
 
-    //constructors for initial mapping
-    CConnectionManager conManager;
-
     // Instantiate Dispatcher for message delivery
     CDispatcher dispatch;
     // Run server in background thread
-    CBroker broker(dispatch, conManager);
+    CBroker broker(dispatch);
 
     // Initialize modules
     gm::GMAgent GM(id, broker);
@@ -331,7 +328,7 @@ int main(int argc, char* argv[])
                 // Construct the UUID of the peer
                 std::string peerid = GenerateUuid(peerhost, peerport);
                 // Add the UUID to the list of known hosts
-                conManager.PutHostname(peerid, peerhost, peerport);
+                CConnectionManager::Instance().PutHost(peerid, peerhost, peerport);
             }
         }
         else
@@ -340,7 +337,7 @@ int main(int argc, char* argv[])
         }
 
         // Add the local connection to the hostname list
-        conManager.PutHostname(id, "localhost", port);
+        CConnectionManager::Instance().PutHost(id, "localhost", port);
 
         Logger.Debug << "Starting thread of Modules" << std::endl;
         broker.Schedule("gm", boost::bind(&gm::GMAgent::Run, &GM), false);

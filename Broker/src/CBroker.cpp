@@ -32,6 +32,7 @@
 
 #include "CAdapterFactory.hpp"
 #include "CBroker.hpp"
+#include "CConnectionManager.hpp"
 #include "CLogger.hpp"
 #include "CGlobalPeerList.hpp"
 #include "IPeerNode.hpp"
@@ -65,14 +66,12 @@ CLocalLogger Logger(__FILE__);
 /// @post An acceptor socket is bound on the freedm port awaiting connections
 ///       from other nodes.
 /// @param dispatcher The message dispatcher associated with this Broker
-/// @param conMan The connection manager used by this broker.
 /// @limitations Fails if the port is already in use.
 ///////////////////////////////////////////////////////////////////////////////
-CBroker::CBroker(CDispatcher &dispatcher, freedm::broker::CConnectionManager &conMan)
+CBroker::CBroker(CDispatcher &dispatcher)
     : m_ioService(),
-      m_connManager(conMan),
       m_dispatch(dispatcher),
-      m_newConnection(new CListener(m_ioService, conMan, *this, conMan.GetUUID())),
+      m_newConnection(new CListener(m_ioService, CConnectionManager::Instance(), *this, CConnectionManager::Instance().GetUUID())),
       m_phasetimer(m_ioService),
       m_synchronizer(*this),
       m_signals(m_ioService, SIGINT, SIGTERM),
@@ -90,7 +89,7 @@ CBroker::CBroker(CDispatcher &dispatcher, freedm::broker::CConnectionManager &co
     // Listen for connections and create an event to spawn a new connection
     m_newConnection->GetSocket().open(endpoint.protocol());
     m_newConnection->GetSocket().bind(endpoint);
-    m_connManager.Start(m_newConnection);
+    CConnectionManager::Instance().Start(m_newConnection);
     m_busy = false;
 
     // Try to align on the first phase change
@@ -219,7 +218,7 @@ void CBroker::HandleStop(unsigned int signum)
     }
 
     m_synchronizer.Stop();
-    m_connManager.StopAll();
+    CConnectionManager::Instance().StopAll();
 
     // The server is stopped by canceling all outstanding asynchronous
     // operations. Once all operations have been canceled, the call to
@@ -455,7 +454,7 @@ void CBroker::ChangePhase(const boost::system::error_code & /*err*/)
     }
     if(m_phase != oldphase)
     {
-        m_connManager.ChangePhase((m_phase==0));
+        CConnectionManager::Instance().ChangePhase((m_phase==0));
         std::string oldident = m_modules[oldphase].first;
         Logger.Notice<<"Changed Phase: expiring next time timers for "<<oldident<<std::endl;
         // Look through the timers for the module and see if any of them are

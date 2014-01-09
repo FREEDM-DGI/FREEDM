@@ -87,13 +87,9 @@ std::string CReliableConnection::GetUUID()
 }
 
 /// Get the broker
-CBroker& CReliableConnection::GetBroker() {
+CBroker& CReliableConnection::GetBroker()
+{
     return m_broker;
-}
-
-/// Get the dispatcher
-CDispatcher& CReliableConnection::GetDispatcher() {
-    return m_broker.GetDispatcher();
 }
 
 /// Get the ioservice

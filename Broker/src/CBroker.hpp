@@ -48,8 +48,6 @@
 namespace freedm {
     namespace broker {
 
-class CDispatcher;
-
 /// How long we should wait before aligning the modules again
 const unsigned int ALIGNMENT_DURATION = 250;
 const unsigned int BEACON_FREQUENCY = 2000;
@@ -71,7 +69,7 @@ public:
     typedef std::map<ModuleIdent, std::list< BoundScheduleable > > ReadyMap;
 
     /// Initialize the broker and begin accepting connections and messages
-    CBroker(CDispatcher& dispatcher);
+    CBroker();
 
     /// Terminate the timers since they are pointers.
     ~CBroker();
@@ -103,9 +101,6 @@ public:
     /// Mark that you should try and cancel some timer
     void CancelTimer(ModuleIdent handle);
 
-    /// Access The dispatcher
-    CDispatcher& GetDispatcher() { return m_dispatch; };
-
     /// Registers a module for the scheduler
     void RegisterModule(ModuleIdent m, boost::posix_time::time_duration phase);
 
@@ -121,9 +116,6 @@ private:
 
     /// The io_service used to perform asynchronous operations.
     boost::asio::io_service m_ioService;
-
-    /// The handler for all incoming requests.
-    CDispatcher &m_dispatch;
 
     ///The Broker's pointer to the listening socket
     CListener::ConnectionPtr m_newConnection;

@@ -171,7 +171,7 @@ void CListener::HandleRead(const boost::system::error_code& e,
         {
             Logger.Debug<<"Accepted message "<<m_message->GetHash()<<":"
                           <<m_message->GetSequenceNumber()<<std::endl;
-            GetDispatcher().HandleRequest(GetBroker(),m_message);
+            CDispatcher::Instance().HandleRequest(GetBroker(),m_message);
         }
         else if(m_message->GetStatus() != freedm::broker::CMessage::Created)
         {

@@ -66,9 +66,6 @@ public:
     /// Get the broker
     CBroker& GetBroker();
 
-    /// Get the dispatcher
-    CDispatcher& GetDispatcher();
-
     /// Get the ioservice
     boost::asio::io_service& GetIOService();
 

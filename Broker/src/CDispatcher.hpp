@@ -54,6 +54,9 @@ class CDispatcher
   : private boost::noncopyable
 {
 public:
+    /// Access the singleton instance of the CDispatcher
+    static CDispatcher& Instance();
+
     /// Called upon incoming message
     void HandleRequest(CBroker &broker, MessagePtr msg );
 
@@ -69,6 +72,9 @@ public:
             IWriteHandler *p_handler );
 
 private:
+    /// Private constructor for the singleton instance
+    CDispatcher() {};
+
     /// Making the handler calls bindable
     void ReadHandlerCallback(IReadHandler *h, MessagePtr msg);
 

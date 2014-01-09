@@ -38,6 +38,15 @@ CLocalLogger Logger(__FILE__);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+/// Access the singleton instance of the Dispatcher
+///////////////////////////////////////////////////////////////////////////////
+CDispatcher& CDispatcher::Instance()
+{
+    static CDispatcher dispatcher;
+    return dispatcher;
+}
+
+///////////////////////////////////////////////////////////////////////////////
 /// @fn CDispatcher::HandleRequest
 /// @description Given an input property tree determine which handlers should
 ///   be given the message out of a pool of modules and deliever the message

@@ -282,10 +282,8 @@ int main(int argc, char* argv[])
         return 1;
     }
 
-    // Instantiate Dispatcher for message delivery
-    CDispatcher dispatch;
     // Run server in background thread
-    CBroker broker(dispatch);
+    CBroker broker;
 
     // Initialize modules
     gm::GMAgent GM(id, broker);
@@ -296,14 +294,14 @@ int main(int argc, char* argv[])
     {
         // Instantiate and register the group management module
         broker.RegisterModule("gm",boost::posix_time::milliseconds(CTimings::GM_PHASE_TIME));
-        dispatch.RegisterReadHandler("gm", "any", &GM);
+        CDispatcher::Instance().RegisterReadHandler("gm", "any", &GM);
         // Instantiate and register the state collection module
         broker.RegisterModule("lbq",boost::posix_time::milliseconds(CTimings::LB_SC_QUERY_TIME));
         broker.RegisterModule("sc",boost::posix_time::milliseconds(CTimings::SC_PHASE_TIME));
-        dispatch.RegisterReadHandler("sc", "any", &SC);
+        CDispatcher::Instance().RegisterReadHandler("sc", "any", &SC);
         // Instantiate and register the power management module
         broker.RegisterModule("lb",boost::posix_time::milliseconds(CTimings::LB_PHASE_TIME));
-        dispatch.RegisterReadHandler("lb", "lb", &LB);
+        CDispatcher::Instance().RegisterReadHandler("lb", "lb", &LB);
 
         // The peerlist should be passed into constructors as references or
         // pointers to each submodule to allow sharing peers. NOTE this requires

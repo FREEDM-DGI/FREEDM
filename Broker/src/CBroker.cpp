@@ -65,12 +65,10 @@ CLocalLogger Logger(__FILE__);
 /// @pre The port is free to be bound to.
 /// @post An acceptor socket is bound on the freedm port awaiting connections
 ///       from other nodes.
-/// @param dispatcher The message dispatcher associated with this Broker
 /// @limitations Fails if the port is already in use.
 ///////////////////////////////////////////////////////////////////////////////
-CBroker::CBroker(CDispatcher &dispatcher)
+CBroker::CBroker()
     : m_ioService(),
-      m_dispatch(dispatcher),
       m_newConnection(new CListener(m_ioService, *this, CConnectionManager::Instance().GetUUID())),
       m_phasetimer(m_ioService),
       m_synchronizer(*this),

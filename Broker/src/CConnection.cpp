@@ -153,7 +153,7 @@ void CConnection::Send(CMessage & p_mesg)
         p_mesg.SetSendTimestampNow();
         MessagePtr local(new CMessage);
         *local = p_mesg;
-        GetDispatcher().HandleRequest(GetBroker(),local);
+        CDispatcher::Instance().HandleRequest(GetBroker(),local);
         return;
     }
 

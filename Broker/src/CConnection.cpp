@@ -58,13 +58,12 @@ CLocalLogger Logger(__FILE__);
 /// @pre An initialized socket is ready to be converted to a connection.
 /// @post A new CConnection object is initialized.
 /// @param p_ioService The socket to use for the connection.
-/// @param p_manager The related connection manager that tracks this object.
 /// @param p_broker The broker used for scheduling the message deliveries
 /// @param uuid The uuid this node connects to, or what listener.
 ///////////////////////////////////////////////////////////////////////////////
 CConnection::CConnection(boost::asio::io_service& p_ioService,
-  CConnectionManager& p_manager, CBroker& p_broker, std::string uuid)
-  : CReliableConnection(p_ioService,p_manager,p_broker,uuid)
+    CBroker& p_broker, std::string uuid)
+  : CReliableConnection(p_ioService,p_broker,uuid)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     m_protocols.insert(ProtocolMap::value_type(CSUConnection::Identifier(),
@@ -147,10 +146,10 @@ void CConnection::Send(CMessage & p_mesg)
     // object) is the same as the this node's uuid (As stored by the
     // Connection manager) place the message directly into the received
     // Queue.
-    if(GetUUID() == GetConnectionManager().GetUUID())
+    if(GetUUID() == CConnectionManager::Instance().GetUUID())
     {
-        p_mesg.SetSourceUUID(GetConnectionManager().GetUUID());
-        p_mesg.SetSourceHostname(GetConnectionManager().GetHost());
+        p_mesg.SetSourceUUID(CConnectionManager::Instance().GetUUID());
+        p_mesg.SetSourceHostname(CConnectionManager::Instance().GetHost());
         p_mesg.SetSendTimestampNow();
         MessagePtr local(new CMessage);
         *local = p_mesg;

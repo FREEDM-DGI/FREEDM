@@ -71,7 +71,7 @@ CLocalLogger Logger(__FILE__);
 CBroker::CBroker(CDispatcher &dispatcher)
     : m_ioService(),
       m_dispatch(dispatcher),
-      m_newConnection(new CListener(m_ioService, CConnectionManager::Instance(), *this, CConnectionManager::Instance().GetUUID())),
+      m_newConnection(new CListener(m_ioService, *this, CConnectionManager::Instance().GetUUID())),
       m_phasetimer(m_ioService),
       m_synchronizer(*this),
       m_signals(m_ioService, SIGINT, SIGTERM),

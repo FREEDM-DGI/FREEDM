@@ -56,13 +56,12 @@ CLocalLogger Logger(__FILE__);
 /// @pre An initialized socket is ready to be converted to a connection.
 /// @post A new CConnection object is initialized.
 /// @param p_ioService The socket to use for the connection.
-/// @param p_manager The related connection manager that tracks this object.
 /// @param p_broker the broker responsible for delivering messages
 /// @param uuid: The uuid this node connects to, or what listener.
 ///////////////////////////////////////////////////////////////////////////////
 CListener::CListener(boost::asio::io_service& p_ioService,
-  CConnectionManager& p_manager, CBroker& p_broker, std::string uuid)
-  : CReliableConnection(p_ioService,p_manager,p_broker,uuid)
+  CBroker& p_broker, std::string uuid)
+  : CReliableConnection(p_ioService,p_broker,uuid)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 }
@@ -141,10 +140,10 @@ void CListener::HandleRead(const boost::system::error_code& e,
         std::string uuid = m_message->GetSourceUUID();
         SRemoteHost hostname = m_message->GetSourceHostname();
         ///Make sure the hostname is registered:
-        GetConnectionManager().PutHost(uuid,hostname);
+        CConnectionManager::Instance().PutHost(uuid,hostname);
         ///Get the pointer to the connection:
         CConnection::ConnectionPtr conn;
-        conn = GetConnectionManager().GetConnectionByUUID(uuid);
+        conn = CConnectionManager::Instance().GetConnectionByUUID(uuid);
         Logger.Debug<<"Fetched Connection"<<std::endl;
 #ifdef CUSTOMNETWORK
         if((rand()%100) >= GetReliability())
@@ -190,7 +189,7 @@ listen:
     }
     else
     {
-        GetConnectionManager().Stop(CListener::ConnectionPtr(this));
+        CConnectionManager::Instance().Stop(CListener::ConnectionPtr(this));
     }
 }
 

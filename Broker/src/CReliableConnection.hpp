@@ -35,7 +35,6 @@
 namespace freedm {
     namespace broker {
 
-class CConnectionManager;
 class CDispatcher;
 class CBroker;
 
@@ -50,8 +49,7 @@ public:
 
     /// Construct a CConnection with the given io_service.
     CReliableConnection(boost::asio::io_service& p_ioService,
-            CConnectionManager& p_manager, CBroker& p_broker,
-            std::string uuid);
+            CBroker& p_broker, std::string uuid);
 
     /// Get the socket associated with the CConnection.
     boost::asio::ip::udp::socket& GetSocket();
@@ -64,9 +62,6 @@ public:
 
     /// Get associated UUID
     std::string GetUUID();
-
-    /// Get Connection Manager
-    CConnectionManager& GetConnectionManager();
 
     /// Get the broker
     CBroker& GetBroker();
@@ -88,9 +83,6 @@ public:
 private:
     /// Socket for the CConnection.
     boost::asio::ip::udp::socket m_socket;
-
-    /// The manager for this CConnection.
-    CConnectionManager& m_connManager;
 
     /// The dispatcher used to process the incoming request.
     CBroker& m_broker;

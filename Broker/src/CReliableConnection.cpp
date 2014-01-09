@@ -52,14 +52,12 @@ CLocalLogger Logger(__FILE__);
 /// @pre: An initialized socket is ready to be converted to a connection.
 /// @post: A new CConnection object is initialized.
 /// @param p_ioService: The socket to use for the connection.
-/// @param p_manager: The related connection manager that tracks this object.
 /// @param p_broker: The broker that schedules the message delivery.
 /// @param uuid: The uuid this node connects to, or what listener.
 ///////////////////////////////////////////////////////////////////////////////
 CReliableConnection::CReliableConnection(boost::asio::io_service& p_ioService,
-  CConnectionManager& p_manager, CBroker& p_broker, std::string uuid)
+  CBroker& p_broker, std::string uuid)
   : m_socket(p_ioService),
-    m_connManager(p_manager),
     m_broker(p_broker),
     m_uuid(uuid)
 {
@@ -86,11 +84,6 @@ boost::asio::ip::udp::socket& CReliableConnection::GetSocket()
 std::string CReliableConnection::GetUUID()
 {
     return m_uuid;
-}
-
-/// Get Connection Manager
-CConnectionManager& CReliableConnection::GetConnectionManager() {
-    return m_connManager;
 }
 
 /// Get the broker

@@ -63,7 +63,7 @@ class GMAgent
     /// Module states
     enum { NORMAL,DOWN,RECOVERY,REORGANIZATION,ELECTION };
     /// Constructor for using this object as a module.
-    GMAgent(std::string uuid_, CBroker &broker);
+    GMAgent(std::string uuid_);
     /// Module destructor
     ~GMAgent();
 
@@ -223,9 +223,6 @@ class GMAgent
 
     ///Maximum clock skew in milliseconds;
     static const int MAX_SKEW = 100;
-
-    ///The broker!
-    CBroker& m_broker;
 
     /// Number of groups formed
     int m_groupsformed ;

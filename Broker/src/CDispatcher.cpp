@@ -53,10 +53,9 @@ CDispatcher& CDispatcher::Instance()
 ///   as appropriate.
 /// @pre Modules have registered their read handlers.
 /// @post Message delievered to a module
-/// @param broker The broker that schedules the message deliveries
 /// @param msg The message to distribute to modules
 ///////////////////////////////////////////////////////////////////////////////
-void CDispatcher::HandleRequest(CBroker &broker, MessagePtr msg)
+void CDispatcher::HandleRequest(MessagePtr msg)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     ptree sub_;
@@ -78,7 +77,7 @@ void CDispatcher::HandleRequest(CBroker &broker, MessagePtr msg)
         {
             CBroker::BoundScheduleable x = boost::bind(&CDispatcher::ReadHandlerCallback,
                 this, mapIt_->second, msg);
-            broker.Schedule(m_handlerToModule[mapIt_->second],x);
+            CBroker::Instance().Schedule(m_handlerToModule[mapIt_->second],x);
             processed = true;
         }
 
@@ -102,7 +101,7 @@ void CDispatcher::HandleRequest(CBroker &broker, MessagePtr msg)
                 }
                 CBroker::BoundScheduleable x = boost::bind(&CDispatcher::ReadHandlerCallback,
                     this, mapIt_->second, msg);
-                broker.Schedule(m_handlerToModule[mapIt_->second],x);
+                CBroker::Instance().Schedule(m_handlerToModule[mapIt_->second],x);
                 processed = true;
             }
         }
@@ -115,7 +114,7 @@ void CDispatcher::HandleRequest(CBroker &broker, MessagePtr msg)
                 {
                     CBroker::BoundScheduleable x = boost::bind(&CDispatcher::ReadHandlerCallback,
                         this, mapIt_->second, msg);
-                    broker.Schedule(m_handlerToModule[mapIt_->second],x);
+                    CBroker::Instance().Schedule(m_handlerToModule[mapIt_->second],x);
                     processed = true;
                 }
             }

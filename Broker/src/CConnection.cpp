@@ -57,13 +57,10 @@ CLocalLogger Logger(__FILE__);
 ///   to have the object behave as a listener, Start() should be called on it.
 /// @pre An initialized socket is ready to be converted to a connection.
 /// @post A new CConnection object is initialized.
-/// @param p_ioService The socket to use for the connection.
-/// @param p_broker The broker used for scheduling the message deliveries
 /// @param uuid The uuid this node connects to, or what listener.
 ///////////////////////////////////////////////////////////////////////////////
-CConnection::CConnection(boost::asio::io_service& p_ioService,
-    CBroker& p_broker, std::string uuid)
-  : CReliableConnection(p_ioService,p_broker,uuid)
+CConnection::CConnection(std::string uuid)
+  : CReliableConnection(uuid)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     m_protocols.insert(ProtocolMap::value_type(CSUConnection::Identifier(),
@@ -153,7 +150,7 @@ void CConnection::Send(CMessage & p_mesg)
         p_mesg.SetSendTimestampNow();
         MessagePtr local(new CMessage);
         *local = p_mesg;
-        CDispatcher::Instance().HandleRequest(GetBroker(),local);
+        CDispatcher::Instance().HandleRequest(local);
         return;
     }
 

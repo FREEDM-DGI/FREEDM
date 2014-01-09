@@ -48,8 +48,7 @@ public:
     typedef boost::shared_ptr<CReliableConnection> ConnectionPtr;
 
     /// Construct a CConnection with the given io_service.
-    CReliableConnection(boost::asio::io_service& p_ioService,
-            CBroker& p_broker, std::string uuid);
+    CReliableConnection(std::string uuid);
 
     /// Get the socket associated with the CConnection.
     boost::asio::ip::udp::socket& GetSocket();
@@ -62,9 +61,6 @@ public:
 
     /// Get associated UUID
     std::string GetUUID();
-
-    /// Get the broker
-    CBroker& GetBroker();
 
     /// Get the ioservice
     boost::asio::io_service& GetIOService();
@@ -80,9 +76,6 @@ public:
 private:
     /// Socket for the CConnection.
     boost::asio::ip::udp::socket m_socket;
-
-    /// The dispatcher used to process the incoming request.
-    CBroker& m_broker;
 
     /// The UUID of the remote endpoint for the connection
     std::string m_uuid;

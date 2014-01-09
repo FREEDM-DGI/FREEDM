@@ -282,25 +282,22 @@ int main(int argc, char* argv[])
         return 1;
     }
 
-    // Run server in background thread
-    CBroker broker;
-
     // Initialize modules
-    gm::GMAgent GM(id, broker);
-    sc::SCAgent SC(id, broker);
-    lb::LBAgent LB(id, broker);
+    gm::GMAgent GM(id);
+    sc::SCAgent SC(id);
+    lb::LBAgent LB(id);
 
     try
     {
         // Instantiate and register the group management module
-        broker.RegisterModule("gm",boost::posix_time::milliseconds(CTimings::GM_PHASE_TIME));
+        CBroker::Instance().RegisterModule("gm",boost::posix_time::milliseconds(CTimings::GM_PHASE_TIME));
         CDispatcher::Instance().RegisterReadHandler("gm", "any", &GM);
         // Instantiate and register the state collection module
-        broker.RegisterModule("lbq",boost::posix_time::milliseconds(CTimings::LB_SC_QUERY_TIME));
-        broker.RegisterModule("sc",boost::posix_time::milliseconds(CTimings::SC_PHASE_TIME));
+        CBroker::Instance().RegisterModule("lbq",boost::posix_time::milliseconds(CTimings::LB_SC_QUERY_TIME));
+        CBroker::Instance().RegisterModule("sc",boost::posix_time::milliseconds(CTimings::SC_PHASE_TIME));
         CDispatcher::Instance().RegisterReadHandler("sc", "any", &SC);
         // Instantiate and register the power management module
-        broker.RegisterModule("lb",boost::posix_time::milliseconds(CTimings::LB_PHASE_TIME));
+        CBroker::Instance().RegisterModule("lb",boost::posix_time::milliseconds(CTimings::LB_PHASE_TIME));
         CDispatcher::Instance().RegisterReadHandler("lb", "lb", &LB);
 
         // The peerlist should be passed into constructors as references or
@@ -338,8 +335,8 @@ int main(int argc, char* argv[])
         CConnectionManager::Instance().PutHost(id, "localhost", port);
 
         Logger.Debug << "Starting thread of Modules" << std::endl;
-        broker.Schedule("gm", boost::bind(&gm::GMAgent::Run, &GM), false);
-        broker.Schedule("lbq", boost::bind(&lb::LBAgent::Run, &LB), false);
+        CBroker::Instance().Schedule("gm", boost::bind(&gm::GMAgent::Run, &GM), false);
+        CBroker::Instance().Schedule("lbq", boost::bind(&lb::LBAgent::Run, &LB), false);
     }
     catch (std::exception & e)
     {
@@ -349,12 +346,12 @@ int main(int argc, char* argv[])
 
     try
     {
-        broker.Run();
+        CBroker::Instance().Run();
     }
     catch (std::exception & e)
     {
         Logger.Fatal << "Exception caught in Broker: " << e.what() << std::endl;
-        broker.Stop();
+        CBroker::Instance().Stop();
         return 1;
     }
 

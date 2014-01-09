@@ -102,16 +102,14 @@ CLocalLogger Logger(__FILE__);
 /// @pre PoxisMain prepares parameters and invokes module.
 /// @post Object initialized and ready to enter run state.
 /// @param uuid: This object's uuid.
-/// @param broker the broker object
 /// @limitations: None
 ///////////////////////////////////////////////////////////////////////////////
 
-SCAgent::SCAgent(std::string uuid, CBroker &broker):
+SCAgent::SCAgent(std::string uuid):
         IPeerNode(uuid, CConnectionManager::Instance()),
         m_countstate(0),
         m_NotifyToSave(false),
-        m_curversion("default", 0),
-        m_broker(broker)
+        m_curversion("default", 0)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     AddPeer(CGlobalPeerList::instance().GetPeer(uuid));
@@ -694,7 +692,7 @@ void SCAgent::HandleRequest(MessagePtr msg, PeerNodePtr peer)
                   << " )" << std::endl;
 
     //Put the initiate call into the back of queue
-    m_broker.Schedule("sc",boost::bind(&SCAgent::Initiate, this),true);
+    CBroker::Instance().Schedule("sc",boost::bind(&SCAgent::Initiate, this),true);
     //Initiate();
 }
 

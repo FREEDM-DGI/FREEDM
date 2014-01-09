@@ -55,13 +55,9 @@ CLocalLogger Logger(__FILE__);
 ///   to have the object behave as a listener, Start() should be called on it.
 /// @pre An initialized socket is ready to be converted to a connection.
 /// @post A new CConnection object is initialized.
-/// @param p_ioService The socket to use for the connection.
-/// @param p_broker the broker responsible for delivering messages
-/// @param uuid: The uuid this node connects to, or what listener.
 ///////////////////////////////////////////////////////////////////////////////
-CListener::CListener(boost::asio::io_service& p_ioService,
-  CBroker& p_broker, std::string uuid)
-  : CReliableConnection(p_ioService,p_broker,uuid)
+CListener::CListener()
+  : CReliableConnection(CConnectionManager::Instance().GetUUID())
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 }
@@ -165,13 +161,13 @@ void CListener::HandleRead(const boost::system::error_code& e,
         else if(m_message->GetStatus() == freedm::broker::CMessage::ClockReading && conn->Receive(*m_message))
         {
             Logger.Debug<<"Got A clock message"<<std::endl;
-            GetBroker().GetClockSynchronizer().HandleRead(m_message);
+            CBroker::Instance().GetClockSynchronizer().HandleRead(m_message);
         }
         else if(conn->Receive(*m_message))
         {
             Logger.Debug<<"Accepted message "<<m_message->GetHash()<<":"
                           <<m_message->GetSequenceNumber()<<std::endl;
-            CDispatcher::Instance().HandleRequest(GetBroker(),m_message);
+            CDispatcher::Instance().HandleRequest(m_message);
         }
         else if(m_message->GetStatus() != freedm::broker::CMessage::Created)
         {

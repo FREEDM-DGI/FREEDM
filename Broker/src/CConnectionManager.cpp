@@ -259,7 +259,7 @@ ConnectionPtr CConnectionManager::GetConnectionByUUID(std::string uuid)
 
     // Create a new CConnection object for this host
     Logger.Debug<<"Constructing CConnection"<<std::endl;
-    ConnectionPtr c(new CConnection(m_inchannel->GetIOService(), m_inchannel->GetBroker(), uuid));
+    ConnectionPtr c(new CConnection(uuid));
 
     // Initiate the UDP connection
     Logger.Debug<<"Computing remote endpoint"<<std::endl;

@@ -89,21 +89,19 @@ CLocalLogger Logger(__FILE__);
 /// @pre: Posix Main should register read handler and invoke this module
 /// @post: Object is initialized and ready to run load balancing
 /// @param uuid_: This object's uuid
-/// @param broker: The Broker
 /// @limitations: None
 ///////////////////////////////////////////////////////////////////////////////
-LBAgent::LBAgent(std::string uuid_, CBroker &broker):
-    IPeerNode(uuid_, CConnectionManager::Instance()),
-    m_broker(broker)
+LBAgent::LBAgent(std::string uuid_):
+    IPeerNode(uuid_, CConnectionManager::Instance())
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     PeerNodePtr self_ = CGlobalPeerList::instance().GetPeer(uuid_);
     InsertInPeerSet(m_AllPeers, self_);
     m_Leader = GetUUID();
     m_Normal = 0;
-    m_GlobalTimer = broker.AllocateTimer("lb");
+    m_GlobalTimer = CBroker::Instance().AllocateTimer("lb");
     // Bound to lbq so it resolves before the state collection round
-    m_StateTimer = broker.AllocateTimer("lbq");
+    m_StateTimer = CBroker::Instance().AllocateTimer("lbq");
     RegisterSubhandle("any.PeerList",boost::bind(&LBAgent::HandlePeerList, this, _1, _2));
     RegisterSubhandle("lb.demand",boost::bind(&LBAgent::HandleDemand, this, _1, _2));
     RegisterSubhandle("lb.normal",boost::bind(&LBAgent::HandleNormal, this, _1, _2));
@@ -138,7 +136,7 @@ int LBAgent::Run()
     // This timer gets resolved for the lb module (instead of lbq) so
     // it is safe to give it a timeout of 1 effectively making it expire
     // immediately
-    m_broker.Schedule(m_GlobalTimer,
+    CBroker::Instance().Schedule(m_GlobalTimer,
         boost::posix_time::not_a_date_time,
         boost::bind(&LBAgent::LoadManage, this,
             boost::asio::placeholders::error));
@@ -347,10 +345,10 @@ void LBAgent::LoadManage()
     // Schedule the NEXT LB before starting this one. So ensure that after this
     // LB completes, there's still time to run another before scheduling it.
     // Otherwise we'll steal time from the next broker module.
-    if (m_broker.TimeRemaining() >
+    if (CBroker::Instance().TimeRemaining() >
         boost::posix_time::milliseconds(2*CTimings::LB_GLOBAL_TIMER))
     {
-        m_broker.Schedule(m_GlobalTimer,
+        CBroker::Instance().Schedule(m_GlobalTimer,
                           boost::posix_time::milliseconds(
                               CTimings::LB_GLOBAL_TIMER),
                           boost::bind(&LBAgent::LoadManage,
@@ -363,7 +361,7 @@ void LBAgent::LoadManage()
     {
         // Schedule past the end of our phase so control will pass to the broker
         // after this LB, and we won't go again until it's our turn.
-        m_broker.Schedule(m_GlobalTimer,
+        CBroker::Instance().Schedule(m_GlobalTimer,
                           boost::posix_time::not_a_date_time,
                           boost::bind(&LBAgent::LoadManage,
                                       this,
@@ -1186,7 +1184,7 @@ void LBAgent::HandleStateTimer( const boost::system::error_code & error )
         CollectState();
     }
 
-    m_broker.Schedule(m_StateTimer, boost::posix_time::milliseconds(CTimings::LB_STATE_TIMER),
+    CBroker::Instance().Schedule(m_StateTimer, boost::posix_time::milliseconds(CTimings::LB_STATE_TIMER),
         boost::bind(&LBAgent::HandleStateTimer, this, boost::asio::placeholders::error));
 }
 

@@ -22,6 +22,7 @@
 /// Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
 ////////////////////////////////////////////////////////////////////////////////
 
+#include "CBroker.hpp"
 #include "CConnectionManager.hpp"
 #include "CDispatcher.hpp"
 #include "CLogger.hpp"
@@ -51,14 +52,10 @@ CLocalLogger Logger(__FILE__);
 /// @description: Constructor for the CGenericConnection object.
 /// @pre: An initialized socket is ready to be converted to a connection.
 /// @post: A new CConnection object is initialized.
-/// @param p_ioService: The socket to use for the connection.
-/// @param p_broker: The broker that schedules the message delivery.
 /// @param uuid: The uuid this node connects to, or what listener.
 ///////////////////////////////////////////////////////////////////////////////
-CReliableConnection::CReliableConnection(boost::asio::io_service& p_ioService,
-  CBroker& p_broker, std::string uuid)
-  : m_socket(p_ioService),
-    m_broker(p_broker),
+CReliableConnection::CReliableConnection(std::string uuid)
+  : m_socket(CBroker::Instance().GetIOService()),
     m_uuid(uuid)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
@@ -84,12 +81,6 @@ boost::asio::ip::udp::socket& CReliableConnection::GetSocket()
 std::string CReliableConnection::GetUUID()
 {
     return m_uuid;
-}
-
-/// Get the broker
-CBroker& CReliableConnection::GetBroker()
-{
-    return m_broker;
 }
 
 /// Get the ioservice

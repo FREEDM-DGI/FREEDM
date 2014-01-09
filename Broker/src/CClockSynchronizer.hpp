@@ -46,7 +46,7 @@ public:
     /// PeerNodePtr
     typedef boost::shared_ptr<IPeerNode> PeerNodePtr;
     /// Initialize module
-    explicit CClockSynchronizer(CBroker &broker);
+    explicit CClockSynchronizer(boost::asio::io_service& ios);
     /// Receiver
     void HandleExchangeResponse(MessagePtr msg, PeerNodePtr peer);
     /// Receiver

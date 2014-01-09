@@ -72,7 +72,7 @@ class SCAgent : public IReadHandler, public IPeerNode,
 {
     public:
         ///Constructor
-        SCAgent(std::string uuid, CBroker &broker);
+        SCAgent(std::string uuid);
         //Handler
         ///Handle receiving messages
         void HandleAny(MessagePtr msg, PeerNodePtr peer);
@@ -145,9 +145,6 @@ class SCAgent : public IReadHandler, public IPeerNode,
 
         ///all known peers
         PeerSet m_AllPeers;
-
-        /// The broker
-        CBroker &m_broker;
 };
 
 } // namespace sc

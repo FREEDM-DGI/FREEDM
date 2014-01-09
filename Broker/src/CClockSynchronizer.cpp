@@ -46,10 +46,10 @@ const int QUERY_INTERVAL = 10000;
 /// @limitations none
 /// @pre None
 /// @post Read handlers are registered and the synchronizer is ready to begin
-/// @param broker The broker object.
+/// @param ios the broker's ioservice
 ///////////////////////////////////////////////////////////////////////////////
-CClockSynchronizer::CClockSynchronizer(CBroker &broker)
-    : m_exchangetimer(broker.GetIOService()),
+CClockSynchronizer::CClockSynchronizer(boost::asio::io_service& ios)
+    : m_exchangetimer(ios),
       m_uuid(CConnectionManager::Instance().GetUUID())
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;

@@ -56,47 +56,25 @@ CLocalLogger Logger(__FILE__);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// @fn CBroker::CBroker
-/// @description The constructor for the broker
-/// @io provide an acceptor socket for incoming network connections.
-/// @peers any node running the broker architecture.
-/// @sharedmemory The dispatcher and connection manager are shared with the
-///               modules.
-/// @pre The port is free to be bound to.
-/// @post An acceptor socket is bound on the freedm port awaiting connections
-///       from other nodes.
-/// @limitations Fails if the port is already in use.
+/// Access the singleton Broker instance
+///////////////////////////////////////////////////////////////////////////////
+CBroker& CBroker::Instance()
+{
+    static CBroker broker;
+    return broker;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+/// Private constructor for the singleton Broker instance
 ///////////////////////////////////////////////////////////////////////////////
 CBroker::CBroker()
-    : m_ioService(),
-      m_newConnection(new CListener(m_ioService, *this, CConnectionManager::Instance().GetUUID())),
-      m_phasetimer(m_ioService),
-      m_synchronizer(*this),
-      m_signals(m_ioService, SIGINT, SIGTERM),
-      m_stopping(false)
+    : m_newConnection(new CListener())
+    , m_phasetimer(m_ioService)
+    , m_synchronizer(m_ioService)
+    , m_signals(m_ioService, SIGINT, SIGTERM)
+    , m_stopping(false)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    // Open the acceptor with the option to reuse the address (i.e. SO_REUSEADDR).
-    boost::asio::ip::udp::resolver resolver(m_ioService);
-    boost::asio::ip::udp::resolver::query query(
-        CGlobalConfiguration::Instance().GetListenAddress(),
-        CGlobalConfiguration::Instance().GetListenPort()
-    );
-    boost::asio::ip::udp::endpoint endpoint = *resolver.resolve( query );
-
-    // Listen for connections and create an event to spawn a new connection
-    m_newConnection->GetSocket().open(endpoint.protocol());
-    m_newConnection->GetSocket().bind(endpoint);
-    CConnectionManager::Instance().Start(m_newConnection);
-    m_busy = false;
-
-    // Try to align on the first phase change
-    boost::posix_time::ptime now = boost::posix_time::microsec_clock::universal_time();
-    now += CGlobalConfiguration::Instance().GetClockSkew();
-    now -= boost::posix_time::milliseconds(2*ALIGNMENT_DURATION);
-    m_last_alignment = now;
-
-    m_phase = 0;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -127,7 +105,24 @@ CBroker::~CBroker()
 void CBroker::Run()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    m_signals.async_wait(boost::bind(&CBroker::HandleSignal, this,_1,_2));
+
+    // Open the acceptor with the option to reuse the address (i.e. SO_REUSEADDR).
+    boost::asio::ip::udp::resolver resolver(m_ioService);
+    boost::asio::ip::udp::resolver::query query(
+        CGlobalConfiguration::Instance().GetListenAddress(),
+        CGlobalConfiguration::Instance().GetListenPort()
+    );
+
+    // Listen for connections and create an event to spawn a new connection
+    m_newConnection->Start();
+
+    // Try to align on the first phase change
+    boost::posix_time::ptime now = boost::posix_time::microsec_clock::universal_time();
+    now += CGlobalConfiguration::Instance().GetClockSkew();
+    now -= boost::posix_time::milliseconds(2 * ALIGNMENT_DURATION);
+    m_last_alignment = now;
+
+    m_signals.async_wait(boost::bind(&CBroker::HandleSignal, this, _1, _2));
     device::CAdapterFactory::Instance(); // create it
     m_synchronizer.Run();
     m_ioService.run();

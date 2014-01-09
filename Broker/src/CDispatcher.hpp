@@ -58,7 +58,7 @@ public:
     static CDispatcher& Instance();
 
     /// Called upon incoming message
-    void HandleRequest(CBroker &broker, MessagePtr msg );
+    void HandleRequest(MessagePtr msg );
 
     /// Called prior to sending a message
     void HandleWrite( ptree &p_mesg );

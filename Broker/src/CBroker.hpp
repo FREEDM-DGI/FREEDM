@@ -68,8 +68,8 @@ public:
     typedef std::map<TimerHandle, bool > NextTimeMap;
     typedef std::map<ModuleIdent, std::list< BoundScheduleable > > ReadyMap;
 
-    /// Initialize the broker and begin accepting connections and messages
-    CBroker();
+    /// Get the singleton instance of this class
+    static CBroker& Instance();
 
     /// Terminate the timers since they are pointers.
     ~CBroker();
@@ -111,6 +111,9 @@ public:
     CClockSynchronizer& GetClockSynchronizer();
 
 private:
+    /// Private constructor for the singleton instance
+    CBroker();
+
     /// Handle completion of an asynchronous accept operation.
     void HandleAccept(const boost::system::error_code& e);
 

@@ -82,7 +82,7 @@ class LBAgent
 {
     public:
         /// Constructor for using this object as a module
-        LBAgent(std::string uuid_, CBroker &broker);
+        LBAgent(std::string uuid_);
 
         /// Main loop of the algorithm called from PosixBroker
         int Run();
@@ -176,8 +176,6 @@ class LBAgent
         CBroker::TimerHandle     m_GlobalTimer;
         /// Timer until next periodic state collection
         CBroker::TimerHandle      m_StateTimer;
-
-        CBroker &m_broker;
 
         bool m_sstExists;
 };

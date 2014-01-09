@@ -50,18 +50,19 @@ class CListener
 public:
     /// The Listener Shared pointer type
     typedef boost::shared_ptr<CListener> ConnectionPtr;
-    /// Construct a CConnection with the given io_service.
-    CListener();
+
+    /// Access the singleton instance of the CListener
+    static CListener& Instance();
 
     /// Start the first asynchronous operation for the CConnection.
-    void Start();
-
-    /// Stop all asynchronous operations associated with the CConnection.
-    void Stop();
+    void Start(boost::asio::ip::udp::endpoint& endpoint);
 
     /// Get Remote UUID
     std::string GetUUID() { return m_uuid; };
 private:
+    /// Private constructor for the singleton instance
+    CListener();
+
     /// Handle completion of a read operation.
     void HandleRead(const boost::system::error_code& e, std::size_t bytes_transferred);
 

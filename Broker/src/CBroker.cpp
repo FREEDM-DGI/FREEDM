@@ -68,8 +68,7 @@ CBroker& CBroker::Instance()
 /// Private constructor for the singleton Broker instance
 ///////////////////////////////////////////////////////////////////////////////
 CBroker::CBroker()
-    : m_newConnection(new CListener())
-    , m_phasetimer(m_ioService)
+    : m_phasetimer(m_ioService)
     , m_synchronizer(m_ioService)
     , m_signals(m_ioService, SIGINT, SIGTERM)
     , m_stopping(false)
@@ -112,9 +111,10 @@ void CBroker::Run()
         CGlobalConfiguration::Instance().GetListenAddress(),
         CGlobalConfiguration::Instance().GetListenPort()
     );
+    boost::asio::ip::udp::endpoint endpoint = *(resolver.resolve(query));
 
     // Listen for connections and create an event to spawn a new connection
-    m_newConnection->Start();
+    CListener::Instance().Start(endpoint);
 
     // Try to align on the first phase change
     boost::posix_time::ptime now = boost::posix_time::microsec_clock::universal_time();

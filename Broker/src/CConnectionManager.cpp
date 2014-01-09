@@ -57,20 +57,6 @@ CConnectionManager::CConnectionManager()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// @fn CConnectionManager::Start
-/// @description Performs initialization of a connection.
-/// @pre The connection c has not been started.
-/// @post The connection c has been started.
-/// @param c A connection pointer that has not been started.
-///////////////////////////////////////////////////////////////////////////////
-void CConnectionManager::Start (CListener::ConnectionPtr c)
-{
-    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    c->Start();
-    m_inchannel = c;
-}
-
-///////////////////////////////////////////////////////////////////////////////
 /// Access the singleton instance of the connection manager
 ///////////////////////////////////////////////////////////////////////////////
 CConnectionManager& CConnectionManager::Instance()
@@ -152,20 +138,6 @@ void CConnectionManager::Stop (CConnection::ConnectionPtr c)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// @fn CConnectionManager::Stop
-/// @description Stops the listener connection
-/// @pre The connection is the listener connection.
-/// @post The connection is closed.
-/// @param c the connection pointer to stop.
-///////////////////////////////////////////////////////////////////////////////
-void CConnectionManager::Stop (CListener::ConnectionPtr c)
-{
-    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    c->Stop();
-    //TODO: Make the whole thing terminate if the listner says stop.
-}
-
-///////////////////////////////////////////////////////////////////////////////
 /// @fn CConnectionManager::StopAll
 /// @description Repeatedly pops a connection and stops it until the forward
 ///               connection map is empty, then clears the reverse map.
@@ -181,7 +153,6 @@ void CConnectionManager::StopAll ()
       Stop((*m_connections.left.begin()).second); //Side effect of stop should make this map smaller
     }
     m_connections.clear();
-    Stop(m_inchannel);
     Logger.Debug << "All Connections Closed" << std::endl;
 }
 
@@ -263,7 +234,7 @@ ConnectionPtr CConnectionManager::GetConnectionByUUID(std::string uuid)
 
     // Initiate the UDP connection
     Logger.Debug<<"Computing remote endpoint"<<std::endl;
-    boost::asio::ip::udp::resolver resolver(m_inchannel->GetIOService());
+    boost::asio::ip::udp::resolver resolver(CBroker::Instance().GetIOService());
     boost::asio::ip::udp::resolver::query query( s, port);
     boost::asio::ip::udp::resolver::iterator it;
     try
@@ -319,7 +290,7 @@ void CConnectionManager::LoadNetworkConfig()
     boost::property_tree::ptree pt;
     boost::property_tree::read_xml("network.xml",pt);
     int inreliability = pt.get("network.incoming.reliability",100);
-    m_inchannel->SetReliability(inreliability);
+    CListener::Instance().SetReliability(inreliability);
     BOOST_FOREACH(ptree::value_type & child, pt.get_child("network.outgoing"))
     {
         std::string uuid = child.second.get<std::string>("<xmlattr>.uuid");

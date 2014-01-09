@@ -63,34 +63,31 @@ CListener::CListener()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+/// Access the singleton instance of the CListener
+///////////////////////////////////////////////////////////////////////////////
+CListener& CListener::Instance()
+{
+    static CListener listener;
+    return listener;
+}
+
+///////////////////////////////////////////////////////////////////////////////
 /// @fn CListener::Start
 /// @description: Starts the receive routine which causes this socket to behave
 ///   as a listener.
 /// @pre The object is initialized.
 /// @post The connection is asynchronously waiting for messages.
+/// @param endpoint the endpoint for the listener to listen on
 ///////////////////////////////////////////////////////////////////////////////
-
-void CListener::Start()
+void CListener::Start(boost::asio::ip::udp::endpoint& endpoint)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    GetSocket().open(endpoint.protocol());
+    GetSocket().bind(endpoint);
     GetSocket().async_receive_from(boost::asio::buffer(m_buffer, CReliableConnection::MAX_PACKET_SIZE),
             m_endpoint, boost::bind(&CListener::HandleRead, this,
             boost::asio::placeholders::error,
             boost::asio::placeholders::bytes_transferred));
-}
-
-///////////////////////////////////////////////////////////////////////////////
-/// @fn CListener::Stop
-/// @description Stops the socket and cancels the timeout timer. Does not
-///   need to be called on a listening connection (ie one that has had
-///   Start() called on it.
-/// @pre Any initialized CConnection object.
-/// @post The underlying socket is closed and the message timeout timer is
-///        cancelled.
-///////////////////////////////////////////////////////////////////////////////
-void CListener::Stop()
-{
-    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -182,10 +179,6 @@ listen:
                 m_endpoint, boost::bind(&CListener::HandleRead, this,
                 boost::asio::placeholders::error,
                 boost::asio::placeholders::bytes_transferred));
-    }
-    else
-    {
-        CConnectionManager::Instance().Stop(CListener::ConnectionPtr(this));
     }
 }
 

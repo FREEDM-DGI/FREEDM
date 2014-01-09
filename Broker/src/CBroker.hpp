@@ -120,9 +120,6 @@ private:
     /// The io_service used to perform asynchronous operations.
     boost::asio::io_service m_ioService;
 
-    ///The Broker's pointer to the listening socket
-    CListener::ConnectionPtr m_newConnection;
-
     ///Schedule to Move Onto The Next Phase.
     void ChangePhase(const boost::system::error_code &err);
 

@@ -72,6 +72,7 @@ CSRConnection::CSRConnection(CConnection *  conn)
     // Message killing (SEND)
     m_sendkills = false;
     m_sendkill = 0;
+    m_dropped = 0;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -175,7 +176,14 @@ void CSRConnection::Resend(const boost::system::error_code& err)
             Logger.Debug<<"Message Expired: "<<m_window.front().GetHash()
                           <<":"<<m_window.front().GetSequenceNumber()<<std::endl;
             m_window.pop_front();
+            m_dropped++;
         }
+        if(m_dropped > MAX_DROPPED_MSGS)
+        {
+            Logger.Warn<<"Connection to "<<GetConnection()->GetUUID()<<" has lost "<<m_dropped<<" messages. Attempting to reconnect."<<std::endl;
+            GetConnection()->Stop();
+            return;
+        } 
         Logger.Trace<<__PRETTY_FUNCTION__<<" Flushed Expired"<<std::endl;
         if(m_window.size() > 0)
         {
@@ -239,6 +247,7 @@ void CSRConnection::ReceiveACK(const CMessage &msg)
             m_sendkill = fseq; 
             m_window.pop_front();
             m_sendkills = false;
+            m_dropped = 0;
         }
     }
     if(m_window.size() > 0)

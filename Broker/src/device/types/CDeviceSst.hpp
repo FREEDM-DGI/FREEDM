@@ -58,7 +58,7 @@ public:
     SignalValue GetGateway() const;
     
     /// Increases the gateway value by the specified amount.
-    void StepGateway(const SignalValue step = 1);
+    void SetGateway(const SignalValue v);
 private:
     /// Redefine the base accessor as private.
     using IDevice::Get;

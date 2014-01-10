@@ -104,21 +104,6 @@ bool CDeviceLogger::IsDgiEnabled() const
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-/// Returns the approximate time of a concurrent simulation.
-///
-/// @pre None.
-/// @post Returns the last simulation time received by the DGI.
-/// @return The simulation time if a simulation is running, nan otherwise.
-///
-/// @limitations None.
-////////////////////////////////////////////////////////////////////////////////
-SignalValue CDeviceLogger::GetSimulationTime() const
-{
-    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    return Get("simulationTime");
-}
-
-////////////////////////////////////////////////////////////////////////////////
 /// Sets the current group membership status.
 ///
 /// @pre None.

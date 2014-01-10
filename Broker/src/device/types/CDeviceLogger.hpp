@@ -61,12 +61,6 @@ public:
 
     /// Sets the group status for this peer.
     void SetGroupStatus(const SignalValue status);
-
-    /// Sets the current gateway for this peer.
-    void SetGateway(const SignalValue gateway);
-
-    /// Sets the number of devices for this peer.
-    void SetDeviceCount(const SignalValue gateway);
 private:
     /// redefine base accessor as private
     using IDevice::Get;

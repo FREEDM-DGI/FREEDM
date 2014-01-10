@@ -53,8 +53,6 @@ CDeviceLogger::CDeviceLogger(std::string device, IAdapter::Pointer adapter)
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
     m_CommandSet.insert("groupStatus");
-    m_CommandSet.insert("gateway");
-    m_CommandSet.insert("deviceCount");
     m_StateSet.insert("dgiEnable");
 }
 
@@ -117,38 +115,6 @@ void CDeviceLogger::SetGroupStatus(const SignalValue status)
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     Set("groupStatus", status);
     Logger.Info << "Set group status: " << status << std::endl;
-}
-
-////////////////////////////////////////////////////////////////////////////////
-/// Stores the most recent gateway value in the logger.
-///
-/// @pre None.
-/// @post Calls IAdapter::Set with the signal "gateway".
-/// @param gateway A copy of the most recent gateway value for this DGI.
-///
-/// @limitations None.
-////////////////////////////////////////////////////////////////////////////////
-void CDeviceLogger::SetGateway(const SignalValue gateway)
-{
-    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    Set("gateway", gateway);
-    Logger.Info << "Set gateway: " << gateway << std::endl;
-}
-
-////////////////////////////////////////////////////////////////////////////////
-/// Stores the current number of deviecs in the system.
-///
-/// @pre None.
-/// @post Calls IAdapter::Set with the signal "deviceCount".
-/// @param numdev The number of devices attached to this DGI.
-///
-/// @limitations None.
-////////////////////////////////////////////////////////////////////////////////
-void CDeviceLogger::SetDeviceCount(const SignalValue numdev)
-{
-    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    Set("deviceCount", numdev);
-    Logger.Info << "Set device count: " << numdev << std::endl;
 }
 
 } // namespace device

@@ -56,7 +56,6 @@ CDeviceLogger::CDeviceLogger(std::string device, IAdapter::Pointer adapter)
     m_CommandSet.insert("gateway");
     m_CommandSet.insert("deviceCount");
     m_StateSet.insert("dgiEnable");
-    m_StateSet.insert("simulationTime");
 }
 
 ////////////////////////////////////////////////////////////////////////////////

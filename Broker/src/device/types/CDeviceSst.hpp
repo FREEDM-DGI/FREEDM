@@ -57,8 +57,8 @@ public:
     /// Determine the gateway value of the SST.
     SignalValue GetGateway() const;
 
-    /// Increases the gateway value by the specified amount.
-    void SetGateway(const SignalValue v);
+    /// Sets the gateway value of this SST.
+    void SetGateway(const SignalValue gateway);
 private:
     /// Redefine the base accessor as private.
     using IDevice::Get;

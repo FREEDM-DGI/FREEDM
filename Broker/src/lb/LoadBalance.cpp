@@ -1169,13 +1169,13 @@ void LBAgent::Desd_PStar()
         if(LBAgent::DEMAND == m_Status)
         {
             m_PStar = (*it)->GetStorage() + P_Migrate;
-            (*it)->StepStorage(P_Migrate);
+            (*it)->SetStorage(m_PStar);
             Logger.Notice << "P* (on DESD) = " << m_PStar << std::endl;
         }
         else if(LBAgent::SUPPLY == m_Status)
         {
             m_PStar = (*it)->GetStorage() - P_Migrate;
-            (*it)->StepStorage(-P_Migrate);
+            (*it)->SetStorage(-m_PStar);
             Logger.Notice << "P* (on DESD) = " << m_PStar << std::endl;
         }
         else

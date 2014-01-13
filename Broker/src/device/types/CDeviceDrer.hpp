@@ -57,8 +57,8 @@ public:
     /// Determine the energy generation of the DRER.
     SignalValue GetGeneration() const;
 
-    /// Increases the energy generation by the specified amount.
-    void StepGeneration(const SignalValue step = 1);
+    /// Sets the amount of energy generation of this DRER.
+    void SetGeneration(const SignalValue generation);
 private:
     /// Redefine the base accessor as private.
     using IDevice::Get;

@@ -57,8 +57,8 @@ public:
     /// Determine the energy drain of this load.
     SignalValue GetLoad() const;
 
-    /// Increases the energy drain by the specified amount.
-    void StepLoad(const SignalValue step = 1);
+    /// Sets the amount of energy drain of this load.
+    void SetLoad(const SignalValue load);
 private:
     /// Redefine the base accessor as private.
     using IDevice::Get;

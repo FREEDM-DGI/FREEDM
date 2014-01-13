@@ -57,8 +57,8 @@ public:
     /// Determine the energy storage of the DESD.
     SignalValue GetStorage() const;
 
-    /// Increases the storage by the specified amount.
-    void StepStorage(const SignalValue step = 1);
+    /// Sets the amount of energy stored by this DESD.
+    void SetStorage(const SignalValue storage);
 private:
     /// Redefine the base accessor as private.
     using IDevice::Get;

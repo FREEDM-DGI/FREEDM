@@ -107,19 +107,19 @@ SignalValue CDeviceLoad::GetLoad() const
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-/// Increases the energy drain of this load by the passed amount.
+/// Sets the amount of energy drain of this load.
 ///
 /// @pre None.
 /// @post Determines the current drain with CDeviceLoad::GetLoad.
 /// @post Calls IAdapter::Set with the signal "load".
-/// @param step The amount to add to the current drain.
+/// @param load The new amount of energy drain.
 ///
 /// @limitations The energy drain increase will take some time to manifest.
 ////////////////////////////////////////////////////////////////////////////////
-void CDeviceLoad::StepLoad(const SignalValue step)
+void CDeviceLoad::SetLoad(const SignalValue load)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    Set("drain", GetLoad() + step);
+    Set("drain", load);
 }
 
 } // namespace device

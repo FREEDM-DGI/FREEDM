@@ -81,47 +81,47 @@ class IDevice
 public:
     /// Convenience type for a shared pointer to self.
     typedef boost::shared_ptr<IDevice> Pointer;
-    
+
     /// Virtual destructor for derived classes.
     virtual ~IDevice();
-    
+
     /// Virtual constructor for derived classes.
     virtual Pointer Create(const std::string identifier,
             IAdapter::Pointer adapter) const = 0;
-    
+
     /// Gets the device identifier.
     std::string GetID() const;
-    
+
     /// Gets the value of some device signal.
     SignalValue Get(const std::string signal) const;
-    
+
     /// Sets the value of some device signal.
     void Set(const std::string signal, const SignalValue value);
-    
+
     /// Gets the set of recognized state signals.
     std::set<std::string> GetStateSet() const;
-    
+
     /// Gets the set of recognized command signals.
     std::set<std::string> GetCommandSet() const;
-    
+
     /// Checks if the device recognizes a state signal.
     bool HasStateSignal(const std::string signal) const;
-    
+
     /// Checks if the device recognizes a command signal.
     bool HasCommandSignal(const std::string signal) const;
 protected:
     /// Constructor for derived classes.
     IDevice(const std::string identifier, IAdapter::Pointer adapter);
-    
+
     /// Unique device identifier.
     std::string m_identifier;
-    
+
     /// Adapter that implements the get and set functions.
     IAdapter::Pointer m_adapter;
-    
+
     /// Set of state signals.
     std::set<std::string> m_StateSet;
-    
+
     /// Set of command signals.
     std::set<std::string> m_CommandSet;
 };

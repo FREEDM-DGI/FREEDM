@@ -54,7 +54,7 @@ CDeviceSst::CDeviceSst(const std::string identifier, IAdapter::Pointer adapter)
     : IDevice(identifier, adapter)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    
+
     m_StateSet.insert("gateway");
     m_CommandSet.insert("gateway");
 }

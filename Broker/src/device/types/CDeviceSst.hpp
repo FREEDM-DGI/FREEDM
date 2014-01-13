@@ -43,26 +43,26 @@ class CDeviceSst
 public:
     /// Convenience type for a shared pointer to self.
     typedef boost::shared_ptr<CDeviceSst> Pointer;
-    
+
     /// Constructor which takes an identifier and device adapter.
     CDeviceSst(const std::string identifier, IAdapter::Pointer adapter);
-    
+
     /// Virtual destructor for derived classes.
     virtual ~CDeviceSst();
-    
+
     /// Virtual constructor for another device of the same type.
     IDevice::Pointer Create(const std::string identifier,
             IAdapter::Pointer adapter) const;
-    
+
     /// Determine the gateway value of the SST.
     SignalValue GetGateway() const;
-    
+
     /// Increases the gateway value by the specified amount.
     void SetGateway(const SignalValue v);
 private:
     /// Redefine the base accessor as private.
     using IDevice::Get;
-    
+
     /// Redefine the base mutator as private.
     using IDevice::Set;
 };

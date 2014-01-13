@@ -2,13 +2,7 @@ cmake_minimum_required(VERSION 2.6)
 
 project(Broker)
 
-# Support build versioning for development builds
-list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/CMakeModules/")
-include(GetGitRevisionDescription)
-get_git_head_revision(GIT_REFSPEC GIT_SHA1)
-
-# ${GIT_SHA1} for development builds. Set to an appropriate string for releases.
-set(BROKER_VERSION ${GIT_SHA1})
+set(BROKER_VERSION 1.5.0)
 
 # Options go here; be sure to edit config.hpp.cmake if they're needed for build
 option(CUSTOMNETWORK "for network.xml support" OFF)

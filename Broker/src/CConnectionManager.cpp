@@ -264,11 +264,9 @@ ConnectionPtr CConnectionManager::GetConnectionByUUID(std::string uuid_)
     }
     catch (boost::system::system_error& e)
     {
-        std::stringstream ss;
-        ss<<"Error connecting to host "<<s_<<":"<<port<<": "<< e.what();
+        Logger.Warn<<"Error connecting to host "<<s_<<":"<<port<<": "<< e.what()<<std::endl;
         PutConnection(uuid_,c_);
         return c_;
-        //throw EConnectionError(ss.str());
     }
     // *it is safe only if we get here
     Logger.Info<<"Resolved: "<<static_cast<boost::asio::ip::udp::endpoint>(*it)<<std::endl;

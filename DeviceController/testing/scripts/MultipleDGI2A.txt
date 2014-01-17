@@ -1,0 +1,4 @@
+# Negative Normal Value
+enable Sst SST1 gateway -15.0
+work forever
+

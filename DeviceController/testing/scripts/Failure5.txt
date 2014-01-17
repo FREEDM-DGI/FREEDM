@@ -1,0 +1,4 @@
+# Wi-Fi drops before sending states
+sendtofactory packets/ValidHello.txt
+# Kill Wi-Fi now
+sleep 10

@@ -1,0 +1,3 @@
+# The DGI adapter receives a packet containing nonsense data
+enable Sst SST1 gateway 5.0
+sendtoadapter packets/Golbat.txt

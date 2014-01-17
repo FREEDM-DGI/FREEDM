@@ -13,6 +13,10 @@
 ///     IDevice::GetID
 ///     IDevice::Get
 ///     IDevice::Set
+///     IDevice::GetStateSet
+///     IDevice::GetCommandSet
+///     IDevice::HasStateSignal
+///     IDevice::HasCommandSignal
 ///
 /// These source code files were created at Missouri University of Science and
 /// Technology, and are intended for use in teaching or research. They may be
@@ -30,6 +34,8 @@
 #include "IDevice.hpp"
 #include "CLogger.hpp"
 
+#include <stdexcept>
+
 namespace freedm {
 namespace broker {
 namespace device {
@@ -40,17 +46,17 @@ CLocalLogger Logger(__FILE__);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-/// Called by subclass constructors to initialize the device.
+/// Constructor for derived classes.
 ///
-/// @pre none
-/// @post Base of the device created and initialized.
-/// @param device The unique device identifier for the device.
+/// @pre None.
+/// @post Constructs the base device class.
+/// @param identifier The unique identifier for the device.
 /// @param adapter The implementation scheme of the device.
 ///
 /// @limitations None.
 ////////////////////////////////////////////////////////////////////////////////
-IDevice::IDevice(const std::string device, IAdapter::Pointer adapter)
-    : m_identifier(device)
+IDevice::IDevice(const std::string identifier, IAdapter::Pointer adapter)
+    : m_identifier(identifier)
     , m_adapter(adapter)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
@@ -60,7 +66,7 @@ IDevice::IDevice(const std::string device, IAdapter::Pointer adapter)
 /// Virtual destructor for derived classes.
 ///
 /// @pre None.
-/// @post Base of the device destroyed.
+/// @post Destroys the base device class.
 ///
 /// @limitations None.
 ////////////////////////////////////////////////////////////////////////////////
@@ -70,11 +76,11 @@ IDevice::~IDevice()
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-/// Accessor for the unique device identifier.
+/// Accessor for the device identifier.
 ///
 /// @pre None.
-/// @post Returns the value of m_identifier.
-/// @return The unique identifier for this device.
+/// @post Returns m_identifier.
+/// @return The unique device identifier.
 ///
 /// @limitations None.
 ////////////////////////////////////////////////////////////////////////////////
@@ -85,35 +91,123 @@ std::string IDevice::GetID() const
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-/// Gets a device signal's value from the internal adapter.
+/// Gets the value of a device signal from the adapter.
 ///
-/// @pre m_adapter must recognize the passed signal.
-/// @post m_adapter is queried for the value of the signal.
-/// @param signal The signal of the device to retrieve.
-/// @return Current value of the specified signal.
+/// @ErrorHandling Throws a std::runtime_error if IDevice::HasStateSignal
+/// returns false for the passed signal.
+/// @pre m_adapter must recognized the passed signal.
+/// @post m_adapter is queried for the value of the passed signal.
+/// @param signal The signal to retrieve from m_adapter.
+/// @return The current value of the specified signal.
 ///
-/// @limitations None.
+/// @limitations This function can fail even if IDevice::HasStateSignal returns
+/// true for the passed signal.  The adapter, not the device, must recognize
+/// the given state signal.
 ////////////////////////////////////////////////////////////////////////////////
 SignalValue IDevice::Get(const std::string signal) const
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    return m_adapter->Get(m_identifier, signal);
+
+    if( !HasStateSignal(signal) )
+    {
+        throw std::runtime_error("The device, " + m_identifier
+                + ", does not recognize the state signal: " + signal);
+    }
+
+    SignalValue value = m_adapter->Get(m_identifier, signal);
+
+    Logger.Debug << m_identifier << " " << signal << ": " << value << std::endl;
+
+    return value;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-/// Sets a device signal's value in the internal adapter.
+/// Sets the value of a device signal in the adapter.
 ///
-/// @pre m_adapter must recognize the passed signal.
-/// @post m_adapter is queried to set the signal to the passed value.
-/// @param signal The signal of the device to update.
+/// @ErrorHandling Throws a std::runtime_error if IDevice::HasCommandSignal
+/// returns false for the passed signal.
+/// @pre m_adapter must recognized the passed signal.
+/// @post m_adapter is queried to set the value of the passed signal.
+/// @param signal The signal to update in m_adapter.
 /// @param value The value to set for the signal.
 ///
-/// @limitations None.
+/// @limitations This function can fail even if IDevice::HasCommandSignal
+/// returns true for the passed signal.  The adapter, not the device, must
+/// recognize the given command signal.
 ////////////////////////////////////////////////////////////////////////////////
 void IDevice::Set(const std::string signal, const SignalValue value)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+
+    if( !HasCommandSignal(signal) )
+    {
+        throw std::runtime_error("The device, " + m_identifier
+                + ", does not recognize the command signal: " + signal);
+    }
+
     m_adapter->Set(m_identifier, signal, value);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/// Accessor for the set of state signals.
+///
+/// @pre None.
+/// @post Returns m_StateSet.
+/// @return The set of state signals.
+///
+/// @limitations None.
+////////////////////////////////////////////////////////////////////////////////
+std::set<std::string> IDevice::GetStateSet() const
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    return m_StateSet;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/// Accessor for the set of command signals.
+///
+/// @pre None.
+/// @post Returns m_CommandSet.
+/// @return The set of command signals.
+///
+/// @limitations None.
+////////////////////////////////////////////////////////////////////////////////
+std::set<std::string> IDevice::GetCommandSet() const
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    return m_CommandSet;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/// Checks if the device recognizes a string as a state signal.
+///
+/// @pre None.
+/// @post Searches m_StateSet for the passed signal.
+/// @param signal The string identifier of the state signal.
+/// @return True if m_StateSet contains signal.
+///
+/// @limitations None.
+////////////////////////////////////////////////////////////////////////////////
+bool IDevice::HasStateSignal(const std::string signal) const
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    return m_StateSet.count(signal) > 0;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/// Checks if the device recognizes a string as a command signal.
+///
+/// @pre None.
+/// @post Searches m_CommandSet for the passed signal.
+/// @param signal The string identifier of the command signal.
+/// @return True if m_CommandSet contains signal.
+///
+/// @limitations None.
+////////////////////////////////////////////////////////////////////////////////
+bool IDevice::HasCommandSignal(const std::string signal) const
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    return m_CommandSet.count(signal) > 0;
 }
 
 } // namespace device

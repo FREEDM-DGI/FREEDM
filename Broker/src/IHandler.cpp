@@ -57,7 +57,7 @@ void IReadHandler::RegisterSubhandle(std::string key, SubhandleFunctor f)
 /// IReadHandler::HandleRead
 /// @description Does some processing on the message before sending to the
 /// functor
-/// @param msg The CMessage Recieved.
+/// @param msg The CMessage Received.
 ///////////////////////////////////////////////////////////////////////////////
 void IReadHandler::HandleRead(MessagePtr msg)
 {
@@ -82,7 +82,7 @@ void IReadHandler::HandleRead(MessagePtr msg)
     }
     if(msg->GetHandler() == "")
     {
-        throw std::runtime_error("Message didn't specify a handler");
+        throw EUnhandledMessage("Message didn't specify a handler");
     }
     //Try to find the key in the map, unless its type is any:
     BOOST_FOREACH(SubhandleContainer::value_type f, m_handlers)

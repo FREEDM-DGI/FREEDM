@@ -66,19 +66,6 @@ CClockSynchronizer::CClockSynchronizer(CBroker &broker)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// CClockSynchronizer::~CClockSynchronizer
-/// @description Destructs the synchronizer object
-/// @limitations none
-/// @pre None
-/// @post Everything is stopped
-///////////////////////////////////////////////////////////////////////////////
-CClockSynchronizer::~CClockSynchronizer()
-{
-    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    //empty
-}
-
-///////////////////////////////////////////////////////////////////////////////
 /// CClockSynchronizer::Run()
 /// @description Starts the timer that handles most of the processing
 /// @limitations none
@@ -203,7 +190,14 @@ void CClockSynchronizer::HandleExchangeResponse(MessagePtr msg, PeerNodePtr peer
         }
     }
     double lag = (TDToDouble(sumlag))/rlist.size();
-    Logger.Warn<<"Computed lag ("<<sender<<"): "<<lag<<std::endl;
+    if(lag < 0.015)
+    {
+        Logger.Notice<<"Computed lag ("<<sender<<"): "<<lag<<std::endl;
+    }
+    else
+    {
+        Logger.Warn<<"Computed lag ("<<sender<<"): "<<lag<<std::endl;
+    }
     double dxbar = TDToDouble(sumx)/rlist.size();
     double dybar = TDToDouble(sumy)/rlist.size();
     boost::posix_time::time_duration xbar = DoubleToTD(dxbar);
@@ -326,7 +320,7 @@ void CClockSynchronizer::Exchange(const boost::system::error_code& err)
         tmp3 /= tmp2;
         m_myoffset = DoubleToTD(tmp1);
         Logger.Notice<<"Adjusting Skew to "<<m_myoffset<<std::endl;
-        CGlobalConfiguration::instance().SetClockSkew(m_myoffset);
+        CGlobalConfiguration::Instance().SetClockSkew(m_myoffset);
         m_myskew = tmp3;
     }
     //Now we adjust the CRAP out of our offset and skew table.
@@ -409,7 +403,7 @@ boost::posix_time::ptime CClockSynchronizer::GetSynchronizedTime()
 { 
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     boost::posix_time::ptime now = boost::posix_time::microsec_clock::universal_time();
-    return now + CGlobalConfiguration::instance().GetClockSkew();
+    return now + CGlobalConfiguration::Instance().GetClockSkew();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

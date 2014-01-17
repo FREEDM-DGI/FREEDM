@@ -21,7 +21,9 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 #include "CLogger.hpp"
-#include "device/CFakeAdapter.hpp"
+#include "CFakeAdapter.hpp"
+
+#include <boost/thread.hpp>
 
 namespace freedm {
 namespace broker {
@@ -35,6 +37,12 @@ CLocalLogger Logger(__FILE__);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+/// Constructor
+////////////////////////////////////////////////////////////////////////////////
+CFakeAdapter::CFakeAdapter()
+    : m_stopped(false) { }
+   
+////////////////////////////////////////////////////////////////////////////////
 /// Creates a new fake device adapter adapter.
 ///
 /// @return a smart pointer to the new device adapter.
@@ -42,16 +50,35 @@ CLocalLogger Logger(__FILE__);
 CFakeAdapter::Pointer CFakeAdapter::Create()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    return Pointer(new CFakeAdapter);
+    return Pointer(new CFakeAdapter());
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-/// Starts the fake adapter. Actually does nothing.
+/// Starts the fake adapter.  Reveals the adapter's devices to the device
+/// manager.
+///
+/// @pre adapter is stopped
+/// @post adapter is started
 ////////////////////////////////////////////////////////////////////////////////
 void CFakeAdapter::Start()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    return /*nothing*/;
+    RevealDevices();
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/// Stops the fake adapter.  (Makes sets fail.)  Thread-safe.
+///
+/// @pre adapter is started
+/// @post adapter is stopped
+////////////////////////////////////////////////////////////////////////////////
+void CFakeAdapter::Stop()
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+
+    m_stopMutex.lock();
+    m_stopped = true;
+    m_stopMutex.unlock();
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -90,7 +117,8 @@ SignalValue CFakeAdapter::Get(const std::string device,
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-/// Sets the value of a device's setting.
+/// Sets the value of a device's setting.  The set occurs immediately.  If the
+/// adapter has been stopped, nothing happens.
 ///
 /// @param device the unique identifier of the target device.
 /// @param key the desired setting on the target device.
@@ -100,7 +128,12 @@ void CFakeAdapter::Set(const std::string device, const std::string key,
                        const SignalValue value)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    m_registry[device][key] = value;
+
+    boost::lock_guard<boost::mutex> lock(m_stopMutex);
+    if (!m_stopped)
+    {
+        m_registry[device][key] = value;
+    }
 }
 
 } // namespace device

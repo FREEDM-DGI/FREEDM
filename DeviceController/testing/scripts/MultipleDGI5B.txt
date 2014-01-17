@@ -1,0 +1,7 @@
+# Device Removed during Convergence
+enable Sst SST1 gateway 9000.1
+enable Sst SST2 gateway 250.0
+work 10
+disable SST1
+work forever
+

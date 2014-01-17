@@ -51,9 +51,9 @@ CLocalLogger Logger(__FILE__);
 CConnectionManager::CConnectionManager()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    m_uuid = CGlobalConfiguration::instance().GetUUID();
-    m_hostname.hostname = CGlobalConfiguration::instance().GetHostname();
-    m_hostname.port = CGlobalConfiguration::instance().GetListenPort();
+    m_uuid = CGlobalConfiguration::Instance().GetUUID();
+    m_hostname.hostname = CGlobalConfiguration::Instance().GetHostname();
+    m_hostname.port = CGlobalConfiguration::Instance().GetListenPort();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -250,7 +250,7 @@ ConnectionPtr CConnectionManager::GetConnectionByUUID(std::string uuid_)
 
     // Create a new CConnection object for this host	
     Logger.Debug<<"Constructing CConnection"<<std::endl;
-    ConnectionPtr c_(new CConnection(m_inchannel->GetIOService(), *this, m_inchannel->GetBroker(), uuid_));  
+    ConnectionPtr c_(new CConnection(m_inchannel->GetIOService(), *this, m_inchannel->GetBroker(), uuid_));
    
     // Initiate the UDP connection
     Logger.Debug<<"Computing remote endpoint"<<std::endl;
@@ -264,9 +264,9 @@ ConnectionPtr CConnectionManager::GetConnectionByUUID(std::string uuid_)
     }
     catch (boost::system::system_error& e)
     {
-        std::stringstream ss;
-        ss<<"Error connecting to host "<<s_<<":"<<port<<": "<< e.what();
-        throw std::runtime_error(ss.str());
+        Logger.Warn<<"Error connecting to host "<<s_<<":"<<port<<": "<< e.what()<<std::endl;
+        PutConnection(uuid_,c_);
+        return c_;
     }
     // *it is safe only if we get here
     Logger.Info<<"Resolved: "<<static_cast<boost::asio::ip::udp::endpoint>(*it)<<std::endl;

@@ -1,0 +1,7 @@
+# Stress Test
+enable Load TOASTER drain 42.0
+enable Drer SOLAR generation 15.0
+work 10
+change SOLAR generation 25.0
+work forever
+

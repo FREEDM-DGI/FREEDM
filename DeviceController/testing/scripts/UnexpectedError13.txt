@@ -1,0 +1,3 @@
+# The DGI adapter receives a packet containing a series of commands with the wrong delimiters
+enable Sst SST1 gateway 5.0
+sendtoadapter packets/Adapter-WrongDelimiter-Sequence.txt

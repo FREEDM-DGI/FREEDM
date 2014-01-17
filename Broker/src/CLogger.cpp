@@ -25,6 +25,8 @@
 #include "CGlobalConfiguration.hpp"
 
 #include <boost/program_options/options_description.hpp>
+#include <boost/thread/locks.hpp>
+#include <boost/thread/mutex.hpp>
 
 using namespace boost::posix_time;
 
@@ -36,6 +38,9 @@ namespace {
 
 /// This file's logger.
 CLocalLogger Logger(__FILE__);
+
+/// Only one logger can write at a time.
+boost::mutex mutex;
 
 }
 
@@ -58,10 +63,10 @@ std::streamsize CLog::write(const char* const s, std::streamsize n)
 {
     if (GetOutputLevel() >= m_level)
     {
-        *m_ostream << microsec_clock::local_time() + CGlobalConfiguration::instance().GetClockSkew() << " : "
+        boost::lock_guard<boost::mutex> lock(mutex);
+        *m_ostream << microsec_clock::local_time() + CGlobalConfiguration::Instance().GetClockSkew() << " : "
                 << m_name << "(" << m_level << "):\n\t";
         boost::iostreams::write(*m_ostream, s, n);
-        //*m_ostream << std::endl;
     }
     return n;
 }
@@ -135,7 +140,7 @@ unsigned int CGlobalLogger::GetOutputLevel(const std::string logger) const
     OutputMap::const_iterator it = m_loggers.find(logger);
     if (it == m_loggers.end())
     {
-        throw std::string(
+        throw std::runtime_error(
                 "Requested output level of unregistered logger " + logger);
     }
     return m_loggers.find(logger)->second;
@@ -168,7 +173,15 @@ void CGlobalLogger::SetInitialLoggerLevels(const std::string loggerCfgFile)
     else
     {
         // Process the config
-        po::store(parse_config_file(ifs, loggerOpts), vm);
+        try
+        {
+            po::store(parse_config_file(ifs, loggerOpts), vm);
+        }
+        catch( po::unknown_option & e)
+        {
+            throw std::runtime_error( "Invalid logger name '" 
+                    + e.get_option_name() + "' in " + loggerCfgFile );
+        }
         po::notify(vm);
         Logger.Info << "Logger config file " << loggerCfgFile <<
                 " successfully loaded." << std::endl;

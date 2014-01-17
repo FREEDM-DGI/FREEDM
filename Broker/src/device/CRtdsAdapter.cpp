@@ -35,17 +35,20 @@
 #include "CRtdsAdapter.hpp"
 #include "CLogger.hpp"
 #include "CTimings.hpp"
+#include "SynchronousTimeout.hpp"
 
 #include <sys/param.h>
 
+#include <cmath>
 #include <vector>
 #include <cstring>
+#include <csignal>
 #include <stdexcept>
 #include <algorithm>
 
 #include <boost/asio.hpp>
-#include <boost/thread/mutex.hpp>
-#include <boost/thread/locks.hpp>
+#include <boost/thread.hpp>
+#include <boost/foreach.hpp>
 #include <boost/static_assert.hpp>
 #include <boost/property_tree/ptree.hpp>
 
@@ -120,7 +123,10 @@ void CRtdsAdapter::Start()
     
     IBufferAdapter::Start();
     ITcpAdapter::Connect();
-    Run();
+    m_runTimer.expires_from_now(
+            boost::posix_time::milliseconds(CTimings::DEV_RTDS_DELAY));
+    m_runTimer.async_wait(boost::bind(&CRtdsAdapter::Run, shared_from_this(),
+            boost::asio::placeholders::error));
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -146,10 +152,24 @@ void CRtdsAdapter::Start()
 ///
 /// @limitations This function uses synchronous communication.
 ////////////////////////////////////////////////////////////////////////////////
-void CRtdsAdapter::Run()
+void CRtdsAdapter::Run(const boost::system::error_code & e)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    
+
+    if( e )
+    {
+        if (e == boost::asio::error::operation_aborted)
+        {
+            return;
+        }
+        else
+        {
+            Logger.Fatal << "Run called with error: " << e.message()
+                    << std::endl;
+            throw boost::system::system_error(e);
+        }
+    }
+
     // Always send data to FPGA first
     if( !m_txBuffer.empty() )
     {
@@ -160,13 +180,14 @@ void CRtdsAdapter::Run()
         try
         {
             Logger.Debug << "Blocking for a socket write call." << std::endl;
-            boost::asio::write(m_socket, boost::asio::buffer(m_txBuffer, 
-                    m_txBuffer.size() * sizeof(SignalValue)));
+            TimedWrite(m_socket, boost::asio::buffer(m_txBuffer, 
+                    m_txBuffer.size() * sizeof(SignalValue)),
+                    CTimings::DEV_SOCKET_TIMEOUT);
         }
-        catch(std::exception & e)
+        catch(boost::system::system_error & e)
         {
-            throw std::runtime_error("Send to FPGA failed: "
-                    + std::string(e.what()));
+            Logger.Fatal << "Send to FPGA failed: " << e.what();
+            throw;
         }
         EndianSwapIfNeeded(m_txBuffer);
         
@@ -183,37 +204,69 @@ void CRtdsAdapter::Run()
         try
         {
             Logger.Debug << "Blocking for a socket read call." << std::endl;
-            boost::asio::read(m_socket, boost::asio::buffer(m_rxBuffer,
-                    m_rxBuffer.size() * sizeof(SignalValue)));
+            TimedRead(m_socket, boost::asio::buffer(m_rxBuffer,
+                    m_rxBuffer.size() * sizeof(SignalValue)),
+                    CTimings::DEV_SOCKET_TIMEOUT);
         }
-        catch (std::exception & e)
+        catch (boost::system::system_error & e)
         {
-            throw std::runtime_error("Receive from FPGA failed: " 
-                    + std::string(e.what()));
+            Logger.Fatal << "Receive from FPGA failed: " << e.what();
+            throw;
         }
         EndianSwapIfNeeded(m_rxBuffer);
+
+        if( m_buffer_initialized == false )
+        {
+            m_buffer_initialized = true;
+
+            for( unsigned int i = 0; i < m_rxBuffer.size(); i++ )
+            {
+                if( m_rxBuffer[i] == NULL_COMMAND )
+                {
+                    m_buffer_initialized = false;
+                }
+            }
+            if( m_buffer_initialized )
+            {
+                RevealDevices();
+            }
+        }
         
         Logger.Debug << "Releasing the rxBuffer mutex." << std::endl;
     }
 
     // Start the timer; on timeout, this function is called again
     m_runTimer.expires_from_now(
-            boost::posix_time::milliseconds(CTimings::RTDS_RUN_DELAY));
-    m_runTimer.async_wait(boost::bind(&CRtdsAdapter::Run, this));
+    boost::posix_time::milliseconds(CTimings::DEV_RTDS_DELAY));
+    m_runTimer.async_wait(boost::bind(&CRtdsAdapter::Run, shared_from_this(),
+            boost::asio::placeholders::error));
 }
 
 ////////////////////////////////////////////////////////////////////////////
-/// Closes the socket connection to the FPGA.
+/// Stops the adapter. Thread-safe.
 ///
 /// @pre None.
-/// @post Closes m_socket.
+/// @post Adapter is stopped and can be freed
 ///
 /// @limitations None.
 ////////////////////////////////////////////////////////////////////////////
-void CRtdsAdapter::Quit()
+void CRtdsAdapter::Stop()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    m_socket.close();
+
+    try
+    {
+        m_runTimer.cancel();
+    }
+    catch( boost::system::system_error& e)
+    {
+        Logger.Error << "Error cancelling timer: " << e.what() << std::endl;
+    }
+
+    if( m_socket.is_open() )
+    {
+        m_socket.close();
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////
@@ -227,12 +280,6 @@ void CRtdsAdapter::Quit()
 CRtdsAdapter::~CRtdsAdapter()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    
-    if( m_socket.is_open() )
-    {
-        Quit();
-    }
-
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -272,7 +319,7 @@ void CRtdsAdapter::ReverseBytes( char * buffer, const int numBytes )
 void CRtdsAdapter::EndianSwapIfNeeded(std::vector<SignalValue> & v)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    
+
 // check endianess at compile time.  Middle-Endian not allowed
 // The parameters __BYTE_ORDER, __LITTLE_ENDIAN, __BIG_ENDIAN should
 // automatically be defined and determined in sys/param.h, which exists

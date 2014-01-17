@@ -25,6 +25,7 @@
 #include "CTableManager.hpp"
 
 #include <set>
+#include <cmath>
 #include <string>
 #include <stdexcept>
 
@@ -165,7 +166,7 @@ void CAdapter::ReadDetails( const boost::property_tree::ptree & tree,
         
         if( value )
         {
-            if( currentValue != TSignalValue() && currentValue != value.get() )
+            if( currentValue != NULL_COMMAND && currentValue != value.get() )
             {
                 Logger.Warn << "The initial value for " << devsig << " is set"
                             << " more than once to different values in the"

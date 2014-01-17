@@ -1,0 +1,4 @@
+# One DGI without Devices
+enable Sst SST1 gateway 10.0
+work forever
+

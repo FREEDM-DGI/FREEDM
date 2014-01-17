@@ -51,6 +51,9 @@ CDeviceLogger::CDeviceLogger(std::string device, IAdapter::Pointer adapter)
     : IDevice(device, adapter)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+
+    m_CommandSet.insert("groupStatus");
+    m_StateSet.insert("dgiEnable");
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -64,6 +67,38 @@ CDeviceLogger::CDeviceLogger(std::string device, IAdapter::Pointer adapter)
 CDeviceLogger::~CDeviceLogger()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/// Constructs another CDeviceLogger.
+///
+/// @pre None.
+/// @post Constructs a new device.
+/// @param identifier The unique identifier for the device.
+/// @param adapter The adapter that implements operations for the device.
+/// @return shared pointer to the new device.
+///
+/// @limitations None.
+////////////////////////////////////////////////////////////////////////////////
+IDevice::Pointer CDeviceLogger::Create(const std::string identifier,
+        IAdapter::Pointer adapter) const
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    return IDevice::Pointer(new CDeviceLogger(identifier, adapter));
+}
+///////////////////////////////////////////////////////////////////////////////
+/// Checks if the RTDS simulation is receiving DGI commands.
+///
+/// @pre None.
+/// @post Returns whether the simulation will respond to a command.
+/// @return True if the simulation is using DGI commands.
+///
+/// @limitations None.
+////////////////////////////////////////////////////////////////////////////////
+bool CDeviceLogger::IsDgiEnabled() const
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    return Get("dgiEnable") == 1;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

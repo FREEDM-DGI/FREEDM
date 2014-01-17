@@ -1,0 +1,4 @@
+# Different Devices
+enable Sst SST1 gateway 5.0
+work forever
+

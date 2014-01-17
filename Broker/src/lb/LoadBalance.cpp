@@ -73,7 +73,7 @@ namespace broker {
 
 namespace lb {
 
-const int P_Migrate = 1;
+const float P_Migrate = 1;
 
 namespace {
 
@@ -116,16 +116,7 @@ LBAgent::LBAgent(std::string uuid_, CBroker &broker):
     RegisterSubhandle("lb.ComputedNormal",boost::bind(&LBAgent::HandleComputedNormal, this, _1, _2));
     RegisterSubhandle("any",boost::bind(&LBAgent::HandleAny, this, _1, _2));
     m_sstExists = false;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-/// ~LBAgent
-/// @description: Class desctructor
-/// @pre: None
-/// @post: The object is ready to be destroyed.
-///////////////////////////////////////////////////////////////////////////////
-LBAgent::~LBAgent()
-{
+    m_actuallyread = true;
 }
 
 ////////////////////////////////////////////////////////////
@@ -285,14 +276,51 @@ void LBAgent::CollectState()
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     CMessage m_cs;
     m_cs.SetHandler("sc.request");
-    m_cs.m_submessages.put("sc.deviceType", "Sst");
-    m_cs.m_submessages.put("sc.valueType", "gateway");
     m_cs.m_submessages.put("sc.source", GetUUID());
     m_cs.m_submessages.put("sc.module", "lb");
+
+/*
+    //for only one device
+    m_cs.m_submessages.put("sc.deviceType", "Sst");
+    m_cs.m_submessages.put("sc.valueType", "gateway");
+*/
+
+    //for multiple devices
+    m_cs.m_submessages.put("sc.deviceNum", 4);
+    //SST device
+    ptree subPtree1;
+    subPtree1.add("deviceType", "Sst");
+    subPtree1.add("valueType", "gateway");
+    m_cs.m_submessages.add_child("sc.devices.device", subPtree1);
+
+    //DRER device
+    ptree subPtree2;
+    subPtree2.add("deviceType", "Drer");
+    subPtree2.add("valueType", "generation");
+    m_cs.m_submessages.add_child("sc.devices.device", subPtree2);
+
+    //LOAD device
+    ptree subPtree3;
+    subPtree3.add("deviceType", "Load");
+    subPtree3.add("valueType", "drain");
+    m_cs.m_submessages.add_child("sc.devices.device", subPtree3);
+    
+    //FID device
+    ptree subPtree4;
+    subPtree4.add("deviceType", "Fid");
+    subPtree4.add("valueType", "state");
+    m_cs.m_submessages.add_child("sc.devices.device", subPtree4);
+
+    //DESD device
+    ptree subPtree5;
+    subPtree5.add("deviceType", "Desd");
+    subPtree5.add("valueType", "storage");
+    m_cs.m_submessages.add_child("sc.devices.device", subPtree5);
+	
     try
     {
        GetPeer(GetUUID())->Send(m_cs);
-       Logger.Status << "LB module requested State Collection" << std::endl;
+       Logger.Notice << "LB module requested State Collection" << std::endl;
     }
     catch (boost::system::system_error& e)
     {
@@ -322,6 +350,7 @@ void LBAgent::LoadManage()
     if (m_broker.TimeRemaining() >
         boost::posix_time::milliseconds(2*CTimings::LB_GLOBAL_TIMER))
     {
+        m_actuallyread = false;
         m_broker.Schedule(m_GlobalTimer,
                           boost::posix_time::milliseconds(
                               CTimings::LB_GLOBAL_TIMER),
@@ -342,12 +371,17 @@ void LBAgent::LoadManage()
                                       boost::asio::placeholders::error));
         Logger.Info << "Won't run over phase, scheduling another LoadManage in "
                     << "next round" << std::endl;
+        m_actuallyread = true;
     }
 
     //Remember previous load before computing current load
     m_prevStatus = m_Status;
     //Call LoadTable to update load state of the system as observed by this node
     LoadTable();
+
+    using namespace device;
+    std::multiset<CDeviceLogger::Pointer> logger;
+    logger = CDeviceManager::Instance().GetDevicesOfType<CDeviceLogger>();
 
     //Send Demand message when the current state is Demand
     //NOTE: (changing the original architecture in which Demand broadcast is done
@@ -366,8 +400,24 @@ void LBAgent::LoadManage()
     // If you are in Supply state
     else if (LBAgent::SUPPLY == m_Status)
     {
-        //initiate draft request
-        SendDraftRequest();
+        if( logger.empty() || (*logger.begin())->IsDgiEnabled() == true )
+        {
+            //initiate draft request
+            SendDraftRequest();
+        }
+    }
+
+    if( !logger.empty() && (*logger.begin())->IsDgiEnabled() == false )
+    {
+        typedef device::CDeviceSst SST;
+        std::multiset<SST::Pointer> SSTContainer;
+        std::multiset<SST::Pointer>::iterator it, end;
+        SSTContainer = device::CDeviceManager::Instance().GetDevicesOfType<SST>();
+
+        for( it = SSTContainer.begin(), end = SSTContainer.end(); it != end; it++ )
+        {
+            (*it)->SetGateway(m_NetGateway);
+        }
     }
 }//end LoadManage
 
@@ -384,7 +434,7 @@ void LBAgent::LoadManage( const boost::system::error_code& err )
 
     if(!err)
     {
-        LoadManage();
+        m_broker.Schedule("lb", boost::bind(&LBAgent::LoadManage, this), true);
     }
     else if(boost::asio::error::operation_aborted == err )
     {
@@ -433,18 +483,21 @@ void LBAgent::LoadTable()
     m_Storage = CDeviceManager::Instance().GetNetValue<DESD>(&DESD::GetStorage);
     m_Load = CDeviceManager::Instance().GetNetValue<LOAD>(&LOAD::GetLoad);
     m_SstGateway = CDeviceManager::Instance().GetNetValue<SST>(&SST::GetGateway);
-
-    if (numSSTs >= 1)
+    
+    if(m_actuallyread)
     {
-        m_sstExists = true;
-        // FIXME should consider other devices
-        m_NetGateway = m_SstGateway;
-    }
-    else
-    {
-        m_sstExists = false;
-        // FIXME should consider Gateway
-        m_NetGateway = m_Load - m_Gen - m_Storage;
+        if (numSSTs >= 1)
+        {
+            m_sstExists = true;
+            // FIXME should consider other devices
+            m_NetGateway = m_SstGateway;
+        }
+        else
+        {
+            m_sstExists = false;
+            // FIXME should consider Gateway
+            m_NetGateway = m_Load - m_Gen - m_Storage;
+        }
     }
 
     // used to ensure three digits before the decimal, two after
@@ -473,6 +526,8 @@ void LBAgent::LoadTable()
             << std::setfill('0') << std::setw(2) << numSSTs << "): " 
             << extraSstSpace << std::setfill(' ') << std::setw(sstGateWidth)
             << m_SstGateway << " |" << std::endl;
+    ss << "\t| " << "Net Gateway : " << m_NetGateway << std::endl;
+
 //
 // We will hide Overall Gateway for the time being as it is useless until
 // we properly support multiple device LBs.
@@ -489,12 +544,14 @@ void LBAgent::LoadTable()
     ss << "\t| " << std::setw(20) << "----" << std::setw(27) << "-----"
             << std::setw(7) << "|" << std::endl;
 
+    bool isActive = (m_sstExists || numDESDs > 0);
+
     //Compute the Load state based on the current gateway value and Normal
-    if(m_NetGateway < m_Normal - NORMAL_TOLERANCE)
+    if(isActive && m_NetGateway < m_Normal - NORMAL_TOLERANCE)
     {
         m_Status = LBAgent::SUPPLY;
     }
-    else if(m_NetGateway > m_Normal + NORMAL_TOLERANCE)
+    else if(isActive && m_NetGateway > m_Normal + NORMAL_TOLERANCE)
     {
         m_Status = LBAgent::DEMAND;
         m_DemandVal = m_SstGateway-m_Normal;
@@ -598,7 +655,6 @@ void LBAgent::SendDraftRequest()
     }//end if
 }//end SendDraftRequest
 
-#pragma GCC diagnostic ignored "-Wunused-parameter"
 ////////////////////////////////////////////////////////////
 /// HandleRead
 /// @description: Handles the incoming messages meant for lb module and performs
@@ -612,7 +668,7 @@ void LBAgent::SendDraftRequest()
 /// @peers The members of the group or a subset of, from whom message was received
 /// @limitations:
 /////////////////////////////////////////////////////////
-void LBAgent::HandleAny(MessagePtr msg, PeerNodePtr peer)
+void LBAgent::HandleAny(MessagePtr msg, PeerNodePtr /*peer*/)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     PeerSet tempSet_;
@@ -625,7 +681,7 @@ void LBAgent::HandleAny(MessagePtr msg, PeerNodePtr peer)
         Logger.Error<<"Unhandled Load Balancing Message"<<std::endl;
         msg->Save(Logger.Error);
         Logger.Error<<std::endl;
-        throw std::runtime_error("Unhandled Load Balancing Message");
+        throw EUnhandledMessage("Unhandled Load Balancing Message");
     }
 }
 
@@ -731,8 +787,7 @@ void LBAgent::HandleSupply(MessagePtr msg, PeerNodePtr peer)
     InsertInPeerSet(m_LoNodes,peer);
 }
 
-#pragma GCC diagnostic ignored "-Wunused-parameter"
-void LBAgent::HandleRequest(MessagePtr msg, PeerNodePtr peer)
+void LBAgent::HandleRequest(MessagePtr /*msg*/, PeerNodePtr peer)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     if(CountInPeerSet(m_AllPeers,peer) == 0)
@@ -784,7 +839,7 @@ void LBAgent::HandleRequest(MessagePtr msg, PeerNodePtr peer)
     }
 }
 
-void LBAgent::HandleYes(MessagePtr msg, PeerNodePtr peer)
+void LBAgent::HandleYes(MessagePtr /*msg*/, PeerNodePtr peer)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     // --------------------------------------------------------------
@@ -820,7 +875,7 @@ void LBAgent::HandleYes(MessagePtr msg, PeerNodePtr peer)
     }
 }
 
-void LBAgent::HandleNo(MessagePtr msg, PeerNodePtr peer)
+void LBAgent::HandleNo(MessagePtr /*msg*/, PeerNodePtr peer)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     if(CountInPeerSet(m_AllPeers,peer) == 0)
@@ -830,7 +885,7 @@ void LBAgent::HandleNo(MessagePtr msg, PeerNodePtr peer)
     Logger.Notice << "(No) from " << peer->GetUUID() << std::endl;
 }
 
-void LBAgent::HandleDrafting(MessagePtr msg, PeerNodePtr peer)
+void LBAgent::HandleDrafting(MessagePtr /*msg*/, PeerNodePtr peer)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     // --------------------------------------------------------------
@@ -903,7 +958,7 @@ void LBAgent::HandleAccept(MessagePtr msg, PeerNodePtr peer)
     if( LBAgent::SUPPLY == m_Status)
     {
         // Make necessary power setting accordingly to allow power migration
-        Logger.Warn<<"Migrating power on request from: "<< peer->GetUUID() << std::endl;
+        Logger.Notice<<"Migrating power on request from: "<< peer->GetUUID() << std::endl;
 	// !!!NOTE: You may use Step_PStar() or PStar(DemandValue) currently
         if (m_sstExists)
            Step_PStar();
@@ -916,24 +971,62 @@ void LBAgent::HandleAccept(MessagePtr msg, PeerNodePtr peer)
     }
 }
 
-void LBAgent::HandleCollectedState(MessagePtr msg, PeerNodePtr peer)
+void LBAgent::HandleCollectedState(MessagePtr msg, PeerNodePtr /*peer*/)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     // --------------------------------------------------------------
     // You received the collected global state in response to your SC Request
     // --------------------------------------------------------------
-    int peercount=0;
+    int peercount=0; // number of peers *with devices*
     double agg_gateway=0;
-    ptree &pt = msg->GetSubMessages();
-	BOOST_FOREACH(ptree::value_type &v, pt.get_child("CollectedState.state"))
-	{
-	    Logger.Notice << "SC module returned values: "
-			  << v.second.data() << std::endl;
- 	    peercount++;
-            agg_gateway += boost::lexical_cast<double>(v.second.data());
-	}
 
-	//Consider any intransit "accept" messages in agg_gateway calculation
+    ptree &pt = msg->GetSubMessages();
+    if(pt.get_child_optional("CollectedState.gateway"))
+    {
+	    BOOST_FOREACH(ptree::value_type &v, pt.get_child("CollectedState.gateway"))
+	    {
+	        Logger.Notice << "SC module returned gateway values: "
+			              << v.second.data() << std::endl;
+		    if (v.second.data() != "no device")
+		    {
+     	            peercount++;
+                	    agg_gateway += boost::lexical_cast<double>(v.second.data());
+		    }
+	    }
+    }
+    if(pt.get_child_optional("CollectedState.generation"))
+    {
+	    BOOST_FOREACH(ptree::value_type &v, pt.get_child("CollectedState.generation"))
+	    {
+	        Logger.Notice << "SC module returned generation values: "
+			              << v.second.data() << std::endl;
+	    }
+    }
+    if(pt.get_child_optional("CollectedState.storage"))
+    {
+	    BOOST_FOREACH(ptree::value_type &v, pt.get_child("CollectedState.storage"))
+	    {
+	        Logger.Notice << "SC module returned storage values: "
+			              << v.second.data() << std::endl;
+	    }
+    }
+    if(pt.get_child_optional("CollectedState.drain"))
+    {
+	    BOOST_FOREACH(ptree::value_type &v, pt.get_child("CollectedState.drain"))
+	    {
+	        Logger.Notice << "SC module returned drain values: "
+			              << v.second.data() << std::endl;
+	    }
+    }
+    if(pt.get_child_optional("CollectedState.state"))
+    {
+	    BOOST_FOREACH(ptree::value_type &v, pt.get_child("CollectedState.state"))
+	    {
+		Logger.Notice << "SC module returned state values: "
+				      << v.second.data() << std::endl;
+	    }
+    }
+    //Consider any intransit "accept" messages in agg_gateway calculation
     if(pt.get_child_optional("CollectedState.intransit"))
     {
         BOOST_FOREACH(ptree::value_type &v, pt.get_child("CollectedState.intransit"))
@@ -941,7 +1034,7 @@ void LBAgent::HandleCollectedState(MessagePtr msg, PeerNodePtr peer)
             Logger.Status << "SC module returned intransit messages: "
                 << v.second.data() << std::endl;
             if(v.second.data() == "accept"){
-	    Logger.Notice << "SC module returned values: "
+	        Logger.Notice << "SC module returned values: "
 			  << v.second.data() << std::endl;
                 agg_gateway += P_Migrate;
              }
@@ -951,11 +1044,15 @@ void LBAgent::HandleCollectedState(MessagePtr msg, PeerNodePtr peer)
     {
         m_Normal = agg_gateway/peercount;
         Logger.Info << "Computed Normal: " << m_Normal << std::endl;
-        SendNormal(m_Normal);
     }
+    else
+    {
+        m_Normal = 0;
+    }
+    SendNormal(m_Normal);
 }
 
-void LBAgent::HandleComputedNormal(MessagePtr msg, PeerNodePtr peer)
+void LBAgent::HandleComputedNormal(MessagePtr msg, PeerNodePtr /*peer*/)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     // --------------------------------------------------------------
@@ -989,14 +1086,14 @@ void LBAgent::Step_PStar()
     {
         if(LBAgent::DEMAND == m_Status)
         {
-            m_PStar = (*it)->GetGateway() - P_Migrate;
-            (*it)->StepGateway(-P_Migrate);
+            m_NetGateway -= P_Migrate;
+            (*it)->SetGateway(m_NetGateway);
             Logger.Notice << "P* = " << m_PStar << std::endl;
         }
         else if(LBAgent::SUPPLY == m_Status)
         {
-            m_PStar = (*it)->GetGateway() + P_Migrate;
-            (*it)->StepGateway(P_Migrate);
+            m_NetGateway += P_Migrate;
+            (*it)->SetGateway(m_NetGateway);
             Logger.Notice << "P* = " << m_PStar << std::endl;
         }
         else
@@ -1030,14 +1127,14 @@ void LBAgent::PStar(device::SignalValue DemandValue)
         {
             m_PStar = (*it)->GetGateway() - P_Migrate;
             Logger.Notice << "P* = " << m_PStar << std::endl;
-            (*it)->StepGateway(-P_Migrate);
+            (*it)->SetGateway(-P_Migrate);
         }
         else if(LBAgent::SUPPLY == m_Status)
         {
             if( DemandValue <= m_SstGateway + NORMAL_TOLERANCE - m_Normal )
             {
                 Logger.Notice << "P* = " << m_SstGateway + DemandValue << std::endl;
-                (*it)->StepGateway(P_Migrate);
+                (*it)->SetGateway(P_Migrate);
             }
             else
             {

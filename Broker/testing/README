@@ -1,3 +1,6 @@
 When running the RTDS adapter tests, it would be wise to have the PSCAD
 interface running in the background. There's a similar run_test.sh in
 PSCAD-Interface/testing. Use it!
+
+Before running MultipleDGI tests, make sure your kernel hostname is resolvable:
+'hostnamectl set-hostname --transient localhost'

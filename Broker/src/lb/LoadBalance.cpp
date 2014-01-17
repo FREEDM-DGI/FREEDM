@@ -78,9 +78,10 @@ const int P_Migrate = 1;
 
 //const variables for scheduling invariants
 const int RESPONSE_TIME_MARGIN = 250;
-const int MAX_BETTER_OBSERVED_RTT = 3;
+const int MAX_BETTER_OBS_RTT_COUNT = 3;
 const int KMAX = 26;
 bool static ECN_Status = true;
+
 
 namespace {
 
@@ -108,8 +109,6 @@ LBAgent::LBAgent(std::string uuid_, CBroker &broker):
     m_Leader = GetUUID();
     m_Normal = 0;
     m_GlobalTimer = broker.AllocateTimer("lb");
-    //for scheduling invariant
-    m_DeadlineTimer = broker.AllocateTimer("lb");
     
     // Bound to lbq so it resolves before the state collection round
     m_StateTimer = broker.AllocateTimer("lbq");
@@ -149,10 +148,13 @@ int LBAgent::Run()
     // This timer gets resolved for the lb module (instead of lbq) so
     // it is safe to give it a timeout of 1 effectively making it expire
     // immediately
+    m_Mutex.lock();
     m_broker.Schedule(m_GlobalTimer,
         boost::posix_time::not_a_date_time,
         boost::bind(&LBAgent::LoadManage, this,
             boost::asio::placeholders::error));
+    m_Mutex.unlock();
+    PowerTransfer = boost::posix_time::milliseconds(CTimings::LB_STATE_TIMER);
     return 0;
 }
 
@@ -363,12 +365,14 @@ void LBAgent::LoadManage()
     if (m_broker.TimeRemaining() >
         boost::posix_time::milliseconds(2*CTimings::LB_GLOBAL_TIMER))
     {
+	m_Mutex.lock();
         m_broker.Schedule(m_GlobalTimer,
                           boost::posix_time::milliseconds(
                               CTimings::LB_GLOBAL_TIMER),
                           boost::bind(&LBAgent::LoadManage,
                                       this,
                                       boost::asio::placeholders::error));
+	m_Mutex.unlock();
         Logger.Info << "Scheduled another LoadManage in "
                     << CTimings::LB_GLOBAL_TIMER << "ms" << std::endl;
     }
@@ -376,11 +380,13 @@ void LBAgent::LoadManage()
     {
         // Schedule past the end of our phase so control will pass to the broker
         // after this LB, and we won't go again until it's our turn.
+	m_Mutex.lock();
         m_broker.Schedule(m_GlobalTimer,
                           boost::posix_time::not_a_date_time,
                           boost::bind(&LBAgent::LoadManage,
                                       this,
                                       boost::asio::placeholders::error));
+	m_Mutex.unlock();
         Logger.Info << "Won't run over phase, scheduling another LoadManage in "
                     << "next round" << std::endl;
     }
@@ -854,14 +860,15 @@ void LBAgent::HandleYes(MessagePtr /*msg*/, PeerNodePtr peer)
     //for scheduling invariant
     microsecT2 = boost::posix_time::microsec_clock::local_time();
     //expected RTT
-    Obs_Avg_RTT = microsecT2-microsecT1;
-    if First_Time == true )
+    msdiff = microsecT2-microsecT1;
+    Obs_Avg_RTT = msdiff.total_milliseconds();
+    if (First_Time == true )
     {
 	First_Time = false;
     	Curr_RTT = Obs_Avg_RTT;
 	Curr_K = 0;
 	Better_RTT_Obs_Counter = 0;
-	Last_Time_Sent = 0;	
+	Last_Time_Sent = boost::posix_time::not_a_date_time;	
     	Curr_Relative_Deadline = Curr_RTT + RESPONSE_TIME_MARGIN;
 	Update_Period();
 
@@ -902,13 +909,15 @@ bool LBAgent::Invariant_Check()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     microsecT3 = boost::posix_time::microsec_clock::local_time();  
-//    Deadline = microsecT3 + Curr_Relative_Deadline;
-//    int DEADLINE_TIMEOUT = boost::lexical_cast<int>(Deadline);
 
-    int DEADLINE_TIMEOUT = boost::lexical_cast<int>(Curr_Relative_Deadline);
+    Deadline = microsecT3;
+    msdiff = Deadline - Phase_Time;
+
     //Start  the timer, on timeout, deadline_miss will be called
-    m_broker.Schedule(m_DeadlineTimer, boost::posix_time::milliseconds(DEADLINE_TIMEOUT),
-		      boost::bing(&LBAgent::Deadline_Miss, this, boost::asio::placeholders::error));
+    m_Mutex.lock();
+    m_broker.Schedule(m_GlobalTimer, boost::posix_time::milliseconds(Curr_Relative_Deadline),
+		      boost::bind(&LBAgent::Deadline_Miss, this, boost::asio::placeholders::error));
+    m_Mutex.unlock();
 
     bool Ik_Invariant;
     bool Ip_Invariant;
@@ -918,24 +927,39 @@ bool LBAgent::Invariant_Check()
     else
 	Ik_Invariant = false;
 
-    if (Deadline < Phase_Time)
+//    if (Deadline < Phase_Time)
+    if (msdiff.total_milliseconds()<PowerTransfer.total_milliseconds() - Curr_Relative_Deadline)
 	Ic_Invariant = true;
     else
 	Ic_Invariant = false;
 
-    if (microsecT3 - Laste_Time_Sent > Curr_Period)
+//    if (microsecT3 - Last_Time_Sent > Curr_Period)
+    msdiff = microsecT3 - Last_Time_Sent;
+    if (msdiff.total_milliseconds() > Curr_Period)
 	Ip_Invariant = true;
     else 
 	Ip_Invariant = false;
     return Ik_Invariant*Ic_Invariant*Ip_Invariant;
 }
 
-void LBAgent::Deadline_Miss()
+
+void LBAgent::Deadline_Miss(const boost::system::error_code& err)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    Curr_RTT = Curr_RTT + RESPONSE_TIME_MARGIN;
-    Curr_Relative_Deadline = Curr_RTT + RESPONSE_TIME_MARGIN;
-    Update_Period();    
+    if (!err)
+    {
+    	Curr_RTT = Curr_RTT + RESPONSE_TIME_MARGIN;
+    	Curr_Relative_Deadline = Curr_RTT + RESPONSE_TIME_MARGIN;
+    	Update_Period();    
+    }
+    else if (boost::asio::error::operation_aborted == err)
+    {
+    }
+    else
+    {
+	Logger.Error << err << std::endl;
+	throw boost::system::system_error(err);
+    }
 }
 
 void LBAgent::Update_Period()
@@ -946,7 +970,6 @@ void LBAgent::Update_Period()
     else
 	Curr_Period = Curr_Relative_Deadline/(Kmaxlocal-Curr_K);
 }
-
 
 void LBAgent::HandleNo(MessagePtr /*msg*/, PeerNodePtr peer)
 {
@@ -1055,16 +1078,19 @@ void LBAgent::Msg_Ack_Received()
 {
     //for scheduling invariant
     microsecT4 = boost::posix_time::microsec_clock::local_time();
-    temp_MsgRTT = microsecT4 - Last_Time_Sent;
+    msdiff = microsecT4 - Last_Time_Sent;
+    temp_MsgRTT = msdiff.total_milliseconds();
     Curr_K--;
-
-    if(Deadline > microsecT4)
+    
+    //if(Deadline > microsecT4)
+    msdiff = microsecT4 - microsecT3;
+    if (msdiff.total_milliseconds()<Curr_Relative_Deadline)
     {
-	    Deadline_Met(_MsgID);
+	   Deadline_Met();
     }
     else
     {
-	    if( (temp_MsgRTT > Curr_Relative_Deadline)
+	    if(temp_MsgRTT > Curr_Relative_Deadline)
 	    {
 	        Curr_RTT = temp_MsgRTT;
 	        Curr_Relative_Deadline = Curr_RTT + RESPONSE_TIME_MARGIN;
@@ -1081,7 +1107,9 @@ void LBAgent::Msg_Ack_Received()
         ECN = true;
     }
     else
+    {
         ECN = false;
+    }
 #endif
 }
 
@@ -1138,7 +1166,6 @@ void LBAgent::Ack_Recv_Is_Better()
 	Logger.Notice <<"  Curr_RTT: "<<Curr_RTT<<std::endl;
 	Update_Period();
 
-	}
 }
 
 void LBAgent::Detected_ECN_CE()
@@ -1155,21 +1182,33 @@ void LBAgent::Detected_ECN_CE()
         ECN_Status = false;
         int DEADLINE_TIMEOUT = boost::lexical_cast<int>(Curr_RTT);
        //Start  the timer, on timeout, deadline_miss will be called
-       m_broker.Schedule(m_ECNTimer, boost::posix_time::milliseconds(DEADLINE_TIMEOUT),
-		      boost::bing(&LBAgent::ECN_Active, this, boost::asio::placeholders::error));       
-
+	m_Mutex.lock();
+        m_broker.Schedule(m_GlobalTimer, boost::posix_time::milliseconds(DEADLINE_TIMEOUT),
+   		      boost::bind(&LBAgent::ECN_Active, this, boost::asio::placeholders::error));       
+	m_Mutex.unlock();
     }
 }
 
-void LBAgent::Calculate_ECN_Counter()
+int LBAgent::Calculate_ECN_Counter()
 {   
     return Curr_K*2;
 }
 
 
-void LBAgent::ECN_Active()
+void LBAgent::ECN_Active(const boost::system::error_code& err)
 {
-    ECN_Status = true;
+    if (!err)
+    {
+        ECN_Status = true;
+    }
+    else if (boost::asio::error::operation_aborted == err)
+    {
+    }
+    else
+    {
+	Logger.Error << err << std::endl;
+	throw boost::system::system_error(err);
+    }
 }
 
 
@@ -1248,7 +1287,7 @@ void LBAgent::HandleCollectedState(MessagePtr msg, PeerNodePtr /*peer*/)
         Logger.Info << "Computed Normal: " << m_Normal << std::endl;
         //for scheduleing invariant
 	//equally distributed KMAX
-   	Kmaxlocal = KMAX/peercournt;
+   	Kmaxlocal = KMAX/peercount;
     }
     else
     {
@@ -1407,11 +1446,12 @@ void LBAgent::HandleStateTimer( const boost::system::error_code & error )
     {
         //Initiate state collection if you are the m_Leader
         CollectState();
-	Phase_Time = boost::posix_time::microsec_clock::local_time() + LB_STATE_TIMER;
+	Phase_Time = boost::posix_time::microsec_clock::local_time();// + LB_STATE_TIMER;
     }
-
+    m_Mutex.lock();
     m_broker.Schedule(m_StateTimer, boost::posix_time::milliseconds(CTimings::LB_STATE_TIMER),
         boost::bind(&LBAgent::HandleStateTimer, this, boost::asio::placeholders::error));
+    m_Mutex.unlock();
 }
 
 } // namespace lb

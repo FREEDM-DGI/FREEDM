@@ -98,6 +98,10 @@ class CSRConnection : public IProtocol
         static const unsigned int REFIRE_TIME = 10;
         /// Mutex for the current ack
         boost::shared_mutex m_ackmutex;
+        /// The number of messages that have to be dropped before the connection is dead
+        static const unsigned int MAX_DROPPED_MSGS = 3;
+        /// The number that have been dropped.
+        unsigned int m_dropped;
 };
 
     }

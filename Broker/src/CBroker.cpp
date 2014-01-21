@@ -125,6 +125,10 @@ void CBroker::Run()
 
     m_signals.async_wait(boost::bind(&CBroker::HandleSignal, this, _1, _2));
     device::CAdapterFactory::Instance(); // create it
+    // The io_service::run() call will block until all asynchronous operations
+    // have finished. While the server is running, there is always at least one
+    // asynchronous operation outstanding: the asynchronous accept call waiting
+    // for new incoming connections.
     m_synchronizer.Run();
     m_ioService.run();
 }

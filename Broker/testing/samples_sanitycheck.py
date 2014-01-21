@@ -40,8 +40,8 @@ config_files = ['freedm.cfg']
 adapter_files = {'adapter.xml':'rtds.xml'}
 
 # List of all timings configuration files to test
-timings_files = ['timings.cfg', 'timings-mamba.cfg', 'timings-ts7800.cfg', \
-        'timings-ts7800-6.cfg']
+timings_files = ['timings-p4-3.cfg', 'timings-mamba-5.cfg', \
+                 'timings-ts7800-3.cfg', 'timings-ts7800-6.cfg']
 
 # List of all logger configuration files to test
 logger_files = ['logger.cfg']

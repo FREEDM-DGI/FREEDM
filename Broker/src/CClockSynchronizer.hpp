@@ -47,16 +47,6 @@ class CClockSynchronizer
     typedef boost::shared_ptr<IPeerNode> PeerNodePtr; 
     /// Initialize module
     explicit CClockSynchronizer(CBroker &broker);
-    /// Receiver
-    void HandleExchangeResponse(MessagePtr msg, PeerNodePtr peer);
-    /// Receiver
-    void HandleExchange(MessagePtr msg, PeerNodePtr peer);
-    /// Broadcaster    
-    void Exchange(const boost::system::error_code& err );    
-    /// Generate the exchange message
-    CMessage ExchangeMessage(unsigned int k);
-    /// Generate the exchange response message
-    CMessage ExchangeResponse(unsigned int k);
     /// Returns the synchronized time
     boost::posix_time::ptime GetSynchronizedTime();
     /// Starts the stuff.
@@ -88,6 +78,16 @@ class CClockSynchronizer
     /// Last responses type
     typedef std::map< MapIndex, unsigned int > LastResponseMap;
 
+    /// Receiver
+    void HandleExchangeResponse(MessagePtr msg, PeerNodePtr peer);
+    /// Receiver
+    void HandleExchange(MessagePtr msg, PeerNodePtr peer);
+    /// Broadcaster
+    void Exchange(const boost::system::error_code& err );
+    /// Generate the exchange message
+    CMessage ExchangeMessage(unsigned int k);
+    /// Generate the exchange response message
+    CMessage ExchangeResponse(unsigned int k);
 
     /// Relative offsets
     OffsetMap m_offsets;

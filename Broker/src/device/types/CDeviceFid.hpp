@@ -43,23 +43,23 @@ class CDeviceFid
 public:
     /// Convenience type for a shared pointer to self.
     typedef boost::shared_ptr<CDeviceFid> Pointer;
-    
+
     /// Constructor which takes an identifier and device adapter.
     CDeviceFid(const std::string identifier, IAdapter::Pointer adapter);
-    
+
     /// Virtual destructor for derived classes.
     virtual ~CDeviceFid();
-    
+
     /// Virtual constructor for another device of the same type.
     IDevice::Pointer Create(const std::string identifier,
             IAdapter::Pointer adapter) const;
-    
+
     /// Determine if the FID is active.
     bool IsActive() const;
 private:
     /// Redefine the base accessor as private.
     using IDevice::Get;
-    
+
     /// Redefine the base mutator as private.
     using IDevice::Set;
 };

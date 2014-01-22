@@ -113,19 +113,19 @@ SignalValue CDeviceDesd::GetStorage() const
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-/// Increases the stored energy of the DESD by the passed amount.
+/// Sets the amount of energy stored by this DESD.
 ///
 /// @pre None.
 /// @post Determines the current storage with CDeviceDesd::GetStorage.
 /// @post Calls IAdapter::Set with the signal "storage".
-/// @param step The amount to add to the current storage.
+/// @param storage The amount of stored energy
 ///
 /// @limitations The storage increase will take some time to manifest.
 ////////////////////////////////////////////////////////////////////////////////
-void CDeviceDesd::StepStorage(const SignalValue step)
+void CDeviceDesd::SetStorage(const SignalValue storage)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    Set("storage", GetStorage() + step);
+    Set("storage", storage);
 }
 
 } // namespace device

@@ -107,19 +107,19 @@ SignalValue CDeviceDrer::GetGeneration() const
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-/// Increases the energy generation of this DRER by the passed amount.
+/// Sets the amount of energy generation of this DRER.
 ///
 /// @pre None.
 /// @post Determines the current generation with CDeviceDrer::GetGeneration.
 /// @post Calls IAdapter::Set with the signal "generation".
-/// @param step The amount to add to the current generation.
+/// @param generation The new amount of energy generation.
 ///
 /// @limitations The generation increase will take some time to manifest.
 ////////////////////////////////////////////////////////////////////////////////
-void CDeviceDrer::StepGeneration(const SignalValue step)
+void CDeviceDrer::SetGeneration(const SignalValue generation)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    Set("generation", GetGeneration() + step);
+    Set("generation", generation);
 }
 
 } // namespace device

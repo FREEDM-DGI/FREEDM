@@ -64,7 +64,7 @@ namespace {
 CLocalLogger Logger(__FILE__);
 
 /// The copyright year for this DGI release.
-const unsigned int COPYRIGHT_YEAR = 2013;
+const unsigned int COPYRIGHT_YEAR = 2014;
 
 /// UUID of the DGI, currently hostname:port
 std::string GenerateUuid(std::string host, std::string port)

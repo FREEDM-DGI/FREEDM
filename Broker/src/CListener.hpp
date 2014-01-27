@@ -47,9 +47,6 @@ class CListener
 {
 
 public:
-    /// The Listener Shared pointer type
-    typedef boost::shared_ptr<CListener> ConnectionPtr;
-
     /// Access the singleton instance of the CListener
     static CListener& Instance();
 

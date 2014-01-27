@@ -82,6 +82,9 @@ public:
     /// Change Phase Event
     void ChangePhase(bool newround);
 
+    /// Get a socket connected to a single peer DGI
+    boost::asio::ip::udp::socket& GetSocket();
+
     /// Get associated UUID
     std::string GetUUID();
 private:
@@ -92,6 +95,9 @@ private:
 
     /// Default protocol
     std::string m_defaultprotocol;
+
+    /// Datagram socket connected to a single peer DGI
+    boost::asio::ip::udp::socket m_socket;
 
     /// The UUID of the remote endpoint for the connection
     std::string m_uuid;

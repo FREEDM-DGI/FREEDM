@@ -78,6 +78,9 @@ private:
 
     /// The UUID of the remote endpoint for the connection
     std::string m_uuid;
+
+    /// Listening socket
+    boost::asio::ip::udp::socket m_socket;
 };
 
 

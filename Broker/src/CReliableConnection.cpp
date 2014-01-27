@@ -53,24 +53,9 @@ CLocalLogger Logger(__FILE__);
 /// @post: A new CConnection object is initialized.
 ///////////////////////////////////////////////////////////////////////////////
 CReliableConnection::CReliableConnection()
-  : m_socket(CBroker::Instance().GetIOService())
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     m_reliability = 100;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-/// @fn CReliableConnection::GetSocket
-/// @description Returns the socket used by this node.
-/// @pre None
-/// @post None
-/// @return A reference to the socket used by this connection.
-///////////////////////////////////////////////////////////////////////////////
-boost::asio::ip::udp::socket& CReliableConnection::GetSocket()
-{
-    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-
-    return m_socket;
 }
 
 /// Set the connection reliability for DCUSTOMNETWORK

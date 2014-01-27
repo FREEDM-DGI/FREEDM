@@ -59,7 +59,8 @@ CLocalLogger Logger(__FILE__);
 /// @param uuid The uuid this node connects to, or what listener.
 ///////////////////////////////////////////////////////////////////////////////
 CConnection::CConnection(std::string uuid)
-  : m_uuid(uuid)
+  : m_socket(CBroker::Instance().GetIOService())
+  , m_uuid(uuid)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     m_protocols.insert(ProtocolMap::value_type(CSUConnection::Identifier(),
@@ -205,6 +206,18 @@ bool CConnection::Receive(const CMessage &msg)
         }
     }
     return false;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+/// Returns the socket used by this node.
+///
+/// @return A reference to the socket used by this connection.
+///////////////////////////////////////////////////////////////////////////////
+boost::asio::ip::udp::socket& CConnection::GetSocket()
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+
+    return m_socket;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

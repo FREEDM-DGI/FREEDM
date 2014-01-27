@@ -61,6 +61,7 @@ CLocalLogger Logger(__FILE__);
 CConnection::CConnection(std::string uuid)
   : m_socket(CBroker::Instance().GetIOService())
   , m_uuid(uuid)
+  , m_reliability(100)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     m_protocols.insert(ProtocolMap::value_type(CSUConnection::Identifier(),
@@ -228,6 +229,27 @@ boost::asio::ip::udp::socket& CConnection::GetSocket()
 std::string CConnection::GetUUID() const
 {
     return m_uuid;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+/// Set the connection reliability for DCUSTOMNETWORK. 0 all packets are
+/// artifically dropped. 100 means no packets are artifically dropped.
+///
+/// @param r between 0 and 100
+///////////////////////////////////////////////////////////////////////////////
+void CConnection::SetReliability(int r)
+{
+    m_reliability = r;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+/// Get the connection reliability for DCUSTOMNETWORK
+///
+/// @return percentage of packets that are allowed through
+///////////////////////////////////////////////////////////////////////////////
+int CConnection::GetReliability()
+{
+    return m_reliability;
 }
 
     } // namespace broker

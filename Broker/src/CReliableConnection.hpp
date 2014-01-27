@@ -49,15 +49,6 @@ public:
 
     /// Construct a CConnection with the given io_service.
     CReliableConnection();
-
-    /// Set the connection reliability for DCUSTOMNETWORK
-    void SetReliability(int r);
-
-    /// Get the connection reliability for DCUSTOMNETWORK
-    int GetReliability();
-private:
-    /// The reliability of the connection (FOR -DCUSTOMNETWORK)
-    int m_reliability;
 };
 
 

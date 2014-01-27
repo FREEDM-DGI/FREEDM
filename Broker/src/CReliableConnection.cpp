@@ -55,21 +55,7 @@ CLocalLogger Logger(__FILE__);
 CReliableConnection::CReliableConnection()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    m_reliability = 100;
 }
-
-/// Set the connection reliability for DCUSTOMNETWORK
-void CReliableConnection::SetReliability(int r)
-{
-    m_reliability = r;
-}
-
-/// Get the connection reliability for DCUSTOMNETWORK
-int CReliableConnection::GetReliability()
-{
-    return m_reliability;
-}
-
 
     } // namespace broker
 } // namespace freedm

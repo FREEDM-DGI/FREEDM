@@ -87,6 +87,13 @@ public:
 
     /// Get associated UUID
     std::string GetUUID() const;
+
+    /// Set the connection reliability for DCUSTOMNETWORK
+    void SetReliability(int r);
+
+    /// Get the connection reliability for DCUSTOMNETWORK
+    int GetReliability();
+
 private:
     typedef boost::shared_ptr<IProtocol> ProtocolPtr;
     typedef std::map<std::string,ProtocolPtr> ProtocolMap;
@@ -101,6 +108,9 @@ private:
 
     /// The UUID of the remote endpoint for the connection
     std::string m_uuid;
+
+    /// The reliability of the connection (FOR -DCUSTOMNETWORK)
+    int m_reliability;
 };
 
 typedef boost::shared_ptr<CConnection> ConnectionPtr;

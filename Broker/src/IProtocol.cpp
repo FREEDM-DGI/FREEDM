@@ -25,7 +25,6 @@
 #include "CGlobalConfiguration.hpp"
 #include "CLogger.hpp"
 #include "config.hpp"
-#include "CReliableConnection.hpp"
 #include "IProtocol.hpp"
 
 #include <exception>

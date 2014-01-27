@@ -11,7 +11,6 @@ set(BROKER_FILES
     CListener.cpp
     CLogger.cpp
     CMessage.cpp
-    CReliableConnection.cpp
     CSRConnection.cpp
     CSUConnection.cpp
     CSRSWConnection.cpp

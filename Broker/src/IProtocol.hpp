@@ -26,7 +26,6 @@
 
 #include "CConnection.hpp"
 #include "CMessage.hpp"
-#include "CReliableConnection.hpp"
 
 #include <iomanip>
 #include <set>

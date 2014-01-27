@@ -26,7 +26,6 @@
 
 #include "CDispatcher.hpp"
 #include "CMessage.hpp"
-#include "CReliableConnection.hpp"
 #include "SRemoteHost.hpp"
 
 #include <deque>
@@ -54,7 +53,6 @@ struct EConnectionError
 
 /// Represents a single outgoing connection to a client.
 class CConnection
-    : public CReliableConnection
 {
 
 public:

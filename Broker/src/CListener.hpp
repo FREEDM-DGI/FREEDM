@@ -26,7 +26,6 @@
 
 #include "CGlobalConfiguration.hpp"
 #include "CMessage.hpp"
-#include "CReliableConnection.hpp"
 
 #include <iomanip>
 
@@ -45,7 +44,6 @@ class CBroker;
 
 /// Represents a single CListener from a client.
 class CListener
-    : public CReliableConnection
 {
 
 public:

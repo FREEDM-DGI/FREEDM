@@ -289,8 +289,6 @@ void CConnectionManager::LoadNetworkConfig()
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     boost::property_tree::ptree pt;
     boost::property_tree::read_xml("network.xml",pt);
-    int inreliability = pt.get("network.incoming.reliability",100);
-    CListener::Instance().SetReliability(inreliability);
     BOOST_FOREACH(ptree::value_type & child, pt.get_child("network.outgoing"))
     {
         std::string uuid = child.second.get<std::string>("<xmlattr>.uuid");

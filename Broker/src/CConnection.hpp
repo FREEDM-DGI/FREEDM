@@ -81,6 +81,9 @@ public:
 
     /// Change Phase Event
     void ChangePhase(bool newround);
+
+    /// Get associated UUID
+    std::string GetUUID();
 private:
     typedef boost::shared_ptr<IProtocol> ProtocolPtr;
     typedef std::map<std::string,ProtocolPtr> ProtocolMap;
@@ -89,6 +92,9 @@ private:
 
     /// Default protocol
     std::string m_defaultprotocol;
+
+    /// The UUID of the remote endpoint for the connection
+    std::string m_uuid;
 };
 
 typedef boost::shared_ptr<CConnection> ConnectionPtr;

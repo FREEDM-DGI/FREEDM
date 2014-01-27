@@ -58,7 +58,6 @@ CLocalLogger Logger(__FILE__);
 /// @post A new CConnection object is initialized.
 ///////////////////////////////////////////////////////////////////////////////
 CListener::CListener()
-  : CReliableConnection(CConnectionManager::Instance().GetUUID())
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 }

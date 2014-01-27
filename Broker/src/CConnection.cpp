@@ -59,7 +59,7 @@ CLocalLogger Logger(__FILE__);
 /// @param uuid The uuid this node connects to, or what listener.
 ///////////////////////////////////////////////////////////////////////////////
 CConnection::CConnection(std::string uuid)
-  : CReliableConnection(uuid)
+  : m_uuid(uuid)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     m_protocols.insert(ProtocolMap::value_type(CSUConnection::Identifier(),
@@ -205,6 +205,16 @@ bool CConnection::Receive(const CMessage &msg)
         }
     }
     return false;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+/// Gets the UUID of the DGI on the other end of this connection.
+///
+/// @return the peer's UUID
+///////////////////////////////////////////////////////////////////////////////
+std::string CConnection::GetUUID()
+{
+    return m_uuid;
 }
 
     } // namespace broker

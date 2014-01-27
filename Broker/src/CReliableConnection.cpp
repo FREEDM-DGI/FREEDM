@@ -51,11 +51,9 @@ CLocalLogger Logger(__FILE__);
 /// @description: Constructor for the CGenericConnection object.
 /// @pre: An initialized socket is ready to be converted to a connection.
 /// @post: A new CConnection object is initialized.
-/// @param uuid: The uuid this node connects to, or what listener.
 ///////////////////////////////////////////////////////////////////////////////
-CReliableConnection::CReliableConnection(std::string uuid)
-  : m_socket(CBroker::Instance().GetIOService()),
-    m_uuid(uuid)
+CReliableConnection::CReliableConnection()
+  : m_socket(CBroker::Instance().GetIOService())
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     m_reliability = 100;
@@ -73,13 +71,6 @@ boost::asio::ip::udp::socket& CReliableConnection::GetSocket()
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
     return m_socket;
-}
-
-
-/// Get associated UUID
-std::string CReliableConnection::GetUUID()
-{
-    return m_uuid;
 }
 
 /// Get the ioservice

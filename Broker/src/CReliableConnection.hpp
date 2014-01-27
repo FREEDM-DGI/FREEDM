@@ -53,9 +53,6 @@ public:
     /// Get the socket associated with the CConnection.
     boost::asio::ip::udp::socket& GetSocket();
 
-    /// Get the ioservice
-    boost::asio::io_service& GetIOService();
-
     /// Set the connection reliability for DCUSTOMNETWORK
     void SetReliability(int r);
 

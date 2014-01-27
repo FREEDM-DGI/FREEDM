@@ -73,12 +73,6 @@ boost::asio::ip::udp::socket& CReliableConnection::GetSocket()
     return m_socket;
 }
 
-/// Get the ioservice
-boost::asio::io_service& CReliableConnection::GetIOService()
-{
-    return m_socket.get_io_service();
-}
-
 /// Set the connection reliability for DCUSTOMNETWORK
 void CReliableConnection::SetReliability(int r)
 {

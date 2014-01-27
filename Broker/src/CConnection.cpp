@@ -225,7 +225,7 @@ boost::asio::ip::udp::socket& CConnection::GetSocket()
 ///
 /// @return the peer's UUID
 ///////////////////////////////////////////////////////////////////////////////
-std::string CConnection::GetUUID()
+std::string CConnection::GetUUID() const
 {
     return m_uuid;
 }

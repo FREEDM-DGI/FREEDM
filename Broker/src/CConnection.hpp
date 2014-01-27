@@ -86,7 +86,7 @@ public:
     boost::asio::ip::udp::socket& GetSocket();
 
     /// Get associated UUID
-    std::string GetUUID();
+    std::string GetUUID() const;
 private:
     typedef boost::shared_ptr<IProtocol> ProtocolPtr;
     typedef std::map<std::string,ProtocolPtr> ProtocolMap;

@@ -77,7 +77,7 @@ class IProtocol
         virtual void Write(CMessage msg);
     private:
         /// Write buffer
-        boost::array<char, CReliableConnection::MAX_PACKET_SIZE> m_buffer;
+        boost::array<char, CGlobalConfiguration::MAX_PACKET_SIZE> m_buffer;
         /// The underlying and related connection object.
         CConnection * m_conn;
         /// Tracker for the stoppedness of the connection

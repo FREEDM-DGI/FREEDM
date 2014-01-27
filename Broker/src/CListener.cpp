@@ -25,6 +25,7 @@
 #include "CConnection.hpp"
 #include "CConnectionManager.hpp"
 #include "CDispatcher.hpp"
+#include "CGlobalConfiguration.hpp"
 #include "CListener.hpp"
 #include "CLogger.hpp"
 #include "CMessage.hpp"
@@ -84,7 +85,7 @@ void CListener::Start(boost::asio::ip::udp::endpoint& endpoint)
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     GetSocket().open(endpoint.protocol());
     GetSocket().bind(endpoint);
-    GetSocket().async_receive_from(boost::asio::buffer(m_buffer, CReliableConnection::MAX_PACKET_SIZE),
+    GetSocket().async_receive_from(boost::asio::buffer(m_buffer, CGlobalConfiguration::MAX_PACKET_SIZE),
             m_endpoint, boost::bind(&CListener::HandleRead, this,
             boost::asio::placeholders::error,
             boost::asio::placeholders::bytes_transferred));
@@ -123,7 +124,7 @@ void CListener::HandleRead(const boost::system::error_code& e,
         catch(std::exception &e)
         {
             Logger.Error<<"Couldn't parse message XML: "<<e.what()<<std::endl;
-            GetSocket().async_receive_from(boost::asio::buffer(m_buffer, CReliableConnection::MAX_PACKET_SIZE),
+            GetSocket().async_receive_from(boost::asio::buffer(m_buffer, CGlobalConfiguration::MAX_PACKET_SIZE),
                 m_endpoint, boost::bind(&CListener::HandleRead, this,
                 boost::asio::placeholders::error,
                 boost::asio::placeholders::bytes_transferred));
@@ -175,7 +176,7 @@ void CListener::HandleRead(const boost::system::error_code& e,
 listen:
 #endif
         Logger.Debug<<"Listening for next message"<<std::endl;
-        GetSocket().async_receive_from(boost::asio::buffer(m_buffer, CReliableConnection::MAX_PACKET_SIZE),
+        GetSocket().async_receive_from(boost::asio::buffer(m_buffer, CGlobalConfiguration::MAX_PACKET_SIZE),
                 m_endpoint, boost::bind(&CListener::HandleRead, this,
                 boost::asio::placeholders::error,
                 boost::asio::placeholders::bytes_transferred));

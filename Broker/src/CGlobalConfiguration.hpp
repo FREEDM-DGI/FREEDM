@@ -84,6 +84,8 @@ class CGlobalConfiguration : public boost::noncopyable
         std::string GetDevicesEndpoint() const { return m_devicesEndpoint; };
         /// Get the path to the adapter configuration file
         std::string GetAdapterConfigPath() const { return m_adapterConfigPath; };
+        /// The maximum packet size in bytes
+        static const unsigned int MAX_PACKET_SIZE = 60000;
     private:
         std::string m_hostname; /// Node hostname
         std::string m_port; /// Port number

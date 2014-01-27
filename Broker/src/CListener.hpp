@@ -24,6 +24,7 @@
 #ifndef CLISTENER_HPP
 #define CLISTENER_HPP
 
+#include "CGlobalConfiguration.hpp"
 #include "CMessage.hpp"
 #include "CReliableConnection.hpp"
 
@@ -70,7 +71,7 @@ private:
     boost::asio::ip::udp::endpoint m_endpoint;
 
     /// Buffer for incoming data.
-    boost::array<char, CReliableConnection::MAX_PACKET_SIZE> m_buffer;
+    boost::array<char, CGlobalConfiguration::MAX_PACKET_SIZE> m_buffer;
 
     /// The incoming request.
     MessagePtr m_message;

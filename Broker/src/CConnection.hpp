@@ -92,7 +92,7 @@ public:
     void SetReliability(int r);
 
     /// Get the connection reliability for DCUSTOMNETWORK
-    int GetReliability();
+    int GetReliability() const;
 
 private:
     typedef boost::shared_ptr<IProtocol> ProtocolPtr;

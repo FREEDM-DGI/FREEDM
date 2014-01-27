@@ -247,7 +247,7 @@ void CConnection::SetReliability(int r)
 ///
 /// @return percentage of packets that are allowed through
 ///////////////////////////////////////////////////////////////////////////////
-int CConnection::GetReliability()
+int CConnection::GetReliability() const
 {
     return m_reliability;
 }

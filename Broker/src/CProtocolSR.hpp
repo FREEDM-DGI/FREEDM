@@ -1,12 +1,12 @@
 ////////////////////////////////////////////////////////////////////////////////
-/// @file         CSRConnection.hpp
+/// @file         CProtocolSR.hpp
 ///
 /// @author       Derek Ditch <derek.ditch@mst.edu>
 /// @author       Stephen Jackson <scj7t4@mst.edu>
 ///
 /// @project      FREEDM DGI
 ///
-/// @description  Declare CSRConnection class
+/// @description  Declare CProtocolSR class
 ///
 /// These source code files were created at Missouri University of Science and
 /// Technology, and are intended for use in teaching or research. They may be
@@ -21,8 +21,8 @@
 /// Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
 ////////////////////////////////////////////////////////////////////////////////
 
-#ifndef CSRCONNECTION_HPP
-#define CSRCONNECTION_HPP
+#ifndef CPROTOCOLSR_HPP
+#define CPROTOCOLSR_HPP
 
 #include "CConnection.hpp"
 #include "CMessage.hpp"
@@ -43,12 +43,12 @@ namespace freedm {
 
 
 /// A reliable connection protocol with sweet as expirations.
-class CSRConnection : public IProtocol
-    , public boost::enable_shared_from_this<CSRConnection>
+class CProtocolSR : public IProtocol
+    , public boost::enable_shared_from_this<CProtocolSR>
 {
     public:
         /// Initializes the protocol with the underlying connection
-        explicit CSRConnection(CConnection * conn);
+        explicit CProtocolSR(CConnection * conn);
         /// Public facing send function that sends a message
         void Send(CMessage msg);
         /// Public facing function that handles marking down ACKs for sent messages

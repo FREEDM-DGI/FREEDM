@@ -1,11 +1,11 @@
 ////////////////////////////////////////////////////////////////////////////////
-/// @file         CSRSWConnection.cpp
+/// @file         CProtocolSR.cpp
 ///
 /// @author       Stephen Jackson <scj7t4@mst.edu>
 ///
 /// @project      FREEDM DGI
 ///
-/// @description  Declare CSRSWConnection class
+/// @description  Declare CProtocolSR class
 ///
 /// These source code files were created at Missouri University of Science and
 /// Technology, and are intended for use in teaching or research. They may be
@@ -23,8 +23,9 @@
 #include "CConnectionManager.hpp"
 #include "CLogger.hpp"
 #include "CMessage.hpp"
-#include "CSRSWConnection.hpp"
+#include "CProtocolSR.hpp"
 #include "IProtocol.hpp"
+#include "CTimings.hpp"
 
 #include <iomanip>
 #include <set>
@@ -46,15 +47,15 @@ CLocalLogger Logger(__FILE__);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// CSRSWConnection::CSRSWConnection
-/// @description Constructor for the CSRSWConnection class.
+/// CProtocolSR::CProtocolSR
+/// @description Constructor for the CProtocolSR class.
 /// @pre The object is uninitialized.
 /// @post The object is initialized: m_killwindow is empty, the connection is
 ///       marked as unsynced, It won't be sending kill statuses. Its first
 ///       message will be numbered as 0 for outgoing and the timer is not set.
 /// @param conn The underlying connection object this protocol writes to
 ///////////////////////////////////////////////////////////////////////////////
-CSRSWConnection::CSRSWConnection(CConnection *  conn)
+CProtocolSR::CProtocolSR(CConnection *  conn)
     : IProtocol(conn),
       m_timeout(conn->GetSocket().get_io_service())
 {
@@ -64,22 +65,19 @@ CSRSWConnection::CSRSWConnection(CConnection *  conn)
     m_inseq = 0;
     //Inbound Message Sequencing
     m_insync = false;
+    //m_insynctime
     m_inresyncs = 0;
     //Outbound message sequencing
     m_outsync = false;
-}
-
-void CSRSWConnection::ChangePhase(bool /*newround*/)
-{
-    //m_outseq = 0;
-    m_outsync = false;
-    m_window.clear();
-    m_outstandingwindow.clear();
+    // Message killing (SEND)
+    m_sendkills = false;
+    m_sendkill = 0;
+    m_dropped = 0;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// CSRSWConnection::CSRSWConnection
-/// @description Send function for the CSRSWConnection. Sending using this
+/// CProtocolSR::CProtocolSR
+/// @description Send function for the CProtocolSR. Sending using this
 ///   protocol involves an alternating bit scheme. Messages can expire and
 ///   delivery won't be attempted after the deadline is passed. Killed messages
 ///   are noted in the next outgoing message. The receiver tracks the killed
@@ -91,7 +89,7 @@ void CSRSWConnection::ChangePhase(bool /*newround*/)
 ///     If a message is written to the channel, the m_killable flag is set.
 /// @param msg The message to write to the channel.
 ///////////////////////////////////////////////////////////////////////////////
-void CSRSWConnection::Send(CMessage msg)
+void CProtocolSR::Send(CMessage msg)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
@@ -111,22 +109,23 @@ void CSRSWConnection::Send(CMessage msg)
     msg.SetSourceHostname(CConnectionManager::Instance().GetHost());
     msg.SetProtocol(GetIdentifier());
     msg.SetSendTimestampNow();
+    if(!msg.HasExpireTime())
+    {
+        Logger.Debug<<"Set Expire time"<<std::endl;
+        msg.SetExpireTimeFromNow(boost::posix_time::milliseconds(CTimings::CSRC_DEFAULT_TIMEOUT));
+    }
 
-    if(m_outstandingwindow.size() < OUTSTANDING_WINDOW)
+    if(m_window.size() == 0)
     {
         Write(msg);
-        m_outstandingwindow.push_back(msg);
         boost::system::error_code x;
         Resend(x);
     }
-    else
-    {
-        m_window.push_back(msg);
-    }
+    m_window.push_back(msg);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// CSRSWConnection::CSRSWConnection
+/// CProtocolSR::CProtocolSR
 /// @description Handles refiring ACKs and Sent Messages.
 /// @pre The connection has received or sent at least one message.
 /// @post One of the following conditions or combination of states is
@@ -145,23 +144,74 @@ void CSRSWConnection::Send(CMessage msg)
 ///       5) If there is still a message to resend, the timer is reset.
 /// @param err The timer error code. If the err is 0 then the timer expired
 ///////////////////////////////////////////////////////////////////////////////
-void CSRSWConnection::Resend(const boost::system::error_code& err)
+void CProtocolSR::Resend(const boost::system::error_code& err)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     if(!err && !GetStopped())
     {
-        if(m_outstandingwindow.size() > 0)
+        Logger.Trace<<__PRETTY_FUNCTION__<<" Checking ACK"<<std::endl;
+        // Check if the front of the queue is an ACK
+        /*
+        m_ackmutex.lock();
+        if(m_currentack.GetStatus() == freedm::broker::CMessage::Accepted)
         {
-            Logger.Trace<<__PRETTY_FUNCTION__<<" Writing"<<std::endl;
-            std::deque<CMessage>::iterator it;
-            for(it = m_outstandingwindow.begin(); it != m_outstandingwindow.end(); it++)
+            //if(!m_currentack.IsExpired())
+            //{
+                Write(m_currentack);
+                m_timeout.cancel();
+                m_timeout.expires_from_now(boost::posix_time::milliseconds(REFIRE_TIME));
+                m_timeout.async_wait(boost::bind(&CProtocolSR::Resend,this,
+                    boost::asio::placeholders::error));
+            //}
+        }
+        m_ackmutex.unlock();
+        */
+        Logger.Trace<<__PRETTY_FUNCTION__<<" Sent ACK"<<std::endl;
+        while(m_window.size() > 0 && m_window.front().IsExpired())
+        {
+            Logger.Trace<<__PRETTY_FUNCTION__<<" Flusing"<<std::endl;
+            //First message in the window should be the only one
+            //ever to have been written.
+            m_sendkills = true;
+            Logger.Debug<<"Message Expired: "<<m_window.front().GetHash()
+                          <<":"<<m_window.front().GetSequenceNumber()<<std::endl;
+            m_window.pop_front();
+            m_dropped++;
+        }
+        if(m_dropped > MAX_DROPPED_MSGS)
+        {
+            Logger.Warn<<"Connection to "<<GetConnection()->GetUUID()<<" has lost "<<m_dropped<<" messages. Attempting to reconnect."<<std::endl;
+            GetConnection()->Stop();
+            return;
+        }
+        Logger.Trace<<__PRETTY_FUNCTION__<<" Flushed Expired"<<std::endl;
+        if(m_window.size() > 0)
+        {
+            if(m_sendkills &&  m_sendkill > m_window.front().GetSequenceNumber())
             {
-                Write(*it);
+                // If we have expired a message and caused the seqnos
+                // to wrap, we resync the connection. This shouldn't
+                // happen very often.
+                // If we wrap, don't send kills
+                m_sendkills = false;
+                m_sendkill = 0;
+                SendSYN();
             }
+            if(m_sendkills)
+            {
+                // kill will be set to the last message accepted by receiver
+                // (and whose ack has been received)
+                Logger.Trace<<__PRETTY_FUNCTION__<<" Adding Properties"<<std::endl;
+                ptree x;
+                x.put("src.kill",m_sendkill);
+                m_window.front().SetProtocolProperties(x);
+            }
+            Logger.Trace<<__PRETTY_FUNCTION__<<" Writing"<<std::endl;
+            Write(m_window.front());
             // Head of window can be killed.
             m_timeout.cancel();
-            m_timeout.expires_from_now(boost::posix_time::milliseconds(REFIRE_TIME));
-            m_timeout.async_wait(boost::bind(&CSRSWConnection::Resend,shared_from_this(),
+            m_timeout.expires_from_now(boost::posix_time::milliseconds(CTimings::CSRC_RESEND_TIME));
+            m_timeout.async_wait(boost::bind(&CProtocolSR::Resend,shared_from_this(),
                 boost::asio::placeholders::error));
         }
     }
@@ -169,7 +219,7 @@ void CSRSWConnection::Resend(const boost::system::error_code& err)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// CSRSWConnection::ReceiveACK
+/// CProtocolSR::ReceiveACK
 /// @description Marks a message as acknowledged by the receiver and moves to
 ///     transmit the next message.
 /// @pre A message has been sent.
@@ -180,34 +230,27 @@ void CSRSWConnection::Resend(const boost::system::error_code& err)
 ///       If the there is still an message in the window to send, the
 ///       resend function is called.
 ///////////////////////////////////////////////////////////////////////////////
-void CSRSWConnection::ReceiveACK(const CMessage &msg)
+void CProtocolSR::ReceiveACK(const CMessage &msg)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     unsigned int seq = msg.GetSequenceNumber();
     ptree pp = msg.GetProtocolProperties();
-    while(m_outstandingwindow.size() > 0)
+    size_t hash = pp.get<size_t>("src.hash");
+    if(m_window.size() > 0)
     {
-        unsigned int fseq = m_outstandingwindow.front().GetSequenceNumber();
-        unsigned int bounda = fseq;
-        unsigned int boundb = (fseq+OUTSTANDING_WINDOW)%SEQUENCE_MODULO;
         // Assuming hash collisions are small, we will check the hash
         // of the front message. On hit, we can accept the acknowledge.
+        unsigned int fseq = m_window.front().GetSequenceNumber();
         Logger.Debug<<"Received ACK "<<seq<<" expecting ACK "<<fseq<<std::endl;
-        if(bounda <= seq || (seq < boundb and boundb < bounda))
+        if(fseq == seq && m_window.front().GetHash() == hash)
         {
-            m_outstandingwindow.pop_front();
-            if(m_window.size() > 0)
-            {
-                m_outstandingwindow.push_back(m_window.front());
-                m_window.pop_front();
-            }
-        }
-        else
-        {
-            break;
+            m_sendkill = fseq;
+            m_window.pop_front();
+            m_sendkills = false;
+            m_dropped = 0;
         }
     }
-    if(m_outstandingwindow.size() > 0)
+    if(m_window.size() > 0)
     {
         boost::system::error_code x;
         Resend(x);
@@ -215,7 +258,7 @@ void CSRSWConnection::ReceiveACK(const CMessage &msg)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// CSRSWConnection::Receive
+/// CProtocolSR::Receive
 /// @description Accepts a message into the protocol, if that message should
 ///   be accepted. If this function returns true, the message is passed to
 ///   the dispatcher. Since this message accepts SYNs there might be times
@@ -252,9 +295,11 @@ void CSRSWConnection::ReceiveACK(const CMessage &msg)
 ///         in the gap of sequence numbers.
 /// @return True if the message is accepted, false otherwise.
 ///////////////////////////////////////////////////////////////////////////////
-bool CSRSWConnection::Receive(const CMessage &msg)
+bool CProtocolSR::Receive(const CMessage &msg)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    unsigned int kill = 0;
+    bool usekill = false; //If true, we should accept any inseq
     if(msg.GetStatus() == freedm::broker::CMessage::BadRequest)
     {
         //See if we are already trying to sync:
@@ -307,18 +352,45 @@ bool CSRSWConnection::Receive(const CMessage &msg)
     }
     // See if the message contains kill data. If it does, read it and mark
     // we should use it.
-    // Consider the window you expect to see
-    unsigned int seq = msg.GetSequenceNumber();
-    if(m_inseq == seq)
+    try
     {
-        m_inseq = (seq+1)%SEQUENCE_MODULO;
+        ptree pp = msg.GetProtocolProperties();
+        kill = pp.get<unsigned int>("src.kill");
+        usekill = true;
+    }
+    catch(std::exception &e)
+    {
+        kill = msg.GetSequenceNumber();
+        usekill = false;
+    }
+    //Consider the window you expect to see
+    // If the killed message is the one immediately preceeding this
+    // message in terms of sequence number we should accept it
+    Logger.Debug<<"Recv: "<<msg.GetSequenceNumber()<<" Expected "<<m_inseq<<" Using kill: "<<usekill<<" with "<<kill<<std::endl;
+    if(msg.GetSequenceNumber() == m_inseq)
+    {
+        //m_insync = true;
+        m_inseq = (m_inseq+1)%SEQUENCE_MODULO;
         return true;
     }
+    else if(usekill == true && kill< m_inseq
+            && msg.GetSequenceNumber() > m_inseq)
+    {
+        //m_inseq will be right for the next expected message.
+        m_inseq = (msg.GetSequenceNumber()+1)%SEQUENCE_MODULO;
+        return true;
+    }
+    else if(usekill == true)
+    {
+        Logger.Debug<<"KILL: "<<kill<<" INSEQ "<<m_inseq<<" SEQ: "
+                      <<msg.GetSequenceNumber()<<std::endl;
+    }
+    // Justin case.
     return false;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// CSRSWConnection::SendACK
+/// CProtocolSR::SendACK
 /// @description Composes an ack and writes it to the channel. ACKS are saved
 ///     to the protocol's state and are written again during resends to try and
 ///     maximize througput.
@@ -327,7 +399,7 @@ bool CSRSWConnection::Receive(const CMessage &msg)
 /// @post The m_currentack member is set to the ack and the message will
 ///     be resent during resend until it expires.
 ///////////////////////////////////////////////////////////////////////////////
-void CSRSWConnection::SendACK(const CMessage &msg)
+void CProtocolSR::SendACK(const CMessage &msg)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     unsigned int seq = msg.GetSequenceNumber();
@@ -350,35 +422,35 @@ void CSRSWConnection::SendACK(const CMessage &msg)
     m_ackmutex.unlock();
     /// Hook into resend until the message expires.
     m_timeout.cancel();
-    m_timeout.expires_from_now(boost::posix_time::milliseconds(REFIRE_TIME));
-    m_timeout.async_wait(boost::bind(&CSRSWConnection::Resend,shared_from_this(),
+    m_timeout.expires_from_now(boost::posix_time::milliseconds(CTimings::CSRC_RESEND_TIME));
+    m_timeout.async_wait(boost::bind(&CProtocolSR::Resend,shared_from_this(),
         boost::asio::placeholders::error));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// CSRSWConnection::SendSYN
+/// CProtocolSR::SendSYN
 /// @description Composes an SYN and writes it to the channel.
 /// @pre A message has been accepted.
 /// @post A syn has been written to the channel
 ///////////////////////////////////////////////////////////////////////////////
-void CSRSWConnection::SendSYN()
+void CProtocolSR::SendSYN()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     unsigned int seq = m_outseq;
     freedm::broker::CMessage outmsg;
-    if(m_outstandingwindow.size() == 0)
+    if(m_window.size() == 0)
     {
         m_outseq = (m_outseq+1)%SEQUENCE_MODULO;
     }
     else
     {
         //Don't bother if front of queue is already a SYN
-        if(m_outstandingwindow.front().GetStatus() == CMessage::Created)
+        if(m_window.front().GetStatus() == CMessage::Created)
         {
             return;
         }
         //Set it as the seq before the front of queue
-        seq = m_outstandingwindow.front().GetSequenceNumber();
+        seq = m_window.front().GetSequenceNumber();
         if(seq == 0)
         {
             seq = SEQUENCE_MODULO-1;
@@ -397,7 +469,7 @@ void CSRSWConnection::SendSYN()
     outmsg.SetProtocol(GetIdentifier());
     outmsg.SetNeverExpires();
     Write(outmsg);
-    m_outstandingwindow.push_front(outmsg);
+    m_window.push_front(outmsg);
     m_outsync = true;
     /// Hook into resend until the message expires.
     boost::system::error_code x;

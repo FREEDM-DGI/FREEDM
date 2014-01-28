@@ -28,9 +28,9 @@
 #include "CLogger.hpp"
 #include "CMessage.hpp"
 #include "config.hpp"
-#include "CSRConnection.hpp"
-#include "CSUConnection.hpp"
-#include "CSRSWConnection.hpp"
+#include "CProtocolSR.hpp"
+#include "CProtocolSU.hpp"
+#include "CProtocolSRSW.hpp"
 
 #include <vector>
 
@@ -64,13 +64,13 @@ CConnection::CConnection(std::string uuid)
   , m_reliability(100)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    m_protocols.insert(ProtocolMap::value_type(CSUConnection::Identifier(),
-        ProtocolPtr(new CSUConnection(this))));
-    m_protocols.insert(ProtocolMap::value_type(CSRConnection::Identifier(),
-        ProtocolPtr(new CSRConnection(this))));
-    m_protocols.insert(ProtocolMap::value_type(CSRSWConnection::Identifier(),
-        ProtocolPtr(new CSRSWConnection(this))));
-    m_defaultprotocol = CSRConnection::Identifier();
+    m_protocols.insert(ProtocolMap::value_type(CProtocolSU::Identifier(),
+        ProtocolPtr(new CProtocolSU(this))));
+    m_protocols.insert(ProtocolMap::value_type(CProtocolSR::Identifier(),
+        ProtocolPtr(new CProtocolSR(this))));
+    m_protocols.insert(ProtocolMap::value_type(CProtocolSRSW::Identifier(),
+        ProtocolPtr(new CProtocolSRSW(this))));
+    m_defaultprotocol = CProtocolSR::Identifier();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

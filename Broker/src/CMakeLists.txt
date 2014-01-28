@@ -11,9 +11,9 @@ set(BROKER_FILES
     CListener.cpp
     CLogger.cpp
     CMessage.cpp
-    CSRConnection.cpp
-    CSUConnection.cpp
-    CSRSWConnection.cpp
+    CProtocolSR.cpp
+    CProtocolSU.cpp
+    CProtocolSRSW.cpp
     IPeerNode.cpp
     IProtocol.cpp
     IHandler.cpp

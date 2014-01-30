@@ -87,9 +87,7 @@ void CConnection::Start()
 
 ///////////////////////////////////////////////////////////////////////////////
 /// @fn CConnection::Stop
-/// @description Stops the socket and cancels the timeout timer. Does not
-///   need to be called on a listening connection (ie one that has had
-///   Start() called on it.
+/// @description Stops the socket and cancels the timeout timer.
 /// @pre Any initialized CConnection object.
 /// @post The underlying socket is closed and the message timeout timer is
 ///        cancelled.

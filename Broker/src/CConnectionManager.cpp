@@ -128,7 +128,7 @@ void CConnectionManager::PutHost(std::string u, SRemoteHost host)
 /// @post The connection is closed and removed from the map.
 /// @param c the connection pointer to stop.
 ///////////////////////////////////////////////////////////////////////////////
-void CConnectionManager::Stop (CConnection::ConnectionPtr c)
+void CConnectionManager::Stop(ConnectionPtr c)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     if(m_connections.right.count(c))
@@ -146,7 +146,7 @@ void CConnectionManager::Stop (CConnection::ConnectionPtr c)
 /// @post The forward and reverse connection maps are empty, and all
 ///        connections that were contained within them are stopped.
 ///////////////////////////////////////////////////////////////////////////////
-void CConnectionManager::StopAll ()
+void CConnectionManager::StopAll()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     while(m_connections.size() > 0)

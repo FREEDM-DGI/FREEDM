@@ -50,13 +50,9 @@ CLocalLogger Logger(__FILE__);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// @fn CConnection::CConnection
-/// @description Constructor for the CConnection object. Since the change to
-///   udp, this object can act either as a listener or sender (but not both)
-///   to have the object behave as a listener, Start() should be called on it.
-/// @pre An initialized socket is ready to be converted to a connection.
-/// @post A new CConnection object is initialized.
-/// @param uuid The uuid this node connects to, or what listener.
+/// Create a connection to one particular peer
+///
+/// @param uuid the UUID of the peer to connect to
 ///////////////////////////////////////////////////////////////////////////////
 CConnection::CConnection(std::string uuid)
   : m_socket(CBroker::Instance().GetIOService())

@@ -63,9 +63,6 @@ public:
     /// Construct a CConnection to a peer
     CConnection(std::string uuid);
 
-    /// Start the first asynchronous operation for the CConnection.
-    void Start();
-
     /// Stop all asynchronous operations associated with the CConnection.
     void Stop();
 

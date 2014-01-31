@@ -74,18 +74,6 @@ CConnection::CConnection(std::string uuid)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// @fn CConnection::Start
-/// @description Starts the receive routine which causes this socket to behave
-///   as a listener.
-/// @pre The object is initialized.
-/// @post The connection is asynchronously waiting for messages.
-///////////////////////////////////////////////////////////////////////////////
-void CConnection::Start()
-{
-    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-}
-
-///////////////////////////////////////////////////////////////////////////////
 /// @fn CConnection::Stop
 /// @description Stops the socket and cancels the timeout timer.
 /// @pre Any initialized CConnection object.

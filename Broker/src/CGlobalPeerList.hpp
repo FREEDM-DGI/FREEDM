@@ -43,7 +43,6 @@ class GMAgent;
 class CGlobalPeerList : public boost::noncopyable
 {
     public:
-        friend class freedm::broker::IReadHandler;
         friend class freedm::broker::gm::GMAgent;
         /// Provides a PeerNodePtr type
         typedef boost::shared_ptr<IPeerNode> PeerNodePtr;

@@ -22,6 +22,8 @@
 
 #include "CGlobalPeerList.hpp"
 
+#include <stdexcept>
+#include <string>
 
 #include <boost/make_shared.hpp>
 
@@ -41,11 +43,9 @@ CGlobalPeerList::PeerNodePtr CGlobalPeerList::GetPeer(std::string uuid)
     PeerSetIterator pst = Find(uuid);
     if(pst == end())
     {
-        std::stringstream ss;
-        ss << "Peer "<<uuid<<" was not found in the global table."<<std::endl;
-        throw std::runtime_error(ss.str());
+        throw std::runtime_error("Peer " + uuid + " was not found in the global table");
     }
-    return (*pst).second;
+    return pst->second;
 }
 ////////////////////////////////////////////////////////
 /// CGlobalPeerList::Count

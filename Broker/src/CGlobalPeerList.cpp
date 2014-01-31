@@ -22,6 +22,9 @@
 
 #include "CGlobalPeerList.hpp"
 
+
+#include <boost/make_shared.hpp>
+
 namespace freedm {
 
 namespace broker {
@@ -95,15 +98,14 @@ void CGlobalPeerList::Insert(PeerNodePtr p)
 /// CGlobalPeerList::Create
 /// @description Constructs a new peernode pointer, intserts it, and returns it
 /// @param uuid The UUID this pointer addresses.
-/// @param connmgr The connection manager used to communicate with this node.
 //////////////////////////////////////////////////////
-CGlobalPeerList::PeerNodePtr CGlobalPeerList::Create(std::string uuid, ConnManagerPtr connmgr)
+CGlobalPeerList::PeerNodePtr CGlobalPeerList::Create(std::string uuid)
 {
     if(Count(uuid) > 0)
     {
         return GetPeer(uuid);
     }
-    PeerNodePtr p(new IPeerNode(uuid,connmgr));
+    PeerNodePtr p = boost::make_shared<IPeerNode>(uuid);
     Insert(p);
     return p;
 }

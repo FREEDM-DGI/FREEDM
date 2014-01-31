@@ -77,8 +77,7 @@ void IReadHandler::HandleRead(MessagePtr msg)
             Logger.Info<<"Didn't have a peer to construct the new peer from (might be ok)"<<std::endl;
             return;
         }
-        ConnManagerPtr connmgr = CGlobalPeerList::instance().begin()->second->GetConnectionManager();
-        peer = CGlobalPeerList::instance().Create(source,connmgr);
+        peer = CGlobalPeerList::instance().Create(source);
     }
     if(msg->GetHandler() == "")
     {

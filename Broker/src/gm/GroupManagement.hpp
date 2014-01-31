@@ -101,7 +101,7 @@ class GMAgent
 
     // Processors
     /// Handles Processing a PeerList
-    static PeerSet ProcessPeerList(MessagePtr msg, CConnectionManager& connmgr);
+    static PeerSet ProcessPeerList(MessagePtr msg);
 
     //Routines
     /// Checks for other up leaders

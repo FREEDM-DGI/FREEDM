@@ -22,15 +22,21 @@
 /// Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
 ////////////////////////////////////////////////////////////////////////////////
 
+#include "config.hpp"
+
 #include "CBroker.hpp"
 #include "CConnection.hpp"
 #include "CConnectionManager.hpp"
-#include "config.hpp"
+#include "CListener.hpp"
 #include "CLogger.hpp"
+#include "CGlobalConfiguration.hpp"
 
 #include <algorithm>
 
 #include <boost/bind.hpp>
+#include <boost/make_shared.hpp>
+#include <boost/property_tree/ptree.hpp>
+#include <boost/property_tree/xml_parser.hpp>
 #include <boost/thread/locks.hpp>
 
 namespace freedm {
@@ -231,12 +237,12 @@ ConnectionPtr CConnectionManager::GetConnectionByUUID(std::string uuid)
 
     // Create a new CConnection object for this host
     Logger.Debug<<"Constructing CConnection"<<std::endl;
-    ConnectionPtr c(new CConnection(uuid));
+    ConnectionPtr c = boost::make_shared<CConnection>(uuid);
 
     // Initiate the UDP connection
     Logger.Debug<<"Computing remote endpoint"<<std::endl;
     boost::asio::ip::udp::resolver resolver(CBroker::Instance().GetIOService());
-    boost::asio::ip::udp::resolver::query query( s, port);
+    boost::asio::ip::udp::resolver::query query(s, port);
     boost::asio::ip::udp::resolver::iterator it;
     try
     {
@@ -255,9 +261,9 @@ ConnectionPtr CConnectionManager::GetConnectionByUUID(std::string uuid)
     //Once the connection is built, connection manager gets a call back to register it.
     Logger.Debug<<"Inserting connection"<<std::endl;
     PutConnection(uuid,c);
-    #ifdef CUSTOMNETWORK
+#ifdef CUSTOMNETWORK
     LoadNetworkConfig();
-    #endif
+#endif
     return c;
 }
 
@@ -270,8 +276,7 @@ ConnectionPtr CConnectionManager::GetConnectionByUUID(std::string uuid)
 ///////////////////////////////////////////////////////////////////////////////
 void CConnectionManager::ChangePhase(bool newround)
 {
-    connectionmap::left_iterator it;
-    for(it = m_connections.left.begin(); it != m_connections.left.end(); it++)
+    for(connectionmap::left_iterator it = m_connections.left.begin(); it != m_connections.left.end(); it++)
     {
         it->second->ChangePhase(newround);
     }
@@ -290,7 +295,7 @@ void CConnectionManager::LoadNetworkConfig()
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     boost::property_tree::ptree pt;
     boost::property_tree::read_xml("network.xml",pt);
-    BOOST_FOREACH(ptree::value_type & child, pt.get_child("network.outgoing"))
+    BOOST_FOREACH(boost::property_tree::ptree::value_type & child, pt.get_child("network.outgoing"))
     {
         std::string uuid = child.second.get<std::string>("<xmlattr>.uuid");
         int reliability = child.second.get<int>("reliability");

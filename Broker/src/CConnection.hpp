@@ -60,7 +60,7 @@ public:
     /// ConnectionPtr Typedef
     typedef boost::shared_ptr<CConnection> ConnectionPtr;
 
-    /// Construct a CConnection with the given io_service.
+    /// Construct a CConnection to a peer
     CConnection(std::string uuid);
 
     /// Start the first asynchronous operation for the CConnection.

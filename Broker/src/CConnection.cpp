@@ -226,6 +226,8 @@ boost::asio::ip::udp::socket& CConnection::GetSocket()
 ///////////////////////////////////////////////////////////////////////////////
 std::string CConnection::GetUUID() const
 {
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+
     return m_uuid;
 }
 
@@ -237,6 +239,8 @@ std::string CConnection::GetUUID() const
 ///////////////////////////////////////////////////////////////////////////////
 void CConnection::SetReliability(int r)
 {
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+
     m_reliability = r;
 }
 
@@ -247,6 +251,8 @@ void CConnection::SetReliability(int r)
 ///////////////////////////////////////////////////////////////////////////////
 int CConnection::GetReliability() const
 {
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+
     return m_reliability;
 }
 

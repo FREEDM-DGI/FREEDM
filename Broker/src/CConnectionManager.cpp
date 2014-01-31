@@ -42,6 +42,7 @@ namespace {
 CLocalLogger Logger(__FILE__);
 
 }
+
 ///////////////////////////////////////////////////////////////////////////////
 /// @fn CConnectionManager::CConnectionManager
 /// @description: Initializes the connection manager object
@@ -103,7 +104,6 @@ void CConnectionManager::PutHost(std::string u, std::string host, std::string po
     }
 }
 
-
 ///////////////////////////////////////////////////////////////////////////////
 /// @fn CConnectionManager::PutHost
 /// @description Registers a hostname with the uuid to hostname map.
@@ -120,6 +120,7 @@ void CConnectionManager::PutHost(std::string u, SRemoteHost host)
         m_hosts.insert(std::pair<std::string, SRemoteHost>(u, host));
     }
 }
+
 ///////////////////////////////////////////////////////////////////////////////
 /// @fn CConnectionManager::Stop
 /// @description Stops a connection and removes it from the connections maps.

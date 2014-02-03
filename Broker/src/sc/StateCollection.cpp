@@ -106,7 +106,7 @@ CLocalLogger Logger(__FILE__);
 ///////////////////////////////////////////////////////////////////////////////
 
 SCAgent::SCAgent(std::string uuid):
-        IPeerNode(uuid, CConnectionManager::Instance()),
+        IPeerNode(uuid),
         m_countstate(0),
         m_NotifyToSave(false),
         m_curversion("default", 0)
@@ -611,7 +611,7 @@ void SCAgent::HandlePeerList(MessagePtr msg, PeerNodePtr peer)
     m_scleader = peer->GetUUID();
     Logger.Info << "Peer List received from Group Leader: " << peer->GetUUID() <<std::endl;
     // Process the peer list.
-    m_AllPeers = gm::GMAgent::ProcessPeerList(msg,GetConnectionManager());
+    m_AllPeers = gm::GMAgent::ProcessPeerList(msg);
 
     //if only one node left
     if (m_AllPeers.size()==1)

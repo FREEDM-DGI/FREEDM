@@ -22,6 +22,11 @@
 
 #include "CGlobalPeerList.hpp"
 
+#include <stdexcept>
+#include <string>
+
+#include <boost/make_shared.hpp>
+
 namespace freedm {
 
 namespace broker {
@@ -38,11 +43,9 @@ CGlobalPeerList::PeerNodePtr CGlobalPeerList::GetPeer(std::string uuid)
     PeerSetIterator pst = Find(uuid);
     if(pst == end())
     {
-        std::stringstream ss;
-        ss << "Peer "<<uuid<<" was not found in the global table."<<std::endl;
-        throw std::runtime_error(ss.str());
+        throw std::runtime_error("Peer " + uuid + " was not found in the global table");
     }
-    return (*pst).second;
+    return pst->second;
 }
 ////////////////////////////////////////////////////////
 /// CGlobalPeerList::Count
@@ -95,15 +98,14 @@ void CGlobalPeerList::Insert(PeerNodePtr p)
 /// CGlobalPeerList::Create
 /// @description Constructs a new peernode pointer, intserts it, and returns it
 /// @param uuid The UUID this pointer addresses.
-/// @param connmgr The connection manager used to communicate with this node.
 //////////////////////////////////////////////////////
-CGlobalPeerList::PeerNodePtr CGlobalPeerList::Create(std::string uuid, ConnManagerPtr connmgr)
+CGlobalPeerList::PeerNodePtr CGlobalPeerList::Create(std::string uuid)
 {
     if(Count(uuid) > 0)
     {
         return GetPeer(uuid);
     }
-    PeerNodePtr p(new IPeerNode(uuid,connmgr));
+    PeerNodePtr p = boost::make_shared<IPeerNode>(uuid);
     Insert(p);
     return p;
 }

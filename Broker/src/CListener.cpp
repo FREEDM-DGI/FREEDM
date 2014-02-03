@@ -22,9 +22,11 @@
 /// Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
 ////////////////////////////////////////////////////////////////////////////////
 
+#include "CBroker.hpp"
 #include "CConnection.hpp"
 #include "CConnectionManager.hpp"
 #include "CDispatcher.hpp"
+#include "CGlobalConfiguration.hpp"
 #include "CListener.hpp"
 #include "CLogger.hpp"
 #include "CMessage.hpp"
@@ -57,7 +59,7 @@ CLocalLogger Logger(__FILE__);
 /// @post A new CConnection object is initialized.
 ///////////////////////////////////////////////////////////////////////////////
 CListener::CListener()
-  : CReliableConnection(CConnectionManager::Instance().GetUUID())
+  : m_socket(CBroker::Instance().GetIOService())
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 }
@@ -82,9 +84,9 @@ CListener& CListener::Instance()
 void CListener::Start(boost::asio::ip::udp::endpoint& endpoint)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    GetSocket().open(endpoint.protocol());
-    GetSocket().bind(endpoint);
-    GetSocket().async_receive_from(boost::asio::buffer(m_buffer, CReliableConnection::MAX_PACKET_SIZE),
+    m_socket.open(endpoint.protocol());
+    m_socket.bind(endpoint);
+    m_socket.async_receive_from(boost::asio::buffer(m_buffer, CGlobalConfiguration::MAX_PACKET_SIZE),
             m_endpoint, boost::bind(&CListener::HandleRead, this,
             boost::asio::placeholders::error,
             boost::asio::placeholders::bytes_transferred));
@@ -123,7 +125,7 @@ void CListener::HandleRead(const boost::system::error_code& e,
         catch(std::exception &e)
         {
             Logger.Error<<"Couldn't parse message XML: "<<e.what()<<std::endl;
-            GetSocket().async_receive_from(boost::asio::buffer(m_buffer, CReliableConnection::MAX_PACKET_SIZE),
+            m_socket.async_receive_from(boost::asio::buffer(m_buffer, CGlobalConfiguration::MAX_PACKET_SIZE),
                 m_endpoint, boost::bind(&CListener::HandleRead, this,
                 boost::asio::placeholders::error,
                 boost::asio::placeholders::bytes_transferred));
@@ -175,7 +177,7 @@ void CListener::HandleRead(const boost::system::error_code& e,
 listen:
 #endif
         Logger.Debug<<"Listening for next message"<<std::endl;
-        GetSocket().async_receive_from(boost::asio::buffer(m_buffer, CReliableConnection::MAX_PACKET_SIZE),
+        m_socket.async_receive_from(boost::asio::buffer(m_buffer, CGlobalConfiguration::MAX_PACKET_SIZE),
                 m_endpoint, boost::bind(&CListener::HandleRead, this,
                 boost::asio::placeholders::error,
                 boost::asio::placeholders::bytes_transferred));

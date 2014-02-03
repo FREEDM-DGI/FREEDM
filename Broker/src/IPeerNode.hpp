@@ -26,7 +26,6 @@
 #define IPEERNODE_HPP_
 
 #include "CConnection.hpp"
-#include "CConnectionManager.hpp"
 
 #include <list>
 #include <set>
@@ -42,12 +41,10 @@ namespace freedm {
 namespace broker {
 
 typedef boost::shared_ptr<freedm::broker::CMessage> MessagePtr;
-typedef freedm::broker::CConnectionManager& ConnManagerPtr;
 
 /// Base interface for agents/broker modules
 class IPeerNode
-  : public boost::enable_shared_from_this<IPeerNode>
-  , private boost::noncopyable
+  : private boost::noncopyable
 {
         //////////////////////////////////////////////////////////
         /// class IPeerNode
@@ -62,13 +59,11 @@ class IPeerNode
         /////////////////////////////////////////////////////////
     public:
         /// Construct a peer node
-        IPeerNode(std::string uuid, ConnManagerPtr connmgr);
+        IPeerNode(std::string uuid);
         /// Gets the uuid of the node this addresses
         std::string GetUUID() const;
         /// Gives a connection ptr to this peer
         ConnectionPtr GetConnection();
-        /// Returns a pointer to the connection manager
-        ConnManagerPtr GetConnectionManager();
         /// Gets the hostname of this peer
         std::string GetHostname() const;
         /// Gets the port of this peer.
@@ -79,7 +74,6 @@ class IPeerNode
         friend class CAgent;
     private:
         std::string m_uuid; /// This node's uuid.
-        ConnManagerPtr m_connmgr; /// The connection manager to use
 };
 
 bool operator==(const IPeerNode& a, const IPeerNode& b);

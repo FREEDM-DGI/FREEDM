@@ -1,12 +1,12 @@
 ////////////////////////////////////////////////////////////////////////////////
-/// @file         CSUConnection.cpp
+/// @file         CProtocolSU.cpp
 ///
 /// @author       Derek Ditch <derek.ditch@mst.edu>
 /// @author       Stephen Jackson <scj7t4@mst.edu>
 ///
 /// @project      FREEDM DGI
 ///
-/// @description  Declare CSUConnection class
+/// @description  Declare CProtocolSU class
 ///
 /// These source code files were created at Missouri University of Science and
 /// Technology, and are intended for use in teaching or research. They may be
@@ -24,7 +24,7 @@
 #include "CConnectionManager.hpp"
 #include "CLogger.hpp"
 #include "CMessage.hpp"
-#include "CSUConnection.hpp"
+#include "CProtocolSU.hpp"
 #include "IProtocol.hpp"
 #include "CTimings.hpp"
 
@@ -47,7 +47,7 @@ CLocalLogger Logger(__FILE__);
 
 }
 
-CSUConnection::CSUConnection(CConnection *  conn)
+CProtocolSU::CProtocolSU(CConnection *  conn)
     : IProtocol(conn),
       m_timeout(conn->GetSocket().get_io_service())
 {
@@ -56,7 +56,7 @@ CSUConnection::CSUConnection(CConnection *  conn)
     m_acceptmod = SEQUENCE_MODULO/WINDOW_SIZE;
 }
 
-void CSUConnection::Send(CMessage msg)
+void CProtocolSU::Send(CMessage msg)
 {
     unsigned int msgseq;
 
@@ -82,12 +82,12 @@ void CSUConnection::Send(CMessage msg)
         Write(msg);
         m_timeout.cancel();
         m_timeout.expires_from_now(boost::posix_time::milliseconds(CTimings::CSUC_RESEND_TIME));
-        m_timeout.async_wait(boost::bind(&CSUConnection::Resend,this,
+        m_timeout.async_wait(boost::bind(&CProtocolSU::Resend,this,
             boost::asio::placeholders::error));
     }
 }
 
-void CSUConnection::Resend(const boost::system::error_code& err)
+void CProtocolSU::Resend(const boost::system::error_code& err)
 {
     if(!err)
     {
@@ -117,13 +117,13 @@ void CSUConnection::Resend(const boost::system::error_code& err)
         {
             m_timeout.cancel();
             m_timeout.expires_from_now(boost::posix_time::milliseconds(CTimings::CSUC_RESEND_TIME));
-            m_timeout.async_wait(boost::bind(&CSUConnection::Resend,this,
+            m_timeout.async_wait(boost::bind(&CProtocolSU::Resend,this,
                 boost::asio::placeholders::error));
         }
     }
 }
 
-void CSUConnection::ReceiveACK(const CMessage &msg)
+void CProtocolSU::ReceiveACK(const CMessage &msg)
 {
     unsigned int seq = msg.GetSequenceNumber();
     while(m_window.size() > 0)
@@ -147,7 +147,7 @@ void CSUConnection::ReceiveACK(const CMessage &msg)
     }
 }
 
-bool CSUConnection::Receive(const CMessage &msg)
+bool CProtocolSU::Receive(const CMessage &msg)
 {
     //Consider the window you expect to see
     unsigned int bounda = m_inseq;
@@ -167,7 +167,7 @@ bool CSUConnection::Receive(const CMessage &msg)
     return false;
 }
 
-void CSUConnection::SendACK(const CMessage &msg)
+void CProtocolSU::SendACK(const CMessage &msg)
 {
     unsigned int seq = msg.GetSequenceNumber();
     freedm::broker::CMessage outmsg;

@@ -92,7 +92,7 @@ CLocalLogger Logger(__FILE__);
 /// @limitations: None
 ///////////////////////////////////////////////////////////////////////////////
 LBAgent::LBAgent(std::string uuid_):
-    IPeerNode(uuid_, CConnectionManager::Instance())
+    IPeerNode(uuid_)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     PeerNodePtr self_ = CGlobalPeerList::instance().GetPeer(uuid_);
@@ -716,7 +716,7 @@ void LBAgent::HandlePeerList(MessagePtr msg, PeerNodePtr peer)
         EraseInPeerSet(m_LoNodes,p_);
         EraseInPeerSet(m_NoNodes,p_);
     }
-    temp = gm::GMAgent::ProcessPeerList(msg,GetConnectionManager());
+    temp = gm::GMAgent::ProcessPeerList(msg);
     BOOST_FOREACH( PeerNodePtr p_, temp | boost::adaptors::map_values )
     {
         if(CountInPeerSet(m_AllPeers,p_) == 0)

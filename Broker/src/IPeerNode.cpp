@@ -23,6 +23,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 #include "CConnection.hpp"
+#include "CConnectionManager.hpp"
 #include "CLogger.hpp"
 #include "CMessage.hpp"
 #include "IPeerNode.hpp"
@@ -50,11 +51,9 @@ CLocalLogger Logger(__FILE__);
 /// @description Prepares a peer node. Provides node status
 ///   and sending functions to the agent in a very clean manner.
 /// @param uuid The uuid of the node
-/// @param connmgr The module managing the connections
 /////////////////////////////////////////////////////////////
-IPeerNode::IPeerNode(std::string uuid, ConnManagerPtr connmgr)
-    : m_uuid(uuid),
-      m_connmgr(connmgr)
+IPeerNode::IPeerNode(std::string uuid)
+    : m_uuid(uuid)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 }
@@ -77,7 +76,7 @@ std::string IPeerNode::GetUUID() const
 /////////////////////////////////////////////////////////////
 std::string IPeerNode::GetHostname() const
 {
-    return m_connmgr.GetHostByUUID(GetUUID()).hostname;
+    return CConnectionManager::Instance().GetHostByUUID(GetUUID()).hostname;
 }
 ////////////////////////////////////////////////////////////
 /// IPeerNode::GetPort
@@ -85,17 +84,7 @@ std::string IPeerNode::GetHostname() const
 ////////////////////////////////////////////////////////////
 std::string IPeerNode::GetPort() const
 {
-    return m_connmgr.GetHostByUUID(GetUUID()).port;
-}
-
-/////////////////////////////////////////////////////////////
-/// @fn IPeerNode::GetConnectionManager
-/// @description Returns a reference to the connection manager
-///              this object was constructed with.
-/////////////////////////////////////////////////////////////
-ConnManagerPtr IPeerNode::GetConnectionManager()
-{
-    return m_connmgr;
+    return CConnectionManager::Instance().GetHostByUUID(GetUUID()).port;
 }
 
 /////////////////////////////////////////////////////////////
@@ -109,7 +98,7 @@ ConnManagerPtr IPeerNode::GetConnectionManager()
 /////////////////////////////////////////////////////////////
 broker::ConnectionPtr IPeerNode::GetConnection()
 {
-    return m_connmgr.GetConnectionByUUID(m_uuid);
+    return CConnectionManager::Instance().GetConnectionByUUID(m_uuid);
 }
 
 /////////////////////////////////////////////////////////////

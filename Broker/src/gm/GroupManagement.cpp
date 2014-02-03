@@ -84,7 +84,7 @@ CLocalLogger Logger(__FILE__);
 /// @param p_uuid: This object's uuid.
 ///////////////////////////////////////////////////////////////////////////////
 GMAgent::GMAgent(std::string p_uuid)
-    : IPeerNode(p_uuid,CConnectionManager::Instance()),
+    : IPeerNode(p_uuid),
     CHECK_TIMEOUT(boost::posix_time::not_a_date_time),
     TIMEOUT_TIMEOUT(boost::posix_time::not_a_date_time),
     GLOBAL_TIMEOUT(boost::posix_time::milliseconds(CTimings::GM_GLOBAL_TIMEOUT)),
@@ -920,10 +920,9 @@ void GMAgent::Timeout( const boost::system::error_code& err )
 /// @description Provides a utility function for correctly handling incoming
 ///     peer lists.
 /// @param msg The message to parse
-/// @param connmgr A connection manager to use for constructing unrecognized peers.
 /// @return A PeerSet with all nodes in the group.
 ///////////////////////////////////////////////////////////////////////////////
-GMAgent::PeerSet GMAgent::ProcessPeerList(MessagePtr msg, CConnectionManager& connmgr)
+GMAgent::PeerSet GMAgent::ProcessPeerList(MessagePtr msg)
 {
     // Note: The group leader inserts himself into the peer list.
     PeerSet tmp;
@@ -942,8 +941,8 @@ GMAgent::PeerSet GMAgent::ProcessPeerList(MessagePtr msg, CConnectionManager& co
         {
             //Logger.Debug<<"I don't recognize this peer"<<std::endl;
             //If you don't already know about the peer, make sure it is in the connection manager
-            connmgr.PutHost(nuuid, nhost, nport);
-            p = CGlobalPeerList::instance().Create(nuuid,connmgr);
+            CConnectionManager::Instance().PutHost(nuuid, nhost, nport);
+            p = CGlobalPeerList::instance().Create(nuuid);
         }
         InsertInPeerSet(tmp,p);
     }
@@ -1017,7 +1016,7 @@ void GMAgent::HandlePeerList(MessagePtr msg, PeerNodePtr peer)
         m_timerMutex.unlock();
         Logger.Info << "RECV: PeerList (Ready) message from " <<peer->GetUUID() << std::endl;
         m_UpNodes.clear();
-        m_UpNodes = ProcessPeerList(msg,GetConnectionManager());
+        m_UpNodes = ProcessPeerList(msg);
         m_membership += m_UpNodes.size();
         m_membershipchecks++;
         m_UpNodes.erase(GetUUID());
@@ -1026,7 +1025,7 @@ void GMAgent::HandlePeerList(MessagePtr msg, PeerNodePtr peer)
     else if(peer->GetUUID() == m_GroupLeader && GetStatus() == GMAgent::NORMAL)
     {
         m_UpNodes.clear();
-        m_UpNodes = ProcessPeerList(msg,GetConnectionManager());
+        m_UpNodes = ProcessPeerList(msg);
         m_membership = m_UpNodes.size()+1;
         m_membershipchecks++;
         m_UpNodes.erase(GetUUID());
@@ -1181,8 +1180,8 @@ void GMAgent::HandleInvite(MessagePtr msg, PeerNodePtr peer)
             std::string nport = pt.get<std::string>("gm.groupleaderport");
             Logger.Debug<<"I don't recognize this peer"<<std::endl;
             //If you don't already know about the peer, make sure it is in the connection manager
-            GetConnectionManager().PutHost(m_GroupLeader, nhost, nport);
-            p = CGlobalPeerList::instance().Create(m_GroupLeader,GetConnectionManager());
+            CConnectionManager::Instance().PutHost(m_GroupLeader, nhost, nport);
+            p = CGlobalPeerList::instance().Create(m_GroupLeader);
         }
         SendToPeer(p,m_);
         SetStatus(GMAgent::REORGANIZATION);
@@ -1243,7 +1242,7 @@ void GMAgent::HandleResponseAYC(MessagePtr msg, PeerNodePtr peer)
         std::string nuuid = pt.get<std::string>("gm.ldruuid");
         std::string nhost = pt.get<std::string>("gm.ldrhost");
         std::string nport = pt.get<std::string>("gm.ldrport");
-        GetConnectionManager().PutHost(nuuid, nhost, nport);
+        CConnectionManager::Instance().PutHost(nuuid, nhost, nport);
         AddPeer(nuuid);
         EraseInPeerSet(m_Coordinators,peer);
     }
@@ -1330,7 +1329,7 @@ void GMAgent::HandlePeerListQuery(MessagePtr msg, PeerNodePtr peer)
 GMAgent::PeerNodePtr GMAgent::AddPeer(std::string uuid)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    return CGlobalPeerList::instance().Create(uuid,GetConnectionManager());
+    return CGlobalPeerList::instance().Create(uuid);
 }
 
 
@@ -1373,8 +1372,8 @@ int GMAgent::Run()
 
     std::map<std::string, SRemoteHost>::iterator mapIt_;
 
-    for( mapIt_ = GetConnectionManager().GetHostsBegin();
-        mapIt_ != GetConnectionManager().GetHostsEnd(); ++mapIt_ )
+    for( mapIt_ = CConnectionManager::Instance().GetHostsBegin();
+        mapIt_ != CConnectionManager::Instance().GetHostsEnd(); ++mapIt_ )
     {
         std::string host_ = mapIt_->first;
         Logger.Notice<<"Registering peer "<<mapIt_->first<<std::endl;

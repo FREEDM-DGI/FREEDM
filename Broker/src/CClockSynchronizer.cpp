@@ -21,6 +21,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 #include "CClockSynchronizer.hpp"
+#include "CConnectionManager.hpp"
 #include "CGlobalPeerList.hpp"
 #include "CLogger.hpp"
 

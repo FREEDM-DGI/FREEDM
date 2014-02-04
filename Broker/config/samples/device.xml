@@ -25,7 +25,6 @@
 </deviceType>
 <deviceType>
     <id>Logger</id>
+    <state>dgiEnable</state>
     <command>groupStatus</command>
-    <command>devcount</command>
-    <command>gateway</command>
 </deviceType>

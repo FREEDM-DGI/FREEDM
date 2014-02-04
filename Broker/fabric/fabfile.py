@@ -29,7 +29,7 @@ def pull_checkout(branch='master'):
         else:
             run('git checkout %s' % branch)
         run('git pull')
- 
+
 def build():
     with cd(BROKER_DIR):
         run("BOOST_ROOT='%s' cmake ." % BOOST_ROOT)

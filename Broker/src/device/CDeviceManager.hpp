@@ -66,7 +66,7 @@ public:
 
     /// Tests to see if a device exists.
     bool DeviceExists(std::string devid) const;
-    
+
     /// Gets a device by its identifier.
     CDevice::Pointer GetDevice(std::string devid);
     
@@ -107,7 +107,7 @@ private:
 
     /// Remove a device by its identifier.
     bool RemoveDevice(std::string devid);
-    
+
     /// Mapping from identifiers to device pointers.
     PhysicalDeviceSet m_devices;
 

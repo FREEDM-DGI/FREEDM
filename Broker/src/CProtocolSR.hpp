@@ -1,12 +1,12 @@
 ////////////////////////////////////////////////////////////////////////////////
-/// @file         CSUConnection.hpp
+/// @file         CProtocolSR.hpp
 ///
 /// @author       Derek Ditch <derek.ditch@mst.edu>
 /// @author       Stephen Jackson <scj7t4@mst.edu>
 ///
 /// @project      FREEDM DGI
 ///
-/// @description  Declare CSUConnection class
+/// @description  Declare CProtocolSR class
 ///
 /// These source code files were created at Missouri University of Science and
 /// Technology, and are intended for use in teaching or research. They may be
@@ -21,8 +21,8 @@
 /// Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
 ////////////////////////////////////////////////////////////////////////////////
 
-#ifndef CSUCONNECTION_HPP
-#define CSUCONNECTION_HPP
+#ifndef CPROTOCOLSR_HPP
+#define CPROTOCOLSR_HPP
 
 #include "CConnection.hpp"
 #include "CMessage.hpp"
@@ -36,16 +36,19 @@
 #include <boost/enable_shared_from_this.hpp>
 #include <boost/noncopyable.hpp>
 #include <boost/shared_ptr.hpp>
+#include <boost/thread/shared_mutex.hpp>
 
 namespace freedm {
     namespace broker {
 
-/// A connection protocol
-class CSUConnection : public IProtocol
+
+/// A reliable connection protocol with sweet as expirations.
+class CProtocolSR : public IProtocol
+    , public boost::enable_shared_from_this<CProtocolSR>
 {
     public:
         /// Initializes the protocol with the underlying connection
-        explicit CSUConnection(CConnection * conn);
+        explicit CProtocolSR(CConnection * conn);
         /// Public facing send function that sends a message
         void Send(CMessage msg);
         /// Public facing function that handles marking down ACKs for sent messages
@@ -54,36 +57,51 @@ class CSUConnection : public IProtocol
         bool Receive(const CMessage &msg);
         /// Handles Writing an ack for the input message to the channel
         void SendACK(const CMessage &msg);
+        /// Sends a synchronizer
+        void SendSYN();
         /// Stops the timers
-        void Stop() { m_timeout.cancel(); };
+        void Stop() { m_timeout.cancel(); SetStopped(true); };
         /// Returns the identifier
         std::string GetIdentifier() { return Identifier(); };
         /// Returns the identifier for this protocol.
-        static std::string Identifier() { return "SUC"; };
+        static std::string Identifier() { return "SRC"; };
     private:
         /// Resend outstanding messages
         void Resend(const boost::system::error_code& err);
         /// Timeout for resends
         boost::asio::deadline_timer m_timeout;
+        /// The current ack to flood with
+        CMessage m_currentack;
         /// The expected next in sequence number
         unsigned int m_inseq;
         /// The next number to assign to an outgoing message
         unsigned int m_outseq;
-        /// The modifier for how wide of a window the protocol should accept
-        unsigned int m_acceptmod; 
-        /// The number of retries
-        const static unsigned int MAX_RETRIES = 100;
-        /// The window size
-        const static unsigned int WINDOW_SIZE = 8;
-        /// The sequence modulo
-        const static unsigned int SEQUENCE_MODULO = 1024;
-        /// Queue item
-        struct QueueItem {
-            int ret; //The retries remaining
-            CMessage msg; //the message in queue
-        };
+        /// Marks if this has been synced.
+        bool m_insync;
+        /// Counts the number of times this one has been resynced
+        unsigned int m_inresyncs;
+        /// Time the last accepted sync was
+        boost::posix_time::ptime m_insynctime;
+        /// Marks if we've sent the outsync for this connection
+        bool m_outsync;
+        /// Keeps track of the last resync that we've seen
+        boost::posix_time::ptime m_outsynctime;
+        /// Marks if we should send the kill hash.
+        bool m_sendkills;
+        /// The hash to... MURDER.
+        unsigned int  m_sendkill;
         /// The window
-        std::deque<QueueItem> m_window;
+        std::deque<CMessage> m_window;
+        /// Sequence modulo
+        static const unsigned int SEQUENCE_MODULO = 1024;
+        /// Refire time in MS
+        static const unsigned int REFIRE_TIME = 10;
+        /// Mutex for the current ack
+        boost::shared_mutex m_ackmutex;
+        /// The number of messages that have to be dropped before the connection is dead
+        static const unsigned int MAX_DROPPED_MSGS = 3;
+        /// The number that have been dropped.
+        unsigned int m_dropped;
 };
 
     }

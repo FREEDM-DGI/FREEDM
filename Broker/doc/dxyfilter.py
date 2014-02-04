@@ -77,7 +77,7 @@ def stateTransition(state, line):
     elif state == KEEP_REMAINING_LINES_STATE:
         return KEEP_REMAINING_LINES_STATE
 
-for line in fileinput.input(): 
+for line in fileinput.input():
     state = stateTransition(state, line)
     # Could result in lost documentation
     if '@function' in line or '@fn' in line or state == DISCARD_LINE_STATE:

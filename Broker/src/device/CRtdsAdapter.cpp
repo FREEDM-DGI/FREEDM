@@ -120,7 +120,7 @@ CRtdsAdapter::CRtdsAdapter(boost::asio::io_service & service,
 void CRtdsAdapter::Start()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    
+
     IBufferAdapter::Start();
     ITcpAdapter::Connect();
     m_runTimer.expires_from_now(
@@ -175,12 +175,12 @@ void CRtdsAdapter::Run(const boost::system::error_code & e)
     {
         boost::unique_lock<boost::shared_mutex> writeLock(m_txMutex);
         Logger.Debug << "Obtained the txBuffer mutex." << std::endl;
-        
+
         EndianSwapIfNeeded(m_txBuffer);
         try
         {
             Logger.Debug << "Blocking for a socket write call." << std::endl;
-            TimedWrite(m_socket, boost::asio::buffer(m_txBuffer, 
+            TimedWrite(m_socket, boost::asio::buffer(m_txBuffer,
                     m_txBuffer.size() * sizeof(SignalValue)),
                     CTimings::DEV_SOCKET_TIMEOUT);
         }
@@ -190,7 +190,7 @@ void CRtdsAdapter::Run(const boost::system::error_code & e)
             throw;
         }
         EndianSwapIfNeeded(m_txBuffer);
-        
+
         Logger.Debug << "Releasing the txBuffer mutex." << std::endl;
     }
 
@@ -200,7 +200,7 @@ void CRtdsAdapter::Run(const boost::system::error_code & e)
         // must be a unique_lock for endian swaps
         boost::unique_lock<boost::shared_mutex> writeLock(m_rxMutex);
         Logger.Debug << "Obtained the rxBuffer mutex." << std::endl;
-        
+
         try
         {
             Logger.Debug << "Blocking for a socket read call." << std::endl;
@@ -231,7 +231,7 @@ void CRtdsAdapter::Run(const boost::system::error_code & e)
                 RevealDevices();
             }
         }
-        
+
         Logger.Debug << "Releasing the rxBuffer mutex." << std::endl;
     }
 
@@ -295,7 +295,7 @@ CRtdsAdapter::~CRtdsAdapter()
 void CRtdsAdapter::ReverseBytes( char * buffer, const int numBytes )
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    
+
     for( std::size_t i = 0, j = numBytes-1; i < j; i++, j-- )
     {
         char temp = buffer[i];
@@ -329,7 +329,7 @@ void CRtdsAdapter::EndianSwapIfNeeded(std::vector<SignalValue> & v)
     {
         ReverseBytes((char*)&v[i], sizeof(SignalValue));
     }
-    
+
 #elif __BYTE_ORDER == __BIG_ENDIAN
     Logger.Debug << "Endian swap skipped: host is big-endian." << std::endl;
 #else

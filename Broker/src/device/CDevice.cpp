@@ -57,24 +57,6 @@ SignalValue CDevice::GetState(std::string signal) const
     return m_adapter->GetState(m_devid, signal);
 }
 
-SignalValue CDevice::GetCommand(std::string signal, bool override) const
-{
-    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-
-    if( !HasCommand(signal) )
-    {
-        throw std::runtime_error("bad command signal");
-    }
-
-    SignalValue result = m_adapter->GetCommand(m_devid, signal);
-    
-    if( override && HasState(signal) && result == NULL_COMMAND )
-    {
-        result = m_adapter->GetState(m_devid, signal);
-    }
-    return result;
-}
-
 std::set<std::string> CDevice::GetStateSet() const
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
@@ -97,16 +79,6 @@ void CDevice::SetCommand(std::string signal, SignalValue value)
     }
 
     m_adapter->SetCommand(m_devid, signal, value);
-}
-
-void CDevice::ClearCommands()
-{
-    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-
-    BOOST_FOREACH(std::string signal, m_devinfo.s_command)
-    {
-        m_adapter->SetCommand(m_devid, signal, NULL_COMMAND);
-    }
 }
 
 } // namespace device

@@ -70,12 +70,12 @@ IBufferAdapter::IBufferAdapter() { }
 void IBufferAdapter::Start()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    
+
     std::size_t stateSize;
     std::size_t commandSize;
     std::set<std::size_t> stateIndices;
     std::set<std::size_t> commandIndices;
-    
+
     // It's imperative that these buffers are initially populated with invalid
     // values (NaN) and anything that communicates with IBufferAdapter knows to
     // ignore the NaNs. If we just initialize to 0.0 we could be bit by a race
@@ -86,7 +86,7 @@ void IBufferAdapter::Start()
         stateIndices.insert(i);
         m_rxBuffer.push_back(NULL_COMMAND);
     }
-    
+
     BOOST_FOREACH( std::size_t i, m_commandInfo | boost::adaptors::map_values )
     {
         commandIndices.insert(i);
@@ -94,10 +94,10 @@ void IBufferAdapter::Start()
     }
 
     m_buffer_initialized = false;
-    
+
     stateSize = stateIndices.size();
     commandSize = commandIndices.size();
-    
+
     // Tom Roth <tprfh7@mst.edu>:
     // The following code will ensure the the sets contain consecutive integers
     // with the values [0,1,...,size-1].
@@ -122,7 +122,7 @@ void IBufferAdapter::Start()
     {
         throw std::runtime_error("The state indices are not consecutive.");
     }
-    
+
     if( commandSize > 0 && *(commandIndices.rbegin()) != commandSize - 1 )
     {
         throw std::runtime_error("The command indices are not consecutive.");
@@ -148,16 +148,16 @@ void IBufferAdapter::SetCommand(const std::string device, const std::string sign
         const SignalValue value)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    
+
     const DeviceSignal devsig(device, signal);
     boost::unique_lock<boost::shared_mutex> writeLock(m_txMutex);
-    
+
     if( m_commandInfo.count(devsig) != 1 )
     {
         throw std::runtime_error("Attempted to set a device signal (" + device
                 + "," + signal + ") that does not exist.");
     }
-    
+
     m_txBuffer.at(m_commandInfo[devsig]) = value;
 }
 
@@ -184,7 +184,7 @@ SignalValue IBufferAdapter::GetState(const std::string device,
 
     const DeviceSignal devsig(device, signal);
     boost::shared_lock<boost::shared_mutex> readLock(m_rxMutex);
-    
+
     if( m_stateInfo.count(devsig) != 1 )
     {
         throw std::runtime_error("Attempted to get a device signal (" + device
@@ -196,20 +196,6 @@ SignalValue IBufferAdapter::GetState(const std::string device,
     Logger.Debug << device << " " << signal << ": " << value << std::endl;
 
     return value;
-}
-
-SignalValue IBufferAdapter::GetCommand(const std::string device, const std::string signal) const
-{
-    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-
-    const DeviceSignal devsig(device, signal);
-    boost::shared_lock<boost::shared_mutex> readLock(m_txMutex);
-
-    if( m_commandInfo.count(devsig) != 1 )
-    {
-        throw std::runtime_error("bad command");
-    }
-    return m_txBuffer.at(m_commandInfo.find(devsig)->second);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -232,32 +218,32 @@ void IBufferAdapter::RegisterStateInfo(const std::string device,
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     DeviceSignal devsig(device, signal);
-    
+
     if( device.empty() || signal.empty() )
     {
         throw std::runtime_error("Received an invalid device signal.");
     }
-    
+
     if( m_stateInfo.count(devsig) > 0 )
     {
         throw std::runtime_error("The device signal (" + device + "," + signal
                 + ") is already registered as state information.");
     }
-    
+
     if( index == 0 )
     {
         throw std::runtime_error("The state index must be greater than 0.");
     }
-    
+
     BOOST_FOREACH( std::size_t i, m_stateInfo | boost::adaptors::map_values )
     {
         if( index-1 == i )
         {
-            throw std::runtime_error("Detected duplicate state index " 
+            throw std::runtime_error("Detected duplicate state index "
                     + boost::lexical_cast<std::string>(index));
         }
     }
-    
+
     // Buffer indices start at zero, but XML indices start at one...
     m_stateInfo.insert(std::pair<DeviceSignal, std::size_t>(devsig, index-1));
     Logger.Info << "Registered the device signal (" << device << "," << signal
@@ -284,18 +270,18 @@ void IBufferAdapter::RegisterCommandInfo(const std::string device,
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     DeviceSignal devsig(device, signal);
-    
+
     if( device.empty() || signal.empty() )
     {
         throw std::runtime_error("Received an invalid device signal.");
     }
-    
+
     if( m_commandInfo.count(devsig) > 0 )
     {
         throw std::runtime_error("The device signal (" +device + "," + signal
                 + ") is already registered as command information.");
     }
-    
+
     if( index == 0 )
     {
         throw std::runtime_error("The command index must be greater than 0.");
@@ -305,7 +291,7 @@ void IBufferAdapter::RegisterCommandInfo(const std::string device,
     {
         if( index-1 == i )
         {
-            throw std::runtime_error("Detected duplicate command index " 
+            throw std::runtime_error("Detected duplicate command index "
                     + boost::lexical_cast<std::string>(index));
         }
     }

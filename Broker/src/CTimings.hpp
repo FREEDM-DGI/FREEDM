@@ -7,7 +7,7 @@
 
 namespace freedm {
 namespace broker {
- 
+
 class CTimings
 {
 public:

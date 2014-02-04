@@ -54,8 +54,11 @@ class CDispatcher
   : private boost::noncopyable
 {
 public:
+    /// Access the singleton instance of the CDispatcher
+    static CDispatcher& Instance();
+
     /// Called upon incoming message
-    void HandleRequest(CBroker &broker, MessagePtr msg );
+    void HandleRequest(MessagePtr msg );
 
     /// Called prior to sending a message
     void HandleWrite( ptree &p_mesg );
@@ -69,15 +72,18 @@ public:
             IWriteHandler *p_handler );
 
 private:
+    /// Private constructor for the singleton instance
+    CDispatcher() {};
+
     /// Making the handler calls bindable
     void ReadHandlerCallback(IReadHandler *h, MessagePtr msg);
-    
+
     /// All the registered read handlers.
     std::multimap< const std::string, IReadHandler *> m_readHandlers;
 
     /// All the registered write handlers.
     std::map< const std::string, IWriteHandler *> m_writeHandlers;
- 
+
     /// Reverse map to get the calling module from the handler pointer.
     std::map< IReadHandler *, const std::string > m_handlerToModule;
 

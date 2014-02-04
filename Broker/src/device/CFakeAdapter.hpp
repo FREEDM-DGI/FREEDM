@@ -44,13 +44,13 @@ namespace device {
 /// @limitations Cannot be used for realistic power simulations, since commands
 ///              take effect immediately.
 ////////////////////////////////////////////////////////////////////////////////
-class CFakeAdapter 
+class CFakeAdapter
     : public IAdapter
 {
 public:
     /// Type of a fake adapter pointer.
     typedef boost::shared_ptr<CFakeAdapter> Pointer;
-    
+
     /// Creates a new fake adapter.
     static Pointer Create();
 
@@ -59,11 +59,9 @@ public:
 
     /// Stop the fake adapter.
     void Stop();
-    
+
     /// Retrieves a value from a device.
     SignalValue GetState(const std::string device, const std::string key) const;
-
-    SignalValue GetCommand(const std::string device, const std::string key) const;
 
     /// Sets a value on a device.
     void SetCommand(const std::string device, const std::string key,
@@ -75,7 +73,7 @@ private:
 
     /// Map of device setting keys to values.
     typedef std::map<std::string, SignalValue> KeyMap;
-    
+
     /// Map of devices of KeyMaps.
     typedef std::map<std::string, KeyMap> DeviceMap;
 

@@ -154,9 +154,9 @@ class CLocalLogger : private boost::noncopyable
         std::string GetName() const;
         /// Returns the filtering level for this set of loggers.
         unsigned int GetOutputLevel() const;
-        /// Sets the output level for this set of loggers. 
+        /// Sets the output level for this set of loggers.
         void SetOutputLevel(const unsigned int level);
-        
+
     private:
         /// The name of this logger
         const std::string m_name;

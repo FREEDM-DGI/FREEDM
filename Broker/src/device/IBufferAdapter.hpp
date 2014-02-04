@@ -58,28 +58,26 @@ public:
     /// Retrieve data from rxBuffer.
     SignalValue GetState(const std::string device, const std::string signal) const;
 
-    SignalValue GetCommand(const std::string device, const std::string signal) const;
-    
     /// Registers a new device signal with the physical adapter.
     void RegisterStateInfo(const std::string device, const std::string signal,
             const std::size_t index);
-    
+
     /// Registers a new device signal with the physical adapter.
     void RegisterCommandInfo(const std::string device, const std::string signal,
             const std::size_t index);
 
     /// Starts the adapter
     void Start();
-    
+
     /// Virtual destructor for derived classes.
     virtual ~IBufferAdapter();
-protected:    
+protected:
     /// Constructor
     IBufferAdapter();
 
     /// Translates a device signal into its rxBuffer (state) index
     std::map<const DeviceSignal, const std::size_t> m_stateInfo;
-    
+
     /// Translates a device signal into its txBuffer (command) index
     std::map<const DeviceSignal, const std::size_t> m_commandInfo;
 

@@ -22,16 +22,16 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 #include "CConnection.hpp"
+#include "CGlobalConfiguration.hpp"
 #include "CLogger.hpp"
 #include "config.hpp"
-#include "CReliableConnection.hpp"
 #include "IProtocol.hpp"
 
 #include <exception>
 
 namespace freedm {
     namespace broker {
-        
+
 namespace {
 
 /// This file's logger.
@@ -42,7 +42,7 @@ CLocalLogger Logger(__FILE__);
 void IProtocol::Write(CMessage msg)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    boost::array<char, CReliableConnection::MAX_PACKET_SIZE>::iterator it;
+    boost::array<char, CGlobalConfiguration::MAX_PACKET_SIZE>::iterator it;
 
     /// Previously, we would call Synthesize here. Unfortunately, that was an
     /// Appalling heap of junk that didn't even work the way you expected it
@@ -65,21 +65,21 @@ void IProtocol::Write(CMessage msg)
     }
     raw = oss.str();
     /// Check to make sure it isn't goint to overfill our message packet:
-    if(raw.length() > CReliableConnection::MAX_PACKET_SIZE)
+    if(raw.length() > CGlobalConfiguration::MAX_PACKET_SIZE)
     {
         Logger.Info << "Message too long for buffer" << std::endl;
         Logger.Info << raw << std::endl;
         throw std::runtime_error("Outgoing message is to long for buffer");
     }
-    /// If that looks good, lets write it into our buffer.    
+    /// If that looks good, lets write it into our buffer.
     it = m_buffer.begin();
     /// Use std::copy to copy the string into the buffer starting at it.
     it = std::copy(raw.begin(),raw.end(),it);
-    
+
     Logger.Debug<<"Writing "<<raw.length()<<" bytes to channel"<<std::endl;
 
     #ifdef CUSTOMNETWORK
-    if((rand()%100) >= GetConnection()->GetReliability()) 
+    if((rand()%100) >= GetConnection()->GetReliability())
     {
         Logger.Info<<"Outgoing Packet Dropped ("<<GetConnection()->GetReliability()
                       <<") -> "<<GetConnection()->GetUUID()<<std::endl;
@@ -95,7 +95,7 @@ void IProtocol::Write(CMessage msg)
     catch(boost::system::system_error &e)
     {
         Logger.Debug << "Writing Failed: " << e.what() << std::endl;
-        GetConnection()->Stop(); 
+        GetConnection()->Stop();
     }
 }
 

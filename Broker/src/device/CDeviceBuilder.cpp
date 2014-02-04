@@ -207,6 +207,11 @@ void CDeviceBuilder::ExpandInfo(std::string target, std::set<std::string> path, 
     Logger.Debug << "Processed " << target << std::endl;
 }
 
+DeviceInfo CDeviceBuilder::GetDeviceInfo(std::string type)
+{
+    return m_type_to_info.at(type);
+}
+
 CDevice::Pointer CDeviceBuilder::CreateDevice(std::string id, std::string type, IAdapter::Pointer adapter)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;

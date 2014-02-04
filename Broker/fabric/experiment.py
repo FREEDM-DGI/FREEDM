@@ -17,8 +17,8 @@
     completeness or usefulness of these codes or any
     information distributed with these codes.
 
-    Suggested modifications or questions about these codes 
-    can be directed to Dr. Bruce McMillin, Department of 
+    Suggested modifications or questions about these codes
+    can be directed to Dr. Bruce McMillin, Department of
     Computer Science, Missouri University of Science and
     Technology, Rolla, MO  65409 (ff@mst.edu).
 """
@@ -34,7 +34,7 @@ class Experiment(object):
     def __init__(self,host2uuid,granularity):
         """
         Intializes the experiment object by generating an experiment counter.
-        
+
         @param host2uuid A dictionary mapping hostnames to UUIDs
         @param granularity How much to step for each experiment
         """
@@ -79,7 +79,7 @@ class Experiment(object):
         Although the freedm.xml file supports more complex network bus
         descriptions (such as unsymmetric channels) this software only
         supports generating symmertric channels.
-        
+
         @param host1 The first host to as source vertex.
         @param host2 The second host to use a destination vertex.
         @param value The reliability value to set the channel to. (0-100)
@@ -95,7 +95,7 @@ class Experiment(object):
         """
         This function will return a dictionary of dictionaries, which provides
         a table of the network settings for the current step of the experiment.
-        
+
         @return A dictionary of dictionaries keyed as [sourcehost][desthost]
             whose value is the reliability of that network edge.
         """
@@ -124,7 +124,7 @@ class Experiment(object):
         Increments the experiment counter. If there are no more experiments
         left to be run, default will be returned (or None) if default has
         not been provided
-        
+
         @param default the value to return if there are no more experiments
             to produce.
         @ereturn the new value of expcounter
@@ -173,7 +173,7 @@ class Experiment(object):
         """
         Allows converting this object to a string. Debugging purposes only;
         this does not serialize the object.
-        
+
         @return The experiment counter as a string.
         """
         return str(self.expcounter)
@@ -202,7 +202,7 @@ class Experiment(object):
     def tsv_entry(self):
         """
         Generates an entry of the experiment tsv file.
-        
+
         @return a tab seperated string of the current experiment settings.
         """
         return "\t".join([str(x) for x in self.expcounter])
@@ -210,7 +210,7 @@ class Experiment(object):
         """
         Generates the all the file descriptors for the all the network.xml
         files for the current stage of the experiment.
-        
+
         @return A dictionary of fileio objects that can be written into the
             hosts network.xml files.
         """
@@ -222,21 +222,21 @@ class Experiment(object):
                 # make a new dict, translating hostnames to uuids
                 d.setdefault(self.host2uuid[k2],v2)
             filedict.setdefault(k,network.create_network_file(100,d))
-        return filedict    
+        return filedict
 
 if __name__ == "__main__":
     import random
     dictthing = {'google.com':'goog','amazon.com':'amaz','movingpictures.com':'mvpc','rush.com':'rush'}
     x = Experiment(dictthing,20)
     i = 0
-    
+
     x.fix_edge('google.com','amazon.com',27)
     x.fix_edge('movingpictures.com','rush.com',73)
 
     x.fix_edge('google.com','movingpictures.com',0)
     x.fix_edge('amazon.com','rush.com',0)
-        
-    x.bus_edges([('google.com','rush.com'),('amazon.com','movingpictures.com')])    
+
+    x.bus_edges([('google.com','rush.com'),('amazon.com','movingpictures.com')])
 
     if 1:
         while x.next() != None:
@@ -250,8 +250,8 @@ if __name__ == "__main__":
 
         x.fix_edge('google.com','movingpictures.com',0)
         x.fix_edge('amazon.com','rush.com',0)
-            
-        x.bus_edges([('google.com','rush.com'),('amazon.com','movingpictures.com')])    
+
+        x.bus_edges([('google.com','rush.com'),('amazon.com','movingpictures.com')])
         i = 0
         while x.next() != None:
             print x
@@ -265,8 +265,8 @@ if __name__ == "__main__":
 
         x.fix_edge('google.com','movingpictures.com',0)
         x.fix_edge('amazon.com','rush.com',0)
-            
-        x.bus_edges([('google.com','rush.com'),('amazon.com','movingpictures.com')])    
+
+        x.bus_edges([('google.com','rush.com'),('amazon.com','movingpictures.com')])
         for i in xrange(random.randint(1,40000)):
             x.next()
         print x.generate_files()

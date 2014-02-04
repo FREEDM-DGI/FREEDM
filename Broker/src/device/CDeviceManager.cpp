@@ -227,6 +227,16 @@ std::size_t CDeviceManager::DeviceCount() const
     return m_devices.size();
 }
 
+///////////////////////////////////////////////////////////////////////////////
+/// Creates a set that contains the stored devices of the given type.
+///
+/// @pre None.
+/// @post Places each device that recognizes the type in the result set.
+/// @param type The string identifier for the type of device to retrieve.
+/// @return A set that contains the matching subset of m_devices.
+///
+/// @limitations None.
+///////////////////////////////////////////////////////////////////////////////
 std::set<CDevice::Pointer> CDeviceManager::GetDevicesOfType(std::string type)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
@@ -275,7 +285,6 @@ std::multiset<SignalValue> CDeviceManager::GetValues(std::string type,
 ///////////////////////////////////////////////////////////////////////////////
 /// Aggregates a set of device signals using the given binary operation.
 ///
-/// @pre DeviceType must have a typedef for IDevice::Pointer.
 /// @pre The devices of the specified type must recognize the given signal.
 /// @post Performs a binary mathematical operation on a subset of m_devices.
 /// @param type The device type that should perform the operation.

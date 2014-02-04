@@ -30,6 +30,3 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/config.hpp.cmake
               )
 
 add_library(broker ${BROKER_FILES})
-
-# don't compile broker until codegen has run
-add_dependencies(broker GeneratedPhysicalDeviceTypes)

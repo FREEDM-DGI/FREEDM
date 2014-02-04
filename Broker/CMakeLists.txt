@@ -51,9 +51,6 @@ add_subdirectory(src)
 
 add_executable(PosixBroker src/PosixMain.cpp)
 
-# don't compile PosixBroker until codegen has run
-add_dependencies(PosixBroker GeneratedPhysicalDeviceTypes)
-
 # link the executable to its dependencies
 target_link_libraries(PosixBroker
                       broker

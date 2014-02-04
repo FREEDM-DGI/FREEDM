@@ -8,9 +8,6 @@
 ///
 /// @description    Handles the creation of device adapters.
 ///
-/// @functions
-///     CAdapterFactory::RegisterDevicePrototype
-///
 /// These source code files were created at Missouri University of Science and
 /// Technology, and are intended for use in teaching or research. They may be
 /// freely copied, modified, and redistributed as long as modified versions are

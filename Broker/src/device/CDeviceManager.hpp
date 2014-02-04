@@ -9,11 +9,6 @@
 ///
 /// @description  Bridges the gap between the DGI and the device interface.
 ///
-/// @functions
-///     CDeviceManager::GetDevicesOfType
-///     CDeviceManager::GetValues
-///     CDeviceManager::GetValue
-///
 /// These source code files were created at Missouri University of Science and
 /// Technology, and are intended for use in teaching or research. They may be
 /// freely copied, modified, and redistributed as long as modified versions are

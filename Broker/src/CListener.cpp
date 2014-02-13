@@ -52,9 +52,7 @@ CLocalLogger Logger(__FILE__);
 
 ///////////////////////////////////////////////////////////////////////////////
 /// @fn CListener::CListener
-/// @description Constructor for the CConnection object. Since the change to
-///   udp, this object can act either as a listener or sender (but not both)
-///   to have the object behave as a listener, Start() should be called on it.
+/// @description Constructor
 /// @pre An initialized socket is ready to be converted to a connection.
 /// @post A new CConnection object is initialized.
 ///////////////////////////////////////////////////////////////////////////////
@@ -75,8 +73,7 @@ CListener& CListener::Instance()
 
 ///////////////////////////////////////////////////////////////////////////////
 /// @fn CListener::Start
-/// @description: Starts the receive routine which causes this socket to behave
-///   as a listener.
+/// @description: Begin listening for incoming messages
 /// @pre The object is initialized.
 /// @post The connection is asynchronously waiting for messages.
 /// @param endpoint the endpoint for the listener to listen on

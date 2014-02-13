@@ -2,7 +2,6 @@
 /// @file         CListener.cpp
 ///
 /// @author       Derek Ditch <derek.ditch@mst.edu>
-/// @author       Christopher M. Kohlhoff <chris@kohlhoff.com> (Boost Example)
 /// @author       Stephen Jackson <scj7t4@mst.edu>
 ///
 /// @project      FREEDM DGI

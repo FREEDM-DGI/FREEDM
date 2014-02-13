@@ -90,7 +90,7 @@ public:
     SRemoteHost GetHostByUUID( std::string uuid ) const;
 
     /// Fetch a connection pointer via UUID
-    ConnectionPtr GetConnectionByUUID( std::string uuid_ );
+    ConnectionPtr GetConnectionByUUID( std::string uuid );
 
     /// An iterator to the beginning of the hostname map
     hostnamemap::iterator GetHostsBegin() { return m_hosts.begin(); };

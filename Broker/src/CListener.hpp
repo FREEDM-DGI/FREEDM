@@ -54,6 +54,9 @@ public:
     /// Start the first asynchronous operation for the CConnection.
     void Start(boost::asio::ip::udp::endpoint& endpoint);
 
+    /// Stop any current async read and close the socket
+    void Stop();
+
 private:
     /// Private constructor for the singleton instance
     CListener();

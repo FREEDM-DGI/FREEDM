@@ -160,6 +160,7 @@ void CConnectionManager::StopAll()
       Stop((*m_connections.left.begin()).second); //Side effect of stop should make this map smaller
     }
     m_connections.clear();
+    CListener::Instance().Stop();
     Logger.Debug << "All Connections Closed" << std::endl;
 }
 

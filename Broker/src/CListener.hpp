@@ -54,8 +54,6 @@ public:
     /// Start the first asynchronous operation for the CConnection.
     void Start(boost::asio::ip::udp::endpoint& endpoint);
 
-    /// Get Remote UUID
-    std::string GetUUID() { return m_uuid; };
 private:
     /// Private constructor for the singleton instance
     CListener();

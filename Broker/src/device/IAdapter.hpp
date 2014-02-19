@@ -25,6 +25,7 @@
 #define	I_ADAPTER_HPP
 
 #include <set>
+#include <cmath>
 #include <string>
 #include <utility>
 
@@ -39,6 +40,9 @@ namespace device {
 
 /// Type of the value for device signals.
 typedef float SignalValue;
+
+/// Sent by the DGI to indicate it knows nothing about the state of a device.
+const SignalValue NULL_COMMAND = std::pow(10, 8);
 
 /// Type of the unique identifier for device values.
 typedef std::pair<const std::string, const std::string> DeviceSignal;
@@ -74,11 +78,11 @@ public:
     virtual void Stop() = 0;
 
     /// Retrieves a value from a device.
-    virtual SignalValue Get(const std::string device,
+    virtual SignalValue GetState(const std::string device,
             const std::string signal) const = 0;
 
     /// Sets a value on a device.
-    virtual void Set(const std::string device, const std::string signal,
+    virtual void SetCommand(const std::string device, const std::string signal,
             const SignalValue value) = 0;
 
     /// Virtual destructor for derived classes.

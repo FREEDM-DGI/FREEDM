@@ -44,7 +44,7 @@
 #include "CConnectionManager.hpp"
 #include "CDispatcher.hpp"
 #include "CMessage.hpp"
-#include "PhysicalDeviceTypes.hpp"
+#include "CDevice.hpp"
 
 #include "IPeerNode.hpp"
 #include "IAgent.hpp"

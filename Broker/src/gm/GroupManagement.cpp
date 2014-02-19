@@ -35,8 +35,8 @@
 #include "CMessage.hpp"
 #include "SRemoteHost.hpp"
 #include "CDeviceManager.hpp"
-#include "PhysicalDeviceTypes.hpp"
 #include "CTimings.hpp"
+#include "CDevice.hpp"
 
 #include <algorithm>
 #include <cassert>
@@ -397,12 +397,12 @@ void GMAgent::SystemState()
     }
     Logger.Status<<std::endl;
     Logger.Status<<"Group Float : "<< *groupfloat << std::endl;
-
-    std::multiset<device::CDeviceLogger::Pointer> devset;
-    devset = device::CDeviceManager::Instance().GetDevicesOfType<device::CDeviceLogger>();
+   
+    std::set<device::CDevice::Pointer> devset;
+    devset = device::CDeviceManager::Instance().GetDevicesOfType("Logger");
     if( !devset.empty() )
     {
-        (*devset.begin())->SetGroupStatus(*groupfloat);
+        (*devset.begin())->SetCommand("groupStatus", *groupfloat);
     }
 
     nodestatus<<"FID state: "<<device::CDeviceManager::Instance().
@@ -486,7 +486,7 @@ void GMAgent::FIDCheck( const boost::system::error_code& err)
     if(!err)
     {
         int attachedFIDs = device::CDeviceManager::Instance().
-                GetDevicesOfType<device::CDeviceFid>().size();
+                GetDevicesOfType("Fid").size();
         unsigned int FIDState = device::CDeviceManager::Instance().
                 GetNetValue("Fid", "state");
         if(m_fidsclosed == true && attachedFIDs  > 0 && FIDState == 0)

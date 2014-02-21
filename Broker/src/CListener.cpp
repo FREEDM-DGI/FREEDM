@@ -89,6 +89,23 @@ void CListener::Start(boost::asio::ip::udp::endpoint& endpoint)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+/// Closes the listening socket.
+///////////////////////////////////////////////////////////////////////////////
+void CListener::Stop()
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+
+    try
+    {
+        m_socket.close();
+    }
+    catch (boost::system::system_error& e)
+    {
+        Logger.Error << "Error calling close: " << e.what() << std::endl;
+    }
+}
+
+///////////////////////////////////////////////////////////////////////////////
 /// @fn CListener::HandleRead
 /// @description The callback which accepts messages from the remote sender.
 /// @param e The errorcode if any associated.

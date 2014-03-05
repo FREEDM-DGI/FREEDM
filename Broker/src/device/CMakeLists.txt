@@ -5,7 +5,6 @@ set(DEVICE_FILES
     CFakeAdapter.cpp
     CRtdsAdapter.cpp
     IBufferAdapter.cpp
-    ITcpAdapter.cpp
     IAdapter.cpp
     CTcpServer.cpp
     CPnpAdapter.cpp

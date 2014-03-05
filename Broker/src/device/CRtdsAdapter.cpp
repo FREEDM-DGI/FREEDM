@@ -18,6 +18,7 @@
 ///               CRtdsAdapter::Run
 ///               CRtdsAdapter::CRtdsAdapter
 ///               CRtdsAdapter::Quit
+///               CRtdsAdapter::Connect
 ///
 /// These source code files were created at Missouri University of Science and
 /// Technology, and are intended for use in teaching or research. They may be
@@ -101,10 +102,12 @@ IAdapter::Pointer CRtdsAdapter::Create(boost::asio::io_service & service,
 ///
 /// @limitations None
 ////////////////////////////////////////////////////////////////////////////////
-CRtdsAdapter::CRtdsAdapter(boost::asio::io_service & service,
+CRtdsAdapter::CRtdsAdapter(boost::asio::io_service & io_service,
         const boost::property_tree::ptree & ptree)
-    : ITcpAdapter(service, ptree)
-    , m_runTimer(service)
+    : m_runTimer(io_service)
+    , m_socket(io_service)
+    , m_host(ptree.get<std::string>("host"))
+    , m_port(ptree.get<std::string>("port"))
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 }
@@ -122,7 +125,7 @@ void CRtdsAdapter::Start()
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
     IBufferAdapter::Start();
-    ITcpAdapter::Connect();
+    Connect();
     m_runTimer.expires_from_now(
             boost::posix_time::milliseconds(CTimings::DEV_RTDS_DELAY));
     m_runTimer.async_wait(boost::bind(&CRtdsAdapter::Run, shared_from_this(),
@@ -335,6 +338,45 @@ void CRtdsAdapter::EndianSwapIfNeeded(std::vector<SignalValue> & v)
 #else
 #error "unsupported endianness or __BYTE_ORDER not defined"
 #endif
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/// Creates a TCP socket connection to the adapter's target host and port.
+///
+/// @ErrorHandling Throws a std::runtime_error for connection errors.
+/// @pre hostname and service specify a valid endpoint.
+/// @post m_socket is connected to the passed service.
+///
+/// @limitations None.
+////////////////////////////////////////////////////////////////////////////////
+void CRtdsAdapter::Connect()
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+
+    boost::asio::ip::tcp::resolver resolver(m_socket.get_io_service());
+    boost::asio::ip::tcp::resolver::query query(m_host, m_port);
+    boost::asio::ip::tcp::resolver::iterator it = resolver.resolve(query);
+    boost::asio::ip::tcp::resolver::iterator end;
+
+    // attempt to connect to one of the resolved endpoints
+    boost::system::error_code error = boost::asio::error::host_not_found;
+
+    while( error && it != end )
+    {
+        m_socket.close();
+        m_socket.connect(*it, error);
+        ++it;
+    }
+
+    if( error )
+    {
+        throw std::runtime_error("Failed to connect to " + m_host + ":"
+                + m_port + " because: "
+                + std::string(boost::system::system_error(error).what()));
+    }
+
+    Logger.Status << "Opened a TCP socket connection to host " << m_host
+            << ":" << m_port << "." << std::endl;
 }
 
 }//namespace broker

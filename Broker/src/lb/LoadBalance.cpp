@@ -1056,7 +1056,6 @@ void LBAgent::HandleComputedNormal(MessagePtr msg, PeerNodePtr /*peer*/)
                    << pt.get<std::string>("lb.source") << std::endl;
     LoadTable();
 }
-#pragma GCC diagnostic warning "-Wunused-parameter"
 
 ////////////////////////////////////////////////////////////
 /// Step_PStar

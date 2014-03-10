@@ -74,7 +74,7 @@ void IProtocol::Write(CMessage msg)
     /// If that looks good, lets write it into our buffer.
     it = m_buffer.begin();
     /// Use std::copy to copy the string into the buffer starting at it.
-    it = std::copy(raw.begin(),raw.end(),it);
+    std::copy(raw.begin(),raw.end(),it);
 
     Logger.Debug<<"Writing "<<raw.length()<<" bytes to channel"<<std::endl;
 

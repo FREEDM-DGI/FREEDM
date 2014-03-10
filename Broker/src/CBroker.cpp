@@ -41,6 +41,7 @@
 #include <boost/bind.hpp>
 #include <boost/foreach.hpp>
 
+#include <cassert>
 #include <map>
 
 /// General FREEDM Namespace
@@ -415,6 +416,7 @@ void CBroker::ChangePhase(const boost::system::error_code & /*err*/)
     {
         round += m_modules[i].second.total_milliseconds();
     }
+    assert(round > 0);
     unsigned int millisecs = time.total_milliseconds();
     unsigned int intoround = (millisecs % round);
     unsigned int cphase = 0;

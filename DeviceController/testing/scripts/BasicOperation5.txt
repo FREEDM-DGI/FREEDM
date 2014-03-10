@@ -1,4 +1,0 @@
-# Detects Two Different Devices
-enable Sst SST1 gateway 5.0
-enable Load TOASTER drain 42.0
-work forever

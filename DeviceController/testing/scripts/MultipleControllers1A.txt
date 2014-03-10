@@ -1,4 +1,0 @@
-# Same Device with Different Names
-enable Sst SST1 gateway 5.0
-work forever
-

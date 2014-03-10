@@ -1,4 +1,0 @@
-# Negative Normal Value
-enable Sst SST2 gateway 5.0
-work forever
-

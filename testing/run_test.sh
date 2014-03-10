@@ -1,7 +1,7 @@
 #!/bin/sh -e
 
 host=`hostname`
-exec='../src/PosixBroker'
+exec='../PosixBroker'
 
 if [ $# -gt 3 ] || [ $# -lt 2 ]; then
     echo "Incorrect number of arguments! Tee-hee!"

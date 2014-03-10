@@ -30,3 +30,15 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/config.hpp.cmake
               )
 
 add_library(broker ${BROKER_FILES})
+
+add_executable(PosixBroker PosixMain.cpp)
+
+# link the executable to its dependencies
+target_link_libraries(PosixBroker
+                      broker
+                      device
+                      ${Boost_DATE_TIME_LIBRARY}
+                      ${Boost_PROGRAM_OPTIONS_LIBRARY}
+                      ${Boost_SYSTEM_LIBRARY}
+                      ${Boost_THREAD_LIBRARY}
+                     )

@@ -49,18 +49,6 @@ include_directories("${PROJECT_BINARY_DIR}/src/device")
 # goto src/CMakeLists.txt
 add_subdirectory(src)
 
-add_executable(PosixBroker src/PosixMain.cpp)
-
-# link the executable to its dependencies
-target_link_libraries(PosixBroker
-                      broker
-                      device
-                      ${Boost_DATE_TIME_LIBRARY}
-                      ${Boost_PROGRAM_OPTIONS_LIBRARY}
-                      ${Boost_SYSTEM_LIBRARY}
-                      ${Boost_THREAD_LIBRARY}
-                     )
-
 if(DOXYGEN)
     find_package(Doxygen)
     if(DOXYGEN_FOUND)

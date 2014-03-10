@@ -10,7 +10,6 @@ Makefile
 */Makefile
 */#*
 */*~
-PosixBroker
 *.[oa]
 build/
 install/

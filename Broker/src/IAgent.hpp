@@ -18,6 +18,9 @@
 /// Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
 ////////////////////////////////////////////////////////////////////////////////
 
+#ifndef IAGENT_HPP_
+#define IAGENT_HPP_
+
 #include <map>
 #include <string>
 
@@ -26,9 +29,6 @@
 //      - (providing a logger would also be good)
 #include <algorithm>
 #include <exception>
-
-#ifndef IAGENT_HPP_
-#define IAGENT_HPP_
 
 namespace freedm {
 namespace broker {

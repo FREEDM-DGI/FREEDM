@@ -41,20 +41,12 @@
 #ifndef LOADBALANCE_HPP_
 #define LOADBALANCE_HPP_
 
-#include "CConnectionManager.hpp"
-#include "CDispatcher.hpp"
 #include "CMessage.hpp"
 #include "CDevice.hpp"
 
 #include "IPeerNode.hpp"
 #include "IAgent.hpp"
 
-#include <cmath>
-#include <set>
-#include <sstream>
-#include <vector>
-
-#include <boost/property_tree/ptree.hpp>
 #include <boost/shared_ptr.hpp>
 
 using boost::asio::ip::tcp;

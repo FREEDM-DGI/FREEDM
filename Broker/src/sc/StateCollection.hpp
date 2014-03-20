@@ -79,7 +79,6 @@ class SCAgent : public IReadHandler, public IPeerNode,
         ///Initiator starts state collection
         void    Initiate();
         ///Save local state
-        //void    TakeSnapshot(std::string deviceType, std::string valueType);
         void    TakeSnapshot(const std::vector<std::string>& devicelist);
         ///Peer sends collected states back to the initiator
         void    SendStateBack();
@@ -123,10 +122,6 @@ class SCAgent : public IReadHandler, public IPeerNode,
 
         //For multidevices state collection the following variables have to be changed
         std::vector<std::string> m_device;
-
-        ///type of device and value
-        //std::string m_deviceType;
-        //std::string m_valueType;
 
         ///current version of marker
         StateVersion        m_curversion;

@@ -66,8 +66,12 @@ class GMAgent
     GMAgent(std::string uuid_);
     /// Module destructor
     ~GMAgent();
+    /// Called to start the system
+    int	Run();
+    /// Handles Processing a PeerList
+    static PeerSet ProcessPeerList(MessagePtr msg);
 
-    // Internal
+  private:
     /// Resets the algorithm to the default startup state.
     void Recovery();
     /// Returns true if this node considers itself a coordinator
@@ -94,10 +98,6 @@ class GMAgent
     void HandleResponseAYT(MessagePtr msg,PeerNodePtr peer);
     /// Handles recieving peerlist requests
     void HandlePeerListQuery(MessagePtr msg, PeerNodePtr peer);
-
-    // Processors
-    /// Handles Processing a PeerList
-    static PeerSet ProcessPeerList(MessagePtr msg);
 
     //Routines
     /// Checks for other up leaders
@@ -136,10 +136,6 @@ class GMAgent
     /// Generates a CMessage that can be used to query for the group
     static CMessage PeerListQuery(std::string requester);
 
-    // This is the main loop of the algorithm
-    /// Called to start the system
-    int	Run();
-
     //Peer Set Manipulation
     /// Adds a peer to the peer set from UUID
     PeerNodePtr AddPeer(std::string uuid);
@@ -148,7 +144,6 @@ class GMAgent
     /// Gets a pointer to a peer from UUID.
     PeerNodePtr GetPeer(std::string uuid);
 
-  private:
     /// Gets the status of a node
     int GetStatus() const;
     /// Sets the status of the node

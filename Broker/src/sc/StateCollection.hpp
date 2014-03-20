@@ -35,11 +35,6 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/property_tree/ptree.hpp>
 
-using boost::asio::ip::tcp;
-using boost::property_tree::ptree;
-
-using namespace boost::asio;
-
 namespace freedm
 {
 
@@ -48,6 +43,8 @@ namespace broker
 
 namespace sc
 {
+
+using boost::property_tree::ptree;
 
 ///////////////////////////////////////////////////////////////////////////////
 /// @class          SCAgent

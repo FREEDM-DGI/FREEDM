@@ -62,6 +62,11 @@ class SCAgent : public IReadHandler, public IPeerNode,
     public:
         ///Constructor
         SCAgent(std::string uuid);
+
+    private:
+        //Marker structure
+        typedef std::pair< std::string, int >  StateVersion;
+
         //Handler
         ///Handle receiving messages
         void HandleAny(MessagePtr msg, PeerNodePtr peer);
@@ -69,10 +74,6 @@ class SCAgent : public IReadHandler, public IPeerNode,
         void HandleRequest(MessagePtr msg, PeerNodePtr peer);
         void HandleMarker(MessagePtr msg, PeerNodePtr peer);
         void HandleState(MessagePtr msg, PeerNodePtr peer);
-
-    private:
-        //Marker structure
-        typedef std::pair< std::string, int >  StateVersion;
 
         //Internal
         ///Initiator starts state collection

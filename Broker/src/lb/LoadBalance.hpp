@@ -46,6 +46,7 @@
 
 #include "IPeerNode.hpp"
 #include "IAgent.hpp"
+#include "IHandler.hpp"
 
 #include <boost/shared_ptr.hpp>
 

@@ -50,11 +50,6 @@
 
 #include <boost/shared_ptr.hpp>
 
-using boost::asio::ip::tcp;
-using boost::property_tree::ptree;
-
-using namespace boost::asio;
-
 namespace freedm {
 
 namespace broker {

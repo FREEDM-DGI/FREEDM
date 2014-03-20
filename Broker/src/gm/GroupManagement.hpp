@@ -92,10 +92,6 @@ class GMAgent
     void HandleResponseAYC(MessagePtr msg,PeerNodePtr peer);
     /// Handles recieving AYT responses
     void HandleResponseAYT(MessagePtr msg,PeerNodePtr peer);
-    /// Handles recieving clock readings
-    void HandleClock(MessagePtr msg,PeerNodePtr peer);
-    /// Handles recieving clock skews
-    void HandleClockSkew(MessagePtr msg,PeerNodePtr peer);
     /// Handles recieving peerlist requests
     void HandlePeerListQuery(MessagePtr msg, PeerNodePtr peer);
 
@@ -137,10 +133,6 @@ class GMAgent
     CMessage AreYouThere();
     /// Generates a peer list
     CMessage PeerList(std::string requester="any");
-    /// Generates a request to read the remote clock
-    CMessage ClockRequest();
-    /// Generates a message informing a node of their new clock skew
-    CMessage ClockSkew(boost::posix_time::time_duration t);
     /// Generates a CMessage that can be used to query for the group
     static CMessage PeerListQuery(std::string requester);
 
@@ -220,9 +212,6 @@ class GMAgent
     boost::posix_time::time_duration AYT_RESPONSE_TIMEOUT;
     /// How long to wait for responses from other nodes.
     boost::posix_time::time_duration INVITE_RESPONSE_TIMEOUT;
-
-    ///Maximum clock skew in milliseconds;
-    static const int MAX_SKEW = 100;
 
     /// Number of groups formed
     int m_groupsformed ;

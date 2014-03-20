@@ -24,23 +24,12 @@
 #ifndef GROUPMANAGEMENT_HPP_
 #define GROUPMANAGEMENT_HPP_
 
-#include "CConnection.hpp"
-#include "CConnectionManager.hpp"
-#include "CDispatcher.hpp"
-#include "CGlobalPeerList.hpp"
 #include "CMessage.hpp"
 #include "IAgent.hpp"
 #include "IHandler.hpp"
 #include "IPeerNode.hpp"
 
-#include <cmath>
-#include <set>
-#include <sstream>
-#include <vector>
-
 #include <boost/interprocess/sync/interprocess_mutex.hpp>
-#include <boost/progress.hpp>
-#include <boost/property_tree/ptree.hpp>
 #include <boost/shared_ptr.hpp>
 
 namespace freedm {

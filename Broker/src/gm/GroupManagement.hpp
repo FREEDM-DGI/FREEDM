@@ -77,7 +77,7 @@ class GMAgent
     /// A set of common code to be run before every message
     void Prehandler(SubhandleFunctor f,MessagePtr msg, PeerNodePtr peer);
     /// Handles receiving incoming messages.
-    virtual void HandleAny(MessagePtr msg,PeerNodePtr peer);
+    void HandleAny(MessagePtr msg,PeerNodePtr peer);
     /// Hadles recieving peerlists
     void HandlePeerList(MessagePtr msg,PeerNodePtr peer);
     /// Handles recieving accept messsages

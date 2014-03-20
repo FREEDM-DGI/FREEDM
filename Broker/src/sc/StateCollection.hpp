@@ -24,23 +24,15 @@
 #ifndef CSTATECOLLECTION_HPP_
 #define CSTATECOLLECTION_HPP_
 
-#include "CConnection.hpp"
-#include "CConnectionManager.hpp"
-#include "CDispatcher.hpp"
 #include "CMessage.hpp"
 #include "IAgent.hpp"
 #include "IHandler.hpp"
 #include "IPeerNode.hpp"
-#include "CDevice.hpp"
 
-#include <cmath>
 #include <map>
-#include <sstream>
-#include <set>
 #include <vector>
 
 #include <boost/shared_ptr.hpp>
-#include <boost/progress.hpp>
 #include <boost/property_tree/ptree.hpp>
 
 using boost::asio::ip::tcp;

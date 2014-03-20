@@ -148,7 +148,7 @@ class GMAgent
     /// Gets a pointer to a peer from UUID.
     PeerNodePtr GetPeer(std::string uuid);
 
-  protected:
+  private:
     /// Gets the status of a node
     int GetStatus() const;
     /// Sets the status of the node

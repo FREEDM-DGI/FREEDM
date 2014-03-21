@@ -106,8 +106,6 @@ class GMAgent
     CMessage AreYouCoordinator();
     /// Creates Group Invitation Message
     CMessage Invitation();
-    /// Creates Ready Message
-    CMessage Ready();
     /// Creates A Response message
     CMessage Response(std::string payload,std::string type,
         const boost::posix_time::ptime& exp, int seq);

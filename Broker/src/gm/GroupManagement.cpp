@@ -190,24 +190,6 @@ CMessage GMAgent::Invitation()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// GMAgent::Ready
-/// @description Creates a ready message from this node.
-/// @pre This node is in a group.
-/// @post No Change.
-/// @return A CMessage with the contents of a Ready Message.
-///////////////////////////////////////////////////////////////////////////////
-CMessage GMAgent::Ready()
-{
-    CMessage m_;
-    m_.SetHandler("gm.Ready");
-    m_.m_submessages.put("gm.source", GetUUID());
-    m_.m_submessages.put("gm.groupid",m_GroupID);
-    m_.m_submessages.put("gm.groupleader",m_GroupLeader);
-    m_.SetNeverExpires();
-    return m_;
-}
-
-///////////////////////////////////////////////////////////////////////////////
 /// GMAgent::Response
 /// @description Creates a response message (Yes/No) message from this node
 /// @pre This node has a UUID.
@@ -823,9 +805,6 @@ void GMAgent::Reorganize( const boost::system::error_code& err )
     {
         SetStatus(GMAgent::REORGANIZATION);
         Logger.Notice << "+ State change: REORGANIZATION: " << __LINE__    << std::endl;
-        // Send Ready msg to all up nodes in this group
-        CMessage m_ = Ready();
-        Logger.Info <<"SEND: Sending out Ready"<<std::endl;
         // Send new membership list to group members
         // PeerList is the new READY
         PushPeerList();

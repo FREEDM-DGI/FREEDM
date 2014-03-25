@@ -87,7 +87,7 @@ GMAgent::GMAgent(std::string p_uuid)
     : IPeerNode(p_uuid),
     CHECK_TIMEOUT(boost::posix_time::not_a_date_time),
     TIMEOUT_TIMEOUT(boost::posix_time::not_a_date_time),
-    GLOBAL_TIMEOUT(boost::posix_time::milliseconds(CTimings::GM_GLOBAL_TIMEOUT)),
+    GLOBAL_TIMEOUT(boost::posix_time::milliseconds(CTimings::GM_PHASE_TIME)),
     FID_TIMEOUT(boost::posix_time::not_a_date_time),
     AYC_RESPONSE_TIMEOUT(boost::posix_time::milliseconds(CTimings::GM_AYC_RESPONSE_TIMEOUT)),
     AYT_RESPONSE_TIMEOUT(boost::posix_time::milliseconds(CTimings::GM_AYT_RESPONSE_TIMEOUT)),

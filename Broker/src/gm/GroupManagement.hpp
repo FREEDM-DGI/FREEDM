@@ -40,7 +40,7 @@ namespace gm {
 
 /// Declaration of Garcia-Molina Invitation Leader Election algorithm.
 class GMAgent
-  : public IReadHandler, public IPeerNode,
+  : public IReadHandler, private IPeerNode,
     public IAgent< boost::shared_ptr<IPeerNode> >
 {
   public:

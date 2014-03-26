@@ -22,18 +22,14 @@
 /// Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
 ////////////////////////////////////////////////////////////////////////////////
 
-#include "CConnection.hpp"
 #include "CConnectionManager.hpp"
 #include "CLogger.hpp"
-#include "CMessage.hpp"
+#include "CConnection.hpp"
 #include "IPeerNode.hpp"
 
 #include <map>
-#include <sstream>
 
-#include <boost/bind.hpp>
 #include <boost/shared_ptr.hpp>
-#include <boost/thread/locks.hpp>
 
 namespace freedm {
 
@@ -82,23 +78,9 @@ std::string IPeerNode::GetHostname() const
 /// IPeerNode::GetPort
 /// @description Returns the port number this node communicates on
 ////////////////////////////////////////////////////////////
-std::string IPeerNode::GetPort() const
+unsigned short IPeerNode::GetPort() const
 {
     return CConnectionManager::Instance().GetHostByUUID(GetUUID()).port;
-}
-
-/////////////////////////////////////////////////////////////
-/// @fn IPeerNode::GetConnection
-/// @description Uses the connection manager to attempt to
-///   get a connection pointer to this node.
-/// @pre None
-/// @post If enough is known about the uuid, a connection
-///   will exist with the connection manager.
-/// @return A ConnectionPtr for the connection to this peer.
-/////////////////////////////////////////////////////////////
-broker::ConnectionPtr IPeerNode::GetConnection()
-{
-    return CConnectionManager::Instance().GetConnectionByUUID(m_uuid);
 }
 
 /////////////////////////////////////////////////////////////
@@ -111,28 +93,33 @@ broker::ConnectionPtr IPeerNode::GetConnection()
 /// @pre None
 /// @post A message is sent to the peer represented by this
 ///   object
-/// @param msg The message to write to channel
+/// @param msg the message to write to channel.
+/// @param expire_in how long from now to set the expiration
+///   time, or not_a_date_time to use the default
 /// @return True if the message was sent.
 /////////////////////////////////////////////////////////////
-bool IPeerNode::Send(freedm::broker::CMessage msg)
+bool IPeerNode::Send(const DgiMessage& msg, const boost::posix_time::time_duration& expire_in)
 {
     try
     {
-        broker::ConnectionPtr c = GetConnection();
+        boost::shared_ptr<CConnection> c
+                = CConnectionManager::Instance().GetConnectionByUUID(m_uuid);
         if(c.get() != NULL)
         {
             //Schedule the send with the io_service thread
-            c->Send(msg);
+            c->Send(msg, expire_in);
         }
         else
         {
-            Logger.Warn << "Couldn't Send Message To Peer (Couldn't make connection)" << std::endl;
+            Logger.Warn << "Couldn't Send Message To Peer"
+                    << " (Couldn't make connection)" << std::endl;
             return false;
         }
     }
     catch(boost::system::system_error& e)
     {
-        Logger.Warn << "Couldn't Send Message To Peer (Sending Failed)" << std::endl;
+        Logger.Warn << "Couldn't Send Message To Peer (Sending Failed)"
+                << std::endl;
         return false;
     }
     Logger.Debug << "Sent message to peer" << std::endl;

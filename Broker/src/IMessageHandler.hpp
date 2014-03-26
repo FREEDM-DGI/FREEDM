@@ -1,9 +1,9 @@
 ////////////////////////////////////////////////////////////////////////////////
-/// @file         SRemoteHost.hpp
+/// @file         IMessageHandler.hpp
+///
+/// @author       Michael Catanzaro <michael.catanzaro@mst.edu>
 ///
 /// @project      FREEDM DGI
-///
-/// @description  A container which holds the hostname and port of a peer.
 ///
 /// These source code files were created at Missouri University of Science and
 /// Technology, and are intended for use in teaching or research. They may be
@@ -18,22 +18,39 @@
 /// Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
 ////////////////////////////////////////////////////////////////////////////////
 
-#ifndef REMOTEHOST_HPP
-#define REMOTEHOST_HPP
+#ifndef IHANDLER_HPP
+#define IHANDLER_HPP
 
-#include <string>
+#include "IPeerNode.hpp"
+
+#include "messages/DgiMessage.pb.h"
+
+#include <stdexcept>
 
 namespace freedm {
+
 namespace broker {
 
-/// A container which lists the hostname and and port of a peer.
-struct SRemoteHost
+///An interface for an object which can handle recieving incoming messages
+class IMessageHandler
 {
-    std::string hostname; /// Remote endpoint hostnames
-    unsigned short port; /// Remote endpoint port
+///////////////////////////////////////////////////////////////////////////////
+/// @class IMessageHandler
+///
+/// @description Provides interface for broker handlers that will be called
+/// after each successful read operation.
+///////////////////////////////////////////////////////////////////////////////
+public:
+    /// Handles received messages
+    virtual void HandleIncomingMessage(
+        boost::shared_ptr<const DgiMessage> msg, boost::shared_ptr<IPeerNode> peer) = 0;
+
+    /// Virtual destructor
+    virtual ~IMessageHandler() {}
 };
 
-}
-}
+} // namespace freedm
 
-#endif
+} // namespace broker
+
+#endif // IHANDLER_HPP

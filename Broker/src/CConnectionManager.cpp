@@ -34,6 +34,7 @@
 #include <algorithm>
 
 #include <boost/bind.hpp>
+#include <boost/lexical_cast.hpp>
 #include <boost/make_shared.hpp>
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/xml_parser.hpp>
@@ -98,7 +99,7 @@ void CConnectionManager::PutConnection(std::string uuid, ConnectionPtr c)
 /// @param host The hostname to enter into the map.
 /// @param port The port the remote host listens on.
 ///////////////////////////////////////////////////////////////////////////////
-void CConnectionManager::PutHost(std::string u, std::string host, std::string port)
+void CConnectionManager::PutHost(std::string u, std::string host, unsigned short port)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     {
@@ -202,8 +203,6 @@ ConnectionPtr CConnectionManager::GetConnectionByUUID(std::string uuid)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
-    std::string s,port;
-
     // See if there is a connection in the open connections already
     if(m_connections.left.count(uuid))
     {
@@ -233,8 +232,8 @@ ConnectionPtr CConnectionManager::GetConnectionByUUID(std::string uuid)
         Logger.Warn<<"Couldn't find peer in host list"<<std::endl;
         return ConnectionPtr();
     }
-    s = mapIt->second.hostname;
-    port = mapIt->second.port;
+    std::string s = mapIt->second.hostname;
+    std::string port = boost::lexical_cast<std::string>(mapIt->second.port);
 
     // Create a new CConnection object for this host
     Logger.Debug<<"Constructing CConnection"<<std::endl;

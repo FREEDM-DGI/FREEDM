@@ -33,7 +33,6 @@
 #ifndef FREEDM_BROKER_HPP
 #define FREEDM_BROKER_HPP
 
-#include "CListener.hpp"
 #include "CClockSynchronizer.hpp"
 
 #include <list>
@@ -47,6 +46,9 @@
 
 namespace freedm {
     namespace broker {
+
+class CConnectionManager;
+class CDispatcher;
 
 /// How long we should wait before aligning the modules again
 const unsigned int ALIGNMENT_DURATION = 250;
@@ -169,7 +171,7 @@ private:
     boost::mutex m_schmutex;
 
     ///The magical clock synchronizer
-    CClockSynchronizer m_synchronizer;
+    boost::shared_ptr<CClockSynchronizer> m_synchronizer;
 
     ///The register for signal handling.
     boost::asio::signal_set m_signals;

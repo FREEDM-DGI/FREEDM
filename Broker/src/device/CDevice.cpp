@@ -255,4 +255,3 @@ void CDevice::SetCommand(std::string signal, SignalValue value)
 } // namespace device
 } // namespace broker
 } // namespace freedm
-

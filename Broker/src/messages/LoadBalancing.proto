@@ -1,9 +1,9 @@
 ////////////////////////////////////////////////////////////////////////////////
-/// @file         SRemoteHost.hpp
+/// @file         LoadBalancing.proto
 ///
-/// @project      FREEDM DGI
+/// @author       Michael Catanzaro <michael.catanzaro@mst.edu>
 ///
-/// @description  A container which holds the hostname and port of a peer.
+/// @description  Declaration of all load balancing message types
 ///
 /// These source code files were created at Missouri University of Science and
 /// Technology, and are intended for use in teaching or research. They may be
@@ -18,22 +18,35 @@
 /// Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
 ////////////////////////////////////////////////////////////////////////////////
 
-#ifndef REMOTEHOST_HPP
-#define REMOTEHOST_HPP
+package freedm.broker.lb;
 
-#include <string>
-
-namespace freedm {
-namespace broker {
-
-/// A container which lists the hostname and and port of a peer.
-struct SRemoteHost
+message ComputedNormalMessage
 {
-    std::string hostname; /// Remote endpoint hostnames
-    unsigned short port; /// Remote endpoint port
-};
-
-}
+    required double computed_normal = 1;
 }
 
-#endif
+message AcceptMessage
+{
+    required float demand_value = 1;
+}
+
+message LoadBalancingMessage
+{
+    enum Type
+    {
+        COMPUTED_NORMAL_MESSAGE = 1;
+        REQUEST_MESSAGE = 2;
+        DRAFTING_MESSAGE = 3;
+        YES_MESSAGE = 4;
+        NO_MESSAGE = 5;
+        ACCEPT_MESSAGE = 6;
+        DEMAND_MESSAGE = 7;
+        NORMAL_MESSAGE = 8;
+        SUPPLY_MESSAGE = 9;
+    }
+
+    required Type type = 1;
+
+    optional ComputedNormalMessage computed_normal_message = 2;
+    optional AcceptMessage accept_message = 3;
+}

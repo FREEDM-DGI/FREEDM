@@ -25,22 +25,18 @@
 #ifndef IPEERNODE_HPP_
 #define IPEERNODE_HPP_
 
-#include "CConnection.hpp"
+#include "messages/DgiMessage.pb.h"
 
-#include <list>
-#include <set>
+#include <memory>
 
-#include <boost/asio.hpp>
-#include <boost/bind.hpp>
-#include <boost/enable_shared_from_this.hpp>
-#include <boost/shared_ptr.hpp>
-#include <boost/thread/mutex.hpp>
+#include <boost/date_time/posix_time/posix_time_types.hpp>
+#include <boost/noncopyable.hpp>
 
 namespace freedm {
 
 namespace broker {
 
-typedef boost::shared_ptr<freedm::broker::CMessage> MessagePtr;
+class CConnectionManager;
 
 /// Base interface for agents/broker modules
 class IPeerNode
@@ -62,16 +58,14 @@ class IPeerNode
         IPeerNode(std::string uuid);
         /// Gets the uuid of the node this addresses
         std::string GetUUID() const;
-        /// Gives a connection ptr to this peer
-        ConnectionPtr GetConnection();
         /// Gets the hostname of this peer
         std::string GetHostname() const;
         /// Gets the port of this peer.
-        std::string GetPort() const;
+        unsigned short GetPort() const;
         /// Sends a message to peer
-        bool Send(freedm::broker::CMessage msg);
-    protected:
-        friend class CAgent;
+        bool Send(
+            const DgiMessage& msg,
+            const boost::posix_time::time_duration& expire_in = boost::posix_time::not_a_date_time);
     private:
         std::string m_uuid; /// This node's uuid.
 };

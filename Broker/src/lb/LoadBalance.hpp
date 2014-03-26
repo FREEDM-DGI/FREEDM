@@ -41,26 +41,14 @@
 #ifndef LOADBALANCE_HPP_
 #define LOADBALANCE_HPP_
 
-#include "CConnectionManager.hpp"
-#include "CDispatcher.hpp"
-#include "CMessage.hpp"
+#include "CBroker.hpp"
 #include "CDevice.hpp"
-
 #include "IPeerNode.hpp"
 #include "IAgent.hpp"
+#include "IMessageHandler.hpp"
+#include "messages/DgiMessage.pb.h"
 
-#include <cmath>
-#include <set>
-#include <sstream>
-#include <vector>
-
-#include <boost/property_tree/ptree.hpp>
 #include <boost/shared_ptr.hpp>
-
-using boost::asio::ip::tcp;
-using boost::property_tree::ptree;
-
-using namespace boost::asio;
 
 namespace freedm {
 
@@ -76,7 +64,7 @@ const double NORMAL_TOLERANCE = 0.5;
 /// Declaration of LBAgent class for load balancing algorithm
 /////////////////////////////////////////////////////////
 class LBAgent
-    : public IReadHandler,
+    : public IMessageHandler,
       public IPeerNode,
       public IAgent< boost::shared_ptr<IPeerNode> >
 {
@@ -103,31 +91,35 @@ class LBAgent
 
         // Messages
         /// Sends a message 'msg' to the peers in 'peerSet_'
-        void SendMsg(std::string msg, PeerSet peerSet_);
+        void SendMsg(const LoadBalancingMessage& msg, PeerSet peerSet_);
         /// Prepares and sends a state collection request to SC
         void CollectState();
         /// Sends the computed Normal to group members
         void SendNormal(double normal);
 
         // Handlers
-        /// Handles the incoming messages according to the message label
-        virtual void HandleAny(MessagePtr msg,PeerNodePtr peer);
-        void HandlePeerList(MessagePtr msg, PeerNodePtr peer);
-        void HandleDemand(MessagePtr msg, PeerNodePtr peer);
-        void HandleNormal(MessagePtr msg, PeerNodePtr peer);
-        void HandleSupply(MessagePtr msg, PeerNodePtr peer);
-        void HandleRequest(MessagePtr msg, PeerNodePtr peer);
-        void HandleYes(MessagePtr msg, PeerNodePtr peer);
-        void HandleNo(MessagePtr msg, PeerNodePtr peer);
-        void HandleDrafting(MessagePtr msg, PeerNodePtr peer);
-        void HandleAccept(MessagePtr msg, PeerNodePtr peer);
-        void HandleCollectedState(MessagePtr msg, PeerNodePtr peer);
-        void HandleComputedNormal(MessagePtr msg, PeerNodePtr peer);
+        /// Handles received messages
+        void HandleIncomingMessage(boost::shared_ptr<const DgiMessage> msg, PeerNodePtr peer);
+        void HandlePeerList(const gm::PeerListMessage& msg, PeerNodePtr peer);
+        void HandleDemand(PeerNodePtr peer);
+        void HandleNormal(PeerNodePtr peer);
+        void HandleSupply(PeerNodePtr peer);
+        void HandleRequest(PeerNodePtr peer);
+        void HandleYes(PeerNodePtr peer);
+        void HandleNo(PeerNodePtr peer);
+        void HandleDrafting(PeerNodePtr peer);
+        void HandleAccept(const AcceptMessage& msg, PeerNodePtr peer);
+        void HandleCollectedState(const sc::CollectedStateMessage& msg);
+        void HandleComputedNormal(const ComputedNormalMessage& msg, PeerNodePtr peer);
 
         /// Adds a new peer by a pointer
         PeerNodePtr AddPeer(PeerNodePtr peer);
         /// Returns a pointer to the peer based on its UUID
         PeerNodePtr GetPeer(std::string uuid);
+
+        /// Wraps a LoadBalancingMessage in a DgiMessage
+        static DgiMessage PrepareForSending(
+            const LoadBalancingMessage& message, std::string recipient = "lb");
 
         // Variables
         /// Calculated Normal

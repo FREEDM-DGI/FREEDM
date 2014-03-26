@@ -22,19 +22,22 @@
 /// Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
 ////////////////////////////////////////////////////////////////////////////////
 
-#include "CConnection.hpp"
+#include "CBroker.hpp"
 #include "CConnectionManager.hpp"
 #include "CDispatcher.hpp"
 #include "CLogger.hpp"
-#include "CMessage.hpp"
-#include "config.hpp"
+#include "CConnection.hpp"
+#include "Messages.hpp"
+
 #include "CProtocolSR.hpp"
-#include "CProtocolSU.hpp"
-#include "CProtocolSRSW.hpp"
+// FIXME restore
+//#include "CProtocolSU.hpp"
+//#include "CProtocolSRSW.hpp"
 
 #include <vector>
 
 #include <boost/bind.hpp>
+#include <boost/make_shared.hpp>
 #include <boost/property_tree/ptree.hpp>
 
 using boost::property_tree::ptree;
@@ -56,17 +59,11 @@ CLocalLogger Logger(__FILE__);
 ///////////////////////////////////////////////////////////////////////////////
 CConnection::CConnection(std::string uuid)
   : m_socket(CBroker::Instance().GetIOService())
+  , m_protocol(*this)
   , m_uuid(uuid)
   , m_reliability(100)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    m_protocols.insert(ProtocolMap::value_type(CProtocolSU::Identifier(),
-        ProtocolPtr(new CProtocolSU(this))));
-    m_protocols.insert(ProtocolMap::value_type(CProtocolSR::Identifier(),
-        ProtocolPtr(new CProtocolSR(this))));
-    m_protocols.insert(ProtocolMap::value_type(CProtocolSRSW::Identifier(),
-        ProtocolPtr(new CProtocolSRSW(this))));
-    m_defaultprotocol = CProtocolSR::Identifier();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -79,12 +76,7 @@ CConnection::CConnection(std::string uuid)
 void CConnection::Stop()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    ProtocolMap::iterator sit;
-    for(sit = m_protocols.begin(); sit != m_protocols.end(); sit++)
-    {
-        (*sit).second->Stop();
-    }
-    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    m_protocol.Stop();
     GetSocket().close();
 }
 
@@ -99,11 +91,7 @@ void CConnection::Stop()
 ///////////////////////////////////////////////////////////////////////////////
 void CConnection::ChangePhase(bool newround)
 {
-    ProtocolMap::iterator it;
-    for(it = m_protocols.begin(); it != m_protocols.end(); it++)
-    {
-        it->second->ChangePhase(newround);
-    }
+    m_protocol.ChangePhase(newround);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -116,34 +104,28 @@ void CConnection::ChangePhase(bool newround)
 ///   UUID, source hostname and sequence number (if it is being sequenced).
 ///   If the message is being sequenced  and the window is not already full,
 ///   the timeout timer is cancelled and reset.
-/// @param p_mesg A CMessage to write to the channel.
+/// @param msg The message to write to the channel, INVALIDATED by this call.
+/// @param expire_in how long from now to set the expiration time, or
+///   not_a_date_time to use the default
 ///////////////////////////////////////////////////////////////////////////////
-void CConnection::Send(CMessage & p_mesg)
+void CConnection::Send(const DgiMessage& msg, const boost::posix_time::time_duration& expire_in)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
-    // If the UUID of the reciepient (The value stored by GetUUID of this
+    // If the UUID of the recipient (The value stored by GetUUID of this
     // object) is the same as the this node's uuid (As stored by the
     // Connection manager) place the message directly into the received
     // Queue.
-    if(GetUUID() == CConnectionManager::Instance().GetUUID())
+    if(m_uuid == CConnectionManager::Instance().GetUUID())
     {
-        p_mesg.SetSourceUUID(CConnectionManager::Instance().GetUUID());
-        p_mesg.SetSourceHostname(CConnectionManager::Instance().GetHost());
-        p_mesg.SetSendTimestampNow();
-        MessagePtr local(new CMessage);
-        *local = p_mesg;
-        CDispatcher::Instance().HandleRequest(local);
-        return;
+        boost::shared_ptr<DgiMessage> copy = boost::make_shared<DgiMessage>();
+        copy->CopyFrom(msg);
+        CDispatcher::Instance().HandleRequest(copy, m_uuid);
     }
-
-    ProtocolMap::iterator sit = m_protocols.find(p_mesg.GetProtocol());
-
-    if(sit == m_protocols.end())
+    else
     {
-        sit = m_protocols.find(m_defaultprotocol);
+        m_protocol.Send(msg, expire_in);
     }
-    (*sit).second->Send(p_mesg);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -155,15 +137,10 @@ void CConnection::Send(CMessage & p_mesg)
 ///   well.
 /// @param msg The message to consider as acknnowledged
 ///////////////////////////////////////////////////////////////////////////////
-void CConnection::ReceiveACK(const CMessage &msg)
+void CConnection::ReceiveACK(const google::protobuf::Message& msg)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    std::string protocol = msg.GetProtocol();
-    ProtocolMap::iterator sit = m_protocols.find(protocol);
-    if(sit != m_protocols.end())
-    {
-        (*sit).second->ReceiveACK(msg);
-    }
+    m_protocol.ReceiveACK(msg);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -175,19 +152,16 @@ void CConnection::ReceiveACK(const CMessage &msg)
 ///   well.
 /// @param msg The message to consider as acknnowledged
 ///////////////////////////////////////////////////////////////////////////////
-bool CConnection::Receive(const CMessage &msg)
+bool CConnection::Receive(const google::protobuf::Message& msg)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    ProtocolMap::iterator sit = m_protocols.find(msg.GetProtocol());
-    if(sit != m_protocols.end())
+
+    if(m_protocol.Receive(msg))
     {
-        bool x = (*sit).second->Receive(msg);
-        if(x)
-        {
-            (*sit).second->SendACK(msg);
-            return true;
-        }
+        m_protocol.SendACK(msg);
+        return true;
     }
+
     return false;
 }
 

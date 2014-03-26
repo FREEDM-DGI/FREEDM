@@ -42,11 +42,12 @@
 
 #include <boost/algorithm/string.hpp>
 #include <boost/asio.hpp>
-#include <boost/asio/ip/host_name.hpp> //for ip::host_name()
 #include <boost/assign/list_of.hpp>
 #include <boost/bind.hpp>
 #include <boost/foreach.hpp>
 #include <boost/lexical_cast.hpp>
+#include <boost/make_shared.hpp>
+#include <boost/pointer_cast.hpp>
 #include <boost/program_options.hpp>
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/xml_parser.hpp>
@@ -73,7 +74,7 @@ std::string GenerateUuid(std::string host, std::string port)
 }
 
 /// Converts a string into a valid port number.
-unsigned short GetPort(const std::string str)
+unsigned short GetPortFromString(const std::string str)
 {
     long port;
 
@@ -117,7 +118,6 @@ int main(int argc, char* argv[])
     std::string cfgFile, loggerCfgFile, timingsFile, adapterCfgFile;
     std::string deviceCfgFile, listenIP, port, hostname, fport, id;
     unsigned int globalVerbosity;
-
     try
     {
         // These options are only allowed on the command line.
@@ -243,7 +243,7 @@ int main(int argc, char* argv[])
         /// Prepare the global Configuration
         CGlobalConfiguration::Instance().SetHostname(hostname);
         CGlobalConfiguration::Instance().SetUUID(id);
-        CGlobalConfiguration::Instance().SetListenPort(port);
+        CGlobalConfiguration::Instance().SetListenPort(GetPortFromString(port));
         CGlobalConfiguration::Instance().SetListenAddress(listenIP);
         CGlobalConfiguration::Instance().SetClockSkew(
                 boost::posix_time::milliseconds(0));
@@ -261,7 +261,7 @@ int main(int argc, char* argv[])
 
         if (vm.count("factory-port"))
         {
-            CGlobalConfiguration::Instance().SetFactoryPort(GetPort(fport));
+            CGlobalConfiguration::Instance().SetFactoryPort(GetPortFromString(fport));
         }
         else
         {
@@ -287,22 +287,24 @@ int main(int argc, char* argv[])
     }
 
     // Initialize modules
-    gm::GMAgent GM(id);
-    sc::SCAgent SC(id);
-    lb::LBAgent LB(id);
+    boost::shared_ptr<IMessageHandler> GM = boost::make_shared<gm::GMAgent>(id);
+    boost::shared_ptr<IMessageHandler> SC = boost::make_shared<sc::SCAgent>(id);
+    boost::shared_ptr<IMessageHandler> LB = boost::make_shared<lb::LBAgent>(id);
 
     try
     {
         // Instantiate and register the group management module
         CBroker::Instance().RegisterModule("gm",boost::posix_time::milliseconds(CTimings::GM_PHASE_TIME));
-        CDispatcher::Instance().RegisterReadHandler("gm", "any", &GM);
-        // Instantiate and register the state collection module
+        CDispatcher::Instance().RegisterReadHandler(GM, "gm");
         CBroker::Instance().RegisterModule("lbq",boost::posix_time::milliseconds(CTimings::LB_SC_QUERY_TIME));
+        // Instantiate and register the state collection module
         CBroker::Instance().RegisterModule("sc",boost::posix_time::milliseconds(CTimings::SC_PHASE_TIME));
-        CDispatcher::Instance().RegisterReadHandler("sc", "any", &SC);
+        CDispatcher::Instance().RegisterReadHandler(SC, "sc");
+        // StateCollection wants to receive Accept messages addressed to lb.
+        CDispatcher::Instance().RegisterReadHandler(SC, "lb");
         // Instantiate and register the power management module
         CBroker::Instance().RegisterModule("lb",boost::posix_time::milliseconds(CTimings::LB_PHASE_TIME));
-        CDispatcher::Instance().RegisterReadHandler("lb", "lb", &LB);
+        CDispatcher::Instance().RegisterReadHandler(LB, "lb");
 
         // The peerlist should be passed into constructors as references or
         // pointers to each submodule to allow sharing peers. NOTE this requires
@@ -327,7 +329,8 @@ int main(int argc, char* argv[])
                 // Construct the UUID of the peer
                 std::string peerid = GenerateUuid(peerhost, peerport);
                 // Add the UUID to the list of known hosts
-                CConnectionManager::Instance().PutHost(peerid, peerhost, peerport);
+                CConnectionManager::Instance().PutHost(
+                    peerid, peerhost, GetPortFromString(peerport));
             }
         }
         else
@@ -336,11 +339,17 @@ int main(int argc, char* argv[])
         }
 
         // Add the local connection to the hostname list
-        CConnectionManager::Instance().PutHost(id, "localhost", port);
+        CConnectionManager::Instance().PutHost(id, "localhost", GetPortFromString(port));
 
         Logger.Debug << "Starting thread of Modules" << std::endl;
-        CBroker::Instance().Schedule("gm", boost::bind(&gm::GMAgent::Run, &GM), false);
-        CBroker::Instance().Schedule("lbq", boost::bind(&lb::LBAgent::Run, &LB), false);
+        CBroker::Instance().Schedule(
+            "gm",
+            boost::bind(&gm::GMAgent::Run, boost::dynamic_pointer_cast<gm::GMAgent>(GM)),
+            false);
+        CBroker::Instance().Schedule(
+            "lb",
+            boost::bind(&lb::LBAgent::Run, boost::dynamic_pointer_cast<lb::LBAgent>(LB)),
+            false);
     }
     catch (std::exception & e)
     {

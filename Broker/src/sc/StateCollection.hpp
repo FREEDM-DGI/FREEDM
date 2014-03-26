@@ -24,29 +24,17 @@
 #ifndef CSTATECOLLECTION_HPP_
 #define CSTATECOLLECTION_HPP_
 
-#include "CConnection.hpp"
-#include "CConnectionManager.hpp"
-#include "CDispatcher.hpp"
-#include "CMessage.hpp"
 #include "IAgent.hpp"
-#include "IHandler.hpp"
+#include "IMessageHandler.hpp"
 #include "IPeerNode.hpp"
-#include "CDevice.hpp"
+#include "messages/DgiMessage.pb.h"
 
-#include <cmath>
 #include <map>
-#include <sstream>
-#include <set>
+#include <memory>
 #include <vector>
 
 #include <boost/shared_ptr.hpp>
-#include <boost/progress.hpp>
 #include <boost/property_tree/ptree.hpp>
-
-using boost::asio::ip::tcp;
-using boost::property_tree::ptree;
-
-using namespace boost::asio;
 
 namespace freedm
 {
@@ -67,7 +55,7 @@ namespace sc
 ///                 other nodes (these messages belong to the channel between the nodes).
 ///////////////////////////////////////////////////////////////////////////////
 
-class SCAgent : public IReadHandler, public IPeerNode,
+class SCAgent : public IMessageHandler, public IPeerNode,
         public IAgent< boost::shared_ptr<IPeerNode> >
 {
     public:
@@ -75,11 +63,13 @@ class SCAgent : public IReadHandler, public IPeerNode,
         SCAgent(std::string uuid);
         //Handler
         ///Handle receiving messages
-        void HandleAny(MessagePtr msg, PeerNodePtr peer);
-        void HandlePeerList(MessagePtr msg, PeerNodePtr peer);
-        void HandleRequest(MessagePtr msg, PeerNodePtr peer);
-        void HandleMarker(MessagePtr msg, PeerNodePtr peer);
-        void HandleState(MessagePtr msg, PeerNodePtr peer);
+        void HandleAccept(PeerNodePtr peer);
+        void HandlePeerList(const gm::PeerListMessage& msg, PeerNodePtr peer);
+        void HandleRequest(const RequestMessage& msg, PeerNodePtr peer);
+        void HandleMarker(const MarkerMessage& msg, PeerNodePtr peer);
+        void HandleState(const StateMessage& msg, PeerNodePtr peer);
+        /// Handles received messages
+        void HandleIncomingMessage(boost::shared_ptr<const DgiMessage> msg, PeerNodePtr peer);
 
     private:
         //Marker structure
@@ -89,18 +79,13 @@ class SCAgent : public IReadHandler, public IPeerNode,
         ///Initiator starts state collection
         void    Initiate();
         ///Save local state
-        //void    TakeSnapshot(std::string deviceType, std::string valueType);
         void    TakeSnapshot(const std::vector<std::string>& devicelist);
         ///Peer sends collected states back to the initiator
         void    SendStateBack();
         ///Initiator sends collected states back to the request module
         void    StateResponse();
         ///Peer save local state and forward maker
-        void    SaveForward(StateVersion latest, CMessage msg);
-
-        // Messages
-        ///Create a marker message
-        CMessage marker();
+        void    SaveForward(StateVersion latest, const MarkerMessage& msg);
 
         //Peer set operations
         ///Add a peer to peer set from a pointer to a peer node object
@@ -108,9 +93,13 @@ class SCAgent : public IReadHandler, public IPeerNode,
         ///Get a pointer to a peer from UUID
         PeerNodePtr GetPeer(std::string uuid);
 
+        /// Wraps a StateCollectionMessage in a DgiMessage
+        static DgiMessage PrepareForSending(
+            const StateCollectionMessage& message, std::string recipient = "sc");
+
         ///collect states container and its iterator
-        std::multimap<StateVersion, ptree> collectstate;
-        std::multimap<StateVersion, ptree>::iterator it;
+        std::multimap<StateVersion, StateMessage> collectstate;
+        std::multimap<StateVersion, StateMessage>::iterator it;
 
         ///count number of states
         unsigned int m_countstate;
@@ -128,20 +117,13 @@ class SCAgent : public IReadHandler, public IPeerNode,
         ///module that request state collection
         std::string m_module;
 
-        ///number of requested device
-        unsigned int m_deviceNum;
-
         //For multidevices state collection the following variables have to be changed
         std::vector<std::string> m_device;
-
-        ///type of device and value
-        //std::string m_deviceType;
-        //std::string m_valueType;
 
         ///current version of marker
         StateVersion        m_curversion;
         ///current state
-        ptree               m_curstate;
+        StateMessage m_curstate;
 
         ///all known peers
         PeerSet m_AllPeers;

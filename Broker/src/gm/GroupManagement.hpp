@@ -24,29 +24,17 @@
 #ifndef GROUPMANAGEMENT_HPP_
 #define GROUPMANAGEMENT_HPP_
 
-#include "CConnection.hpp"
-#include "CConnectionManager.hpp"
-#include "CDispatcher.hpp"
-#include "CGlobalPeerList.hpp"
-#include "CMessage.hpp"
+#include "CBroker.hpp"
 #include "IAgent.hpp"
-#include "IHandler.hpp"
+#include "IMessageHandler.hpp"
 #include "IPeerNode.hpp"
-
-#include <cmath>
-#include <set>
-#include <sstream>
-#include <vector>
+#include "messages/DgiMessage.pb.h"
 
 #include <boost/interprocess/sync/interprocess_mutex.hpp>
-#include <boost/progress.hpp>
-#include <boost/property_tree/ptree.hpp>
 #include <boost/shared_ptr.hpp>
-
-using boost::asio::ip::tcp;
-using boost::property_tree::ptree;
-
-using namespace boost::asio;
+#include <boost/system/error_code.hpp>
+#include <boost/thread/mutex.hpp>
+#include <google/protobuf/message.h>
 
 namespace freedm {
 
@@ -56,7 +44,7 @@ namespace gm {
 
 /// Declaration of Garcia-Molina Invitation Leader Election algorithm.
 class GMAgent
-  : public IReadHandler, public IPeerNode,
+  : public IMessageHandler, public IPeerNode,
     public IAgent< boost::shared_ptr<IPeerNode> >
 {
   public:
@@ -66,42 +54,45 @@ class GMAgent
     GMAgent(std::string uuid_);
     /// Module destructor
     ~GMAgent();
+    /// Called to start the system
+    int	Run();
+    /// Handles Processing a PeerList
+    static PeerSet ProcessPeerList(const PeerListMessage& msg);
 
-    // Internal
+  private:
     /// Resets the algorithm to the default startup state.
     void Recovery();
     /// Returns true if this node considers itself a coordinator
     bool IsCoordinator() const { return (Coordinator() == GetUUID()); };
 
     // Handlers
-    /// A set of common code to be run before every message
-    void Prehandler(SubhandleFunctor f,MessagePtr msg, PeerNodePtr peer);
-    /// Handles receiving incoming messages.
-    virtual void HandleAny(MessagePtr msg,PeerNodePtr peer);
+    /// Handles received messages
+    void HandleIncomingMessage(boost::shared_ptr<const DgiMessage> msg, PeerNodePtr peer);
     /// Hadles recieving peerlists
-    void HandlePeerList(MessagePtr msg,PeerNodePtr peer);
+    void HandlePeerList(const PeerListMessage& msg,PeerNodePtr peer);
     /// Handles recieving accept messsages
-    void HandleAccept(MessagePtr msg,PeerNodePtr peer);
+    void HandleAccept(const AcceptMessage& msg,PeerNodePtr peer);
     /// Handles recieving are you coordinator messages
-    void HandleAreYouCoordinator(MessagePtr msg,PeerNodePtr peer);
+    void HandleAreYouCoordinator(
+        const AreYouCoordinatorMessage& msg,
+        PeerNodePtr peer,
+        const boost::posix_time::ptime& expire_time);
     /// Handles recieving are you there messsages
-    void HandleAreYouThere(MessagePtr msg,PeerNodePtr peer);
+    void HandleAreYouThere(
+        const AreYouThereMessage& msg,
+        PeerNodePtr peer,
+        const boost::posix_time::ptime& expire_time);
     /// Handles recieving invite messages
-    void HandleInvite(MessagePtr msg,PeerNodePtr peer);
+    void HandleInvite(
+        const InviteMessage& msg,
+        PeerNodePtr peer,
+        const boost::posix_time::ptime& expire_time);
     /// Handles recieving AYC responses
-    void HandleResponseAYC(MessagePtr msg,PeerNodePtr peer);
+    void HandleResponseAYC(const AreYouCoordinatorResponseMessage& msg,PeerNodePtr peer);
     /// Handles recieving AYT responses
-    void HandleResponseAYT(MessagePtr msg,PeerNodePtr peer);
-    /// Handles recieving clock readings
-    void HandleClock(MessagePtr msg,PeerNodePtr peer);
-    /// Handles recieving clock skews
-    void HandleClockSkew(MessagePtr msg,PeerNodePtr peer);
+    void HandleResponseAYT(const AreYouThereResponseMessage& msg,PeerNodePtr peere);
     /// Handles recieving peerlist requests
-    void HandlePeerListQuery(MessagePtr msg, PeerNodePtr peer);
-
-    // Processors
-    /// Handles Processing a PeerList
-    static PeerSet ProcessPeerList(MessagePtr msg);
+    void HandlePeerListQuery(const PeerListQueryMessage& msg, PeerNodePtr peer);
 
     //Routines
     /// Checks for other up leaders
@@ -119,34 +110,26 @@ class GMAgent
 
     // Sending Tools
     /// Sends messages to remote peers if FIDs are closed.
-    void SendToPeer(PeerNodePtr peer,CMessage &msg);
+    void SendToPeer(
+        PeerNodePtr peer, const DgiMessage& msg, const boost::posix_time::time_duration& exp);
 
     // Messages
     /// Creates AYC Message.
-    CMessage AreYouCoordinator();
+    DgiMessage AreYouCoordinator();
     /// Creates Group Invitation Message
-    CMessage Invitation();
-    /// Creates Ready Message
-    CMessage Ready();
+    DgiMessage Invitation();
     /// Creates A Response message
-    CMessage Response(std::string payload,std::string type,
-        const boost::posix_time::ptime& exp, int seq);
+    DgiMessage AreYouCoordinatorResponse(std::string payload, int seq);
+    /// Creates A Response message
+    DgiMessage AreYouThereResponse(std::string payload,int seq);
     /// Creates an Accept Message
-    CMessage Accept();
+    DgiMessage Accept();
     /// Creates a AYT, used for Timeout
-    CMessage AreYouThere();
+    DgiMessage AreYouThere();
     /// Generates a peer list
-    CMessage PeerList(std::string requester="any");
-    /// Generates a request to read the remote clock
-    CMessage ClockRequest();
-    /// Generates a message informing a node of their new clock skew
-    CMessage ClockSkew(boost::posix_time::time_duration t);
+    DgiMessage PeerList(std::string requester="all");
     /// Generates a CMessage that can be used to query for the group
-    static CMessage PeerListQuery(std::string requester);
-
-    // This is the main loop of the algorithm
-    /// Called to start the system
-    int	Run();
+    static DgiMessage PeerListQuery(std::string requester);
 
     //Peer Set Manipulation
     /// Adds a peer to the peer set from UUID
@@ -156,7 +139,6 @@ class GMAgent
     /// Gets a pointer to a peer from UUID.
     PeerNodePtr GetPeer(std::string uuid);
 
-  protected:
     /// Gets the status of a node
     int GetStatus() const;
     /// Sets the status of the node
@@ -174,6 +156,10 @@ class GMAgent
     /// Checks the status of the FIDs
     void FIDCheck(const boost::system::error_code& err);
 
+    /// Wraps a GroupManagementMessage in a DgiMessage
+    static DgiMessage PrepareForSending(
+        const GroupManagementMessage& message, std::string recipient = "gm");
+
     /// Nodes In My Group
     PeerSet m_UpNodes;
     /// Known Coordinators
@@ -189,7 +175,7 @@ class GMAgent
     boost::mutex pList_Mutex;
 
     /// The ID number of the current group (Never initialized for fun)
-    unsigned int m_GroupID;
+    google::protobuf::uint32 m_GroupID;
     /// The uuid of the group leader
     std::string  m_GroupLeader;
     /// The number of groups being formed
@@ -220,9 +206,6 @@ class GMAgent
     boost::posix_time::time_duration AYT_RESPONSE_TIMEOUT;
     /// How long to wait for responses from other nodes.
     boost::posix_time::time_duration INVITE_RESPONSE_TIMEOUT;
-
-    ///Maximum clock skew in milliseconds;
-    static const int MAX_SKEW = 100;
 
     /// Number of groups formed
     int m_groupsformed ;

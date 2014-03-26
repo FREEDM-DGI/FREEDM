@@ -95,7 +95,7 @@ private:
 
     /// Disconnects plug and play devices that timeout.
     void Timeout(const boost::system::error_code & e);
-    
+
     /// Set of device adapters managed by the factory.
     std::map<std::string, IAdapter::Pointer> m_adapters;
 

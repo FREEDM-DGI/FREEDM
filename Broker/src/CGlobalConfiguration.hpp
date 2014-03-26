@@ -32,6 +32,7 @@
 #ifndef CGLOBALCONFIGURATION_HPP
 #define CGLOBALCONFIGURATION_HPP
 
+#include <climits>
 #include <string>
 
 #include <boost/date_time/posix_time/posix_time.hpp>
@@ -53,7 +54,7 @@ class CGlobalConfiguration : public boost::noncopyable
         /// Set the hostname
         void SetHostname(std::string h) { m_hostname = h; };
         /// Set the port
-        void SetListenPort(std::string p) { m_port = p; };
+        void SetListenPort(unsigned short p) { m_port = p; };
         /// Set the uuid
         void SetUUID(std::string u) { m_uuid = u; };
         /// Set the address to on
@@ -72,7 +73,7 @@ class CGlobalConfiguration : public boost::noncopyable
         /// Get the hostname
         std::string GetHostname() const { return m_hostname; };
         /// Get the port
-        std::string GetListenPort() const { return m_port; };
+        unsigned short GetListenPort() const { return m_port; };
         /// Get the UUID
         std::string GetUUID() const { return m_uuid; };
         /// Get the address
@@ -88,11 +89,11 @@ class CGlobalConfiguration : public boost::noncopyable
         std::string GetAdapterConfigPath() const { return m_adapterConfigPath; };
         /// Get the path to the device class XML specification file
         std::string GetDeviceConfigPath() const { return m_deviceConfigPath; }
-        /// The maximum packet size in bytes
-        static const unsigned int MAX_PACKET_SIZE = 60000;
+        /// Intentionally signed. UINT16_MAX is too big for a UDP datagram, anyway.
+        static const short MAX_PACKET_SIZE = SHRT_MAX;
     private:
         std::string m_hostname; /// Node hostname
-        std::string m_port; /// Port number
+        unsigned short m_port; /// Port number
         std::string m_uuid; /// The node uuid
         std::string m_address; /// The listening address.
         boost::posix_time::time_duration m_clockskew; /// The skew of the clock

@@ -193,7 +193,7 @@ CDeviceBuilder::CDeviceBuilder(std::string filename)
         vars.s_undefined_type.erase(id);
         vars.s_uninitialized_type.insert(id);
     }
-    
+
     if( vars.s_undefined_type.size() > 0 )
     {
         std::string type = *vars.s_undefined_type.begin();
@@ -330,4 +330,3 @@ CDevice::Pointer CDeviceBuilder::CreateDevice(std::string id, std::string type,
 } // namespace device
 } // namespace broker
 } // namespace freedm
-

@@ -24,7 +24,6 @@
 #ifndef CPROTOCOLSU_HPP
 #define CPROTOCOLSU_HPP
 
-#include "CConnection.hpp"
 #include "CMessage.hpp"
 #include "IProtocol.hpp"
 
@@ -56,10 +55,6 @@ class CProtocolSU : public IProtocol
         void SendACK(const CMessage &msg);
         /// Stops the timers
         void Stop() { m_timeout.cancel(); };
-        /// Returns the identifier
-        std::string GetIdentifier() { return Identifier(); };
-        /// Returns the identifier for this protocol.
-        static std::string Identifier() { return "SUC"; };
     private:
         /// Resend outstanding messages
         void Resend(const boost::system::error_code& err);

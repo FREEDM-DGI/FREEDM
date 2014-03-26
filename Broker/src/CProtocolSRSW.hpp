@@ -24,9 +24,9 @@
 #ifndef CPROTOCOLSRSW_HPP
 #define CPROTOCOLSRSW_HPP
 
-#include "CConnection.hpp"
-#include "CMessage.hpp"
 #include "IProtocol.hpp"
+
+#include "DgiMessage.pb.h"
 
 #include <deque>
 #include <iomanip>
@@ -61,10 +61,6 @@ class CProtocolSRSW : public IProtocol
         void SendSYN();
         /// Stops the timers
         void Stop() { m_timeout.cancel(); SetStopped(true); };
-        /// Returns the identifier
-        std::string GetIdentifier() { return Identifier(); };
-        /// Returns the identifier for this protocol.
-        static std::string Identifier() { return "SRSW"; };
         /// Handles Phase Changes
         void ChangePhase(bool newround);
     private:

@@ -65,7 +65,7 @@ const double NORMAL_TOLERANCE = 0.5;
 /////////////////////////////////////////////////////////
 class LBAgent
     : public IReadHandler,
-      public IPeerNode,
+      private IPeerNode,
       public IAgent< boost::shared_ptr<IPeerNode> >
 {
     public:

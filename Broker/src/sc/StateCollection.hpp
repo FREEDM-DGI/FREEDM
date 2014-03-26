@@ -56,7 +56,7 @@ using boost::property_tree::ptree;
 ///                 other nodes (these messages belong to the channel between the nodes).
 ///////////////////////////////////////////////////////////////////////////////
 
-class SCAgent : public IReadHandler, public IPeerNode,
+class SCAgent : public IReadHandler, private IPeerNode,
         public IAgent< boost::shared_ptr<IPeerNode> >
 {
     public:

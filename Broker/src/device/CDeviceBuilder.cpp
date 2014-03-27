@@ -64,18 +64,20 @@ CDeviceBuilder::CDeviceBuilder(std::string filename)
 
     typedef std::map<std::string, DeviceInfo> map_type;
     using namespace boost::property_tree;
-    ptree device_xml;
+    ptree root;
     BuildVars vars;
 
     try
     {
         Logger.Debug << "read_xml with the path: " << filename << std::endl;
-        read_xml(filename, device_xml);
+        read_xml(filename, root);
     }
     catch(std::exception & e)
     {
         throw std::runtime_error(e.what());
     }
+
+    ptree device_xml = root.get_child("root");
 
     if( device_xml.size() == 0 )
     {

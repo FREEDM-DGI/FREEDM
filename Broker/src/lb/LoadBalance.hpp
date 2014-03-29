@@ -242,6 +242,7 @@ class LBAgent
         bool First_Time_Inv;
         //supply or draw of the system
         double m_g;
+        double agg_gateway;
         //highest demand value in the last migration cycle
         double m_highestDemand;
         //previous the highest demand value

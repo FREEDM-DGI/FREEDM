@@ -936,7 +936,7 @@ bool LBAgent::Cyber_Invariant()
     }
     //knapsack invariant
     bool C2 = false;
-    if (m_preDemand!=0)
+    if (m_prevDemand!=0)
     {
         if (m_preDemand - m_highestDemand < 0)
             C2 = true;
@@ -953,10 +953,9 @@ bool LBAgent::Cyber_Invariant()
 bool LBAgent::Physical_Invariant()
 {
     using namespace device;
-    typedef CDeviceOmega OMEGA;
-    m_Frequency = CDeviceManager::Instance().GetNetValue<OMEGA>(&OMEGA::GetFrequency);
+    m_Frequency = CDeviceManager::Instance().GetNetValue("Omega", "frequency");
 
-    double left = (0.025*m_Frequency + 1)*(m_Frequency-376.8)^2 + (m_Frequency-376.8)*(0.0075*GrossP);
+    double left = (0.025*m_Frequency + 1)*(m_Frequency-376.8)*(m_Frequency-376.8) + (m_Frequency-376.8)*(0.0075*GrossP);
     double right = Kei*(m_Frequency - 376.8);
 
     if (left > right)
@@ -1296,7 +1295,8 @@ void LBAgent::HandleCollectedState(MessagePtr msg, PeerNodePtr /*peer*/)
     // You received the collected global state in response to your SC Request
     // --------------------------------------------------------------
     int peercount=0; // number of peers *with devices*
-    double agg_gateway=0;
+    agg_gateway=0;
+    GrossP = 0;
     ptree &pt = msg->GetSubMessages();
     
     if (pt.get_child_optional("CollectedState.gateway"))
@@ -1309,8 +1309,9 @@ void LBAgent::HandleCollectedState(MessagePtr msg, PeerNodePtr /*peer*/)
             if (v.second.data() != "no device")
             {
                 peercount++;
-                agg_gateway += boost::lexical_cast<double>(v.second.data());
-            }
+                double p = boost::lexical_cast<double>(v.second.data())
+                agg_gateway += p;  
+                GrossP +=p*p; 
         }
     }
     

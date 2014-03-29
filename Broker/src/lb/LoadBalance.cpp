@@ -938,12 +938,12 @@ bool LBAgent::Cyber_Invariant()
     bool C2 = false;
     if (m_prevDemand!=0)
     {
-        if (m_preDemand - m_highestDemand < 0)
+        if (m_prevDemand - m_highestDemand < 0)
             C2 = true;
     }
     else
     {
-        m_preDemand = m_highestDemand;
+        m_prevDemand = m_highestDemand;
         C2 = true;
     }
     return C1*C2;
@@ -1309,9 +1309,10 @@ void LBAgent::HandleCollectedState(MessagePtr msg, PeerNodePtr /*peer*/)
             if (v.second.data() != "no device")
             {
                 peercount++;
-                double p = boost::lexical_cast<double>(v.second.data())
+                double p = boost::lexical_cast<double>(v.second.data());
                 agg_gateway += p;  
-                GrossP +=p*p; 
+                GrossP +=p*p;
+	    } 
         }
     }
     

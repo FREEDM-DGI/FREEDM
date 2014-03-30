@@ -146,11 +146,6 @@ void SCAgent::HandleIncomingMessage(boost::shared_ptr<const DgiMessage> msg, Pee
         {
             HandleAccept(peer);
         }
-        else
-        {
-            Logger.Warn << "Dropped load balancing message of unexpected type:\n"
-                        << msg->DebugString();
-        }
     }
     else if (msg->type() == DgiMessage::STATE_COLLECTION_MESSAGE)
     {

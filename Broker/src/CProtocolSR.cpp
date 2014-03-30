@@ -88,7 +88,7 @@ CProtocolSR::CProtocolSR(CConnection& conn)
 ///     The send window is greater than or equal to one. The timer for the
 ///     resend is freshly set or is currently running for a resend.
 ///     If a message is written to the channel, the m_killable flag is set.
-/// @param msg The message to write to the channel, invalidated by this call.
+/// @param msg The message to write to the channel.
 ///////////////////////////////////////////////////////////////////////////////
 void CProtocolSR::Send(const DgiMessage& msg)
 {

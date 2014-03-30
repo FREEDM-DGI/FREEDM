@@ -107,7 +107,7 @@ void CProtocolSR::Send(const DgiMessage& msg)
     m_outseq = (m_outseq+1) % SEQUENCE_MODULO;
 
     SetExpirationTimeFromNow(csrm, boost::posix_time::millisec(CTimings::CSRC_DEFAULT_TIMEOUT));
-    Logger.Debug<<"Set Expire time"<<std::endl;
+    Logger.Debug<<"Set Expire time: "<< csrm.expire_time() << std::endl;
 
     if(m_window.size() == 0)
     {
@@ -149,8 +149,7 @@ void CProtocolSR::Resend(const boost::system::error_code& err)
             //First message in the window should be the only one
             //ever to have been written.
             m_sendkills = true;
-            Logger.Debug<<"Message Expired: "<<m_window.front().hash()
-                          <<":"<<m_window.front().sequence_no()<<std::endl;
+            Logger.Debug<<"Message Expired: "<<m_window.front().DebugString();
             m_window.pop_front();
             m_dropped++;
         }

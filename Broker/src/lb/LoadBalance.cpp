@@ -901,15 +901,14 @@ void LBAgent::HandleYes(MessagePtr /*msg*/, PeerNodePtr peer)
     m_.SetHandler("lb."+ ss_.str());
     
     //Its better to check your status again before initiating drafting
-    if ( peer->GetUUID() != GetUUID() && LBAgent::SUPPLY == m_Status && Invariant_Check() && !m_inProgress)
+    if ( peer->GetUUID() != GetUUID() && LBAgent::SUPPLY == m_Status && Invariant_Check())
     {
-        m_inProgress = true;
         try
         {
             peer->Send(m_);
             //for scheduling invariant
             Last_Time_Sent  = boost::posix_time::microsec_clock::local_time();
-            Curr_K++;
+            Curr_K+=P_Migrate;
         }
         catch (boost::system::system_error& e)
         {
@@ -918,6 +917,7 @@ void LBAgent::HandleYes(MessagePtr /*msg*/, PeerNodePtr peer)
     }
 }
 
+//check cyber invariant, physical invariant and scheduling invariant
 bool LBAgent::Invariant_Check()
 {
     bool I1 = Cyber_Invariant();

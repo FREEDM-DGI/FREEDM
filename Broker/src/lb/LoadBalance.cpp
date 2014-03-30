@@ -405,6 +405,7 @@ void LBAgent::LoadManage()
     //only when the Normal->Demand or Demand->Normal cases happen)
     if (LBAgent::DEMAND == m_Status)
     {
+        Logger.Notice << "this node is in demand..." << std::endl;
         // Create Demand message and send it to all nodes
         SendMsg("demand", m_AllPeers);
     }
@@ -417,6 +418,7 @@ void LBAgent::LoadManage()
     // If you are in Supply state
     else if (LBAgent::SUPPLY == m_Status)
     {
+        Logger.Notice << "this node is in supply..."<< std::endl;
         //initiate draft request
         SendDraftRequest();
     }
@@ -653,6 +655,7 @@ void LBAgent::SendDraftRequest()
         }
         else
         {
+            Logger.Notice << "Before send out request from this supply node" << std::endl;
             //Create new request and send it to all DEMAND nodes
             SendMsg("request", m_HiNodes);
             //for scheduling invariant

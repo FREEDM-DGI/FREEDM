@@ -34,8 +34,6 @@ unsigned int CTimings::CSUC_RESEND_TIME;
 
 unsigned int CTimings::DEV_PNP_HEARTBEAT;
 
-unsigned int CTimings::GM_GLOBAL_TIMEOUT;
-
 unsigned int CTimings::DEV_RTDS_DELAY;
 
 unsigned int CTimings::GM_AYT_RESPONSE_TIMEOUT;
@@ -115,12 +113,6 @@ void CTimings::SetTimings(const std::string timingsFile)
     desc = "The timing value DEV_PNP_HEARTBEAT";
     loggerOpts.add_options()
         ("DEV_PNP_HEARTBEAT",
-        po::value<unsigned int>( ),
-        desc.c_str() );
-
-    desc = "The timing value GM_GLOBAL_TIMEOUT";
-    loggerOpts.add_options()
-        ("GM_GLOBAL_TIMEOUT",
         po::value<unsigned int>( ),
         desc.c_str() );
 
@@ -299,16 +291,6 @@ void CTimings::SetTimings(const std::string timingsFile)
     {
         throw EDgiConfigError(
                 "DEV_PNP_HEARTBEAT is missing, please check your timings config");
-    }
-
-    try
-    {
-        GM_GLOBAL_TIMEOUT = vm["GM_GLOBAL_TIMEOUT"].as<unsigned int>();
-    }
-    catch (boost::bad_any_cast& e)
-    {
-        throw EDgiConfigError(
-                "GM_GLOBAL_TIMEOUT is missing, please check your timings config");
     }
 
     try

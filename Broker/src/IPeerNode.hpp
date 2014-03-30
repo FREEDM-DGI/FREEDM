@@ -63,9 +63,7 @@ class IPeerNode
         /// Gets the port of this peer.
         unsigned short GetPort() const;
         /// Sends a message to peer
-        bool Send(
-            const DgiMessage& msg,
-            const boost::posix_time::time_duration& expire_in = boost::posix_time::not_a_date_time);
+        bool Send(const DgiMessage& msg);
     private:
         std::string m_uuid; /// This node's uuid.
 };

@@ -25,8 +25,6 @@ public:
 
     static unsigned int DEV_PNP_HEARTBEAT;
 
-    static unsigned int GM_GLOBAL_TIMEOUT;
-
     static unsigned int DEV_RTDS_DELAY;
 
     static unsigned int GM_AYT_RESPONSE_TIMEOUT;

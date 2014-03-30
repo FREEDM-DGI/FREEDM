@@ -48,7 +48,7 @@ class CProtocolSR
         /// Initializes the protocol with the underlying connection
         explicit CProtocolSR(CConnection& conn);
         /// Public facing send function that sends a message
-        void Send(const DgiMessage& msg, const boost::posix_time::time_duration& expire_in);
+        void Send(const DgiMessage& msg);
         /// Public facing function that handles marking down ACKs for sent messages
         void ReceiveACK(const google::protobuf::Message& msg);
         /// deterimines if a  messageshould be given to the dispatcher

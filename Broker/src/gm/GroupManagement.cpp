@@ -86,7 +86,6 @@ GMAgent::GMAgent(std::string p_uuid)
     : IPeerNode(p_uuid),
     CHECK_TIMEOUT(boost::posix_time::not_a_date_time),
     TIMEOUT_TIMEOUT(boost::posix_time::not_a_date_time),
-    GLOBAL_TIMEOUT(boost::posix_time::milliseconds(CTimings::GM_GLOBAL_TIMEOUT)),
     FID_TIMEOUT(boost::posix_time::not_a_date_time),
     AYC_RESPONSE_TIMEOUT(boost::posix_time::milliseconds(CTimings::GM_AYC_RESPONSE_TIMEOUT)),
     AYT_RESPONSE_TIMEOUT(boost::posix_time::milliseconds(CTimings::GM_AYT_RESPONSE_TIMEOUT)),
@@ -148,39 +147,22 @@ void GMAgent::HandleIncomingMessage(boost::shared_ptr<const DgiMessage> msg, Pee
     if(msg->type() == DgiMessage::GROUP_MANAGEMENT_MESSAGE)
     {
         GroupManagementMessage gmm = msg->group_management_message();
-        boost::posix_time::ptime expire_time = boost::posix_time::not_a_date_time;
-        if (gmm.has_expire_time())
-        {
-            expire_time = boost::posix_time::time_from_string(gmm.expire_time());
-        }
         switch(gmm.type())
         {
         case GroupManagementMessage::INVITE_MESSAGE:
-            if(expire_time == boost::posix_time::not_a_date_time)
-            {
-                Logger.Warn << "Received invite message missing expiration time" << std::endl;
-            }
-            HandleInvite(gmm.invite_message(),peer,expire_time);
+            HandleInvite(gmm.invite_message(),peer);
             break;
         case GroupManagementMessage::ACCEPT_MESSAGE:
             HandleAccept(gmm.accept_message(),peer);
             break;
         case GroupManagementMessage::ARE_YOU_COORDINATOR_MESSAGE:
-            if(expire_time == boost::posix_time::not_a_date_time)
-            {
-                Logger.Warn << "Received AYC message missing expiration time" << std::endl;
-            }
-            HandleAreYouCoordinator(gmm.are_you_coordinator_message(),peer,expire_time);
+            HandleAreYouCoordinator(gmm.are_you_coordinator_message(),peer);
             break;
         case GroupManagementMessage::ARE_YOU_COORDINATOR_RESPONSE_MESSAGE:
             HandleResponseAYC(gmm.are_you_coordinator_response_message(),peer);
             break;
         case GroupManagementMessage::ARE_YOU_THERE_MESSAGE:
-            if(expire_time == boost::posix_time::not_a_date_time)
-            {
-                Logger.Warn << "Received AYT message missing expiration time" << std::endl;
-            }
-            HandleAreYouThere(gmm.are_you_there_message(),peer,expire_time);
+            HandleAreYouThere(gmm.are_you_there_message(),peer);
             break;
         case GroupManagementMessage::ARE_YOU_THERE_RESPONSE_MESSAGE:
             HandleResponseAYT(gmm.are_you_there_response_message(),peer);
@@ -368,16 +350,13 @@ DgiMessage GMAgent::PeerListQuery(std::string requester)
 ///     before sending
 /// @param peer the peer to send to
 /// @param msg the message to send
-/// @param exp custom expiration time for the message, or not_a_date_time to
-///   use the default
 ///////////////////////////////////////////////////////////////////////////////
-void GMAgent::SendToPeer(
-    PeerNodePtr peer, const DgiMessage& msg, const boost::posix_time::time_duration& exp)
+void GMAgent::SendToPeer(PeerNodePtr peer, const DgiMessage& msg)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     if(m_fidsclosed == true)
     {
-        peer->Send(msg, exp);
+        peer->Send(msg);
     }
     else
     {
@@ -473,7 +452,7 @@ void GMAgent::PushPeerList()
     {
         Logger.Debug<<"Send group list to all members of this group containing "
                                  << peer->GetUUID() << std::endl;
-        SendToPeer(peer,m_,boost::posix_time::not_a_date_time);
+        SendToPeer(peer,m_);
     }
     if(GetPeer(GetUUID())) GetPeer(GetUUID())->Send(m_);
     Logger.Trace << __PRETTY_FUNCTION__ << "FINISH" <<    std::endl;
@@ -620,7 +599,7 @@ void GMAgent::Check( const boost::system::error_code& err )
             {
                 if( peer->GetUUID() == GetUUID())
                     continue;
-                SendToPeer(peer,m_,GLOBAL_TIMEOUT);
+                SendToPeer(peer,m_);
                 InsertInTimedPeerSet(m_AYCResponse, peer, boost::posix_time::microsec_clock::universal_time());
             }
             // The AlivePeers set is no longer good, we should clear it and make them
@@ -786,7 +765,7 @@ void GMAgent::Merge( const boost::system::error_code& err )
         {
             if( peer->GetUUID() == GetUUID())
                 continue;
-            SendToPeer(peer,m_,GLOBAL_TIMEOUT);
+            SendToPeer(peer,m_);
         }
         // Previously, this set the global timer and waited for GLOBAL_TIMEOUT
         // Before inviting group nodes. However, looking at the original text of the
@@ -833,7 +812,7 @@ void GMAgent::InviteGroupNodes( const boost::system::error_code& err, PeerSet p_
         {
             if( peer->GetUUID() == GetUUID())
                 continue;
-            SendToPeer(peer,m_,GLOBAL_TIMEOUT);
+            SendToPeer(peer,m_);
         }
         if(IsCoordinator())
         {     // We only call Reorganize if we are the new leader
@@ -919,7 +898,7 @@ void GMAgent::Timeout( const boost::system::error_code& err )
             //{
                 if(peer->GetUUID() != GetUUID())
                 {
-                    SendToPeer(peer,m_,GLOBAL_TIMEOUT);
+                    SendToPeer(peer,m_);
                     Logger.Info << "Expecting response from "<<peer->GetUUID()<<std::endl;
                     InsertInTimedPeerSet(m_AYTResponse, peer, boost::posix_time::microsec_clock::universal_time());
                 }
@@ -1075,10 +1054,7 @@ void GMAgent::HandleAccept(const AcceptMessage& msg, PeerNodePtr peer)
 /// @post The node responds yes or no to the request.
 /// @peers Any node in the system is eligible to receive this at any time.
 ///////////////////////////////////////////////////////////////////////////////
-void GMAgent::HandleAreYouCoordinator(
-    const AreYouCoordinatorMessage& msg,
-    PeerNodePtr peer,
-    const boost::posix_time::ptime& expire_time)
+void GMAgent::HandleAreYouCoordinator(const AreYouCoordinatorMessage& msg, PeerNodePtr peer)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     int seq = msg.sequence_no();
@@ -1088,14 +1064,14 @@ void GMAgent::HandleAreYouCoordinator(
         // We are the group Coordinator AND we are at normal operation
         Logger.Info << "SEND: AYC Response (YES) to "<<peer->GetUUID()<<std::endl;
         DgiMessage m_ = AreYouCoordinatorResponse("yes",seq);
-        SendToPeer(peer,m_,expire_time-boost::posix_time::microsec_clock::universal_time());
+        SendToPeer(peer,m_);
     }
     else
     {
         // We are not the Coordinator OR we are not at normal operation
         Logger.Info << "SEND: AYC Response (NO) to "<<peer->GetUUID()<<std::endl;
         DgiMessage m_ = AreYouCoordinatorResponse("no",seq);
-        SendToPeer(peer,m_,expire_time-boost::posix_time::microsec_clock::universal_time());
+        SendToPeer(peer,m_);
     }
 }
 
@@ -1107,10 +1083,7 @@ void GMAgent::HandleAreYouCoordinator(
 /// @post The node responds yes or no to the request.
 /// @peers Any node in the system is eligible to receive this message at any time.
 ///////////////////////////////////////////////////////////////////////////////
-void GMAgent::HandleAreYouThere(
-    const AreYouThereMessage& msg,
-    PeerNodePtr peer,
-    const boost::posix_time::ptime& expire_time)
+void GMAgent::HandleAreYouThere(const AreYouThereMessage& msg, PeerNodePtr peer)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     int seq = msg.sequence_no();
@@ -1122,14 +1095,14 @@ void GMAgent::HandleAreYouThere(
         Logger.Info << "SEND: AYT Response (YES) to "<<peer->GetUUID()<<std::endl;
         // We are Coordinator, peer is in our group, and peer is up
         DgiMessage m_ = AreYouThereResponse("yes",seq);
-        SendToPeer(peer,m_,expire_time-boost::posix_time::microsec_clock::universal_time());
+        SendToPeer(peer,m_);
     }
     else
     {
         Logger.Info << "SEND: AYT Response (NO) to "<<peer->GetUUID()<<std::endl;
         // We are not Coordinator OR peer is not in our groups OR peer is down
         DgiMessage m_ = AreYouThereResponse("no",seq);
-        SendToPeer(peer,m_,expire_time-boost::posix_time::microsec_clock::universal_time());
+        SendToPeer(peer,m_);
     }
 }
 
@@ -1144,10 +1117,7 @@ void GMAgent::HandleAreYouThere(
 ///     work as part of the group it was invited to.
 /// @peers Any node could send an invite at any time.
 ///////////////////////////////////////////////////////////////////////////////
-void GMAgent::HandleInvite(
-    const InviteMessage& msg,
-    PeerNodePtr peer,
-    const boost::posix_time::ptime& expire_time)
+void GMAgent::HandleInvite(const InviteMessage& msg, PeerNodePtr peer)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     PeerSet tempSet_;
@@ -1173,9 +1143,7 @@ void GMAgent::HandleInvite(
             {
                 if( peer->GetUUID() == GetUUID())
                     continue;
-                // We will set the expire time to be the same as the source message
-                SendToPeer(
-                    peer, m_, expire_time-boost::posix_time::microsec_clock::universal_time());
+                SendToPeer(peer, m_);
             }
         }
         DgiMessage m_ = Accept();
@@ -1196,7 +1164,7 @@ void GMAgent::HandleInvite(
                 m_GroupLeader, nhost, static_cast<unsigned short>(nport));
             p = CGlobalPeerList::instance().Create(m_GroupLeader);
         }
-        SendToPeer(p,m_,GLOBAL_TIMEOUT);
+        SendToPeer(p,m_);
         SetStatus(GMAgent::REORGANIZATION);
         Logger.Notice << "+ State Change REORGANIZATION : "<<__LINE__<<std::endl;
         Logger.Info << "TIMER: Setting TimeoutTimer (Recovery) : " << __LINE__ << std::endl;

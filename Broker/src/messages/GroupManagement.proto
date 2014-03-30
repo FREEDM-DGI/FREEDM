@@ -103,7 +103,4 @@ message GroupManagementMessage
     optional AreYouThereMessage are_you_there_message = 7;
     optional PeerListQueryMessage peer_list_query_message = 8;
     optional PeerListMessage peer_list_message = 9;
-
-    // FIXME this is terrible. Can we get rid of it?
-    optional string expire_time = 10;
 }

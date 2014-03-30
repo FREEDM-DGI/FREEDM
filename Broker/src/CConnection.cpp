@@ -105,10 +105,8 @@ void CConnection::ChangePhase(bool newround)
 ///   If the message is being sequenced  and the window is not already full,
 ///   the timeout timer is cancelled and reset.
 /// @param msg The message to write to the channel, INVALIDATED by this call.
-/// @param expire_in how long from now to set the expiration time, or
-///   not_a_date_time to use the default
 ///////////////////////////////////////////////////////////////////////////////
-void CConnection::Send(const DgiMessage& msg, const boost::posix_time::time_duration& expire_in)
+void CConnection::Send(const DgiMessage& msg)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
@@ -124,7 +122,7 @@ void CConnection::Send(const DgiMessage& msg, const boost::posix_time::time_dura
     }
     else
     {
-        m_protocol.Send(msg, expire_in);
+        m_protocol.Send(msg);
     }
 }
 

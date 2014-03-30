@@ -94,11 +94,9 @@ unsigned short IPeerNode::GetPort() const
 /// @post A message is sent to the peer represented by this
 ///   object
 /// @param msg the message to write to channel.
-/// @param expire_in how long from now to set the expiration
-///   time, or not_a_date_time to use the default
 /// @return True if the message was sent.
 /////////////////////////////////////////////////////////////
-bool IPeerNode::Send(const DgiMessage& msg, const boost::posix_time::time_duration& expire_in)
+bool IPeerNode::Send(const DgiMessage& msg)
 {
     try
     {
@@ -106,8 +104,7 @@ bool IPeerNode::Send(const DgiMessage& msg, const boost::posix_time::time_durati
                 = CConnectionManager::Instance().GetConnectionByUUID(m_uuid);
         if(c.get() != NULL)
         {
-            //Schedule the send with the io_service thread
-            c->Send(msg, expire_in);
+            c->Send(msg);
         }
         else
         {

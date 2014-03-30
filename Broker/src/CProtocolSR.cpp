@@ -89,11 +89,8 @@ CProtocolSR::CProtocolSR(CConnection& conn)
 ///     resend is freshly set or is currently running for a resend.
 ///     If a message is written to the channel, the m_killable flag is set.
 /// @param msg The message to write to the channel, invalidated by this call.
-/// @param expire_in how long from now to set the expiration time, or
-///     not_a_date_time to use the default
 ///////////////////////////////////////////////////////////////////////////////
-void CProtocolSR::Send(
-    const DgiMessage& msg, const boost::posix_time::time_duration& expire_in)
+void CProtocolSR::Send(const DgiMessage& msg)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
@@ -109,22 +106,8 @@ void CProtocolSR::Send(
     csrm.set_sequence_no(msgseq);
     m_outseq = (m_outseq+1) % SEQUENCE_MODULO;
 
-    if (expire_in == boost::posix_time::not_a_date_time)
-    {
-        SetExpirationTimeFromNow(csrm, boost::posix_time::millisec(CTimings::CSRC_DEFAULT_TIMEOUT));
-        Logger.Debug<<"Set Expire time"<<std::endl;
-        // FIXME this sucks
-        if (csrm.dgi_message().type() == DgiMessage::GROUP_MANAGEMENT_MESSAGE)
-        {
-            gm::GroupManagementMessage* gmm =
-                csrm.mutable_dgi_message()->mutable_group_management_message();
-            gmm->set_expire_time(csrm.expire_time());
-        }
-    }
-    else
-    {
-        SetExpirationTimeFromNow(csrm, expire_in);
-    }
+    SetExpirationTimeFromNow(csrm, boost::posix_time::millisec(CTimings::CSRC_DEFAULT_TIMEOUT));
+    Logger.Debug<<"Set Expire time"<<std::endl;
 
     if(m_window.size() == 0)
     {

@@ -69,7 +69,7 @@ public:
     void Stop();
 
     /// Puts a message into the channel.
-    void Send(const DgiMessage& msg, const boost::posix_time::time_duration& expire_in);
+    void Send(const DgiMessage& msg);
 
     /// Handles Notification of an acknowledment being received
     void ReceiveACK(const google::protobuf::Message &msg);

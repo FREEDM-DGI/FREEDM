@@ -53,8 +53,7 @@ class IProtocol
         /// Destroy all humans
         virtual ~IProtocol() { };
         /// Public write to channel function
-        virtual void Send(
-            const DgiMessage& msg, const boost::posix_time::time_duration& expire_in) = 0;
+        virtual void Send(const DgiMessage& msg) = 0;
         /// Public facing function that handles marking ACKS
         virtual void ReceiveACK(const google::protobuf::Message& msg) = 0;
         /// Function that determines if a message should dispatched

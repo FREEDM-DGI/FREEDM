@@ -73,20 +73,11 @@ class GMAgent
     /// Handles recieving accept messsages
     void HandleAccept(const AcceptMessage& msg,PeerNodePtr peer);
     /// Handles recieving are you coordinator messages
-    void HandleAreYouCoordinator(
-        const AreYouCoordinatorMessage& msg,
-        PeerNodePtr peer,
-        const boost::posix_time::ptime& expire_time);
+    void HandleAreYouCoordinator(const AreYouCoordinatorMessage& msg,PeerNodePtr peer);
     /// Handles recieving are you there messsages
-    void HandleAreYouThere(
-        const AreYouThereMessage& msg,
-        PeerNodePtr peer,
-        const boost::posix_time::ptime& expire_time);
+    void HandleAreYouThere(const AreYouThereMessage& msg,PeerNodePtr peer);
     /// Handles recieving invite messages
-    void HandleInvite(
-        const InviteMessage& msg,
-        PeerNodePtr peer,
-        const boost::posix_time::ptime& expire_time);
+    void HandleInvite(const InviteMessage& msg,PeerNodePtr peer);
     /// Handles recieving AYC responses
     void HandleResponseAYC(const AreYouCoordinatorResponseMessage& msg,PeerNodePtr peer);
     /// Handles recieving AYT responses
@@ -110,8 +101,7 @@ class GMAgent
 
     // Sending Tools
     /// Sends messages to remote peers if FIDs are closed.
-    void SendToPeer(
-        PeerNodePtr peer, const DgiMessage& msg, const boost::posix_time::time_duration& exp);
+    void SendToPeer(PeerNodePtr peer, const DgiMessage& msg);
 
     // Messages
     /// Creates AYC Message.
@@ -196,8 +186,6 @@ class GMAgent
     boost::posix_time::time_duration CHECK_TIMEOUT;
     /// How long beteween AYT checks
     boost::posix_time::time_duration TIMEOUT_TIMEOUT;
-    /// How long to wait for some timeouts
-    boost::posix_time::time_duration GLOBAL_TIMEOUT;
     /// How long to wait before checking attached FIDs
     boost::posix_time::time_duration FID_TIMEOUT;
     /// How long to wait for responses from other nodes.

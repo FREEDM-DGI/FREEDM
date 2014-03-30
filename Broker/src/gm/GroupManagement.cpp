@@ -38,7 +38,6 @@
 #include "CDeviceManager.hpp"
 #include "CTimings.hpp"
 #include "CDevice.hpp"
-#include "Messages.hpp"
 
 #include <algorithm>
 #include <cstdlib>
@@ -1413,7 +1412,15 @@ void GMAgent::SetStatus(int status)
 ///////////////////////////////////////////////////////////////////////////////
 DgiMessage GMAgent::PrepareForSending(const GroupManagementMessage& message, std::string recipient)
 {
-    return broker::PrepareForSending(message, DgiMessage::GROUP_MANAGEMENT_MESSAGE, recipient);
+    // Abort if any required fields are unset
+    message.CheckInitialized();
+
+    DgiMessage dm;
+    dm.set_type(DgiMessage::GROUP_MANAGEMENT_MESSAGE);
+    dm.mutable_group_management_message()->CopyFrom(message);
+    dm.set_recipient_module(recipient);
+
+    return dm;
 }
 
 } // namespace gm

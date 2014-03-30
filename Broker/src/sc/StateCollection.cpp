@@ -44,7 +44,6 @@
 #include "CGlobalPeerList.hpp"
 #include "CLogger.hpp"
 #include "IPeerNode.hpp"
-#include "Messages.hpp"
 #include "gm/GroupManagement.hpp"
 
 #include <algorithm>
@@ -858,7 +857,15 @@ SCAgent::PeerNodePtr SCAgent::GetPeer(std::string uuid)
 ///////////////////////////////////////////////////////////////////////////////
 DgiMessage SCAgent::PrepareForSending(const StateCollectionMessage& message, std::string recipient)
 {
-    return broker::PrepareForSending(message, DgiMessage::STATE_COLLECTION_MESSAGE, recipient);
+    // Abort if any required fields are unset
+    message.CheckInitialized();
+
+    DgiMessage dm;
+    dm.set_type(DgiMessage::STATE_COLLECTION_MESSAGE);
+    dm.mutable_state_collection_message()->CopyFrom(message);
+    dm.set_recipient_module(recipient);
+
+    return dm;
 }
 
 } // namespace sc

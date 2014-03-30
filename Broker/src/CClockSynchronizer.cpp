@@ -27,7 +27,6 @@
 #include "CGlobalPeerList.hpp"
 #include "CLogger.hpp"
 #include "IPeerNode.hpp"
-#include "Messages.hpp"
 #include "messages/DgiMessage.pb.h"
 
 #include <memory>
@@ -515,7 +514,15 @@ boost::posix_time::time_duration CClockSynchronizer::DoubleToTD(double td)
 ///////////////////////////////////////////////////////////////////////////////
 DgiMessage CClockSynchronizer::PrepareForSending(const ClockSynchronizerMessage& message)
 {
-    return broker::PrepareForSending(message, DgiMessage::CLOCK_SYNCHRONIZER_MESSAGE, "clk");
+    // Abort if any required fields are unset
+    message.CheckInitialized();
+
+    DgiMessage dm;
+    dm.set_type(DgiMessage::CLOCK_SYNCHRONIZER_MESSAGE);
+    dm.mutable_clock_synchronizer_message()->CopyFrom(message);
+    dm.set_recipient_module("cs");
+
+    return dm;
 }
 
 }

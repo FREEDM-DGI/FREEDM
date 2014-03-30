@@ -28,7 +28,7 @@ message AreYouCoordinatorMessage
 message InviteMessage
 {
     required uint32 group_id = 1;
-    required string group_leader = 2;
+    required string group_leader_uuid = 2;
     required string group_leader_host = 3;
     required uint32 group_leader_port = 4;
 }

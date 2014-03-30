@@ -215,6 +215,7 @@ DgiMessage GMAgent::Invitation()
     gmm.set_type(GroupManagementMessage::INVITE_MESSAGE);
     InviteMessage* im = gmm.mutable_invite_message();
     im->set_group_id(m_GroupID);
+    im->set_group_leader_uuid(m_GroupLeader);
     PeerNodePtr p = GetPeer(m_GroupLeader);
     im->set_group_leader_host(p->GetHostname());
     im->set_group_leader_port(p->GetPort());
@@ -1133,7 +1134,7 @@ void GMAgent::HandleInvite(const InviteMessage& msg, PeerNodePtr peer)
         Logger.Notice << "+ State Change ELECTION : "<<__LINE__<<std::endl;
 
         m_GroupID = msg.group_id();
-        m_GroupLeader = msg.group_leader();
+        m_GroupLeader = msg.group_leader_uuid();
         Logger.Notice << "Changed group: " << m_GroupID << " (" << m_GroupLeader << ") " << std::endl;
         if(coord_ == GetUUID())
         {

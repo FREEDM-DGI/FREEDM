@@ -777,8 +777,7 @@ void LBAgent::HandleNormal(MessagePtr msg, PeerNodePtr peer)
     EraseInPeerSet(m_HiNodes,peer);
     EraseInPeerSet(m_LoNodes,peer);
     InsertInPeerSet(m_NoNodes,peer);
-    //for scheduling invariant
-    Kmaxlocal =boost::lexical_cast<int>(pt.get<std::string>("lb.kmaxlocal"));
+
 }
 
 void LBAgent::HandleSupply(MessagePtr msg, PeerNodePtr peer)
@@ -877,7 +876,8 @@ void LBAgent::HandleYes(MessagePtr /*msg*/, PeerNodePtr peer)
     //expected RTT
     msdiff = microsecT2-microsecT1;
     Obs_Avg_RTT = msdiff.total_milliseconds();
-    
+    Logger.Notice << "Scaled RTT is " << Obs_Avg_RTT << std::endl;
+
     if (First_Time_RTT == true )
     {
         First_Time_RTT = false;
@@ -901,7 +901,7 @@ void LBAgent::HandleYes(MessagePtr /*msg*/, PeerNodePtr peer)
     m_.SetHandler("lb."+ ss_.str());
     
     //Its better to check your status again before initiating drafting
-    if ( peer->GetUUID() != GetUUID() && LBAgent::SUPPLY == m_Status && Invariant_Check())
+    if ( peer->GetUUID() != GetUUID() && LBAgent::SUPPLY == m_Status )//&& Invariant_Check())
     {
         try
         {
@@ -1080,7 +1080,7 @@ void LBAgent::HandleDrafting(MessagePtr /*msg*/, PeerNodePtr peer)
         ss_ << m_DemandVal;
         m_.m_submessages.put("lb.value", ss_.str());
         
-        if ( peer->GetUUID() != GetUUID() && LBAgent::DEMAND == m_Status && !m_inProgress  )
+        if ( peer->GetUUID() != GetUUID() && LBAgent::DEMAND == m_Status)// && !m_inProgress  )
         {
             m_inProgress = true;
             try
@@ -1133,7 +1133,7 @@ void LBAgent::HandleAccept(MessagePtr msg, PeerNodePtr peer)
     Logger.Notice << " Draft Accept message received from: " << peer->GetUUID()
     << " with demand of "<< DemValue << std::endl;
     
-    if ( LBAgent::SUPPLY == m_Status && !m_inProgress)
+    if ( LBAgent::SUPPLY == m_Status)// && !m_inProgress)
     {
         m_inProgress = true;
         // Make necessary power setting accordingly to allow power migration
@@ -1376,6 +1376,7 @@ void LBAgent::HandleCollectedState(MessagePtr msg, PeerNodePtr /*peer*/)
         //for scheduleing invariant
         //equally distributed KMAX
         Kmaxlocal = KMAX/peercount;
+        Logger.Notice << "Kmax local is " << Kmaxlocal << std::endl;
     }
     else
     {
@@ -1395,6 +1396,8 @@ void LBAgent::HandleComputedNormal(MessagePtr msg, PeerNodePtr /*peer*/)
     m_Normal = pt.get<double>("lb.cnorm");
     Logger.Notice << "Computed Normal " << m_Normal << " received from "
     << pt.get<std::string>("lb.source") << std::endl;
+    //for scheduling invariant
+    Kmaxlocal =boost::lexical_cast<int>(pt.get<std::string>("lb.kmaxlocal"));
     LoadTable();
 }
 #pragma GCC diagnostic warning "-Wunused-parameter"

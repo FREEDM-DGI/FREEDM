@@ -43,7 +43,6 @@ class GMAgent;
 class CGlobalPeerList : public boost::noncopyable
 {
     public:
-        friend class freedm::broker::IReadHandler;
         friend class freedm::broker::gm::GMAgent;
         /// Provides a PeerNodePtr type
         typedef boost::shared_ptr<IPeerNode> PeerNodePtr;
@@ -69,9 +68,8 @@ class CGlobalPeerList : public boost::noncopyable
         PeerSetIterator end();
         /// Returns a copy of the peer map
         PeerSet& PeerList();
-    protected:
-        /// Construct a peer from uuid and connection manager.
-        PeerNodePtr Create(std::string uuid, ConnManagerPtr connmgr);
+        /// Construct a peer
+        PeerNodePtr Create(std::string uuid);
         /// Pushes a peer node into the set
         void Insert(PeerNodePtr p);
     private:

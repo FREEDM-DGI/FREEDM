@@ -67,7 +67,7 @@ protected:
 
     /// The hostname of the remote host.
     std::string m_host;
-    
+
     /// The port number of the remote host.
     std::string m_port;
 };

@@ -32,6 +32,7 @@
 
 #include "CAdapterFactory.hpp"
 #include "CBroker.hpp"
+#include "CConnectionManager.hpp"
 #include "CLogger.hpp"
 #include "CGlobalPeerList.hpp"
 #include "IPeerNode.hpp"
@@ -40,6 +41,7 @@
 #include <boost/bind.hpp>
 #include <boost/foreach.hpp>
 
+#include <cassert>
 #include <map>
 
 /// General FREEDM Namespace
@@ -53,53 +55,26 @@ namespace {
 CLocalLogger Logger(__FILE__);
 
 }
-        
+
 ///////////////////////////////////////////////////////////////////////////////
-/// @fn CBroker::CBroker
-/// @description The constructor for the broker
-/// @io provide an acceptor socket for incoming network connections.
-/// @peers any node running the broker architecture.
-/// @sharedmemory The dispatcher and connection manager are shared with the
-///               modules.
-/// @pre The port is free to be bound to.
-/// @post An acceptor socket is bound on the freedm port awaiting connections
-///       from other nodes.
-/// @param dispatcher The message dispatcher associated with this Broker
-/// @param conMan The connection manager used by this broker.
-/// @limitations Fails if the port is already in use.
+/// Access the singleton Broker instance
 ///////////////////////////////////////////////////////////////////////////////
-CBroker::CBroker(CDispatcher &dispatcher, freedm::broker::CConnectionManager &conMan)
-    : m_ioService(),
-      m_connManager(conMan),
-      m_dispatch(dispatcher),
-      m_newConnection(new CListener(m_ioService, conMan, *this, conMan.GetUUID())),
-      m_phasetimer(m_ioService),
-      m_synchronizer(*this),
-      m_signals(m_ioService, SIGINT, SIGTERM),
-      m_stopping(false)
+CBroker& CBroker::Instance()
+{
+    static CBroker broker;
+    return broker;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+/// Private constructor for the singleton Broker instance
+///////////////////////////////////////////////////////////////////////////////
+CBroker::CBroker()
+    : m_phasetimer(m_ioService)
+    , m_synchronizer(m_ioService)
+    , m_signals(m_ioService, SIGINT, SIGTERM)
+    , m_stopping(false)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    // Open the acceptor with the option to reuse the address (i.e. SO_REUSEADDR).
-    boost::asio::ip::udp::resolver resolver(m_ioService);
-    boost::asio::ip::udp::resolver::query query(
-        CGlobalConfiguration::Instance().GetListenAddress(),
-        CGlobalConfiguration::Instance().GetListenPort()
-    );
-    boost::asio::ip::udp::endpoint endpoint = *resolver.resolve( query );
-    
-    // Listen for connections and create an event to spawn a new connection
-    m_newConnection->GetSocket().open(endpoint.protocol());
-    m_newConnection->GetSocket().bind(endpoint);
-    m_connManager.Start(m_newConnection);
-    m_busy = false;
-    
-    // Try to align on the first phase change
-    boost::posix_time::ptime now = boost::posix_time::microsec_clock::universal_time();
-    now += CGlobalConfiguration::Instance().GetClockSkew();
-    now -= boost::posix_time::milliseconds(2*ALIGNMENT_DURATION);
-    m_last_alignment = now;
-
-    m_phase = 0;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -112,27 +87,49 @@ CBroker::CBroker(CDispatcher &dispatcher, freedm::broker::CConnectionManager &co
 ///////////////////////////////////////////////////////////////////////////////
 CBroker::~CBroker()
 {
-    TimersMap::iterator it;
-    for(it=m_timers.begin(); it!=m_timers.end(); it++)
+    for(TimersMap::iterator it=m_timers.begin(); it!=m_timers.end(); it++)
     {
-        delete (*it).second;
+        delete it->second;
     }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 /// @fn CBroker::Run()
-/// @description Runs the ioservice until it is out of work. (That should only
-///              happen if a signal is received.)
+/// @description Starts the adapter factory. Runs the ioservice until it is out
+///              of work. (That should only happen if a signal is received.)
+///              Runs the clock synchronizer.
 /// @pre  The ioservice has some schedule of jobs waiting to be performed (so
-///       it doesn't exit immediately)
+///       it doesn't exit immediately). Likely should only be called once.
 /// @post The ioservice has stopped.
 /// @ErrorHandling Could raise arbitrary exceptions from anywhere in the DGI.
 ///////////////////////////////////////////////////////////////////////////////
 void CBroker::Run()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    m_signals.async_wait(boost::bind(&CBroker::HandleSignal, this,_1,_2));
+
+    // Open the acceptor with the option to reuse the address (i.e. SO_REUSEADDR).
+    boost::asio::ip::udp::resolver resolver(m_ioService);
+    boost::asio::ip::udp::resolver::query query(
+        CGlobalConfiguration::Instance().GetListenAddress(),
+        CGlobalConfiguration::Instance().GetListenPort()
+    );
+    boost::asio::ip::udp::endpoint endpoint = *(resolver.resolve(query));
+
+    // Listen for connections and create an event to spawn a new connection
+    CListener::Instance().Start(endpoint);
+
+    // Try to align on the first phase change
+    boost::posix_time::ptime now = boost::posix_time::microsec_clock::universal_time();
+    now += CGlobalConfiguration::Instance().GetClockSkew();
+    now -= boost::posix_time::milliseconds(2 * ALIGNMENT_DURATION);
+    m_last_alignment = now;
+
+    m_signals.async_wait(boost::bind(&CBroker::HandleSignal, this, _1, _2));
     device::CAdapterFactory::Instance(); // create it
+    // The io_service::run() call will block until all asynchronous operations
+    // have finished. While the server is running, there is always at least one
+    // asynchronous operation outstanding: the asynchronous accept call waiting
+    // for new incoming connections.
     m_synchronizer.Run();
     m_ioService.run();
 }
@@ -220,7 +217,7 @@ void CBroker::HandleStop(unsigned int signum)
     }
 
     m_synchronizer.Stop();
-    m_connManager.StopAll();
+    CConnectionManager::Instance().StopAll();
 
     // The server is stopped by canceling all outstanding asynchronous
     // operations. Once all operations have been canceled, the call to
@@ -260,7 +257,7 @@ void CBroker::RegisterModule(CBroker::ModuleIdent m, boost::posix_time::time_dur
         {
             exists = true;
             break;
-        } 
+        }
     }
     if(!exists)
     {
@@ -285,7 +282,7 @@ void CBroker::RegisterModule(CBroker::ModuleIdent m, boost::posix_time::time_dur
 CBroker::TimerHandle CBroker::AllocateTimer(CBroker::ModuleIdent module)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    
+
     boost::mutex::scoped_lock schlock(m_schmutex);
     CBroker::TimerHandle myhandle;
     boost::asio::deadline_timer* t = new boost::asio::deadline_timer(m_ioService);
@@ -305,7 +302,7 @@ CBroker::TimerHandle CBroker::AllocateTimer(CBroker::ModuleIdent module)
 ///   may be rejected if the Broker is stopping.
 /// @param h The handle to the timer being set.
 /// @param wait the amount of the time to wait. If this value is "not_a_date_time"
-///     The wait is converted to positive infinity and the time will expire as 
+///     The wait is converted to positive infinity and the time will expire as
 ///     soon as the module no longer owns the context.
 /// @param x The partially bound function that will be scheduled.
 /// @pre The module is registered
@@ -419,6 +416,7 @@ void CBroker::ChangePhase(const boost::system::error_code & /*err*/)
     {
         round += m_modules[i].second.total_milliseconds();
     }
+    assert(round > 0);
     unsigned int millisecs = time.total_milliseconds();
     unsigned int intoround = (millisecs % round);
     unsigned int cphase = 0;
@@ -428,7 +426,7 @@ void CBroker::ChangePhase(const boost::system::error_code & /*err*/)
     //  completing that phase would go beyod the amount of time in the
     //  round so far (considering all the time that would be used by other phases up
     //  to that point) then that phase is the current one.
-    // Post: CPhase should be the current phase and tmp should be 
+    // Post: CPhase should be the current phase and tmp should be
     while(cphase < m_modules.size() && tmp < intoround)
     {
         cphase++;
@@ -445,7 +443,7 @@ void CBroker::ChangePhase(const boost::system::error_code & /*err*/)
         Logger.Notice<<"Aligned phase to "<<cphase<<" (was "<<m_phase<<") for "
                    <<remaining<<" ms"<<std::endl;
 
-        
+
         m_phase = cphase;
         m_last_alignment = now;
         sched_duration = remaining;
@@ -456,7 +454,7 @@ void CBroker::ChangePhase(const boost::system::error_code & /*err*/)
     }
     if(m_phase != oldphase)
     {
-        m_connManager.ChangePhase((m_phase==0));
+        CConnectionManager::Instance().ChangePhase((m_phase==0));
         std::string oldident = m_modules[oldphase].first;
         Logger.Notice<<"Changed Phase: expiring next time timers for "<<oldident<<std::endl;
         // Look through the timers for the module and see if any of them are
@@ -468,10 +466,10 @@ void CBroker::ChangePhase(const boost::system::error_code & /*err*/)
             if(t.second == oldident && m_nexttime[t.first] == true)
             {
                 Logger.Notice<<"Scheduling task for next time timer: "<<t.first<<std::endl;
-                m_timers[t.first]->cancel();                
+                m_timers[t.first]->cancel();
                 m_nexttime[t.first] = false;
                 m_ntexpired[t.first] = true;
-            }   
+            }
         }
     }
     //If the worker isn't going, start him again when you change phases.
@@ -492,7 +490,7 @@ void CBroker::ChangePhase(const boost::system::error_code & /*err*/)
 /// @fn CBroker::TimeRemaining
 /// @description Shows how much time is remaining in the current pgase
 /// @pre The Change Phase function has been called at least once. This should
-///     have occured by the time the first module is ready to look at the 
+///     have occured by the time the first module is ready to look at the
 ///     remaining time.
 /// @post no change
 /// @return A time_duration describing the amount of time remaining in the
@@ -509,7 +507,7 @@ boost::posix_time::time_duration CBroker::TimeRemaining()
 ///     timer is removed from the timers list. Then Execute is called to keep
 ///     the work queue going.
 /// @pre A task is scheduled for execution
-/// @post The task is entered into th ready queue. 
+/// @post The task is entered into th ready queue.
 ///////////////////////////////////////////////////////////////////////////////
 void CBroker::ScheduledTask(CBroker::Scheduleable x, CBroker::TimerHandle handle,
     const boost::system::error_code &err)
@@ -542,7 +540,7 @@ void CBroker::ScheduledTask(CBroker::Scheduleable x, CBroker::TimerHandle handle
 ///////////////////////////////////////////////////////////////////////////////
 /// @fn CBroker::Worker
 /// @description Reads the current phase and if the phase is correct, queues
-///     all the tasks for that phase to the ioservice. If m_busy is set, the 
+///     all the tasks for that phase to the ioservice. If m_busy is set, the
 ///     worker is still working on clearing the queue. If it's set to false,
 ///     the worker needs to be started when the scheduled task is called
 /// @pre None

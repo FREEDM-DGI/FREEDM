@@ -52,33 +52,27 @@ class CConnectionManager
 public:
     /// ConnectionPtr Typedef
     typedef boost::shared_ptr<CConnection> ConnectionPtr;
-    
+
     /// Typedef for the map which handles uuid to hostname
     typedef std::map<std::string, SRemoteHost> hostnamemap;
-    
-    /// Typedef for the map which handles uuid to connection 
+
+    /// Typedef for the map which handles uuid to connection
     typedef boost::bimap<std::string, ConnectionPtr> connectionmap;
 
-    /// Initialize the connection manager with the uuid from global configuation
-    CConnectionManager();
+    /// Access the singleton instance of the connection manager
+    static CConnectionManager& Instance();
 
-    /// Add the specified connection to the manager and start it.
-    void Start(CListener::ConnectionPtr c);
- 
-    /// Place a hostname and uuid into the hostname / uuid map.
-    void PutHostname(std::string u_, std::string host_, std::string port);
-   
-    /// Place a hostname and uuid into the hostname / uuid map.
-    void PutHostname(std::string u_, SRemoteHost host_);
- 
+    /// Place a host/port and uuid into the host / uuid map.
+    void PutHost(std::string u, std::string host, std::string port);
+
+    /// Place a host/port and uuid into the host / uuid map.
+    void PutHost(std::string u, SRemoteHost host);
+
     /// Register a connection with the manager once it has been built.
     void PutConnection(std::string uuid, ConnectionPtr c);
 
     /// Stop the specified connection.
     void Stop(ConnectionPtr c);
-    
-    /// Stop the specified connection
-    void Stop(CListener::ConnectionPtr c);
 
     /// Stop all connections.
     void StopAll();
@@ -87,49 +81,49 @@ public:
     void ChangePhase(bool newround);
 
     /// Get The UUID
-    std::string GetUUID() { return m_uuid; };
+    std::string GetUUID() const { return m_uuid; }
 
-    /// Get The Hostname
-    SRemoteHost GetHostname() { return m_hostname; };
-    
-    /// Get the hostname from the UUID.
-    SRemoteHost GetHostnameByUUID( std::string uuid ) const; 
+    /// Get The Host
+    SRemoteHost GetHost() const { return m_host; }
+
+    /// Get the host from the UUID.
+    SRemoteHost GetHostByUUID( std::string uuid ) const;
 
     /// Fetch a connection pointer via UUID
-    ConnectionPtr GetConnectionByUUID( std::string uuid_ );
+    ConnectionPtr GetConnectionByUUID( std::string uuid );
 
     /// An iterator to the beginning of the hostname map
-    hostnamemap::iterator GetHostnamesBegin() { return m_hostnames.begin(); };
+    hostnamemap::iterator GetHostsBegin() { return m_hosts.begin(); };
 
     /// An iterator to the end of the hostname map.
-    hostnamemap::iterator GetHostnamesEnd() { return m_hostnames.end(); };
+    hostnamemap::iterator GetHostsEnd() { return m_hosts.end(); };
 
     /// An iterator to the specified hostname.
-    hostnamemap::iterator GetHostname(std::string uuid) { return m_hostnames.find(uuid); };
+    hostnamemap::iterator GetHost(std::string uuid) { return m_hosts.find(uuid); };
 
     /// Iterator to the beginning of the connection map.
     connectionmap::iterator GetConnectionsBegin() { return m_connections.begin(); };
 
     /// Iterator to the end of the connections map.
     connectionmap::iterator GetConnectionsEnd() { return m_connections.end(); };
-    
+
     // Transient Network Simulation
     /// Load a network configuration & apply it.
     void LoadNetworkConfig();
 
 private:
-    /// Mapping from uuid to hostname.
-    hostnamemap m_hostnames;
-    /// Hostname of this node.
-    SRemoteHost m_hostname;
+    /// Private constructor for the singleton instance
+    CConnectionManager();
+    /// Mapping from uuid to host.
+    hostnamemap m_hosts;
+    /// Host/port of this node.
+    SRemoteHost m_host;
     /// Forward map (UUID->Connection)
-    connectionmap   m_connections;
-    /// Incoming messages channel
-    CListener::ConnectionPtr m_inchannel;
+    connectionmap m_connections;
     /// Node UUID
     std::string m_uuid;
     /// Mutex for protecting the handler maps above
-    boost::mutex m_Mutex;       
+    boost::mutex m_Mutex;
 };
 
 } // namespace broker

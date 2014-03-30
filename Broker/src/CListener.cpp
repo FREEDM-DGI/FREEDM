@@ -2,7 +2,6 @@
 /// @file         CListener.cpp
 ///
 /// @author       Derek Ditch <derek.ditch@mst.edu>
-/// @author       Christopher M. Kohlhoff <chris@kohlhoff.com> (Boost Example)
 /// @author       Stephen Jackson <scj7t4@mst.edu>
 ///
 /// @project      FREEDM DGI
@@ -22,9 +21,11 @@
 /// Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
 ////////////////////////////////////////////////////////////////////////////////
 
+#include "CBroker.hpp"
 #include "CConnection.hpp"
 #include "CConnectionManager.hpp"
 #include "CDispatcher.hpp"
+#include "CGlobalConfiguration.hpp"
 #include "CListener.hpp"
 #include "CLogger.hpp"
 #include "CMessage.hpp"
@@ -40,64 +41,70 @@ using boost::property_tree::ptree;
 
 namespace freedm {
     namespace broker {
-        
+
 namespace {
 
 /// This file's logger.
 CLocalLogger Logger(__FILE__);
 
 }
-        
+
 ///////////////////////////////////////////////////////////////////////////////
 /// @fn CListener::CListener
-/// @description Constructor for the CConnection object. Since the change to
-///   udp, this object can act either as a listener or sender (but not both)
-///   to have the object behave as a listener, Start() should be called on it.
+/// @description Constructor
 /// @pre An initialized socket is ready to be converted to a connection.
 /// @post A new CConnection object is initialized.
-/// @param p_ioService The socket to use for the connection.
-/// @param p_manager The related connection manager that tracks this object.
-/// @param p_broker the broker responsible for delivering messages
-/// @param uuid: The uuid this node connects to, or what listener.
 ///////////////////////////////////////////////////////////////////////////////
-CListener::CListener(boost::asio::io_service& p_ioService,
-  CConnectionManager& p_manager, CBroker& p_broker, std::string uuid)
-  : CReliableConnection(p_ioService,p_manager,p_broker,uuid)
+CListener::CListener()
+  : m_socket(CBroker::Instance().GetIOService())
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+/// Access the singleton instance of the CListener
+///////////////////////////////////////////////////////////////////////////////
+CListener& CListener::Instance()
+{
+    static CListener listener;
+    return listener;
+}
+
+///////////////////////////////////////////////////////////////////////////////
 /// @fn CListener::Start
-/// @description: Starts the receive routine which causes this socket to behave
-///   as a listener.
+/// @description: Begin listening for incoming messages
 /// @pre The object is initialized.
 /// @post The connection is asynchronously waiting for messages.
+/// @param endpoint the endpoint for the listener to listen on
 ///////////////////////////////////////////////////////////////////////////////
-
-void CListener::Start()
+void CListener::Start(boost::asio::ip::udp::endpoint& endpoint)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    GetSocket().async_receive_from(boost::asio::buffer(m_buffer, CReliableConnection::MAX_PACKET_SIZE),
+    m_socket.open(endpoint.protocol());
+    m_socket.bind(endpoint);
+    m_socket.async_receive_from(boost::asio::buffer(m_buffer, CGlobalConfiguration::MAX_PACKET_SIZE),
             m_endpoint, boost::bind(&CListener::HandleRead, this,
             boost::asio::placeholders::error,
             boost::asio::placeholders::bytes_transferred));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// @fn CListener::Stop
-/// @description Stops the socket and cancels the timeout timer. Does not
-///   need to be called on a listening connection (ie one that has had
-///   Start() called on it.
-/// @pre Any initialized CConnection object.
-/// @post The underlying socket is closed and the message timeout timer is
-///        cancelled.
+/// Closes the listening socket.
 ///////////////////////////////////////////////////////////////////////////////
 void CListener::Stop()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+
+    try
+    {
+        m_socket.close();
+    }
+    catch (boost::system::system_error& e)
+    {
+        Logger.Error << "Error calling close: " << e.what() << std::endl;
+    }
 }
- 
+
 ///////////////////////////////////////////////////////////////////////////////
 /// @fn CListener::HandleRead
 /// @description The callback which accepts messages from the remote sender.
@@ -110,10 +117,10 @@ void CListener::Stop()
 ///   their appropriate places by the dispatcher. The incoming sequence number
 ///   for the source UUID has been incremented appropriately.
 ///////////////////////////////////////////////////////////////////////////////
-void CListener::HandleRead(const boost::system::error_code& e, 
+void CListener::HandleRead(const boost::system::error_code& e,
                            std::size_t bytes_transferred)
 {
-    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;       
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     if (!e)
     {
         /// I'm removing request parser because it is an appalling heap of junk
@@ -121,8 +128,8 @@ void CListener::HandleRead(const boost::system::error_code& e,
         std::ostreambuf_iterator<char> iss_it(iss);
         std::copy(m_buffer.begin(), m_buffer.begin()+bytes_transferred, iss_it);
         // Create a new CMessage pointer
-        m_message = MessagePtr(new CMessage); 
-        
+        m_message = MessagePtr(new CMessage);
+
         try
         {
             Logger.Debug<<"Loading xml:"<<std::endl;
@@ -131,7 +138,7 @@ void CListener::HandleRead(const boost::system::error_code& e,
         catch(std::exception &e)
         {
             Logger.Error<<"Couldn't parse message XML: "<<e.what()<<std::endl;
-            GetSocket().async_receive_from(boost::asio::buffer(m_buffer, CReliableConnection::MAX_PACKET_SIZE),
+            m_socket.async_receive_from(boost::asio::buffer(m_buffer, CGlobalConfiguration::MAX_PACKET_SIZE),
                 m_endpoint, boost::bind(&CListener::HandleRead, this,
                 boost::asio::placeholders::error,
                 boost::asio::placeholders::bytes_transferred));
@@ -141,10 +148,10 @@ void CListener::HandleRead(const boost::system::error_code& e,
         std::string uuid = m_message->GetSourceUUID();
         SRemoteHost hostname = m_message->GetSourceHostname();
         ///Make sure the hostname is registered:
-        GetConnectionManager().PutHostname(uuid,hostname);                        
+        CConnectionManager::Instance().PutHost(uuid,hostname);
         ///Get the pointer to the connection:
         CConnection::ConnectionPtr conn;
-        conn = GetConnectionManager().GetConnectionByUUID(uuid);
+        conn = CConnectionManager::Instance().GetConnectionByUUID(uuid);
         Logger.Debug<<"Fetched Connection"<<std::endl;
 #ifdef CUSTOMNETWORK
         if((rand()%100) >= GetReliability())
@@ -166,13 +173,13 @@ void CListener::HandleRead(const boost::system::error_code& e,
         else if(m_message->GetStatus() == freedm::broker::CMessage::ClockReading && conn->Receive(*m_message))
         {
             Logger.Debug<<"Got A clock message"<<std::endl;
-            GetBroker().GetClockSynchronizer().HandleRead(m_message);
+            CBroker::Instance().GetClockSynchronizer().HandleRead(m_message);
         }
         else if(conn->Receive(*m_message))
         {
             Logger.Debug<<"Accepted message "<<m_message->GetHash()<<":"
                           <<m_message->GetSequenceNumber()<<std::endl;
-            GetDispatcher().HandleRequest(GetBroker(),m_message);
+            CDispatcher::Instance().HandleRequest(m_message);
         }
         else if(m_message->GetStatus() != freedm::broker::CMessage::Created)
         {
@@ -183,14 +190,10 @@ void CListener::HandleRead(const boost::system::error_code& e,
 listen:
 #endif
         Logger.Debug<<"Listening for next message"<<std::endl;
-        GetSocket().async_receive_from(boost::asio::buffer(m_buffer, CReliableConnection::MAX_PACKET_SIZE),
+        m_socket.async_receive_from(boost::asio::buffer(m_buffer, CGlobalConfiguration::MAX_PACKET_SIZE),
                 m_endpoint, boost::bind(&CListener::HandleRead, this,
                 boost::asio::placeholders::error,
                 boost::asio::placeholders::bytes_transferred));
-    }
-    else
-    {
-        GetConnectionManager().Stop(CListener::ConnectionPtr(this));	
     }
 }
 

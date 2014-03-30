@@ -1,14 +1,3 @@
-# list the device type source files
-set(DEVICE_TYPES
-    types/CDeviceDesd.cpp
-    types/CDeviceDrer.cpp
-    types/CDeviceFid.cpp
-    types/CDeviceLoad.cpp
-    types/CDeviceLogger.cpp
-    types/CDeviceSst.cpp
-    types/IDevice.cpp
-   )
-
 # list the device source files
 set(DEVICE_FILES
     CAdapterFactory.cpp
@@ -20,29 +9,10 @@ set(DEVICE_FILES
     IAdapter.cpp
     CTcpServer.cpp
     CPnpAdapter.cpp
-    PhysicalDeviceTypes.cpp
     SynchronousTimeout.cpp
+    CDeviceBuilder.cpp
+    CDevice.cpp
    )
-
-# generate PhysicalDeviceTypes using the generator
-set(GENERATOR_OUTPUT
-    ${CMAKE_CURRENT_BINARY_DIR}/PhysicalDeviceTypes.hpp
-    ${CMAKE_CURRENT_BINARY_DIR}/PhysicalDeviceTypes.cpp
-   )
-
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/DeviceRegistrationGenerator.py.cmake
-               ${CMAKE_CURRENT_BINARY_DIR}/DeviceRegistrationGenerator.py
-              )
-
-add_custom_command(OUTPUT ${GENERATOR_OUTPUT}
-                   COMMAND ${CMAKE_CURRENT_BINARY_DIR}/DeviceRegistrationGenerator.py
-                   DEPENDS ${DEVICE_TYPES}
-                  )
-
-add_custom_target(GeneratedPhysicalDeviceTypes DEPENDS ${GENERATOR_OUTPUT})
 
 # create the device library
-add_library(device ${DEVICE_FILES} ${DEVICE_TYPES})
-
-# don't compile device until codegen has run
-add_dependencies(device GeneratedPhysicalDeviceTypes)
+add_library(device ${DEVICE_FILES})

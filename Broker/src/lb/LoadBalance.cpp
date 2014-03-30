@@ -12,7 +12,7 @@
 ///               Software Engineering, 1985
 ///
 /// @functions
-/// LBAgent
+///	LBAgent
 ///     Run
 ///     AddPeer
 ///     GetPeer
@@ -42,6 +42,7 @@
 
 #include "LoadBalance.hpp"
 
+#include "CConnectionManager.hpp"
 #include "CLogger.hpp"
 #include "CMessage.hpp"
 #include "gm/GroupManagement.hpp"
@@ -77,7 +78,7 @@ namespace broker
 namespace lb
 {
 
-const int P_Migrate = 1;
+const float P_Migrate = 1;
 
 //const variables for scheduling invariants
 const int RESPONSE_TIME_MARGIN = 250;
@@ -100,21 +101,19 @@ CLocalLogger Logger(__FILE__);
 /// @pre: Posix Main should register read handler and invoke this module
 /// @post: Object is initialized and ready to run load balancing
 /// @param uuid_: This object's uuid
-/// @param broker: The Broker
 /// @limitations: None
 ///////////////////////////////////////////////////////////////////////////////
-LBAgent::LBAgent(std::string uuid_, CBroker &broker):
-        IPeerNode(uuid_, broker.GetConnectionManager()),
-        m_broker(broker)
+LBAgent::LBAgent(std::string uuid_):
+        IPeerNode(uuid_)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     PeerNodePtr self_ = CGlobalPeerList::instance().GetPeer(uuid_);
     InsertInPeerSet(m_AllPeers, self_);
     m_Leader = GetUUID();
     m_Normal = 0;
-    m_GlobalTimer = broker.AllocateTimer("lb");
+    m_GlobalTimer = CBroker::Instance().AllocateTimer("lb");
     // Bound to lbq so it resolves before the state collection round
-    m_StateTimer = broker.AllocateTimer("lbq");
+    m_StateTimer = CBroker::Instance().AllocateTimer("lbq");
     RegisterSubhandle("any.PeerList",boost::bind(&LBAgent::HandlePeerList, this, _1, _2));
     RegisterSubhandle("lb.demand",boost::bind(&LBAgent::HandleDemand, this, _1, _2));
     RegisterSubhandle("lb.normal",boost::bind(&LBAgent::HandleNormal, this, _1, _2));
@@ -137,6 +136,9 @@ LBAgent::LBAgent(std::string uuid_, CBroker &broker):
     m_inProgress = false;
     //initialize imbalanced power K
     Kei = P_Migrate;
+
+    m_actuallyread = true;
+
 }
 
 ////////////////////////////////////////////////////////////
@@ -158,8 +160,9 @@ int LBAgent::Run()
     // This timer gets resolved for the lb module (instead of lbq) so
     // it is safe to give it a timeout of 1 effectively making it expire
     // immediately
+
     m_Mutex.lock();
-    m_broker.Schedule(m_GlobalTimer,
+    CBroker::Instance().Schedule(m_GlobalTimer,
                       boost::posix_time::not_a_date_time,
                       boost::bind(&LBAgent::LoadManage, this,
                                   boost::asio::placeholders::error));
@@ -325,6 +328,7 @@ void LBAgent::CollectState()
     subPtree3.add("deviceType", "Load");
     subPtree3.add("valueType", "drain");
     m_cs.m_submessages.add_child("sc.devices.device", subPtree3);
+
     //FID device
     ptree subPtree4;
     subPtree4.add("deviceType", "Fid");
@@ -335,7 +339,7 @@ void LBAgent::CollectState()
     subPtree5.add("deviceType", "Desd");
     subPtree5.add("valueType", "storage");
     m_cs.m_submessages.add_child("sc.devices.device", subPtree5);
-    
+
     try
     {
         GetPeer(GetUUID())->Send(m_cs);
@@ -366,11 +370,12 @@ void LBAgent::LoadManage()
     // Schedule the NEXT LB before starting this one. So ensure that after this
     // LB completes, there's still time to run another before scheduling it.
     // Otherwise we'll steal time from the next broker module.
-    if (m_broker.TimeRemaining() >
-            boost::posix_time::milliseconds(2*CTimings::LB_GLOBAL_TIMER))
+
+    if (CBroker::Instance().TimeRemaining() >
+        boost::posix_time::milliseconds(2*CTimings::LB_GLOBAL_TIMER))
     {
-        m_Mutex.lock();
-        m_broker.Schedule(m_GlobalTimer,
+        m_actuallyread = false;
+        CBroker::Instance().Schedule(m_GlobalTimer,
                           boost::posix_time::milliseconds(
                               CTimings::LB_GLOBAL_TIMER),
                           boost::bind(&LBAgent::LoadManage,
@@ -384,22 +389,26 @@ void LBAgent::LoadManage()
     {
         // Schedule past the end of our phase so control will pass to the broker
         // after this LB, and we won't go again until it's our turn.
-        m_Mutex.lock();
-        m_broker.Schedule(m_GlobalTimer,
+        CBroker::Instance().Schedule(m_GlobalTimer,
                           boost::posix_time::not_a_date_time,
                           boost::bind(&LBAgent::LoadManage,
                                       this,
                                       boost::asio::placeholders::error));
         m_Mutex.unlock();
         Logger.Info << "Won't run over phase, scheduling another LoadManage in "
-        << "next round" << std::endl;
+                    << "next round" << std::endl;
+        m_actuallyread = true;
     }
     
     //Remember previous load before computing current load
     m_prevStatus = m_Status;
     //Call LoadTable to update load state of the system as observed by this node
     LoadTable();
-    
+
+    using namespace device;
+    std::set<CDevice::Pointer> logger;
+    logger = CDeviceManager::Instance().GetDevicesOfType("Logger");
+
     //Send Demand message when the current state is Demand
     //NOTE: (changing the original architecture in which Demand broadcast is done
     //only when the Normal->Demand or Demand->Normal cases happen)
@@ -418,9 +427,23 @@ void LBAgent::LoadManage()
     // If you are in Supply state
     else if (LBAgent::SUPPLY == m_Status)
     {
-        Logger.Notice << "this node is in supply..."<< std::endl;
-        //initiate draft request
-        SendDraftRequest();
+        if( logger.empty() || (*logger.begin())->GetState("dgiEnable") == 1 )
+        {
+            //initiate draft request
+            SendDraftRequest();
+        }
+    }
+
+    if( !logger.empty() && (*logger.begin())->GetState("dgiEnable") == 0 )
+    {
+        std::set<CDevice::Pointer> SSTContainer;
+        std::set<CDevice::Pointer>::iterator it, end;
+        SSTContainer = device::CDeviceManager::Instance().GetDevicesOfType("Sst");
+
+        for( it = SSTContainer.begin(), end = SSTContainer.end(); it != end; it++ )
+        {
+            (*it)->SetCommand("gateway", m_NetGateway);
+        }
     }
 }//end LoadManage
 
@@ -437,7 +460,7 @@ void LBAgent::LoadManage( const boost::system::error_code& err )
     
     if (!err)
     {
-        LoadManage();
+        CBroker::Instance().Schedule("lb", boost::bind(&LBAgent::LoadManage, this), true);
     }
     else if (boost::asio::error::operation_aborted == err )
     {
@@ -469,42 +492,31 @@ void LBAgent::LoadTable()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     using namespace device;
-    // device typedef for convenience
-    typedef CDeviceDrer DRER;
-    typedef CDeviceDesd DESD;
-    typedef CDeviceLoad LOAD;
-    typedef CDeviceSst SST;
-    int numDRERs = CDeviceManager::Instance().GetDevicesOfType<DRER>().size();
-    int numDESDs = CDeviceManager::Instance().GetDevicesOfType<DESD>().size();
-    int numLOADs = CDeviceManager::Instance().GetDevicesOfType<LOAD>().size();
-    int numSSTs = CDeviceManager::Instance().GetDevicesOfType<SST>().size();
-    int numDevices = CDeviceManager::Instance().DeviceCount();
-    m_Gen = CDeviceManager::Instance().GetNetValue<DRER>(&DRER::GetGeneration);
-    m_Storage = CDeviceManager::Instance().GetNetValue<DESD>(&DESD::GetStorage);
-    m_Load = CDeviceManager::Instance().GetNetValue<LOAD>(&LOAD::GetLoad);
-    m_SstGateway = CDeviceManager::Instance().GetNetValue<SST>(&SST::GetGateway);
     
-    if (numSSTs >= 1)
+    int numDRERs = CDeviceManager::Instance().GetDevicesOfType("Drer").size();
+    int numDESDs = CDeviceManager::Instance().GetDevicesOfType("Desd").size();
+    int numLOADs = CDeviceManager::Instance().GetDevicesOfType("Load").size();
+    int numSSTs  = CDeviceManager::Instance().GetDevicesOfType("Sst").size();
+
+    m_Gen = CDeviceManager::Instance().GetNetValue("Drer", "generation");
+    m_Storage = CDeviceManager::Instance().GetNetValue("Desd", "storage");
+    m_Load = CDeviceManager::Instance().GetNetValue("Load", "drain");
+    m_SstGateway = CDeviceManager::Instance().GetNetValue("Sst", "gateway");
+
+    if(m_actuallyread)
     {
-        m_sstExists = true;
-        // FIXME should consider other devices
-        m_NetGateway = m_SstGateway;
-    }
-    else
-    {
-        m_sstExists = false;
-        // FIXME should consider Gateway
-        m_NetGateway = m_Load - m_Gen - m_Storage;
-    }
-    
-    typedef CDeviceLogger LOGGER;
-    std::multiset<LOGGER::Pointer> LSet;
-    LSet = device::CDeviceManager::Instance().GetDevicesOfType<LOGGER>();
-    
-    if ( !LSet.empty() )
-    {
-        (*LSet.begin())->SetGateway(m_NetGateway);
-        (*LSet.begin())->SetDeviceCount(numDevices);
+        if (numSSTs >= 1)
+        {
+            m_sstExists = true;
+            // FIXME should consider other devices
+            m_NetGateway = m_SstGateway;
+        }
+        else
+        {
+            m_sstExists = false;
+            // FIXME should consider Gateway
+            m_NetGateway = m_Load - m_Gen - m_Storage;
+        }
     }
     
     // used to ensure three digits before the decimal, two after
@@ -519,19 +531,21 @@ void LBAgent::LoadTable()
     std::stringstream ss;
     ss << std::setprecision(2) << std::fixed;
     ss << " ----------- LOAD TABLE (Power Management) ------------"
-    << std::endl;
+            << std::endl;
     ss << "\t| " << "Net DRER (" << std::setfill('0') << std::setw(2)
-    << numDRERs << "): " << extraGenSpace << std::setfill(' ')
-    << std::setw(genWidth) << m_Gen << "     Net DESD    ("
-    << std::setfill('0') << std::setw(2) << numDESDs << "): "
-    << extraStorageSpace << std::setfill(' ') << std::setw(storageWidth)
-    << m_Storage << " |" << std::endl;
+            << numDRERs << "): " << extraGenSpace << std::setfill(' ')
+            << std::setw(genWidth) << m_Gen << "     Net DESD    ("
+            << std::setfill('0') << std::setw(2) << numDESDs << "): "
+            << extraStorageSpace << std::setfill(' ') << std::setw(storageWidth)
+            << m_Storage << " |" << std::endl;
     ss << "\t| " << "Net Load (" << std::setfill('0') << std::setw(2)
-    << numLOADs << "): " << extraLoadSpace << std::setfill(' ')
-    << std::setw(loadWidth) << m_Load << "     SST Gateway ("
-    << std::setfill('0') << std::setw(2) << numSSTs << "): "
-    << extraSstSpace << std::setfill(' ') << std::setw(sstGateWidth)
-    << m_SstGateway << " |" << std::endl;
+            << numLOADs << "): " << extraLoadSpace << std::setfill(' ')
+            << std::setw(loadWidth) << m_Load << "     SST Gateway ("
+            << std::setfill('0') << std::setw(2) << numSSTs << "): "
+            << extraSstSpace << std::setfill(' ') << std::setw(sstGateWidth)
+            << m_SstGateway << " |" << std::endl;
+    ss << "\t| " << "Net Gateway : " << m_NetGateway << std::endl;
+
 //
 // We will hide Overall Gateway for the time being as it is useless until
 // we properly support multiple device LBs.
@@ -728,7 +742,7 @@ void LBAgent::HandlePeerList(MessagePtr msg, PeerNodePtr peer)
         EraseInPeerSet(m_LoNodes,p_);
         EraseInPeerSet(m_NoNodes,p_);
     }
-    temp = gm::GMAgent::ProcessPeerList(msg,GetConnectionManager());
+    temp = gm::GMAgent::ProcessPeerList(msg);
     BOOST_FOREACH( PeerNodePtr p_, temp | boost::adaptors::map_values )
     {
         if (CountInPeerSet(m_AllPeers,p_) == 0)
@@ -978,7 +992,7 @@ bool LBAgent::Schedule_Invariant()
     msdiff = Deadline - Phase_Time;
     //Start  the timer, on timeout, deadline_miss will be called
     m_Mutex.lock();
-    m_broker.Schedule(m_GlobalTimer, boost::posix_time::milliseconds(Curr_Relative_Deadline),
+    CBroker::Instance().Schedule(m_GlobalTimer, boost::posix_time::milliseconds(Curr_Relative_Deadline),
                       boost::bind(&LBAgent::Deadline_Miss, this, boost::asio::placeholders::error));
     m_Mutex.unlock();
     bool Ik_Invariant;
@@ -1262,7 +1276,7 @@ void LBAgent::Detected_ECN_CE()
         int DEADLINE_TIMEOUT = boost::lexical_cast<int>(Curr_RTT);
         //Start  the timer, on timeout, deadline_miss will be called
         m_Mutex.lock();
-        m_broker.Schedule(m_GlobalTimer, boost::posix_time::milliseconds(DEADLINE_TIMEOUT),
+        CBroker::Instance().Schedule(m_GlobalTimer, boost::posix_time::milliseconds(DEADLINE_TIMEOUT),
                           boost::bind(&LBAgent::ECN_Active, this, boost::asio::placeholders::error));
         m_Mutex.unlock();
     }
@@ -1404,7 +1418,6 @@ void LBAgent::HandleComputedNormal(MessagePtr msg, PeerNodePtr /*peer*/)
     Logger.Status << "Received Kmax local is " << Kmaxlocal << std::endl;
     LoadTable();
 }
-#pragma GCC diagnostic warning "-Wunused-parameter"
 
 ////////////////////////////////////////////////////////////
 /// Step_PStar
@@ -1417,23 +1430,22 @@ void LBAgent::HandleComputedNormal(MessagePtr msg, PeerNodePtr /*peer*/)
 void LBAgent::Step_PStar()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    typedef device::CDeviceSst SST;
-    std::multiset<SST::Pointer> SSTContainer;
-    std::multiset<SST::Pointer>::iterator it, end;
-    SSTContainer = device::CDeviceManager::Instance().GetDevicesOfType<SST>();
-    
-    for ( it = SSTContainer.begin(), end = SSTContainer.end(); it != end; it++ )
+    std::set<device::CDevice::Pointer> SSTContainer;
+    std::set<device::CDevice::Pointer>::iterator it, end;
+    SSTContainer = device::CDeviceManager::Instance().GetDevicesOfType("Sst");
+
+    for( it = SSTContainer.begin(), end = SSTContainer.end(); it != end; it++ )
     {
         if (LBAgent::DEMAND == m_Status)
         {
-            m_PStar = (*it)->GetGateway() - P_Migrate;
-            (*it)->StepGateway(-P_Migrate);
+            m_NetGateway -= P_Migrate;
+            (*it)->SetCommand("gateway", m_NetGateway);
             Logger.Notice << "P* = " << m_PStar << std::endl;
         }
         else if (LBAgent::SUPPLY == m_Status)
         {
-            m_PStar = (*it)->GetGateway() + P_Migrate;
-            (*it)->StepGateway(P_Migrate);
+            m_NetGateway += P_Migrate;
+            (*it)->SetCommand("gateway", m_NetGateway);
             Logger.Notice << "P* = " << m_PStar << std::endl;
         }
         else
@@ -1456,25 +1468,24 @@ void LBAgent::Step_PStar()
 void LBAgent::PStar(device::SignalValue DemandValue)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    typedef device::CDeviceSst SST;
-    std::multiset<SST::Pointer> SSTContainer;
-    std::multiset<SST::Pointer>::iterator it, end;
-    SSTContainer = device::CDeviceManager::Instance().GetDevicesOfType<SST>();
-    
-    for ( it = SSTContainer.begin(), end = SSTContainer.end(); it != end; it++ )
+    std::set<device::CDevice::Pointer> SSTContainer;
+    std::set<device::CDevice::Pointer>::iterator it, end;
+    SSTContainer = device::CDeviceManager::Instance().GetDevicesOfType("Sst");
+
+    for( it = SSTContainer.begin(), end = SSTContainer.end(); it != end; it++ )
     {
         if (LBAgent::DEMAND == m_Status)
         {
-            m_PStar = (*it)->GetGateway() - P_Migrate;
+            m_PStar = (*it)->GetState("gateway") - P_Migrate;
             Logger.Notice << "P* = " << m_PStar << std::endl;
-            (*it)->StepGateway(-P_Migrate);
+            (*it)->SetCommand("gateway", -P_Migrate);
         }
         else if (LBAgent::SUPPLY == m_Status)
         {
             if ( DemandValue <= m_SstGateway + NORMAL_TOLERANCE - m_Normal )
             {
                 Logger.Notice << "P* = " << m_SstGateway + DemandValue << std::endl;
-                (*it)->StepGateway(P_Migrate);
+                (*it)->SetCommand("gateway", P_Migrate);
             }
             else
             {
@@ -1499,23 +1510,22 @@ void LBAgent::PStar(device::SignalValue DemandValue)
 void LBAgent::Desd_PStar()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    typedef device::CDeviceDesd DESD;
-    std::multiset<DESD::Pointer> DESDContainer;
-    std::multiset<DESD::Pointer>::iterator it, end;
-    DESDContainer = device::CDeviceManager::Instance().GetDevicesOfType<DESD>();
-    
-    for ( it = DESDContainer.begin(), end = DESDContainer.end(); it != end; it++ )
+    std::set<device::CDevice::Pointer> DESDContainer;
+    std::set<device::CDevice::Pointer>::iterator it, end;
+    DESDContainer = device::CDeviceManager::Instance().GetDevicesOfType("Desd");
+
+    for( it = DESDContainer.begin(), end = DESDContainer.end(); it != end; it++ )
     {
         if (LBAgent::DEMAND == m_Status)
         {
-            m_PStar = (*it)->GetStorage() + P_Migrate;
-            (*it)->StepStorage(P_Migrate);
+            m_PStar = (*it)->GetState("storage") + P_Migrate;
+            (*it)->SetCommand("storage", m_PStar);
             Logger.Notice << "P* (on DESD) = " << m_PStar << std::endl;
         }
         else if (LBAgent::SUPPLY == m_Status)
         {
-            m_PStar = (*it)->GetStorage() - P_Migrate;
-            (*it)->StepStorage(-P_Migrate);
+            m_PStar = (*it)->GetState("storage") - P_Migrate;
+            (*it)->SetCommand("storage", m_PStar);
             Logger.Notice << "P* (on DESD) = " << m_PStar << std::endl;
         }
         else
@@ -1542,11 +1552,10 @@ void LBAgent::HandleStateTimer( const boost::system::error_code & error )
         CollectState();
         Phase_Time = boost::posix_time::microsec_clock::local_time();// + LB_STATE_TIMER;
     }
-    
-    m_Mutex.lock();
-    m_broker.Schedule(m_StateTimer, boost::posix_time::milliseconds(CTimings::LB_STATE_TIMER),
-                      boost::bind(&LBAgent::HandleStateTimer, this, boost::asio::placeholders::error));
-    m_Mutex.unlock();
+
+    CBroker::Instance().Schedule(m_StateTimer, boost::posix_time::milliseconds(CTimings::LB_STATE_TIMER),
+        boost::bind(&LBAgent::HandleStateTimer, this, boost::asio::placeholders::error));
+
 }
 
 } // namespace lb

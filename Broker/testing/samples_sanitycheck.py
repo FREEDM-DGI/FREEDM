@@ -40,8 +40,8 @@ config_files = ['freedm.cfg']
 adapter_files = {'adapter.xml':'rtds.xml'}
 
 # List of all timings configuration files to test
-timings_files = ['timings.cfg', 'timings-mamba.cfg', 'timings-ts7800.cfg', \
-        'timings-ts7800-6.cfg']
+timings_files = ['timings-p4-3.cfg', 'timings-mamba-5.cfg', \
+                 'timings-ts7800-3.cfg', 'timings-ts7800-6.cfg']
 
 # List of all logger configuration files to test
 logger_files = ['logger.cfg']
@@ -72,7 +72,7 @@ for general_config in config_files:
         for timings_config in timings_files:
             for logger_config in logger_files:
                 simserv = subprocess.Popen(['../../PSCAD-Interface/driver',
-                        '--xml', '../../PSCAD-Interface/config/samples/' + 
+                        '--xml', '../../PSCAD-Interface/config/samples/' +
                         adapter_files[adapter_config], '--config',
                         '../../PSCAD-Interface/config/samples/simserv.cfg',
                         '--logger',

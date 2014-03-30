@@ -60,13 +60,13 @@ class GMAgent
     public IAgent< boost::shared_ptr<IPeerNode> >
 {
   public:
-    /// Module states    
+    /// Module states
     enum { NORMAL,DOWN,RECOVERY,REORGANIZATION,ELECTION };
     /// Constructor for using this object as a module.
-    GMAgent(std::string uuid_, CBroker &broker);
+    GMAgent(std::string uuid_);
     /// Module destructor
     ~GMAgent();
-    
+
     // Internal
     /// Resets the algorithm to the default startup state.
     void Recovery();
@@ -101,8 +101,8 @@ class GMAgent
 
     // Processors
     /// Handles Processing a PeerList
-    static PeerSet ProcessPeerList(MessagePtr msg, CConnectionManager& connmgr);
-    
+    static PeerSet ProcessPeerList(MessagePtr msg);
+
     //Routines
     /// Checks for other up leaders
     void Check( const boost::system::error_code& err );
@@ -116,11 +116,11 @@ class GMAgent
     void Merge( const boost::system::error_code& err );
     /// Sends the peer list to all group members.
     void PushPeerList();
-    
+
     // Sending Tools
     /// Sends messages to remote peers if FIDs are closed.
     void SendToPeer(PeerNodePtr peer,CMessage &msg);
-    
+
     // Messages
     /// Creates AYC Message.
     CMessage AreYouCoordinator();
@@ -173,7 +173,7 @@ class GMAgent
     std::string Coordinator() const { return m_GroupLeader; }
     /// Checks the status of the FIDs
     void FIDCheck(const boost::system::error_code& err);
-    
+
     /// Nodes In My Group
     PeerSet m_UpNodes;
     /// Known Coordinators
@@ -183,18 +183,18 @@ class GMAgent
     /// Nodes expecting AYT response from
     TimedPeerSet m_AYTResponse;
     /// Nodes that I need to inspect in the future
-    PeerSet m_AlivePeers;   
- 
+    PeerSet m_AlivePeers;
+
     // Mutex for protecting the m_UpNodes above
     boost::mutex pList_Mutex;
-    
+
     /// The ID number of the current group (Never initialized for fun)
     unsigned int m_GroupID;
     /// The uuid of the group leader
     std::string  m_GroupLeader;
     /// The number of groups being formed
     unsigned int m_GrpCounter;
-    
+
     /* IO and Timers */
     /// The io_service used.
     boost::asio::io_service m_localservice;
@@ -204,7 +204,7 @@ class GMAgent
     CBroker::TimerHandle m_timer;
     /// Timer for checking FIDs.
     CBroker::TimerHandle m_fidtimer;
-    
+
     // Timeouts
     /// How long between AYC checks
     boost::posix_time::time_duration CHECK_TIMEOUT;
@@ -224,9 +224,6 @@ class GMAgent
     ///Maximum clock skew in milliseconds;
     static const int MAX_SKEW = 100;
 
-    ///The broker!
-    CBroker& m_broker;
-    
     /// Number of groups formed
     int m_groupsformed ;
     /// Number of groups broken

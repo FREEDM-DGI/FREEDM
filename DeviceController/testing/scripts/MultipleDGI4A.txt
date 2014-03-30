@@ -1,4 +1,0 @@
-# Device Outage during Convergence
-enable Sst SST1 gateway 0.0
-work forever
-

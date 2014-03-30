@@ -86,7 +86,17 @@ CAdapterFactory::CAdapterFactory()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
-    RegisterDevices();
+    std::string deviceCfgFile =
+        CGlobalConfiguration::Instance().GetDeviceConfigPath();
+
+    if( deviceCfgFile.empty() )
+    {
+        Logger.Status << "System will start no device classes." << std::endl;
+    }
+    else
+    {
+        m_builder = CDeviceBuilder(deviceCfgFile);
+    }
 
     unsigned short factoryPort =
         CGlobalConfiguration::Instance().GetFactoryPort();
@@ -246,11 +256,11 @@ void CAdapterFactory::Stop()
 void CAdapterFactory::CreateAdapter(const boost::property_tree::ptree & p)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    
+
     boost::property_tree::ptree subtree;
     IAdapter::Pointer adapter;
     std::string name, type;
-    
+
     // extract the properties
     try
     {
@@ -263,9 +273,9 @@ void CAdapterFactory::CreateAdapter(const boost::property_tree::ptree & p)
         throw EDgiConfigError("Failed to create adapter: "
                 + std::string(e.what()));
     }
-    
+
     Logger.Debug << "Building " << type << " adapter " << name << std::endl;
-    
+
     // range check the properties
     if( name.empty() )
     {
@@ -275,7 +285,7 @@ void CAdapterFactory::CreateAdapter(const boost::property_tree::ptree & p)
     {
         throw EDgiConfigError("Multiple adapters share the name: " + name);
     }
-    
+
     // create the adapter
     // FIXME - use plugins or something, this sucks
     if( type == "rtds" )
@@ -294,12 +304,12 @@ void CAdapterFactory::CreateAdapter(const boost::property_tree::ptree & p)
     {
         throw EDgiConfigError("Unregistered adapter type: " + type);
     }
-    
+
     // store the adapter; note that InitializeAdapter can throw EBadRequest
     InitializeAdapter(adapter, p);
     m_adapters[name] = adapter;
     Logger.Info << "Created the " << type << " adapter " << name << std::endl;
-    
+
     // signal construction complete
     adapter->Start();
 }
@@ -318,20 +328,20 @@ void CAdapterFactory::CreateAdapter(const boost::property_tree::ptree & p)
 void CAdapterFactory::RemoveAdapter(const std::string identifier)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    
+
     std::set<std::string> devices;
-    
+
     if( m_adapters.count(identifier) == 0 )
     {
         throw std::runtime_error("No such adapter: " + identifier);
     }
-    
+
     devices = m_adapters[identifier]->GetDevices();
 
     m_adapters[identifier]->Stop();
     m_adapters.erase(identifier);
     Logger.Info << "Removed the adapter: " << identifier << std::endl;
-    
+
     BOOST_FOREACH(std::string device, devices)
     {
         CDeviceManager::Instance().RemoveDevice(device);
@@ -355,19 +365,19 @@ void CAdapterFactory::InitializeAdapter(IAdapter::Pointer adapter,
         const boost::property_tree::ptree & p)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    
+
     boost::property_tree::ptree subtree;
     boost::optional<SignalValue> value;
-    IDevice::Pointer device;
+    CDevice::Pointer device;
 
     std::map<std::string, std::string> devtype;
     std::map<std::string, unsigned int> states;
     std::map<std::string, unsigned int> commands;
     std::map<std::string, unsigned int>::iterator it;
-    
+
     std::string type, name, signal;
     std::size_t index;
-    
+
     if( !adapter )
     {
         throw std::logic_error("Received a null IAdapter::Pointer.");
@@ -385,14 +395,14 @@ void CAdapterFactory::InitializeAdapter(IAdapter::Pointer adapter,
             boost::dynamic_pointer_cast<IBufferAdapter>(adapter);
     CFakeAdapter::Pointer fake =
             boost::dynamic_pointer_cast<CFakeAdapter>(adapter);
-    
+
     // i = 0 parses state information
     // i = 1 parses command information
     for( int i = 0; i < 2; i++ )
     {
         Logger.Debug << "Reading the " << (i == 0 ? "state" : "command")
                 << " property tree specification." << std::endl;
-        
+
         try
         {
             subtree = (i == 0 ? p.get_child("state") : p.get_child("command"));
@@ -402,7 +412,7 @@ void CAdapterFactory::InitializeAdapter(IAdapter::Pointer adapter,
             throw EDgiConfigError("Failed to create adapter: "
                     + std::string(e.what()));
         }
-        
+
         BOOST_FOREACH(boost::property_tree::ptree::value_type & child, subtree)
         {
             try
@@ -426,10 +436,10 @@ void CAdapterFactory::InitializeAdapter(IAdapter::Pointer adapter,
                 throw EDgiConfigError("Failed to create adapter: "
                         + std::string(e.what()));
             }
-            
+
             Logger.Debug << "At index " << index << " for the device signal ("
                     << name << "," << signal << ")." << std::endl;
-            
+
             // create the device when first seen
             if( devtype.count(name) == 0 )
             {
@@ -446,15 +456,15 @@ void CAdapterFactory::InitializeAdapter(IAdapter::Pointer adapter,
                         + std::string("devices share the name: ") + name;
                 throw EDgiConfigError(what);
             }
-            
+
             // check if the device recognizes the associated signal
             device = CDeviceManager::Instance().m_hidden_devices.at(name);
-            
-            if( i == 0 && device->HasStateSignal(signal) )
+
+            if( i == 0 && device->HasState(signal) )
             {
                 ++states[name];
             }
-            else if( i == 1 && device->HasCommandSignal(signal) )
+            else if( i == 1 && device->HasCommand(signal) )
             {
                 ++commands[name];
             }
@@ -485,12 +495,12 @@ void CAdapterFactory::InitializeAdapter(IAdapter::Pointer adapter,
             }
             else if( fake && value )
             {
-                SignalValue oldval = fake->Get(name, signal);
+                SignalValue oldval = fake->GetState(name, signal);
                 if( oldval != SignalValue() && oldval != value.get() )
                 {
                     throw std::runtime_error("Duplicate Initial Value");
                 }
-                fake->Set(name, signal, value.get());
+                fake->SetCommand(name, signal, value.get());
             }
         }
     }
@@ -553,25 +563,20 @@ void CAdapterFactory::CreateDevice(const std::string name,
         const std::string type, IAdapter::Pointer adapter)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    
+
     if( CDeviceManager::Instance().DeviceExists(name) )
     {
         throw std::runtime_error("The device " + name + " already exists.");
-    }
-    
-    if( m_prototype.count(type) == 0 )
-    {
-        throw std::runtime_error("Unrecognized device type: " + type);
     }
     
     if( !adapter )
     {
         throw std::runtime_error("Tried to create device using null adapter.");
     }
-    
-    IDevice::Pointer device = m_prototype[type]->Create(name, adapter);
+   
+    CDevice::Pointer device = m_builder.CreateDevice(name, type, adapter);
     CDeviceManager::Instance().AddDevice(device);
-    
+
     Logger.Info << "Created new device: " << name << std::endl;
 }
 
@@ -671,8 +676,8 @@ void CAdapterFactory::HandleRead(const boost::system::error_code & e)
 void CAdapterFactory::Timeout(const boost::system::error_code & e)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    
-    if( !e ) 
+
+    if( !e )
     {
         Logger.Notice << "Connection closed due to timeout." << std::endl;
 
@@ -716,13 +721,13 @@ void CAdapterFactory::Timeout(const boost::system::error_code & e)
 void CAdapterFactory::SessionProtocol()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-   
-    std::istream packet(&m_buffer); 
+
+    std::istream packet(&m_buffer);
     boost::asio::streambuf response;
     std::ostream response_stream(&response);
-    
+
     boost::property_tree::ptree config;
-    
+
     std::set<std::string> states, commands;
     std::string host, header, type, name, entry;
     int sindex = 1, cindex = 1;
@@ -731,7 +736,7 @@ void CAdapterFactory::SessionProtocol()
     {
         packet >> header >> host;
         Logger.Info << "Received " << header << " from " << host << std::endl;
-        
+
         if( header != "Hello" )
         {
             throw EBadRequest("Expected 'Hello' message: " + header);
@@ -753,18 +758,22 @@ void CAdapterFactory::SessionProtocol()
         for( int i = 0; packet >> type >> name; i++ )
         {
             Logger.Debug << "Processing " << type << ":" << name << std::endl;
-            
-            if( m_prototype.count(type) == 0 )
+
+            try
+            {
+                DeviceInfo info = m_builder.GetDeviceInfo(type);
+                states = info.s_state;
+                commands = info.s_command;
+            }
+            catch(std::exception & e)
             {
                 throw EBadRequest("Unknown device type: " + type);
             }
-            
+
             name = host + ":" + name;
             boost::replace_all(name, ".", ":");
-            states = m_prototype[type]->GetStateSet();
-            commands = m_prototype[type]->GetCommandSet();
             Logger.Debug << "Using adapter name " << name << std::endl;
-            
+
             BOOST_FOREACH(std::string signal, states)
             {
                 Logger.Debug << "Adding state for " << signal << std::endl;
@@ -790,7 +799,7 @@ void CAdapterFactory::SessionProtocol()
                 temp.put("device", name);
                 temp.put("signal", signal);
                 temp.put("<xmlattr>.index", cindex);
-                
+
                 entry = name + signal;
                 config.add_child("command." + entry, temp);
 
@@ -800,7 +809,7 @@ void CAdapterFactory::SessionProtocol()
 ////////////////////////////////////////////////////////////////////////////////
 /// The config property tree now contains a valid adapter specification.
 ////////////////////////////////////////////////////////////////////////////////
-        
+
         try
         {
             CreateAdapter(config);
@@ -812,14 +821,14 @@ void CAdapterFactory::SessionProtocol()
                     "sense for a plug and play adapter; what: "
                     + std::string(e.what()));
         }
-        
+
         response_stream << "Start\r\n\r\n";
         Logger.Status << "Blocking to send Start to client" << std::endl;
     }
     catch(EBadRequest & e)
     {
         Logger.Warn << "Rejected client: " << e.what() << std::endl;
-        
+
         response_stream << "BadRequest\r\n";
         response_stream << e.what() << "\r\n\r\n";
 
@@ -831,7 +840,7 @@ void CAdapterFactory::SessionProtocol()
         response_stream << "Error\r\n" << e.what() << "\r\n\r\n";
         Logger.Status << "Blocking to send Error to client" << std::endl;
     }
-    
+
     try
     {
         TimedWrite(*m_server->GetClient(), response,
@@ -839,7 +848,7 @@ void CAdapterFactory::SessionProtocol()
     }
     catch(std::exception & e)
     {
-        Logger.Warn << "Failed to respond to client: " << e.what() << std::endl; 
+        Logger.Warn << "Failed to respond to client: " << e.what() << std::endl;
     }
 
     m_server->StartAccept();

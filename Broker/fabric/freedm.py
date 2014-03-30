@@ -28,7 +28,7 @@ def generate_parser():
     parser.add_option("-e","--experiment",dest="experiment",action="store_true",
         help="Enable experiment mode, which can be used to observe the affects"
              "of network link reliability on the system")
-    expgroup = OptionGroup(parser, "Network Experiments", 
+    expgroup = OptionGroup(parser, "Network Experiments",
         "These options will only be used in network experiment mode (-e). In"
         "this mode, the program will run for a specified period of time with"
         "incrementing network settings (from 0 up to full reliability")
@@ -81,7 +81,7 @@ if __name__ == "__main__":
         for (host,fd) in hostlist.iteritems():
             with settings(host_string=host):
                 fabfile.setup_sim(fd)
-    
+
         if not options.dryrun:
             #This simplifies the operations and lets us "spy" on the running tasks.
             cmd = ['fab','-H', ",".join(options.hostnames), "start_sim:%s" % options.time, "--linewise" ]
@@ -92,7 +92,7 @@ if __name__ == "__main__":
 
         print "All runs should now be dead. Sleeping to let everything clean."
         time.sleep(10)
- 
+
         if exp.next() == None:
             break
     disconnect_all2()

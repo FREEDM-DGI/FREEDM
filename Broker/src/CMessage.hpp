@@ -71,7 +71,7 @@ public:
 
     /// Accessor for hostname
     SRemoteHost GetSourceHostname() const;
-    
+
     /// Accessor for sequenceno
     unsigned int GetSequenceNumber() const;
 
@@ -80,13 +80,13 @@ public:
 
     /// Accessor for handler
     std::string GetHandler() const;
-    
+
     /// Accessor for submessages
     ptree& GetSubMessages();
 
     /// Setter for uuid
     void SetSourceUUID(std::string uuid);
-    
+
     /// Setter for hostname
     void SetSourceHostname(SRemoteHost hostname);
 
@@ -107,7 +107,7 @@ public:
 
     /// Setter for the timestamp
     void SetSendTimestampNow();
-    
+
     /// Setter b for the timestamp
     void SetSendTimestamp(boost::posix_time::ptime p);
 
@@ -153,7 +153,7 @@ public:
     /// Parse CMessage from string.
     virtual bool Load( std::istream &p_is )
         throw ( boost::property_tree::file_parser_error );
-    
+
     /// Put CMessage to a stream.
     virtual void Save( std::ostream &p_os ) const;
 
@@ -165,8 +165,8 @@ public:
 
     /// Contains all the submessages as handled by client algorithms
     ptree       m_submessages;
-   
-private: 
+
+private:
     /// Contains the source node's hostname
     SRemoteHost m_remotehost;
 
@@ -190,7 +190,7 @@ private:
 
     /// The time the message was sent
     boost::posix_time::ptime m_sendtime;
-    
+
     /// The time the message will expire
     boost::posix_time::ptime m_expiretime;
 

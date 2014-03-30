@@ -42,29 +42,19 @@ class CClockSynchronizer
     : public IReadHandler
     , private boost::noncopyable
 {
-    public:
+public:
     /// PeerNodePtr
-    typedef boost::shared_ptr<IPeerNode> PeerNodePtr; 
+    typedef boost::shared_ptr<IPeerNode> PeerNodePtr;
     /// Initialize module
-    explicit CClockSynchronizer(CBroker &broker);
-    /// Receiver
-    void HandleExchangeResponse(MessagePtr msg, PeerNodePtr peer);
-    /// Receiver
-    void HandleExchange(MessagePtr msg, PeerNodePtr peer);
-    /// Broadcaster    
-    void Exchange(const boost::system::error_code& err );    
-    /// Generate the exchange message
-    CMessage ExchangeMessage(unsigned int k);
-    /// Generate the exchange response message
-    CMessage ExchangeResponse(unsigned int k);
+    explicit CClockSynchronizer(boost::asio::io_service& ios);
     /// Returns the synchronized time
-    boost::posix_time::ptime GetSynchronizedTime();
+    boost::posix_time::ptime GetSynchronizedTime() const;
     /// Starts the stuff.
     void Run();
     /// Stops the stuff
     void Stop();
 
-    private:
+private:
     /// Does the i,j referencing
     typedef std::pair<std::string,std::string> MapIndex;
     /// Stores the relative offsets
@@ -88,6 +78,16 @@ class CClockSynchronizer
     /// Last responses type
     typedef std::map< MapIndex, unsigned int > LastResponseMap;
 
+    /// Receiver
+    void HandleExchangeResponse(MessagePtr msg, PeerNodePtr peer);
+    /// Receiver
+    void HandleExchange(MessagePtr msg, PeerNodePtr peer);
+    /// Broadcaster
+    void Exchange(const boost::system::error_code& err );
+    /// Generate the exchange message
+    CMessage ExchangeMessage(unsigned int k);
+    /// Generate the exchange response message
+    CMessage ExchangeResponse(unsigned int k);
 
     /// Relative offsets
     OffsetMap m_offsets;
@@ -116,19 +116,18 @@ class CClockSynchronizer
 
     /// The UUID
     std::string m_uuid;
-   
-    /// Gets the weight with a decay 
-    double GetWeight(MapIndex i);
-    
+
+    /// Gets the weight with a decay
+    double GetWeight(MapIndex i) const;
+
     /// Sets the weight
     void SetWeight(MapIndex i, double w);
-    
+
     ///Turn a time duration into a double
-    double TDToDouble(boost::posix_time::time_duration td);
+    static double TDToDouble(boost::posix_time::time_duration td);
 
     ///Turn a double into a time duration
-    boost::posix_time::time_duration DoubleToTD(double td);
-
+    static boost::posix_time::time_duration DoubleToTD(double td);
 };
 
 

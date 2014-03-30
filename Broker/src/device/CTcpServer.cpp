@@ -19,7 +19,7 @@
 ///     CTcpServer::StartAccept
 ///     CTcpServer::HandleAccept
 ///     CTcpServer::hdr
-///     
+///
 ///
 /// These source code files were created at Missouri University of Science and
 /// Technology, and are intended for use in teaching or research. They may be
@@ -68,7 +68,7 @@ CTcpServer::CTcpServer(boost::asio::io_service & ios, unsigned short port,
     , m_port(port)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-   
+
     using boost::asio::ip::tcp;
 
     tcp::endpoint endpoint(tcp::v4(), port);
@@ -133,13 +133,13 @@ CTcpServer::Pointer CTcpServer::Create(boost::asio::io_service & ios,
 void CTcpServer::Stop()
 {
     Logger.Trace << hdr() << __PRETTY_FUNCTION__ << std::endl;
-    
+
     if( m_acceptor.is_open() )
     {
         Logger.Info << hdr() << "Closed TCP server acceptor." << std::endl;
         m_acceptor.close();
     }
-    
+
     Logger.Status << "Closed TCP server on port " << m_port << "." << std::endl;
 }
 
@@ -169,7 +169,7 @@ void CTcpServer::RegisterHandler(ConnectionHandler h)
     }
 
     m_handler = h;
-    
+
     Logger.Notice << hdr() << "Set client connection handler." << std::endl;
 }
 
@@ -216,7 +216,7 @@ void CTcpServer::HandleAccept(const boost::system::error_code & error)
     if( !error )
     {
         Logger.Info << hdr() << "Accepted new client connection." << std::endl;
-        
+
         if( m_handler.empty() )
         {
             throw std::runtime_error(hdr() + "Null connection handler.");

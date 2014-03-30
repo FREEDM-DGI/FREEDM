@@ -229,7 +229,7 @@ void CProtocolSR::Resend(const boost::system::error_code& err)
 void CProtocolSR::ReceiveACK(const google::protobuf::Message& msg)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    const CsrMessage csrm = dynamic_cast<const CsrMessage&>(msg);
+    const CsrMessage& csrm = dynamic_cast<const CsrMessage&>(msg);
     unsigned int seq = csrm.sequence_no();
     size_t hash = ComputeMessageHash(csrm.dgi_message());
     if(m_window.size() > 0)

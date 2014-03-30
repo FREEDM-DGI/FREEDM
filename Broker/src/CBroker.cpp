@@ -464,7 +464,6 @@ void CBroker::ChangePhase(const boost::system::error_code & /*err*/)
     }
     if(m_phase != oldphase)
     {
-        CConnectionManager::Instance().ChangePhase((m_phase==0));
         ModuleIdent oldident = m_modules[oldphase].first;
         Logger.Notice<<"Changed Phase: expiring next time timers for "<<oldident<<std::endl;
         // Look through the timers for the module and see if any of them are

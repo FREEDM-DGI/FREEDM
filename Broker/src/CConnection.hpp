@@ -24,27 +24,17 @@
 #ifndef CCONNECTION_HPP
 #define CCONNECTION_HPP
 
-#include "CProtocolSR.hpp"
 #include "CDispatcher.hpp"
 #include "SRemoteHost.hpp"
 #include "messages/DgiMessage.pb.h"
 
 #include <memory>
 
+#include <boost/asio/ip/udp.hpp>
 #include <boost/noncopyable.hpp>
-
-namespace google {
-  namespace protobuf {
-
-class Message;
-
-  }
-}
 
 namespace freedm {
     namespace broker {
-
-class IProtocol;
 
 /// Used for errors communicating with peers.
 struct EConnectionError
@@ -71,15 +61,6 @@ public:
     /// Puts a message into the channel.
     void Send(const DgiMessage& msg);
 
-    /// Handles Notification of an acknowledment being received
-    void ReceiveACK(const google::protobuf::Message &msg);
-
-    /// Handler that calls the correct protocol for accept logic
-    bool Receive(const google::protobuf::Message &msg);
-
-    /// Change Phase Event
-    void ChangePhase(bool newround);
-
     /// Get a socket connected to a single peer DGI
     boost::asio::ip::udp::socket& GetSocket();
 
@@ -93,11 +74,11 @@ public:
     int GetReliability() const;
 
 private:
+    /// Writes a message into the output buffer
+    void Write(const DgiMessage& msg);
+
     /// Datagram socket connected to a single peer DGI
     boost::asio::ip::udp::socket m_socket;
-
-    /// FIXME change to IProtocol
-    CProtocolSR m_protocol;
 
     /// The UUID of the remote endpoint for the connection
     std::string m_uuid;

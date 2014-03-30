@@ -133,10 +133,9 @@ void CListener::HandleRead(const boost::system::error_code& e,
     std::ostreambuf_iterator<char> output(iss);
     std::copy(m_buffer.begin(), m_buffer.begin()+bytes_transferred, output);
 
-    // FIXME hardcoded CsrMessage = bad
     Logger.Debug<<"Loading protobuf"<<std::endl;
-    CsrMessage csrm;
-    if(!csrm.ParseFromIstream(&iss))
+    boost::shared_ptr<const DgiMessage> msg = boost::make_shared<const DgiMessage>();
+    if(!(const_cast<DgiMessage&>(*msg)).ParseFromIstream(&iss))
     {
         Logger.Error<<"Failed to load protobuf"<<std::endl;
         ScheduleListen();
@@ -146,17 +145,16 @@ void CListener::HandleRead(const boost::system::error_code& e,
 #ifdef CUSTOMNETWORK
     if((rand()%100) >= GetReliability())
     {
-        Logger.Debug<<"Dropped datagram "<<csrm.hash()<<":"
-                        <<csrm.sequence_no()<<std::endl;
+        Logger.Debug<<"Dropped message "<<msg->DebugString();
         ScheduleListen();
         return;
     }
 #endif
 
-    std::string uuid = csrm.source_uuid();
-    if(csrm.source_port() > std::numeric_limits<unsigned short>::max())
+    std::string uuid = msg->source_uuid();
+    if(msg->source_port() > std::numeric_limits<unsigned short>::max())
         throw std::overflow_error("CListener::HandleRead");
-    SRemoteHost host = { csrm.source_hostname(), static_cast<unsigned short>(csrm.source_port()) };
+    SRemoteHost host = { msg->source_hostname(), static_cast<unsigned short>(msg->source_port()) };
     ///Make sure the hostname is registered:
     CConnectionManager::Instance().PutHost(uuid,host);
     ///Get the pointer to the connection:
@@ -164,26 +162,8 @@ void CListener::HandleRead(const boost::system::error_code& e,
             CConnectionManager::Instance().GetConnectionByUUID(uuid);
     Logger.Debug<<"Fetched Connection"<<std::endl;
 
-    if(csrm.status() == CsrMessage::ACCEPTED)
-    {
-        Logger.Debug<<"Processing Accept Message"<<std::endl;
-        Logger.Debug<<"Received ACK"<<csrm.hash()<<":"
-                        <<csrm.sequence_no()<<std::endl;
-        conn->ReceiveACK(csrm);
-    }
-    else if(conn->Receive(csrm))
-    {
-        Logger.Debug<<"Accepted message "<<csrm.hash()<<":"
-                        <<csrm.sequence_no()<<std::endl;
-        CDispatcher::Instance().HandleRequest(
-            boost::make_shared<const DgiMessage>(
-                DgiMessage(csrm.dgi_message())), uuid);
-    }
-    else if(csrm.status() != CsrMessage::CREATED)
-    {
-        Logger.Debug<<"Rejected message "<<csrm.hash()<<":"
-                        <<csrm.sequence_no()<<std::endl;
-    }
+    Logger.Debug<<"Processing message "<<msg->DebugString();
+    CDispatcher::Instance().HandleRequest(msg, uuid);
 
     ScheduleListen();
 }

@@ -11,13 +11,8 @@ set(BROKER_FILES
     CGlobalPeerList.cpp
     CListener.cpp
     CLogger.cpp
-    CProtocolSR.cpp
-# FIXME
-#    CProtocolSU.cpp
-#    CProtocolSRSW.cpp
     CTimings.cpp
     IPeerNode.cpp
-    IProtocol.cpp
     Messages.cpp
     gm/GroupManagement.cpp
     lb/LoadBalance.cpp

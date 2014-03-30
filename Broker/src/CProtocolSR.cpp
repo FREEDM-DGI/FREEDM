@@ -298,10 +298,10 @@ bool CProtocolSR::Receive(const google::protobuf::Message& msg)
     int kill = 0;
     bool usekill = false; //If true, we should accept any inseq
     boost::posix_time::ptime sendtime = boost::posix_time::time_from_string(csrm.send_time());
-    if(csrm.status() == CsrMessage::BAD_REQUEST)
+    if(csrm.has_status() && csrm.status() == CsrMessage::BAD_REQUEST)
     {
         //See if we are already trying to sync:
-        if(m_window.front().status() != CsrMessage::CREATED)
+        if(m_window.front().has_status() && m_window.front().status() != CsrMessage::CREATED)
         {
             if(m_outsynctime != sendtime)
             {
@@ -316,7 +316,7 @@ bool CProtocolSR::Receive(const google::protobuf::Message& msg)
         }
         return false;
     }
-    if(csrm.status() == CsrMessage::CREATED)
+    if(csrm.has_status() && csrm.status() == CsrMessage::CREATED)
     {
         //Check to see if we've already seen this SYN:
         if(sendtime == m_insynctime)
@@ -431,7 +431,7 @@ void CProtocolSR::SendSYN()
     else
     {
         //Don't bother if front of queue is already a SYN
-        if(m_window.front().status() == CsrMessage::CREATED)
+        if(m_window.front().has_status() && m_window.front().status() == CsrMessage::CREATED)
         {
             return;
         }

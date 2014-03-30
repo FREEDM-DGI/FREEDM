@@ -62,7 +62,7 @@ message CollectedStateMessage
     repeated double storage = 3;
     repeated double drain = 4;
     repeated double state = 5;
-    required int32 num_intransit_accepts = 6 [default = 0];
+    required int32 num_intransit_accepts = 6;
 }
 
 message StateCollectionMessage

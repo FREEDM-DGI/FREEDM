@@ -276,6 +276,7 @@ void SCAgent::StateResponse()
         scm.set_type(StateCollectionMessage::COLLECTED_STATE_MESSAGE);
 
         CollectedStateMessage* csm = scm.mutable_collected_state_message();
+        csm->set_num_intransit_accepts(0);
 
         for (it = collectstate.begin(); it != collectstate.end(); it++)
         {

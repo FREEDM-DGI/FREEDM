@@ -1398,6 +1398,7 @@ void LBAgent::HandleComputedNormal(MessagePtr msg, PeerNodePtr /*peer*/)
     << pt.get<std::string>("lb.source") << std::endl;
     //for scheduling invariant
     Kmaxlocal =boost::lexical_cast<int>(pt.get<std::string>("lb.kmaxlocal"));
+    Logger.Status << "Received Kmax local is " << Kmaxlocal << std::endl;
     LoadTable();
 }
 #pragma GCC diagnostic warning "-Wunused-parameter"

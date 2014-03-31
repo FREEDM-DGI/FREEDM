@@ -161,12 +161,10 @@ int LBAgent::Run()
     // it is safe to give it a timeout of 1 effectively making it expire
     // immediately
 
-    m_Mutex.lock();
     CBroker::Instance().Schedule(m_GlobalTimer,
                       boost::posix_time::not_a_date_time,
                       boost::bind(&LBAgent::LoadManage, this,
                                   boost::asio::placeholders::error));
-    m_Mutex.unlock();
     PowerTransfer = boost::posix_time::milliseconds(CTimings::LB_STATE_TIMER);
     return 0;
 }
@@ -381,7 +379,6 @@ void LBAgent::LoadManage()
                           boost::bind(&LBAgent::LoadManage,
                                       this,
                                       boost::asio::placeholders::error));
-        m_Mutex.unlock();
         Logger.Info << "Scheduled another LoadManage in "
         << CTimings::LB_GLOBAL_TIMER << "ms" << std::endl;
     }
@@ -394,7 +391,6 @@ void LBAgent::LoadManage()
                           boost::bind(&LBAgent::LoadManage,
                                       this,
                                       boost::asio::placeholders::error));
-        m_Mutex.unlock();
         Logger.Info << "Won't run over phase, scheduling another LoadManage in "
                     << "next round" << std::endl;
         m_actuallyread = true;
@@ -991,10 +987,8 @@ bool LBAgent::Schedule_Invariant()
     Deadline = microsecT3;
     msdiff = Deadline - Phase_Time;
     //Start  the timer, on timeout, deadline_miss will be called
-    m_Mutex.lock();
     CBroker::Instance().Schedule(m_GlobalTimer, boost::posix_time::milliseconds(Curr_Relative_Deadline),
                       boost::bind(&LBAgent::Deadline_Miss, this, boost::asio::placeholders::error));
-    m_Mutex.unlock();
     bool Ik_Invariant;
     bool Ip_Invariant;
     bool Ic_Invariant;
@@ -1275,10 +1269,8 @@ void LBAgent::Detected_ECN_CE()
         ECN_Status = false;
         int DEADLINE_TIMEOUT = boost::lexical_cast<int>(Curr_RTT);
         //Start  the timer, on timeout, deadline_miss will be called
-        m_Mutex.lock();
         CBroker::Instance().Schedule(m_GlobalTimer, boost::posix_time::milliseconds(DEADLINE_TIMEOUT),
                           boost::bind(&LBAgent::ECN_Active, this, boost::asio::placeholders::error));
-        m_Mutex.unlock();
     }
 }
 

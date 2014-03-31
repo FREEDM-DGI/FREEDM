@@ -899,7 +899,7 @@ void LBAgent::HandleYes(MessagePtr /*msg*/, PeerNodePtr peer)
         Better_RTT_Obs_Counter = 0;
         Last_Time_Sent = boost::posix_time::not_a_date_time;
         Curr_Relative_Deadline = Curr_RTT + RESPONSE_TIME_MARGIN;
-        Update_Period();
+        //Update_Period();
     }
     
     Logger.Notice << "(Yes) from " << peer->GetUUID() << std::endl;
@@ -935,8 +935,9 @@ bool LBAgent::Invariant_Check()
 {
     bool I1 = Cyber_Invariant();
     bool I2 = Physical_Invariant();
-    bool I3 = Schedule_Invariant();
-    return I1*I2*I3;
+    //bool I3 = Schedule_Invariant();
+    //return I1*I2*I3;
+    return I1*I2;
 }
 //for cyber invariant
 bool LBAgent::Cyber_Invariant()
@@ -987,8 +988,8 @@ bool LBAgent::Schedule_Invariant()
     Deadline = microsecT3;
     msdiff = Deadline - Phase_Time;
     //Start  the timer, on timeout, deadline_miss will be called
-    CBroker::Instance().Schedule(m_GlobalTimer, boost::posix_time::milliseconds(Curr_Relative_Deadline),
-                      boost::bind(&LBAgent::Deadline_Miss, this, boost::asio::placeholders::error));
+    //CBroker::Instance().Schedule(m_GlobalTimer, boost::posix_time::milliseconds(Curr_Relative_Deadline),
+    //                  boost::bind(&LBAgent::Deadline_Miss, this, boost::asio::placeholders::error));
     bool Ik_Invariant;
     bool Ip_Invariant;
     bool Ic_Invariant;
@@ -1269,8 +1270,8 @@ void LBAgent::Detected_ECN_CE()
         ECN_Status = false;
         int DEADLINE_TIMEOUT = boost::lexical_cast<int>(Curr_RTT);
         //Start  the timer, on timeout, deadline_miss will be called
-        CBroker::Instance().Schedule(m_GlobalTimer, boost::posix_time::milliseconds(DEADLINE_TIMEOUT),
-                          boost::bind(&LBAgent::ECN_Active, this, boost::asio::placeholders::error));
+        //CBroker::Instance().Schedule(m_GlobalTimer, boost::posix_time::milliseconds(DEADLINE_TIMEOUT),
+        //                  boost::bind(&LBAgent::ECN_Active, this, boost::asio::placeholders::error));
     }
 }
 

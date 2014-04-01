@@ -34,7 +34,7 @@ namespace freedm {
 namespace broker {
 
 /// Hash a message.
-size_t ComputeMessageHash(const DgiMessage& msg);
+google::protobuf::uint64 ComputeMessageHash(const DgiMessage& msg);
 
 /// Determines whether the message has expired.
 bool MessageIsExpired(const CsrMessage& msg);

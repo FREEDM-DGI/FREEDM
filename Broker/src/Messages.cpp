@@ -48,12 +48,12 @@ CLocalLogger Logger(__FILE__);
 ///
 /// @return a hash of the message
 ///////////////////////////////////////////////////////////////////////////////
-std::size_t ComputeMessageHash(const DgiMessage& msg)
+google::protobuf::uint64 ComputeMessageHash(const DgiMessage& msg)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
     static boost::hash<std::string> string_hash;
-    return string_hash(msg.ShortDebugString());
+    return static_cast<google::protobuf::uint64>(string_hash(msg.ShortDebugString()));
 }
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -380,7 +380,7 @@ void CProtocolSR::SendACK(const google::protobuf::Message& msg)
     outmsg.set_sequence_no(seq);
     Logger.Debug<<"Generating ACK. Source exp time "<<csrm.expire_time()<<std::endl;
     outmsg.set_expire_time(csrm.expire_time());
-    outmsg.set_hash(csrm.hash());
+    outmsg.set_hash(ComputeMessageHash(csrm.dgi_message()));
     PrepareAndWrite(outmsg);
     /// Hook into resend until the message expires.
     m_timeout.cancel();

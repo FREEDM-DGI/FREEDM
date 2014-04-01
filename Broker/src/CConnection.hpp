@@ -36,6 +36,14 @@
 namespace freedm {
     namespace broker {
 
+/// Used for errors communicating with peers.
+struct EConnectionError
+    : virtual std::runtime_error
+{
+    explicit EConnectionError(const std::string& what)
+        : std::runtime_error(what) { }
+};
+
 /// Represents a single outgoing connection to a client.
 class CConnection
     : public boost::noncopyable

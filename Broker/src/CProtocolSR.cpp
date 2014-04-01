@@ -449,6 +449,10 @@ void CProtocolSR::PrepareAndWrite(CsrMessage& msg)
     msg.set_source_hostname(CConnectionManager::Instance().GetHost().hostname);
     msg.set_source_port(CConnectionManager::Instance().GetHost().port);
     StampMessageSendtime(msg);
+    if(!msg.has_expire_time())
+    {
+        SetExpirationTimeFromNow(msg, boost::posix_time::millisec(CTimings::CSRC_DEFAULT_TIMEOUT));
+    }
 
     Write(msg);
 }

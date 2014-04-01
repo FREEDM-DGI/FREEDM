@@ -65,7 +65,7 @@ message CsrMessage
     required string send_time = 4;
     optional uint32 sequence_no = 5;
     optional Status status = 6;
-    optional string expire_time = 7;
+    required string expire_time = 7;
     optional int32 kill = 8;
     optional fixed64 hash = 9;
 

@@ -895,7 +895,7 @@ void LBAgent::HandleYes(MessagePtr /*msg*/, PeerNodePtr peer)
     msdiff = microsecT2-microsecT1;
     Obs_Avg_RTT = msdiff.total_milliseconds();
     Logger.Notice << "Scaled RTT is " << Obs_Avg_RTT << std::endl;
-
+    //first time receive message "Yes" from demand nodes
     if (First_Time_RTT == true )
     {
         First_Time_RTT = false;
@@ -904,7 +904,7 @@ void LBAgent::HandleYes(MessagePtr /*msg*/, PeerNodePtr peer)
         Better_RTT_Obs_Counter = 0;
         Last_Time_Sent = boost::posix_time::not_a_date_time;
         Curr_Relative_Deadline = Curr_RTT + RESPONSE_TIME_MARGIN;
-        //Update_Period();
+        Update_Period();
     }
     
     Logger.Notice << "(Yes) from " << peer->GetUUID() << std::endl;
@@ -919,12 +919,13 @@ void LBAgent::HandleYes(MessagePtr /*msg*/, PeerNodePtr peer)
     m_.SetHandler("lb."+ ss_.str());
     
     //Its better to check your status again before initiating drafting
-    if ( peer->GetUUID() != GetUUID() && LBAgent::SUPPLY == m_Status )//&& Invariant_Check())
+    if ( peer->GetUUID() != GetUUID() && LBAgent::SUPPLY == m_Status && Invariant_Check())
     {
         try
         {
             peer->Send(m_);
             //for scheduling invariant
+            //Last time of an event to trigger a migration
             Last_Time_Sent  = boost::posix_time::microsec_clock::local_time();
             Curr_K+=P_Migrate;
         }
@@ -1097,7 +1098,7 @@ void LBAgent::HandleDrafting(MessagePtr /*msg*/, PeerNodePtr peer)
         ss_ << m_DemandVal;
         m_.m_submessages.put("lb.value", ss_.str());
         
-        if ( peer->GetUUID() != GetUUID() && LBAgent::DEMAND == m_Status)// && !m_inProgress  )
+        if ( peer->GetUUID() != GetUUID() && LBAgent::DEMAND == m_Status && !m_inProgress  )
         {
             m_inProgress = true;
             try
@@ -1150,7 +1151,7 @@ void LBAgent::HandleAccept(MessagePtr msg, PeerNodePtr peer)
     Logger.Notice << " Draft Accept message received from: " << peer->GetUUID()
     << " with demand of "<< DemValue << std::endl;
     
-    if ( LBAgent::SUPPLY == m_Status)// && !m_inProgress)
+    if ( LBAgent::SUPPLY == m_Status && !m_inProgress)
     {
         m_inProgress = true;
         // Make necessary power setting accordingly to allow power migration
@@ -1172,6 +1173,7 @@ void LBAgent::HandleAccept(MessagePtr msg, PeerNodePtr peer)
     m_inProgress = false;
 }
 
+//receive message back as expected
 void LBAgent::Msg_Ack_Received()
 {
     //for scheduling invariant
@@ -1197,7 +1199,7 @@ void LBAgent::Msg_Ack_Received()
     }
     
 #ifdef ENABLE_ECN
-    int _ECN;
+    int _ECN=0;
     
     //ECN
     if (_ECN >= 11)
@@ -1383,7 +1385,8 @@ void LBAgent::HandleCollectedState(MessagePtr msg, PeerNodePtr /*peer*/)
             }
         }
     }
-    
+    m_g = agg_gateway;
+
     if (peercount != 0)
     {
         m_Normal = agg_gateway/peercount;

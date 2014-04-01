@@ -36,6 +36,7 @@
 #include <boost/asio.hpp>
 #include <boost/noncopyable.hpp>
 #include <boost/shared_ptr.hpp>
+#include <google/protobuf/message.h>
 
 namespace freedm {
     namespace broker {
@@ -215,7 +216,7 @@ void CProtocolSR::ReceiveACK(const google::protobuf::Message& msg)
         // Assuming hash collisions are small, we will check the hash
         // of the front message. On hit, we can accept the acknowledge.
         unsigned int fseq = m_window.front().sequence_no();
-        unsigned int expectedHash = ComputeMessageHash(m_window.front().dgi_message());
+        google::protobuf::uint64 expectedHash = ComputeMessageHash(m_window.front().dgi_message());
         if(fseq == seq && expectedHash == csrm.hash())
         {
             Logger.Debug<<"Accepting ACK "<<seq<<std::endl;

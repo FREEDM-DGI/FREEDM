@@ -272,7 +272,7 @@ bool CProtocolSR::Receive(const google::protobuf::Message& msg)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     const CsrMessage& csrm = dynamic_cast<const CsrMessage&>(msg);
-    int kill = 0;
+    unsigned int kill = 0;
     bool usekill = false; //If true, we should accept any inseq
     boost::posix_time::ptime sendtime = boost::posix_time::time_from_string(csrm.send_time());
     if(csrm.has_status() && csrm.status() == CsrMessage::BAD_REQUEST)
@@ -343,8 +343,7 @@ bool CProtocolSR::Receive(const google::protobuf::Message& msg)
         m_inseq = (m_inseq+1)%SEQUENCE_MODULO;
         return true;
     }
-    else if(usekill == true && static_cast<unsigned int>(kill)< m_inseq
-            && csrm.sequence_no() > m_inseq)
+    else if(usekill == true && kill < m_inseq && csrm.sequence_no() > m_inseq)
     {
         //m_inseq will be right for the next expected message.
         m_inseq = (csrm.sequence_no()+1)%SEQUENCE_MODULO;

@@ -22,16 +22,21 @@
 /// Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
 ////////////////////////////////////////////////////////////////////////////////
 
-#include "CConnection.hpp"
-
 #include "CBroker.hpp"
+#include "CConnectionManager.hpp"
 #include "CDispatcher.hpp"
 #include "CGlobalConfiguration.hpp"
 #include "CLogger.hpp"
+#include "CConnection.hpp"
 #include "messages/DgiMessage.pb.h"
 
-#include <boost/asio.hpp>
+#include <vector>
+
+#include <boost/bind.hpp>
 #include <boost/make_shared.hpp>
+#include <boost/property_tree/ptree.hpp>
+
+using boost::property_tree::ptree;
 
 namespace freedm {
 namespace broker {
@@ -85,9 +90,10 @@ void CConnection::Send(const DgiMessage& msg)
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
     // If the UUID of the recipient (The value stored by GetUUID of this
-    // object) is the same as the this node's uuid, place the message directly
-    // into the received Queue.
-    if(m_uuid == CGlobalConfiguration::Instance().GetUUID())
+    // object) is the same as the this node's uuid (As stored by the
+    // Connection manager) place the message directly into the received
+    // Queue.
+    if(m_uuid == CConnectionManager::Instance().GetUUID())
     {
         boost::shared_ptr<DgiMessage> copy = boost::make_shared<DgiMessage>();
         copy->CopyFrom(msg);

@@ -345,8 +345,8 @@ bool CProtocolSR::Receive(const google::protobuf::Message& msg)
     //Consider the window you expect to see
     // If the killed message is the one immediately preceeding this
     // message in terms of sequence number we should accept it
-    Logger.Debug<<"Recv: "<<csrm.sequence_no()<<" Expected "<<m_inseq<<" Using kill? "<<usekill
-                <<" with kill="<<kill<<" Hash: "<<ComputeMessageHash(csrm.dgi_message())<<std::endl;
+    Logger.Debug<<"Recv: "<<csrm.sequence_no()<<" Expected "<<m_inseq<<" Using kill: "<<usekill
+                <<" with "<<kill<<" hash: "<<ComputeMessageHash(csrm.dgi_message())<<std::endl;
     if(csrm.sequence_no() == m_inseq)
     {
         m_inseq = (m_inseq+1)%SEQUENCE_MODULO;

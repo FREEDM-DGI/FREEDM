@@ -66,7 +66,6 @@ message CsrMessage
     optional uint32 sequence_no = 5;
     optional Status status = 6;
     optional string expire_time = 7;
-    // FIXME should be a bool, and probably required
     optional int32 kill = 8;
     optional fixed64 hash = 9;
 

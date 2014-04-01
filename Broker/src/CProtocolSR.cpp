@@ -318,7 +318,6 @@ bool CProtocolSR::Receive(const google::protobuf::Message& msg)
         // Presumably, if we are here, the connection is registered
         outmsg.set_status(CsrMessage::BAD_REQUEST);
         outmsg.set_sequence_no(m_inresyncs%SEQUENCE_MODULO);
-//FIXME        outmsg.set_kill(-1);
         PrepareAndWrite(outmsg);
         return false;
     }
@@ -326,6 +325,7 @@ bool CProtocolSR::Receive(const google::protobuf::Message& msg)
     // we should use it.
     if (csrm.has_kill())
     {
+        kill = csrm.kill();
         usekill = true;
     }
     else

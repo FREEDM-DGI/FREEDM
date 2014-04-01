@@ -172,19 +172,14 @@ void CProtocolSR::Resend(const boost::system::error_code& err)
                 m_sendkill = 0;
                 SendSYN();
             }
-            CsrMessage msg;
-            if(msg.has_dgi_message())
+            if(m_sendkills)
             {
-                msg.mutable_dgi_message()->CopyFrom(m_window.front().dgi_message());
+                // kill will be set to the last message accepted by receiver
+                // (and whose ack has been received)
+                m_window.front().set_kill(m_sendkill);
             }
-            // FIXME is this a reasonable expiration time?
-            SetExpirationTimeFromNow(
-                msg, boost::posix_time::millisec(CTimings::CSRC_DEFAULT_TIMEOUT));
-            // kill will be set to the last message accepted by receiver
-            // (and whose ack has been received); -1 means no kill
-            msg.set_kill(m_sendkills ? m_sendkill : -1);
             Logger.Trace<<__PRETTY_FUNCTION__<<" Writing"<<std::endl;
-            PrepareAndWrite(msg);
+            PrepareAndWrite(m_window.front());
             // Head of window can be killed.
             m_timeout.cancel();
             m_timeout.expires_from_now(boost::posix_time::milliseconds(CTimings::CSRC_RESEND_TIME));
@@ -323,21 +318,20 @@ bool CProtocolSR::Receive(const google::protobuf::Message& msg)
         // Presumably, if we are here, the connection is registered
         outmsg.set_status(CsrMessage::BAD_REQUEST);
         outmsg.set_sequence_no(m_inresyncs%SEQUENCE_MODULO);
-        outmsg.set_kill(-1);
+//FIXME        outmsg.set_kill(-1);
         PrepareAndWrite(outmsg);
         return false;
     }
     // See if the message contains kill data. If it does, read it and mark
-    // we should use it.  -1 means unset.
-    kill = csrm.kill();
-    if (kill == -1)
+    // we should use it.
+    if (csrm.has_kill())
     {
-        kill = csrm.sequence_no();
-        usekill = false;
+        usekill = true;
     }
     else
     {
-        usekill = true;
+        kill = csrm.sequence_no();
+        usekill = false;
     }
 
     //Consider the window you expect to see

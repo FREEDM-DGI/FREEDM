@@ -57,18 +57,19 @@ google::protobuf::uint64 ComputeMessageHash(const DgiMessage& msg)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// Determines whether the message has expired. It is an error to call this
-/// function on a message that has not yet been given an expiration time.
+/// Determines whether the message has expired.
 ///
 /// @param msg the message to check
 ///
-/// @return true if the message has expired
+/// @return true if the message has expired; false otherwise (including if the
+///         message has no expiration time set)
 ///////////////////////////////////////////////////////////////////////////////
 bool MessageIsExpired(const CsrMessage& msg)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
-    assert(msg.has_expire_time());
+    if(!msg.has_expire_time())
+        return false;
 
     return boost::posix_time::time_from_string(msg.expire_time())
         < boost::posix_time::microsec_clock::universal_time();

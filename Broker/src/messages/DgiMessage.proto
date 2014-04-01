@@ -63,9 +63,9 @@ message CsrMessage
     required uint32 source_port = 3;
     // FIXME times should be sent as ints, not as strings...
     required string send_time = 4;
-    required uint32 sequence_no = 5;
-    optional Status status = 6;
-    required string expire_time = 7;
+    required string expire_time = 5;
+    required uint32 sequence_no = 6;
+    optional Status status = 7;
     optional int32 kill = 8;
     optional fixed64 hash = 9;
 

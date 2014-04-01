@@ -101,13 +101,11 @@ void CProtocolSR::Send(const DgiMessage& msg)
 
     CsrMessage csrm;
     csrm.mutable_dgi_message()->CopyFrom(msg);
-
-    unsigned int msgseq = m_outseq;
-    csrm.set_sequence_no(msgseq);
-    m_outseq = (m_outseq+1) % SEQUENCE_MODULO;
-
+    csrm.set_sequence_no(m_outseq);
     SetExpirationTimeFromNow(csrm, boost::posix_time::millisec(CTimings::CSRC_DEFAULT_TIMEOUT));
-    Logger.Debug<<"Set Expire time: "<< csrm.expire_time() << std::endl;
+
+    Logger.Debug<<"Sending message "<<m_outseq<<" hash: "<<ComputeMessageHash(msg)<<std::endl;
+    m_outseq = (m_outseq+1) % SEQUENCE_MODULO;
 
     if(m_window.size() == 0)
     {
@@ -149,7 +147,7 @@ void CProtocolSR::Resend(const boost::system::error_code& err)
             //First message in the window should be the only one
             //ever to have been written.
             m_sendkills = true;
-            Logger.Debug<<"Message Expired: "<<m_window.front().DebugString();
+            Logger.Debug<<"Message Expired: "<<m_window.front().ShortDebugString()<<std::endl;
             m_window.pop_front();
             m_dropped++;
         }
@@ -208,19 +206,28 @@ void CProtocolSR::ReceiveACK(const google::protobuf::Message& msg)
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     const CsrMessage& csrm = dynamic_cast<const CsrMessage&>(msg);
     unsigned int seq = csrm.sequence_no();
-    size_t hash = ComputeMessageHash(csrm.dgi_message());
-    if(m_window.size() > 0)
+    if(!csrm.has_hash())
+    {
+        Logger.Warn<<"Received ACK without hash set"<<std::endl;
+    }
+    else if(m_window.size() > 0)
     {
         // Assuming hash collisions are small, we will check the hash
         // of the front message. On hit, we can accept the acknowledge.
         unsigned int fseq = m_window.front().sequence_no();
-        Logger.Debug<<"Received ACK "<<seq<<" expecting ACK "<<fseq<<std::endl;
-        if(fseq == seq && ComputeMessageHash(m_window.front().dgi_message()) == hash)
+        unsigned int expectedHash = ComputeMessageHash(m_window.front().dgi_message());
+        if(fseq == seq && expectedHash == csrm.hash())
         {
+            Logger.Debug<<"Accepting ACK "<<seq<<std::endl;
             m_sendkill = fseq;
             m_window.pop_front();
             m_sendkills = false;
             m_dropped = 0;
+        }
+        else
+        {
+            Logger.Debug<<"Rejected ACK "<<seq<<" expecting ACK "<<fseq<<std::endl;
+            Logger.Debug<<"ACK hash "<<csrm.hash()<<" expected hash "<<expectedHash<<std::endl;
         }
     }
     if(m_window.size() > 0)
@@ -337,7 +344,8 @@ bool CProtocolSR::Receive(const google::protobuf::Message& msg)
     //Consider the window you expect to see
     // If the killed message is the one immediately preceeding this
     // message in terms of sequence number we should accept it
-    Logger.Debug<<"Recv: "<<csrm.sequence_no()<<" Expected "<<m_inseq<<" Using kill: "<<usekill<<" with "<<kill<<std::endl;
+    Logger.Debug<<"Recv: "<<csrm.sequence_no()<<" Expected "<<m_inseq<<" Using kill: "<<usekill
+                <<" with "<<kill<<" hash: "<<ComputeMessageHash(csrm.dgi_message())<<std::endl;
     if(csrm.sequence_no() == m_inseq)
     {
         m_inseq = (m_inseq+1)%SEQUENCE_MODULO;
@@ -372,11 +380,10 @@ void CProtocolSR::SendACK(const google::protobuf::Message& msg)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     const CsrMessage& csrm = dynamic_cast<const CsrMessage&>(msg);
-    unsigned int seq = csrm.sequence_no();
     CsrMessage outmsg;
     // Presumably, if we are here, the connection is registered
     outmsg.set_status(CsrMessage::ACCEPTED);
-    outmsg.set_sequence_no(seq);
+    outmsg.set_sequence_no(csrm.sequence_no());
     Logger.Debug<<"Generating ACK. Source exp time "<<csrm.expire_time()<<std::endl;
     outmsg.set_expire_time(csrm.expire_time());
     outmsg.set_hash(ComputeMessageHash(csrm.dgi_message()));

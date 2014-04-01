@@ -22,7 +22,6 @@
 
 #include "Messages.hpp"
 
-#include "CGlobalConfiguration.hpp"
 #include "CLogger.hpp"
 #include "messages/DgiMessage.pb.h"
 
@@ -138,10 +137,6 @@ DgiMessage PrepareForSending(
         dm.GetReflection()->MutableMessage(&dm, submessage_descriptor);
     assert(dm_submessage != NULL);
     dm_submessage->CopyFrom(submessage);
-
-    dm.set_source_uuid(CGlobalConfiguration::Instance().GetUUID());
-    dm.set_source_hostname(CGlobalConfiguration::Instance().GetHostname());
-    dm.set_source_port(CGlobalConfiguration::Instance().GetListenPort());
 
     return dm;
 }

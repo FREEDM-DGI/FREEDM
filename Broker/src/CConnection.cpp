@@ -25,10 +25,14 @@
 #include "CBroker.hpp"
 #include "CConnectionManager.hpp"
 #include "CDispatcher.hpp"
-#include "CGlobalConfiguration.hpp"
 #include "CLogger.hpp"
 #include "CConnection.hpp"
 #include "Messages.hpp"
+
+#include "CProtocolSR.hpp"
+// FIXME restore
+//#include "CProtocolSU.hpp"
+//#include "CProtocolSRSW.hpp"
 
 #include <vector>
 
@@ -55,6 +59,7 @@ CLocalLogger Logger(__FILE__);
 ///////////////////////////////////////////////////////////////////////////////
 CConnection::CConnection(std::string uuid)
   : m_socket(CBroker::Instance().GetIOService())
+  , m_protocol(*this)
   , m_uuid(uuid)
   , m_reliability(100)
 {
@@ -63,14 +68,30 @@ CConnection::CConnection(std::string uuid)
 
 ///////////////////////////////////////////////////////////////////////////////
 /// @fn CConnection::Stop
-/// @description Stops the socket
+/// @description Stops the socket and cancels the timeout timer.
 /// @pre Any initialized CConnection object.
-/// @post The underlying socket is closed
+/// @post The underlying socket is closed and the message timeout timer is
+///        cancelled.
 ///////////////////////////////////////////////////////////////////////////////
 void CConnection::Stop()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    m_protocol.Stop();
     GetSocket().close();
+}
+
+///////////////////////////////////////////////////////////////////////////////
+/// @fn CConnection::ChangePhase
+/// @description An event that gets called when the broker changes the current
+///   phase.
+/// @pre None
+/// @post The sliding window protocol if it exists is stopped.
+/// @param newround If true, the phase change is also the start of an entirely
+///     new round.
+///////////////////////////////////////////////////////////////////////////////
+void CConnection::ChangePhase(bool newround)
+{
+    m_protocol.ChangePhase(newround);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -101,8 +122,45 @@ void CConnection::Send(const DgiMessage& msg)
     }
     else
     {
-        Write(msg);
+        m_protocol.Send(msg);
     }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+/// @fn CConnection::ReceiveACK
+/// @description Handler for recieving acknowledgments from a sender.
+/// @pre Initialized connection.
+/// @post The message with sequence number has been acknowledged and all
+///   messages sent before that message have been considered acknowledged as
+///   well.
+/// @param msg The message to consider as acknnowledged
+///////////////////////////////////////////////////////////////////////////////
+void CConnection::ReceiveACK(const google::protobuf::Message& msg)
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    m_protocol.ReceiveACK(msg);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+/// @fn CConnection::Receive
+/// @description Handler for determineing if a received message should be ACKd
+/// @pre Initialized connection.
+/// @post The message with sequence number has been acknowledged and all
+///   messages sent before that message have been considered acknowledged as
+///   well.
+/// @param msg The message to consider as acknnowledged
+///////////////////////////////////////////////////////////////////////////////
+bool CConnection::Receive(const google::protobuf::Message& msg)
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+
+    if(m_protocol.Receive(msg))
+    {
+        m_protocol.SendACK(msg);
+        return true;
+    }
+
+    return false;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -152,60 +210,6 @@ int CConnection::GetReliability() const
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
     return m_reliability;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-/// Sends a message over the connection. This is a blocking send. An
-/// asynchronous send is not currently provided because (a) this would require
-/// a second io_service, or a second thread in our io_service's thread pool,
-/// (b) because it would make the code more complicated: e.g. modules would be
-/// required to use an async callback (write handler) if they want custom error
-/// handling, and we would need to be more careful with our output buffer, and
-/// (c) because we don't know whether this actually slows down the DGI or not,
-/// or if so, how much. A TODO item would be to look into this. Synchronous
-/// writes usually slow things down dramatically, but that may not be the case
-/// with the DGI, given our custom scheduling.
-///
-/// @param msg the message to send to this p
-///////////////////////////////////////////////////////////////////////////////
-void CConnection::Write(const DgiMessage& msg)
-{
-    // FIXME FIXME FIXME this is unreliable, but the DGI requires reliability. Switch to TCP.
-
-    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-
-    msg.CheckInitialized();
-
-    /// Check to make sure it isn't going to overfill our message packet
-    if(msg.ByteSize() > CGlobalConfiguration::MAX_PACKET_SIZE)
-    {
-        Logger.Warn << "Message too long for buffer: " << std::endl
-                << msg.DebugString() << std::endl;
-        throw std::runtime_error("Outgoing message is too long for buffer");
-    }
-
-    #ifdef CUSTOMNETWORK
-    if((rand()%100) >= GetConnection()->GetReliability())
-    {
-        Logger.Info<<"Outgoing Packet Dropped ("<<m_reliability<<") -> "<<m_uuid<<std::endl;
-        return;
-    }
-    #endif
-
-    boost::array<char, CGlobalConfiguration::MAX_PACKET_SIZE> write_buffer;
-    msg.SerializeToArray(&write_buffer[0], CGlobalConfiguration::MAX_PACKET_SIZE);
-
-    Logger.Debug<<"Writing "<<msg.ByteSize()<<" bytes to channel"<<std::endl;
-
-    try
-    {
-        m_socket.send(boost::asio::buffer(&write_buffer[0], msg.ByteSize()));
-    }
-    catch(boost::system::system_error &e)
-    {
-        Logger.Debug << "Writing Failed: " << e.what() << std::endl;
-        Stop(); // FIXME probably unimplemented
-    }
 }
 
     } // namespace broker

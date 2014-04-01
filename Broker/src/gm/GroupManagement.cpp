@@ -31,7 +31,6 @@
 #include "CBroker.hpp"
 #include "CConnection.hpp"
 #include "CConnectionManager.hpp"
-#include "CGlobalConfiguration.hpp"
 #include "CGlobalPeerList.hpp"
 #include "CLogger.hpp"
 #include "SRemoteHost.hpp"

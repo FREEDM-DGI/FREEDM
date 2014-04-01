@@ -74,6 +74,9 @@ public:
     /// Stop all connections.
     void StopAll();
 
+    /// Handle Rounds
+    void ChangePhase(bool newround);
+
     /// Get The UUID
     std::string GetUUID() const { return m_uuid; }
 

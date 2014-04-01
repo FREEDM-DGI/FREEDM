@@ -46,11 +46,6 @@ message DgiMessage
     optional ClockSynchronizerMessage clock_synchronizer_message = 5;
 
     required string recipient_module = 6;
-
-// FIXME good?
-    required string source_uuid = 7;
-    required string source_hostname = 8;
-    required uint32 source_port = 9;
 }
 
 // FIXME doesn't really belong in DgiMessage.proto

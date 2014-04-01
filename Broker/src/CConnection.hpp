@@ -27,7 +27,6 @@
 #include "CProtocolSR.hpp"
 #include "CDispatcher.hpp"
 #include "SRemoteHost.hpp"
-#include "messages/DgiMessage.pb.h"
 
 #include <memory>
 
@@ -69,13 +68,13 @@ public:
     void Stop();
 
     /// Puts a message into the channel.
-    void Send(const DgiMessage& msg);
+    void Send(const ModuleMessage& msg);
 
     /// Handles Notification of an acknowledment being received
-    void ReceiveACK(const google::protobuf::Message &msg);
+    void ReceiveACK(const ProtocolMessage& msg);
 
     /// Handler that calls the correct protocol for accept logic
-    bool Receive(const google::protobuf::Message &msg);
+    bool Receive(const ProtocolMessage& msg);
 
     /// Change Phase Event
     void ChangePhase(bool newround);

@@ -115,9 +115,9 @@ LBAgent::LBAgent(std::string uuid_):
 /// @param msg the incoming message
 /// @param peer the node that sent this message (could be this DGI)
 ///////////////////////////////////////////////////////////////////////////////
-void LBAgent::HandleIncomingMessage(boost::shared_ptr<const DgiMessage> msg, PeerNodePtr peer)
+void LBAgent::HandleIncomingMessage(boost::shared_ptr<const ModuleMessage> msg, PeerNodePtr peer)
 {
-    if(msg->type() == DgiMessage::GROUP_MANAGEMENT_MESSAGE)
+    if(msg->type() == ModuleMessage::GROUP_MANAGEMENT_MESSAGE)
     {
         gm::GroupManagementMessage gmm = msg->group_management_message();
 
@@ -131,7 +131,7 @@ void LBAgent::HandleIncomingMessage(boost::shared_ptr<const DgiMessage> msg, Pee
                         << msg->DebugString();
         }
     }
-    else if(msg->type() == DgiMessage::STATE_COLLECTION_MESSAGE)
+    else if(msg->type() == ModuleMessage::STATE_COLLECTION_MESSAGE)
     {
         sc::StateCollectionMessage scm = msg->state_collection_message();
 
@@ -145,7 +145,7 @@ void LBAgent::HandleIncomingMessage(boost::shared_ptr<const DgiMessage> msg, Pee
                         << msg->DebugString();
         }
     }
-    else if(msg->type() == DgiMessage::LOAD_BALANCING_MESSAGE)
+    else if(msg->type() == ModuleMessage::LOAD_BALANCING_MESSAGE)
     {
         LoadBalancingMessage lbm = msg->load_balancing_message();
 
@@ -370,7 +370,7 @@ void LBAgent::CollectState()
     try
     {
        GetPeer(GetUUID())->Send(
-            broker::PrepareForSending(scm, DgiMessage::STATE_COLLECTION_MESSAGE, "sc"));
+            broker::PrepareForSending(scm, ModuleMessage::STATE_COLLECTION_MESSAGE, "sc"));
        Logger.Notice << "LB module requested State Collection" << std::endl;
     }
     catch (boost::system::system_error& e)
@@ -1154,18 +1154,18 @@ void LBAgent::HandleStateTimer( const boost::system::error_code & error )
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// Wraps a LoadBalancingMessage in a DgiMessage.
+/// Wraps a LoadBalancingMessage in a ModuleMessage.
 ///
 /// @param message the message to prepare. If any required field is unset,
 ///                the DGI will abort.
 /// @param recipient the module (sc/lb/gm/clk etc.) the message should be
 ///                delivered to
 ///
-/// @return a DgiMessage containing a copy of the LoadBalancingMessage
+/// @return a ModuleMessage containing a copy of the LoadBalancingMessage
 ///////////////////////////////////////////////////////////////////////////////
-DgiMessage LBAgent::PrepareForSending(const LoadBalancingMessage& message, std::string recipient)
+ModuleMessage LBAgent::PrepareForSending(const LoadBalancingMessage& message, std::string recipient)
 {
-    return broker::PrepareForSending(message, DgiMessage::LOAD_BALANCING_MESSAGE, recipient);
+    return broker::PrepareForSending(message, ModuleMessage::LOAD_BALANCING_MESSAGE, recipient);
 }
 
 } // namespace lb

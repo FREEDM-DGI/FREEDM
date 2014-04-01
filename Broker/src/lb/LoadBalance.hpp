@@ -46,7 +46,7 @@
 #include "IPeerNode.hpp"
 #include "IAgent.hpp"
 #include "IMessageHandler.hpp"
-#include "messages/DgiMessage.pb.h"
+#include "messages/ModuleMessage.pb.h"
 
 #include <boost/shared_ptr.hpp>
 
@@ -99,7 +99,7 @@ class LBAgent
 
         // Handlers
         /// Handles received messages
-        void HandleIncomingMessage(boost::shared_ptr<const DgiMessage> msg, PeerNodePtr peer);
+        void HandleIncomingMessage(boost::shared_ptr<const ModuleMessage> msg, PeerNodePtr peer);
         void HandlePeerList(const gm::PeerListMessage& msg, PeerNodePtr peer);
         void HandleDemand(PeerNodePtr peer);
         void HandleNormal(PeerNodePtr peer);
@@ -117,8 +117,8 @@ class LBAgent
         /// Returns a pointer to the peer based on its UUID
         PeerNodePtr GetPeer(std::string uuid);
 
-        /// Wraps a LoadBalancingMessage in a DgiMessage
-        static DgiMessage PrepareForSending(
+        /// Wraps a LoadBalancingMessage in a ModuleMessage
+        static ModuleMessage PrepareForSending(
             const LoadBalancingMessage& message, std::string recipient = "lb");
 
         // Variables

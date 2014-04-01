@@ -26,7 +26,7 @@
 
 #include "IProtocol.hpp"
 
-#include "messages/DgiMessage.pb.h"
+#include "messages/ProtocolMessage.pb.h"
 
 #include <deque>
 #include <iomanip>
@@ -48,19 +48,19 @@ class CProtocolSR
         /// Initializes the protocol with the underlying connection
         explicit CProtocolSR(CConnection& conn);
         /// Public facing send function that sends a message
-        void Send(const DgiMessage& msg);
+        void Send(const ModuleMessage& msg);
         /// Public facing function that handles marking down ACKs for sent messages
-        void ReceiveACK(const google::protobuf::Message& msg);
+        void ReceiveACK(const ProtocolMessage& msg);
         /// deterimines if a  messageshould be given to the dispatcher
-        bool Receive(const google::protobuf::Message& msg);
+        bool Receive(const ProtocolMessage& msg);
         /// Handles Writing an ack for the input message to the channel
-        void SendACK(const google::protobuf::Message& msg);
+        void SendACK(const ProtocolMessage& msg);
         /// Sends a synchronizer
         void SendSYN();
         /// Stops the timers
         void Stop() { m_timeout.cancel(); SetStopped(true); };
         /// Handles writing the message to the underlying connection
-        void PrepareAndWrite(CsrMessage& msg);
+        void PrepareAndWrite(ProtocolMessage& msg);
     private:
         /// Resend outstanding messages
         void Resend(const boost::system::error_code& err);
@@ -85,7 +85,7 @@ class CProtocolSR
         /// The hash to... MURDER.
         unsigned int m_sendkill;
         /// The window
-        std::deque<CsrMessage> m_window;
+        std::deque<ProtocolMessage> m_window;
         /// Sequence modulo
         static const unsigned int SEQUENCE_MODULO = 1024;
         /// Refire time in MS

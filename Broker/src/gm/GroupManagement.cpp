@@ -130,7 +130,7 @@ GMAgent::~GMAgent()
 /// @param msg the incoming message
 /// @param peer the node that sent this message (could be this DGI)
 ///////////////////////////////////////////////////////////////////////////////
-void GMAgent::HandleIncomingMessage(boost::shared_ptr<const DgiMessage> msg, PeerNodePtr peer)
+void GMAgent::HandleIncomingMessage(boost::shared_ptr<const ModuleMessage> msg, PeerNodePtr peer)
 {
     //Are all FIDs open?
     if(m_fidsclosed == false)
@@ -144,7 +144,7 @@ void GMAgent::HandleIncomingMessage(boost::shared_ptr<const DgiMessage> msg, Pee
         InsertInPeerSet(m_AlivePeers,peer);
     }
 
-    if(msg->type() == DgiMessage::GROUP_MANAGEMENT_MESSAGE)
+    if(msg->type() == ModuleMessage::GROUP_MANAGEMENT_MESSAGE)
     {
         GroupManagementMessage gmm = msg->group_management_message();
         switch(gmm.type())
@@ -188,7 +188,7 @@ void GMAgent::HandleIncomingMessage(boost::shared_ptr<const DgiMessage> msg, Pee
 /// @return A GroupManagementMessage with the contents of an Are You Coordinator Message.
 /// @limitations: Can only author messages from this node.
 ///////////////////////////////////////////////////////////////////////////////
-DgiMessage GMAgent::AreYouCoordinator()
+ModuleMessage GMAgent::AreYouCoordinator()
 {
     static google::protobuf::uint32 id = 0;
     GroupManagementMessage gmm;
@@ -208,7 +208,7 @@ DgiMessage GMAgent::AreYouCoordinator()
 /// @post No change
 /// @return A GroupManagementMessage with the contents of a Invitation message.
 ///////////////////////////////////////////////////////////////////////////////
-DgiMessage GMAgent::Invitation()
+ModuleMessage GMAgent::Invitation()
 {
     GroupManagementMessage gmm;
     gmm.set_type(GroupManagementMessage::INVITE_MESSAGE);
@@ -230,7 +230,7 @@ DgiMessage GMAgent::Invitation()
 /// @param seq sequence number? (?)
 /// @return A GroupManagementMessage with the contents of a Response message
 ///////////////////////////////////////////////////////////////////////////////
-DgiMessage GMAgent::AreYouCoordinatorResponse(std::string payload,int seq)
+ModuleMessage GMAgent::AreYouCoordinatorResponse(std::string payload,int seq)
 {
     GroupManagementMessage gmm;
     gmm.set_type(GroupManagementMessage::ARE_YOU_COORDINATOR_RESPONSE_MESSAGE);
@@ -252,7 +252,7 @@ DgiMessage GMAgent::AreYouCoordinatorResponse(std::string payload,int seq)
 /// @param seq sequence number? (?)
 /// @return A GroupManagementMessage with the contents of a Response message
 ///////////////////////////////////////////////////////////////////////////////
-DgiMessage GMAgent::AreYouThereResponse(std::string payload,int seq)
+ModuleMessage GMAgent::AreYouThereResponse(std::string payload,int seq)
 {
     GroupManagementMessage gmm;
     gmm.set_type(GroupManagementMessage::ARE_YOU_THERE_RESPONSE_MESSAGE);
@@ -272,7 +272,7 @@ DgiMessage GMAgent::AreYouThereResponse(std::string payload,int seq)
 /// @post No change.
 /// @return A GroupManagementMessage with the contents of an Accept message
 ///////////////////////////////////////////////////////////////////////////////
-DgiMessage GMAgent::Accept()
+ModuleMessage GMAgent::Accept()
 {
     GroupManagementMessage gmm;
     gmm.set_type(GroupManagementMessage::ACCEPT_MESSAGE);
@@ -288,7 +288,7 @@ DgiMessage GMAgent::Accept()
 /// @post No Change.
 /// @return A GroupManagementMessage with the contents of an AreYouThere message
 ///////////////////////////////////////////////////////////////////////////////
-DgiMessage GMAgent::AreYouThere()
+ModuleMessage GMAgent::AreYouThere()
 {
     static int id = 100000;
     GroupManagementMessage gmm;
@@ -308,7 +308,7 @@ DgiMessage GMAgent::AreYouThere()
 /// @post No Change.
 /// @return A GroupManagementMessage with the contents of group membership
 ///////////////////////////////////////////////////////////////////////////////
-DgiMessage GMAgent::PeerList(std::string requester)
+ModuleMessage GMAgent::PeerList(std::string requester)
 {
     GroupManagementMessage gmm;
     gmm.set_type(GroupManagementMessage::PEER_LIST_MESSAGE);
@@ -336,7 +336,7 @@ DgiMessage GMAgent::PeerList(std::string requester)
 /// @param requester: The module who the response should be addressed to.
 /// @return A GroupManagementMessage which can be used to query for
 ///////////////////////////////////////////////////////////////////////////////
-DgiMessage GMAgent::PeerListQuery(std::string requester)
+ModuleMessage GMAgent::PeerListQuery(std::string requester)
 {
     GroupManagementMessage gmm;
     gmm.set_type(GroupManagementMessage::PEER_LIST_QUERY_MESSAGE);
@@ -352,7 +352,7 @@ DgiMessage GMAgent::PeerListQuery(std::string requester)
 /// @param peer the peer to send to
 /// @param msg the message to send
 ///////////////////////////////////////////////////////////////////////////////
-void GMAgent::SendToPeer(PeerNodePtr peer, const DgiMessage& msg)
+void GMAgent::SendToPeer(PeerNodePtr peer, const ModuleMessage& msg)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     if(m_fidsclosed == true)
@@ -448,7 +448,7 @@ void GMAgent::SystemState()
 void GMAgent::PushPeerList()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    DgiMessage m_ = PeerList();
+    ModuleMessage m_ = PeerList();
     BOOST_FOREACH( PeerNodePtr peer, m_UpNodes | boost::adaptors::map_values)
     {
         Logger.Debug<<"Send group list to all members of this group containing "
@@ -594,7 +594,7 @@ void GMAgent::Check( const boost::system::error_code& err )
             // Reset and find all group leaders
             m_Coordinators.clear();
             m_AYCResponse.clear();
-            DgiMessage m_ = AreYouCoordinator();
+            ModuleMessage m_ = AreYouCoordinator();
             Logger.Info <<"SEND: Sending out AYC"<<std::endl;
             BOOST_FOREACH( PeerNodePtr peer, CGlobalPeerList::instance().PeerList() | boost::adaptors::map_values)
             {
@@ -759,7 +759,7 @@ void GMAgent::Merge( const boost::system::error_code& err )
         PeerSet tempSet_ = m_UpNodes;
         m_UpNodes.clear();
         // Create new invitation and send it to all Coordinators
-        DgiMessage m_ = Invitation();
+        ModuleMessage m_ = Invitation();
         Logger.Info <<"SEND: Sending out Invites (Invite Coordinators)"<<std::endl;
         Logger.Debug <<"Tempset is "<<tempSet_.size()<<" Nodes (IC)"<<std::endl;
         BOOST_FOREACH( PeerNodePtr peer, m_Coordinators | boost::adaptors::map_values)
@@ -806,7 +806,7 @@ void GMAgent::InviteGroupNodes( const boost::system::error_code& err, PeerSet p_
         /* If the timer expired, err should be false, if canceled,
          * second condition is true.    Timer should only be canceled if
          * we are no longer waiting on more replies  */
-        DgiMessage m_ = Invitation();
+        ModuleMessage m_ = Invitation();
         Logger.Info <<"SEND: Sending out Invites (Invite Group Nodes):"<<std::endl;
         Logger.Debug <<"Tempset is "<<p_tempSet.size()<<" Nodes (IGN)"<<std::endl;
         BOOST_FOREACH( PeerNodePtr peer, p_tempSet | boost::adaptors::map_values)
@@ -888,7 +888,7 @@ void GMAgent::Timeout( const boost::system::error_code& err )
     {
         SystemState();
         /* If we are the group leader, we don't need to run this */
-        DgiMessage m_ = AreYouThere();
+        ModuleMessage m_ = AreYouThere();
         peer = GetPeer(Coordinator());
         m_AYTResponse.clear();
         m_aytoptional = false;
@@ -1064,14 +1064,14 @@ void GMAgent::HandleAreYouCoordinator(const AreYouCoordinatorMessage& msg, PeerN
     {
         // We are the group Coordinator AND we are at normal operation
         Logger.Info << "SEND: AYC Response (YES) to "<<peer->GetUUID()<<std::endl;
-        DgiMessage m_ = AreYouCoordinatorResponse("yes",seq);
+        ModuleMessage m_ = AreYouCoordinatorResponse("yes",seq);
         SendToPeer(peer,m_);
     }
     else
     {
         // We are not the Coordinator OR we are not at normal operation
         Logger.Info << "SEND: AYC Response (NO) to "<<peer->GetUUID()<<std::endl;
-        DgiMessage m_ = AreYouCoordinatorResponse("no",seq);
+        ModuleMessage m_ = AreYouCoordinatorResponse("no",seq);
         SendToPeer(peer,m_);
     }
 }
@@ -1095,14 +1095,14 @@ void GMAgent::HandleAreYouThere(const AreYouThereMessage& msg, PeerNodePtr peer)
     {
         Logger.Info << "SEND: AYT Response (YES) to "<<peer->GetUUID()<<std::endl;
         // We are Coordinator, peer is in our group, and peer is up
-        DgiMessage m_ = AreYouThereResponse("yes",seq);
+        ModuleMessage m_ = AreYouThereResponse("yes",seq);
         SendToPeer(peer,m_);
     }
     else
     {
         Logger.Info << "SEND: AYT Response (NO) to "<<peer->GetUUID()<<std::endl;
         // We are not Coordinator OR peer is not in our groups OR peer is down
-        DgiMessage m_ = AreYouThereResponse("no",seq);
+        ModuleMessage m_ = AreYouThereResponse("no",seq);
         SendToPeer(peer,m_);
     }
 }
@@ -1139,7 +1139,7 @@ void GMAgent::HandleInvite(const InviteMessage& msg, PeerNodePtr peer)
         {
             Logger.Info << "SEND: Sending invitations to former group members" << std::endl;
             // Forward invitation to all members of my group
-            DgiMessage m_ = Invitation();
+            ModuleMessage m_ = Invitation();
             BOOST_FOREACH(PeerNodePtr peer, tempSet_ | boost::adaptors::map_values)
             {
                 if( peer->GetUUID() == GetUUID())
@@ -1147,7 +1147,7 @@ void GMAgent::HandleInvite(const InviteMessage& msg, PeerNodePtr peer)
                 SendToPeer(peer, m_);
             }
         }
-        DgiMessage m_ = Accept();
+        ModuleMessage m_ = Accept();
         Logger.Info << "SEND: Invitation accept to "<<peer->GetUUID()<< std::endl;
         //Send Accept
         //If this is a forwarded invite, the source may not be where I want
@@ -1401,18 +1401,18 @@ void GMAgent::SetStatus(int status)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// Wraps a GroupManagementMessage in a DgiMessage.
+/// Wraps a GroupManagementMessage in a ModuleMessage.
 ///
 /// @param message the message to prepare. If any required field is unset,
 ///   the DGI will abort.
 /// @param recipient the module (sc/lb/gm/clk etc.) the message should be
 ///   delivered to
 ///
-/// @return a DgiMessage containing a copy of the GroupManagementMessage
+/// @return a ModuleMessage containing a copy of the GroupManagementMessage
 ///////////////////////////////////////////////////////////////////////////////
-DgiMessage GMAgent::PrepareForSending(const GroupManagementMessage& message, std::string recipient)
+ModuleMessage GMAgent::PrepareForSending(const GroupManagementMessage& message, std::string recipient)
 {
-    return broker::PrepareForSending(message, DgiMessage::GROUP_MANAGEMENT_MESSAGE, recipient);
+    return broker::PrepareForSending(message, ModuleMessage::GROUP_MANAGEMENT_MESSAGE, recipient);
 }
 
 } // namespace gm

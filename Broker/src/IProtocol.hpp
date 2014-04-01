@@ -33,17 +33,12 @@
 #include <boost/enable_shared_from_this.hpp>
 #include <boost/noncopyable.hpp>
 
-namespace google {
-  namespace protobuf {
-    class Message;
-  }
-}
-
 namespace freedm {
     namespace broker {
 
 class CConnection;
-class DgiMessage;
+class ModuleMessage;
+class ProtocolMessage;
 
 /// A connection protocol
 class IProtocol
@@ -53,13 +48,13 @@ class IProtocol
         /// Destroy all humans
         virtual ~IProtocol() { };
         /// Public write to channel function
-        virtual void Send(const DgiMessage& msg) = 0;
+        virtual void Send(const ModuleMessage& msg) = 0;
         /// Public facing function that handles marking ACKS
-        virtual void ReceiveACK(const google::protobuf::Message& msg) = 0;
+        virtual void ReceiveACK(const ProtocolMessage& msg) = 0;
         /// Function that determines if a message should dispatched
-        virtual bool Receive(const google::protobuf::Message& msg) = 0;
+        virtual bool Receive(const ProtocolMessage& msg) = 0;
         /// Handles Writing an ack for the input message to the channel
-        virtual void SendACK(const google::protobuf::Message& msg) = 0;
+        virtual void SendACK(const ProtocolMessage& msg) = 0;
         /// Handles Stopping the timers etc
         virtual void Stop() = 0;
         /// Handles the change phase even
@@ -76,7 +71,7 @@ class IProtocol
         /// Callback for when a write completes.
         virtual void WriteCallback(const boost::system::error_code&) { }
         /// Handles writing the message to the underlying connection
-        void Write(const google::protobuf::Message& msg);
+        void Write(const ProtocolMessage& msg);
     private:
         /// The underlying and related connection object.
         CConnection& m_conn;

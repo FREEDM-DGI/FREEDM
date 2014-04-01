@@ -54,7 +54,7 @@ public:
     /// Stops the stuff
     void Stop();
     /// Handles received messages
-    void HandleIncomingMessage(boost::shared_ptr<const DgiMessage> msg, PeerNodePtr peer);
+    void HandleIncomingMessage(boost::shared_ptr<const ModuleMessage> msg, PeerNodePtr peer);
 
 private:
     /// Does the i,j referencing
@@ -88,11 +88,11 @@ private:
     void Exchange(const boost::system::error_code& err );
 
     /// Generate the exchange message
-    DgiMessage CreateExchangeMessage(unsigned int k);
+    ModuleMessage CreateExchangeMessage(unsigned int k);
     /// Generate the exchange response message
-    DgiMessage CreateExchangeResponse(unsigned int k);
-    /// Wraps a clock synchronizer message in a DgiMessage
-    static DgiMessage PrepareForSending(const ClockSynchronizerMessage& message);
+    ModuleMessage CreateExchangeResponse(unsigned int k);
+    /// Wraps a clock synchronizer message in a ModuleMessage
+    static ModuleMessage PrepareForSending(const ClockSynchronizerMessage& message);
 
     /// Relative offsets
     OffsetMap m_offsets;

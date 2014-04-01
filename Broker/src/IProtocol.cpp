@@ -21,14 +21,15 @@
 /// Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
 ////////////////////////////////////////////////////////////////////////////////
 
-#include "CLogger.hpp"
-#include "CConnection.hpp"
 #include "config.hpp"
+
 #include "IProtocol.hpp"
 
-#include <stdexcept>
+#include "CConnection.hpp"
+#include "CLogger.hpp"
+#include "messages/ProtocolMessage.pb.h"
 
-#include <google/protobuf/message.h>
+#include <stdexcept>
 
 namespace freedm {
     namespace broker {
@@ -54,7 +55,7 @@ CLocalLogger Logger(__FILE__);
 ///
 /// @param msg the message to send to this p
 ///////////////////////////////////////////////////////////////////////////////
-void IProtocol::Write(const google::protobuf::Message& msg)
+void IProtocol::Write(const ProtocolMessage& msg)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 

@@ -28,7 +28,7 @@
 #include "CLogger.hpp"
 #include "IPeerNode.hpp"
 #include "Messages.hpp"
-#include "messages/DgiMessage.pb.h"
+#include "messages/ModuleMessage.pb.h"
 
 #include <memory>
 #include <utility>
@@ -106,15 +106,13 @@ void CClockSynchronizer::Stop()
 /// "Downcasts" incoming messages into a specific message type, and passes the
 /// message to an appropriate handler.
 ///
-/// @param msg the incoming message. Must be of type
-///            DgiMessage.Type.CLOCK_SYNCHRONIZER_MESSAGE or
-///            DgiMessage.Type.BROADCAST
+/// @param msg the incoming message
 /// @param peer the node that sent this message (could be this DGI)
 ///////////////////////////////////////////////////////////////////////////////
 void CClockSynchronizer::HandleIncomingMessage(
-    boost::shared_ptr<const DgiMessage> msg, PeerNodePtr peer)
+    boost::shared_ptr<const ModuleMessage> msg, PeerNodePtr peer)
 {
-    if (msg->type() != DgiMessage::CLOCK_SYNCHRONIZER_MESSAGE)
+    if (msg->type() != ModuleMessage::CLOCK_SYNCHRONIZER_MESSAGE)
     {
         Logger.Warn << "Dropped message of unexpected type:\n" << msg->DebugString();
         return;
@@ -378,7 +376,7 @@ void CClockSynchronizer::Exchange(const boost::system::error_code& err)
 /// @param k The sequence number to be delivered so that old messages are not
 ///     used.
 ///////////////////////////////////////////////////////////////////////////////
-DgiMessage CClockSynchronizer::CreateExchangeMessage(unsigned int k)
+ModuleMessage CClockSynchronizer::CreateExchangeMessage(unsigned int k)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     ClockSynchronizerMessage csm;
@@ -398,7 +396,7 @@ DgiMessage CClockSynchronizer::CreateExchangeMessage(unsigned int k)
 /// @param k The sequence number to be delivered so that old messages are not
 ///     used.
 ///////////////////////////////////////////////////////////////////////////////
-DgiMessage CClockSynchronizer::CreateExchangeResponse(unsigned int k)
+ModuleMessage CClockSynchronizer::CreateExchangeResponse(unsigned int k)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     ClockSynchronizerMessage csm;
@@ -506,16 +504,16 @@ boost::posix_time::time_duration CClockSynchronizer::DoubleToTD(double td)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// Wraps a ClockSynchronizerMessage in a DgiMessage.
+/// Wraps a ClockSynchronizerMessage in a ModuleMessage.
 ///
 /// @param message the message to prepare. If any required field is unset,
 ///     the DGI will abort.
 ///
-/// @return a DgiMessage containing a copy of the ClockSynchronizerMessage
+/// @return a ModuleMessage containing a copy of the ClockSynchronizerMessage
 ///////////////////////////////////////////////////////////////////////////////
-DgiMessage CClockSynchronizer::PrepareForSending(const ClockSynchronizerMessage& message)
+ModuleMessage CClockSynchronizer::PrepareForSending(const ClockSynchronizerMessage& message)
 {
-    return broker::PrepareForSending(message, DgiMessage::CLOCK_SYNCHRONIZER_MESSAGE, "clk");
+    return broker::PrepareForSending(message, ModuleMessage::CLOCK_SYNCHRONIZER_MESSAGE, "clk");
 }
 
 }

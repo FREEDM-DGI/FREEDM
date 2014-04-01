@@ -27,6 +27,7 @@
 #include "CConnection.hpp"
 #include "CTimings.hpp"
 #include "Messages.hpp"
+#include "messages/ProtocolMessage.pb.h"
 
 #include <cassert>
 #include <iomanip>
@@ -91,7 +92,7 @@ CProtocolSR::CProtocolSR(CConnection& conn)
 ///     If a message is written to the channel, the m_killable flag is set.
 /// @param msg The message to write to the channel.
 ///////////////////////////////////////////////////////////////////////////////
-void CProtocolSR::Send(const DgiMessage& msg)
+void CProtocolSR::Send(const ModuleMessage& msg)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
@@ -100,23 +101,23 @@ void CProtocolSR::Send(const DgiMessage& msg)
         SendSYN();
     }
 
-    CsrMessage csrm;
-    csrm.mutable_dgi_message()->CopyFrom(msg);
+    ProtocolMessage pm;
+    pm.mutable_module_message()->CopyFrom(msg);
 
     unsigned int msgseq = m_outseq;
-    csrm.set_sequence_no(msgseq);
+    pm.set_sequence_no(msgseq);
     m_outseq = (m_outseq+1) % SEQUENCE_MODULO;
 
-    SetExpirationTimeFromNow(csrm, boost::posix_time::millisec(CTimings::CSRC_DEFAULT_TIMEOUT));
-    Logger.Debug<<"Set Expire time: "<< csrm.expire_time() << std::endl;
+    SetExpirationTimeFromNow(pm, boost::posix_time::millisec(CTimings::CSRC_DEFAULT_TIMEOUT));
+    Logger.Debug<<"Set Expire time: "<< pm.expire_time() << std::endl;
 
     if(m_window.size() == 0)
     {
-        PrepareAndWrite(csrm);
+        PrepareAndWrite(pm);
         boost::system::error_code x;
         Resend(x);
     }
-    m_window.push_back(csrm);
+    m_window.push_back(pm);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -204,19 +205,18 @@ void CProtocolSR::Resend(const boost::system::error_code& err)
 ///       If the there is still an message in the window to send, the
 ///       resend function is called.
 ///////////////////////////////////////////////////////////////////////////////
-void CProtocolSR::ReceiveACK(const google::protobuf::Message& msg)
+void CProtocolSR::ReceiveACK(const ProtocolMessage& msg)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    const CsrMessage& csrm = dynamic_cast<const CsrMessage&>(msg);
-    unsigned int seq = csrm.sequence_no();
+    unsigned int seq = msg.sequence_no();
     if(m_window.size() > 0)
     {
         // Assuming hash collisions are small, we will check the hash
         // of the front message. On hit, we can accept the acknowledge.
         unsigned int fseq = m_window.front().sequence_no();
         Logger.Debug<<"Received ACK "<<seq<<" expecting ACK "<<fseq<<std::endl;
-        google::protobuf::uint64 expectedHash = ComputeMessageHash(m_window.front().dgi_message());
-        if(fseq == seq && expectedHash == csrm.hash())
+        google::protobuf::uint64 expectedHash = ComputeMessageHash(m_window.front().module_message());
+        if(fseq == seq && expectedHash == msg.hash())
         {
             m_sendkill = fseq;
             m_window.pop_front();
@@ -269,17 +269,16 @@ void CProtocolSR::ReceiveACK(const google::protobuf::Message& msg)
 ///         in the gap of sequence numbers.
 /// @return True if the message is accepted, false otherwise.
 ///////////////////////////////////////////////////////////////////////////////
-bool CProtocolSR::Receive(const google::protobuf::Message& msg)
+bool CProtocolSR::Receive(const ProtocolMessage& msg)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    const CsrMessage& csrm = dynamic_cast<const CsrMessage&>(msg);
     unsigned int kill = 0;
     bool usekill = false; //If true, we should accept any inseq
-    boost::posix_time::ptime sendtime = boost::posix_time::time_from_string(csrm.send_time());
-    if(csrm.has_status() && csrm.status() == CsrMessage::BAD_REQUEST)
+    boost::posix_time::ptime sendtime = boost::posix_time::time_from_string(msg.send_time());
+    if(msg.has_status() && msg.status() == ProtocolMessage::BAD_REQUEST)
     {
         //See if we are already trying to sync:
-        if(m_window.front().has_status() && m_window.front().status() != CsrMessage::CREATED)
+        if(m_window.front().has_status() && m_window.front().status() != ProtocolMessage::CREATED)
         {
             if(m_outsynctime != sendtime)
             {
@@ -294,7 +293,7 @@ bool CProtocolSR::Receive(const google::protobuf::Message& msg)
         }
         return false;
     }
-    if(csrm.has_status() && csrm.status() == CsrMessage::CREATED)
+    if(msg.has_status() && msg.status() == ProtocolMessage::CREATED)
     {
         //Check to see if we've already seen this SYN:
         if(sendtime == m_insynctime)
@@ -303,11 +302,11 @@ bool CProtocolSR::Receive(const google::protobuf::Message& msg)
             Logger.Debug<<"Duplicate Sync"<<std::endl;
         }
         Logger.Debug<<"Got Sync"<<std::endl;
-        m_inseq = (csrm.sequence_no()+1)%SEQUENCE_MODULO;
+        m_inseq = (msg.sequence_no()+1)%SEQUENCE_MODULO;
         m_insynctime = sendtime;
         m_inresyncs++;
         m_insync = true;
-        SendACK(csrm);
+        SendACK(msg);
         return false;
     }
     if(m_insync == false)
@@ -315,45 +314,45 @@ bool CProtocolSR::Receive(const google::protobuf::Message& msg)
         Logger.Debug<<"Connection Needs Resync"<<std::endl;
         //If the connection hasn't been synchronized, we want to
         //tell them it is a bad request so they know they need to sync.
-        CsrMessage outmsg;
+        ProtocolMessage outmsg;
         // Presumably, if we are here, the connection is registered
-        outmsg.set_status(CsrMessage::BAD_REQUEST);
+        outmsg.set_status(ProtocolMessage::BAD_REQUEST);
         outmsg.set_sequence_no(m_inresyncs%SEQUENCE_MODULO);
         PrepareAndWrite(outmsg);
         return false;
     }
     // See if the message contains kill data. If it does, read it and mark
     // we should use it.
-    if (csrm.has_kill())
+    if (msg.has_kill())
     {
-        kill = csrm.kill();
+        kill = msg.kill();
         usekill = true;
     }
     else
     {
-        kill = csrm.sequence_no();
+        kill = msg.sequence_no();
         usekill = false;
     }
 
     //Consider the window you expect to see
     // If the killed message is the one immediately preceeding this
     // message in terms of sequence number we should accept it
-    Logger.Debug<<"Recv: "<<csrm.sequence_no()<<" Expected "<<m_inseq<<" Using kill: "<<usekill<<" with "<<kill<<std::endl;
-    if(csrm.sequence_no() == m_inseq)
+    Logger.Debug<<"Recv: "<<msg.sequence_no()<<" Expected "<<m_inseq<<" Using kill: "<<usekill<<" with "<<kill<<std::endl;
+    if(msg.sequence_no() == m_inseq)
     {
         m_inseq = (m_inseq+1)%SEQUENCE_MODULO;
         return true;
     }
-    else if(usekill == true && kill < m_inseq && csrm.sequence_no() > m_inseq)
+    else if(usekill == true && kill < m_inseq && msg.sequence_no() > m_inseq)
     {
         //m_inseq will be right for the next expected message.
-        m_inseq = (csrm.sequence_no()+1)%SEQUENCE_MODULO;
+        m_inseq = (msg.sequence_no()+1)%SEQUENCE_MODULO;
         return true;
     }
     else if(usekill == true)
     {
         Logger.Debug<<"KILL: "<<kill<<" INSEQ "<<m_inseq<<" SEQ: "
-                      <<csrm.sequence_no()<<std::endl;
+                      <<msg.sequence_no()<<std::endl;
     }
     // Justin case.
     return false;
@@ -369,18 +368,17 @@ bool CProtocolSR::Receive(const google::protobuf::Message& msg)
 /// @post The m_currentack member is set to the ack and the message will
 ///     be resent during resend until it expires.
 ///////////////////////////////////////////////////////////////////////////////
-void CProtocolSR::SendACK(const google::protobuf::Message& msg)
+void CProtocolSR::SendACK(const ProtocolMessage& msg)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    const CsrMessage& csrm = dynamic_cast<const CsrMessage&>(msg);
-    unsigned int seq = csrm.sequence_no();
-    CsrMessage outmsg;
+    unsigned int seq = msg.sequence_no();
+    ProtocolMessage outmsg;
     // Presumably, if we are here, the connection is registered
-    outmsg.set_status(CsrMessage::ACCEPTED);
+    outmsg.set_status(ProtocolMessage::ACCEPTED);
     outmsg.set_sequence_no(seq);
-    Logger.Debug<<"Generating ACK. Source exp time "<<csrm.expire_time()<<std::endl;
-    outmsg.set_expire_time(csrm.expire_time());
-    outmsg.set_hash(ComputeMessageHash(csrm.dgi_message()));
+    Logger.Debug<<"Generating ACK. Source exp time "<<msg.expire_time()<<std::endl;
+    outmsg.set_expire_time(msg.expire_time());
+    outmsg.set_hash(ComputeMessageHash(msg.module_message()));
     PrepareAndWrite(outmsg);
     /// Hook into resend until the message expires.
     m_timeout.cancel();
@@ -407,7 +405,7 @@ void CProtocolSR::SendSYN()
     else
     {
         //Don't bother if front of queue is already a SYN
-        if(m_window.front().has_status() && m_window.front().status() == CsrMessage::CREATED)
+        if(m_window.front().has_status() && m_window.front().status() == ProtocolMessage::CREATED)
         {
             return;
         }
@@ -423,8 +421,8 @@ void CProtocolSR::SendSYN()
         }
     }
     // Presumably, if we are here, the connection is registered
-    CsrMessage outmsg;
-    outmsg.set_status(CsrMessage::CREATED);
+    ProtocolMessage outmsg;
+    outmsg.set_status(ProtocolMessage::CREATED);
     outmsg.set_sequence_no(seq);
     SetExpirationTimeFromNow(outmsg, boost::posix_time::millisec(CTimings::CSRC_DEFAULT_TIMEOUT));
     PrepareAndWrite(outmsg);
@@ -441,7 +439,7 @@ void CProtocolSR::SendSYN()
 ///
 /// @param msg the message write.
 ///////////////////////////////////////////////////////////////////////////////
-void CProtocolSR::PrepareAndWrite(CsrMessage& msg)
+void CProtocolSR::PrepareAndWrite(ProtocolMessage& msg)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 

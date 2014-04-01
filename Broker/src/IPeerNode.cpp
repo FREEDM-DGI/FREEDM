@@ -26,6 +26,7 @@
 #include "CLogger.hpp"
 #include "CConnection.hpp"
 #include "IPeerNode.hpp"
+#include "messages/ModuleMessage.pb.h"
 
 #include <map>
 
@@ -96,7 +97,7 @@ unsigned short IPeerNode::GetPort() const
 /// @param msg the message to write to channel.
 /// @return True if the message was sent.
 /////////////////////////////////////////////////////////////
-bool IPeerNode::Send(const DgiMessage& msg)
+bool IPeerNode::Send(const ModuleMessage& msg)
 {
     try
     {

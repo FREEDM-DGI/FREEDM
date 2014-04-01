@@ -1,9 +1,9 @@
 ////////////////////////////////////////////////////////////////////////////////
-/// @file         DgiMessage.proto
+/// @file         ModuleMessage.proto
 ///
 /// @author       Michael Catanzaro <michael.catanzaro@mst.edu>
 ///
-/// @description  Declaration of global message types
+/// @description  A ModuleMessages encapsulates a message from some DGI module.
 ///
 /// These source code files were created at Missouri University of Science and
 /// Technology, and are intended for use in teaching or research. They may be
@@ -25,7 +25,7 @@ import "StateCollection.proto";
 
 package freedm.broker;
 
-message DgiMessage
+message ModuleMessage
 {
     enum Type
     {
@@ -47,51 +47,3 @@ message DgiMessage
 
     required string recipient_module = 6;
 }
-
-// FIXME doesn't really belong in DgiMessage.proto
-message CsrMessage
-{
-    enum Status
-    {
-        CREATED = 1;
-        ACCEPTED = 2;
-        BAD_REQUEST = 3;
-    }
-
-    required string source_uuid = 1;
-    required string source_hostname = 2;
-    required uint32 source_port = 3;
-    // FIXME times should be sent as ints, not as strings...
-    required string send_time = 4;
-    required string expire_time = 5;
-    required uint32 sequence_no = 6;
-    optional Status status = 7;
-    optional int32 kill = 8;
-    optional fixed64 hash = 9;
-
-    optional DgiMessage dgi_message = 10;
-}
-
-// FIXME restore support for the alternative protocols:
-//
-//message CsrswMessage
-//{
-//    optional fixed64 hash = 1;
-//    required DgiMessage dgi_message = 2;
-//}
-//
-//message CsuMessage
-//{
-//    optional fixed64 hash = 1;
-//    required DgiMessage dgi_message = 2;
-//}
-
-//message SuperDgiMessage
-//{
-//  enum Type
-//  {
-//
-//  }
-//
-//
-//}

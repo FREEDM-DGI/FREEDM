@@ -122,9 +122,9 @@ SCAgent::SCAgent(std::string uuid):
 /// @param msg the incoming message
 /// @param peer the node that sent this message (could be this DGI)
 ///////////////////////////////////////////////////////////////////////////////
-void SCAgent::HandleIncomingMessage(boost::shared_ptr<const DgiMessage> msg, PeerNodePtr peer)
+void SCAgent::HandleIncomingMessage(boost::shared_ptr<const ModuleMessage> msg, PeerNodePtr peer)
 {
-    if (msg->type() == DgiMessage::GROUP_MANAGEMENT_MESSAGE)
+    if (msg->type() == ModuleMessage::GROUP_MANAGEMENT_MESSAGE)
     {
         gm::GroupManagementMessage gmm = msg->group_management_message();
 
@@ -138,7 +138,7 @@ void SCAgent::HandleIncomingMessage(boost::shared_ptr<const DgiMessage> msg, Pee
                         << msg->DebugString();
         }
     }
-    else if (msg->type() == DgiMessage::LOAD_BALANCING_MESSAGE)
+    else if (msg->type() == ModuleMessage::LOAD_BALANCING_MESSAGE)
     {
         lb::LoadBalancingMessage lbm = msg->load_balancing_message();
 
@@ -147,7 +147,7 @@ void SCAgent::HandleIncomingMessage(boost::shared_ptr<const DgiMessage> msg, Pee
             HandleAccept(peer);
         }
     }
-    else if (msg->type() == DgiMessage::STATE_COLLECTION_MESSAGE)
+    else if (msg->type() == ModuleMessage::STATE_COLLECTION_MESSAGE)
     {
         StateCollectionMessage scm = msg->state_collection_message();
 
@@ -847,18 +847,18 @@ SCAgent::PeerNodePtr SCAgent::GetPeer(std::string uuid)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// Wraps a StateCollectionMessage in a DgiMessage.
+/// Wraps a StateCollectionMessage in a ModuleMessage.
 ///
 /// @param message the message to prepare. If any required field is unset,
 ///                the DGI will abort.
 /// @param recipient the module (sc/lb/gm/clk etc.) the message should be
 ///                  delivered to
 ///
-/// @return a DgiMessage containing a copy of the StateCollectionMessage
+/// @return a ModuleMessage containing a copy of the StateCollectionMessage
 ///////////////////////////////////////////////////////////////////////////////
-DgiMessage SCAgent::PrepareForSending(const StateCollectionMessage& message, std::string recipient)
+ModuleMessage SCAgent::PrepareForSending(const StateCollectionMessage& message, std::string recipient)
 {
-    return broker::PrepareForSending(message, DgiMessage::STATE_COLLECTION_MESSAGE, recipient);
+    return broker::PrepareForSending(message, ModuleMessage::STATE_COLLECTION_MESSAGE, recipient);
 }
 
 } // namespace sc

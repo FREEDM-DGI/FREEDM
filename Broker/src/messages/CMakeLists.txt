@@ -1,6 +1,7 @@
 PROTOBUF_GENERATE_CPP(PROTO_SRCS
                       PROTO_HDRS
-                      DgiMessage.proto
+                      ProtocolMessage.proto
+                      ModuleMessage.proto
                       ClockSynchronizer.proto
                       LoadBalancing.proto
                       GroupManagement.proto

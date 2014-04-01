@@ -27,7 +27,7 @@
 #include "IAgent.hpp"
 #include "IMessageHandler.hpp"
 #include "IPeerNode.hpp"
-#include "messages/DgiMessage.pb.h"
+#include "messages/ModuleMessage.pb.h"
 
 #include <map>
 #include <memory>
@@ -69,7 +69,7 @@ class SCAgent : public IMessageHandler, public IPeerNode,
         void HandleMarker(const MarkerMessage& msg, PeerNodePtr peer);
         void HandleState(const StateMessage& msg, PeerNodePtr peer);
         /// Handles received messages
-        void HandleIncomingMessage(boost::shared_ptr<const DgiMessage> msg, PeerNodePtr peer);
+        void HandleIncomingMessage(boost::shared_ptr<const ModuleMessage> msg, PeerNodePtr peer);
 
     private:
         //Marker structure
@@ -93,8 +93,8 @@ class SCAgent : public IMessageHandler, public IPeerNode,
         ///Get a pointer to a peer from UUID
         PeerNodePtr GetPeer(std::string uuid);
 
-        /// Wraps a StateCollectionMessage in a DgiMessage
-        static DgiMessage PrepareForSending(
+        /// Wraps a StateCollectionMessage in a ModuleMessage
+        static ModuleMessage PrepareForSending(
             const StateCollectionMessage& message, std::string recipient = "sc");
 
         ///collect states container and its iterator

@@ -31,7 +31,8 @@
 // FIXME restore
 //#include "CProtocolSU.hpp"
 //#include "CProtocolSRSW.hpp"
-#include "messages/DgiMessage.pb.h"
+#include "messages/ModuleMessage.pb.h"
+#include "messages/ProtocolMessage.pb.h"
 
 #include <boost/asio.hpp>
 #include <boost/make_shared.hpp>
@@ -100,7 +101,7 @@ void CConnection::ChangePhase(bool newround)
 ///   the timeout timer is cancelled and reset.
 /// @param msg The message to write to the channel, INVALIDATED by this call.
 ///////////////////////////////////////////////////////////////////////////////
-void CConnection::Send(const DgiMessage& msg)
+void CConnection::Send(const ModuleMessage& msg)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
@@ -109,7 +110,7 @@ void CConnection::Send(const DgiMessage& msg)
     // into the received Queue.
     if(m_uuid == CGlobalConfiguration::Instance().GetUUID())
     {
-        boost::shared_ptr<DgiMessage> copy = boost::make_shared<DgiMessage>();
+        boost::shared_ptr<ModuleMessage> copy = boost::make_shared<ModuleMessage>();
         copy->CopyFrom(msg);
         CDispatcher::Instance().HandleRequest(copy, m_uuid);
     }
@@ -128,7 +129,7 @@ void CConnection::Send(const DgiMessage& msg)
 ///   well.
 /// @param msg The message to consider as acknnowledged
 ///////////////////////////////////////////////////////////////////////////////
-void CConnection::ReceiveACK(const google::protobuf::Message& msg)
+void CConnection::ReceiveACK(const ProtocolMessage& msg)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     m_protocol.ReceiveACK(msg);
@@ -143,7 +144,7 @@ void CConnection::ReceiveACK(const google::protobuf::Message& msg)
 ///   well.
 /// @param msg The message to consider as acknnowledged
 ///////////////////////////////////////////////////////////////////////////////
-bool CConnection::Receive(const google::protobuf::Message& msg)
+bool CConnection::Receive(const ProtocolMessage& msg)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 

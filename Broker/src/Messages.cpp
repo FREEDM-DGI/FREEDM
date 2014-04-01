@@ -23,7 +23,8 @@
 #include "Messages.hpp"
 
 #include "CLogger.hpp"
-#include "messages/DgiMessage.pb.h"
+#include "messages/ModuleMessage.pb.h"
+#include "messages/ProtocolMessage.pb.h"
 
 #include <cassert>
 
@@ -48,7 +49,7 @@ CLocalLogger Logger(__FILE__);
 ///
 /// @return a hash of the message
 ///////////////////////////////////////////////////////////////////////////////
-google::protobuf::uint64 ComputeMessageHash(const DgiMessage& msg)
+google::protobuf::uint64 ComputeMessageHash(const ModuleMessage& msg)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
@@ -64,7 +65,7 @@ google::protobuf::uint64 ComputeMessageHash(const DgiMessage& msg)
 /// @return true if the message has expired; false otherwise (including if the
 ///         message has no expiration time set)
 ///////////////////////////////////////////////////////////////////////////////
-bool MessageIsExpired(const CsrMessage& msg)
+bool MessageIsExpired(const ProtocolMessage& msg)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
@@ -81,7 +82,7 @@ bool MessageIsExpired(const CsrMessage& msg)
 /// @param msg the message to modify
 /// @param expires_in how long from now to set the expiration time
 ///////////////////////////////////////////////////////////////////////////////
-void SetExpirationTimeFromNow(CsrMessage& msg, const boost::posix_time::time_duration& expires_in)
+void SetExpirationTimeFromNow(ProtocolMessage& msg, const boost::posix_time::time_duration& expires_in)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
@@ -95,7 +96,7 @@ void SetExpirationTimeFromNow(CsrMessage& msg, const boost::posix_time::time_dur
 ///
 /// @param msg the message to stamp, transfer-none
 ///////////////////////////////////////////////////////////////////////////////
-void StampMessageSendtime(CsrMessage& msg)
+void StampMessageSendtime(ProtocolMessage& msg)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
@@ -105,33 +106,33 @@ void StampMessageSendtime(CsrMessage& msg)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// Wraps a module-specific message type in a DgiMessage.
+/// Wraps a module-specific message type in a ModuleMessage.
 ///
 /// @param submessage the message to be wrapped. If any required field is
 ///     unset, the DGI will abort.
 /// @param type the type of the message to be wrapped. If this type does not
-///     match the tag of a submessage of DgiMessage, the DGI will abort.
+///     match the tag of a submessage of ModuleMessage, the DGI will abort.
 /// @param recipient the module (sc/lb/gm/clk etc.) the message should be
 ///     delivered to
 ///
-/// @return the DgiMessage containing a copy of the submessage
+/// @return the ModuleMessage containing a copy of the submessage
 ///////////////////////////////////////////////////////////////////////////////
-DgiMessage PrepareForSending(
-    const google::protobuf::Message& submessage, DgiMessage::Type type, std::string recipient)
+ModuleMessage PrepareForSending(
+    const google::protobuf::Message& submessage, ModuleMessage::Type type, std::string recipient)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
     // Abort if any required fields are unset
     submessage.CheckInitialized();
 
-    DgiMessage dm;
+    ModuleMessage dm;
     dm.set_type(type);
     dm.set_recipient_module(recipient);
 
     // This relies on the fact that the values in the type enum match
     // the tags of the submessages.
     const google::protobuf::FieldDescriptor* submessage_descriptor =
-        DgiMessage::descriptor()->FindFieldByNumber(type);
+        ModuleMessage::descriptor()->FindFieldByNumber(type);
     assert(submessage_descriptor != NULL);
 
     google::protobuf::Message* dm_submessage =

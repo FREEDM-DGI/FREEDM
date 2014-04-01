@@ -31,7 +31,8 @@
 #include "CLogger.hpp"
 #include "CClockSynchronizer.hpp"
 #include "CConnection.hpp"
-#include "messages/DgiMessage.pb.h"
+#include "messages/ModuleMessage.pb.h"
+#include "messages/ProtocolMessage.pb.h"
 
 #include <limits>
 #include <vector>
@@ -133,10 +134,9 @@ void CListener::HandleRead(const boost::system::error_code& e,
     std::ostreambuf_iterator<char> output(iss);
     std::copy(m_buffer.begin(), m_buffer.begin()+bytes_transferred, output);
 
-    // FIXME hardcoded CsrMessage = bad
     Logger.Debug<<"Loading protobuf"<<std::endl;
-    CsrMessage csrm;
-    if(!csrm.ParseFromIstream(&iss))
+    ProtocolMessage pm;
+    if(!pm.ParseFromIstream(&iss))
     {
         Logger.Error<<"Failed to load protobuf"<<std::endl;
         ScheduleListen();
@@ -146,17 +146,16 @@ void CListener::HandleRead(const boost::system::error_code& e,
 #ifdef CUSTOMNETWORK
     if((rand()%100) >= GetReliability())
     {
-        Logger.Debug<<"Dropped datagram "<<csrm.hash()<<":"
-                        <<csrm.sequence_no()<<std::endl;
+        Logger.Debug<<"Dropped datagram "<<pm.hash()<<":"<<pm.sequence_no()<<std::endl;
         ScheduleListen();
         return;
     }
 #endif
 
-    std::string uuid = csrm.source_uuid();
-    if(csrm.source_port() > std::numeric_limits<unsigned short>::max())
+    std::string uuid = pm.source_uuid();
+    if(pm.source_port() > std::numeric_limits<unsigned short>::max())
         throw std::overflow_error("CListener::HandleRead");
-    SRemoteHost host = { csrm.source_hostname(), static_cast<unsigned short>(csrm.source_port()) };
+    SRemoteHost host = { pm.source_hostname(), static_cast<unsigned short>(pm.source_port()) };
     ///Make sure the hostname is registered:
     CConnectionManager::Instance().PutHost(uuid,host);
     ///Get the pointer to the connection:
@@ -164,25 +163,22 @@ void CListener::HandleRead(const boost::system::error_code& e,
             CConnectionManager::Instance().GetConnectionByUUID(uuid);
     Logger.Debug<<"Fetched Connection"<<std::endl;
 
-    if(csrm.status() == CsrMessage::ACCEPTED)
+    if(pm.status() == ProtocolMessage::ACCEPTED)
     {
         Logger.Debug<<"Processing Accept Message"<<std::endl;
-        Logger.Debug<<"Received ACK"<<csrm.hash()<<":"
-                        <<csrm.sequence_no()<<std::endl;
-        conn->ReceiveACK(csrm);
+        Logger.Debug<<"Received ACK"<<pm.hash()<<":"<<pm.sequence_no()<<std::endl;
+        conn->ReceiveACK(pm);
     }
-    else if(conn->Receive(csrm))
+    else if(conn->Receive(pm))
     {
-        Logger.Debug<<"Accepted message "<<csrm.hash()<<":"
-                        <<csrm.sequence_no()<<std::endl;
+        Logger.Debug<<"Accepted message "<<pm.hash()<<":"<<pm.sequence_no()<<std::endl;
         CDispatcher::Instance().HandleRequest(
-            boost::make_shared<const DgiMessage>(
-                DgiMessage(csrm.dgi_message())), uuid);
+            boost::make_shared<const ModuleMessage>(
+                ModuleMessage(pm.module_message())), uuid);
     }
-    else if(csrm.status() != CsrMessage::CREATED)
+    else if(pm.status() != ProtocolMessage::CREATED)
     {
-        Logger.Debug<<"Rejected message "<<csrm.hash()<<":"
-                        <<csrm.sequence_no()<<std::endl;
+        Logger.Debug<<"Rejected message "<<pm.hash()<<":"<<pm.sequence_no()<<std::endl;
     }
 
     ScheduleListen();

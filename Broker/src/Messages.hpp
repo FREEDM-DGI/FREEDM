@@ -23,7 +23,7 @@
 #ifndef MESSAGES_HPP
 #define MESSAGES_HPP
 
-#include "messages/DgiMessage.pb.h"
+#include "messages/ModuleMessage.pb.h"
 
 #include <memory>
 
@@ -33,21 +33,23 @@
 namespace freedm {
 namespace broker {
 
+class ProtocolMessage;
+
 /// Hash a message.
-google::protobuf::uint64 ComputeMessageHash(const DgiMessage& msg);
+google::protobuf::uint64 ComputeMessageHash(const ModuleMessage& msg);
 
 /// Determines whether the message has expired.
-bool MessageIsExpired(const CsrMessage& msg);
+bool MessageIsExpired(const ProtocolMessage& msg);
 
 /// Set the expiration time for this message.
-void SetExpirationTimeFromNow(CsrMessage& msg, const boost::posix_time::time_duration& expires_in);
+void SetExpirationTimeFromNow(ProtocolMessage& msg, const boost::posix_time::time_duration& expires_in);
 
 /// Sets the message's timestamp to the current time.
-void StampMessageSendtime(CsrMessage& msg);
+void StampMessageSendtime(ProtocolMessage& msg);
 
-/// Packs a module-specific message type into a DgiMessage
-DgiMessage PrepareForSending(
-    const google::protobuf::Message& message, DgiMessage::Type type, std::string recipient);
+/// Packs a module's message type into a ModuleMessage
+ModuleMessage PrepareForSending(
+    const google::protobuf::Message& message, ModuleMessage::Type type, std::string recipient);
 
 } // namespace broker
 } // namespace freedm

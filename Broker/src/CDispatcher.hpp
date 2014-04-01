@@ -34,7 +34,7 @@
 #ifndef CDISPATCHER_HPP
 #define CDISPATCHER_HPP
 
-#include "messages/DgiMessage.pb.h"
+#include "messages/ModuleMessage.pb.h"
 
 #include <boost/noncopyable.hpp>
 #include <boost/smart_ptr/shared_ptr.hpp>
@@ -57,7 +57,7 @@ public:
     static CDispatcher& Instance();
 
     /// Called upon incoming message
-    void HandleRequest(boost::shared_ptr<const DgiMessage> msg, std::string uuid);
+    void HandleRequest(boost::shared_ptr<const ModuleMessage> msg, std::string uuid);
 
     /// Registers a handler that will be called with HandleRequest
     void RegisterReadHandler(boost::shared_ptr<IMessageHandler> p_handler, std::string id);
@@ -69,7 +69,7 @@ private:
     /// Making the handler calls bindable
     void ReadHandlerCallback(
         boost::shared_ptr<IMessageHandler> h,
-        boost::shared_ptr<const DgiMessage> msg,
+        boost::shared_ptr<const ModuleMessage> msg,
         std::string uuid);
 
     /// Reverse map to get the calling module from the handler pointer.

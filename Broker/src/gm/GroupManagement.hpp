@@ -28,7 +28,7 @@
 #include "IAgent.hpp"
 #include "IMessageHandler.hpp"
 #include "IPeerNode.hpp"
-#include "messages/DgiMessage.pb.h"
+#include "messages/ModuleMessage.pb.h"
 
 #include <boost/interprocess/sync/interprocess_mutex.hpp>
 #include <boost/shared_ptr.hpp>
@@ -67,7 +67,7 @@ class GMAgent
 
     // Handlers
     /// Handles received messages
-    void HandleIncomingMessage(boost::shared_ptr<const DgiMessage> msg, PeerNodePtr peer);
+    void HandleIncomingMessage(boost::shared_ptr<const ModuleMessage> msg, PeerNodePtr peer);
     /// Hadles recieving peerlists
     void HandlePeerList(const PeerListMessage& msg,PeerNodePtr peer);
     /// Handles recieving accept messsages
@@ -101,25 +101,25 @@ class GMAgent
 
     // Sending Tools
     /// Sends messages to remote peers if FIDs are closed.
-    void SendToPeer(PeerNodePtr peer, const DgiMessage& msg);
+    void SendToPeer(PeerNodePtr peer, const ModuleMessage& msg);
 
     // Messages
     /// Creates AYC Message.
-    DgiMessage AreYouCoordinator();
+    ModuleMessage AreYouCoordinator();
     /// Creates Group Invitation Message
-    DgiMessage Invitation();
+    ModuleMessage Invitation();
     /// Creates A Response message
-    DgiMessage AreYouCoordinatorResponse(std::string payload, int seq);
+    ModuleMessage AreYouCoordinatorResponse(std::string payload, int seq);
     /// Creates A Response message
-    DgiMessage AreYouThereResponse(std::string payload,int seq);
+    ModuleMessage AreYouThereResponse(std::string payload,int seq);
     /// Creates an Accept Message
-    DgiMessage Accept();
+    ModuleMessage Accept();
     /// Creates a AYT, used for Timeout
-    DgiMessage AreYouThere();
+    ModuleMessage AreYouThere();
     /// Generates a peer list
-    DgiMessage PeerList(std::string requester="all");
+    ModuleMessage PeerList(std::string requester="all");
     /// Generates a CMessage that can be used to query for the group
-    static DgiMessage PeerListQuery(std::string requester);
+    static ModuleMessage PeerListQuery(std::string requester);
 
     //Peer Set Manipulation
     /// Adds a peer to the peer set from UUID
@@ -146,8 +146,8 @@ class GMAgent
     /// Checks the status of the FIDs
     void FIDCheck(const boost::system::error_code& err);
 
-    /// Wraps a GroupManagementMessage in a DgiMessage
-    static DgiMessage PrepareForSending(
+    /// Wraps a GroupManagementMessage in a ModuleMessage
+    static ModuleMessage PrepareForSending(
         const GroupManagementMessage& message, std::string recipient = "gm");
 
     /// Nodes In My Group

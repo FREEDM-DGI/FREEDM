@@ -26,8 +26,6 @@
 
 #include "IProtocol.hpp"
 
-#include "DgiMessage.pb.h"
-
 #include <deque>
 #include <iomanip>
 

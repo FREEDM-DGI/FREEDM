@@ -25,11 +25,8 @@
 #ifndef IPEERNODE_HPP_
 #define IPEERNODE_HPP_
 
-#include "messages/DgiMessage.pb.h"
+#include <string>
 
-#include <memory>
-
-#include <boost/date_time/posix_time/posix_time_types.hpp>
 #include <boost/noncopyable.hpp>
 
 namespace freedm {
@@ -37,6 +34,7 @@ namespace freedm {
 namespace broker {
 
 class CConnectionManager;
+class ModuleMessage;
 
 /// Base interface for agents/broker modules
 class IPeerNode
@@ -63,7 +61,7 @@ class IPeerNode
         /// Gets the port of this peer.
         unsigned short GetPort() const;
         /// Sends a message to peer
-        bool Send(const DgiMessage& msg);
+        bool Send(const ModuleMessage& msg);
     private:
         std::string m_uuid; /// This node's uuid.
 };

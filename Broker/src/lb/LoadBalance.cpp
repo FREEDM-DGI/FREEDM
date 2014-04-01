@@ -48,6 +48,7 @@
 #include "CLogger.hpp"
 #include "CDeviceManager.hpp"
 #include "CTimings.hpp"
+#include "Messages.hpp"
 #include "gm/GroupManagement.hpp"
 
 #include <algorithm>
@@ -340,14 +341,10 @@ void LBAgent::CollectState()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
-    DgiMessage dm;
-    dm.set_type(DgiMessage::STATE_COLLECTION_MESSAGE);
-    dm.set_recipient_module("sc");
+    sc::StateCollectionMessage scm;
+    scm.set_type(sc::StateCollectionMessage::REQUEST_MESSAGE);
 
-    sc::StateCollectionMessage* scm = dm.mutable_state_collection_message();
-    scm->set_type(sc::StateCollectionMessage::REQUEST_MESSAGE);
-
-    sc::RequestMessage* rm = scm->mutable_request_message();
+    sc::RequestMessage* rm = scm.mutable_request_message();
     rm->set_module("lb");
 
     sc::DeviceSignalRequestMessage* dsrm = rm->add_device_signal_request_message();
@@ -372,7 +369,8 @@ void LBAgent::CollectState()
 
     try
     {
-       GetPeer(GetUUID())->Send(dm);
+       GetPeer(GetUUID())->Send(
+            broker::PrepareForSending(scm, DgiMessage::STATE_COLLECTION_MESSAGE, "sc"));
        Logger.Notice << "LB module requested State Collection" << std::endl;
     }
     catch (boost::system::system_error& e)
@@ -1167,15 +1165,7 @@ void LBAgent::HandleStateTimer( const boost::system::error_code & error )
 ///////////////////////////////////////////////////////////////////////////////
 DgiMessage LBAgent::PrepareForSending(const LoadBalancingMessage& message, std::string recipient)
 {
-    // Abort if any required fields are unset
-    message.CheckInitialized();
-
-    DgiMessage dm;
-    dm.set_type(DgiMessage::LOAD_BALANCING_MESSAGE);
-    dm.mutable_load_balancing_message()->CopyFrom(message);
-    dm.set_recipient_module(recipient);
-
-    return dm;
+    return broker::PrepareForSending(message, DgiMessage::LOAD_BALANCING_MESSAGE, recipient);
 }
 
 } // namespace lb

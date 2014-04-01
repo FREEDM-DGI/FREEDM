@@ -28,7 +28,7 @@
 #include "CGlobalConfiguration.hpp"
 #include "CLogger.hpp"
 #include "CConnection.hpp"
-#include "messages/DgiMessage.pb.h"
+#include "Messages.hpp"
 
 #include <vector>
 
@@ -83,7 +83,7 @@ void CConnection::Stop()
 ///   UUID, source hostname and sequence number (if it is being sequenced).
 ///   If the message is being sequenced  and the window is not already full,
 ///   the timeout timer is cancelled and reset.
-/// @param msg The message to write to the channel
+/// @param msg The message to write to the channel, INVALIDATED by this call.
 ///////////////////////////////////////////////////////////////////////////////
 void CConnection::Send(const DgiMessage& msg)
 {
@@ -170,15 +170,11 @@ int CConnection::GetReliability() const
 ///////////////////////////////////////////////////////////////////////////////
 void CConnection::Write(const DgiMessage& msg)
 {
+    // FIXME FIXME FIXME this is unreliable, but the DGI requires reliability. Switch to TCP.
+
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
-    // FIXME FIXME nasty, nasty; but makes the API easier to use
-    const_cast<DgiMessage&>(msg).set_source_uuid(CGlobalConfiguration::Instance().GetUUID());
-    const_cast<DgiMessage&>(msg).set_source_hostname(CGlobalConfiguration::Instance().GetHostname());
-    const_cast<DgiMessage&>(msg).set_source_port(CGlobalConfiguration::Instance().GetListenPort());
     msg.CheckInitialized();
-
-    // FIXME FIXME FIXME this is unreliable, but the DGI requires reliability. Switch to TCP.
 
     /// Check to make sure it isn't going to overfill our message packet
     if(msg.ByteSize() > CGlobalConfiguration::MAX_PACKET_SIZE)

@@ -29,21 +29,74 @@ message DgiMessage
 {
     enum Type
     {
-        GROUP_MANAGEMENT_MESSAGE = 1;
-        STATE_COLLECTION_MESSAGE = 2;
-        LOAD_BALANCING_MESSAGE = 3;
-        CLOCK_SYNCHRONIZER_MESSAGE = 4;
+        // Note that these must match the submessage tags below,
+        // or else PrepareForSending() will be very broken.
+        GROUP_MANAGEMENT_MESSAGE = 2;
+        STATE_COLLECTION_MESSAGE = 3;
+        LOAD_BALANCING_MESSAGE = 4;
+        CLOCK_SYNCHRONIZER_MESSAGE = 5;
     }
 
     required Type type = 1;
 
+    // Note that these tags must match the enum above
     optional gm.GroupManagementMessage group_management_message = 2;
     optional sc.StateCollectionMessage state_collection_message = 3;
     optional lb.LoadBalancingMessage load_balancing_message = 4;
     optional ClockSynchronizerMessage clock_synchronizer_message = 5;
 
     required string recipient_module = 6;
+
+// FIXME good?
     required string source_uuid = 7;
     required string source_hostname = 8;
     required uint32 source_port = 9;
 }
+
+// FIXME doesn't really belong in DgiMessage.proto
+message CsrMessage
+{
+    enum Status
+    {
+        CREATED = 1;
+        ACCEPTED = 2;
+        BAD_REQUEST = 3;
+    }
+
+    required string source_uuid = 1;
+    required string source_hostname = 2;
+    required uint32 source_port = 3;
+    // FIXME times should be sent as ints, not as strings...
+    required string send_time = 4;
+    optional uint32 sequence_no = 5;
+    optional Status status = 6;
+    optional string expire_time = 7;
+    optional int32 kill = 8 [default = -1];
+    optional fixed64 hash = 9;
+
+    optional DgiMessage dgi_message = 10;
+}
+
+// FIXME restore support for the alternative protocols:
+//
+//message CsrswMessage
+//{
+//    optional fixed64 hash = 1;
+//    required DgiMessage dgi_message = 2;
+//}
+//
+//message CsuMessage
+//{
+//    optional fixed64 hash = 1;
+//    required DgiMessage dgi_message = 2;
+//}
+
+//message SuperDgiMessage
+//{
+//  enum Type
+//  {
+//
+//  }
+//
+//
+//}

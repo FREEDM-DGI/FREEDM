@@ -13,6 +13,7 @@ set(BROKER_FILES
     CLogger.cpp
     CTimings.cpp
     IPeerNode.cpp
+    Messages.cpp
     gm/GroupManagement.cpp
     lb/LoadBalance.cpp
     sc/StateCollection.cpp

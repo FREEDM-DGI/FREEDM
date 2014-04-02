@@ -54,7 +54,7 @@ class CGlobalConfiguration : public boost::noncopyable
         /// Set the hostname
         void SetHostname(std::string h) { m_hostname = h; };
         /// Set the port
-        void SetListenPort(unsigned short p) { m_port = p; };
+        void SetListenPort(std::string p) { m_port = p; };
         /// Set the uuid
         void SetUUID(std::string u) { m_uuid = u; };
         /// Set the address to on

@@ -244,7 +244,7 @@ int main(int argc, char* argv[])
 
         if(!IsValidPort(port))
         {
-            throw EDgiConfigError("invalid listen port: " + msg.DebugString());
+            throw EDgiConfigError("invalid listen port: " + port);
         }
 
         /// Prepare the global Configuration
@@ -336,8 +336,7 @@ int main(int argc, char* argv[])
                 // Construct the UUID of the peer
                 std::string peerid = GenerateUuid(peerhost, peerport);
                 // Add the UUID to the list of known hosts
-                CConnectionManager::Instance().PutHost(
-                    peerid, peerhost, GetPortFromString(peerport));
+                CConnectionManager::Instance().PutHost(peerid, peerhost, peerport);
             }
         }
         else
@@ -346,7 +345,7 @@ int main(int argc, char* argv[])
         }
 
         // Add the local connection to the hostname list
-        CConnectionManager::Instance().PutHost(id, "localhost", GetPortFromString(port));
+        CConnectionManager::Instance().PutHost(id, "localhost", port);
 
         Logger.Debug << "Starting thread of Modules" << std::endl;
         CBroker::Instance().Schedule(

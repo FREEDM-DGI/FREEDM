@@ -34,7 +34,6 @@
 #include "messages/ModuleMessage.pb.h"
 #include "messages/ProtocolMessage.pb.h"
 
-#include <limits>
 #include <vector>
 
 #include <boost/bind.hpp>
@@ -152,10 +151,15 @@ void CListener::HandleRead(const boost::system::error_code& e,
     }
 #endif
 
+    if(!IsValidPort(pm.source_port()))
+    {
+        Logger.Warn<<"Received message with invalid source port"<<pm.source_port()<<std::endl;
+        ScheduleListen();
+        return;
+    }
+
     std::string uuid = pm.source_uuid();
-    if(pm.source_port() > std::numeric_limits<unsigned short>::max())
-        throw std::overflow_error("CListener::HandleRead");
-    SRemoteHost host = { pm.source_hostname(), static_cast<unsigned short>(pm.source_port()) };
+    SRemoteHost host = { pm.source_hostname(), pm.source_port() };
     ///Make sure the hostname is registered:
     CConnectionManager::Instance().PutHost(uuid,host);
     ///Get the pointer to the connection:

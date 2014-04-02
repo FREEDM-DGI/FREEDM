@@ -31,6 +31,8 @@
 #include "lb/LoadBalance.hpp"
 #include "sc/StateCollection.hpp"
 #include "CTimings.hpp"
+#include "SRemoteHost.hpp"
+#include "FreedmExceptions.hpp"
 
 #include <cassert>
 #include <iostream>
@@ -240,10 +242,15 @@ int main(int argc, char* argv[])
         // Load timings from files
         CTimings::SetTimings(timingsFile);
 
+        if(!IsValidPort(port))
+        {
+            throw EDgiConfigError("invalid listen port: " + msg.DebugString());
+        }
+
         /// Prepare the global Configuration
         CGlobalConfiguration::Instance().SetHostname(hostname);
         CGlobalConfiguration::Instance().SetUUID(id);
-        CGlobalConfiguration::Instance().SetListenPort(GetPortFromString(port));
+        CGlobalConfiguration::Instance().SetListenPort(port);
         CGlobalConfiguration::Instance().SetListenAddress(listenIP);
         CGlobalConfiguration::Instance().SetClockSkew(
                 boost::posix_time::milliseconds(0));

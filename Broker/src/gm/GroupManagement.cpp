@@ -45,7 +45,6 @@
 #include <fstream>
 #include <iomanip>
 #include <iostream>
-#include <limits>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -955,17 +954,19 @@ GMAgent::PeerSet GMAgent::ProcessPeerList(const PeerListMessage& msg)
         //Logger.Debug<<"Peer Item"<<std::endl;
         std::string nuuid = cpm.uuid();
         std::string nhost = cpm.host();
-        google::protobuf::uint32 nport = cpm.port();
-        if(nport>std::numeric_limits<unsigned short>::max())
-            throw std::overflow_error("GMAgent::ProcessPeerList");
+        std::string nport = cpm.port();
+        if(!IsValidPort(nport))
+        {
+            throw std::runtime_error(
+                "GMAgent::ProcessPeerList: invalid port: " + msg.DebugString());
+        }
         //Logger.Debug<<"Got Peer ("<<nuuid<<","<<nhost<<","<<nport<<")"<<std::endl;
         PeerNodePtr p = CGlobalPeerList::instance().GetPeer(nuuid);
         if(!p)
         {
             //Logger.Debug<<"I don't recognize this peer"<<std::endl;
             //If you don't already know about the peer, make sure it is in the connection manager
-            CConnectionManager::Instance().PutHost(
-                nuuid, nhost, static_cast<unsigned short>(nport));
+            CConnectionManager::Instance().PutHost(nuuid, nhost, nport);
             p = CGlobalPeerList::instance().Create(nuuid);
         }
         InsertInPeerSet(tmp,p);
@@ -1156,13 +1157,15 @@ void GMAgent::HandleInvite(const InviteMessage& msg, PeerNodePtr peer)
         if(!p)
         {
             std::string nhost = msg.group_leader_host();
-            google::protobuf::uint32 nport = msg.group_leader_port();
-            if(nport>std::numeric_limits<unsigned short>::max())
-                throw std::overflow_error("GMAgent::HandleInvite");
+            std::string nport = msg.group_leader_port();
+            if(!IsValidPort(nport))
+            {
+                throw std::runtime_error(
+                    "GMAgent::HandleInvite: invalid port: " + msg.DebugString());
+            }
             Logger.Debug<<"I don't recognize this peer"<<std::endl;
             //If you don't already know about the peer, make sure it is in the connection manager
-            CConnectionManager::Instance().PutHost(
-                m_GroupLeader, nhost, static_cast<unsigned short>(nport));
+            CConnectionManager::Instance().PutHost(m_GroupLeader, nhost, nport);
             p = CGlobalPeerList::instance().Create(m_GroupLeader);
         }
         SendToPeer(p,m_);
@@ -1222,9 +1225,12 @@ void GMAgent::HandleResponseAYC(const AreYouCoordinatorResponseMessage& msg, Pee
     {
         std::string nuuid = msg.leader_uuid();
         std::string nhost = msg.leader_host();
-        google::protobuf::uint32 nport = msg.leader_port();
-        if(nport>std::numeric_limits<unsigned short>::max())
-            throw std::overflow_error("GMAgent::HandleResponseAYC");
+        std::string nport = msg.leader_port();
+        if(!IsValidPort(nport))
+        {
+            throw std::runtime_error(
+                "GMAgent::HandleResponseAYC: invalid port: " + msg.DebugString());
+        }
         CConnectionManager::Instance().PutHost(nuuid, nhost, nport);
         AddPeer(nuuid);
         EraseInPeerSet(m_Coordinators,peer);

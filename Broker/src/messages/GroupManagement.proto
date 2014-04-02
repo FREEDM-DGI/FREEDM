@@ -30,7 +30,7 @@ message InviteMessage
     required uint32 group_id = 1;
     required string group_leader_uuid = 2;
     required string group_leader_host = 3;
-    required uint32 group_leader_port = 4;
+    required string group_leader_port = 4;
 }
 
 message AreYouCoordinatorResponseMessage
@@ -38,7 +38,7 @@ message AreYouCoordinatorResponseMessage
     required string payload = 1;
     required string leader_uuid = 2;
     required string leader_host = 3;
-    required uint32 leader_port = 4;
+    required string leader_port = 4;
     required uint32 sequence_no = 5;
 }
 
@@ -47,7 +47,7 @@ message AreYouThereResponseMessage
     required string payload = 1;
     required string leader_uuid = 2;
     required string leader_host = 3;
-    required uint32 leader_port = 4;
+    required string leader_port = 4;
     required uint32 sequence_no = 5;
 }
 
@@ -71,7 +71,7 @@ message ConnectedPeerMessage
 {
     required string uuid = 1;
     required string host = 2;
-    required uint32 port = 3;
+    required string port = 3;
 }
 
 message PeerListMessage

@@ -99,7 +99,7 @@ void CConnectionManager::PutConnection(std::string uuid, ConnectionPtr c)
 /// @param host The hostname to enter into the map.
 /// @param port The port the remote host listens on.
 ///////////////////////////////////////////////////////////////////////////////
-void CConnectionManager::PutHost(std::string u, std::string host, unsigned short port)
+void CConnectionManager::PutHost(std::string u, std::string host, std::string port)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     {

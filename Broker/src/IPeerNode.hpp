@@ -59,7 +59,7 @@ class IPeerNode
         /// Gets the hostname of this peer
         std::string GetHostname() const;
         /// Gets the port of this peer.
-        unsigned short GetPort() const;
+        std::string GetPort() const;
         /// Sends a message to peer
         bool Send(const ModuleMessage& msg);
     private:

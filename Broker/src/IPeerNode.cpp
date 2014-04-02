@@ -79,7 +79,7 @@ std::string IPeerNode::GetHostname() const
 /// IPeerNode::GetPort
 /// @description Returns the port number this node communicates on
 ////////////////////////////////////////////////////////////
-unsigned short IPeerNode::GetPort() const
+std::string IPeerNode::GetPort() const
 {
     return CConnectionManager::Instance().GetHostByUUID(GetUUID()).port;
 }

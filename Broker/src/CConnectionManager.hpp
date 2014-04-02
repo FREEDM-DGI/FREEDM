@@ -60,7 +60,7 @@ public:
     static CConnectionManager& Instance();
 
     /// Place a host/port and uuid into the host / uuid map.
-    void PutHost(std::string u, std::string host, unsigned short port);
+    void PutHost(std::string u, std::string host, std::string port);
 
     /// Place a host/port and uuid into the host / uuid map.
     void PutHost(std::string u, SRemoteHost host);

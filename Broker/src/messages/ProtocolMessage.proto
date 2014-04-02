@@ -33,7 +33,7 @@ message ProtocolMessage
 
     required string source_uuid = 1;
     required string source_hostname = 2;
-    required uint32 source_port = 3;
+    required string source_port = 3;
     // FIXME times should be sent as ints, not as strings...
     required string send_time = 4;
     required string expire_time = 5;

@@ -28,9 +28,8 @@
 #include "CDispatcher.hpp"
 #include "CLogger.hpp"
 #include "CProtocolSR.hpp"
-// FIXME restore
-//#include "CProtocolSU.hpp"
-//#include "CProtocolSRSW.hpp"
+#include "CProtocolSU.hpp"
+#include "CProtocolSRSW.hpp"
 #include "messages/ModuleMessage.pb.h"
 #include "messages/ProtocolMessage.pb.h"
 
@@ -54,7 +53,7 @@ CLocalLogger Logger(__FILE__);
 ///////////////////////////////////////////////////////////////////////////////
 CConnection::CConnection(std::string uuid)
   : m_socket(CBroker::Instance().GetIOService())
-  , m_protocol(new CProtocolSR(*this))
+  , m_protocol(new CProtocolSR(*this))   // FIXME hardcoded protocol
   , m_uuid(uuid)
   , m_reliability(100)
 {

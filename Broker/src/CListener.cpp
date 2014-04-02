@@ -145,7 +145,7 @@ void CListener::HandleRead(const boost::system::error_code& e,
 #ifdef CUSTOMNETWORK
     if((rand()%100) >= GetReliability())
     {
-        Logger.Debug<<"Dropped datagram "<<pm.hash()<<":"<<pm.sequence_no()<<std::endl;
+        Logger.Debug<<"Dropped datagram "<<pm.hash()<<":"<<pm.sequence_num()<<std::endl;
         ScheduleListen();
         return;
     }
@@ -170,19 +170,19 @@ void CListener::HandleRead(const boost::system::error_code& e,
     if(pm.status() == ProtocolMessage::ACCEPTED)
     {
         Logger.Debug<<"Processing Accept Message"<<std::endl;
-        Logger.Debug<<"Received ACK"<<pm.hash()<<":"<<pm.sequence_no()<<std::endl;
+        Logger.Debug<<"Received ACK"<<pm.hash()<<":"<<pm.sequence_num()<<std::endl;
         conn->ReceiveACK(pm);
     }
     else if(conn->Receive(pm))
     {
-        Logger.Debug<<"Accepted message "<<pm.hash()<<":"<<pm.sequence_no()<<std::endl;
+        Logger.Debug<<"Accepted message "<<pm.hash()<<":"<<pm.sequence_num()<<std::endl;
         CDispatcher::Instance().HandleRequest(
             boost::make_shared<const ModuleMessage>(
                 ModuleMessage(pm.module_message())), uuid);
     }
     else if(pm.status() != ProtocolMessage::CREATED)
     {
-        Logger.Debug<<"Rejected message "<<pm.hash()<<":"<<pm.sequence_no()<<std::endl;
+        Logger.Debug<<"Rejected message "<<pm.hash()<<":"<<pm.sequence_num()<<std::endl;
     }
 
     ScheduleListen();

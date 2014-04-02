@@ -26,7 +26,9 @@
 #include "IProtocol.hpp"
 
 #include "CConnection.hpp"
+#include "CConnectionManager.hpp"
 #include "CLogger.hpp"
+#include "Messages.hpp"
 #include "messages/ProtocolMessage.pb.h"
 
 #include <stdexcept>
@@ -55,9 +57,14 @@ CLocalLogger Logger(__FILE__);
 ///
 /// @param msg the message to send to this p
 ///////////////////////////////////////////////////////////////////////////////
-void IProtocol::Write(const ProtocolMessage& msg)
+void IProtocol::Write(ProtocolMessage& msg)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+
+    msg.set_source_uuid(CConnectionManager::Instance().GetUUID());
+    msg.set_source_hostname(CConnectionManager::Instance().GetHost().hostname);
+    msg.set_source_port(CConnectionManager::Instance().GetHost().port);
+    StampMessageSendtime(msg);
 
     msg.CheckInitialized();
 

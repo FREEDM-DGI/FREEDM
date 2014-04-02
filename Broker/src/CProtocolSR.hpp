@@ -29,13 +29,9 @@
 #include "messages/ProtocolMessage.pb.h"
 
 #include <deque>
-#include <iomanip>
 
-#include <boost/array.hpp>
-#include <boost/asio.hpp>
-#include <boost/noncopyable.hpp>
-#include <boost/shared_ptr.hpp>
-#include <boost/thread/shared_mutex.hpp>
+#include <boost/asio/deadline_timer.hpp>
+#include <boost/date_time/posix_time/posix_time.hpp>
 
 namespace freedm {
     namespace broker {
@@ -60,7 +56,7 @@ class CProtocolSR
         /// Stops the timers
         void Stop() { m_timeout.cancel(); SetStopped(true); };
         /// Handles writing the message to the underlying connection
-        void PrepareAndWrite(ProtocolMessage& msg);
+        void Write(ProtocolMessage& msg);
     private:
         /// Resend outstanding messages
         void Resend(const boost::system::error_code& err);

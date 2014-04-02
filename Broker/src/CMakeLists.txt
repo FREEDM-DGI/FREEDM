@@ -12,9 +12,8 @@ set(BROKER_FILES
     CListener.cpp
     CLogger.cpp
     CProtocolSR.cpp
-# FIXME
-#    CProtocolSU.cpp
-#    CProtocolSRSW.cpp
+    CProtocolSU.cpp
+    CProtocolSRSW.cpp
     CTimings.cpp
     IPeerNode.cpp
     IProtocol.cpp

@@ -71,7 +71,7 @@ class IProtocol
         /// Callback for when a write completes.
         virtual void WriteCallback(const boost::system::error_code&) { }
         /// Handles writing the message to the underlying connection
-        void Write(const ProtocolMessage& msg);
+        virtual void Write(ProtocolMessage& msg);
     private:
         /// The underlying and related connection object.
         CConnection& m_conn;

@@ -209,7 +209,7 @@ class LBAgent
         int temp_MsgRTT;
         
         boost::posix_time::ptime Deadline;
-        boost::posix_time::ptime Phase_Time;
+        boost::posix_time::ptime Phase_Time_Start;
         boost::posix_time::time_duration PowerTransfer;
         // invariant function
         bool Invariant_Check();

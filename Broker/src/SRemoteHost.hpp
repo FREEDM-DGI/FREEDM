@@ -35,7 +35,7 @@ namespace broker {
 ///
 /// @return true if port represents a valid port
 ///////////////////////////////////////////////////////////////////////////////
-bool IsValidPort(std::string port)
+inline bool IsValidPort(std::string port)
 {
     try
     {

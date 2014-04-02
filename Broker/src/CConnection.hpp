@@ -64,6 +64,9 @@ public:
     /// Construct a CConnection to a peer
     CConnection(std::string uuid);
 
+    /// Destructor
+    ~CConnection();
+
     /// Stop all asynchronous operations associated with the CConnection.
     void Stop();
 
@@ -95,8 +98,8 @@ private:
     /// Datagram socket connected to a single peer DGI
     boost::asio::ip::udp::socket m_socket;
 
-    /// FIXME change to IProtocol
-    CProtocolSR m_protocol;
+    /// The custom network protocol to use for sending/receiving messages
+    IProtocol* m_protocol;
 
     /// The UUID of the remote endpoint for the connection
     std::string m_uuid;

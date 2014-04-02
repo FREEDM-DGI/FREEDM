@@ -54,11 +54,19 @@ CLocalLogger Logger(__FILE__);
 ///////////////////////////////////////////////////////////////////////////////
 CConnection::CConnection(std::string uuid)
   : m_socket(CBroker::Instance().GetIOService())
-  , m_protocol(*this)
+  , m_protocol(new CProtocolSR(*this))
   , m_uuid(uuid)
   , m_reliability(100)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+/// Destructor
+///////////////////////////////////////////////////////////////////////////////
+CConnection::~CConnection()
+{
+    delete m_protocol;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -71,7 +79,7 @@ CConnection::CConnection(std::string uuid)
 void CConnection::Stop()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    m_protocol.Stop();
+    m_protocol->Stop();
     GetSocket().close();
 }
 
@@ -86,7 +94,7 @@ void CConnection::Stop()
 ///////////////////////////////////////////////////////////////////////////////
 void CConnection::ChangePhase(bool newround)
 {
-    m_protocol.ChangePhase(newround);
+    m_protocol->ChangePhase(newround);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -116,7 +124,7 @@ void CConnection::Send(const ModuleMessage& msg)
     }
     else
     {
-        m_protocol.Send(msg);
+        m_protocol->Send(msg);
     }
 }
 
@@ -132,7 +140,7 @@ void CConnection::Send(const ModuleMessage& msg)
 void CConnection::ReceiveACK(const ProtocolMessage& msg)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    m_protocol.ReceiveACK(msg);
+    m_protocol->ReceiveACK(msg);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -148,9 +156,9 @@ bool CConnection::Receive(const ProtocolMessage& msg)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
-    if(m_protocol.Receive(msg))
+    if(m_protocol->Receive(msg))
     {
-        m_protocol.SendACK(msg);
+        m_protocol->SendACK(msg);
         return true;
     }
 

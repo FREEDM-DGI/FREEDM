@@ -37,11 +37,9 @@ message ExchangeResponseMessage
     }
 
     repeated TableEntry table_entry = 1;
-    // FIXME This is synchronized time. The name is confusing.
-    required string sendtime = 2;
-    required uint32 response = 3;
-    // FIXME This is unsynchronized time. The name is confusing.
-    required string send_timestamp = 4;
+    required uint32 response = 2;
+    // FIXME use an int, not a string
+    required string unsynchronized_sendtime = 3;
 }
 
 message ClockSynchronizerMessage

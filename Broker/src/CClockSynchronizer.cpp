@@ -163,7 +163,8 @@ void CClockSynchronizer::HandleExchangeResponse(const ExchangeResponseMessage& m
     MapIndex ij(m_uuid,sender);
     boost::posix_time::ptime challenge;
     boost::posix_time::ptime now = boost::posix_time::microsec_clock::universal_time();
-    boost::posix_time::ptime response = boost::posix_time::time_from_string(msg.send_timestamp());
+    boost::posix_time::ptime response =
+        boost::posix_time::time_from_string(msg.unsynchronized_sendtime());
     unsigned int k = msg.response();
     Logger.Debug<<__FILE__<<":"<<__LINE__<<std::endl;
     if(m_queries.find(ij) == m_queries.end() || m_queries[ij].first != k)
@@ -402,11 +403,8 @@ ModuleMessage CClockSynchronizer::CreateExchangeResponse(unsigned int k)
     ClockSynchronizerMessage csm;
     csm.set_type(ClockSynchronizerMessage::EXCHANGE_RESPONSE_MESSAGE);
     ExchangeResponseMessage* erm = csm.mutable_exchange_response_message();
-    // FIXME synchronized time, needs a better name
-    erm->set_sendtime(boost::posix_time::to_simple_string(GetSynchronizedTime()));
     erm->set_response(k);
-    // FIXME unsynchronized time, needs a better name
-    erm->set_send_timestamp(boost::posix_time::to_simple_string(
+    erm->set_unsynchronized_sendtime(boost::posix_time::to_simple_string(
         boost::posix_time::microsec_clock::universal_time()));
     for(OffsetMap::iterator oit=m_offsets.begin(); oit != m_offsets.end(); oit++)
     {

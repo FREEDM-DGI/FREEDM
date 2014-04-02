@@ -38,7 +38,6 @@ message ExchangeResponseMessage
 
     repeated TableEntry table_entry = 1;
     required uint32 response = 2;
-    // FIXME use an int, not a string
     required string unsynchronized_sendtime = 3;
 }
 

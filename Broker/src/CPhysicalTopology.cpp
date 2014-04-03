@@ -21,6 +21,9 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 #include "CPhysicalTopology.hpp"
+#include "CGlobalConfiguration.hpp"
+#include "CLogger.hpp"
+
 
 #include <queue>
 #include <fstream>
@@ -39,7 +42,7 @@ CLocalLogger Logger(__FILE__);
 ///////////////////////////////////////////////////////////////////////////////
 /// Get the singleton instance of this class
 ///////////////////////////////////////////////////////////////////////////////
-static CPhysicalTopology& CPhysicalTopology::Instance()
+CPhysicalTopology& CPhysicalTopology::Instance()
 {
     static CPhysicalTopology topology;
     return topology;
@@ -48,7 +51,10 @@ static CPhysicalTopology& CPhysicalTopology::Instance()
 ///////////////////////////////////////////////////////////////////////////////
 /// Cleans up on exit
 ///////////////////////////////////////////////////////////////////////////////
-~CPhysicalTopology::CPhysicalToplogy();
+CPhysicalTopology::~CPhysicalTopology()
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 /// Private constructor for the singleton instance
@@ -57,23 +63,36 @@ static CPhysicalTopology& CPhysicalTopology::Instance()
 ///////////////////////////////////////////////////////////////////////////////
 CPhysicalTopology::CPhysicalTopology()
 {
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     LoadTopology();
 }
-
-/// Find the reachable peers.
-std::set<string> CPhysicalTopology::ReachablePeers(std::string source, CPhysicalTopology::FIDState fidstate)
+///////////////////////////////////////////////////////////////////////////////
+/// Find the reachable peers. Performs a BFS on the physical topology starting
+/// at a source vertex. Nodes with FID are checked for the status of their FID
+/// If the FID status is unavailable or the FID is open, the edge is considered
+/// Broken
+/// @pre A physical topology has been loaded.
+/// @post No change to class state.
+/// @returns A set of UUIDs of hostnames that are still reachable.
+/// @param source The initial vertex to perform BFS from.
+/// @param fidstate a map that is FID Name -> State. A closed FID is true, an
+///     open FID is false. If an FID is open edges it controls are not used.
+///////////////////////////////////////////////////////////////////////////////
+CPhysicalTopology::VertexSet CPhysicalTopology::ReachablePeers(std::string source,
+    CPhysicalTopology::FIDState fidstate)
 {
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     typedef std::pair<int, std::string> BFSExplorer;
     typedef std::priority_queue< BFSExplorer > BFSPQueue;
 
     BFSPQueue openset;
     std::set<std::string> closedset;
     std::string consider, controlfid;
-    CPhysicalToplogy::VertexPair vx;
+    CPhysicalTopology::VertexPair vx;
     int hops;
     BFSExplorer tmp;
 
-    openset.insert(BFSExplorer(0,source));
+    openset.push(BFSExplorer(0,source));
     while(openset.size() > 0)
     {
         tmp = openset.top();
@@ -91,43 +110,62 @@ std::set<string> CPhysicalTopology::ReachablePeers(std::string source, CPhysical
             if(m_fidcontrol.count(vx) > 0)
             {
                 // An FID controls this edge
-                controlfid = m_fidcontrol[neighbor];
-                if(fidstate.count(controlfid) == 0 || fidstate[controlfid] == false)
+                controlfid = m_fidcontrol[vx];
+                if(fidstate.count(controlfid) == 0
+                    || fidstate[controlfid] == false)
                 {
                     // If we don't have the state of an FID, assume it is OPEN.
-                    // If the fid is OPEN (false) then that edge is not available.
+                    // If the fid is OPEN (false) then that edge is not
+                    // available.
                     continue;
                 }
             }
             else
             {
                 // This edge is not controlled by an FID, assume it is open.
-                openset.insert(BFSExploer(hops+1, neighbor));
+                openset.push(BFSExplorer(hops+1, neighbor));
             }
         }
     } 
     return closedset;
 }
 
+///////////////////////////////////////////////////////////////////////////////
 /// Load the topology from a file
-void LoadTopology()
+/// @pre: The topology is correctly specified in a topology config file. The
+///     CGlobalConfiguration class has an entry loaded with a working path to
+///     the topology file.
+/// @post: The topology is loaded into the related maps: the adjacency list is
+///     loaded into m_adjlist, and the map of which edges FIDs control is
+///     loaded into m_fidcontrol.
+/// @returns None
+///////////////////////////////////////////////////////////////////////////////
+void CPhysicalTopology::LoadTopology()
 {
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     const std::string EDGE_TOKEN = "edge";
     const std::string VERTEX_TOKEN = "sst";
     const std::string CONTROL_TOKEN = "fid";
     
-    AdjacencyListMap altmp;
-    FIDControlMap fctmp;
-    std::map<std::string, std::string> strans; //Fake to real translation table.
-    VertexSet seennames;
+    CPhysicalTopology::AdjacencyListMap altmp;
+    CPhysicalTopology::FIDControlMap fctmp;
+    std::map<std::string, std::string> strans; //Fake to real translation table
+    CPhysicalTopology::VertexSet seennames;
 
-    ifstream topf("config/topology.cfg");
-    
+    std::string fp = CGlobalConfiguration::Instance().GetTopologyConfigPath();
+    if(fp == "")
+    {
+        Logger.Warn<<"No topology configuration file specified"<<std::endl;
+        return;
+    }
+    std::ifstream topf(fp.c_str());
+
     std::string token;
     
     if(!topf.is_open())
     {
-        // XXX: raise exception, couldn't open topology.
+        //raise exception, couldn't open topology.
+        throw std::runtime_error("Physical Topology: Couldn't open topology file.");
     }
 
     while(!topf.eof())
@@ -139,14 +177,14 @@ void LoadTopology()
             std::string v_symbol2;
             topf>>v_symbol1>>v_symbol2;
 
-            if(altmp.count[v_symbol1])
+            if(altmp.count(v_symbol1))
                 altmp[v_symbol1] = VertexSet();
-            if(altmp.count[v_symbol2])
+            if(altmp.count(v_symbol2))
                 altmp[v_symbol2] = VertexSet();
             
             //Bi directional!
             altmp[v_symbol1].insert(v_symbol2);
-            altmp(v_symbol2].insert(v_symbol1);
+            altmp[v_symbol2].insert(v_symbol1);
 
             seennames.insert(v_symbol1);
             seennames.insert(v_symbol2);
@@ -156,7 +194,7 @@ void LoadTopology()
             std::string uuid;
             std::string vsymbol;
             topf>>vsymbol>>uuid;
-            symboltrans[vsymbol] = uuid;
+            strans[vsymbol] = uuid;
         }
         else if(token == CONTROL_TOKEN)
         {
@@ -170,17 +208,21 @@ void LoadTopology()
             vx1 = VertexPair(v_symbol1, v_symbol2);
             vx2 = VertexPair(v_symbol2, v_symbol1);
 
-            fctmp[vx1].insert(fidname);
-            fctmp(vx2].insert(fidname);
+            fctmp[vx1] = fidname;
+            fctmp[vx2] = fidname;
             
             seennames.insert(v_symbol1);
             seennames.insert(v_symbol2);
         }
         else
         {
-            // XXX: raise exception, malformed input
+            Logger.Error<<"Expected control token, saw '"<<token<<"'"<<std::endl;
+            // raise exception, malformed input
+            throw std::runtime_error("Physical Topology: Input topology file is malformed.");
         }
     }
+    topf.close();
+
     // Verify that all the virtual names have a real translation.
     bool all_valid = true;
     BOOST_FOREACH( std::string vname, seennames )
@@ -188,12 +230,14 @@ void LoadTopology()
         if(strans.count(vname) == 0)
         {
             all_valid = false;
-            // XXX: Warn user about bad name.
+            // Warn user about bad name.
+            Logger.Error<<"Couldn't find UUID for virtualname "<<vname<<std::endl;
         }
     }
     if(all_valid == false)
     {
-        // XXX: raise exception missing real name.
+        // raise exception missing real name.
+        throw std::runtime_error("Physical Topology: UUID for virtual name missing.");
     }
     // Now we have to take the temporary ones and translate that into the real ones (Ugh!)
     BOOST_FOREACH( const AdjacencyListMap::value_type& mp, altmp )

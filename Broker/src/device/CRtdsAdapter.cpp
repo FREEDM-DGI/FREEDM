@@ -97,7 +97,7 @@ IAdapter::Pointer CRtdsAdapter::Create(boost::asio::io_service & service,
 /// @pre None.
 /// @post CRtdsAdapter created.
 ///
-/// @param service The io_service to be used to communicate with the FPGA.
+/// @param io_service The io_service to be used to communicate with the FPGA.
 /// @param ptree The property tree specifying this adapter's device signals.
 ///
 /// @limitations None

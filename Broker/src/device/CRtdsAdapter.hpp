@@ -31,6 +31,7 @@
 #include <boost/enable_shared_from_this.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/asio/io_service.hpp>
+#include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/deadline_timer.hpp>
 #include <boost/property_tree/ptree_fwd.hpp>
 

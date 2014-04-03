@@ -26,9 +26,9 @@
 #ifndef C_RTDS_ADAPTER_HPP
 #define C_RTDS_ADAPTER_HPP
 
-#include "ITcpAdapter.hpp"
 #include "IBufferAdapter.hpp"
 
+#include <boost/enable_shared_from_this.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/asio/io_service.hpp>
 #include <boost/asio/deadline_timer.hpp>

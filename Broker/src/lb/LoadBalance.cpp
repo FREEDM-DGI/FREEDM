@@ -957,7 +957,7 @@ bool LBAgent::Invariant_Check()
     bool I2 = Physical_Invariant();
     Logger.Status << "Physical invariant is " << I2 << std::endl;
     //bool I3 = Schedule_Invariant();
-    Logger.Status << "Scheduling invariant is " << I3 << std::endl;
+    //Logger.Status << "Scheduling invariant is " << I3 << std::endl;
     //return I1*I2*I3;
     return I1*I2;
     //return I1*I3;

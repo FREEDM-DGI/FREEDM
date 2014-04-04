@@ -1,4 +1,0 @@
-# Stress Test
-enable Sst SST2 gateway 7.0
-work forever
-

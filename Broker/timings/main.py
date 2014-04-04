@@ -22,7 +22,7 @@ Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
 """
 
 from variables import VARIABLES
-from parameters import PARAMETERS 
+from parameters import PARAMETERS
 from templates import *
 
 def main():

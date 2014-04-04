@@ -1,3 +1,0 @@
-# Device Fails before Sending State
-sendtofactory packets/ValidHello.txt
-dieHorribly

@@ -118,7 +118,7 @@ void CGlobalLogger::RegisterLocalLogger(const std::string logger)
 
 void CGlobalLogger::SetGlobalLevel(const unsigned int level)
 {
-    // Iterate over the registered loggers and 
+    // Iterate over the registered loggers and
     // set the filter levels of each logger
     OutputMap::iterator it;
     for (it = m_loggers.begin(); it != m_loggers.end(); it++)
@@ -179,7 +179,7 @@ void CGlobalLogger::SetInitialLoggerLevels(const std::string loggerCfgFile)
         }
         catch( po::unknown_option & e)
         {
-            throw std::runtime_error( "Invalid logger name '" 
+            throw std::runtime_error( "Invalid logger name '"
                     + e.get_option_name() + "' in " + loggerCfgFile );
         }
         po::notify(vm);

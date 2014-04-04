@@ -24,7 +24,7 @@ PARAMETERS = {
     # Time to acquire the channel
     'tp': 2,
     # Time to write the message to the channel
-    'tm': 2, 
+    'tm': 2,
     # Time to process the outgoing message for sending
     'ts_proc': 2,
     # Time to process the outgoing message for recieving

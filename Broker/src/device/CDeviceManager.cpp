@@ -36,6 +36,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 #include "CDeviceManager.hpp"
+#include "CLogger.hpp"
 
 #include <stdexcept>
 
@@ -89,10 +90,10 @@ CDeviceManager::CDeviceManager()
 ///
 /// @limitations None.
 ///////////////////////////////////////////////////////////////////////////////
-void CDeviceManager::AddDevice(IDevice::Pointer device)
+void CDeviceManager::AddDevice(CDevice::Pointer device)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    
+
     boost::unique_lock<boost::shared_mutex> lock(m_mutex);
 
     if( m_devices.count(device->GetID()) > 0 )
@@ -104,7 +105,7 @@ void CDeviceManager::AddDevice(IDevice::Pointer device)
         throw std::runtime_error("Duplicate device ID: " + device->GetID());
     }
 
-    m_hidden_devices[device->GetID()] = device;   
+    m_hidden_devices[device->GetID()] = device;
     Logger.Info << "Stored " << device->GetID() << " as hidden device." << std::endl;
 }
 
@@ -151,7 +152,7 @@ bool CDeviceManager::RemoveDevice(std::string devid)
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
     boost::unique_lock<boost::shared_mutex> lock(m_mutex);
- 
+
     if( m_devices.erase(devid) != 1 && m_hidden_devices.erase(devid) != 1 )
     {
         Logger.Warn << "Could not remove the device " << devid << " from the "
@@ -192,10 +193,10 @@ bool CDeviceManager::DeviceExists(std::string devid) const
 /// class.  The previous implementation of const IDevice::Pointer was incorrect
 /// because the syntax made the pointer, not the shared object, constant.
 ///////////////////////////////////////////////////////////////////////////////
-IDevice::Pointer CDeviceManager::GetDevice(std::string devid)
+CDevice::Pointer CDeviceManager::GetDevice(std::string devid)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    
+
     boost::shared_lock<boost::shared_mutex> lock(m_mutex);
     iterator it = m_devices.find(devid);
     if( it != m_devices.end() )
@@ -206,7 +207,7 @@ IDevice::Pointer CDeviceManager::GetDevice(std::string devid)
     {
         Logger.Warn << "Could not get the device " << devid << " from the "
                 << " device manager: no such device exists." << std::endl;
-        return IDevice::Pointer();
+        return CDevice::Pointer();
     }
 }
 
@@ -227,6 +228,33 @@ std::size_t CDeviceManager::DeviceCount() const
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+/// Creates a set that contains the stored devices of the given type.
+///
+/// @pre None.
+/// @post Places each device that recognizes the type in the result set.
+/// @param type The string identifier for the type of device to retrieve.
+/// @return A set that contains the matching subset of m_devices.
+///
+/// @limitations None.
+///////////////////////////////////////////////////////////////////////////////
+std::set<CDevice::Pointer> CDeviceManager::GetDevicesOfType(std::string type)
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+
+    boost::shared_lock<boost::shared_mutex> lock(m_mutex);
+    std::set<CDevice::Pointer> result;
+
+    for( iterator it = m_devices.begin(); it != m_devices.end(); it++ )
+    {
+        if( it->second->HasType(type) )
+        {
+            result.insert(it->second);
+        }
+    }
+    return result;
+}
+
+///////////////////////////////////////////////////////////////////////////////
 /// Retrieves a multiset of values for the specified device signal.
 ///
 /// @pre The signal must be recognized by the specified device.
@@ -241,14 +269,14 @@ std::multiset<SignalValue> CDeviceManager::GetValues(std::string type,
         std::string signal)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    
+
     std::multiset<SignalValue> result;
 
-    std::multiset<IDevice::Pointer> devices = GetDevicesOfType(type);
+    std::set<CDevice::Pointer> devices = GetDevicesOfType(type);
 
-    BOOST_FOREACH (IDevice::Pointer device, devices)
+    BOOST_FOREACH (CDevice::Pointer device, devices)
     {
-        result.insert(device->Get(signal));
+        result.insert(device->GetState(signal));
     }
 
     return result;
@@ -257,7 +285,6 @@ std::multiset<SignalValue> CDeviceManager::GetValues(std::string type,
 ///////////////////////////////////////////////////////////////////////////////
 /// Aggregates a set of device signals using the given binary operation.
 ///
-/// @pre DeviceType must have a typedef for IDevice::Pointer.
 /// @pre The devices of the specified type must recognize the given signal.
 /// @post Performs a binary mathematical operation on a subset of m_devices.
 /// @param type The device type that should perform the operation.
@@ -268,16 +295,16 @@ std::multiset<SignalValue> CDeviceManager::GetValues(std::string type,
 ///////////////////////////////////////////////////////////////////////////////
 SignalValue CDeviceManager::GetNetValue(std::string type, std::string signal)
 {
-    DeviceManagerLogger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    
-    SignalValue result = 0;
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
-    std::multiset<IDevice::Pointer> devices = GetDevicesOfType(type);
-    std::multiset<IDevice::Pointer>::iterator it, end;
+    SignalValue result = 0;
+    
+    std::set<CDevice::Pointer> devices = GetDevicesOfType(type);
+    std::set<CDevice::Pointer>::iterator it, end;
 
     for( it = devices.begin(), end = devices.end(); it != end; it++ )
     {
-        result = result + (*it)->Get(signal);
+        result = result + (*it)->GetState(signal);
     }
 
     return result;

@@ -54,12 +54,12 @@ CLocalLogger Logger(__FILE__);
 void ITcpAdapter::Connect()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    
+
     boost::asio::ip::tcp::resolver resolver(m_socket.get_io_service());
     boost::asio::ip::tcp::resolver::query query(m_host, m_port);
     boost::asio::ip::tcp::resolver::iterator it = resolver.resolve(query);
     boost::asio::ip::tcp::resolver::iterator end;
-    
+
     // attempt to connect to one of the resolved endpoints
     boost::system::error_code error = boost::asio::error::host_not_found;
 
@@ -76,7 +76,7 @@ void ITcpAdapter::Connect()
                 + m_port + " because: "
                 + std::string(boost::system::system_error(error).what()));
     }
-    
+
     Logger.Status << "Opened a TCP socket connection to host " << m_host
             << ":" << m_port << "." << std::endl;
 }

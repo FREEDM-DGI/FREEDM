@@ -1,4 +1,0 @@
-# Modifies Correct Adapter
-enable Sst SST1 gateway 7.0
-work forever
-

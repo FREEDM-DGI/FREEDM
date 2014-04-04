@@ -28,10 +28,9 @@
 #include "CLogger.hpp"
 #include "CMessage.hpp"
 #include "config.hpp"
-#include "CSRConnection.hpp"
-#include "CSUConnection.hpp"
-#include "CSRSWConnection.hpp"
-#include "RequestParser.hpp"
+#include "CProtocolSR.hpp"
+#include "CProtocolSU.hpp"
+#include "CProtocolSRSW.hpp"
 
 #include <vector>
 
@@ -42,57 +41,37 @@ using boost::property_tree::ptree;
 
 namespace freedm {
 namespace broker {
-        
+
 namespace {
 
 /// This file's logger.
 CLocalLogger Logger(__FILE__);
 
 }
-        
-///////////////////////////////////////////////////////////////////////////////
-/// @fn CConnection::CConnection
-/// @description Constructor for the CConnection object. Since the change to
-///   udp, this object can act either as a listener or sender (but not both)
-///   to have the object behave as a listener, Start() should be called on it.
-/// @pre An initialized socket is ready to be converted to a connection.
-/// @post A new CConnection object is initialized.
-/// @param p_ioService The socket to use for the connection.
-/// @param p_manager The related connection manager that tracks this object.
-/// @param p_broker The broker used for scheduling the message deliveries
-/// @param uuid The uuid this node connects to, or what listener.
-///////////////////////////////////////////////////////////////////////////////
-CConnection::CConnection(boost::asio::io_service& p_ioService,
-  CConnectionManager& p_manager, CBroker& p_broker, std::string uuid)
-  : CReliableConnection(p_ioService,p_manager,p_broker,uuid)
-{
-    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    m_protocols.insert(ProtocolMap::value_type(CSUConnection::Identifier(),
-        ProtocolPtr(new CSUConnection(this))));
-    m_protocols.insert(ProtocolMap::value_type(CSRConnection::Identifier(),
-        ProtocolPtr(new CSRConnection(this))));
-    m_protocols.insert(ProtocolMap::value_type(CSRSWConnection::Identifier(),
-        ProtocolPtr(new CSRSWConnection(this))));
-    m_defaultprotocol = CSRConnection::Identifier();
-}
 
 ///////////////////////////////////////////////////////////////////////////////
-/// @fn CConnection::Start
-/// @description Starts the receive routine which causes this socket to behave
-///   as a listener.
-/// @pre The object is initialized.
-/// @post The connection is asynchronously waiting for messages.
+/// Create a connection to one particular peer
+///
+/// @param uuid the UUID of the peer to connect to
 ///////////////////////////////////////////////////////////////////////////////
-void CConnection::Start()
+CConnection::CConnection(std::string uuid)
+  : m_socket(CBroker::Instance().GetIOService())
+  , m_uuid(uuid)
+  , m_reliability(100)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    m_protocols.insert(ProtocolMap::value_type(CProtocolSU::Identifier(),
+        ProtocolPtr(new CProtocolSU(this))));
+    m_protocols.insert(ProtocolMap::value_type(CProtocolSR::Identifier(),
+        ProtocolPtr(new CProtocolSR(this))));
+    m_protocols.insert(ProtocolMap::value_type(CProtocolSRSW::Identifier(),
+        ProtocolPtr(new CProtocolSRSW(this))));
+    m_defaultprotocol = CProtocolSR::Identifier();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 /// @fn CConnection::Stop
-/// @description Stops the socket and cancels the timeout timer. Does not
-///   need to be called on a listening connection (ie one that has had
-///   Start() called on it.
+/// @description Stops the socket and cancels the timeout timer.
 /// @pre Any initialized CConnection object.
 /// @post The underlying socket is closed and the message timeout timer is
 ///        cancelled.
@@ -104,7 +83,7 @@ void CConnection::Stop()
     for(sit = m_protocols.begin(); sit != m_protocols.end(); sit++)
     {
         (*sit).second->Stop();
-    }   
+    }
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     GetSocket().close();
 }
@@ -126,7 +105,7 @@ void CConnection::ChangePhase(bool newround)
         it->second->ChangePhase(newround);
     }
 }
- 
+
 ///////////////////////////////////////////////////////////////////////////////
 /// @fn CConnection::Send
 /// @description Given a message and wether or not it should be sequenced,
@@ -147,19 +126,19 @@ void CConnection::Send(CMessage & p_mesg)
     // object) is the same as the this node's uuid (As stored by the
     // Connection manager) place the message directly into the received
     // Queue.
-    if(GetUUID() == GetConnectionManager().GetUUID())
+    if(GetUUID() == CConnectionManager::Instance().GetUUID())
     {
-        p_mesg.SetSourceUUID(GetConnectionManager().GetUUID());
-        p_mesg.SetSourceHostname(GetConnectionManager().GetHostname());
+        p_mesg.SetSourceUUID(CConnectionManager::Instance().GetUUID());
+        p_mesg.SetSourceHostname(CConnectionManager::Instance().GetHost());
         p_mesg.SetSendTimestampNow();
         MessagePtr local(new CMessage);
         *local = p_mesg;
-        GetDispatcher().HandleRequest(GetBroker(),local);
+        CDispatcher::Instance().HandleRequest(local);
         return;
     }
 
-    ProtocolMap::iterator sit = m_protocols.find(p_mesg.GetProtocol());    
-    
+    ProtocolMap::iterator sit = m_protocols.find(p_mesg.GetProtocol());
+
     if(sit == m_protocols.end())
     {
         sit = m_protocols.find(m_defaultprotocol);
@@ -210,6 +189,55 @@ bool CConnection::Receive(const CMessage &msg)
         }
     }
     return false;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+/// Returns the socket used by this node.
+///
+/// @return A reference to the socket used by this connection.
+///////////////////////////////////////////////////////////////////////////////
+boost::asio::ip::udp::socket& CConnection::GetSocket()
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+
+    return m_socket;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+/// Gets the UUID of the DGI on the other end of this connection.
+///
+/// @return the peer's UUID
+///////////////////////////////////////////////////////////////////////////////
+std::string CConnection::GetUUID() const
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+
+    return m_uuid;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+/// Set the connection reliability for DCUSTOMNETWORK. 0 all packets are
+/// artifically dropped. 100 means no packets are artifically dropped.
+///
+/// @param r between 0 and 100
+///////////////////////////////////////////////////////////////////////////////
+void CConnection::SetReliability(int r)
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+
+    m_reliability = r;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+/// Get the connection reliability for DCUSTOMNETWORK
+///
+/// @return percentage of packets that are allowed through
+///////////////////////////////////////////////////////////////////////////////
+int CConnection::GetReliability() const
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+
+    return m_reliability;
 }
 
     } // namespace broker

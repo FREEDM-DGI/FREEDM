@@ -1,3 +1,0 @@
-#Duplicate Device Names
-sendtofactory packets/Factory-DoubleDevice.txt
-

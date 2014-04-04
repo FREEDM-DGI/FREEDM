@@ -1,4 +1,0 @@
-config/controller*.cfg
-config/*.txt
-tests/config/controller*.cfg
-tests/config/multiple-dgi-controller*.cfg

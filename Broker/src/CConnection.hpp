@@ -3,7 +3,7 @@
 ///
 /// @author       Derek Ditch <derek.ditch@mst.edu>
 /// @author       Stephen Jackson <scj7t4@mst.edu>
-/// 
+///
 /// @project      FREEDM DGI
 ///
 /// @description  Declare CConnection class
@@ -26,7 +26,6 @@
 
 #include "CDispatcher.hpp"
 #include "CMessage.hpp"
-#include "CReliableConnection.hpp"
 #include "SRemoteHost.hpp"
 
 #include <deque>
@@ -54,20 +53,15 @@ struct EConnectionError
 
 /// Represents a single outgoing connection to a client.
 class CConnection
-    : public CReliableConnection
+    : public boost::noncopyable
 {
 
 public:
     /// ConnectionPtr Typedef
     typedef boost::shared_ptr<CConnection> ConnectionPtr;
 
-    /// Construct a CConnection with the given io_service.
-    CConnection(boost::asio::io_service& p_ioService,
-            CConnectionManager& p_manager, CBroker& p_broker,
-            std::string uuid);
-
-    /// Start the first asynchronous operation for the CConnection.
-    void Start();
+    /// Construct a CConnection to a peer
+    CConnection(std::string uuid);
 
     /// Stop all asynchronous operations associated with the CConnection.
     void Stop();
@@ -83,14 +77,36 @@ public:
 
     /// Change Phase Event
     void ChangePhase(bool newround);
+
+    /// Get a socket connected to a single peer DGI
+    boost::asio::ip::udp::socket& GetSocket();
+
+    /// Get associated UUID
+    std::string GetUUID() const;
+
+    /// Set the connection reliability for DCUSTOMNETWORK
+    void SetReliability(int r);
+
+    /// Get the connection reliability for DCUSTOMNETWORK
+    int GetReliability() const;
+
 private:
     typedef boost::shared_ptr<IProtocol> ProtocolPtr;
     typedef std::map<std::string,ProtocolPtr> ProtocolMap;
     /// Protocol Handler Map
     ProtocolMap m_protocols;
-    
+
     /// Default protocol
     std::string m_defaultprotocol;
+
+    /// Datagram socket connected to a single peer DGI
+    boost::asio::ip::udp::socket m_socket;
+
+    /// The UUID of the remote endpoint for the connection
+    std::string m_uuid;
+
+    /// The reliability of the connection (FOR -DCUSTOMNETWORK)
+    int m_reliability;
 };
 
 typedef boost::shared_ptr<CConnection> ConnectionPtr;

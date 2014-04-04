@@ -39,6 +39,7 @@
 
 #include "CBroker.hpp"
 #include "CConnection.hpp"
+#include "CConnectionManager.hpp"
 #include "CLogger.hpp"
 #include "CMessage.hpp"
 #include "gm/GroupManagement.hpp"
@@ -101,16 +102,14 @@ CLocalLogger Logger(__FILE__);
 /// @pre PoxisMain prepares parameters and invokes module.
 /// @post Object initialized and ready to enter run state.
 /// @param uuid: This object's uuid.
-/// @param broker the broker object
 /// @limitations: None
 ///////////////////////////////////////////////////////////////////////////////
 
-SCAgent::SCAgent(std::string uuid, CBroker &broker):
-        IPeerNode(uuid, broker.GetConnectionManager()),
+SCAgent::SCAgent(std::string uuid):
+        IPeerNode(uuid),
         m_countstate(0),
         m_NotifyToSave(false),
-        m_curversion("default", 0),
-        m_broker(broker)
+        m_curversion("default", 0)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     AddPeer(CGlobalPeerList::instance().GetPeer(uuid));
@@ -196,7 +195,7 @@ void SCAgent::Initiate()
     //add each device from m_device to marker message
     BOOST_FOREACH(std::string device, m_device)
     {
-        m_.m_submessages.add("sc.devices.device", device);       
+        m_.m_submessages.add("sc.devices.device", device);
     }
     //send tagged marker to all other peers
     BOOST_FOREACH(PeerNodePtr peer, m_AllPeers | boost::adaptors::map_values)
@@ -399,9 +398,9 @@ void SCAgent::TakeSnapshot(const std::vector<std::string>& devicelist)
         sub_ptree.add("value", PowerValue);
 	sub_ptree.add("count", count);
         m_.m_submessages.add_child("sc.collects.collect", sub_ptree);
-        
+
     }
-    
+
     m_curstate = m_.GetSubMessages();
 
 }
@@ -438,13 +437,13 @@ void SCAgent::SendStateBack()
                 ptree sub_pt1 = v.second;
                 ptree sub_pt2;
                 Logger.Status << "item:     " << sub_pt1.get<std::string>("type") << "   "
-                              << sub_pt1.get<std::string>("signal") << "    " 
+                              << sub_pt1.get<std::string>("signal") << "    "
                               <<  sub_pt1.get<std::string>("value") << std::endl;
                 sub_pt2.add ("type", sub_pt1.get<std::string>("type"));
                 sub_pt2.add ("signal", sub_pt1.get<std::string>("signal"));
                 sub_pt2.add ("value", sub_pt1.get<std::string>("value"));
 		sub_pt2.add ("count", sub_pt1.get<std::string>("count"));
-                m_.m_submessages.add_child("sc.collects.collect", sub_pt2);    
+                m_.m_submessages.add_child("sc.collects.collect", sub_pt2);
             }
         }
     }//end for
@@ -549,7 +548,7 @@ void SCAgent::SaveForward(StateVersion latest, CMessage msg)
 /// @post parsing messages, save if its in-transit message
 /// @peers Invoked by dispatcher, other SC
 /// @param msg the received message
-/// @param peer the node 
+/// @param peer the node
 //////////////////////////////////////////////////////////////////
 
 void SCAgent::HandleAny(MessagePtr msg, PeerNodePtr peer)
@@ -581,13 +580,13 @@ void SCAgent::HandleAny(MessagePtr msg, PeerNodePtr peer)
     if (m_NotifyToSave == true)
     {
         Logger.Status << "Receiving message which is in transit......:" << msg->GetHandler() << std::endl;
-        
+
         ptree sub_ptree;
         sub_ptree.add("type", "Message");
         sub_ptree.add("signal", "inchannel");
         sub_ptree.add("value", intransit);
         m_.m_submessages.add_child("sc.collects.collect", sub_ptree);
-        
+
         m_curstate = m_.GetSubMessages();
         collectstate.insert(std::pair<StateVersion, ptree>(m_curversion, m_curstate));
         m_countstate++;
@@ -603,7 +602,7 @@ void SCAgent::HandleAny(MessagePtr msg, PeerNodePtr peer)
 /// @post parsing messages, reset to default state if receiving PeerList from different leader.
 /// @peers Invoked by dispatcher, other SC
 /// @param msg the received message
-/// @param peer the node 
+/// @param peer the node
 //////////////////////////////////////////////////////////////////
 void SCAgent::HandlePeerList(MessagePtr msg, PeerNodePtr peer)
 {
@@ -612,7 +611,7 @@ void SCAgent::HandlePeerList(MessagePtr msg, PeerNodePtr peer)
     m_scleader = peer->GetUUID();
     Logger.Info << "Peer List received from Group Leader: " << peer->GetUUID() <<std::endl;
     // Process the peer list.
-    m_AllPeers = gm::GMAgent::ProcessPeerList(msg,GetConnectionManager());
+    m_AllPeers = gm::GMAgent::ProcessPeerList(msg);
 
     //if only one node left
     if (m_AllPeers.size()==1)
@@ -684,16 +683,16 @@ void SCAgent::HandleRequest(MessagePtr msg, PeerNodePtr peer)
         std::string deviceType = sub_pt.get<std::string>("deviceType");
         std::string valueType = sub_pt.get<std::string>("valueType");
         std::string combine = deviceType + ":" + valueType;
-        m_device.push_back(combine); 
-        Logger.Status<<"Device Item:  .." << combine << std::endl;        
+        m_device.push_back(combine);
+        Logger.Status<<"Device Item:  .." << combine << std::endl;
     }
 
     //call initiate to start state collection
     Logger.Notice << "Receiving state collect request from " << m_module << " ( " << pt.get<std::string>("sc.source")
                   << " )" << std::endl;
-    
+
     //Put the initiate call into the back of queue
-    m_broker.Schedule("sc",boost::bind(&SCAgent::Initiate, this),true);
+    CBroker::Instance().Schedule("sc",boost::bind(&SCAgent::Initiate, this),true);
     //Initiate();
 }
 
@@ -706,7 +705,7 @@ void SCAgent::HandleRequest(MessagePtr msg, PeerNodePtr peer)
 /// @post parsing marker messages based on different conditions.
 /// @peers Invoked by dispatcher, other SC
 /// @param msg the received message
-/// @param peer the node 
+/// @param peer the node
 //////////////////////////////////////////////////////////////////
 void SCAgent::HandleMarker(MessagePtr msg, PeerNodePtr peer)
 {
@@ -722,7 +721,7 @@ void SCAgent::HandleMarker(MessagePtr msg, PeerNodePtr peer)
     incomingVer_.second = pt.get<unsigned int>("sc.id");
     m_device.clear();
 
-    //parse the device information from msg to a vector    
+    //parse the device information from msg to a vector
 	BOOST_FOREACH(ptree::value_type &v, pt.get_child("sc.devices"))
 	{
         //save power level for each node into a vector
@@ -792,7 +791,7 @@ void SCAgent::HandleMarker(MessagePtr msg, PeerNodePtr peer)
         else if (incomingVer_.first == m_scleader && m_curversion.first != incomingVer_.first)
         {
             Logger.Status << "Incoming marker is from leader, follow the leader" << std::endl;
-            SaveForward(incomingVer_, *msg);            
+            SaveForward(incomingVer_, *msg);
         }
         else
         {
@@ -810,7 +809,7 @@ void SCAgent::HandleMarker(MessagePtr msg, PeerNodePtr peer)
 /// @post parsing messages based on state or in-transit channel message.
 /// @peers Invoked by dispatcher, other SC
 /// @param msg the received message
-/// @param peer the node 
+/// @param peer the node
 //////////////////////////////////////////////////////////////////
 void SCAgent::HandleState(MessagePtr msg, PeerNodePtr peer)
 {
@@ -846,7 +845,7 @@ void SCAgent::HandleState(MessagePtr msg, PeerNodePtr peer)
 ///               m_AllPeers is a specific peer set for SC module.
 /// @pre m_AllPeers
 /// @post Add a peer to m_AllPeers
-/// @param peer 
+/// @param peer
 /// @return a pointer to a peer node
 /////////////////////////////////////////////////////////
 SCAgent::PeerNodePtr SCAgent::AddPeer(PeerNodePtr peer)

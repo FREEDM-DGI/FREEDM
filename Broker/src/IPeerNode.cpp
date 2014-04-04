@@ -3,7 +3,7 @@
 ///
 /// @author       Derek Ditch <dpdm85@mst.edu>
 /// @author       Ravi Akella <rcaq5c@mst.edu>
-/// @author       Stephen Jackson <scj7t4@mst.edu>    
+/// @author       Stephen Jackson <scj7t4@mst.edu>
 ///
 /// @project      FREEDM DGI
 ///
@@ -23,6 +23,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 #include "CConnection.hpp"
+#include "CConnectionManager.hpp"
 #include "CLogger.hpp"
 #include "CMessage.hpp"
 #include "IPeerNode.hpp"
@@ -37,7 +38,7 @@
 namespace freedm {
 
 namespace broker {
-        
+
 namespace {
 
 /// This file's logger.
@@ -50,11 +51,9 @@ CLocalLogger Logger(__FILE__);
 /// @description Prepares a peer node. Provides node status
 ///   and sending functions to the agent in a very clean manner.
 /// @param uuid The uuid of the node
-/// @param connmgr The module managing the connections
 /////////////////////////////////////////////////////////////
-IPeerNode::IPeerNode(std::string uuid, ConnManagerPtr connmgr)
-    : m_uuid(uuid),
-      m_connmgr(connmgr)
+IPeerNode::IPeerNode(std::string uuid)
+    : m_uuid(uuid)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 }
@@ -76,8 +75,8 @@ std::string IPeerNode::GetUUID() const
 ///              string
 /////////////////////////////////////////////////////////////
 std::string IPeerNode::GetHostname() const
-{ 
-    return m_connmgr.GetHostnameByUUID(GetUUID()).hostname;
+{
+    return CConnectionManager::Instance().GetHostByUUID(GetUUID()).hostname;
 }
 ////////////////////////////////////////////////////////////
 /// IPeerNode::GetPort
@@ -85,17 +84,7 @@ std::string IPeerNode::GetHostname() const
 ////////////////////////////////////////////////////////////
 std::string IPeerNode::GetPort() const
 {
-    return m_connmgr.GetHostnameByUUID(GetUUID()).port;
-}
-
-/////////////////////////////////////////////////////////////
-/// @fn IPeerNode::GetConnectionManager
-/// @description Returns a reference to the connection manager
-///              this object was constructed with.
-/////////////////////////////////////////////////////////////
-ConnManagerPtr IPeerNode::GetConnectionManager()
-{
-    return m_connmgr;
+    return CConnectionManager::Instance().GetHostByUUID(GetUUID()).port;
 }
 
 /////////////////////////////////////////////////////////////
@@ -103,13 +92,13 @@ ConnManagerPtr IPeerNode::GetConnectionManager()
 /// @description Uses the connection manager to attempt to
 ///   get a connection pointer to this node.
 /// @pre None
-/// @post If enough is known about the uuid, a connection 
+/// @post If enough is known about the uuid, a connection
 ///   will exist with the connection manager.
 /// @return A ConnectionPtr for the connection to this peer.
 /////////////////////////////////////////////////////////////
 broker::ConnectionPtr IPeerNode::GetConnection()
 {
-    return m_connmgr.GetConnectionByUUID(m_uuid);
+    return CConnectionManager::Instance().GetConnectionByUUID(m_uuid);
 }
 
 /////////////////////////////////////////////////////////////
@@ -121,7 +110,7 @@ broker::ConnectionPtr IPeerNode::GetConnection()
 ///   now, we use UDP and it doesn't matter.
 /// @pre None
 /// @post A message is sent to the peer represented by this
-///   object 
+///   object
 /// @param msg The message to write to channel
 /// @return True if the message was sent.
 /////////////////////////////////////////////////////////////

@@ -1,4 +1,0 @@
-# Stress Test
-enable Desd BATTERY storage 10.0
-work forever
-

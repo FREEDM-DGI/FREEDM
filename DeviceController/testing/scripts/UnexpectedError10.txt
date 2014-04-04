@@ -1,2 +1,0 @@
-# The DGI adapter factory receives a packet containing nonsense data
-sendtofactory packets/Golbat.txt

@@ -1,5 +1,0 @@
-# Device Fails for more than DGI Timeout Value
-enable Sst SST1 gateway 5.0
-work 5
-sleep 10
-work forever

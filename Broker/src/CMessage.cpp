@@ -31,7 +31,7 @@ using boost::property_tree::ptree;
 
 namespace freedm {
 namespace broker {
-    
+
 namespace {
 
 /// This file's logger.
@@ -313,7 +313,7 @@ bool CMessage::Load( std::istream &p_is )
 
     // We allow exceptions from read_info to propagate out in the
     // event that the message is incomplete.
-    
+
     // Load XML into the property tree using the input stream
     // An exception is thrown if reading fails.  This is propagated
     // up to distinguish between successful parse and valid
@@ -323,7 +323,7 @@ bool CMessage::Load( std::istream &p_is )
     // If the message is complete but doesn't have a source or
     // submessage identifier, then the message is malformed,
     // return false;
-    try 
+    try
     {
         Logger.Debug << "Loading pt." << std::endl;
         *this = CMessage( pt );
@@ -385,7 +385,7 @@ CMessage::operator ptree () const
     pt.put("message.sendtime",m_sendtime );
     pt.put("message.expiretime",m_expiretime );
     pt.put("message.protocol",m_protocol );
-    pt.put("message.handler",m_handler); 
+    pt.put("message.handler",m_handler);
     pt.add_child("message.properties", m_properties );
     pt.add_child("message.submessages", m_submessages );
 
@@ -442,7 +442,7 @@ CMessage::CMessage( const ptree &pt )
          throw;
     }
 }
-    
+
 } // namespace broker
 } // namespace freedm
 

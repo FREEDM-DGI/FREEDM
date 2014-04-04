@@ -1,7 +1,0 @@
-# Stress Test
-enable Sst SST1 gateway 5.0
-enable Drer WIND generation 24.0
-work 10
-change SST1 gateway 10.0
-work forever
-

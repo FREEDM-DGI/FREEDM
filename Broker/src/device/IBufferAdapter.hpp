@@ -26,7 +26,6 @@
 
 #include "IAdapter.hpp"
 
-#include <cmath>
 #include <map>
 #include <string>
 #include <vector>
@@ -37,9 +36,6 @@
 namespace freedm {
 namespace broker {
 namespace device {
-
-/// Sent by the DGI to indicate it knows nothing about the state of a device.
-const float NULL_COMMAND = std::pow(10, 8);
 
 /// Buffer adapter device interface.
 ///////////////////////////////////////////////////////////////////////////////
@@ -56,32 +52,32 @@ public:
     typedef boost::shared_ptr<IBufferAdapter> Pointer;
 
     /// Set data in txBuffer.
-    void Set(const std::string device, const std::string signal,
+    void SetCommand(const std::string device, const std::string signal,
             const SignalValue value);
 
     /// Retrieve data from rxBuffer.
-    SignalValue Get(const std::string device, const std::string signal) const;
-    
+    SignalValue GetState(const std::string device, const std::string signal) const;
+
     /// Registers a new device signal with the physical adapter.
     void RegisterStateInfo(const std::string device, const std::string signal,
             const std::size_t index);
-    
+
     /// Registers a new device signal with the physical adapter.
     void RegisterCommandInfo(const std::string device, const std::string signal,
             const std::size_t index);
 
     /// Starts the adapter
     void Start();
-    
+
     /// Virtual destructor for derived classes.
     virtual ~IBufferAdapter();
-protected:    
+protected:
     /// Constructor
     IBufferAdapter();
 
     /// Translates a device signal into its rxBuffer (state) index
     std::map<const DeviceSignal, const std::size_t> m_stateInfo;
-    
+
     /// Translates a device signal into its txBuffer (command) index
     std::map<const DeviceSignal, const std::size_t> m_commandInfo;
 

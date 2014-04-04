@@ -34,7 +34,6 @@
 #define FREEDM_BROKER_HPP
 
 #include "CListener.hpp"
-#include "CConnectionManager.hpp"
 #include "CClockSynchronizer.hpp"
 
 #include <list>
@@ -48,8 +47,6 @@
 
 namespace freedm {
     namespace broker {
-
-class CDispatcher;
 
 /// How long we should wait before aligning the modules again
 const unsigned int ALIGNMENT_DURATION = 250;
@@ -71,15 +68,15 @@ public:
     typedef std::map<TimerHandle, bool > NextTimeMap;
     typedef std::map<ModuleIdent, std::list< BoundScheduleable > > ReadyMap;
 
-    /// Initialize the broker and begin accepting connections and messages
-    CBroker(CDispatcher& dispatcher, freedm::broker::CConnectionManager &conMan);
+    /// Get the singleton instance of this class
+    static CBroker& Instance();
 
     /// Terminate the timers since they are pointers.
     ~CBroker();
 
     /// Run the Server's io_service loop.
     void Run();
- 
+
     /// Return a reference to the IO Service
     boost::asio::io_service& GetIOService();
 
@@ -91,10 +88,10 @@ public:
 
     /// Stop the server.
     void HandleStop(unsigned int signum = 0);
-    
+
     /// Schedule a task
     int Schedule(TimerHandle h, boost::posix_time::time_duration wait, Scheduleable x);
-    
+
     /// Schedule a task
     int Schedule(ModuleIdent m, BoundScheduleable x, bool start_worker=true);
 
@@ -104,12 +101,6 @@ public:
     /// Mark that you should try and cancel some timer
     void CancelTimer(ModuleIdent handle);
 
-    /// Access the connection manager
-    CConnectionManager& GetConnectionManager() { return m_connManager; };
-    
-    /// Access The dispatcher
-    CDispatcher& GetDispatcher() { return m_dispatch; };
-    
     /// Registers a module for the scheduler
     void RegisterModule(ModuleIdent m, boost::posix_time::time_duration phase);
 
@@ -118,22 +109,16 @@ public:
 
     /// Returns the synchronizer
     CClockSynchronizer& GetClockSynchronizer();
-    
+
 private:
+    /// Private constructor for the singleton instance
+    CBroker();
+
     /// Handle completion of an asynchronous accept operation.
     void HandleAccept(const boost::system::error_code& e);
 
     /// The io_service used to perform asynchronous operations.
     boost::asio::io_service m_ioService;
-
-    /// The connection manager which owns all live connections.
-    CConnectionManager &m_connManager;
-
-    /// The handler for all incoming requests.
-    CDispatcher &m_dispatch;
-
-    ///The Broker's pointer to the listening socket
-    CListener::ConnectionPtr m_newConnection;
 
     ///Schedule to Move Onto The Next Phase.
     void ChangePhase(const boost::system::error_code &err);
@@ -146,13 +131,13 @@ private:
 
     ///Flag for if the executer is scheduled to run again.
     bool m_busy;
-    
+
     ///The last time the phases were aligned
     boost::posix_time::ptime m_last_alignment;
 
     ///List of modules for the scheduler
     ModuleVector m_modules;
-    
+
     ///Whose turn is it for round robin.
     PhaseMarker m_phase;
 
@@ -161,19 +146,19 @@ private:
 
     ///Time for the phases
     boost::asio::deadline_timer m_phasetimer;
-    
+
     ///The current counter for the time handlers
     TimerHandle m_handlercounter;
 
     ///How the timers are allocated.
-    TimerAlloc m_allocs;    
+    TimerAlloc m_allocs;
 
     ///A list of timers used for scheduling
     TimersMap m_timers;
 
     ///Maps handle to bool: if a timer handle is set to expire for the next round.
     NextTimeMap m_nexttime;
-    
+
     ///Maps if a specific timer has been cancelled or triggered by end of round
     NextTimeMap m_ntexpired;
 

@@ -7,7 +7,7 @@
 ///
 /// @description  DGI Load Balancing Module
 ///
-/// @functions  
+/// @functions
 ///     LBAgent
 ///     LB
 ///     AddPeer
@@ -44,7 +44,7 @@
 #include "CConnectionManager.hpp"
 #include "CDispatcher.hpp"
 #include "CMessage.hpp"
-#include "PhysicalDeviceTypes.hpp"
+#include "CDevice.hpp"
 
 #include "IPeerNode.hpp"
 #include "IAgent.hpp"
@@ -72,7 +72,7 @@ const double NORMAL_TOLERANCE = 0.5;
 //////////////////////////////////////////////////////////
 /// class LBAgent
 ///
-/// @description 
+/// @description
 /// Declaration of LBAgent class for load balancing algorithm
 /////////////////////////////////////////////////////////
 class LBAgent
@@ -82,25 +82,25 @@ class LBAgent
 {
     public:
         /// Constructor for using this object as a module
-        LBAgent(std::string uuid_, CBroker &broker);
+        LBAgent(std::string uuid_);
 
         /// Main loop of the algorithm called from PosixBroker
         int Run();
 
     private:
-        enum EStatus { SUPPLY, NORM, DEMAND }; 
+        enum EStatus { SUPPLY, NORM, DEMAND };
          // Routines
-        /// Advertises a draft request to demand nodes on Supply 
+        /// Advertises a draft request to demand nodes on Supply
         void SendDraftRequest();
-        /// Maintains the load table  
+        /// Maintains the load table
         void LoadTable();
         /// Monitors the demand changes and trigers the algorithm accordingly
-        void LoadManage();        
+        void LoadManage();
         /// Triggers the LoadManage routine on timeout
         void LoadManage( const boost::system::error_code& err );
         /// Sends request to SC module to initiate state collection on timeout
         void HandleStateTimer( const boost::system::error_code & error);
-        
+
         // Messages
         /// Sends a message 'msg' to the peers in 'peerSet_'
         void SendMsg(std::string msg, PeerSet peerSet_);
@@ -112,18 +112,18 @@ class LBAgent
         // Handlers
         /// Handles the incoming messages according to the message label
         virtual void HandleAny(MessagePtr msg,PeerNodePtr peer);
-        void HandlePeerList(MessagePtr msg, PeerNodePtr peer); 
-        void HandleDemand(MessagePtr msg, PeerNodePtr peer); 
-        void HandleNormal(MessagePtr msg, PeerNodePtr peer); 
-        void HandleSupply(MessagePtr msg, PeerNodePtr peer); 
-        void HandleRequest(MessagePtr msg, PeerNodePtr peer); 
-        void HandleYes(MessagePtr msg, PeerNodePtr peer); 
-        void HandleNo(MessagePtr msg, PeerNodePtr peer); 
-        void HandleDrafting(MessagePtr msg, PeerNodePtr peer); 
-        void HandleAccept(MessagePtr msg, PeerNodePtr peer); 
-        void HandleCollectedState(MessagePtr msg, PeerNodePtr peer); 
-        void HandleComputedNormal(MessagePtr msg, PeerNodePtr peer); 
-        
+        void HandlePeerList(MessagePtr msg, PeerNodePtr peer);
+        void HandleDemand(MessagePtr msg, PeerNodePtr peer);
+        void HandleNormal(MessagePtr msg, PeerNodePtr peer);
+        void HandleSupply(MessagePtr msg, PeerNodePtr peer);
+        void HandleRequest(MessagePtr msg, PeerNodePtr peer);
+        void HandleYes(MessagePtr msg, PeerNodePtr peer);
+        void HandleNo(MessagePtr msg, PeerNodePtr peer);
+        void HandleDrafting(MessagePtr msg, PeerNodePtr peer);
+        void HandleAccept(MessagePtr msg, PeerNodePtr peer);
+        void HandleCollectedState(MessagePtr msg, PeerNodePtr peer);
+        void HandleComputedNormal(MessagePtr msg, PeerNodePtr peer);
+
         /// Adds a new peer by a pointer
         PeerNodePtr AddPeer(PeerNodePtr peer);
         /// Returns a pointer to the peer based on its UUID
@@ -148,11 +148,11 @@ class LBAgent
         float   m_NetGateway;
         /// Demand cost of this node in Demand
         float   m_DemandVal;
-        /// Current Demand state of this node  
+        /// Current Demand state of this node
         EStatus   m_Status;
         /// Previous demand state of this node before state change
-        EStatus   m_prevStatus;  
-   
+        EStatus   m_prevStatus;
+
         // Peer lists
         /// Set of known peers in Demand State
         PeerSet     m_HiNodes;
@@ -160,24 +160,22 @@ class LBAgent
         PeerSet     m_NoNodes;
         /// Set of known peers in Supply State
         PeerSet     m_LoNodes;
-        /// Set of all the known peers 
+        /// Set of all the known peers
         PeerSet     m_AllPeers;
-        
-        // Power migration functions 
+
+        // Power migration functions
         /// 'Power migration' by stepping up/down P* by a constant value
         void Step_PStar();
         /// 'Power migration' by stepping up/down P* basing on the demand cost
         void PStar(device::SignalValue DemandValue);
         /// 'Power migration' through controlling DESD devices
-        void Desd_PStar();   
-        
-        // IO and Timers 
+        void Desd_PStar();
+
+        // IO and Timers
         /// Timer until check of demand state change
         CBroker::TimerHandle     m_GlobalTimer;
         /// Timer until next periodic state collection
         CBroker::TimerHandle      m_StateTimer;
-        
-        CBroker &m_broker;
 
         bool m_sstExists;
         /// Set to true for the first get gateway call to indicate they should

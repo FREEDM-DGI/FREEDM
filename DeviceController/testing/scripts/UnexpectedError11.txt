@@ -1,3 +1,0 @@
-# The DGI adapter receives a packet containing a lone command with the wrong delimiter
-enable Sst SST1 gateway 5.0
-sendtoadapter packets/Adapter-WrongDelimiter-Lone.txt

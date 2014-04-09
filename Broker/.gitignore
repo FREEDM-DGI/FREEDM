@@ -14,3 +14,4 @@ PosixBroker
 *.[oa]
 build/
 install/
+doxygen/

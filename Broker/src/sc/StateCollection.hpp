@@ -45,6 +45,8 @@ namespace broker
 namespace sc
 {
 
+using boost::property_tree::ptree;
+
 ///////////////////////////////////////////////////////////////////////////////
 /// @class          SCAgent
 /// @description    Declaration of Chandy-Lamport Algorithm
@@ -55,12 +57,17 @@ namespace sc
 ///                 other nodes (these messages belong to the channel between the nodes).
 ///////////////////////////////////////////////////////////////////////////////
 
-class SCAgent : public IMessageHandler, public IPeerNode,
+class SCAgent : public IMessageHandler, private IPeerNode,
         public IAgent< boost::shared_ptr<IPeerNode> >
 {
     public:
         ///Constructor
         SCAgent(std::string uuid);
+
+    private:
+        //Marker structure
+        typedef std::pair< std::string, int >  StateVersion;
+
         //Handler
         ///Handle receiving messages
         void HandleAccept(PeerNodePtr peer);
@@ -70,10 +77,6 @@ class SCAgent : public IMessageHandler, public IPeerNode,
         void HandleState(const StateMessage& msg, PeerNodePtr peer);
         /// Handles received messages
         void HandleIncomingMessage(boost::shared_ptr<const ModuleMessage> msg, PeerNodePtr peer);
-
-    private:
-        //Marker structure
-        typedef std::pair< std::string, int >  StateVersion;
 
         //Internal
         ///Initiator starts state collection

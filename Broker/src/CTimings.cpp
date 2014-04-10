@@ -19,14 +19,11 @@ namespace {
 CLocalLogger Logger(__FILE__);
 
 }
-
 unsigned int CTimings::GM_AYC_RESPONSE_TIMEOUT;
 
 unsigned int CTimings::GM_PREMERGE_MAX_TIMEOUT;
 
 unsigned int CTimings::GM_INVITE_RESPONSE_TIMEOUT;
-
-unsigned int CTimings::GM_CHECK_TIMEOUT;
 
 unsigned int CTimings::LB_PHASE_TIME;
 
@@ -38,15 +35,9 @@ unsigned int CTimings::DEV_RTDS_DELAY;
 
 unsigned int CTimings::GM_AYT_RESPONSE_TIMEOUT;
 
-unsigned int CTimings::LB_GLOBAL_TIMER;
-
 unsigned int CTimings::GM_PHASE_TIME;
 
-unsigned int CTimings::GM_FID_TIMEOUT;
-
 unsigned int CTimings::SC_PHASE_TIME;
-
-unsigned int CTimings::CS_EXCHANGE_TIME;
 
 unsigned int CTimings::DEV_SOCKET_TIMEOUT;
 
@@ -56,13 +47,13 @@ unsigned int CTimings::LB_SC_QUERY_TIME;
 
 unsigned int CTimings::GM_PREMERGE_MIN_TIMEOUT;
 
-unsigned int CTimings::GM_TIMEOUT_TIMEOUT;
-
 unsigned int CTimings::CSRC_RESEND_TIME;
 
 unsigned int CTimings::GM_PREMERGE_GRANULARITY;
 
 unsigned int CTimings::LB_STATE_TIMER;
+
+unsigned int CTimings::LB_GLOBAL_TIMER;
 
 
 
@@ -89,12 +80,6 @@ void CTimings::SetTimings(const std::string timingsFile)
     desc = "The timing value GM_INVITE_RESPONSE_TIMEOUT";
     loggerOpts.add_options()
         ("GM_INVITE_RESPONSE_TIMEOUT",
-        po::value<unsigned int>( ),
-        desc.c_str() );
-
-    desc = "The timing value GM_CHECK_TIMEOUT";
-    loggerOpts.add_options()
-        ("GM_CHECK_TIMEOUT",
         po::value<unsigned int>( ),
         desc.c_str() );
 
@@ -128,33 +113,15 @@ void CTimings::SetTimings(const std::string timingsFile)
         po::value<unsigned int>( ),
         desc.c_str() );
 
-    desc = "The timing value LB_GLOBAL_TIMER";
-    loggerOpts.add_options()
-        ("LB_GLOBAL_TIMER",
-        po::value<unsigned int>( ),
-        desc.c_str() );
-
     desc = "The timing value GM_PHASE_TIME";
     loggerOpts.add_options()
         ("GM_PHASE_TIME",
         po::value<unsigned int>( ),
         desc.c_str() );
 
-    desc = "The timing value GM_FID_TIMEOUT";
-    loggerOpts.add_options()
-        ("GM_FID_TIMEOUT",
-        po::value<unsigned int>( ),
-        desc.c_str() );
-
     desc = "The timing value SC_PHASE_TIME";
     loggerOpts.add_options()
         ("SC_PHASE_TIME",
-        po::value<unsigned int>( ),
-        desc.c_str() );
-
-    desc = "The timing value CS_EXCHANGE_TIME";
-    loggerOpts.add_options()
-        ("CS_EXCHANGE_TIME",
         po::value<unsigned int>( ),
         desc.c_str() );
 
@@ -182,12 +149,6 @@ void CTimings::SetTimings(const std::string timingsFile)
         po::value<unsigned int>( ),
         desc.c_str() );
 
-    desc = "The timing value GM_TIMEOUT_TIMEOUT";
-    loggerOpts.add_options()
-        ("GM_TIMEOUT_TIMEOUT",
-        po::value<unsigned int>( ),
-        desc.c_str() );
-
     desc = "The timing value CSRC_RESEND_TIME";
     loggerOpts.add_options()
         ("CSRC_RESEND_TIME",
@@ -203,6 +164,12 @@ void CTimings::SetTimings(const std::string timingsFile)
     desc = "The timing value LB_STATE_TIMER";
     loggerOpts.add_options()
         ("LB_STATE_TIMER",
+        po::value<unsigned int>( ),
+        desc.c_str() );
+
+    desc = "The timing value LB_GLOBAL_TIMER";
+    loggerOpts.add_options()
+        ("LB_GLOBAL_TIMER",
         po::value<unsigned int>( ),
         desc.c_str() );
 
@@ -251,16 +218,6 @@ void CTimings::SetTimings(const std::string timingsFile)
     {
         throw EDgiConfigError(
                 "GM_INVITE_RESPONSE_TIMEOUT is missing, please check your timings config");
-    }
-
-    try
-    {
-        GM_CHECK_TIMEOUT = vm["GM_CHECK_TIMEOUT"].as<unsigned int>();
-    }
-    catch (boost::bad_any_cast& e)
-    {
-        throw EDgiConfigError(
-                "GM_CHECK_TIMEOUT is missing, please check your timings config");
     }
 
     try
@@ -315,16 +272,6 @@ void CTimings::SetTimings(const std::string timingsFile)
 
     try
     {
-        LB_GLOBAL_TIMER = vm["LB_GLOBAL_TIMER"].as<unsigned int>();
-    }
-    catch (boost::bad_any_cast& e)
-    {
-        throw EDgiConfigError(
-                "LB_GLOBAL_TIMER is missing, please check your timings config");
-    }
-
-    try
-    {
         GM_PHASE_TIME = vm["GM_PHASE_TIME"].as<unsigned int>();
     }
     catch (boost::bad_any_cast& e)
@@ -335,32 +282,12 @@ void CTimings::SetTimings(const std::string timingsFile)
 
     try
     {
-        GM_FID_TIMEOUT = vm["GM_FID_TIMEOUT"].as<unsigned int>();
-    }
-    catch (boost::bad_any_cast& e)
-    {
-        throw EDgiConfigError(
-                "GM_FID_TIMEOUT is missing, please check your timings config");
-    }
-
-    try
-    {
         SC_PHASE_TIME = vm["SC_PHASE_TIME"].as<unsigned int>();
     }
     catch (boost::bad_any_cast& e)
     {
         throw EDgiConfigError(
                 "SC_PHASE_TIME is missing, please check your timings config");
-    }
-
-    try
-    {
-        CS_EXCHANGE_TIME = vm["CS_EXCHANGE_TIME"].as<unsigned int>();
-    }
-    catch (boost::bad_any_cast& e)
-    {
-        throw EDgiConfigError(
-                "CS_EXCHANGE_TIME is missing, please check your timings config");
     }
 
     try
@@ -405,16 +332,6 @@ void CTimings::SetTimings(const std::string timingsFile)
 
     try
     {
-        GM_TIMEOUT_TIMEOUT = vm["GM_TIMEOUT_TIMEOUT"].as<unsigned int>();
-    }
-    catch (boost::bad_any_cast& e)
-    {
-        throw EDgiConfigError(
-                "GM_TIMEOUT_TIMEOUT is missing, please check your timings config");
-    }
-
-    try
-    {
         CSRC_RESEND_TIME = vm["CSRC_RESEND_TIME"].as<unsigned int>();
     }
     catch (boost::bad_any_cast& e)
@@ -444,6 +361,16 @@ void CTimings::SetTimings(const std::string timingsFile)
     }
 
 
+    try
+    {
+        LB_GLOBAL_TIMER = vm["LB_GLOBAL_TIMER"].as<unsigned int>();
+
+    }
+    catch (boost::bad_any_cast& e)
+    {
+        throw EDgiConfigError(
+                "LB_GLOBAL_TIMER is missing, please check your timings config");
+    }
 }
 
 }

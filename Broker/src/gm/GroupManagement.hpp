@@ -32,9 +32,7 @@
 
 #include <boost/interprocess/sync/interprocess_mutex.hpp>
 #include <boost/shared_ptr.hpp>
-#include <boost/system/error_code.hpp>
 #include <boost/thread/mutex.hpp>
-#include <google/protobuf/message.h>
 
 namespace freedm {
 
@@ -44,7 +42,7 @@ namespace gm {
 
 /// Declaration of Garcia-Molina Invitation Leader Election algorithm.
 class GMAgent
-  : public IMessageHandler, public IPeerNode,
+  : public IMessageHandler, private IPeerNode,
     public IAgent< boost::shared_ptr<IPeerNode> >
 {
   public:

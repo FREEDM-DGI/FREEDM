@@ -64,6 +64,7 @@ CDispatcher& CDispatcher::Instance()
 void CDispatcher::HandleRequest(boost::shared_ptr<const ModuleMessage> msg, std::string uuid)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Debug << "Processing message addressed to: " << msg->recipient_module() << std::endl;
 
     bool processed = false;
 
@@ -129,7 +130,7 @@ void CDispatcher::RegisterReadHandler(
     boost::shared_ptr<IMessageHandler> handler, std::string id)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-
+    Logger.Debug << "Registered module listening on " << id << std::endl;
     m_registrations.insert(std::make_pair(handler,id));
 }
 

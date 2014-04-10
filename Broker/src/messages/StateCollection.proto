@@ -67,16 +67,6 @@ message CollectedStateMessage
 
 message StateCollectionMessage
 {
-    enum Type
-    {
-        MARKER_MESSAGE = 1;
-        STATE_MESSAGE = 2;
-        REQUEST_MESSAGE = 3;
-        COLLECTED_STATE_MESSAGE = 4;
-    }
-
-    required Type type = 1;
-
     optional MarkerMessage marker_message = 2;
     optional StateMessage state_message = 3;
     optional RequestMessage request_message = 4;

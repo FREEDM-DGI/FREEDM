@@ -186,14 +186,17 @@ void CPhysicalTopology::LoadTopology()
     }
 
     // Read from the input file
-    while(!topf.eof())
+    while(topf >> token)
     {
-        topf >> token;
         if(token == EDGE_TOKEN)
         {
             std::string v_symbol1;
             std::string v_symbol2;
-            topf>>v_symbol1>>v_symbol2;
+            if(!(topf>>v_symbol1>>v_symbol2))
+            {
+                throw std::runtime_error("Failed Reading Edge Topology Entry (EOF?)");
+            }
+            Logger.Debug<<"Got Edge: "<<v_symbol1<<","<<v_symbol2<<std::endl;
 
             if(altmp.count(v_symbol1))
                 altmp[v_symbol1] = VertexSet();
@@ -211,8 +214,12 @@ void CPhysicalTopology::LoadTopology()
         {
             std::string uuid;
             std::string vsymbol;
-            topf>>vsymbol>>uuid;
+            if(!(topf>>vsymbol>>uuid))
+            {
+                throw std::runtime_error("Failed Reading Vertex Topology Entry (EOF?)");
+            }
             strans[vsymbol] = uuid;
+            Logger.Debug<<"Got Vertex: "<<vsymbol<<"->"<<uuid<<std::endl;
         }
         else if(token == CONTROL_TOKEN)
         {
@@ -221,7 +228,11 @@ void CPhysicalTopology::LoadTopology()
             std::string fidname;
             VertexPair vx1, vx2;
 
-            topf>>v_symbol1>>v_symbol2>>fidname;
+            if(!(topf>>v_symbol1>>v_symbol2>>fidname))
+            {
+                throw std::runtime_error("Failed Reading Control Topology Entry (EOF?)");
+            }
+            Logger.Debug<<"Got Control: "<<v_symbol1<<","<<v_symbol2<<" via "<<fidname<<std::endl;
             // Bi directional!
             vx1 = VertexPair(v_symbol1, v_symbol2);
             vx2 = VertexPair(v_symbol2, v_symbol1);
@@ -238,6 +249,7 @@ void CPhysicalTopology::LoadTopology()
             // raise exception, malformed input
             throw std::runtime_error("Physical Topology: Input topology file is malformed.");
         }
+        token = "";
     }
     topf.close();
 
@@ -249,7 +261,7 @@ void CPhysicalTopology::LoadTopology()
         {
             all_valid = false;
             // Warn user about bad name.
-            Logger.Error<<"Couldn't find UUID for virtualname "<<vname<<std::endl;
+            Logger.Error<<"Couldn't find UUID for virtualname: "<<vname<<std::endl;
         }
     }
     if(all_valid == false)

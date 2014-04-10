@@ -117,6 +117,8 @@ LBAgent::LBAgent(std::string uuid_):
 ///////////////////////////////////////////////////////////////////////////////
 void LBAgent::HandleIncomingMessage(boost::shared_ptr<const ModuleMessage> msg, PeerNodePtr peer)
 {
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+
     if(msg->type() == ModuleMessage::GROUP_MANAGEMENT_MESSAGE)
     {
         gm::GroupManagementMessage gmm = msg->group_management_message();
@@ -1165,6 +1167,7 @@ void LBAgent::HandleStateTimer( const boost::system::error_code & error )
 ///////////////////////////////////////////////////////////////////////////////
 ModuleMessage LBAgent::PrepareForSending(const LoadBalancingMessage& message, std::string recipient)
 {
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     return broker::PrepareForSending(message, ModuleMessage::LOAD_BALANCING_MESSAGE, recipient);
 }
 

@@ -131,6 +131,8 @@ GMAgent::~GMAgent()
 ///////////////////////////////////////////////////////////////////////////////
 void GMAgent::HandleIncomingMessage(boost::shared_ptr<const ModuleMessage> msg, PeerNodePtr peer)
 {
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+
     //Are all FIDs open?
     if(m_fidsclosed == false)
     {
@@ -1418,6 +1420,7 @@ void GMAgent::SetStatus(int status)
 ///////////////////////////////////////////////////////////////////////////////
 ModuleMessage GMAgent::PrepareForSending(const GroupManagementMessage& message, std::string recipient)
 {
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     return broker::PrepareForSending(message, ModuleMessage::GROUP_MANAGEMENT_MESSAGE, recipient);
 }
 

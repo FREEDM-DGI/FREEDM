@@ -112,6 +112,8 @@ void CClockSynchronizer::Stop()
 void CClockSynchronizer::HandleIncomingMessage(
     boost::shared_ptr<const ModuleMessage> msg, PeerNodePtr peer)
 {
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+
     if (msg->type() != ModuleMessage::CLOCK_SYNCHRONIZER_MESSAGE)
     {
         Logger.Warn << "Dropped message of unexpected type:\n" << msg->DebugString();
@@ -511,6 +513,7 @@ boost::posix_time::time_duration CClockSynchronizer::DoubleToTD(double td)
 ///////////////////////////////////////////////////////////////////////////////
 ModuleMessage CClockSynchronizer::PrepareForSending(const ClockSynchronizerMessage& message)
 {
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     return broker::PrepareForSending(message, ModuleMessage::CLOCK_SYNCHRONIZER_MESSAGE, "clk");
 }
 

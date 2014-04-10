@@ -124,6 +124,8 @@ SCAgent::SCAgent(std::string uuid):
 ///////////////////////////////////////////////////////////////////////////////
 void SCAgent::HandleIncomingMessage(boost::shared_ptr<const ModuleMessage> msg, PeerNodePtr peer)
 {
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+
     if (msg->type() == ModuleMessage::GROUP_MANAGEMENT_MESSAGE)
     {
         gm::GroupManagementMessage gmm = msg->group_management_message();
@@ -858,6 +860,7 @@ SCAgent::PeerNodePtr SCAgent::GetPeer(std::string uuid)
 ///////////////////////////////////////////////////////////////////////////////
 ModuleMessage SCAgent::PrepareForSending(const StateCollectionMessage& message, std::string recipient)
 {
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     return broker::PrepareForSending(message, ModuleMessage::STATE_COLLECTION_MESSAGE, recipient);
 }
 

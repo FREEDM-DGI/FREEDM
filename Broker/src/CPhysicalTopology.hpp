@@ -48,7 +48,10 @@ public:
     ~CPhysicalTopology();
 
     /// Find the reachable peers.
-    std::set<std::string> ReachablePeers(std::string source, FIDState fidstate);
+    VertexSet ReachablePeers(std::string source, FIDState fidstate);
+
+    /// Returns if the physical topology is available.
+    bool IsAvailable();
 
 private:
     /// Private constructor for the singleton instance
@@ -59,6 +62,7 @@ private:
 
     AdjacencyListMap m_adjlist; /// Structure of physical layer
     FIDControlMap m_fidcontrol; /// Which edges FIDs control.
+    bool m_available; /// If a physical topology has been loaded
 };
 
     } // namespace broker

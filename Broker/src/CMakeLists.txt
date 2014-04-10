@@ -19,6 +19,7 @@ set(BROKER_FILES
     IHandler.cpp
     CClockSynchronizer.cpp
     CTimings.cpp
+    CPhysicalTopology.cpp
     gm/GroupManagement.cpp
     lb/LoadBalance.cpp
     sc/StateCollection.cpp

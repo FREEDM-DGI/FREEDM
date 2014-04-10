@@ -595,30 +595,37 @@ void GMAgent::Premerge( const boost::system::error_code &err )
                 Logger.Info << "No response from peer: "<<peer->GetUUID()<<std::endl;
             }
         }
-        // Run BFS on the collected Data to make sure your group is still reachable.
-        std::set<std::string> reachables = CPhysicalTopology::Instance().ReachablePeers(GetUUID(),  m_fidstate);
-        std::set<std::string> unreachables;
-        // Of the nodes in the m_UpNodes set, which are not in the physically reachable set?
-        // This will select nodes that we need to remove from our active group.
-        BOOST_FOREACH( std::string uuid, m_UpNodes | boost::adaptors::map_keys)
+        if(CPhysicalTopology::Instance().IsAvailable())
         {
-            if(reachables.count(uuid) == 0)
-                unreachables.insert(uuid);
+            // Run BFS on the collected Data to make sure your group is still reachable.
+            std::set<std::string> reachables = CPhysicalTopology::Instance().ReachablePeers(GetUUID(),  m_fidstate);
+            std::set<std::string> unreachables;
+            // Of the nodes in the m_UpNodes set, which are not in the physically reachable set?
+            // This will select nodes that we need to remove from our active group.
+            BOOST_FOREACH( std::string uuid, m_UpNodes | boost::adaptors::map_keys)
+            {
+                if(reachables.count(uuid) == 0)
+                    unreachables.insert(uuid);
+            }
+            // Of the nodes in the m_Coordinators set, which are not in the physically reachable set?
+            // These are coordinators that we can see, but we don't want to participate in an election with.
+            BOOST_FOREACH( std::string uuid, m_Coordinators | boost::adaptors::map_keys)
+            {
+                if(reachables.count(uuid) == 0)
+                    unreachables.insert(uuid);
+            }
+            // For each unreachable node, remove them from the coordinators set, and the active group.
+            BOOST_FOREACH( std::string uuid, unreachables)
+            {
+                list_change = true;
+                m_UpNodes.erase(uuid);
+                m_Coordinators.erase(uuid);
+                Logger.Info << "FID state indicates "<<uuid<<" is unreachable"<<std::endl;
+            }
         }
-        // Of the nodes in the m_Coordinators set, which are not in the physically reachable set?
-        // These are coordinators that we can see, but we don't want to participate in an election with.
-        BOOST_FOREACH( std::string uuid, m_Coordinators | boost::adaptors::map_keys)
+        else
         {
-            if(reachables.count(uuid) == 0)
-                unreachables.insert(uuid);
-        }
-        // For each unreachable node, remove them from the coordinators set, and the active group.
-        BOOST_FOREACH( std::string uuid, unreachables)
-        {
-            list_change = true;
-            m_UpNodes.erase(uuid);
-            m_Coordinators.erase(uuid);
-            Logger.Info << "FID state indicates "<<uuid<<" is unreachable"<<std::endl;
+            Logger.Warn<<"Physical Topology not available. Groups will form using cyber topology only."<<std::endl;
         }
         if(list_change)
         {

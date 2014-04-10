@@ -145,34 +145,44 @@ void GMAgent::HandleIncomingMessage(boost::shared_ptr<const ModuleMessage> msg, 
         InsertInPeerSet(m_AlivePeers,peer);
     }
 
-    if(msg->type() == ModuleMessage::GROUP_MANAGEMENT_MESSAGE)
+    if(msg->has_group_management_message())
     {
         GroupManagementMessage gmm = msg->group_management_message();
-        switch(gmm.type())
+        if(gmm.has_invite_message())
         {
-        case GroupManagementMessage::INVITE_MESSAGE:
             HandleInvite(gmm.invite_message(),peer);
-            break;
-        case GroupManagementMessage::ACCEPT_MESSAGE:
+        }
+        else if(gmm.has_accept_message())
+        {
             HandleAccept(gmm.accept_message(),peer);
-            break;
-        case GroupManagementMessage::ARE_YOU_COORDINATOR_MESSAGE:
+        }
+        else if(gmm.has_are_you_coordinator_message())
+        {
             HandleAreYouCoordinator(gmm.are_you_coordinator_message(),peer);
-            break;
-        case GroupManagementMessage::ARE_YOU_COORDINATOR_RESPONSE_MESSAGE:
+        }
+        else if(gmm.has_are_you_coordinator_response_message())
+        {
             HandleResponseAYC(gmm.are_you_coordinator_response_message(),peer);
-            break;
-        case GroupManagementMessage::ARE_YOU_THERE_MESSAGE:
+        }
+        else if(gmm.has_are_you_there_message())
+        {
             HandleAreYouThere(gmm.are_you_there_message(),peer);
-            break;
-        case GroupManagementMessage::ARE_YOU_THERE_RESPONSE_MESSAGE:
+        }
+        else if(gmm.has_are_you_there_response_message())
+        {
             HandleResponseAYT(gmm.are_you_there_response_message(),peer);
-            break;
-        case GroupManagementMessage::PEER_LIST_QUERY_MESSAGE:
+        }
+        else if(gmm.has_peer_list_query_message())
+        {
             HandlePeerListQuery(gmm.peer_list_query_message(),peer);
-            break;
-        case GroupManagementMessage::PEER_LIST_MESSAGE:
+        }
+        else if(gmm.has_peer_list_message())
+        {
             HandlePeerList(gmm.peer_list_message(),peer);
+        }
+        else
+        {
+            Logger.Warn << "Dropped gm message of unexpected type:\n" << msg->DebugString();
         }
     }
     else
@@ -193,7 +203,6 @@ ModuleMessage GMAgent::AreYouCoordinator()
 {
     static google::protobuf::uint32 id = 0;
     GroupManagementMessage gmm;
-    gmm.set_type(GroupManagementMessage::ARE_YOU_COORDINATOR_MESSAGE);
     AreYouCoordinatorMessage* aycm = gmm.mutable_are_you_coordinator_message();
     aycm->set_sequence_no(id);
     Logger.Debug<<"Generated AYC : "<<id<<std::endl;
@@ -212,7 +221,6 @@ ModuleMessage GMAgent::AreYouCoordinator()
 ModuleMessage GMAgent::Invitation()
 {
     GroupManagementMessage gmm;
-    gmm.set_type(GroupManagementMessage::INVITE_MESSAGE);
     InviteMessage* im = gmm.mutable_invite_message();
     im->set_group_id(m_GroupID);
     im->set_group_leader_uuid(m_GroupLeader);
@@ -234,7 +242,6 @@ ModuleMessage GMAgent::Invitation()
 ModuleMessage GMAgent::AreYouCoordinatorResponse(std::string payload,int seq)
 {
     GroupManagementMessage gmm;
-    gmm.set_type(GroupManagementMessage::ARE_YOU_COORDINATOR_RESPONSE_MESSAGE);
     AreYouCoordinatorResponseMessage* aycrm = gmm.mutable_are_you_coordinator_response_message();
     aycrm->set_payload(payload);
     aycrm->set_leader_uuid(Coordinator());
@@ -256,7 +263,6 @@ ModuleMessage GMAgent::AreYouCoordinatorResponse(std::string payload,int seq)
 ModuleMessage GMAgent::AreYouThereResponse(std::string payload,int seq)
 {
     GroupManagementMessage gmm;
-    gmm.set_type(GroupManagementMessage::ARE_YOU_THERE_RESPONSE_MESSAGE);
     AreYouThereResponseMessage* aytrm = gmm.mutable_are_you_there_response_message();
     aytrm->set_payload(payload);
     aytrm->set_leader_uuid(Coordinator());
@@ -276,7 +282,6 @@ ModuleMessage GMAgent::AreYouThereResponse(std::string payload,int seq)
 ModuleMessage GMAgent::Accept()
 {
     GroupManagementMessage gmm;
-    gmm.set_type(GroupManagementMessage::ACCEPT_MESSAGE);
     AcceptMessage* am = gmm.mutable_accept_message();
     am->set_group_id(m_GroupID);
     return PrepareForSending(gmm);
@@ -293,7 +298,6 @@ ModuleMessage GMAgent::AreYouThere()
 {
     static int id = 100000;
     GroupManagementMessage gmm;
-    gmm.set_type(GroupManagementMessage::ARE_YOU_THERE_MESSAGE);
     AreYouThereMessage* aytm = gmm.mutable_are_you_there_message();
     aytm->set_group_id(m_GroupID);
     aytm->set_sequence_no(id);
@@ -312,7 +316,6 @@ ModuleMessage GMAgent::AreYouThere()
 ModuleMessage GMAgent::PeerList(std::string requester)
 {
     GroupManagementMessage gmm;
-    gmm.set_type(GroupManagementMessage::PEER_LIST_MESSAGE);
     PeerListMessage* plm = gmm.mutable_peer_list_message();
     BOOST_FOREACH(PeerNodePtr peer, m_UpNodes | boost::adaptors::map_values)
     {
@@ -340,7 +343,6 @@ ModuleMessage GMAgent::PeerList(std::string requester)
 ModuleMessage GMAgent::PeerListQuery(std::string requester)
 {
     GroupManagementMessage gmm;
-    gmm.set_type(GroupManagementMessage::PEER_LIST_QUERY_MESSAGE);
     PeerListQueryMessage* plqm = gmm.mutable_peer_list_query_message();
     plqm->set_requester(requester);
     return PrepareForSending(gmm);
@@ -1418,10 +1420,14 @@ void GMAgent::SetStatus(int status)
 ///
 /// @return a ModuleMessage containing a copy of the GroupManagementMessage
 ///////////////////////////////////////////////////////////////////////////////
-ModuleMessage GMAgent::PrepareForSending(const GroupManagementMessage& message, std::string recipient)
+ModuleMessage GMAgent::PrepareForSending(
+    const GroupManagementMessage& message, std::string recipient)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    return broker::PrepareForSending(message, ModuleMessage::GROUP_MANAGEMENT_MESSAGE, recipient);
+    ModuleMessage mm;
+    mm.mutable_group_management_message()->CopyFrom(message);
+    mm.set_recipient_module(recipient);
+    return mm;
 }
 
 } // namespace gm

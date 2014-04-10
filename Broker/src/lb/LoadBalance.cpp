@@ -119,11 +119,11 @@ void LBAgent::HandleIncomingMessage(boost::shared_ptr<const ModuleMessage> msg, 
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
-    if(msg->type() == ModuleMessage::GROUP_MANAGEMENT_MESSAGE)
+    if(msg->has_group_management_message())
     {
         gm::GroupManagementMessage gmm = msg->group_management_message();
 
-        if(gmm.type() == gm::GroupManagementMessage::PEER_LIST_MESSAGE)
+        if(gmm.has_peer_list_message())
         {
             HandlePeerList(gmm.peer_list_message(), peer);
         }
@@ -133,11 +133,11 @@ void LBAgent::HandleIncomingMessage(boost::shared_ptr<const ModuleMessage> msg, 
                         << msg->DebugString();
         }
     }
-    else if(msg->type() == ModuleMessage::STATE_COLLECTION_MESSAGE)
+    else if(msg->has_state_collection_message())
     {
         sc::StateCollectionMessage scm = msg->state_collection_message();
 
-        if(scm.type() == sc::StateCollectionMessage::COLLECTED_STATE_MESSAGE)
+        if(scm.has_collected_state_message())
         {
             HandleCollectedState(scm.collected_state_message());
         }
@@ -147,7 +147,7 @@ void LBAgent::HandleIncomingMessage(boost::shared_ptr<const ModuleMessage> msg, 
                         << msg->DebugString();
         }
     }
-    else if(msg->type() == ModuleMessage::LOAD_BALANCING_MESSAGE)
+    else if(msg->has_load_balancing_message())
     {
         LoadBalancingMessage lbm = msg->load_balancing_message();
 
@@ -344,8 +344,6 @@ void LBAgent::CollectState()
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
     sc::StateCollectionMessage scm;
-    scm.set_type(sc::StateCollectionMessage::REQUEST_MESSAGE);
-
     sc::RequestMessage* rm = scm.mutable_request_message();
     rm->set_module("lb");
 
@@ -371,8 +369,10 @@ void LBAgent::CollectState()
 
     try
     {
-       GetPeer(GetUUID())->Send(
-            broker::PrepareForSending(scm, ModuleMessage::STATE_COLLECTION_MESSAGE, "sc"));
+       ModuleMessage mm;
+       mm.mutable_state_collection_message()->CopyFrom(scm);
+       mm.set_recipient_module("sc");
+       GetPeer(GetUUID())->Send(mm);
        Logger.Notice << "LB module requested State Collection" << std::endl;
     }
     catch (boost::system::system_error& e)
@@ -1168,7 +1168,10 @@ void LBAgent::HandleStateTimer( const boost::system::error_code & error )
 ModuleMessage LBAgent::PrepareForSending(const LoadBalancingMessage& message, std::string recipient)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    return broker::PrepareForSending(message, ModuleMessage::LOAD_BALANCING_MESSAGE, recipient);
+    ModuleMessage mm;
+    mm.mutable_load_balancing_message()->CopyFrom(message);
+    mm.set_recipient_module(recipient);
+    return mm;
 }
 
 } // namespace lb

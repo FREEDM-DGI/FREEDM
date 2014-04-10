@@ -105,43 +105,5 @@ void StampMessageSendtime(ProtocolMessage& msg)
             boost::posix_time::microsec_clock::universal_time()));
 }
 
-///////////////////////////////////////////////////////////////////////////////
-/// Wraps a module-specific message type in a ModuleMessage.
-///
-/// @param submessage the message to be wrapped. If any required field is
-///     unset, the DGI will abort.
-/// @param type the type of the message to be wrapped. If this type does not
-///     match the tag of a submessage of ModuleMessage, the DGI will abort.
-/// @param recipient the module (sc/lb/gm/clk etc.) the message should be
-///     delivered to
-///
-/// @return the ModuleMessage containing a copy of the submessage
-///////////////////////////////////////////////////////////////////////////////
-ModuleMessage PrepareForSending(
-    const google::protobuf::Message& submessage, ModuleMessage::Type type, std::string recipient)
-{
-    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-
-    // Abort if any required fields are unset
-    submessage.CheckInitialized();
-
-    ModuleMessage dm;
-    dm.set_type(type);
-    dm.set_recipient_module(recipient);
-
-    // This relies on the fact that the values in the type enum match
-    // the tags of the submessages.
-    const google::protobuf::FieldDescriptor* submessage_descriptor =
-        ModuleMessage::descriptor()->FindFieldByNumber(type);
-    assert(submessage_descriptor != NULL);
-
-    google::protobuf::Message* dm_submessage =
-        dm.GetReflection()->MutableMessage(&dm, submessage_descriptor);
-    assert(dm_submessage != NULL);
-    dm_submessage->CopyFrom(submessage);
-
-    return dm;
-}
-
 } // namespace broker
 } // namespace freedm

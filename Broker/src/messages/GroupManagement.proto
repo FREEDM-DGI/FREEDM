@@ -81,26 +81,12 @@ message PeerListMessage
 
 message GroupManagementMessage
 {
-    enum Type
-    {
-        ARE_YOU_COORDINATOR_MESSAGE = 1;
-        INVITE_MESSAGE = 2;
-        ARE_YOU_COORDINATOR_RESPONSE_MESSAGE = 3;
-        ARE_YOU_THERE_RESPONSE_MESSAGE = 4;
-        ACCEPT_MESSAGE = 5;
-        ARE_YOU_THERE_MESSAGE = 6;
-        PEER_LIST_QUERY_MESSAGE = 7;
-        PEER_LIST_MESSAGE = 8;
-    }
-
-    required Type type = 1;
-
-    optional AreYouCoordinatorMessage are_you_coordinator_message = 2;
-    optional InviteMessage invite_message = 3;
-    optional AreYouCoordinatorResponseMessage are_you_coordinator_response_message = 4;
-    optional AreYouThereResponseMessage are_you_there_response_message = 5;
-    optional AcceptMessage accept_message = 6;
-    optional AreYouThereMessage are_you_there_message = 7;
-    optional PeerListQueryMessage peer_list_query_message = 8;
-    optional PeerListMessage peer_list_message = 9;
+    optional AreYouCoordinatorMessage are_you_coordinator_message = 1;
+    optional InviteMessage invite_message = 2;
+    optional AreYouCoordinatorResponseMessage are_you_coordinator_response_message = 3;
+    optional AreYouThereResponseMessage are_you_there_response_message = 4;
+    optional AcceptMessage accept_message = 5;
+    optional AreYouThereMessage are_you_there_message = 6;
+    optional PeerListQueryMessage peer_list_query_message = 7;
+    optional PeerListMessage peer_list_message = 8;
 }

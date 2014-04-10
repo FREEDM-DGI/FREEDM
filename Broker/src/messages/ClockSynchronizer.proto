@@ -43,14 +43,6 @@ message ExchangeResponseMessage
 
 message ClockSynchronizerMessage
 {
-    enum Type
-    {
-        EXCHANGE_MESSAGE = 1;
-        EXCHANGE_RESPONSE_MESSAGE = 2;
-    }
-
-    required Type type = 1;
-
-    optional ExchangeMessage exchange_message = 2;
-    optional ExchangeResponseMessage exchange_response_message = 3;
+    optional ExchangeMessage exchange_message = 1;
+    optional ExchangeResponseMessage exchange_response_message = 2;
 }

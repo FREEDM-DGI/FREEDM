@@ -126,11 +126,11 @@ void SCAgent::HandleIncomingMessage(boost::shared_ptr<const ModuleMessage> msg, 
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
-    if (msg->type() == ModuleMessage::GROUP_MANAGEMENT_MESSAGE)
+    if (msg->has_group_management_message())
     {
         gm::GroupManagementMessage gmm = msg->group_management_message();
 
-        if (gmm.type() == gm::GroupManagementMessage::PEER_LIST_MESSAGE)
+        if (gmm.has_peer_list_message())
         {
             HandlePeerList(gmm.peer_list_message(), peer);
         }
@@ -140,7 +140,7 @@ void SCAgent::HandleIncomingMessage(boost::shared_ptr<const ModuleMessage> msg, 
                         << msg->DebugString();
         }
     }
-    else if (msg->type() == ModuleMessage::LOAD_BALANCING_MESSAGE)
+    else if (msg->has_load_balancing_message())
     {
         lb::LoadBalancingMessage lbm = msg->load_balancing_message();
 
@@ -149,25 +149,25 @@ void SCAgent::HandleIncomingMessage(boost::shared_ptr<const ModuleMessage> msg, 
             HandleAccept(peer);
         }
     }
-    else if (msg->type() == ModuleMessage::STATE_COLLECTION_MESSAGE)
+    else if (msg->has_state_collection_message())
     {
         StateCollectionMessage scm = msg->state_collection_message();
 
-        switch (scm.type())
+        if (scm.has_marker_message())
         {
-        case StateCollectionMessage::MARKER_MESSAGE:
             HandleMarker(scm.marker_message(), peer);
-            break;
-        case StateCollectionMessage::STATE_MESSAGE:
+        }
+        else if (scm.has_state_message())
+        {
             HandleState(scm.state_message(), peer);
-            break;
-        case StateCollectionMessage::REQUEST_MESSAGE:
+        }
+        else if (scm.has_request_message())
+        {
             HandleRequest(scm.request_message(), peer);
-            break;
-        case StateCollectionMessage::COLLECTED_STATE_MESSAGE:
-            // These are responses to modules that request state collections.
-            // We don't need to process them.
-            break;
+        }
+        else
+        {
+            Logger.Warn << "Dropped sc message of unexpected type:\n" << msg->DebugString();
         }
     }
     else
@@ -226,8 +226,6 @@ void SCAgent::Initiate()
     Logger.Info << "Marker is ready from " << GetUUID() << std::endl;
 
     StateCollectionMessage scm;
-    scm.set_type(StateCollectionMessage::MARKER_MESSAGE);
-
     MarkerMessage* mm = scm.mutable_marker_message();
     mm->set_source(GetUUID());
     mm->set_id(m_curversion.second);
@@ -270,8 +268,6 @@ void SCAgent::StateResponse()
         Logger.Info << "Sending requested state back to " << m_module << " module" << std::endl;
 
         StateCollectionMessage scm;
-        scm.set_type(StateCollectionMessage::COLLECTED_STATE_MESSAGE);
-
         CollectedStateMessage* csm = scm.mutable_collected_state_message();
         csm->set_num_intransit_accepts(0);
 
@@ -437,8 +433,6 @@ void SCAgent::SendStateBack()
     Logger.Status << "(Peer)The number of collected states is " << int(collectstate.size()) << std::endl;
 
     StateCollectionMessage scm;
-    scm.set_type(StateCollectionMessage::STATE_MESSAGE);
-
     StateMessage* sm = scm.mutable_state_message();
     sm->set_source(GetUUID());
     sm->set_marker_uuid(m_curversion.first);
@@ -500,8 +494,6 @@ void SCAgent::SaveForward(StateVersion latest, const MarkerMessage& msg)
     m_countstate++;
 
     StateCollectionMessage scm;
-    scm.set_type(StateCollectionMessage::MARKER_MESSAGE);
-
     MarkerMessage* mm = scm.mutable_marker_message();
     mm->CopyFrom(msg);
 
@@ -858,10 +850,14 @@ SCAgent::PeerNodePtr SCAgent::GetPeer(std::string uuid)
 ///
 /// @return a ModuleMessage containing a copy of the StateCollectionMessage
 ///////////////////////////////////////////////////////////////////////////////
-ModuleMessage SCAgent::PrepareForSending(const StateCollectionMessage& message, std::string recipient)
+ModuleMessage SCAgent::PrepareForSending(
+    const StateCollectionMessage& message, std::string recipient)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    return broker::PrepareForSending(message, ModuleMessage::STATE_COLLECTION_MESSAGE, recipient);
+    ModuleMessage mm;
+    mm.mutable_state_collection_message()->CopyFrom(message);
+    mm.set_recipient_module(recipient);
+    return mm;
 }
 
 } // namespace sc

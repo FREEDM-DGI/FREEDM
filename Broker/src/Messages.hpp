@@ -47,10 +47,6 @@ void SetExpirationTimeFromNow(ProtocolMessage& msg, const boost::posix_time::tim
 /// Sets the message's timestamp to the current time.
 void StampMessageSendtime(ProtocolMessage& msg);
 
-/// Packs a module's message type into a ModuleMessage
-ModuleMessage PrepareForSending(
-    const google::protobuf::Message& message, ModuleMessage::Type type, std::string recipient);
-
 } // namespace broker
 } // namespace freedm
 

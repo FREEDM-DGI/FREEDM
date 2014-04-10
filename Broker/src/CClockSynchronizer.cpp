@@ -114,20 +114,24 @@ void CClockSynchronizer::HandleIncomingMessage(
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
-    if (msg->type() != ModuleMessage::CLOCK_SYNCHRONIZER_MESSAGE)
+    if (!msg->has_clock_synchronizer_message())
     {
         Logger.Warn << "Dropped message of unexpected type:\n" << msg->DebugString();
         return;
     }
+
     ClockSynchronizerMessage csm = msg->clock_synchronizer_message();
-    switch (csm.type())
+    if(csm.has_exchange_message())
     {
-    case ClockSynchronizerMessage::EXCHANGE_MESSAGE:
         HandleExchange(csm.exchange_message(), peer);
-        break;
-    case ClockSynchronizerMessage::EXCHANGE_RESPONSE_MESSAGE:
+    }
+    else if(csm.has_exchange_response_message())
+    {
         HandleExchangeResponse(csm.exchange_response_message(), peer);
-        break;
+    }
+    else
+    {
+        Logger.Warn << "Dropped clk message of unexpected type:\n" << msg->DebugString();
     }
 }
 
@@ -383,7 +387,6 @@ ModuleMessage CClockSynchronizer::CreateExchangeMessage(unsigned int k)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     ClockSynchronizerMessage csm;
-    csm.set_type(ClockSynchronizerMessage::EXCHANGE_MESSAGE);
     ExchangeMessage* em = csm.mutable_exchange_message();
     em->set_query(k);
     return PrepareForSending(csm);
@@ -403,7 +406,6 @@ ModuleMessage CClockSynchronizer::CreateExchangeResponse(unsigned int k)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     ClockSynchronizerMessage csm;
-    csm.set_type(ClockSynchronizerMessage::EXCHANGE_RESPONSE_MESSAGE);
     ExchangeResponseMessage* erm = csm.mutable_exchange_response_message();
     erm->set_response(k);
     erm->set_unsynchronized_sendtime(boost::posix_time::to_simple_string(
@@ -514,7 +516,10 @@ boost::posix_time::time_duration CClockSynchronizer::DoubleToTD(double td)
 ModuleMessage CClockSynchronizer::PrepareForSending(const ClockSynchronizerMessage& message)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    return broker::PrepareForSending(message, ModuleMessage::CLOCK_SYNCHRONIZER_MESSAGE, "clk");
+    ModuleMessage mm;
+    mm.mutable_clock_synchronizer_message()->CopyFrom(message);
+    mm.set_recipient_module("clk");
+    return mm;
 }
 
 }

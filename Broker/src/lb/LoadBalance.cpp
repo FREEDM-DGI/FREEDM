@@ -78,7 +78,7 @@ namespace broker
 namespace lb
 {
 
-const float P_Migrate = 1;
+const float P_Migrate = 3 ;
 
 //const variables for scheduling invariants
 const int RESPONSE_TIME_MARGIN = 250;
@@ -278,7 +278,7 @@ void LBAgent::SendNormal(double Normal)
 	m_.m_submessages.put("lb.powerflow", boost::lexical_cast<std::string>(m_g));
 	m_.m_submessages.put("lb.agggateway", boost::lexical_cast<std::string>(agg_gateway));
 	//for physical invariant
-	m_.m_submessages.put("lb.grossp", boost::lexical_cast<std::string>(GrossP));
+	//m_.m_submessages.put("lb.grossp", boost::lexical_cast<std::string>(GrossP));
         //for scheduling invariant
         m_.m_submessages.put("lb.kmaxlocal", boost::lexical_cast<std::string>(Kmaxlocal));
         BOOST_FOREACH( PeerNodePtr peer, m_AllPeers | boost::adaptors::map_values)
@@ -512,6 +512,10 @@ void LBAgent::LoadTable()
     m_Storage = CDeviceManager::Instance().GetNetValue("Desd", "storage");
     m_Load = CDeviceManager::Instance().GetNetValue("Load", "drain");
     m_SstGateway = CDeviceManager::Instance().GetNetValue("Sst", "gateway");
+
+    //calculate GrossP temprally
+    GrossP = 1000*m_SstGateway*m_SstGateway*1000;
+    Logger.Status << "-----The GrossP is  " << GrossP << std::endl;
 
     if(m_actuallyread)
     {
@@ -996,7 +1000,7 @@ bool LBAgent::Physical_Invariant()
     using namespace device;
     m_Frequency = CDeviceManager::Instance().GetNetValue("Omega", "frequency");
 
-    double left = (0.025*m_Frequency + 1)*(m_Frequency-376.8)*(m_Frequency-376.8) + (m_Frequency-376.8)*(0.0075*GrossP);
+    double left = (0.08*m_Frequency + 0.01)*(m_Frequency-376.8)*(m_Frequency-376.8) + (m_Frequency-376.8)*(5.001e-8*GrossP);
     double right = Kei*(m_Frequency - 376.8);
     Logger.Status << "Physical invaraint left side of formula is " << left << " and right side of formula is " << right << std::endl;
     if (left > right)
@@ -1372,7 +1376,7 @@ void LBAgent::HandleCollectedState(MessagePtr msg, PeerNodePtr /*peer*/)
                 peercount++;
                 double p = boost::lexical_cast<double>(v.second.data());
                 agg_gateway += p;  
-                GrossP +=p*p;
+                //GrossP +=p*p;
 	    } 
         }
     }
@@ -1467,7 +1471,7 @@ void LBAgent::HandleComputedNormal(MessagePtr msg, PeerNodePtr /*peer*/)
     m_g = boost::lexical_cast<double>(pt.get<std::string>("lb.powerflow"));
     agg_gateway = boost::lexical_cast<double>(pt.get<std::string>("lb.agggateway"));
     //for physical invariant
-    GrossP = boost::lexical_cast<double>(pt.get<std::string>("lb.grossp"));
+    //GrossP = boost::lexical_cast<double>(pt.get<std::string>("lb.grossp"));
     LoadTable();
 }
 

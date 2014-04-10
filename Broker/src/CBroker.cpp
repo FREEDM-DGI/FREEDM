@@ -260,16 +260,7 @@ void CBroker::RegisterModule(CBroker::ModuleIdent m, boost::posix_time::time_dur
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     boost::mutex::scoped_lock schlock(m_schmutex);
     boost::system::error_code err;
-    bool exists = false;
-    for(unsigned int i=0; i < m_modules.size(); i++)
-    {
-        if(m_modules[i].first == m)
-        {
-            exists = true;
-            break;
-        }
-    }
-    if(!exists)
+    if(!IsModuleRegistered(m))
     {
         m_modules.push_back(PhaseTuple(m,phase));
         if(m_modules.size() == 1)
@@ -279,6 +270,28 @@ void CBroker::RegisterModule(CBroker::ModuleIdent m, boost::posix_time::time_dur
             schlock.lock();
         }
     }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+/// Checks to see if a module is registered with the scheduler. Such a module
+/// will only receive messages during its scheduled phase.
+///
+/// @param m the identifier for the module.
+///
+/// @return true if the module is registered/scheduled
+///////////////////////////////////////////////////////////////////////////////
+bool CBroker::IsModuleRegistered(ModuleIdent m)
+{
+    bool exists = false;
+    for(unsigned int i=0; i < m_modules.size(); i++)
+    {
+        if(m_modules[i].first == m)
+        {
+            exists = true;
+            break;
+        }
+    }
+    return exists;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

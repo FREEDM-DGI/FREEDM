@@ -74,10 +74,19 @@ void CDispatcher::HandleRequest(boost::shared_ptr<const ModuleMessage> msg, std:
     {
         if (it->second == msg->recipient_module() || msg->recipient_module() == "all")
         {
-            CBroker::Instance().Schedule(
-                it->second,
-                boost::bind(
-                    &CDispatcher::ReadHandlerCallback, this, it->first, msg, uuid));
+            // Scheduled modules receive messages only during that module's phase.
+            // Unscheduled modules receive messages immediately.
+            if (CBroker::Instance().IsModuleRegistered(it->second))
+            {
+                CBroker::Instance().Schedule(
+                    it->second,
+                    boost::bind(
+                        &CDispatcher::ReadHandlerCallback, this, it->first, msg, uuid));
+            }
+            else
+            {
+                ReadHandlerCallback(it->first, msg, uuid);
+            }
             processed = true;
         }
     }

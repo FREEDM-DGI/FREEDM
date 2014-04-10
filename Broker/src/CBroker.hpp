@@ -106,6 +106,9 @@ public:
     /// Registers a module for the scheduler
     void RegisterModule(ModuleIdent m, boost::posix_time::time_duration phase);
 
+    /// Checks to see if a module is registered with the scheduler
+    bool IsModuleRegistered(ModuleIdent m);
+
     /// Returns how much time the current module has left in its round
     boost::posix_time::time_duration TimeRemaining();
 

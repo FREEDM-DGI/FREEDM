@@ -125,11 +125,13 @@ void LoadTopology()
     
     std::string token;
     
+    // 
     if(!topf.is_open())
     {
         // XXX: raise exception, couldn't open topology.
     }
 
+    // Read from the input file
     while(!topf.eof())
     {
         topf >> token;
@@ -195,6 +197,7 @@ void LoadTopology()
     {
         // XXX: raise exception missing real name.
     }
+
     // Now we have to take the temporary ones and translate that into the real ones (Ugh!)
     BOOST_FOREACH( const AdjacencyListMap::value_type& mp, altmp )
     {
@@ -208,12 +211,15 @@ void LoadTopology()
         m_adjlist[name] = n;
     }
 
+    // Mark how edges are controlled.
     BOOST_FOREACH( const FIDControlMap::value_type& mp, fctmp )
     {
         std::string namea = strans[mp.first.first];
         std::string nameb = strans[mp.first.second];
         std::string fidname = mp.second;
-        m_fidcontrol[VertexPair(namea,nameb)] = fidname;        
+        // Bidirectional
+        m_fidcontrol.insert(VertexPair(namea,nameb), fidname);        
+        m_fidcontrol.insert(VertexPair(nameb,namea), fidname);        
     }
     // Done, yay!    
 }

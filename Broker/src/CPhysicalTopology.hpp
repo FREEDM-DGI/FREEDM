@@ -38,17 +38,17 @@ public:
     typedef std::pair< std::string, std::string > VertexPair;
     typedef std::set<std::string> VertexSet;
     typedef std::map<std::string, VertexSet > AdjacencyListMap;
-    typedef std::map<VertexPair,  string> FIDControlMap;
+    typedef std::multimap<VertexPair,  std::string> FIDControlMap;
     typedef std::map<std::string, bool> FIDState;
 
     /// Get the singleton instance of this class
     static CPhysicalTopology& Instance();
 
     /// Clean up this module
-    ~CPhysicalToplogy();
+    ~CPhysicalTopology();
 
     /// Find the reachable peers.
-    std::set<string> ReachablePeers(std::string source, FIDState fidstate);
+    std::set<std::string> ReachablePeers(std::string source, FIDState fidstate);
 
 private:
     /// Private constructor for the singleton instance

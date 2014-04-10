@@ -808,8 +808,6 @@ void GMAgent::Reorganize( const boost::system::error_code& err )
     {
         SetStatus(GMAgent::REORGANIZATION);
         Logger.Notice << "+ State change: REORGANIZATION: " << __LINE__    << std::endl;
-        // Send Ready msg to all up nodes in this group
-        CMessage m_ = Ready();
         Logger.Info <<"SEND: Sending out Ready"<<std::endl;
         // Send new membership list to group members
         // PeerList is the new READY

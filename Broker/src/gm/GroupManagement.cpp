@@ -1052,8 +1052,6 @@ void GMAgent::HandleAreYouThere(MessagePtr msg, PeerNodePtr peer)
         // We are Coordinator, peer is in our group, and peer is up
         CMessage m_ = Response("yes","AreYouThere",msg->GetExpireTime(),seq);
         peer->Send(m_);
-        // Update our FID state
-        UpdateFIDState(pt);
     }
     else
     {

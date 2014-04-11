@@ -278,7 +278,7 @@ void LBAgent::SendNormal(double Normal)
 	m_.m_submessages.put("lb.powerflow", boost::lexical_cast<std::string>(m_g));
 	m_.m_submessages.put("lb.agggateway", boost::lexical_cast<std::string>(agg_gateway));
 	//for physical invariant
-	//m_.m_submessages.put("lb.grossp", boost::lexical_cast<std::string>(GrossP));
+	m_.m_submessages.put("lb.grossp", boost::lexical_cast<std::string>(GrossP));
         //for scheduling invariant
         m_.m_submessages.put("lb.kmaxlocal", boost::lexical_cast<std::string>(Kmaxlocal));
         BOOST_FOREACH( PeerNodePtr peer, m_AllPeers | boost::adaptors::map_values)
@@ -1471,7 +1471,7 @@ void LBAgent::HandleComputedNormal(MessagePtr msg, PeerNodePtr /*peer*/)
     m_g = boost::lexical_cast<double>(pt.get<std::string>("lb.powerflow"));
     agg_gateway = boost::lexical_cast<double>(pt.get<std::string>("lb.agggateway"));
     //for physical invariant
-    //GrossP = boost::lexical_cast<double>(pt.get<std::string>("lb.grossp"));
+    GrossP = boost::lexical_cast<double>(pt.get<std::string>("lb.grossp"));
     LoadTable();
 }
 

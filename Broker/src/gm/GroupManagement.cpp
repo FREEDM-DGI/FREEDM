@@ -202,7 +202,6 @@ CMessage GMAgent::AreYouCoordinator()
     id++;
     // Push the state of my attached FIDs so the leader can do the BFS on it
     // To make sure it's connected
-    m_.m_submessages.add_child("gm.fids", GetFIDState());
     m_.SetExpireTimeFromNow(GLOBAL_TIMEOUT);
     return m_;
 }
@@ -597,6 +596,14 @@ void GMAgent::Premerge( const boost::system::error_code &err )
         }
         if(CPhysicalTopology::Instance().IsAvailable())
         {
+            // Add my state of m_fidstate:
+            std::set<device::CDevice::Pointer> attachedFIDs = 
+                device::CDeviceManager::Instance().GetDevicesOfType("Fid");
+            BOOST_FOREACH(device::CDevice::Pointer ptr, attachedFIDs)
+            {
+                m_fidstate[ptr->GetID()] = ptr->GetState("state");
+            }
+
             // Run BFS on the collected Data to make sure your group is still reachable.
             std::set<std::string> reachables = CPhysicalTopology::Instance().ReachablePeers(GetUUID(),  m_fidstate);
             std::set<std::string> unreachables;
@@ -1010,7 +1017,6 @@ void GMAgent::HandleAccept(MessagePtr msg, PeerNodePtr peer)
 void GMAgent::HandleAreYouCoordinator(MessagePtr msg, PeerNodePtr peer)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    ptree &pt = msg->GetSubMessages();
     int seq = msg->GetSubMessages().get<int>("gm.seq");
     Logger.Info << "RECV: AreYouCoordinator message from "<< peer->GetUUID() <<" seq: "<<seq<<std::endl;
     if(GetStatus() == GMAgent::NORMAL && IsCoordinator())
@@ -1019,7 +1025,6 @@ void GMAgent::HandleAreYouCoordinator(MessagePtr msg, PeerNodePtr peer)
         Logger.Info << "SEND: AYC Response (YES) to "<<peer->GetUUID()<<std::endl;
         CMessage m_ = Response("yes","AreYouCoordinator",msg->GetExpireTime(),seq);
         peer->Send(m_);
-        UpdateFIDState(pt);
     }
     else
     {

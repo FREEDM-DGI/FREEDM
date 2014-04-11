@@ -113,7 +113,8 @@ CPhysicalTopology::VertexSet CPhysicalTopology::ReachablePeers(std::string sourc
         consider = tmp.second;
         hops = tmp.first;
         closedset.insert(consider);
-        Logger.Debug<<"Considering "<<consider<<" ("<<hops<<" hops) ("<<m_adjlist[consider].size()<<" Neighbors)"<<std::endl;
+        Logger.Debug<<"Considering "<<consider<<" ("<<hops<<" hops) ("
+                    <<m_adjlist[consider].size()<<" Neighbors)"<<std::endl;
 
         BOOST_FOREACH( std::string neighbor, m_adjlist[consider] )
         {
@@ -141,7 +142,8 @@ CPhysicalTopology::VertexSet CPhysicalTopology::ReachablePeers(std::string sourc
                     // If we don't have the state of an FID, assume it is OPEN.
                     // If the fid is OPEN (false) then that edge is not
                     // available.
-                    Logger.Debug<<"Edge to "<<neighbor<<" is bad: "<<controlfid<<" Is Open or undefined"<<std::endl;
+                    Logger.Debug<<"Edge to "<<neighbor<<" is bad: "<<controlfid
+                                <<" Is Open or undefined"<<std::endl;
                     good_edge = false;
                     break;
                 }

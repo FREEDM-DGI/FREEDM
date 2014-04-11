@@ -114,11 +114,20 @@ CPhysicalTopology::VertexSet CPhysicalTopology::ReachablePeers(std::string sourc
 
         consider = tmp.second;
         hops = tmp.first;
+        Logger.Debug<<"Considering "<<consider<<" ("<<hops<<" hops) ("<<m_adjlist[consider].size()<<" Neighbors)"<<std::endl;
 
-        BOOST_FOREACH( std::string neighbor, m_adjlist[source] )
+        BOOST_FOREACH( std::string neighbor, m_adjlist[consider] )
         {
+            Logger.Debug<<"Neighbor: "<<neighbor;
             if(closedset.count(neighbor) > 0)
+            {
+                Logger.Debug<<" closed!"<<std::endl;
                 continue;
+            }
+            else
+            {
+                Logger.Debug<<std::endl;
+            }
             vx = CPhysicalTopology::VertexPair(consider,neighbor);
             bool good_edge = true;
             std::pair<FIDControlMap::iterator,FIDControlMap::iterator>
@@ -133,12 +142,14 @@ CPhysicalTopology::VertexSet CPhysicalTopology::ReachablePeers(std::string sourc
                     // If we don't have the state of an FID, assume it is OPEN.
                     // If the fid is OPEN (false) then that edge is not
                     // available.
+                    Logger.Debug<<"Edge to "<<neighbor<<" is bad: "<<controlfid<<" Is Open or undefined"<<std::endl;
                     good_edge = false;
                     break;
                 }
             }
             if(good_edge)
             {
+                Logger.Debug<<"Node "<<neighbor<<" is reachable"<<std::endl;
                 // This edge is not controlled by an FID, assume it is open.
                 openset.push(BFSExplorer(hops+1, neighbor));
             }
@@ -198,9 +209,9 @@ void CPhysicalTopology::LoadTopology()
             }
             Logger.Debug<<"Got Edge: "<<v_symbol1<<","<<v_symbol2<<std::endl;
 
-            if(altmp.count(v_symbol1))
+            if(!altmp.count(v_symbol1))
                 altmp[v_symbol1] = VertexSet();
-            if(altmp.count(v_symbol2))
+            if(!altmp.count(v_symbol2))
                 altmp[v_symbol2] = VertexSet();
             
             //Bi directional!

@@ -599,10 +599,20 @@ void GMAgent::Premerge( const boost::system::error_code &err )
             // Add my state of m_fidstate:
             std::set<device::CDevice::Pointer> attachedFIDs = 
                 device::CDeviceManager::Instance().GetDevicesOfType("Fid");
+            Logger.Warn<<"There are "<<attachedFIDs.size()<<" Attached Fids"<<std::endl;
             BOOST_FOREACH(device::CDevice::Pointer ptr, attachedFIDs)
             {
+                Logger.Warn<<"Got "<<ptr->GetID()<<"'s state!"<<std::endl;
                 m_fidstate[ptr->GetID()] = ptr->GetState("state");
             }
+            //Debug Print out the FID state
+            std::stringstream table;
+            std::pair<std::string, bool> fidstate;
+            BOOST_FOREACH(fidstate, m_fidstate)
+            {
+                table << fidstate.first << " = "<<fidstate.second << std::endl;
+            }
+            Logger.Warn<<table.str();
 
             // Run BFS on the collected Data to make sure your group is still reachable.
             std::set<std::string> reachables = CPhysicalTopology::Instance().ReachablePeers(GetUUID(),  m_fidstate);

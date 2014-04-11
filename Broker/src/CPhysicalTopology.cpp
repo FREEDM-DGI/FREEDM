@@ -110,10 +110,9 @@ CPhysicalTopology::VertexSet CPhysicalTopology::ReachablePeers(std::string sourc
     {
         tmp = openset.top();
         openset.pop();
-        closedset.insert(consider);
-
         consider = tmp.second;
         hops = tmp.first;
+        closedset.insert(consider);
         Logger.Debug<<"Considering "<<consider<<" ("<<hops<<" hops) ("<<m_adjlist[consider].size()<<" Neighbors)"<<std::endl;
 
         BOOST_FOREACH( std::string neighbor, m_adjlist[consider] )

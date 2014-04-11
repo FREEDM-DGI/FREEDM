@@ -612,10 +612,18 @@ void GMAgent::Premerge( const boost::system::error_code &err )
             {
                 table << fidstate.first << " = "<<fidstate.second << std::endl;
             }
-            Logger.Warn<<table.str();
+            Logger.Warn<<table.str()<<std::endl;
 
             // Run BFS on the collected Data to make sure your group is still reachable.
             std::set<std::string> reachables = CPhysicalTopology::Instance().ReachablePeers(GetUUID(),  m_fidstate);
+            std::stringstream table2;
+            Logger.Warn<<"There are "<<reachables.size()<<" reachable peers"<<std::endl;
+            BOOST_FOREACH(std::string reachable, reachables)
+            {
+                table2 << reachable << std::endl;
+            }
+            Logger.Warn<<table2.str()<<std::endl;
+            
             std::set<std::string> unreachables;
             // Of the nodes in the m_UpNodes set, which are not in the physically reachable set?
             // This will select nodes that we need to remove from our active group.

@@ -26,11 +26,12 @@
 #ifndef C_RTDS_ADAPTER_HPP
 #define C_RTDS_ADAPTER_HPP
 
-#include "ITcpAdapter.hpp"
 #include "IBufferAdapter.hpp"
 
+#include <boost/enable_shared_from_this.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/asio/io_service.hpp>
+#include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/deadline_timer.hpp>
 #include <boost/property_tree/ptree_fwd.hpp>
 
@@ -53,8 +54,7 @@ namespace device {
 ///     multiple microgrids simulated by the RTDS model is done FPGA-side.
 ////////////////////////////////////////////////////////////////////////////////
 class CRtdsAdapter
-     : public ITcpAdapter
-     , public IBufferAdapter
+     : public IBufferAdapter
      , public boost::enable_shared_from_this<CRtdsAdapter>
 {
 public:
@@ -88,8 +88,20 @@ private:
     /// Swaps the endianness of all SignalValues in a vector.
     void EndianSwapIfNeeded(std::vector<SignalValue> & v);
 
+    /// Creates a socket connection to the given hostname and port number.
+    void Connect();
+
     /// Timer object to set communication cycle pace.
     boost::asio::deadline_timer m_runTimer;
+
+    /// Socket to use for the TCP connection.
+    mutable boost::asio::ip::tcp::socket m_socket;
+
+    /// The hostname of the remote host.
+    std::string m_host;
+
+    /// The port number of the remote host.
+    std::string m_port;
 };
 
 } //namespace device

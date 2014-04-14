@@ -43,6 +43,7 @@
 #include "LoadBalance.hpp"
 
 #include "CConnectionManager.hpp"
+#include "CGlobalPeerList.hpp"
 #include "CLogger.hpp"
 #include "CMessage.hpp"
 #include "gm/GroupManagement.hpp"

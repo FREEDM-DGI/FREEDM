@@ -112,6 +112,11 @@ LBAgent::LBAgent(std::string uuid_):
     m_Leader = GetUUID();
     m_Normal = 0;
     m_GlobalTimer = CBroker::Instance().AllocateTimer("lb");
+    //for scheduling invariant
+    m_DeadlineTimer = CBroker::Instance().AllocateTimer("lb");
+    //for ECN
+    m_ECNTimer = CBroker::Instance().AllocateTimer("lb");
+
     // Bound to lbq so it resolves before the state collection round
     m_StateTimer = CBroker::Instance().AllocateTimer("lbq");
     RegisterSubhandle("any.PeerList",boost::bind(&LBAgent::HandlePeerList, this, _1, _2));
@@ -988,8 +993,8 @@ bool LBAgent::Schedule_Invariant()
     Deadline = microsecT3;
     msdiff = Deadline - Phase_Time;
     //Start  the timer, on timeout, deadline_miss will be called
-    //CBroker::Instance().Schedule(m_GlobalTimer, boost::posix_time::milliseconds(Curr_Relative_Deadline),
-    //                  boost::bind(&LBAgent::Deadline_Miss, this, boost::asio::placeholders::error));
+    CBroker::Instance().Schedule(m_DeadlineTimer, boost::posix_time::milliseconds(Curr_Relative_Deadline),
+                      boost::bind(&LBAgent::Deadline_Miss, this, boost::asio::placeholders::error));
     bool Ik_Invariant;
     bool Ip_Invariant;
     bool Ic_Invariant;
@@ -1269,9 +1274,9 @@ void LBAgent::Detected_ECN_CE()
         Update_Period();
         ECN_Status = false;
         int DEADLINE_TIMEOUT = boost::lexical_cast<int>(Curr_RTT);
-        //Start  the timer, on timeout, deadline_miss will be called
-        //CBroker::Instance().Schedule(m_GlobalTimer, boost::posix_time::milliseconds(DEADLINE_TIMEOUT),
-        //                  boost::bind(&LBAgent::ECN_Active, this, boost::asio::placeholders::error));
+        //Start  the timer, on timeout, ECN active will be called
+        CBroker::Instance().Schedule(m_ECNTimer, boost::posix_time::milliseconds(DEADLINE_TIMEOUT),
+                          boost::bind(&LBAgent::ECN_Active, this, boost::asio::placeholders::error));
     }
 }
 

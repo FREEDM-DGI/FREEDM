@@ -1470,7 +1470,7 @@ void LBAgent::HandleCollectedState(MessagePtr msg, PeerNodePtr /*peer*/)
     }
     //find the highest demand nodes
     m_highestDemand = powerLevel[0];
-    for (int i = 1; i < m_AllPeers.size(); i++)
+    for (unsigned int i = 1; i < m_AllPeers.size(); i++)
     {
         if (m_highestDemand < powerLevel[i])
             m_highestDemand = powerLevel[i];

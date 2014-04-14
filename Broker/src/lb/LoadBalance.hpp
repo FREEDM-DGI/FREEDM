@@ -255,6 +255,8 @@ class LBAgent
         
         // Cyber and Physical Invariant
         bool First_Time_Inv;
+        /// Cyber Invariant 
+        int CyberInv;
         /// Supply or draw of the system
         double m_g;
         /// Calculated gateway from load table

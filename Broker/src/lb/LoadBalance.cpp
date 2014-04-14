@@ -275,8 +275,7 @@ void LBAgent::SendNormal(double Normal)
         m_.SetHandler("lb.ComputedNormal");
         m_.m_submessages.put("lb.cnorm", boost::lexical_cast<std::string>(Normal));
 	//for cyber invariant
-	m_.m_submessages.put("lb.powerflow", boost::lexical_cast<std::string>(m_g));
-	m_.m_submessages.put("lb.agggateway", boost::lexical_cast<std::string>(agg_gateway));
+	m_.m_submessages.put("lb.cyberinv", boost::lexical_cast<std::string>(CyberInv));
 	//for physical invariant
 	//m_.m_submessages.put("lb.grossp", boost::lexical_cast<std::string>(GrossP));
         //for scheduling invariant
@@ -954,20 +953,19 @@ void LBAgent::HandleYes(MessagePtr /*msg*/, PeerNodePtr peer)
 
 ///////////////////////////////////////////////////////////////////////////////
 /// LBAgent::Invariant_Check()
-/// @description This function check cyber invariant, physical invariant and 
-///              scheduling invariant.
+/// @description This function check physical invariant and scheduling invariant.            
 ///////////////////////////////////////////////////////////////////////////////
 bool LBAgent::Invariant_Check()
 {
-    bool I1 = Cyber_Invariant();
+    bool I1 = (CyberInv==1)? true: false;
     Logger.Status << "Cyber invariant is " << I1 << std::endl;
     bool I2 = Physical_Invariant();
     Logger.Status << "Physical invariant is " << I2 << std::endl;
     //bool I3 = Schedule_Invariant();
     //Logger.Status << "Scheduling invariant is " << I3 << std::endl;
-    //return I1*I2*I3;
     return I1*I2;
     //return I1*I3;
+    //return I1*I2*I3;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1470,7 +1468,7 @@ void LBAgent::HandleCollectedState(MessagePtr msg, PeerNodePtr /*peer*/)
     }
     //find the highest demand nodes
     m_highestDemand = powerLevel[0];
-    for (int i = 1; i < m_AllPeers.size(); i++)
+    for (unsigned int i = 1; i < m_AllPeers.size(); i++)
     {
         if (m_highestDemand < powerLevel[i])
             m_highestDemand = powerLevel[i];
@@ -1501,9 +1499,15 @@ void LBAgent::HandleCollectedState(MessagePtr msg, PeerNodePtr /*peer*/)
         m_Normal = 0;
     }
     
+    //Check Cyber Invariant 
+    if (Cyber_Invariant())
+        CyberInv = 1;
+    else
+        CyberInv = 0;
     SendNormal(m_Normal);
 
     m_prevDemand = m_highestDemand;
+
 }
 
 void LBAgent::HandleComputedNormal(MessagePtr msg, PeerNodePtr /*peer*/)
@@ -1520,8 +1524,7 @@ void LBAgent::HandleComputedNormal(MessagePtr msg, PeerNodePtr /*peer*/)
     Kmaxlocal =boost::lexical_cast<int>(pt.get<std::string>("lb.kmaxlocal"));
     Logger.Status << "Received Kmax local is " << Kmaxlocal << std::endl;
     //for cyber invariant
-    m_g = boost::lexical_cast<double>(pt.get<std::string>("lb.powerflow"));
-    agg_gateway = boost::lexical_cast<double>(pt.get<std::string>("lb.agggateway"));
+    CyberInv = boost::lexical_cast<int>(pt.get<std::string>("lb.cyberinv"));
     //for physical invariant
     //GrossP = boost::lexical_cast<double>(pt.get<std::string>("lb.grossp"));
     LoadTable();

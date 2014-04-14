@@ -1343,7 +1343,7 @@ void LBAgent::Detected_ECN_CE()
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     if (ECN_Status)
     {
-        int Max_Better_Obs_RTT_Count_ECN = Calculate_ECN_Counter();
+        Max_Better_Obs_RTT_Count_ECN = Calculate_ECN_Counter();
         Curr_RTT = Curr_RTT + 2*Curr_K * RESPONSE_TIME_MARGIN;
         Curr_Relative_Deadline = Curr_RTT + RESPONSE_TIME_MARGIN;
         Update_Period();

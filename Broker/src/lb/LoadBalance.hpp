@@ -239,6 +239,8 @@ class LBAgent
         //ECN related functions and variables
         /// Flag to indicate ECN
         bool ECN;
+        /// Number that acknowledgements are received earlier than expected in ECN
+        int Max_Better_Obs_RTT_Count_ECN;
         /// Congestion Experienced (CE) bit has been set and received
         void Detected_ECN_CE();
         /// Calculate counter in ECN mode

@@ -1316,6 +1316,10 @@ void LBAgent::Ack_Recv_Is_Better()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     Logger.Notice << "Ack is better" << std::endl;
+#ifdef ENABLE_ECN
+	if(Max_Better_Obs_RTT_Count_ECN==MAX_BETTER_OBS_RTT_COUNT)
+#endif
+	{
     // reset counter for next Better_RTT
     Better_RTT_Obs_Counter = 0;
 #ifdef ENABLE_ECN
@@ -1327,6 +1331,7 @@ void LBAgent::Ack_Recv_Is_Better()
 #endif
     Logger.Notice <<"  Curr_RTT: "<<Curr_RTT<<std::endl;
     Update_Period();
+    }
 }
 
 ///////////////////////////////////////////////////////////////////////////////

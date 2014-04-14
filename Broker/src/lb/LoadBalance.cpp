@@ -139,7 +139,7 @@ LBAgent::LBAgent(std::string uuid_):
     First_Time_Inv = true;
     //a flag to indicate power migration is inprogress for supply node
     m_inProgress = false;
-    //initialize imbalanced power K
+    //initialize imbalanced power K (predict the future power migration)
     Kei = P_Migrate;
 
     m_actuallyread = true;
@@ -318,11 +318,7 @@ void LBAgent::CollectState()
     m_cs.SetHandler("sc.request");
     m_cs.m_submessages.put("sc.source", GetUUID());
     m_cs.m_submessages.put("sc.module", "lb");
-    /*
-        //for only one device
-        m_cs.m_submessages.put("sc.deviceType", "Sst");
-        m_cs.m_submessages.put("sc.valueType", "gateway");
-    */
+
     //for multiple devices
     m_cs.m_submessages.put("sc.deviceNum", 4);
     //SST device
@@ -513,7 +509,7 @@ void LBAgent::LoadTable()
     m_Load = CDeviceManager::Instance().GetNetValue("Load", "drain");
     m_SstGateway = CDeviceManager::Instance().GetNetValue("Sst", "gateway");
 
-    //calculate GrossP temprally
+    //calculate GrossP for test one supply and one demand
     GrossP = 1000*m_SstGateway*m_SstGateway*1000;
     Logger.Status << "-----The GrossP is  " << GrossP << std::endl;
 
@@ -687,6 +683,7 @@ void LBAgent::SendDraftRequest()
             //Create new request and send it to all DEMAND nodes
             SendMsg("request", m_HiNodes);
             //for scheduling invariant
+            //Recording current time for sending out "request" message
             microsecT1 = boost::posix_time::microsec_clock::local_time();
         }//end else
     }//end if
@@ -903,18 +900,20 @@ void LBAgent::HandleYes(MessagePtr /*msg*/, PeerNodePtr peer)
         return;
         
     //for scheduling invariant
+    //Record time for receiving response to the "request" message
     microsecT2 = boost::posix_time::microsec_clock::local_time();
     //expected RTT
     msdiff = microsecT2-microsecT1;
     Obs_Avg_RTT = msdiff.total_milliseconds();
     Logger.Notice << "Scaled RTT is " << Obs_Avg_RTT << std::endl;
-    //first time receive message "Yes" from demand nodes
+    //first time receive message "Yes" from demand nodes, then initialization
     if (First_Time_RTT == true )
     {
         First_Time_RTT = false;
         Curr_RTT = Obs_Avg_RTT;
         Curr_K = 0;
         Better_RTT_Obs_Counter = 0;
+        //Record time as Last_Time_Sent to the next migration message
         Last_Time_Sent = boost::posix_time::microsec_clock::local_time();
         Curr_Relative_Deadline = Curr_RTT + RESPONSE_TIME_MARGIN;
         Update_Period();
@@ -943,8 +942,8 @@ void LBAgent::HandleYes(MessagePtr /*msg*/, PeerNodePtr peer)
 	    //Start  the timer, on timeout, deadline_miss will be called
     	    CBroker::Instance().Schedule(m_DeadlineTimer, boost::posix_time::milliseconds(Curr_Relative_Deadline),
     	                  boost::bind(&LBAgent::Deadline_Miss, this, boost::asio::placeholders::error));
-
-            Curr_K+=P_Migrate;
+            //Outstanding message will be added by 1
+            Curr_K++;
         }
         catch (boost::system::system_error& e)
         {
@@ -953,7 +952,11 @@ void LBAgent::HandleYes(MessagePtr /*msg*/, PeerNodePtr peer)
     }
 }
 
-//check cyber invariant, physical invariant and scheduling invariant
+///////////////////////////////////////////////////////////////////////////////
+/// LBAgent::Invariant_Check()
+/// @description This function check cyber invariant, physical invariant and 
+///              scheduling invariant.
+///////////////////////////////////////////////////////////////////////////////
 bool LBAgent::Invariant_Check()
 {
     bool I1 = Cyber_Invariant();
@@ -966,40 +969,38 @@ bool LBAgent::Invariant_Check()
     return I1*I2;
     //return I1*I3;
 }
-//for cyber invariant
+
+///////////////////////////////////////////////////////////////////////////////
+/// LBAgent::Cyber_Invariant()
+/// @description This function check cyber invariant.
+///////////////////////////////////////////////////////////////////////////////
 bool LBAgent::Cyber_Invariant()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     //power invariant
     bool C1 = false;
     Logger.Status << "m_g is " << m_g << " and agg_gateway" << agg_gateway << std::endl;
-    if (m_g == agg_gateway)
-    {
+    if ((m_g - agg_gateway) < 1 || (m_g - agg_gateway) > -1)
         C1 = true;
-    }
     //Logger.Status << "C1 in cyber invariant is " << C1 << std::endl;
     //knapsack invariant
-    bool C2 = true;
-    if (m_prevDemand!=0)
-    {
-        if (m_prevDemand - m_highestDemand < 0)
-            C2 = true;
-    }
-    else
-    {
-        m_prevDemand = m_highestDemand;
+    bool C2 = false;
+    if (m_prevDemand - m_highestDemand <= 0)
         C2 = true;
-    }
     return C1*C2;
 }
 
-//for physical invariant
+///////////////////////////////////////////////////////////////////////////////
+/// LBAgent::Physical_Invariant()
+/// @description This function check physical invariant.
+///////////////////////////////////////////////////////////////////////////////
 bool LBAgent::Physical_Invariant()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    //Obtaining frequency from physical system
     using namespace device;
     m_Frequency = CDeviceManager::Instance().GetNetValue("Omega", "frequency");
-
+    // Check left side and right side of physical invariant formula
     double left = (0.08*m_Frequency + 0.01)*(m_Frequency-376.8)*(m_Frequency-376.8) + (m_Frequency-376.8)*(5.001e-8*GrossP);
     double right = Kei*(m_Frequency - 376.8);
     Logger.Status << "Physical invaraint left side of formula is " << left << " and right side of formula is " << right << std::endl;
@@ -1010,8 +1011,10 @@ bool LBAgent::Physical_Invariant()
 
 }
 
-
-//fore scheduling invariant
+///////////////////////////////////////////////////////////////////////////////
+/// LBAgent::Schedule_Invariant()
+/// @description This function check scheduling invariant.
+///////////////////////////////////////////////////////////////////////////////
 bool LBAgent::Schedule_Invariant()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
@@ -1055,7 +1058,11 @@ bool LBAgent::Schedule_Invariant()
     return Ik_Invariant*Ic_Invariant*Ip_Invariant;
 }
 
-
+///////////////////////////////////////////////////////////////////////////////
+/// LBAgent::Deadline_Miss()
+/// @description This function is called when Acknowledgement message hasn't  
+///              been received before deadline.
+///////////////////////////////////////////////////////////////////////////////
 void LBAgent::Deadline_Miss(const boost::system::error_code& err)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
@@ -1068,7 +1075,7 @@ void LBAgent::Deadline_Miss(const boost::system::error_code& err)
             Curr_RTT = Curr_RTT + RESPONSE_TIME_MARGIN;
             Curr_Relative_Deadline = Curr_RTT + RESPONSE_TIME_MARGIN;
             Update_Period();
-   	 }
+   	    }
     	else if (boost::asio::error::operation_aborted == err)
     	{
     	}
@@ -1080,6 +1087,11 @@ void LBAgent::Deadline_Miss(const boost::system::error_code& err)
     }
 }
 
+
+///////////////////////////////////////////////////////////////////////////////
+/// LBAgent::Update_Period()
+/// @description This function is called to update the period of sending message.
+///////////////////////////////////////////////////////////////////////////////
 void LBAgent::Update_Period()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
@@ -1105,8 +1117,6 @@ void LBAgent::HandleNo(MessagePtr /*msg*/, PeerNodePtr peer)
         return;
         
     Logger.Notice << "(No) from " << peer->GetUUID() << std::endl;
-    //for scheduling invariant
-    microsecT2 = boost::posix_time::microsec_clock::local_time();
 }
 
 void LBAgent::HandleDrafting(MessagePtr /*msg*/, PeerNodePtr peer)
@@ -1214,13 +1224,16 @@ void LBAgent::HandleAccept(MessagePtr msg, PeerNodePtr peer)
     m_inProgress = false;
 }
 
-//receive message back as expected
+///////////////////////////////////////////////////////////////////////////////
+/// LBAgent::Msg_Ack_Received()
+/// @description This function is called when Acknowledgement message has  
+///              been received as expected.
+///////////////////////////////////////////////////////////////////////////////
 void LBAgent::Msg_Ack_Received()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     //for scheduling invariant
     microsecT4 = boost::posix_time::microsec_clock::local_time();
-
     msdiff = microsecT4 - Last_Time_Sent;
     temp_MsgRTT = msdiff.total_milliseconds();
     Curr_K--;
@@ -1242,9 +1255,8 @@ void LBAgent::Msg_Ack_Received()
     }
     
 #ifdef ENABLE_ECN
-    int _ECN=0;
-    
-    //ECN
+    int _ECN=0;    
+    //Congestion explicit bit is detected
     if (_ECN >= 11)
     {
         Detected_ECN_CE();
@@ -1254,10 +1266,14 @@ void LBAgent::Msg_Ack_Received()
     {
         ECN = false;
     }
-    
 #endif
 }
 
+///////////////////////////////////////////////////////////////////////////////
+/// LBAgent::Deadline_Met()
+/// @description This function is called when acknowledgement message has  
+///              been received before deadline.
+///////////////////////////////////////////////////////////////////////////////
 void LBAgent::Deadline_Met()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
@@ -1291,13 +1307,19 @@ void LBAgent::Deadline_Met()
     }
 }
 
-
-// this function gets triggered when observed RTT
-// is good MAX_BETTER_OBSERVED_RTT number of times
+///////////////////////////////////////////////////////////////////////////////
+/// LBAgent::Ack_Received_Is_Better()
+/// @description This function is called when observed RTT is good  
+///              MAX_BETTER_OBSERVED_RTT number of times.
+///////////////////////////////////////////////////////////////////////////////
 void LBAgent::Ack_Recv_Is_Better()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     Logger.Notice << "Ack is better" << std::endl;
+#ifdef ENABLE_ECN
+	if(Max_Better_Obs_RTT_Count_ECN==MAX_BETTER_OBS_RTT_COUNT)
+#endif
+	{
     // reset counter for next Better_RTT
     Better_RTT_Obs_Counter = 0;
 #ifdef ENABLE_ECN
@@ -1309,15 +1331,20 @@ void LBAgent::Ack_Recv_Is_Better()
 #endif
     Logger.Notice <<"  Curr_RTT: "<<Curr_RTT<<std::endl;
     Update_Period();
+    }
 }
 
+///////////////////////////////////////////////////////////////////////////////
+/// LBAgent::Detected_ECN_CE()
+/// @description This function is called when CE bit is deteced.
+//////////////////////////////////////////////////////////////////////////////
 void LBAgent::Detected_ECN_CE()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     if (ECN_Status)
     {
         Max_Better_Obs_RTT_Count_ECN = Calculate_ECN_Counter();
-        Curr_RTT = Curr_RTT + Curr_K * RESPONSE_TIME_MARGIN;
+        Curr_RTT = Curr_RTT + 2*Curr_K * RESPONSE_TIME_MARGIN;
         Curr_Relative_Deadline = Curr_RTT + RESPONSE_TIME_MARGIN;
         Update_Period();
         ECN_Status = false;
@@ -1334,7 +1361,10 @@ int LBAgent::Calculate_ECN_Counter()
     return Curr_K*2;
 }
 
-
+///////////////////////////////////////////////////////////////////////////////
+/// LBAgent::ECN_Active()
+/// @description This function is called to enable ECN.
+//////////////////////////////////////////////////////////////////////////////
 void LBAgent::ECN_Active(const boost::system::error_code& err)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
@@ -1363,7 +1393,9 @@ void LBAgent::HandleCollectedState(MessagePtr msg, PeerNodePtr /*peer*/)
     agg_gateway=0;
     GrossP = 0;
     ptree &pt = msg->GetSubMessages();
-    
+    // Vector container to record gateway for each node
+    std::vector<double> powerLevel(m_AllPeers.size());
+
     if (pt.get_child_optional("CollectedState.gateway"))
     {
         BOOST_FOREACH(ptree::value_type &v, pt.get_child("CollectedState.gateway"))
@@ -1373,9 +1405,12 @@ void LBAgent::HandleCollectedState(MessagePtr msg, PeerNodePtr /*peer*/)
             
             if (v.second.data() != "no device")
             {
-                peercount++;
                 double p = boost::lexical_cast<double>(v.second.data());
+                //save gateway for each node
+                powerLevel[peercount]=p;
+                peercount++;
                 agg_gateway += p;  
+                //the following is the normal way to calculate GrossP
                 //GrossP +=p*p;
 	    } 
         }
@@ -1416,9 +1451,6 @@ void LBAgent::HandleCollectedState(MessagePtr msg, PeerNodePtr /*peer*/)
             << v.second.data() << std::endl;
         }
     }
-   
-    m_g = agg_gateway;
-    Logger.Status << "In collected state, m_g is " << m_g << "and agg_gateway is " << agg_gateway  << std::endl;
  
     //Consider any intransit "accept" messages in agg_gateway calculation
     if (pt.get_child_optional("CollectedState.intransit"))
@@ -1436,6 +1468,24 @@ void LBAgent::HandleCollectedState(MessagePtr msg, PeerNodePtr /*peer*/)
             }
         }
     }
+    //find the highest demand nodes
+    m_highestDemand = powerLevel[0];
+    for (unsigned int i = 1; i < m_AllPeers.size(); i++)
+    {
+        if (m_highestDemand < powerLevel[i])
+            m_highestDemand = powerLevel[i];
+    }
+
+    // If first time checking invariant, assign aggregate gateway to m_g
+    if (First_Time_Inv)
+    {
+        m_g = agg_gateway;
+        //assign m_highestDemand to previous demand
+        m_prevDemand = m_highestDemand;
+        First_Time_Inv = false;
+    }
+    Logger.Status << "In collected state, m_g is " << m_g << "and agg_gateway is " << agg_gateway  << std::endl;
+
 
     if (peercount != 0)
     {
@@ -1452,6 +1502,8 @@ void LBAgent::HandleCollectedState(MessagePtr msg, PeerNodePtr /*peer*/)
     }
     
     SendNormal(m_Normal);
+
+    m_prevDemand = m_highestDemand;
 }
 
 void LBAgent::HandleComputedNormal(MessagePtr msg, PeerNodePtr /*peer*/)
@@ -1606,7 +1658,6 @@ void LBAgent::HandleStateTimer( const boost::system::error_code & error )
     {
         //Initiate state collection if you are the m_Leader
         CollectState();
-        //Phase_Time = boost::posix_time::microsec_clock::local_time();// + LB_STATE_TIMER;
     }
 
     CBroker::Instance().Schedule(m_StateTimer, boost::posix_time::milliseconds(CTimings::LB_STATE_TIMER),

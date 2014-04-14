@@ -184,74 +184,92 @@ class LBAgent
         /// Timer until next periodic state collection
         CBroker::TimerHandle      m_StateTimer;
 
+        // Invariant Function
+        /// Main function for invariant check
+        bool Invariant_Check();
+        /// Function for schedule invariant
+        bool Schedule_Invariant();
+        /// Function for cyber invariant
+        bool Cyber_Invariant();
+        /// Function for physical invariant
+        bool Physical_Invariant();
         
-        
-        //for scheduling invariant
-        //Kmaxlocal
+        // Scheduling Invariant
+        /// Number of outstanding messages the local node can have
         int Kmaxlocal;
+        /// Period of power migration initiated by the local node
         int Curr_Period;
+        /// Number of outstanding messages the local node currently have
         int Curr_K;
+        /// Number that acknowledgements are received earlier than expected 
         int Better_RTT_Obs_Counter;
+        /// Flag to initialize round trip time
         bool First_Time_RTT;
-        
-        //time variables
-        boost::posix_time::ptime microsecT1;
-        boost::posix_time::ptime microsecT2;
-        boost::posix_time::time_duration msdiff;
-        int Obs_Avg_RTT;
-        
-        boost::posix_time::ptime microsecT3;
-        boost::posix_time::ptime microsecT4;
-        
-        boost::posix_time::ptime Last_Time_Sent;
+        /// Observed average round trip time
+        int Obs_Avg_RTT;       
+        /// Expected round trip time
         int Curr_RTT;
+        /// Current relative deadline for power migration message
         int Curr_Relative_Deadline;
+        /// Temporary round trip time 
         int temp_MsgRTT;
         
-        boost::posix_time::ptime Deadline;
+        // Time Variables for calculating round trip time
+        boost::posix_time::ptime microsecT1;
+        boost::posix_time::ptime microsecT2;
+        boost::posix_time::ptime microsecT3;
+        boost::posix_time::ptime microsecT4;        
+        boost::posix_time::ptime Last_Time_Sent;
         boost::posix_time::ptime Phase_Time_Start;
+        boost::posix_time::time_duration msdiff;
         boost::posix_time::time_duration PowerTransfer;
-        // invariant function
-        bool Invariant_Check();
-        bool Schedule_Invariant();
-        bool Cyber_Invariant();
-        bool Physical_Invariant();
-
-        // schedule invariant function
+       
+        // Schedule Invariant Function
+        /// Acknowledgement message is received
         void Msg_Ack_Received();
+        /// Acknowledgement arrives earlier than expected
         void Ack_Recv_Is_Better();
+        /// Message is received before deadline
         void Deadline_Met();
+        /// Message isn't received before deadline
         void Deadline_Miss(const boost::system::error_code& err);
+        /// Period of sending migration message is updated
         void Update_Period();
-        //ECN
-        void Detected_ECN_CE();
-        int Max_Better_Obs_RTT_Count_ECN;
+
+        //ECN related functions and variables
+        /// Flag to indicate ECN
         bool ECN;
+        /// Number that acknowledgements are received earlier than expected in ECN
+        int Max_Better_Obs_RTT_Count_ECN;
+        /// Congestion Experienced (CE) bit has been set and received
+        void Detected_ECN_CE();
+        /// Calculate counter in ECN mode
         int Calculate_ECN_Counter();
+        /// Function to set ECN active
         void ECN_Active(const boost::system::error_code& err);
         
-        //timer until dealine miss is triggered
+        /// Timer until dealine miss is triggered
         CBroker::TimerHandle m_DeadlineTimer;
-        //ECN timer
+        /// Timer until ECN is called 
         CBroker::TimerHandle m_ECNTimer;
         
-        boost::interprocess::interprocess_mutex m_Mutex;
-
-        ///cyber and physical invariant
+        // Cyber and Physical Invariant
         bool First_Time_Inv;
-        //supply or draw of the system
+        /// Supply or draw of the system
         double m_g;
+        /// Calculated gateway from load table
         double agg_gateway;
-        //highest demand value in the last migration cycle
+        /// Highest demand value in the last migration cycle
         double m_highestDemand;
-        //previous the highest demand value
+        /// Previous the highest demand value
         double m_prevDemand;
-        //imbalanced power
+        /// Imbalanced power
         int Kei;
-        //flag to indicate power migration in progress
+        /// Flag to indicate power migration in progress
         bool m_inProgress;
-        //gross power flow for physical invariant
+        /// Gross power flow for physical invariant
         double GrossP; 
+        /// Frequency from physical system
         double m_Frequency;
 
         bool m_sstExists;

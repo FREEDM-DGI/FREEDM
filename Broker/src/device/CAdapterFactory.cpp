@@ -40,6 +40,7 @@
 #include "IBufferAdapter.hpp"
 #include "CRtdsAdapter.hpp"
 #include "CPnpAdapter.hpp"
+#include "CSerialAdapter.hpp"
 #include "CDeviceManager.hpp"
 #include "CGlobalConfiguration.hpp"
 #include "CFakeAdapter.hpp"
@@ -54,10 +55,12 @@
 
 #include <signal.h>
 
+#include <boost/ref.hpp>
 #include <boost/asio.hpp>
 #include <boost/bind.hpp>
 #include <boost/foreach.hpp>
 #include <boost/optional.hpp>
+#include <boost/make_shared.hpp>
 #include <boost/property_tree/ptree.hpp>
 #include <boost/system/system_error.hpp>
 #include <boost/algorithm/string/regex.hpp>
@@ -299,6 +302,10 @@ void CAdapterFactory::CreateAdapter(const boost::property_tree::ptree & p)
     else if( type == "fake" )
     {
         adapter = CFakeAdapter::Create();
+    }
+    else if( type == "serial" )
+    {
+        adapter = boost::make_shared<CSerialAdapter>(boost::ref(m_ios));
     }
     else
     {

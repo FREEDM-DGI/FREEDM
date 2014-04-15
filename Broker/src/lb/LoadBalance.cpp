@@ -61,6 +61,7 @@
 
 #include <boost/asio.hpp>
 #include <boost/bind.hpp>
+#include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/date_time/posix_time/posix_time_types.hpp>
 #include <boost/foreach.hpp>
 #include <boost/function.hpp>
@@ -75,7 +76,7 @@ namespace broker {
 
 namespace lb {
 
-const float P_Migrate = 3;
+const float P_Migrate = 1;
 
 namespace {
 
@@ -116,6 +117,12 @@ LBAgent::LBAgent(std::string uuid_):
     RegisterSubhandle("lb.ComputedNormal",boost::bind(&LBAgent::HandleComputedNormal, this, _1, _2));
     RegisterSubhandle("any",boost::bind(&LBAgent::HandleAny, this, _1, _2));
     m_sstExists = false;
+    // First time flag for invariant
+    First_Time_Inv = true;
+    // Flag to indicate power migration is in progress
+    m_inProgress = false;
+    // Initialize imbalanced power K (predict the future power migration)
+    Kei = P_Migrate;
     m_actuallyread = true;
 }
 
@@ -244,6 +251,8 @@ void LBAgent::SendNormal(double Normal)
         m_.m_submessages.put("lb.source", GetUUID());
         m_.SetHandler("lb.ComputedNormal");
         m_.m_submessages.put("lb.cnorm", boost::lexical_cast<std::string>(Normal));
+        //for cyber invariant
+        m_.m_submessages.put("lb.cyberinv", boost::lexical_cast<std::string>(CyberInv));
         BOOST_FOREACH( PeerNodePtr peer, m_AllPeers | boost::adaptors::map_values)
         {
             try
@@ -855,7 +864,7 @@ void LBAgent::HandleYes(MessagePtr /*msg*/, PeerNodePtr peer)
     m_.SetHandler("lb."+ ss_.str());
 
     //Its better to check your status again before initiating drafting
-    if( peer->GetUUID() != GetUUID() && LBAgent::SUPPLY == m_Status )
+    if( peer->GetUUID() != GetUUID() && LBAgent::SUPPLY == m_Status && Invariant_Check() )
     {
         try
         {
@@ -867,7 +876,64 @@ void LBAgent::HandleYes(MessagePtr /*msg*/, PeerNodePtr peer)
         }
     }
 }
+///////////////////////////////////////////////////////////////////////////////
+/// LBAgent::Invariant_Check()
+/// @description This function check physical invariant and scheduling invariant.
+///////////////////////////////////////////////////////////////////////////////
+bool LBAgent::Invariant_Check()
+{
+    bool I1 = (CyberInv==1)? true: false;
+    Logger.Status << "Cyber invariant is " << I1 << std::endl;
+    bool I2 = Physical_Invariant();
+    Logger.Status << "Physical invariant is " << I2 << std::endl;
+    return I1*I2;
+}
 
+///////////////////////////////////////////////////////////////////////////////
+/// LBAgent::Cyber_Invariant()
+/// @description This function check cyber invariant.
+///////////////////////////////////////////////////////////////////////////////
+bool LBAgent::Cyber_Invariant()
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    //power invariant
+    bool C1 = false;
+    Logger.Status << "m_g is " << m_g << " and agg_gateway" << agg_gateway << std::endl;
+    
+    if ((m_g - agg_gateway) < 1 || (m_g - agg_gateway) > -1)
+        C1 = true;
+        
+    Logger.Status << "C1 in cyber invariant is " << C1 << std::endl;
+    //knapsack invariant
+    bool C2 = false;
+    
+    if (m_prevDemand - m_highestDemand >= 0)
+        C2 = true;
+        
+    Logger.Status << "C2 in cyber invariant is " << C2 << std::endl;
+    return C1*C2;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+/// LBAgent::Physical_Invariant()
+/// @description This function check physical invariant.
+///////////////////////////////////////////////////////////////////////////////
+bool LBAgent::Physical_Invariant()
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    //Obtaining frequency from physical system
+    using namespace device;
+    m_Frequency = CDeviceManager::Instance().GetNetValue("Omega", "frequency");
+    // Check left side and right side of physical invariant formula
+    double left = (0.08*m_Frequency + 0.01)*(m_Frequency-376.8)*(m_Frequency-376.8) + (m_Frequency-376.8)*(5.001e-8*GrossP);
+    double right = Kei*(m_Frequency - 376.8);
+    Logger.Status << "Physical invaraint left side of formula is " << left << " and right side of formula is " << right << std::endl;
+    
+    if (left > right)
+        return true;
+    else
+        return false;
+}
 void LBAgent::HandleNo(MessagePtr /*msg*/, PeerNodePtr peer)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
@@ -905,8 +971,9 @@ void LBAgent::HandleDrafting(MessagePtr /*msg*/, PeerNodePtr peer)
         ss_ << m_DemandVal;
         m_.m_submessages.put("lb.value", ss_.str());
 
-        if( peer->GetUUID() != GetUUID() && LBAgent::DEMAND == m_Status )
+        if( peer->GetUUID() != GetUUID() && LBAgent::DEMAND == m_Status && !m_inProgress )
         {
+	    m_inProgress = true;
             try
             {
                 peer->Send(m_);
@@ -919,7 +986,10 @@ void LBAgent::HandleDrafting(MessagePtr /*msg*/, PeerNodePtr peer)
             // Make necessary power setting accordingly to allow power migration
             // !!!NOTE: You may use Step_PStar() or PStar(m_DemandVal) currently
             if (m_sstExists)
+	    {
                Step_PStar();
+	       Kei += P_Migrate;
+	    }
             else
                Desd_PStar();
         }
@@ -927,6 +997,7 @@ void LBAgent::HandleDrafting(MessagePtr /*msg*/, PeerNodePtr peer)
         {
             //Nothing; Local Load change from Demand state (Migration will not proceed)
         }
+	m_inProgress = false;
     }
 }
 
@@ -948,13 +1019,17 @@ void LBAgent::HandleAccept(MessagePtr msg, PeerNodePtr peer)
     Logger.Notice << " Draft Accept message received from: " << peer->GetUUID()
                    << " with demand of "<< DemValue << std::endl;
 
-    if( LBAgent::SUPPLY == m_Status)
+    if( LBAgent::SUPPLY == m_Status && !m_inProgress)
     {
+	m_inProgress = true;
         // Make necessary power setting accordingly to allow power migration
         Logger.Notice<<"Migrating power on request from: "<< peer->GetUUID() << std::endl;
 	// !!!NOTE: You may use Step_PStar() or PStar(DemandValue) currently
         if (m_sstExists)
+	{
            Step_PStar();
+	   Kei += P_Migrate;
+	}
         else
            Desd_PStar();
     }//end if( LBAgent::SUPPLY == m_Status)
@@ -962,6 +1037,7 @@ void LBAgent::HandleAccept(MessagePtr msg, PeerNodePtr peer)
     {
         Logger.Warn << "Unexpected Accept message" << std::endl;
     }
+    m_inProgress = false;
 }
 
 void LBAgent::HandleCollectedState(MessagePtr msg, PeerNodePtr /*peer*/)
@@ -971,9 +1047,11 @@ void LBAgent::HandleCollectedState(MessagePtr msg, PeerNodePtr /*peer*/)
     // You received the collected global state in response to your SC Request
     // --------------------------------------------------------------
     int peercount=0; // number of peers *with devices*
-    double agg_gateway=0;
-
+    agg_gateway=0;
+    GrossP = 0;
     ptree &pt = msg->GetSubMessages();
+    // Vector container to record gateway for each node
+    std::vector<double> powerLevel(m_AllPeers.size());
     if(pt.get_child_optional("CollectedState.gateway"))
     {
 	    BOOST_FOREACH(ptree::value_type &v, pt.get_child("CollectedState.gateway"))
@@ -1033,6 +1111,26 @@ void LBAgent::HandleCollectedState(MessagePtr msg, PeerNodePtr /*peer*/)
              }
         }
     }
+    //find the highest demand nodes
+    m_highestDemand = powerLevel[0];
+    
+    for (unsigned int i = 1; i < m_AllPeers.size(); i++)
+    {
+        if (m_highestDemand < powerLevel[i])
+            m_highestDemand = powerLevel[i];
+    }
+    
+    // If first time checking invariant, assign aggregate gateway to m_g
+    if (First_Time_Inv)
+    {
+        m_g = agg_gateway;
+        //assign m_highestDemand to previous demand
+        m_prevDemand = m_highestDemand;
+        First_Time_Inv = false;
+    }
+    
+    Logger.Status << "In collected state, m_g is " << m_g << "and agg_gateway is " << agg_gateway  << std::endl;
+
     if(peercount != 0)
     {
         m_Normal = agg_gateway/peercount;
@@ -1042,7 +1140,14 @@ void LBAgent::HandleCollectedState(MessagePtr msg, PeerNodePtr /*peer*/)
     {
         m_Normal = 0;
     }
+    //Check Cyber Invariant
+    if (Cyber_Invariant())
+        CyberInv = 1;
+    else
+        CyberInv = 0;
+        
     SendNormal(m_Normal);
+    m_prevDemand = m_highestDemand;
 }
 
 void LBAgent::HandleComputedNormal(MessagePtr msg, PeerNodePtr /*peer*/)
@@ -1055,6 +1160,8 @@ void LBAgent::HandleComputedNormal(MessagePtr msg, PeerNodePtr /*peer*/)
     m_Normal = pt.get<double>("lb.cnorm");
     Logger.Notice << "Computed Normal " << m_Normal << " received from "
                    << pt.get<std::string>("lb.source") << std::endl;
+    //for cyber invariant
+    CyberInv = boost::lexical_cast<int>(pt.get<std::string>("lb.cyberinv"));
     LoadTable();
 }
 

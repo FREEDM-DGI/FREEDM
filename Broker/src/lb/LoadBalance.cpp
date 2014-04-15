@@ -1525,7 +1525,7 @@ void LBAgent::HandleComputedNormal(MessagePtr msg, PeerNodePtr /*peer*/)
     //for cyber invariant
     CyberInv = boost::lexical_cast<int>(pt.get<std::string>("lb.cyberinv"));
     //for physical invariant
-    GrossP = boost::lexical_cast<double>(pt.get<std::string>("lb.grossp"));
+    //GrossP = boost::lexical_cast<double>(pt.get<std::string>("lb.grossp"));
     LoadTable();
 }
 

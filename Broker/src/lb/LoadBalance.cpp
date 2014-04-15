@@ -12,7 +12,7 @@
 ///               Software Engineering, 1985
 ///
 /// @functions
-///	LBAgent
+/// LBAgent
 ///     Run
 ///     AddPeer
 ///     GetPeer
@@ -116,7 +116,6 @@ LBAgent::LBAgent(std::string uuid_):
     m_DeadlineTimer = CBroker::Instance().AllocateTimer("lb");
     //for ECN
     m_ECNTimer = CBroker::Instance().AllocateTimer("lb");
-
     // Bound to lbq so it resolves before the state collection round
     m_StateTimer = CBroker::Instance().AllocateTimer("lbq");
     RegisterSubhandle("any.PeerList",boost::bind(&LBAgent::HandlePeerList, this, _1, _2));
@@ -132,7 +131,6 @@ LBAgent::LBAgent(std::string uuid_):
     RegisterSubhandle("lb.ComputedNormal",boost::bind(&LBAgent::HandleComputedNormal, this, _1, _2));
     RegisterSubhandle("any",boost::bind(&LBAgent::HandleAny, this, _1, _2));
     m_sstExists = false;
-
     //first time flag to obtain expected RTT
     First_Time_RTT = true;
     //first time flag for invariant
@@ -141,9 +139,7 @@ LBAgent::LBAgent(std::string uuid_):
     m_inProgress = false;
     //initialize imbalanced power K (predict the future power migration)
     Kei = P_Migrate;
-
     m_actuallyread = true;
-
 }
 
 ////////////////////////////////////////////////////////////
@@ -165,11 +161,10 @@ int LBAgent::Run()
     // This timer gets resolved for the lb module (instead of lbq) so
     // it is safe to give it a timeout of 1 effectively making it expire
     // immediately
-
     CBroker::Instance().Schedule(m_GlobalTimer,
-                      boost::posix_time::not_a_date_time,
-                      boost::bind(&LBAgent::LoadManage, this,
-                                  boost::asio::placeholders::error));
+                                 boost::posix_time::not_a_date_time,
+                                 boost::bind(&LBAgent::LoadManage, this,
+                                             boost::asio::placeholders::error));
     //this is the power migration phase time
     PowerTransfer = boost::posix_time::milliseconds(CTimings::LB_GLOBAL_TIMER);
     return 0;
@@ -274,10 +269,10 @@ void LBAgent::SendNormal(double Normal)
         m_.m_submessages.put("lb.source", GetUUID());
         m_.SetHandler("lb.ComputedNormal");
         m_.m_submessages.put("lb.cnorm", boost::lexical_cast<std::string>(Normal));
-	//for cyber invariant
-	m_.m_submessages.put("lb.cyberinv", boost::lexical_cast<std::string>(CyberInv));
-	//for physical invariant
-	m_.m_submessages.put("lb.grossp", boost::lexical_cast<std::string>(GrossP));
+        //for cyber invariant
+        m_.m_submessages.put("lb.cyberinv", boost::lexical_cast<std::string>(CyberInv));
+        //for physical invariant
+        //m_.m_submessages.put("lb.grossp", boost::lexical_cast<std::string>(GrossP));
         //for scheduling invariant
         m_.m_submessages.put("lb.kmaxlocal", boost::lexical_cast<std::string>(Kmaxlocal));
         BOOST_FOREACH( PeerNodePtr peer, m_AllPeers | boost::adaptors::map_values)
@@ -312,12 +307,10 @@ void LBAgent::CollectState()
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     //start of the state collection
     Phase_Time_Start = boost::posix_time::microsec_clock::local_time();// + LB_STATE_TIMER;
-
     CMessage m_cs;
     m_cs.SetHandler("sc.request");
     m_cs.m_submessages.put("sc.source", GetUUID());
     m_cs.m_submessages.put("sc.module", "lb");
-
     //for multiple devices
     m_cs.m_submessages.put("sc.deviceNum", 4);
     //SST device
@@ -335,7 +328,6 @@ void LBAgent::CollectState()
     subPtree3.add("deviceType", "Load");
     subPtree3.add("valueType", "drain");
     m_cs.m_submessages.add_child("sc.devices.device", subPtree3);
-
     //FID device
     ptree subPtree4;
     subPtree4.add("deviceType", "Fid");
@@ -346,7 +338,7 @@ void LBAgent::CollectState()
     subPtree5.add("deviceType", "Desd");
     subPtree5.add("valueType", "storage");
     m_cs.m_submessages.add_child("sc.devices.device", subPtree5);
-
+    
     try
     {
         GetPeer(GetUUID())->Send(m_cs);
@@ -373,21 +365,20 @@ void LBAgent::CollectState()
 void LBAgent::LoadManage()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    
     // Schedule the NEXT LB before starting this one. So ensure that after this
     // LB completes, there's still time to run another before scheduling it.
     // Otherwise we'll steal time from the next broker module.
-
+    
     if (CBroker::Instance().TimeRemaining() >
-        boost::posix_time::milliseconds(2*CTimings::LB_GLOBAL_TIMER))
+            boost::posix_time::milliseconds(2*CTimings::LB_GLOBAL_TIMER))
     {
         m_actuallyread = false;
         CBroker::Instance().Schedule(m_GlobalTimer,
-                          boost::posix_time::milliseconds(
-                              CTimings::LB_GLOBAL_TIMER),
-                          boost::bind(&LBAgent::LoadManage,
-                                      this,
-                                      boost::asio::placeholders::error));
+                                     boost::posix_time::milliseconds(
+                                         CTimings::LB_GLOBAL_TIMER),
+                                     boost::bind(&LBAgent::LoadManage,
+                                                 this,
+                                                 boost::asio::placeholders::error));
         Logger.Info << "Scheduled another LoadManage in "
         << CTimings::LB_GLOBAL_TIMER << "ms" << std::endl;
     }
@@ -396,12 +387,12 @@ void LBAgent::LoadManage()
         // Schedule past the end of our phase so control will pass to the broker
         // after this LB, and we won't go again until it's our turn.
         CBroker::Instance().Schedule(m_GlobalTimer,
-                          boost::posix_time::not_a_date_time,
-                          boost::bind(&LBAgent::LoadManage,
-                                      this,
-                                      boost::asio::placeholders::error));
+                                     boost::posix_time::not_a_date_time,
+                                     boost::bind(&LBAgent::LoadManage,
+                                                 this,
+                                                 boost::asio::placeholders::error));
         Logger.Info << "Won't run over phase, scheduling another LoadManage in "
-                    << "next round" << std::endl;
+        << "next round" << std::endl;
         m_actuallyread = true;
     }
     
@@ -409,11 +400,10 @@ void LBAgent::LoadManage()
     m_prevStatus = m_Status;
     //Call LoadTable to update load state of the system as observed by this node
     LoadTable();
-
     using namespace device;
     std::set<CDevice::Pointer> logger;
     logger = CDeviceManager::Instance().GetDevicesOfType("Logger");
-
+    
     //Send Demand message when the current state is Demand
     //NOTE: (changing the original architecture in which Demand broadcast is done
     //only when the Normal->Demand or Demand->Normal cases happen)
@@ -432,20 +422,20 @@ void LBAgent::LoadManage()
     // If you are in Supply state
     else if (LBAgent::SUPPLY == m_Status)
     {
-        if( logger.empty() || (*logger.begin())->GetState("dgiEnable") == 1 )
+        if ( logger.empty() || (*logger.begin())->GetState("dgiEnable") == 1 )
         {
             //initiate draft request
             SendDraftRequest();
         }
     }
-
-    if( !logger.empty() && (*logger.begin())->GetState("dgiEnable") == 0 )
+    
+    if ( !logger.empty() && (*logger.begin())->GetState("dgiEnable") == 0 )
     {
         std::set<CDevice::Pointer> SSTContainer;
         std::set<CDevice::Pointer>::iterator it, end;
         SSTContainer = device::CDeviceManager::Instance().GetDevicesOfType("Sst");
-
-        for( it = SSTContainer.begin(), end = SSTContainer.end(); it != end; it++ )
+        
+        for ( it = SSTContainer.begin(), end = SSTContainer.end(); it != end; it++ )
         {
             (*it)->SetCommand("gateway", m_NetGateway);
         }
@@ -497,22 +487,19 @@ void LBAgent::LoadTable()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     using namespace device;
-    
     int numDRERs = CDeviceManager::Instance().GetDevicesOfType("Drer").size();
     int numDESDs = CDeviceManager::Instance().GetDevicesOfType("Desd").size();
     int numLOADs = CDeviceManager::Instance().GetDevicesOfType("Load").size();
     int numSSTs  = CDeviceManager::Instance().GetDevicesOfType("Sst").size();
-
     m_Gen = CDeviceManager::Instance().GetNetValue("Drer", "generation");
     m_Storage = CDeviceManager::Instance().GetNetValue("Desd", "storage");
     m_Load = CDeviceManager::Instance().GetNetValue("Load", "drain");
     m_SstGateway = CDeviceManager::Instance().GetNetValue("Sst", "gateway");
-
     //calculate GrossP for test one supply and one demand
     GrossP = 1000*m_SstGateway*m_SstGateway*1000;
     Logger.Status << "-----The GrossP is  " << GrossP << std::endl;
-
-    if(m_actuallyread)
+    
+    if (m_actuallyread)
     {
         if (numSSTs >= 1)
         {
@@ -540,21 +527,20 @@ void LBAgent::LoadTable()
     std::stringstream ss;
     ss << std::setprecision(2) << std::fixed;
     ss << " ----------- LOAD TABLE (Power Management) ------------"
-            << std::endl;
+    << std::endl;
     ss << "\t| " << "Net DRER (" << std::setfill('0') << std::setw(2)
-            << numDRERs << "): " << extraGenSpace << std::setfill(' ')
-            << std::setw(genWidth) << m_Gen << "     Net DESD    ("
-            << std::setfill('0') << std::setw(2) << numDESDs << "): "
-            << extraStorageSpace << std::setfill(' ') << std::setw(storageWidth)
-            << m_Storage << " |" << std::endl;
+    << numDRERs << "): " << extraGenSpace << std::setfill(' ')
+    << std::setw(genWidth) << m_Gen << "     Net DESD    ("
+    << std::setfill('0') << std::setw(2) << numDESDs << "): "
+    << extraStorageSpace << std::setfill(' ') << std::setw(storageWidth)
+    << m_Storage << " |" << std::endl;
     ss << "\t| " << "Net Load (" << std::setfill('0') << std::setw(2)
-            << numLOADs << "): " << extraLoadSpace << std::setfill(' ')
-            << std::setw(loadWidth) << m_Load << "     SST Gateway ("
-            << std::setfill('0') << std::setw(2) << numSSTs << "): "
-            << extraSstSpace << std::setfill(' ') << std::setw(sstGateWidth)
-            << m_SstGateway << " |" << std::endl;
+    << numLOADs << "): " << extraLoadSpace << std::setfill(' ')
+    << std::setw(loadWidth) << m_Load << "     SST Gateway ("
+    << std::setfill('0') << std::setw(2) << numSSTs << "): "
+    << extraSstSpace << std::setfill(' ') << std::setw(sstGateWidth)
+    << m_SstGateway << " |" << std::endl;
     ss << "\t| " << "Net Gateway : " << m_NetGateway << std::endl;
-
 //
 // We will hide Overall Gateway for the time being as it is useless until
 // we properly support multiple device LBs.
@@ -804,7 +790,6 @@ void LBAgent::HandleNormal(MessagePtr msg, PeerNodePtr peer)
     EraseInPeerSet(m_HiNodes,peer);
     EraseInPeerSet(m_LoNodes,peer);
     InsertInPeerSet(m_NoNodes,peer);
-
 }
 
 void LBAgent::HandleSupply(MessagePtr msg, PeerNodePtr peer)
@@ -905,6 +890,7 @@ void LBAgent::HandleYes(MessagePtr /*msg*/, PeerNodePtr peer)
     msdiff = microsecT2-microsecT1;
     Obs_Avg_RTT = msdiff.total_milliseconds();
     Logger.Notice << "Scaled RTT is " << Obs_Avg_RTT << std::endl;
+    
     //first time receive message "Yes" from demand nodes, then initialization
     if (First_Time_RTT == true )
     {
@@ -938,9 +924,9 @@ void LBAgent::HandleYes(MessagePtr /*msg*/, PeerNodePtr peer)
             //for scheduling invariant
             //Last time of an event to trigger a migration
             Last_Time_Sent  = boost::posix_time::microsec_clock::local_time();
-	    //Start  the timer, on timeout, deadline_miss will be called
-    	    CBroker::Instance().Schedule(m_DeadlineTimer, boost::posix_time::milliseconds(Curr_Relative_Deadline),
-    	                  boost::bind(&LBAgent::Deadline_Miss, this, boost::asio::placeholders::error));
+            //Start  the timer, on timeout, deadline_miss will be called
+            CBroker::Instance().Schedule(m_DeadlineTimer, boost::posix_time::milliseconds(Curr_Relative_Deadline),
+                                         boost::bind(&LBAgent::Deadline_Miss, this, boost::asio::placeholders::error));
             //Outstanding message will be added by 1
             Curr_K++;
         }
@@ -953,7 +939,7 @@ void LBAgent::HandleYes(MessagePtr /*msg*/, PeerNodePtr peer)
 
 ///////////////////////////////////////////////////////////////////////////////
 /// LBAgent::Invariant_Check()
-/// @description This function check physical invariant and scheduling invariant.            
+/// @description This function check physical invariant and scheduling invariant.
 ///////////////////////////////////////////////////////////////////////////////
 bool LBAgent::Invariant_Check()
 {
@@ -978,13 +964,18 @@ bool LBAgent::Cyber_Invariant()
     //power invariant
     bool C1 = false;
     Logger.Status << "m_g is " << m_g << " and agg_gateway" << agg_gateway << std::endl;
+    
     if ((m_g - agg_gateway) < 1 || (m_g - agg_gateway) > -1)
         C1 = true;
-    //Logger.Status << "C1 in cyber invariant is " << C1 << std::endl;
+        
+    Logger.Status << "C1 in cyber invariant is " << C1 << std::endl;
     //knapsack invariant
     bool C2 = false;
-    if (m_prevDemand - m_highestDemand <= 0)
+    
+    if (m_prevDemand - m_highestDemand >= 0)
         C2 = true;
+        
+    Logger.Status << "C2 in cyber invariant is " << C2 << std::endl;
     return C1*C2;
 }
 
@@ -1002,11 +993,11 @@ bool LBAgent::Physical_Invariant()
     double left = (0.08*m_Frequency + 0.01)*(m_Frequency-376.8)*(m_Frequency-376.8) + (m_Frequency-376.8)*(5.001e-8*GrossP);
     double right = Kei*(m_Frequency - 376.8);
     Logger.Status << "Physical invaraint left side of formula is " << left << " and right side of formula is " << right << std::endl;
+    
     if (left > right)
         return true;
     else
         return false;
-
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1017,37 +1008,35 @@ bool LBAgent::Schedule_Invariant()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     microsecT3 = boost::posix_time::microsec_clock::local_time();
-
     Logger.Status << "-------------Scheduling Invaraint------------------" << std::endl;
     Logger.Status << "Current relative deadline is " << Curr_Relative_Deadline << std::endl;
-    
     //use LB phase time
     msdiff = microsecT3-microsecT1;
-    
     bool Ik_Invariant;
     bool Ip_Invariant;
     bool Ic_Invariant;
+    Logger.Status << "Current K is " << Curr_K << std::endl;
     
-    Logger.Status << "Current K is " << Curr_K << std::endl; 
-
     // current imbalanced power K should be less than assigned Kmaxlocal
     if (Curr_K < (Kmaxlocal-1))
         Ik_Invariant = true;
     else
         Ik_Invariant = false;
-    
+        
     Logger.Status << "Time has been used for power migration is " << msdiff.total_milliseconds() << std::endl;
     Logger.Status << "State collection phase is "<< PowerTransfer.total_milliseconds() << std::endl;
+    
     // current response time should be less than LB power migration time minus used time for power migration
     if (Curr_RTT < PowerTransfer.total_milliseconds()-msdiff.total_milliseconds())
         Ic_Invariant = true;
     else
         Ic_Invariant = false;
-     
-    //period should be less than current invariant time minus last power migration sent   
+        
+    //period should be less than current invariant time minus last power migration sent
     msdiff = microsecT3-Last_Time_Sent;
     Logger.Status << "Current period is " << Curr_Period << std::endl;
-    Logger.Status << "The last time send is " << Last_Time_Sent  << " and this invariant check is happen at " << microsecT3 << std::endl;    
+    Logger.Status << "The last time send is " << Last_Time_Sent  << " and this invariant check is happen at " << microsecT3 << std::endl;
+    
     if (msdiff.total_milliseconds() > Curr_Period)
         Ip_Invariant = true;
     else
@@ -1058,30 +1047,31 @@ bool LBAgent::Schedule_Invariant()
 
 ///////////////////////////////////////////////////////////////////////////////
 /// LBAgent::Deadline_Miss()
-/// @description This function is called when Acknowledgement message hasn't  
+/// @description This function is called when Acknowledgement message hasn't
 ///              been received before deadline.
 ///////////////////////////////////////////////////////////////////////////////
 void LBAgent::Deadline_Miss(const boost::system::error_code& err)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    boost::posix_time::ptime currTime = boost::posix_time::microsec_clock::local_time(); 
+    boost::posix_time::ptime currTime = boost::posix_time::microsec_clock::local_time();
     msdiff = currTime - Last_Time_Sent;
+    
     if (msdiff.total_milliseconds() < Curr_Relative_Deadline)
-    {    
-    	if (!err)
-    	{
+    {
+        if (!err)
+        {
             Curr_RTT = Curr_RTT + RESPONSE_TIME_MARGIN;
             Curr_Relative_Deadline = Curr_RTT + RESPONSE_TIME_MARGIN;
             Update_Period();
-   	    }
-    	else if (boost::asio::error::operation_aborted == err)
-    	{
-    	}
-    	else
-    	{
+        }
+        else if (boost::asio::error::operation_aborted == err)
+        {
+        }
+        else
+        {
             Logger.Error << err << std::endl;
             throw boost::system::system_error(err);
-    	}
+        }
     }
 }
 
@@ -1098,7 +1088,7 @@ void LBAgent::Update_Period()
         Curr_Period = Curr_RTT;
     else
         Curr_Period = Curr_Relative_Deadline/(Kmaxlocal-Curr_K);
-
+        
     Logger.Status << "Current updated period is " << Curr_Period << std::endl;
     Logger.Status << "Current Kmax local is " << Curr_K << std::endl;
     Logger.Status << "Current RTT is " << Curr_RTT << std::endl;
@@ -1150,6 +1140,7 @@ void LBAgent::HandleDrafting(MessagePtr /*msg*/, PeerNodePtr peer)
         if ( peer->GetUUID() != GetUUID() && LBAgent::DEMAND == m_Status && !m_inProgress  )
         {
             m_inProgress = true;
+            
             try
             {
                 peer->Send(m_);
@@ -1173,6 +1164,7 @@ void LBAgent::HandleDrafting(MessagePtr /*msg*/, PeerNodePtr peer)
         {
             //Nothing; Local Load change from Demand state (Migration will not proceed)
         }
+        
         m_inProgress = false;
     }
 }
@@ -1219,12 +1211,13 @@ void LBAgent::HandleAccept(MessagePtr msg, PeerNodePtr peer)
     {
         Logger.Warn << "Unexpected Accept message" << std::endl;
     }
+    
     m_inProgress = false;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 /// LBAgent::Msg_Ack_Received()
-/// @description This function is called when Acknowledgement message has  
+/// @description This function is called when Acknowledgement message has
 ///              been received as expected.
 ///////////////////////////////////////////////////////////////////////////////
 void LBAgent::Msg_Ack_Received()
@@ -1235,7 +1228,6 @@ void LBAgent::Msg_Ack_Received()
     msdiff = microsecT4 - Last_Time_Sent;
     temp_MsgRTT = msdiff.total_milliseconds();
     Curr_K--;
-
     msdiff = microsecT4 - microsecT3;
     
     if (msdiff.total_milliseconds()<Curr_Relative_Deadline)
@@ -1253,7 +1245,8 @@ void LBAgent::Msg_Ack_Received()
     }
     
 #ifdef ENABLE_ECN
-    int _ECN=0;    
+    int _ECN=0;
+    
     //Congestion explicit bit is detected
     if (_ECN >= 11)
     {
@@ -1264,17 +1257,19 @@ void LBAgent::Msg_Ack_Received()
     {
         ECN = false;
     }
+    
 #endif
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 /// LBAgent::Deadline_Met()
-/// @description This function is called when acknowledgement message has  
+/// @description This function is called when acknowledgement message has
 ///              been received before deadline.
 ///////////////////////////////////////////////////////////////////////////////
 void LBAgent::Deadline_Met()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    
     // check for Better RTT
     if ( temp_MsgRTT < Curr_RTT )
     {
@@ -1307,7 +1302,7 @@ void LBAgent::Deadline_Met()
 
 ///////////////////////////////////////////////////////////////////////////////
 /// LBAgent::Ack_Received_Is_Better()
-/// @description This function is called when observed RTT is good  
+/// @description This function is called when observed RTT is good
 ///              MAX_BETTER_OBSERVED_RTT number of times.
 ///////////////////////////////////////////////////////////////////////////////
 void LBAgent::Ack_Recv_Is_Better()
@@ -1315,20 +1310,21 @@ void LBAgent::Ack_Recv_Is_Better()
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     Logger.Notice << "Ack is better" << std::endl;
 #ifdef ENABLE_ECN
-	if(Max_Better_Obs_RTT_Count_ECN==MAX_BETTER_OBS_RTT_COUNT)
+    
+    if (Max_Better_Obs_RTT_Count_ECN==MAX_BETTER_OBS_RTT_COUNT)
 #endif
-	{
-    // reset counter for next Better_RTT
-    Better_RTT_Obs_Counter = 0;
+    {
+        // reset counter for next Better_RTT
+        Better_RTT_Obs_Counter = 0;
 #ifdef ENABLE_ECN
-    Curr_RTT =  Curr_RTT - RESPONSE_TIME_MARGIN;
-    Curr_Relative_Deadline = Curr_RTT + RESPONSE_TIME_MARGIN;
+        Curr_RTT =  Curr_RTT - RESPONSE_TIME_MARGIN;
+        Curr_Relative_Deadline = Curr_RTT + RESPONSE_TIME_MARGIN;
 #else
-    Curr_RTT = Obs_Avg_RTT + RESPONSE_TIME_MARGIN;
-    Curr_Relative_Deadline = Obs_Avg_RTT + RESPONSE_TIME_MARGIN;
+        Curr_RTT = Obs_Avg_RTT + RESPONSE_TIME_MARGIN;
+        Curr_Relative_Deadline = Obs_Avg_RTT + RESPONSE_TIME_MARGIN;
 #endif
-    Logger.Notice <<"  Curr_RTT: "<<Curr_RTT<<std::endl;
-    Update_Period();
+        Logger.Notice <<"  Curr_RTT: "<<Curr_RTT<<std::endl;
+        Update_Period();
     }
 }
 
@@ -1339,6 +1335,7 @@ void LBAgent::Ack_Recv_Is_Better()
 void LBAgent::Detected_ECN_CE()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    
     if (ECN_Status)
     {
         Max_Better_Obs_RTT_Count_ECN = Calculate_ECN_Counter();
@@ -1349,7 +1346,7 @@ void LBAgent::Detected_ECN_CE()
         int DEADLINE_TIMEOUT = boost::lexical_cast<int>(Curr_RTT);
         //Start  the timer, on timeout, ECN active will be called
         CBroker::Instance().Schedule(m_ECNTimer, boost::posix_time::milliseconds(DEADLINE_TIMEOUT),
-                          boost::bind(&LBAgent::ECN_Active, this, boost::asio::placeholders::error));
+                                     boost::bind(&LBAgent::ECN_Active, this, boost::asio::placeholders::error));
     }
 }
 
@@ -1366,6 +1363,7 @@ int LBAgent::Calculate_ECN_Counter()
 void LBAgent::ECN_Active(const boost::system::error_code& err)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    
     if (!err)
     {
         ECN_Status = true;
@@ -1393,7 +1391,7 @@ void LBAgent::HandleCollectedState(MessagePtr msg, PeerNodePtr /*peer*/)
     ptree &pt = msg->GetSubMessages();
     // Vector container to record gateway for each node
     std::vector<double> powerLevel(m_AllPeers.size());
-
+    
     if (pt.get_child_optional("CollectedState.gateway"))
     {
         BOOST_FOREACH(ptree::value_type &v, pt.get_child("CollectedState.gateway"))
@@ -1407,10 +1405,10 @@ void LBAgent::HandleCollectedState(MessagePtr msg, PeerNodePtr /*peer*/)
                 //save gateway for each node
                 powerLevel[peercount]=p;
                 peercount++;
-                agg_gateway += p;  
+                agg_gateway += p;
                 //the following is the normal way to calculate GrossP
                 //GrossP +=p*p;
-	    } 
+            }
         }
     }
     
@@ -1449,7 +1447,7 @@ void LBAgent::HandleCollectedState(MessagePtr msg, PeerNodePtr /*peer*/)
             << v.second.data() << std::endl;
         }
     }
- 
+    
     //Consider any intransit "accept" messages in agg_gateway calculation
     if (pt.get_child_optional("CollectedState.intransit"))
     {
@@ -1466,14 +1464,16 @@ void LBAgent::HandleCollectedState(MessagePtr msg, PeerNodePtr /*peer*/)
             }
         }
     }
+    
     //find the highest demand nodes
     m_highestDemand = powerLevel[0];
+    
     for (unsigned int i = 1; i < m_AllPeers.size(); i++)
     {
         if (m_highestDemand < powerLevel[i])
             m_highestDemand = powerLevel[i];
     }
-
+    
     // If first time checking invariant, assign aggregate gateway to m_g
     if (First_Time_Inv)
     {
@@ -1482,9 +1482,9 @@ void LBAgent::HandleCollectedState(MessagePtr msg, PeerNodePtr /*peer*/)
         m_prevDemand = m_highestDemand;
         First_Time_Inv = false;
     }
+    
     Logger.Status << "In collected state, m_g is " << m_g << "and agg_gateway is " << agg_gateway  << std::endl;
-
-
+    
     if (peercount != 0)
     {
         m_Normal = agg_gateway/peercount;
@@ -1499,15 +1499,14 @@ void LBAgent::HandleCollectedState(MessagePtr msg, PeerNodePtr /*peer*/)
         m_Normal = 0;
     }
     
-    //Check Cyber Invariant 
+    //Check Cyber Invariant
     if (Cyber_Invariant())
         CyberInv = 1;
     else
         CyberInv = 0;
+        
     SendNormal(m_Normal);
-
     m_prevDemand = m_highestDemand;
-
 }
 
 void LBAgent::HandleComputedNormal(MessagePtr msg, PeerNodePtr /*peer*/)
@@ -1544,8 +1543,8 @@ void LBAgent::Step_PStar()
     std::set<device::CDevice::Pointer> SSTContainer;
     std::set<device::CDevice::Pointer>::iterator it, end;
     SSTContainer = device::CDeviceManager::Instance().GetDevicesOfType("Sst");
-
-    for( it = SSTContainer.begin(), end = SSTContainer.end(); it != end; it++ )
+    
+    for ( it = SSTContainer.begin(), end = SSTContainer.end(); it != end; it++ )
     {
         if (LBAgent::DEMAND == m_Status)
         {
@@ -1582,8 +1581,8 @@ void LBAgent::PStar(device::SignalValue DemandValue)
     std::set<device::CDevice::Pointer> SSTContainer;
     std::set<device::CDevice::Pointer>::iterator it, end;
     SSTContainer = device::CDeviceManager::Instance().GetDevicesOfType("Sst");
-
-    for( it = SSTContainer.begin(), end = SSTContainer.end(); it != end; it++ )
+    
+    for ( it = SSTContainer.begin(), end = SSTContainer.end(); it != end; it++ )
     {
         if (LBAgent::DEMAND == m_Status)
         {
@@ -1624,8 +1623,8 @@ void LBAgent::Desd_PStar()
     std::set<device::CDevice::Pointer> DESDContainer;
     std::set<device::CDevice::Pointer>::iterator it, end;
     DESDContainer = device::CDeviceManager::Instance().GetDevicesOfType("Desd");
-
-    for( it = DESDContainer.begin(), end = DESDContainer.end(); it != end; it++ )
+    
+    for ( it = DESDContainer.begin(), end = DESDContainer.end(); it != end; it++ )
     {
         if (LBAgent::DEMAND == m_Status)
         {
@@ -1662,10 +1661,9 @@ void LBAgent::HandleStateTimer( const boost::system::error_code & error )
         //Initiate state collection if you are the m_Leader
         CollectState();
     }
-
+    
     CBroker::Instance().Schedule(m_StateTimer, boost::posix_time::milliseconds(CTimings::LB_STATE_TIMER),
-        boost::bind(&LBAgent::HandleStateTimer, this, boost::asio::placeholders::error));
-
+                                 boost::bind(&LBAgent::HandleStateTimer, this, boost::asio::placeholders::error));
 }
 
 } // namespace lb

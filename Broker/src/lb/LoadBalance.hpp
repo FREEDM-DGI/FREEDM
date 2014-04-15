@@ -89,14 +89,14 @@ class LBAgent
     public:
         /// Constructor for using this object as a module
         LBAgent(std::string uuid_);
-
+        
         /// Main loop of the algorithm called from PosixBroker
         int Run();
         
     private:
         enum EStatus { SUPPLY, NORM, DEMAND };
-         // Routines
-
+        // Routines
+        
         /// Advertises a draft request to demand nodes on Supply
         void SendDraftRequest();
         /// Maintains the load table
@@ -107,7 +107,7 @@ class LBAgent
         void LoadManage( const boost::system::error_code& err );
         /// Sends request to SC module to initiate state collection on timeout
         void HandleStateTimer( const boost::system::error_code & error);
-
+        
         // Messages
         /// Sends a message 'msg' to the peers in 'peerSet_'
         void SendMsg(std::string msg, PeerSet peerSet_);
@@ -130,7 +130,7 @@ class LBAgent
         void HandleAccept(MessagePtr msg, PeerNodePtr peer);
         void HandleCollectedState(MessagePtr msg, PeerNodePtr peer);
         void HandleComputedNormal(MessagePtr msg, PeerNodePtr peer);
-
+        
         /// Adds a new peer by a pointer
         PeerNodePtr AddPeer(PeerNodePtr peer);
         /// Returns a pointer to the peer based on its UUID
@@ -159,7 +159,7 @@ class LBAgent
         EStatus   m_Status;
         /// Previous demand state of this node before state change
         EStatus   m_prevStatus;
-
+        
         // Peer lists
         /// Set of known peers in Demand State
         PeerSet     m_HiNodes;
@@ -169,7 +169,7 @@ class LBAgent
         PeerSet     m_LoNodes;
         /// Set of all the known peers
         PeerSet     m_AllPeers;
-
+        
         // Power migration functions
         /// 'Power migration' by stepping up/down P* by a constant value
         void Step_PStar();
@@ -177,13 +177,13 @@ class LBAgent
         void PStar(device::SignalValue DemandValue);
         /// 'Power migration' through controlling DESD devices
         void Desd_PStar();
-
+        
         // IO and Timers
         /// Timer until check of demand state change
         CBroker::TimerHandle     m_GlobalTimer;
         /// Timer until next periodic state collection
         CBroker::TimerHandle      m_StateTimer;
-
+        
         // Invariant Function
         /// Main function for invariant check
         bool Invariant_Check();
@@ -201,29 +201,29 @@ class LBAgent
         int Curr_Period;
         /// Number of outstanding messages the local node currently have
         int Curr_K;
-        /// Number that acknowledgements are received earlier than expected 
+        /// Number that acknowledgements are received earlier than expected
         int Better_RTT_Obs_Counter;
         /// Flag to initialize round trip time
         bool First_Time_RTT;
         /// Observed average round trip time
-        int Obs_Avg_RTT;       
+        int Obs_Avg_RTT;
         /// Expected round trip time
         int Curr_RTT;
         /// Current relative deadline for power migration message
         int Curr_Relative_Deadline;
-        /// Temporary round trip time 
+        /// Temporary round trip time
         int temp_MsgRTT;
         
         // Time Variables for calculating round trip time
         boost::posix_time::ptime microsecT1;
         boost::posix_time::ptime microsecT2;
         boost::posix_time::ptime microsecT3;
-        boost::posix_time::ptime microsecT4;        
+        boost::posix_time::ptime microsecT4;
         boost::posix_time::ptime Last_Time_Sent;
         boost::posix_time::ptime Phase_Time_Start;
         boost::posix_time::time_duration msdiff;
         boost::posix_time::time_duration PowerTransfer;
-       
+        
         // Schedule Invariant Function
         /// Acknowledgement message is received
         void Msg_Ack_Received();
@@ -235,7 +235,7 @@ class LBAgent
         void Deadline_Miss(const boost::system::error_code& err);
         /// Period of sending migration message is updated
         void Update_Period();
-
+        
         //ECN related functions and variables
         /// Flag to indicate ECN
         bool ECN;
@@ -250,12 +250,12 @@ class LBAgent
         
         /// Timer until dealine miss is triggered
         CBroker::TimerHandle m_DeadlineTimer;
-        /// Timer until ECN is called 
+        /// Timer until ECN is called
         CBroker::TimerHandle m_ECNTimer;
         
         // Cyber and Physical Invariant
         bool First_Time_Inv;
-        /// Cyber Invariant 
+        /// Cyber Invariant
         int CyberInv;
         /// Supply or draw of the system
         double m_g;
@@ -270,15 +270,15 @@ class LBAgent
         /// Flag to indicate power migration in progress
         bool m_inProgress;
         /// Gross power flow for physical invariant
-        double GrossP; 
+        double GrossP;
         /// Frequency from physical system
         double m_Frequency;
-
+        
         bool m_sstExists;
         /// Set to true for the first get gateway call to indicate they should
         /// Actually read the value.
         bool m_actuallyread;
-
+        
 };
 
 } // namespace lb

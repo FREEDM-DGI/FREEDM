@@ -253,6 +253,8 @@ void LBAgent::SendNormal(double Normal)
         m_.m_submessages.put("lb.cnorm", boost::lexical_cast<std::string>(Normal));
         //for cyber invariant
         m_.m_submessages.put("lb.cyberinv", boost::lexical_cast<std::string>(CyberInv));
+        //for physical invariant
+        //m_.m_submessages.put("lb.grossp", boost::lexical_cast<std::string>(GrossP));
         BOOST_FOREACH( PeerNodePtr peer, m_AllPeers | boost::adaptors::map_values)
         {
             try
@@ -485,6 +487,10 @@ void LBAgent::LoadTable()
     m_Storage = CDeviceManager::Instance().GetNetValue("Desd", "storage");
     m_Load = CDeviceManager::Instance().GetNetValue("Load", "drain");
     m_SstGateway = CDeviceManager::Instance().GetNetValue("Sst", "gateway");
+
+    //calculate GrossP for test one supply and one demand
+    GrossP = 1000*m_SstGateway*m_SstGateway*1000;
+    Logger.Status << "-----The GrossP is  " << GrossP << std::endl;
 
     if(m_actuallyread)
     {
@@ -988,7 +994,7 @@ void LBAgent::HandleDrafting(MessagePtr /*msg*/, PeerNodePtr peer)
             if (m_sstExists)
 	    {
                Step_PStar();
-	       Kei += P_Migrate;
+	        Kei += P_Migrate;
 	    }
             else
                Desd_PStar();
@@ -1028,7 +1034,7 @@ void LBAgent::HandleAccept(MessagePtr msg, PeerNodePtr peer)
         if (m_sstExists)
 	{
            Step_PStar();
-	   Kei += P_Migrate;
+	    Kei += P_Migrate;
 	}
         else
            Desd_PStar();
@@ -1060,8 +1066,13 @@ void LBAgent::HandleCollectedState(MessagePtr msg, PeerNodePtr /*peer*/)
 			              << v.second.data() << std::endl;
 		    if (v.second.data() != "no device")
 		    {
-     	            peercount++;
-                	    agg_gateway += boost::lexical_cast<double>(v.second.data());
+                	double p = boost::lexical_cast<double>(v.second.data());
+                	//save gateway for each node
+                	powerLevel[peercount]=p;
+                	peercount++;
+                	agg_gateway += p;
+                	//the following is the normal way to calculate GrossP
+                	//GrossP +=p*p;
 		    }
 	    }
     }
@@ -1162,6 +1173,8 @@ void LBAgent::HandleComputedNormal(MessagePtr msg, PeerNodePtr /*peer*/)
                    << pt.get<std::string>("lb.source") << std::endl;
     //for cyber invariant
     CyberInv = boost::lexical_cast<int>(pt.get<std::string>("lb.cyberinv"));
+    //for physical invariant
+    //GrossP = boost::lexical_cast<double>(pt.get<std::string>("lb.grossp"));
     LoadTable();
 }
 

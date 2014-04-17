@@ -1190,7 +1190,7 @@ void LBAgent::HandleStateTimer( const boost::system::error_code & error )
         CollectState();
     }
 
-    CBroker::Instance().Schedule(m_StateTimer, boost::posix_time::milliseconds(CTimings::LB_STATE_TIMER),
+    CBroker::Instance().Schedule(m_StateTimer, boost::posix_time::not_a_date_time,
         boost::bind(&LBAgent::HandleStateTimer, this, boost::asio::placeholders::error));
 }
 

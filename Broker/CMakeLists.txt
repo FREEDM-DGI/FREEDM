@@ -65,7 +65,7 @@ if(DOXYGEN)
     find_package(Doxygen)
     if(DOXYGEN_FOUND)
         add_custom_command(TARGET PosixBroker POST_BUILD
-                           COMMAND ${PROJECT_SOURCE_DIR}/builddocs.sh
+                           COMMAND doxygen ${PROJECT_SOURCE_DIR}/freedm.dxy
                           )
     endif()
 endif()

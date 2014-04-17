@@ -24,29 +24,13 @@
 #ifndef GROUPMANAGEMENT_HPP_
 #define GROUPMANAGEMENT_HPP_
 
-#include "CConnection.hpp"
-#include "CConnectionManager.hpp"
-#include "CDispatcher.hpp"
-#include "CGlobalPeerList.hpp"
 #include "CMessage.hpp"
 #include "IAgent.hpp"
 #include "IHandler.hpp"
 #include "IPeerNode.hpp"
 
-#include <cmath>
-#include <set>
-#include <sstream>
-#include <vector>
-
 #include <boost/interprocess/sync/interprocess_mutex.hpp>
-#include <boost/progress.hpp>
-#include <boost/property_tree/ptree.hpp>
 #include <boost/shared_ptr.hpp>
-
-using boost::asio::ip::tcp;
-using boost::property_tree::ptree;
-
-using namespace boost::asio;
 
 namespace freedm {
 
@@ -56,7 +40,7 @@ namespace gm {
 
 /// Declaration of Garcia-Molina Invitation Leader Election algorithm.
 class GMAgent
-  : public IReadHandler, public IPeerNode,
+  : public IReadHandler, private IPeerNode,
     public IAgent< boost::shared_ptr<IPeerNode> >
 {
   public:
@@ -66,8 +50,12 @@ class GMAgent
     GMAgent(std::string uuid_);
     /// Module destructor
     ~GMAgent();
+    /// Called to start the system
+    int	Run();
+    /// Handles Processing a PeerList
+    static PeerSet ProcessPeerList(MessagePtr msg);
 
-    // Internal
+  private:
     /// Resets the algorithm to the default startup state.
     void Recovery();
     /// Returns true if this node considers itself a coordinator
@@ -77,7 +65,7 @@ class GMAgent
     /// A set of common code to be run before every message
     void Prehandler(SubhandleFunctor f,MessagePtr msg, PeerNodePtr peer);
     /// Handles receiving incoming messages.
-    virtual void HandleAny(MessagePtr msg,PeerNodePtr peer);
+    void HandleAny(MessagePtr msg,PeerNodePtr peer);
     /// Hadles recieving peerlists
     void HandlePeerList(MessagePtr msg,PeerNodePtr peer);
     /// Handles recieving accept messsages
@@ -92,16 +80,8 @@ class GMAgent
     void HandleResponseAYC(MessagePtr msg,PeerNodePtr peer);
     /// Handles recieving AYT responses
     void HandleResponseAYT(MessagePtr msg,PeerNodePtr peer);
-    /// Handles recieving clock readings
-    void HandleClock(MessagePtr msg,PeerNodePtr peer);
-    /// Handles recieving clock skews
-    void HandleClockSkew(MessagePtr msg,PeerNodePtr peer);
     /// Handles recieving peerlist requests
     void HandlePeerListQuery(MessagePtr msg, PeerNodePtr peer);
-
-    // Processors
-    /// Handles Processing a PeerList
-    static PeerSet ProcessPeerList(MessagePtr msg);
 
     //Routines
     /// Checks for other up leaders
@@ -126,8 +106,6 @@ class GMAgent
     CMessage AreYouCoordinator();
     /// Creates Group Invitation Message
     CMessage Invitation();
-    /// Creates Ready Message
-    CMessage Ready();
     /// Creates A Response message
     CMessage Response(std::string payload,std::string type,
         const boost::posix_time::ptime& exp, int seq);
@@ -137,16 +115,8 @@ class GMAgent
     CMessage AreYouThere();
     /// Generates a peer list
     CMessage PeerList(std::string requester="any");
-    /// Generates a request to read the remote clock
-    CMessage ClockRequest();
-    /// Generates a message informing a node of their new clock skew
-    CMessage ClockSkew(boost::posix_time::time_duration t);
     /// Generates a CMessage that can be used to query for the group
     static CMessage PeerListQuery(std::string requester);
-
-    // This is the main loop of the algorithm
-    /// Called to start the system
-    int	Run();
 
     //Peer Set Manipulation
     /// Adds a peer to the peer set from UUID
@@ -156,7 +126,6 @@ class GMAgent
     /// Gets a pointer to a peer from UUID.
     PeerNodePtr GetPeer(std::string uuid);
 
-  protected:
     /// Gets the status of a node
     int GetStatus() const;
     /// Sets the status of the node
@@ -220,9 +189,6 @@ class GMAgent
     boost::posix_time::time_duration AYT_RESPONSE_TIMEOUT;
     /// How long to wait for responses from other nodes.
     boost::posix_time::time_duration INVITE_RESPONSE_TIMEOUT;
-
-    ///Maximum clock skew in milliseconds;
-    static const int MAX_SKEW = 100;
 
     /// Number of groups formed
     int m_groupsformed ;

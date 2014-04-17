@@ -125,7 +125,7 @@ class LBAgent
         /// Aggregate Load
         float   m_Load;
         /// Aggregate Generation
-        float   m_Gen;
+        float   m_initialGatewayen;
         /// Aggregate Storage
         float   m_Storage;
         /// Target value of gateway
@@ -161,38 +161,38 @@ class LBAgent
 
         // IO and Timers
         /// Timer until check of demand state change
-        CBroker::TimerHandle     m_GlobalTimer;
+        CBroker::TimerHandle     m_initialGatewaylobalTimer;
         /// Timer until next periodic state collection
         CBroker::TimerHandle      m_StateTimer;
 
         // Invariant Function
         /// Main function for invariant check
-        bool Invariant_Check();
+        bool InvariantCheck();
         /// Function for cyber invariant
-        bool Cyber_Invariant();
+        bool CyberInvariant();
         /// Function for physical invariant
-        bool Physical_Invariant();
+        bool PhysicalInvariant();
 
         // Cyber and Physical Invariant
-        bool First_Time_Inv;
+        bool m_firstTimeInvariant;
         /// Cyber Invariant
-        int CyberInv;
+        int m_cyberInvariant;
         /// Supply or draw of the system
-        double m_g;
+        double m_initialGateway;
         /// Calculated gateway from load table
-        double agg_gateway;
+        double m_aggregateGateway;
         /// Highest demand value in the last migration cycle
         double m_highestDemand;
         /// Previous the highest demand value
         double m_prevDemand;
         /// Imbalanced power
-        int Kei;
+        int m_outstandingMessages;
         /// Flag to indicate power migration in progress
         bool m_inProgress;
         /// Gross power flow for physical invariant
-        double GrossP;
+        double m_grossPowerFlow;
         /// Frequency from physical system
-        double m_Frequency;
+        double m_frequency;
 
         bool m_sstExists;
         /// Set to true for the first get gateway call to indicate they should

@@ -125,7 +125,7 @@ class LBAgent
         /// Aggregate Load
         float   m_Load;
         /// Aggregate Generation
-        float   m_initialGatewayen;
+        float   m_Gen;
         /// Aggregate Storage
         float   m_Storage;
         /// Target value of gateway
@@ -161,7 +161,7 @@ class LBAgent
 
         // IO and Timers
         /// Timer until check of demand state change
-        CBroker::TimerHandle     m_initialGatewaylobalTimer;
+        CBroker::TimerHandle     m_GlobalTimer;
         /// Timer until next periodic state collection
         CBroker::TimerHandle      m_StateTimer;
 

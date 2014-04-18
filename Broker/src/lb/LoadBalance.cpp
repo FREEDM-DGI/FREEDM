@@ -101,7 +101,7 @@ LBAgent::LBAgent(std::string uuid_):
     InsertInPeerSet(m_AllPeers, self_);
     m_Leader = GetUUID();
     m_Normal = 0;
-    m_initialGatewaylobalTimer = CBroker::Instance().AllocateTimer("lb");
+    m_GlobalTimer = CBroker::Instance().AllocateTimer("lb");
     // Bound to lbq so it resolves before the state collection round
     m_StateTimer = CBroker::Instance().AllocateTimer("lbq");
     RegisterSubhandle("any.PeerList",boost::bind(&LBAgent::HandlePeerList, this, _1, _2));
@@ -145,7 +145,7 @@ int LBAgent::Run()
     // This timer gets resolved for the lb module (instead of lbq) so
     // it is safe to give it a timeout of 1 effectively making it expire
     // immediately
-    CBroker::Instance().Schedule(m_initialGatewaylobalTimer,
+    CBroker::Instance().Schedule(m_GlobalTimer,
         boost::posix_time::not_a_date_time,
         boost::bind(&LBAgent::LoadManage, this,
             boost::asio::placeholders::error));
@@ -362,7 +362,7 @@ void LBAgent::LoadManage()
         boost::posix_time::milliseconds(2*CTimings::LB_GLOBAL_TIMER))
     {
         m_actuallyread = false;
-        CBroker::Instance().Schedule(m_initialGatewaylobalTimer,
+        CBroker::Instance().Schedule(m_GlobalTimer,
                           boost::posix_time::milliseconds(
                               CTimings::LB_GLOBAL_TIMER),
                           boost::bind(&LBAgent::LoadManage,
@@ -375,7 +375,7 @@ void LBAgent::LoadManage()
     {
         // Schedule past the end of our phase so control will pass to the broker
         // after this LB, and we won't go again until it's our turn.
-        CBroker::Instance().Schedule(m_initialGatewaylobalTimer,
+        CBroker::Instance().Schedule(m_GlobalTimer,
                           boost::posix_time::not_a_date_time,
                           boost::bind(&LBAgent::LoadManage,
                                       this,
@@ -483,7 +483,7 @@ void LBAgent::LoadTable()
     int numLOADs = CDeviceManager::Instance().GetDevicesOfType("Load").size();
     int numSSTs  = CDeviceManager::Instance().GetDevicesOfType("Sst").size();
 
-    m_initialGatewayen = CDeviceManager::Instance().GetNetValue("Drer", "generation");
+    m_Gen = CDeviceManager::Instance().GetNetValue("Drer", "generation");
     m_Storage = CDeviceManager::Instance().GetNetValue("Desd", "storage");
     m_Load = CDeviceManager::Instance().GetNetValue("Load", "drain");
     m_SstGateway = CDeviceManager::Instance().GetNetValue("Sst", "gateway");
@@ -504,12 +504,12 @@ void LBAgent::LoadTable()
         {
             m_sstExists = false;
             // FIXME should consider Gateway
-            m_NetGateway = m_Load - m_initialGatewayen - m_Storage;
+            m_NetGateway = m_Load - m_Gen - m_Storage;
         }
     }
 
     // used to ensure three digits before the decimal, two after
-    unsigned int genWidth = (m_initialGatewayen > 0 ? 6 : 7);
+    unsigned int genWidth = (m_Gen > 0 ? 6 : 7);
     unsigned int storageWidth = (m_Storage > 0 ? 6 : 7);
     unsigned int loadWidth = (m_Load > 0 ? 6 : 7);
     unsigned int sstGateWidth = (m_SstGateway > 0 ? 6 : 7);
@@ -524,7 +524,7 @@ void LBAgent::LoadTable()
             << std::endl;
     ss << "\t| " << "Net DRER (" << std::setfill('0') << std::setw(2)
             << numDRERs << "): " << extraGenSpace << std::setfill(' ')
-            << std::setw(genWidth) << m_initialGatewayen << "     Net DESD    ("
+            << std::setw(genWidth) << m_Gen << "     Net DESD    ("
             << std::setfill('0') << std::setw(2) << numDESDs << "): "
             << extraStorageSpace << std::setfill(' ') << std::setw(storageWidth)
             << m_Storage << " |" << std::endl;
@@ -890,9 +890,18 @@ bool LBAgent::InvariantCheck()
 {
     bool I1 = (m_cyberInvariant==1)? true: false;
     Logger.Status << "Cyber invariant is " << I1 << std::endl;
-    bool I2 = PhysicalInvariant();
-    Logger.Status << "Physical invariant is " << I2 << std::endl;
-    return I1*I2;
+    // Check if there is Omega device for physical invariant    
+    using namespace device;
+    int  count = device::CDeviceManager::Instance().GetDevicesOfType("Omega").size();
+    if (count != 0)
+    {
+        bool I2 = PhysicalInvariant();
+        Logger.Status << "Physical invariant is " << I2 << std::endl;
+        return I1*I2;
+    }
+    else
+        return I1;
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////

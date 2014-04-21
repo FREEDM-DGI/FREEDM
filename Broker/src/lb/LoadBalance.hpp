@@ -176,14 +176,14 @@ class LBAgent
         // Cyber and Physical Invariant
         bool m_firstTimeInvariant;
         /// Cyber Invariant
-        int m_cyberInvariant;
+        bool m_cyberInvariant;
         /// Supply or draw of the system
         double m_initialGateway;
         /// Calculated gateway from load table
         double m_aggregateGateway;
         /// Highest demand value in the last migration cycle
         double m_highestDemand;
-        /// Previous the highest demand value
+        /// The previous highest demand value
         double m_prevDemand;
         /// Imbalanced power
         int m_outstandingMessages;

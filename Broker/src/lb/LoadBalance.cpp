@@ -56,12 +56,12 @@
 #include <exception>
 #include <fstream>
 #include <iomanip>
+#include <limits>
 #include <set>
 #include <string>
 
 #include <boost/asio.hpp>
 #include <boost/bind.hpp>
-#include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/date_time/posix_time/posix_time_types.hpp>
 #include <boost/foreach.hpp>
 #include <boost/function.hpp>
@@ -252,9 +252,7 @@ void LBAgent::SendNormal(double Normal)
         m_.SetHandler("lb.ComputedNormal");
         m_.m_submessages.put("lb.cnorm", boost::lexical_cast<std::string>(Normal));
         //for cyber invariant
-        m_.m_submessages.put("lb.m_cyberInvariant", boost::lexical_cast<std::string>(m_cyberInvariant));
-        //for physical invariant
-        //m_.m_submessages.put("lb.m_grossPowerFlow", boost::lexical_cast<std::string>(m_grossPowerFlow));
+        m_.m_submessages.put("lb.cyberInvariant", boost::lexical_cast<std::string>(m_cyberInvariant));
         BOOST_FOREACH( PeerNodePtr peer, m_AllPeers | boost::adaptors::map_values)
         {
             try
@@ -884,24 +882,24 @@ void LBAgent::HandleYes(MessagePtr /*msg*/, PeerNodePtr peer)
 }
 ///////////////////////////////////////////////////////////////////////////////
 /// LBAgent::InvariantCheck()
-/// @description This function check physical invariant and scheduling invariant.
+/// @description This function check physical invariant.
 ///////////////////////////////////////////////////////////////////////////////
 bool LBAgent::InvariantCheck()
 {
-    bool I1 = (m_cyberInvariant==1)? true: false;
-    Logger.Status << "Cyber invariant is " << I1 << std::endl;
+    bool I1 = (m_cyberInvariant==1);
+    Logger.Status << "Cyber invariant is " << (I1 ? "true" : "false") << std::endl;
     // Check if there is Omega device for physical invariant    
-    using namespace device;
-    int  count = device::CDeviceManager::Instance().GetDevicesOfType("Omega").size();
+    int count = device::CDeviceManager::Instance().GetDevicesOfType("Omega").size();
     if (count != 0)
     {
         bool I2 = PhysicalInvariant();
-        Logger.Status << "Physical invariant is " << I2 << std::endl;
+        Logger.Status << "Physical invariant is " << (I2 ? "true" : "false") << std::endl;
         return I1*I2;
     }
     else
+    {
         return I1;
-
+    }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -913,19 +911,16 @@ bool LBAgent::CyberInvariant()
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     //power invariant
     bool C1 = false;
-    Logger.Status << "m_initialGateway is " << m_initialGateway << " and m_aggregateGateway" << m_aggregateGateway << std::endl;
+    Logger.Status << "m_initialGateway is " << m_initialGateway << " and m_aggregateGateway " << m_aggregateGateway << std::endl;
     
-    if ((m_initialGateway - m_aggregateGateway) < 1 || (m_initialGateway - m_aggregateGateway) > -1)
+    if ((m_initialGateway - m_aggregateGateway) < 1 && (m_initialGateway - m_aggregateGateway) > -1)
         C1 = true;
         
-    Logger.Status << "C1 in cyber invariant is " << C1 << std::endl;
+    Logger.Info << "C1 in cyber invariant is " << (C1 ? "true" : "false") << std::endl;
     //knapsack invariant
-    bool C2 = false;
-    
-    if (m_prevDemand - m_highestDemand >= 0)
-        C2 = true;
+    bool C2 = (m_prevDemand - m_highestDemand >= 0);
         
-    Logger.Status << "C2 in cyber invariant is " << C2 << std::endl;
+    Logger.Info << "C2 in cyber invariant is " << (C2 ? "true" : "false") << std::endl;
     return C1*C2;
 }
 
@@ -937,8 +932,7 @@ bool LBAgent::PhysicalInvariant()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     //Obtaining frequency from physical system
-    using namespace device;
-    m_frequency = CDeviceManager::Instance().GetNetValue("Omega", "frequency");
+    m_frequency = device::CDeviceManager::Instance().GetNetValue("Omega", "frequency");
     // Check left side and right side of physical invariant formula
     double left = (0.08*m_frequency + 0.01)*(m_frequency-376.8)*(m_frequency-376.8) + (m_frequency-376.8)*(5.001e-8*m_grossPowerFlow);
     double right = m_outstandingMessages*(m_frequency - 376.8);
@@ -1065,8 +1059,7 @@ void LBAgent::HandleCollectedState(MessagePtr msg, PeerNodePtr /*peer*/)
     m_aggregateGateway=0;
     m_grossPowerFlow = 0;
     ptree &pt = msg->GetSubMessages();
-    // Vector container to record gateway for each node
-    std::vector<double> powerLevel(m_AllPeers.size());
+    m_highestDemand = std::numeric_limits<double>::min();
     if(pt.get_child_optional("CollectedState.gateway"))
     {
 	    BOOST_FOREACH(ptree::value_type &v, pt.get_child("CollectedState.gateway"))
@@ -1076,10 +1069,10 @@ void LBAgent::HandleCollectedState(MessagePtr msg, PeerNodePtr /*peer*/)
 		    if (v.second.data() != "no device")
 		    {
                 	double p = boost::lexical_cast<double>(v.second.data());
-                	//save gateway for each node
-                	powerLevel[peercount]=p;
-                	peercount++;
+                    peercount++;
                     m_aggregateGateway += p;
+                    if (p > m_highestDemand)
+                        m_highestDemand = p;
 		    }
 	    }
     }
@@ -1129,20 +1122,11 @@ void LBAgent::HandleCollectedState(MessagePtr msg, PeerNodePtr /*peer*/)
              }
         }
     }
-    //find the highest demand nodes
-    m_highestDemand = powerLevel[0];
-    
-    for (unsigned int i = 1; i < m_AllPeers.size(); i++)
-    {
-        if (m_highestDemand < powerLevel[i])
-            m_highestDemand = powerLevel[i];
-    }
     
     // If first time checking invariant, assign aggregate gateway to m_initialGateway
     if (m_firstTimeInvariant)
     {
         m_initialGateway = m_aggregateGateway;
-        //assign m_highestDemand to previous demand
         m_prevDemand = m_highestDemand;
         m_firstTimeInvariant = false;
     }
@@ -1179,7 +1163,7 @@ void LBAgent::HandleComputedNormal(MessagePtr msg, PeerNodePtr /*peer*/)
     Logger.Notice << "Computed Normal " << m_Normal << " received from "
                    << pt.get<std::string>("lb.source") << std::endl;
     //for cyber invariant
-    m_cyberInvariant = boost::lexical_cast<int>(pt.get<std::string>("lb.m_cyberInvariant"));
+    m_cyberInvariant = boost::lexical_cast<int>(pt.get<std::string>("lb.cyberInvariant"));
     LoadTable();
 }
 

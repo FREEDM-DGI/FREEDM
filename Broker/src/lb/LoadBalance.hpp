@@ -174,6 +174,7 @@ class LBAgent
         bool PhysicalInvariant();
 
         // Cyber and Physical Invariant
+	/// Flag for invariant check at the first time
         bool m_firstTimeInvariant;
         /// Cyber Invariant
         bool m_cyberInvariant;
@@ -185,7 +186,7 @@ class LBAgent
         double m_highestDemand;
         /// The previous highest demand value
         double m_prevDemand;
-        /// Imbalanced power
+        /// The messages that are send out by the supply but not received by the demand yet
         int m_outstandingMessages;
         /// Flag to indicate power migration in progress
         bool m_inProgress;

@@ -122,7 +122,7 @@ LBAgent::LBAgent(std::string uuid_):
     // Flag to indicate power migration is in progress
     m_inProgress = false;
     // Initialize imbalanced power K (predict the future power migration)
-    m_outstandingMessages = P_Migrate;
+    m_outstandingMessages = 1;
     m_actuallyread = true;
 }
 
@@ -882,29 +882,38 @@ void LBAgent::HandleYes(MessagePtr /*msg*/, PeerNodePtr peer)
 }
 ///////////////////////////////////////////////////////////////////////////////
 /// LBAgent::InvariantCheck()
-/// @description This function check physical invariant.
+/// @description This function checks integration of cyber and physical invariant. 
+/// @pre The physical system has to be exist for invariant integration test.
+/// @post The function returns result from integration of cyber and physical invariants
+///       check or true for no integration.
 ///////////////////////////////////////////////////////////////////////////////
 bool LBAgent::InvariantCheck()
 {
-    bool I1 = (m_cyberInvariant==1);
-    Logger.Status << "Cyber invariant is " << (I1 ? "true" : "false") << std::endl;
-    // Check if there is Omega device for physical invariant    
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    // Check if there is Omega device for cyber and physical invariant integration    
     int count = device::CDeviceManager::Instance().GetDevicesOfType("Omega").size();
     if (count != 0)
     {
+        bool I1 = (m_cyberInvariant==1);
+        Logger.Status << "Cyber invariant is " << (I1 ? "true" : "false") << std::endl;
         bool I2 = PhysicalInvariant();
         Logger.Status << "Physical invariant is " << (I2 ? "true" : "false") << std::endl;
         return I1*I2;
     }
     else
     {
-        return I1;
+        return true;
     }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 /// LBAgent::CyberInvariant()
-/// @description This function check cyber invariant.
+/// @description This function check cyber invariant. The invariant has two parts.
+///              The power invariant makes sure that total gateway is always the same.
+///		 The knapsack invariant makes sure always the highest demand is picked.
+/// @pre The leader will call this after the state collection.
+/// @post The function will return true if both are satisifed and false if any one is
+///       unsatisfied.
 ///////////////////////////////////////////////////////////////////////////////
 bool LBAgent::CyberInvariant()
 {
@@ -926,16 +935,23 @@ bool LBAgent::CyberInvariant()
 
 ///////////////////////////////////////////////////////////////////////////////
 /// LBAgent::PhysicalInvariant()
-/// @description This function check physical invariant.
+/// @description This function check physical invariant. The Physical invariant formula is
+///  (Omega-OmegaNon)^2(D*Omega-OmegaNon)+(Omega-OmegaNon)(k*P^2)>delta*K*(Omega-OmegaNon).
+///  Except for Omega and big K, all others are constant value given different physical system.
+/// @pre The physical system has to be exist and sending out the frequency through the 
+///      Device Manager.
+/// @post The function returns true if formula is satisfied; false vice versa.
 ///////////////////////////////////////////////////////////////////////////////
 bool LBAgent::PhysicalInvariant()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     //Obtaining frequency from physical system
     m_frequency = device::CDeviceManager::Instance().GetNetValue("Omega", "frequency");
+    const float OmegaNon = 376.8;
+
     // Check left side and right side of physical invariant formula
-    double left = (0.08*m_frequency + 0.01)*(m_frequency-376.8)*(m_frequency-376.8) + (m_frequency-376.8)*(5.001e-8*m_grossPowerFlow);
-    double right = m_outstandingMessages*(m_frequency - 376.8);
+    double left = (0.08*m_frequency + 0.01)*(m_frequency-OmegaNon)*(m_frequency-OmegaNon) + (m_frequency-OmegaNon)*(5.001e-8*m_grossPowerFlow);
+    double right = P_Migrate*m_outstandingMessages*(m_frequency - OmegaNon);
     Logger.Status << "Physical invaraint left side of formula is " << left << " and right side of formula is " << right << std::endl;
     
     if (left > right)
@@ -997,7 +1013,7 @@ void LBAgent::HandleDrafting(MessagePtr /*msg*/, PeerNodePtr peer)
             if (m_sstExists)
 	    {
                Step_PStar();
-	        m_outstandingMessages += P_Migrate;
+	        m_outstandingMessages ++;
 	    }
             else
                Desd_PStar();
@@ -1037,7 +1053,7 @@ void LBAgent::HandleAccept(MessagePtr msg, PeerNodePtr peer)
         if (m_sstExists)
 	{
            Step_PStar();
-	    m_outstandingMessages += P_Migrate;
+	    m_outstandingMessages ++;
 	}
         else
            Desd_PStar();

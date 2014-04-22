@@ -40,6 +40,7 @@
 #include "CBroker.hpp"
 #include "CConnection.hpp"
 #include "CConnectionManager.hpp"
+#include "CGlobalPeerList.hpp"
 #include "CLogger.hpp"
 #include "CMessage.hpp"
 #include "gm/GroupManagement.hpp"
@@ -585,6 +586,7 @@ void SCAgent::HandleAny(MessagePtr msg, PeerNodePtr peer)
         sub_ptree.add("type", "Message");
         sub_ptree.add("signal", "inchannel");
         sub_ptree.add("value", intransit);
+        sub_ptree.add("count", 1);
         m_.m_submessages.add_child("sc.collects.collect", sub_ptree);
 
         m_curstate = m_.GetSubMessages();

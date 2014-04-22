@@ -26,6 +26,7 @@
 #include "CBroker.hpp"
 #include "CConnection.hpp"
 #include "CConnectionManager.hpp"
+#include "CGlobalPeerList.hpp"
 #include "CLogger.hpp"
 #include "CMessage.hpp"
 #include "SRemoteHost.hpp"
@@ -84,7 +85,7 @@ GMAgent::GMAgent(std::string p_uuid)
     : IPeerNode(p_uuid),
     CHECK_TIMEOUT(boost::posix_time::not_a_date_time),
     TIMEOUT_TIMEOUT(boost::posix_time::not_a_date_time),
-    GLOBAL_TIMEOUT(boost::posix_time::milliseconds(CTimings::GM_GLOBAL_TIMEOUT)),
+    GLOBAL_TIMEOUT(boost::posix_time::milliseconds(CTimings::GM_PHASE_TIME)),
     FID_TIMEOUT(boost::posix_time::not_a_date_time),
     AYC_RESPONSE_TIMEOUT(boost::posix_time::milliseconds(CTimings::GM_AYC_RESPONSE_TIMEOUT)),
     AYT_RESPONSE_TIMEOUT(boost::posix_time::milliseconds(CTimings::GM_AYT_RESPONSE_TIMEOUT)),
@@ -818,7 +819,6 @@ void GMAgent::Reorganize( const boost::system::error_code& err )
     {
         SetStatus(GMAgent::REORGANIZATION);
         Logger.Notice << "+ State change: REORGANIZATION: " << __LINE__    << std::endl;
-        Logger.Info <<"SEND: Sending out Ready"<<std::endl;
         // Send new membership list to group members
         // PeerList is the new READY
         PushPeerList();

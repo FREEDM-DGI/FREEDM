@@ -24,29 +24,16 @@
 #ifndef CSTATECOLLECTION_HPP_
 #define CSTATECOLLECTION_HPP_
 
-#include "CConnection.hpp"
-#include "CConnectionManager.hpp"
-#include "CDispatcher.hpp"
 #include "CMessage.hpp"
 #include "IAgent.hpp"
 #include "IHandler.hpp"
 #include "IPeerNode.hpp"
-#include "CDevice.hpp"
 
-#include <cmath>
 #include <map>
-#include <sstream>
-#include <set>
 #include <vector>
 
 #include <boost/shared_ptr.hpp>
-#include <boost/progress.hpp>
 #include <boost/property_tree/ptree.hpp>
-
-using boost::asio::ip::tcp;
-using boost::property_tree::ptree;
-
-using namespace boost::asio;
 
 namespace freedm
 {
@@ -56,6 +43,8 @@ namespace broker
 
 namespace sc
 {
+
+using boost::property_tree::ptree;
 
 ///////////////////////////////////////////////////////////////////////////////
 /// @class          SCAgent
@@ -67,12 +56,17 @@ namespace sc
 ///                 other nodes (these messages belong to the channel between the nodes).
 ///////////////////////////////////////////////////////////////////////////////
 
-class SCAgent : public IReadHandler, public IPeerNode,
+class SCAgent : public IReadHandler, private IPeerNode,
         public IAgent< boost::shared_ptr<IPeerNode> >
 {
     public:
         ///Constructor
         SCAgent(std::string uuid);
+
+    private:
+        //Marker structure
+        typedef std::pair< std::string, int >  StateVersion;
+
         //Handler
         ///Handle receiving messages
         void HandleAny(MessagePtr msg, PeerNodePtr peer);
@@ -81,15 +75,10 @@ class SCAgent : public IReadHandler, public IPeerNode,
         void HandleMarker(MessagePtr msg, PeerNodePtr peer);
         void HandleState(MessagePtr msg, PeerNodePtr peer);
 
-    private:
-        //Marker structure
-        typedef std::pair< std::string, int >  StateVersion;
-
         //Internal
         ///Initiator starts state collection
         void    Initiate();
         ///Save local state
-        //void    TakeSnapshot(std::string deviceType, std::string valueType);
         void    TakeSnapshot(const std::vector<std::string>& devicelist);
         ///Peer sends collected states back to the initiator
         void    SendStateBack();
@@ -133,10 +122,6 @@ class SCAgent : public IReadHandler, public IPeerNode,
 
         //For multidevices state collection the following variables have to be changed
         std::vector<std::string> m_device;
-
-        ///type of device and value
-        //std::string m_deviceType;
-        //std::string m_valueType;
 
         ///current version of marker
         StateVersion        m_curversion;

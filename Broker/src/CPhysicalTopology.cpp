@@ -100,18 +100,14 @@ CPhysicalTopology::VertexSet CPhysicalTopology::ReachablePeers(std::string sourc
 
     BFSPQueue openset;
     std::set<std::string> closedset;
-    std::string consider, controlfid;
-    CPhysicalTopology::VertexPair vx;
-    int hops;
-    BFSExplorer tmp;
 
     openset.push(BFSExplorer(0,source));
     while(openset.size() > 0)
     {
-        tmp = openset.top();
+        BFSExplorer tmp = openset.top();
         openset.pop();
-        consider = tmp.second;
-        hops = tmp.first;
+        std::string consider = tmp.second;
+        int hops = tmp.first;
         closedset.insert(consider);
         Logger.Debug<<"Considering "<<consider<<" ("<<hops<<" hops) ("
                     <<m_adjlist[consider].size()<<" Neighbors)"<<std::endl;
@@ -128,13 +124,13 @@ CPhysicalTopology::VertexSet CPhysicalTopology::ReachablePeers(std::string sourc
             {
                 Logger.Debug<<std::endl;
             }
-            vx = CPhysicalTopology::VertexPair(consider,neighbor);
+            CPhysicalTopology::VertexPair vx = CPhysicalTopology::VertexPair(consider,neighbor);
             bool good_edge = true;
             std::pair<FIDControlMap::iterator,FIDControlMap::iterator>
                 range = m_fidcontrol.equal_range(vx);
             for(FIDControlMap::iterator it=range.first; it != range.second; it++)
             {
-                controlfid = it->second;
+                std::string controlfid = it->second;
                 // An FID controls this edge
                 if(fidstate.count(controlfid) == 0
                     || fidstate[controlfid] == false)

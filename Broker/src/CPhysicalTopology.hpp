@@ -1,5 +1,5 @@
 ////////////////////////////////////////////////////////////////////////////////
-/// @file         CBroker.hpp
+/// @file         CPhysicalTopology.hpp
 ///
 /// @author       Stephen Jackson <scj7t4@mst.edu>
 ///
@@ -31,7 +31,15 @@
 namespace freedm {
     namespace broker {
 
-/// Central monolith of the Broker Architecture.
+/// Provides the Physical Topology Architecture.
+///////////////////////////////////////////////////////////////////////////////
+/// Provides the physical topology of the power system. It gets read from a
+/// file. There is documentation on the wiki. 
+///
+/// It's really important that we have this long documentation, even though
+/// there is nothing to say that would actually be helpful: look at the only
+/// (public) function in this class.
+///////////////////////////////////////////////////////////////////////////////
 class CPhysicalTopology : private boost::noncopyable
 {
 public:

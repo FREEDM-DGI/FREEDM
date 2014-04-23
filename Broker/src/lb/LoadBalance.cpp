@@ -56,6 +56,7 @@
 #include <exception>
 #include <fstream>
 #include <iomanip>
+#include <limits>
 #include <set>
 #include <string>
 
@@ -116,6 +117,12 @@ LBAgent::LBAgent(std::string uuid_):
     RegisterSubhandle("lb.ComputedNormal",boost::bind(&LBAgent::HandleComputedNormal, this, _1, _2));
     RegisterSubhandle("any",boost::bind(&LBAgent::HandleAny, this, _1, _2));
     m_sstExists = false;
+    // First time flag for invariant
+    m_firstTimeInvariant = true;
+    // Flag to indicate power migration is in progress
+    m_inProgress = false;
+    // Initialize imbalanced power K (predict the future power migration)
+    m_outstandingMessages = 1;
     m_actuallyread = true;
 }
 
@@ -244,6 +251,8 @@ void LBAgent::SendNormal(double Normal)
         m_.m_submessages.put("lb.source", GetUUID());
         m_.SetHandler("lb.ComputedNormal");
         m_.m_submessages.put("lb.cnorm", boost::lexical_cast<std::string>(Normal));
+        //for cyber invariant
+        m_.m_submessages.put("lb.cyberInvariant", boost::lexical_cast<std::string>(m_cyberInvariant));
         BOOST_FOREACH( PeerNodePtr peer, m_AllPeers | boost::adaptors::map_values)
         {
             try
@@ -476,6 +485,10 @@ void LBAgent::LoadTable()
     m_Storage = CDeviceManager::Instance().GetNetValue("Desd", "storage");
     m_Load = CDeviceManager::Instance().GetNetValue("Load", "drain");
     m_SstGateway = CDeviceManager::Instance().GetNetValue("Sst", "gateway");
+
+    //calculate m_grossPowerFlow for test one supply and one demand
+    m_grossPowerFlow = 1000*m_SstGateway*m_SstGateway*1000;
+    Logger.Status << "-----The m_grossPowerFlow is  " << m_grossPowerFlow << std::endl;
 
     if(m_actuallyread)
     {
@@ -855,7 +868,7 @@ void LBAgent::HandleYes(MessagePtr /*msg*/, PeerNodePtr peer)
     m_.SetHandler("lb."+ ss_.str());
 
     //Its better to check your status again before initiating drafting
-    if( peer->GetUUID() != GetUUID() && LBAgent::SUPPLY == m_Status )
+    if( peer->GetUUID() != GetUUID() && LBAgent::SUPPLY == m_Status && InvariantCheck() )
     {
         try
         {
@@ -867,7 +880,85 @@ void LBAgent::HandleYes(MessagePtr /*msg*/, PeerNodePtr peer)
         }
     }
 }
+///////////////////////////////////////////////////////////////////////////////
+/// LBAgent::InvariantCheck()
+/// @description This function checks integration of cyber and physical invariant. 
+/// @pre The physical system has to be exist for invariant integration test.
+/// @post The function returns result from integration of cyber and physical invariants
+///       check or true for no integration.
+///////////////////////////////////////////////////////////////////////////////
+bool LBAgent::InvariantCheck()
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    // Check if there is Omega device for cyber and physical invariant integration    
+    int count = device::CDeviceManager::Instance().GetDevicesOfType("Omega").size();
+    if (count != 0)
+    {
+        bool I1 = (m_cyberInvariant==1);
+        Logger.Status << "Cyber invariant is " << (I1 ? "true" : "false") << std::endl;
+        bool I2 = PhysicalInvariant();
+        Logger.Status << "Physical invariant is " << (I2 ? "true" : "false") << std::endl;
+        return I1*I2;
+    }
+    else
+    {
+        return true;
+    }
+}
 
+///////////////////////////////////////////////////////////////////////////////
+/// LBAgent::CyberInvariant()
+/// @description This function check cyber invariant. The invariant has two parts.
+///              The power invariant makes sure that total gateway is always the same.
+///		 The knapsack invariant makes sure always the highest demand is picked.
+/// @pre The leader will call this after the state collection.
+/// @post The function will return true if both are satisifed and false if any one is
+///       unsatisfied.
+///////////////////////////////////////////////////////////////////////////////
+bool LBAgent::CyberInvariant()
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    //power invariant
+    bool C1 = false;
+    Logger.Status << "m_initialGateway is " << m_initialGateway << " and m_aggregateGateway " << m_aggregateGateway << std::endl;
+    
+    if ((m_initialGateway - m_aggregateGateway) < 1 && (m_initialGateway - m_aggregateGateway) > -1)
+        C1 = true;
+        
+    Logger.Info << "C1 in cyber invariant is " << (C1 ? "true" : "false") << std::endl;
+    //knapsack invariant
+    bool C2 = (m_prevDemand - m_highestDemand >= 0);
+        
+    Logger.Info << "C2 in cyber invariant is " << (C2 ? "true" : "false") << std::endl;
+    return C1*C2;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+/// LBAgent::PhysicalInvariant()
+/// @description This function check physical invariant. The Physical invariant formula is
+///  (Omega-OmegaNon)^2(D*Omega-OmegaNon)+(Omega-OmegaNon)(k*P^2)>delta*K*(Omega-OmegaNon).
+///  Except for Omega and big K, all others are constant value given different physical system.
+/// @pre The physical system has to be exist and sending out the frequency through the 
+///      Device Manager.
+/// @post The function returns true if formula is satisfied; false vice versa.
+///////////////////////////////////////////////////////////////////////////////
+bool LBAgent::PhysicalInvariant()
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    //Obtaining frequency from physical system
+    m_frequency = device::CDeviceManager::Instance().GetNetValue("Omega", "frequency");
+    const float OmegaNon = 376.8;
+
+    // Check left side and right side of physical invariant formula
+    double left = (0.08*m_frequency + 0.01)*(m_frequency-OmegaNon)*(m_frequency-OmegaNon) + (m_frequency-OmegaNon)*(5.001e-8*m_grossPowerFlow);
+    double right = P_Migrate*m_outstandingMessages*(m_frequency - OmegaNon);
+    Logger.Status << "Physical invaraint left side of formula is " << left << " and right side of formula is " << right << std::endl;
+    
+    if (left > right)
+        return true;
+    else
+        return false;
+}
 void LBAgent::HandleNo(MessagePtr /*msg*/, PeerNodePtr peer)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
@@ -905,8 +996,9 @@ void LBAgent::HandleDrafting(MessagePtr /*msg*/, PeerNodePtr peer)
         ss_ << m_DemandVal;
         m_.m_submessages.put("lb.value", ss_.str());
 
-        if( peer->GetUUID() != GetUUID() && LBAgent::DEMAND == m_Status )
+        if( peer->GetUUID() != GetUUID() && LBAgent::DEMAND == m_Status && !m_inProgress )
         {
+	    m_inProgress = true;
             try
             {
                 peer->Send(m_);
@@ -919,7 +1011,10 @@ void LBAgent::HandleDrafting(MessagePtr /*msg*/, PeerNodePtr peer)
             // Make necessary power setting accordingly to allow power migration
             // !!!NOTE: You may use Step_PStar() or PStar(m_DemandVal) currently
             if (m_sstExists)
+	    {
                Step_PStar();
+	        m_outstandingMessages ++;
+	    }
             else
                Desd_PStar();
         }
@@ -927,6 +1022,7 @@ void LBAgent::HandleDrafting(MessagePtr /*msg*/, PeerNodePtr peer)
         {
             //Nothing; Local Load change from Demand state (Migration will not proceed)
         }
+	m_inProgress = false;
     }
 }
 
@@ -948,13 +1044,17 @@ void LBAgent::HandleAccept(MessagePtr msg, PeerNodePtr peer)
     Logger.Notice << " Draft Accept message received from: " << peer->GetUUID()
                    << " with demand of "<< DemValue << std::endl;
 
-    if( LBAgent::SUPPLY == m_Status)
+    if( LBAgent::SUPPLY == m_Status && !m_inProgress)
     {
+	m_inProgress = true;
         // Make necessary power setting accordingly to allow power migration
         Logger.Notice<<"Migrating power on request from: "<< peer->GetUUID() << std::endl;
 	// !!!NOTE: You may use Step_PStar() or PStar(DemandValue) currently
         if (m_sstExists)
+	{
            Step_PStar();
+	    m_outstandingMessages ++;
+	}
         else
            Desd_PStar();
     }//end if( LBAgent::SUPPLY == m_Status)
@@ -962,6 +1062,7 @@ void LBAgent::HandleAccept(MessagePtr msg, PeerNodePtr peer)
     {
         Logger.Warn << "Unexpected Accept message" << std::endl;
     }
+    m_inProgress = false;
 }
 
 void LBAgent::HandleCollectedState(MessagePtr msg, PeerNodePtr /*peer*/)
@@ -971,9 +1072,10 @@ void LBAgent::HandleCollectedState(MessagePtr msg, PeerNodePtr /*peer*/)
     // You received the collected global state in response to your SC Request
     // --------------------------------------------------------------
     int peercount=0; // number of peers *with devices*
-    double agg_gateway=0;
-
+    m_aggregateGateway=0;
+    m_grossPowerFlow = 0;
     ptree &pt = msg->GetSubMessages();
+    m_highestDemand = std::numeric_limits<double>::min();
     if(pt.get_child_optional("CollectedState.gateway"))
     {
 	    BOOST_FOREACH(ptree::value_type &v, pt.get_child("CollectedState.gateway"))
@@ -982,8 +1084,11 @@ void LBAgent::HandleCollectedState(MessagePtr msg, PeerNodePtr /*peer*/)
 			              << v.second.data() << std::endl;
 		    if (v.second.data() != "no device")
 		    {
-     	            peercount++;
-                	    agg_gateway += boost::lexical_cast<double>(v.second.data());
+                	double p = boost::lexical_cast<double>(v.second.data());
+                    peercount++;
+                    m_aggregateGateway += p;
+                    if (p > m_highestDemand)
+                        m_highestDemand = p;
 		    }
 	    }
     }
@@ -1019,7 +1124,7 @@ void LBAgent::HandleCollectedState(MessagePtr msg, PeerNodePtr /*peer*/)
 				      << v.second.data() << std::endl;
 	    }
     }
-    //Consider any intransit "accept" messages in agg_gateway calculation
+    //Consider any intransit "accept" messages in m_aggregateGateway calculation
     if(pt.get_child_optional("CollectedState.intransit"))
     {
         BOOST_FOREACH(ptree::value_type &v, pt.get_child("CollectedState.intransit"))
@@ -1029,20 +1134,38 @@ void LBAgent::HandleCollectedState(MessagePtr msg, PeerNodePtr /*peer*/)
             if(v.second.data() == "accept"){
 	        Logger.Notice << "SC module returned values: "
 			  << v.second.data() << std::endl;
-                agg_gateway += P_Migrate;
+                m_aggregateGateway += P_Migrate;
              }
         }
     }
+    
+    // If first time checking invariant, assign aggregate gateway to m_initialGateway
+    if (m_firstTimeInvariant)
+    {
+        m_initialGateway = m_aggregateGateway;
+        m_prevDemand = m_highestDemand;
+        m_firstTimeInvariant = false;
+    }
+    
+    Logger.Status << "In collected state, m_initialGateway is " << m_initialGateway << "and m_aggregateGateway is " << m_aggregateGateway  << std::endl;
+
     if(peercount != 0)
     {
-        m_Normal = agg_gateway/peercount;
+        m_Normal = m_aggregateGateway/peercount;
         Logger.Info << "Computed Normal: " << m_Normal << std::endl;
     }
     else
     {
         m_Normal = 0;
     }
+    //Check Cyber Invariant
+    if (CyberInvariant())
+        m_cyberInvariant = 1;
+    else
+        m_cyberInvariant = 0;
+        
     SendNormal(m_Normal);
+    m_prevDemand = m_highestDemand;
 }
 
 void LBAgent::HandleComputedNormal(MessagePtr msg, PeerNodePtr /*peer*/)
@@ -1055,6 +1178,8 @@ void LBAgent::HandleComputedNormal(MessagePtr msg, PeerNodePtr /*peer*/)
     m_Normal = pt.get<double>("lb.cnorm");
     Logger.Notice << "Computed Normal " << m_Normal << " received from "
                    << pt.get<std::string>("lb.source") << std::endl;
+    //for cyber invariant
+    m_cyberInvariant = boost::lexical_cast<int>(pt.get<std::string>("lb.cyberInvariant"));
     LoadTable();
 }
 

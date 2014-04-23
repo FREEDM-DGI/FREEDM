@@ -165,6 +165,36 @@ class LBAgent
         /// Timer until next periodic state collection
         CBroker::TimerHandle      m_StateTimer;
 
+        // Invariant Function
+        /// Main function for invariant check
+        bool InvariantCheck();
+        /// Function for cyber invariant
+        bool CyberInvariant();
+        /// Function for physical invariant
+        bool PhysicalInvariant();
+
+        // Cyber and Physical Invariant
+	/// Flag for invariant check at the first time
+        bool m_firstTimeInvariant;
+        /// Cyber Invariant
+        int m_cyberInvariant;
+        /// Supply or draw of the system
+        double m_initialGateway;
+        /// Calculated gateway from load table
+        double m_aggregateGateway;
+        /// Highest demand value in the last migration cycle
+        double m_highestDemand;
+        /// The previous highest demand value
+        double m_prevDemand;
+        /// The messages that are send out by the supply but not received by the demand yet
+        int m_outstandingMessages;
+        /// Flag to indicate power migration in progress
+        bool m_inProgress;
+        /// Gross power flow for physical invariant
+        double m_grossPowerFlow;
+        /// Frequency from physical system
+        double m_frequency;
+
         bool m_sstExists;
         /// Set to true for the first get gateway call to indicate they should
         /// Actually read the value.

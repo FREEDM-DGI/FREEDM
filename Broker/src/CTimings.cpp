@@ -51,8 +51,6 @@ unsigned int CTimings::CSRC_RESEND_TIME;
                        
 unsigned int CTimings::GM_PREMERGE_GRANULARITY;
 
-unsigned int CTimings::LB_STATE_TIMER;
-
 unsigned int CTimings::LB_GLOBAL_TIMER;
 
 
@@ -158,12 +156,6 @@ void CTimings::SetTimings(const std::string timingsFile)
     desc = "The timing value GM_PREMERGE_GRANULARITY";
     loggerOpts.add_options()
         ("GM_PREMERGE_GRANULARITY",
-        po::value<unsigned int>( ),
-        desc.c_str() );
-
-    desc = "The timing value LB_STATE_TIMER";
-    loggerOpts.add_options()
-        ("LB_STATE_TIMER",
         po::value<unsigned int>( ),
         desc.c_str() );
 
@@ -349,17 +341,6 @@ void CTimings::SetTimings(const std::string timingsFile)
         throw EDgiConfigError(
                 "GM_PREMERGE_GRANULARITY is missing, please check your timings config");
     }
-
-    try
-    {
-        LB_STATE_TIMER = vm["LB_STATE_TIMER"].as<unsigned int>();
-    }
-    catch (boost::bad_any_cast& e)
-    {
-        throw EDgiConfigError(
-                "LB_STATE_TIMER is missing, please check your timings config");
-    }
-
 
     try
     {

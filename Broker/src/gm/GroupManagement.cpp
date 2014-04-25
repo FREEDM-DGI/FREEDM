@@ -21,11 +21,6 @@
 /// Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
 ////////////////////////////////////////////////////////////////////////////////
 
-
-// !!!!!!!!!!!!!!!!!!!
-// This turns on random Premerge time!
-// !!!!!!!!!!!!!!!!!!!
-
 #include "GroupManagement.hpp"
 
 #include "CBroker.hpp"
@@ -38,6 +33,7 @@
 #include "CDeviceManager.hpp"
 #include "CTimings.hpp"
 #include "CDevice.hpp"
+#include "CPhysicalTopology.hpp"
 
 #include <algorithm>
 #include <cassert>
@@ -49,6 +45,7 @@
 #include <string>
 #include <vector>
 #include <stack>
+#include <set>
 
 #include <boost/asio.hpp>
 #include <boost/assign/list_of.hpp>
@@ -104,28 +101,26 @@ GMAgent::GMAgent(std::string p_uuid)
     m_membershipchecks = 0;
     m_timer = CBroker::Instance().AllocateTimer("gm");
     m_fidtimer = CBroker::Instance().AllocateTimer("gm");
-    m_fidsclosed = true;
     m_GrpCounter = rand();
 
-    PrehandleFunctor f = boost::bind(&GMAgent::Prehandler, this, _1, _2, _3);
     RegisterSubhandle("any.PeerList",
-        PrehandlerHelper(f,boost::bind(&GMAgent::HandlePeerList, this, _1, _2)));
+        boost::bind(&GMAgent::HandlePeerList, this, _1, _2));
     RegisterSubhandle("gm.Invite",
-        PrehandlerHelper(f,boost::bind(&GMAgent::HandleInvite, this, _1, _2)));
+        boost::bind(&GMAgent::HandleInvite, this, _1, _2));
     RegisterSubhandle("gm.Accept",
-        PrehandlerHelper(f,boost::bind(&GMAgent::HandleAccept, this, _1, _2)));
+        boost::bind(&GMAgent::HandleAccept, this, _1, _2));
     RegisterSubhandle("gm.AreYouCoordinator",
-        PrehandlerHelper(f,boost::bind(&GMAgent::HandleAreYouCoordinator, this, _1, _2)));
+        boost::bind(&GMAgent::HandleAreYouCoordinator, this, _1, _2));
     RegisterSubhandle("gm.Response.AreYouCoordinator",
-        PrehandlerHelper(f,boost::bind(&GMAgent::HandleResponseAYC, this, _1, _2)));
+        boost::bind(&GMAgent::HandleResponseAYC, this, _1, _2));
     RegisterSubhandle("gm.AreYouThere",
-        PrehandlerHelper(f,boost::bind(&GMAgent::HandleAreYouThere, this, _1, _2)));
+        boost::bind(&GMAgent::HandleAreYouThere, this, _1, _2));
     RegisterSubhandle("gm.Response.AreYouThere",
-        PrehandlerHelper(f,boost::bind(&GMAgent::HandleResponseAYT, this, _1, _2)));
+        boost::bind(&GMAgent::HandleResponseAYT, this, _1, _2));
     RegisterSubhandle("gm.PeerListQuery",
-        PrehandlerHelper(f,boost::bind(&GMAgent::HandlePeerListQuery, this, _1, _2)));
+        boost::bind(&GMAgent::HandlePeerListQuery, this, _1, _2));
     RegisterSubhandle("any",
-        PrehandlerHelper(f,boost::bind(&GMAgent::HandleAny, this, _1, _2)));
+        boost::bind(&GMAgent::HandleAny, this, _1, _2));
     #ifdef RANDOM_PREMERGE
         srand(time(0));
     #endif
@@ -147,6 +142,49 @@ GMAgent::~GMAgent()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+/// GMAgent::GetFIDState()
+/// @description Creates a ptree which lists the state of all FIDs attached to
+///     this DGI.
+/// @pre None
+/// @post None
+/// @return A ptree identifying each attached FID and it's state.
+///////////////////////////////////////////////////////////////////////////////
+ptree GMAgent::GetFIDState()
+{
+    ptree fidtree;
+    std::set<device::CDevice::Pointer> attachedFIDs = device::CDeviceManager::Instance().GetDevicesOfType("Fid");
+    BOOST_FOREACH(device::CDevice::Pointer ptr, attachedFIDs)
+    {
+        ptree subpt;
+        subpt.put("deviceid", ptr->GetID());
+        subpt.put("state", (bool) ptr->GetState("state"));
+        fidtree.add_child("fid", subpt);
+    }
+    return fidtree;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+/// GMAgent::UpdateFIDState()
+/// @description Given a ptree which contains the fid tree created in
+///     GetFIDState under the key gm, copy the state of each FID in into
+///     m_fidstate.
+/// @pre fidtree contains the key "gm.fids"
+/// @post m_fidstate is updated with the state of the FIDs listed in the
+///     input ptree.
+///////////////////////////////////////////////////////////////////////////////
+void GMAgent::UpdateFIDState(ptree& fidtree)
+{
+    // m_fidstate is the map.
+    BOOST_FOREACH(ptree::value_type &v, fidtree.get_child("gm.fids"))
+    {
+        ptree sub_pt = v.second;
+        std::string devid = sub_pt.get<std::string>("deviceid");
+        bool state = sub_pt.get<bool>("state");
+        m_fidstate[devid] = state;
+    }
+} 
+
+///////////////////////////////////////////////////////////////////////////////
 /// GMAgent::AreYouCoordinator
 /// @description Creates a new Are You Coordinator message, from this object
 /// @pre The UUID is set
@@ -163,6 +201,8 @@ CMessage GMAgent::AreYouCoordinator()
     m_.m_submessages.put("gm.seq",id);
     Logger.Debug<<"Generated AYC : "<<id<<std::endl;
     id++;
+    // Push the state of my attached FIDs so the leader can do the BFS on it
+    // To make sure it's connected
     m_.SetExpireTimeFromNow(GLOBAL_TIMEOUT);
     return m_;
 }
@@ -211,6 +251,7 @@ CMessage GMAgent::Response(std::string payload,std::string type,
     m_.m_submessages.put("gm.ldrhost", GetPeer(Coordinator())->GetHostname());
     m_.m_submessages.put("gm.ldrport", GetPeer(Coordinator())->GetPort());
     m_.m_submessages.put("gm.seq",seq);
+    m_.m_submessages.add_child("gm.fids", GetFIDState());
     m_.SetExpireTime(exp);
     return m_;
 }
@@ -303,26 +344,6 @@ CMessage GMAgent::PeerListQuery(std::string requester)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// GMAgent::SendToPeer
-/// @description Wrapper for peer->Send that checks to see if the FIDs are closed
-///     before sending
-/// @param peer the peer to send to
-/// @param msg the message to send
-///////////////////////////////////////////////////////////////////////////////
-void GMAgent::SendToPeer(PeerNodePtr peer, CMessage &msg)
-{
-    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    if(m_fidsclosed == true)
-    {
-        peer->Send(msg);
-    }
-    else
-    {
-        Logger.Debug << "Message not send (FIDs open)"<<std::endl;
-    }
-}
-
-///////////////////////////////////////////////////////////////////////////////
 /// GMAgent::SystemState
 /// @description Puts the system state to the logger.
 /// @pre None
@@ -394,6 +415,7 @@ void GMAgent::SystemState()
     nodestatus<<std::endl<<"Time left in phase: "<<CBroker::Instance().TimeRemaining()<<std::endl;
     Logger.Status<<nodestatus.str()<<std::endl;
 }
+
 ///////////////////////////////////////////////////////////////////////////////
 /// GMAgent::PushPeerList
 /// @description Sends the membership list to other modules of this node and
@@ -408,9 +430,7 @@ void GMAgent::PushPeerList()
     CMessage m_ = PeerList();
     BOOST_FOREACH( PeerNodePtr peer, m_UpNodes | boost::adaptors::map_values)
     {
-        Logger.Debug<<"Send group list to all members of this group containing "
-                                 << peer->GetUUID() << std::endl;
-        SendToPeer(peer,m_);
+        peer->Send(m_);
     }
     if(GetPeer(GetUUID())) GetPeer(GetUUID())->Send(m_);
     Logger.Trace << __PRETTY_FUNCTION__ << "FINISH" <<    std::endl;
@@ -449,45 +469,10 @@ void GMAgent::Recovery()
     PushPeerList();
     // Go to work
     Logger.Info << "TIMER: Setting CheckTimer (Check): " << __LINE__ << std::endl;
-    m_timerMutex.lock();
     CBroker::Instance().Schedule(m_timer, CHECK_TIMEOUT,
         boost::bind(&GMAgent::Check, this, boost::asio::placeholders::error));
-    m_timerMutex.unlock();
     // On recovery, we will reset the clock skew to 0 and start trying to synch again
     //CGlobalConfiguration::instance().SetClockSkew(boost::posix_time::seconds(0));
-}
-
-///////////////////////////////////////////////////////////////////////////////
-/// GMAgent::FIDCheck
-/// @description: Checks the open and close status of all FIDs attached to this
-///     Node.
-/// @pre None
-/// @post: If all FIDs are open this node stops responding to messages.
-///////////////////////////////////////////////////////////////////////////////
-void GMAgent::FIDCheck( const boost::system::error_code& err)
-{
-    if(!err)
-    {
-        int attachedFIDs = device::CDeviceManager::Instance().
-                GetDevicesOfType("Fid").size();
-        unsigned int FIDState = device::CDeviceManager::Instance().
-                GetNetValue("Fid", "state");
-        if(m_fidsclosed == true && attachedFIDs  > 0 && FIDState == 0)
-        {
-            Logger.Status<<"All FIDs offline. Entering Recovery State"<<std::endl;
-            Recovery();
-            m_fidsclosed = false;
-        }
-        else if(m_fidsclosed == false && attachedFIDs > 0 && FIDState > 0)
-        {
-            Logger.Status<<"All FIDs Online. Checking for Peers"<<std::endl;
-            m_fidsclosed = true;
-        }
-        m_timerMutex.lock();
-        CBroker::Instance().Schedule(m_fidtimer, FID_TIMEOUT,
-            boost::bind(&GMAgent::FIDCheck, this, boost::asio::placeholders::error));
-        m_timerMutex.unlock();
-    }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -510,15 +495,12 @@ void GMAgent::Recovery( const boost::system::error_code& err )
     }
     else if(boost::asio::error::operation_aborted == err )
     {
-        Logger.Info << "Testing recovery cycle" << std::endl;
         if(!IsCoordinator())
         {
             Logger.Info << "TIMER: Setting TimeoutTimer (Timeout):" << __LINE__ << std::endl;
             // We are not the Coordinator, we must run Timeout()
-            m_timerMutex.lock();
             CBroker::Instance().Schedule(m_timer, TIMEOUT_TIMEOUT,
                 boost::bind(&GMAgent::Timeout, this, boost::asio::placeholders::error));
-            m_timerMutex.unlock();
         }
     }
     else
@@ -528,6 +510,7 @@ void GMAgent::Recovery( const boost::system::error_code& err )
         throw boost::system::system_error(err);
     }
 }
+
 ///////////////////////////////////////////////////////////////////////////////
 /// GMAgent::Check
 /// @description This method queries all nodes to Check and see if any of them
@@ -541,7 +524,6 @@ void GMAgent::Recovery( const boost::system::error_code& err )
 void GMAgent::Check( const boost::system::error_code& err )
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    Logger.Debug << "GOT ERROR CODE " << err << std::endl;
     if( !err )
     {
         SystemState();
@@ -557,17 +539,15 @@ void GMAgent::Check( const boost::system::error_code& err )
             {
                 if( peer->GetUUID() == GetUUID())
                     continue;
-                SendToPeer(peer,m_);
+                peer->Send(m_);
                 InsertInTimedPeerSet(m_AYCResponse, peer, boost::posix_time::microsec_clock::universal_time());
             }
             // The AlivePeers set is no longer good, we should clear it and make them
             // Send us new messages
             // Wait for responses
             Logger.Info << "TIMER: Setting GlobalTimer (Premerge): " << __LINE__ << std::endl;
-            m_timerMutex.lock();
             CBroker::Instance().Schedule(m_timer, AYC_RESPONSE_TIMEOUT,
                 boost::bind(&GMAgent::Premerge, this, boost::asio::placeholders::error));
-            m_timerMutex.unlock();
         } // End if
     }
     else if(boost::asio::error::operation_aborted == err )
@@ -608,14 +588,56 @@ void GMAgent::Premerge( const boost::system::error_code &err )
              it++)
         {
             PeerNodePtr peer = it->second.first;
-            if(CountInPeerSet(m_UpNodes,peer)) //&& CountInPeerSet(m_AlivePeers,peer) == 0)
+            if(CountInPeerSet(m_UpNodes,peer)) 
             {
                 list_change = true;
                 EraseInPeerSet(m_UpNodes,peer);
                 Logger.Info << "No response from peer: "<<peer->GetUUID()<<std::endl;
             }
         }
-        m_AlivePeers.clear();
+        if(CPhysicalTopology::Instance().IsAvailable())
+        {
+            // Add my state of m_fidstate:
+            std::set<device::CDevice::Pointer> attachedFIDs = 
+                device::CDeviceManager::Instance().GetDevicesOfType("Fid");
+            Logger.Notice<<"There are "<<attachedFIDs.size()<<" Attached Fids"<<std::endl;
+            BOOST_FOREACH(device::CDevice::Pointer ptr, attachedFIDs)
+            {
+                m_fidstate[ptr->GetID()] = ptr->GetState("state");
+            }
+            // Run BFS on the collected Data to make sure your group is still reachable.
+            std::set<std::string> reachables = CPhysicalTopology::Instance().ReachablePeers(GetUUID(),  m_fidstate);
+            std::stringstream table2;
+            Logger.Warn<<"There are "<<reachables.size()<<" reachable peers"<<std::endl;
+            
+            std::set<std::string> unreachables;
+            // Of the nodes in the m_UpNodes set, which are not in the physically reachable set?
+            // This will select nodes that we need to remove from our active group.
+            BOOST_FOREACH( std::string uuid, m_UpNodes | boost::adaptors::map_keys)
+            {
+                if(reachables.count(uuid) == 0)
+                    unreachables.insert(uuid);
+            }
+            // Of the nodes in the m_Coordinators set, which are not in the physically reachable set?
+            // These are coordinators that we can see, but we don't want to participate in an election with.
+            BOOST_FOREACH( std::string uuid, m_Coordinators | boost::adaptors::map_keys)
+            {
+                if(reachables.count(uuid) == 0)
+                    unreachables.insert(uuid);
+            }
+            // For each unreachable node, remove them from the coordinators set, and the active group.
+            BOOST_FOREACH( std::string uuid, unreachables)
+            {
+                list_change = true;
+                m_UpNodes.erase(uuid);
+                m_Coordinators.erase(uuid);
+                Logger.Info << "FID state indicates "<<uuid<<" is unreachable"<<std::endl;
+            }
+        }
+        else
+        {
+            Logger.Warn<<"Physical Topology not available. Groups will form using cyber topology only."<<std::endl;
+        }
         if(list_change)
         {
             PushPeerList();
@@ -623,6 +645,7 @@ void GMAgent::Premerge( const boost::system::error_code &err )
             m_membershipchecks++;
         }
         // Clear the expected responses
+        m_fidstate.clear();
         m_AYCResponse.clear();
         if( 0 < m_Coordinators.size() )
         {
@@ -649,24 +672,17 @@ void GMAgent::Premerge( const boost::system::error_code &err )
                 wait_val_ = (((maxPeer_ - myPriority)%(granularity+1))*1.0)*delta+minWait;
             else
                 wait_val_ = 0;
-            #ifdef RANDOM_PREMERGE
-            wait_val_ = (rand() % 20) + 10;
-            #endif
             boost::posix_time::milliseconds proportional_Timeout( wait_val_ );
             /* Set deadline timer to call Merge() */
             Logger.Notice << "TIMER: Waiting for Merge(): " << wait_val_ << " ms." << std::endl;
-            m_timerMutex.lock();
             CBroker::Instance().Schedule(m_timer, proportional_Timeout,
                 boost::bind(&GMAgent::Merge, this, boost::asio::placeholders::error));
-            m_timerMutex.unlock();
         }
         else
         {    // We didn't find any other Coordinators, go back to work
             Logger.Info << "TIMER: Setting CheckTimer (Check): " << __LINE__ << std::endl;
-            m_timerMutex.lock();
             CBroker::Instance().Schedule(m_timer, CHECK_TIMEOUT,
                 boost::bind(&GMAgent::Check, this, boost::asio::placeholders::error));
-            m_timerMutex.unlock();
         }
     }
     else
@@ -711,6 +727,8 @@ void GMAgent::Merge( const boost::system::error_code& err )
         m_GrpCounter++;
         m_GroupID = m_GrpCounter;
         m_GroupLeader = GetUUID();
+        // Clear the FID state, this gives us a more accurate BFS
+        m_fidstate.clear();
         Logger.Notice << "Changed group: " << m_GroupID << " (" << m_GroupLeader << ")" << std::endl;
         // m_UpNodes are the members of my group.
         PeerSet tempSet_ = m_UpNodes;
@@ -718,12 +736,11 @@ void GMAgent::Merge( const boost::system::error_code& err )
         // Create new invitation and send it to all Coordinators
         CMessage m_ = Invitation();
         Logger.Info <<"SEND: Sending out Invites (Invite Coordinators)"<<std::endl;
-        Logger.Debug <<"Tempset is "<<tempSet_.size()<<" Nodes (IC)"<<std::endl;
         BOOST_FOREACH( PeerNodePtr peer, m_Coordinators | boost::adaptors::map_values)
         {
             if( peer->GetUUID() == GetUUID())
                 continue;
-            SendToPeer(peer,m_);
+            peer->Send(m_);
         }
         // Previously, this set the global timer and waited for GLOBAL_TIMEOUT
         // Before inviting group nodes. However, looking at the original text of the
@@ -765,20 +782,17 @@ void GMAgent::InviteGroupNodes( const boost::system::error_code& err, PeerSet p_
          * we are no longer waiting on more replies  */
         CMessage m_ = Invitation();
         Logger.Info <<"SEND: Sending out Invites (Invite Group Nodes):"<<std::endl;
-        Logger.Debug <<"Tempset is "<<p_tempSet.size()<<" Nodes (IGN)"<<std::endl;
         BOOST_FOREACH( PeerNodePtr peer, p_tempSet | boost::adaptors::map_values)
         {
             if( peer->GetUUID() == GetUUID())
                 continue;
-            SendToPeer(peer,m_);
+            peer->Send(m_);
         }
         if(IsCoordinator())
         {     // We only call Reorganize if we are the new leader
             Logger.Info << "TIMER: Setting GlobalTimer (Reorganize) : " << __LINE__ << std::endl;
-            m_timerMutex.lock();
             CBroker::Instance().Schedule(m_timer, INVITE_RESPONSE_TIMEOUT,
                 boost::bind(&GMAgent::Reorganize, this, boost::asio::placeholders::error));
-            m_timerMutex.unlock();
         }
     }
     else
@@ -814,13 +828,10 @@ void GMAgent::Reorganize( const boost::system::error_code& err )
         SetStatus(GMAgent::NORMAL);
         Logger.Notice << "+ State change: NORMAL: " << __LINE__ << std::endl;
         m_groupsformed++;
-        Logger.Notice << "Upnodes size: "<<m_UpNodes.size()<<std::endl;
         // Back to work
         Logger.Info << "TIMER: Setting CheckTimer (Check): " << __LINE__ << std::endl;
-        m_timerMutex.lock();
         CBroker::Instance().Schedule(m_timer, CHECK_TIMEOUT,
             boost::bind(&GMAgent::Check, this, boost::asio::placeholders::error));
-        m_timerMutex.unlock();
     }
     else
     {
@@ -848,39 +859,18 @@ void GMAgent::Timeout( const boost::system::error_code& err )
         CMessage m_ = AreYouThere();
         peer = GetPeer(Coordinator());
         m_AYTResponse.clear();
-        m_aytoptional = false;
         if(!IsCoordinator())
         {
             Logger.Info << "SEND: Sending AreYouThere messages." << std::endl;
-            //if( CountInPeerSet(m_AlivePeers, peer) == 0 )
-            //{
-                if(peer->GetUUID() != GetUUID())
-                {
-                    SendToPeer(peer,m_);
-                    Logger.Info << "Expecting response from "<<peer->GetUUID()<<std::endl;
-                    InsertInTimedPeerSet(m_AYTResponse, peer, boost::posix_time::microsec_clock::universal_time());
-                }
-                Logger.Info << "TIMER: Setting TimeoutTimer (Recovery):" << __LINE__ << std::endl;
-                m_timerMutex.lock();
-                CBroker::Instance().Schedule(m_timer, AYT_RESPONSE_TIMEOUT,
-                    boost::bind(&GMAgent::Recovery, this, boost::asio::placeholders::error));
-                m_timerMutex.unlock();
-            /*
-            }
-            else
+            if(peer->GetUUID() != GetUUID())
             {
-                //We'll still check to see if we are considered a part of that group:
-                SendToPeer(peer,m_);
+                peer->Send(m_);
                 Logger.Info << "Expecting response from "<<peer->GetUUID()<<std::endl;
-                InsertInPeerSet(m_AYTResponse,peer);
-                m_AlivePeers.clear();
-                m_aytoptional = true;
-                Logger.Info << "TIMER: Setting TimeoutTimer (Timeout): " << __LINE__ << std::endl;
-                CBroker::Instance().Schedule(m_timer, TIMEOUT_TIMEOUT,
-                    boost::bind(&GMAgent::Timeout, this, boost::asio::placeholders::error));
-                m_timerMutex.unlock();
+                InsertInTimedPeerSet(m_AYTResponse, peer, boost::posix_time::microsec_clock::universal_time());
             }
-            */
+            Logger.Info << "TIMER: Setting TimeoutTimer (Recovery):" << __LINE__ << std::endl;
+            CBroker::Instance().Schedule(m_timer, AYT_RESPONSE_TIMEOUT,
+                boost::bind(&GMAgent::Recovery, this, boost::asio::placeholders::error));
         }
     }
     else if(boost::asio::error::operation_aborted == err )
@@ -930,29 +920,6 @@ GMAgent::PeerSet GMAgent::ProcessPeerList(MessagePtr msg)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// GMAgent::Prehandler
-/// @description Applies global effects to messages, with science!
-/// @param f the handler that will be applied after the prehandler
-/// @param msg The message being send
-/// @param peer The peer who sent the message
-///////////////////////////////////////////////////////////////////////////////
-void GMAgent::Prehandler(SubhandleFunctor f,MessagePtr msg, PeerNodePtr peer)
-{
-    //Are all FIDs open?
-    if(m_fidsclosed == false)
-    {
-        Logger.Debug<<"Dropping message, all FIDs open"<<std::endl;
-        return;
-    }
-    //Make a note of peers that you've noticed are alive
-    if(peer->GetUUID() != GetUUID() && CountInPeerSet(m_UpNodes, peer) > 0)
-    {
-        InsertInPeerSet(m_AlivePeers,peer);
-    }
-    f(msg,peer);
-}
-
-///////////////////////////////////////////////////////////////////////////////
 /// GMAgent::HandleAny
 /// @description This function collects all incoming messages for the purpose
 ///     of determining peer status.
@@ -988,12 +955,10 @@ void GMAgent::HandlePeerList(MessagePtr msg, PeerNodePtr peer)
         m_groupsjoined++;
         // We are no longer the Coordinator, we must run Timeout()
         Logger.Info << "TIMER: Canceling TimeoutTimer : " << __LINE__ << std::endl;
-        m_timerMutex.lock();
         // We used to set a timeout timer here but cancelling the
         // timer should accomplish the same thing.
         CBroker::Instance().Schedule(m_timer, TIMEOUT_TIMEOUT,
             boost::bind(&GMAgent::Timeout, this, boost::asio::placeholders::error));
-        m_timerMutex.unlock();
         Logger.Info << "RECV: PeerList (Ready) message from " <<peer->GetUUID() << std::endl;
         m_UpNodes.clear();
         m_UpNodes = ProcessPeerList(msg);
@@ -1062,14 +1027,14 @@ void GMAgent::HandleAreYouCoordinator(MessagePtr msg, PeerNodePtr peer)
         // We are the group Coordinator AND we are at normal operation
         Logger.Info << "SEND: AYC Response (YES) to "<<peer->GetUUID()<<std::endl;
         CMessage m_ = Response("yes","AreYouCoordinator",msg->GetExpireTime(),seq);
-        SendToPeer(peer,m_);
+        peer->Send(m_);
     }
     else
     {
         // We are not the Coordinator OR we are not at normal operation
         Logger.Info << "SEND: AYC Response (NO) to "<<peer->GetUUID()<<std::endl;
         CMessage m_ = Response("no","AreYouCoordinator",msg->GetExpireTime(),seq);
-        SendToPeer(peer,m_);
+        peer->Send(m_);
     }
 }
 
@@ -1094,14 +1059,14 @@ void GMAgent::HandleAreYouThere(MessagePtr msg, PeerNodePtr peer)
         Logger.Info << "SEND: AYT Response (YES) to "<<peer->GetUUID()<<std::endl;
         // We are Coordinator, peer is in our group, and peer is up
         CMessage m_ = Response("yes","AreYouThere",msg->GetExpireTime(),seq);
-        SendToPeer(peer,m_);
+        peer->Send(m_);
     }
     else
     {
         Logger.Info << "SEND: AYT Response (NO) to "<<peer->GetUUID()<<std::endl;
         // We are not Coordinator OR peer is not in our groups OR peer is down
         CMessage m_ = Response("no","AreYouThere",msg->GetExpireTime(),seq);
-        SendToPeer(peer,m_);
+        peer->Send(m_);
     }
 }
 
@@ -1145,7 +1110,7 @@ void GMAgent::HandleInvite(MessagePtr msg, PeerNodePtr peer)
             {
                 if( peer->GetUUID() == GetUUID())
                     continue;
-                SendToPeer(peer,m_);
+                peer->Send(m_);
             }
         }
         CMessage m_ = Accept();
@@ -1163,14 +1128,12 @@ void GMAgent::HandleInvite(MessagePtr msg, PeerNodePtr peer)
             CConnectionManager::Instance().PutHost(m_GroupLeader, nhost, nport);
             p = CGlobalPeerList::instance().Create(m_GroupLeader);
         }
-        SendToPeer(p,m_);
+        p->Send(m_);
         SetStatus(GMAgent::REORGANIZATION);
         Logger.Notice << "+ State Change REORGANIZATION : "<<__LINE__<<std::endl;
         Logger.Info << "TIMER: Setting TimeoutTimer (Recovery) : " << __LINE__ << std::endl;
-        m_timerMutex.lock();
         CBroker::Instance().Schedule(m_timer, TIMEOUT_TIMEOUT,
             boost::bind(&GMAgent::Recovery, this, boost::asio::placeholders::error));
-        m_timerMutex.unlock();
     }
     else
     {
@@ -1196,12 +1159,13 @@ void GMAgent::HandleResponseAYC(MessagePtr msg, PeerNodePtr peer)
     std::string answer = pt.get<std::string>("gm.payload");
     int seq = msg->GetSubMessages().get<int>("gm.seq");
     Logger.Info << "RECV: Response (AYC) ("<<answer<<") from " <<peer->GetUUID() << " seq "<<seq<< std::endl;
-    Logger.Debug << "Checking expected responses." << std::endl;
     bool expected = CountInTimedPeerSet(m_AYCResponse,peer);
     if(expected)
     {
         boost::posix_time::time_duration interval = boost::posix_time::microsec_clock::universal_time() - GetTimeFromPeerSet(m_AYCResponse, peer);
         Logger.Info << "AYC response received " << interval << " after query sent" << std::endl;
+        //Update the states of the available FIDs
+        UpdateFIDState(pt);
     }
     EraseInTimedPeerSet(m_AYCResponse,peer);
     if(expected == true && pt.get<std::string>("gm.payload") == "yes")
@@ -1210,11 +1174,9 @@ void GMAgent::HandleResponseAYC(MessagePtr msg, PeerNodePtr peer)
         if(m_AYCResponse.size() == 0)
         {
             Logger.Info << "TIMER: Canceling GlobalTimer : " << __LINE__ << std::endl;
-            m_timerMutex.lock();
             //Before, we just cleared this timer. Now I'm going to set it to start another check cycle
             CBroker::Instance().Schedule(m_timer, TIMEOUT_TIMEOUT,
                 boost::bind(&GMAgent::Check, this, boost::asio::placeholders::error));
-            m_timerMutex.unlock();
         }
     }
     else if(pt.get<std::string>("gm.payload") == "no")
@@ -1249,7 +1211,6 @@ void GMAgent::HandleResponseAYT(MessagePtr msg, PeerNodePtr peer)
     std::string answer = pt.get<std::string>("gm.payload");
     int seq = msg->GetSubMessages().get<int>("gm.seq");
     Logger.Info << "RECV: Response (AYT) ("<<answer<<") from " <<peer->GetUUID() << " seq " <<seq<<std::endl;
-    Logger.Debug << "Checking expected responses." << std::endl;
     bool expected = CountInTimedPeerSet(m_AYTResponse,peer);
     if(expected)
     {
@@ -1260,16 +1221,12 @@ void GMAgent::HandleResponseAYT(MessagePtr msg, PeerNodePtr peer)
     EraseInTimedPeerSet(m_AYTResponse,peer);
     if(expected == true && pt.get<std::string>("gm.payload") == "yes")
     {
-        m_timerMutex.lock();
         Logger.Info << "TIMER: Setting TimeoutTimer (Timeout): " << __LINE__ << std::endl;
         CBroker::Instance().Schedule(m_timer, TIMEOUT_TIMEOUT,
             boost::bind(&GMAgent::Timeout, this, boost::asio::placeholders::error));
-        m_timerMutex.unlock();
     }
     else if(pt.get<std::string>("gm.payload") == "no")
     {
-        // We've been removed from the group. if m_aytoptional is set, then we should
-        // recover (m_aytoptional == True iff the recovery timer is not already set.
         if(peer->GetUUID() == Coordinator())
         {
             Recovery();
@@ -1296,7 +1253,6 @@ void GMAgent::HandlePeerListQuery(MessagePtr msg, PeerNodePtr peer)
     std::string requester = pt.get<std::string>("gm.requester");
     peer->Send(PeerList(requester));
 }
-#pragma GCC diagnostic ignored "-Wunused-parameter"
 
 ///////////////////////////////////////////////////////////////////////////////
 /// GMAgent::AddPeer
@@ -1362,15 +1318,8 @@ int GMAgent::Run()
     Logger.Notice<<"All peers added "<<CGlobalPeerList::instance().PeerList().size()<<std::endl;
     BOOST_FOREACH(PeerNodePtr p_, CGlobalPeerList::instance().PeerList() | boost::adaptors::map_values)
     {
-        Logger.Notice << "Pointer: "<<p_<<std::endl;
         Logger.Notice << "! " <<p_->GetUUID() << " added to peer set" <<std::endl;
     }
-    Logger.Notice<<"All listed added"<<std::endl;
-    m_timerMutex.lock();
-    CBroker::Instance().Schedule(m_fidtimer, FID_TIMEOUT,
-        boost::bind(&GMAgent::FIDCheck, this, boost::asio::placeholders::error));
-    m_timerMutex.unlock();
-    Logger.Notice<<"Starting Elections"<<std::endl;
     Recovery();
     return 0;
 }

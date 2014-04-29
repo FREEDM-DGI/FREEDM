@@ -923,7 +923,8 @@ bool LBAgent::CyberInvariant()
         
     Logger.Info << "C1 in cyber invariant is " << (C1 ? "true" : "false") << std::endl;
     //knapsack invariant
-    bool C2 = (m_prevDemand - m_highestDemand >= 0);
+    //there is an oscillation range for gateway
+    bool C2 = ((m_prevDemand - m_highestDemand > 0) || (m_prevDemand - m_highestDemand< 1);
     Logger.Info << "m_prevDemand is " << m_prevDemand << " m_hightestDemand is " << m_highestDemand << std::endl;
     Logger.Info << "C2 in cyber invariant is " << (C2 ? "true" : "false") << std::endl;
     return C1*C2;

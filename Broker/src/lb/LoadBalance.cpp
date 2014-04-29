@@ -1065,6 +1065,7 @@ void LBAgent::HandleCollectedState(MessagePtr msg, PeerNodePtr /*peer*/)
     // You received the collected global state in response to your SC Request
     // --------------------------------------------------------------
     int peercount=0; // number of peers *with devices*
+    float prevNormal = 0;
     m_aggregateGateway=0;
     m_grossPowerFlow = 0;
     ptree &pt = msg->GetSubMessages();
@@ -1133,16 +1134,6 @@ void LBAgent::HandleCollectedState(MessagePtr msg, PeerNodePtr /*peer*/)
              }
         }
     }
-    
-    // If first time checking invariant, assign aggregate gateway to m_initialGateway
-    if (m_firstTimeInvariant)
-    {
-        m_initialGateway = m_aggregateGateway;
-        m_prevDemand = m_highestDemand;
-        m_firstTimeInvariant = false;
-    }
-    
-    Logger.Status << "In collected state, m_initialGateway is " << m_initialGateway << "and m_aggregateGateway is " << m_aggregateGateway  << std::endl;
 
     if(peercount != 0)
     {
@@ -1153,6 +1144,25 @@ void LBAgent::HandleCollectedState(MessagePtr msg, PeerNodePtr /*peer*/)
     {
         m_Normal = 0;
     }
+
+    // If first time checking invariant, assign aggregate gateway to m_initialGateway
+    if (m_firstTimeInvariant)
+    {
+        m_initialGateway = m_aggregateGateway;
+        m_prevDemand = m_highestDemand;
+        prevNormal = m_Normal;
+        m_firstTimeInvariant = false;
+    }
+
+    // If the normal is changed, then assign aggreate gateway to m_initialGateway
+    if ((prevNormal - m_Normal) > -1 && (prevNormal - m_Normal ) < 1)
+    {
+        m_initialGateway = m_aggregateGateway;
+    }    
+    Logger.Info << "In collected state, previous normal is " << prevNormal << " and m_Normal is " << m_Normal  << std::endl;
+
+    Logger.Info << "In collected state, m_initialGateway is " << m_initialGateway << " and m_aggregateGateway is " << m_aggregateGateway  << std::endl;
+
     //Check Cyber Invariant
     if (CyberInvariant())
         m_cyberInvariant = 1;

@@ -186,6 +186,8 @@ class LBAgent
         double m_highestDemand;
         /// The previous highest demand value
         double m_prevDemand;
+        /// The previous Normal value
+        double m_prevNormal;
         /// The messages that are send out by the supply but not received by the demand yet
         int m_outstandingMessages;
         /// Gross power flow for physical invariant

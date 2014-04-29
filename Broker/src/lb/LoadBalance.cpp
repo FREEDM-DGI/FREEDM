@@ -1065,7 +1065,6 @@ void LBAgent::HandleCollectedState(MessagePtr msg, PeerNodePtr /*peer*/)
     // You received the collected global state in response to your SC Request
     // --------------------------------------------------------------
     int peercount=0; // number of peers *with devices*
-    float prevNormal = 0;
     m_aggregateGateway=0;
     m_grossPowerFlow = 0;
     ptree &pt = msg->GetSubMessages();
@@ -1150,14 +1149,15 @@ void LBAgent::HandleCollectedState(MessagePtr msg, PeerNodePtr /*peer*/)
     {
         m_initialGateway = m_aggregateGateway;
         m_prevDemand = m_highestDemand;
-        prevNormal = m_Normal;
+        m_prevNormal = m_Normal;
         m_firstTimeInvariant = false;
     }
 
     // If the normal is changed, then assign aggreate gateway to m_initialGateway
-    if ((prevNormal - m_Normal) > -1 && (prevNormal - m_Normal ) < 1)
+    if ((m_prevNormal - m_Normal) > -1 && (m_prevNormal - m_Normal ) < 1)
     {
         m_initialGateway = m_aggregateGateway;
+        m_prevNormal = m_Normal;
     }    
     Logger.Info << "In collected state, previous normal is " << prevNormal << " and m_Normal is " << m_Normal  << std::endl;
 

@@ -253,6 +253,8 @@ void LBAgent::SendNormal(double Normal)
         m_.m_submessages.put("lb.cnorm", boost::lexical_cast<std::string>(Normal));
         //for cyber invariant
         m_.m_submessages.put("lb.cyberInvariant", boost::lexical_cast<std::string>(m_cyberInvariant));
+        //for physical invariant
+        m_.m_submessages.put("lb.grossPowerFlow", boost::lexical_cast<std::string>(m_grossPowerFlow));
         BOOST_FOREACH( PeerNodePtr peer, m_AllPeers | boost::adaptors::map_values)
         {
             try
@@ -485,10 +487,6 @@ void LBAgent::LoadTable()
     m_Storage = CDeviceManager::Instance().GetNetValue("Desd", "storage");
     m_Load = CDeviceManager::Instance().GetNetValue("Load", "drain");
     m_SstGateway = CDeviceManager::Instance().GetNetValue("Sst", "gateway");
-
-    //calculate m_grossPowerFlow for test one supply and one demand
-    m_grossPowerFlow = 1000*m_SstGateway*m_SstGateway*1000;
-    Logger.Status << "-----The m_grossPowerFlow is  " << m_grossPowerFlow << std::endl;
 
     if(m_actuallyread)
     {
@@ -950,7 +948,7 @@ bool LBAgent::PhysicalInvariant()
     const float OmegaNon = 376.8;
 
     // Check left side and right side of physical invariant formula
-    double left = (0.08*m_frequency + 0.01)*(m_frequency-OmegaNon)*(m_frequency-OmegaNon) + (m_frequency-OmegaNon)*(5.001e-8*m_grossPowerFlow);
+    double left = (0.08*m_frequency + 0.01)*(m_frequency-OmegaNon)*(m_frequency-OmegaNon) + (m_frequency-OmegaNon)*(5.001e-8*m_grossPowerFlow*10e6);
     double right = P_Migrate*m_outstandingMessages*(m_frequency - OmegaNon);
     Logger.Status << "Physical invaraint left side of formula is " << left << " and right side of formula is " << right << std::endl;
     
@@ -996,7 +994,7 @@ void LBAgent::HandleDrafting(MessagePtr /*msg*/, PeerNodePtr peer)
         ss_ << m_DemandVal;
         m_.m_submessages.put("lb.value", ss_.str());
 
-        if( peer->GetUUID() != GetUUID() && LBAgent::DEMAND == m_Status && !m_inProgress )
+        if( peer->GetUUID() != GetUUID() && LBAgent::DEMAND == m_Status) //&& !m_inProgress )
         {
 	    m_inProgress = true;
             try
@@ -1044,7 +1042,7 @@ void LBAgent::HandleAccept(MessagePtr msg, PeerNodePtr peer)
     Logger.Notice << " Draft Accept message received from: " << peer->GetUUID()
                    << " with demand of "<< DemValue << std::endl;
 
-    if( LBAgent::SUPPLY == m_Status && !m_inProgress)
+    if( LBAgent::SUPPLY == m_Status)// !m_inProgress)
     {
 	m_inProgress = true;
         // Make necessary power setting accordingly to allow power migration
@@ -1089,6 +1087,8 @@ void LBAgent::HandleCollectedState(MessagePtr msg, PeerNodePtr /*peer*/)
                     m_aggregateGateway += p;
                     if (p > m_highestDemand)
                         m_highestDemand = p;
+                    //calculated gross power flow square
+                    m_grossPowerFlow += p*p; 
 		    }
 	    }
     }
@@ -1180,6 +1180,9 @@ void LBAgent::HandleComputedNormal(MessagePtr msg, PeerNodePtr /*peer*/)
                    << pt.get<std::string>("lb.source") << std::endl;
     //for cyber invariant
     m_cyberInvariant = boost::lexical_cast<int>(pt.get<std::string>("lb.cyberInvariant"));
+    //for physical invariant
+    m_grossPowerFlow = boost::lexical_cast<double>(pt.get<std::string>("lb.grossPowerFlow"));
+    Logger.Status << "The P square for physical invariant is " << m_grossPowerFlow << std::endl;
     LoadTable();
 }
 

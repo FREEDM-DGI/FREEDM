@@ -119,8 +119,6 @@ LBAgent::LBAgent(std::string uuid_):
     m_sstExists = false;
     // First time flag for invariant
     m_firstTimeInvariant = true;
-    // Flag to indicate power migration is in progress
-    m_inProgress = false;
     // Initialize imbalanced power K (predict the future power migration)
     m_outstandingMessages = 1;
     m_actuallyread = true;
@@ -919,14 +917,14 @@ bool LBAgent::CyberInvariant()
     //power invariant
     bool C1 = false;
     Logger.Status << "m_initialGateway is " << m_initialGateway << " and m_aggregateGateway " << m_aggregateGateway << std::endl;
-    
-    if ((m_initialGateway - m_aggregateGateway) < 1 && (m_initialGateway - m_aggregateGateway) > -1)
+    // there is an oscillation range for gateway 
+    if ((m_initialGateway - m_aggregateGateway) < 2 && (m_initialGateway - m_aggregateGateway) > -2)
         C1 = true;
         
     Logger.Info << "C1 in cyber invariant is " << (C1 ? "true" : "false") << std::endl;
     //knapsack invariant
     bool C2 = (m_prevDemand - m_highestDemand >= 0);
-        
+    Logger.Info << "m_prevDemand is " << m_prevDemand << " m_hightestDemand is " << m_highestDemand << std::endl;
     Logger.Info << "C2 in cyber invariant is " << (C2 ? "true" : "false") << std::endl;
     return C1*C2;
 }
@@ -994,9 +992,8 @@ void LBAgent::HandleDrafting(MessagePtr /*msg*/, PeerNodePtr peer)
         ss_ << m_DemandVal;
         m_.m_submessages.put("lb.value", ss_.str());
 
-        if( peer->GetUUID() != GetUUID() && LBAgent::DEMAND == m_Status) //&& !m_inProgress )
+        if( peer->GetUUID() != GetUUID() && LBAgent::DEMAND == m_Status)
         {
-	    m_inProgress = true;
             try
             {
                 peer->Send(m_);
@@ -1020,7 +1017,6 @@ void LBAgent::HandleDrafting(MessagePtr /*msg*/, PeerNodePtr peer)
         {
             //Nothing; Local Load change from Demand state (Migration will not proceed)
         }
-	m_inProgress = false;
     }
 }
 
@@ -1042,9 +1038,8 @@ void LBAgent::HandleAccept(MessagePtr msg, PeerNodePtr peer)
     Logger.Notice << " Draft Accept message received from: " << peer->GetUUID()
                    << " with demand of "<< DemValue << std::endl;
 
-    if( LBAgent::SUPPLY == m_Status)// !m_inProgress)
+    if( LBAgent::SUPPLY == m_Status)
     {
-	m_inProgress = true;
         // Make necessary power setting accordingly to allow power migration
         Logger.Notice<<"Migrating power on request from: "<< peer->GetUUID() << std::endl;
 	// !!!NOTE: You may use Step_PStar() or PStar(DemandValue) currently
@@ -1060,7 +1055,6 @@ void LBAgent::HandleAccept(MessagePtr msg, PeerNodePtr peer)
     {
         Logger.Warn << "Unexpected Accept message" << std::endl;
     }
-    m_inProgress = false;
 }
 
 void LBAgent::HandleCollectedState(MessagePtr msg, PeerNodePtr /*peer*/)

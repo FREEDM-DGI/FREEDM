@@ -188,8 +188,6 @@ class LBAgent
         double m_prevDemand;
         /// The messages that are send out by the supply but not received by the demand yet
         int m_outstandingMessages;
-        /// Flag to indicate power migration in progress
-        bool m_inProgress;
         /// Gross power flow for physical invariant
         double m_grossPowerFlow;
         /// Frequency from physical system

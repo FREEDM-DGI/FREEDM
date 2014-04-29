@@ -1159,7 +1159,7 @@ void LBAgent::HandleCollectedState(MessagePtr msg, PeerNodePtr /*peer*/)
         m_initialGateway = m_aggregateGateway;
         m_prevNormal = m_Normal;
     }    
-    Logger.Info << "In collected state, previous normal is " << prevNormal << " and m_Normal is " << m_Normal  << std::endl;
+    Logger.Info << "In collected state, previous normal is " << m_prevNormal << " and m_Normal is " << m_Normal  << std::endl;
 
     Logger.Info << "In collected state, m_initialGateway is " << m_initialGateway << " and m_aggregateGateway is " << m_aggregateGateway  << std::endl;
 

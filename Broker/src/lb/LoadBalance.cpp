@@ -251,8 +251,6 @@ void LBAgent::SendNormal(double Normal)
         m_.m_submessages.put("lb.cnorm", boost::lexical_cast<std::string>(Normal));
         //for cyber invariant
         m_.m_submessages.put("lb.cyberInvariant", boost::lexical_cast<std::string>(m_cyberInvariant));
-        //for physical invariant
-        m_.m_submessages.put("lb.grossPowerFlow", boost::lexical_cast<std::string>(m_grossPowerFlow));
         BOOST_FOREACH( PeerNodePtr peer, m_AllPeers | boost::adaptors::map_values)
         {
             try
@@ -945,9 +943,11 @@ bool LBAgent::PhysicalInvariant()
     //Obtaining frequency from physical system
     m_frequency = device::CDeviceManager::Instance().GetNetValue("Omega", "frequency");
     const float OmegaNon = 376.8;
-
+    // In this simple test, all the power is concentrated on a single SST
+    m_grossPowerFlow = m_outstandingMessages;
+    Logger.Info << "The gross power flow is " << m_grossPowerFlow << std::endl;
     // Check left side and right side of physical invariant formula
-    double left = (0.08*m_frequency + 0.01)*(m_frequency-OmegaNon)*(m_frequency-OmegaNon) + (m_frequency-OmegaNon)*(5.001e-8*m_grossPowerFlow*10e6);
+    double left = (0.08*m_frequency + 0.01)*(m_frequency-OmegaNon)*(m_frequency-OmegaNon) + (m_frequency-OmegaNon)*(5.001e-8*m_grossPowerFlow*m_grossPowerFlow*10e6);
     double right = P_Migrate*m_outstandingMessages*(m_frequency - OmegaNon);
     Logger.Status << "Physical invaraint left side of formula is " << left << " and right side of formula is " << right << std::endl;
     
@@ -1066,7 +1066,7 @@ void LBAgent::HandleCollectedState(MessagePtr msg, PeerNodePtr /*peer*/)
     // --------------------------------------------------------------
     int peercount=0; // number of peers *with devices*
     m_aggregateGateway=0;
-    m_grossPowerFlow = 0;
+
     ptree &pt = msg->GetSubMessages();
     m_highestDemand = std::numeric_limits<double>::min();
     if(pt.get_child_optional("CollectedState.gateway"))
@@ -1082,8 +1082,6 @@ void LBAgent::HandleCollectedState(MessagePtr msg, PeerNodePtr /*peer*/)
                     m_aggregateGateway += p;
                     if (p > m_highestDemand)
                         m_highestDemand = p;
-                    //calculated gross power flow square
-                    m_grossPowerFlow += p*p; 
 		    }
 	    }
     }
@@ -1185,9 +1183,6 @@ void LBAgent::HandleComputedNormal(MessagePtr msg, PeerNodePtr /*peer*/)
                    << pt.get<std::string>("lb.source") << std::endl;
     //for cyber invariant
     m_cyberInvariant = boost::lexical_cast<int>(pt.get<std::string>("lb.cyberInvariant"));
-    //for physical invariant
-    m_grossPowerFlow = boost::lexical_cast<double>(pt.get<std::string>("lb.grossPowerFlow"));
-    Logger.Status << "The P square for physical invariant is " << m_grossPowerFlow << std::endl;
     LoadTable();
 }
 

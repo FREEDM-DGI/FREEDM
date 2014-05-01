@@ -49,6 +49,7 @@
 #include "gm/GroupManagement.hpp"
 #include "CDeviceManager.hpp"
 #include "CTimings.hpp"
+#include "CGlobalConfiguration.hpp"
 
 #include <algorithm>
 #include <cassert>
@@ -860,9 +861,15 @@ void LBAgent::HandleYes(MessagePtr /*msg*/, PeerNodePtr peer)
     ss_.clear();
     ss_.str("drafting");
     m_.SetHandler("lb."+ ss_.str());
-
+    
+    //Get invariant check flag from freedm.cfg
+    std::string invset = CGlobalConfiguration::Instance().GetInvariantCheckFlag();
+    bool invCheck = InvariantCheck();
+    // If invaraint check is not set in freedm.cfg, no invariant check will be performed.
+    if (invset == "0")
+        invCheck = true;
     //Its better to check your status again before initiating drafting
-    if( peer->GetUUID() != GetUUID() && LBAgent::SUPPLY == m_Status && InvariantCheck() )
+    if( peer->GetUUID() != GetUUID() && LBAgent::SUPPLY == m_Status && invCheck )
     {
         try
         {

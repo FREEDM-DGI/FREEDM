@@ -144,8 +144,7 @@ void IBufferAdapter::Start()
 ///
 /// @limitations None.
 ////////////////////////////////////////////////////////////////////////////
-void IBufferAdapter::SetCommand(const std::string device, const std::string signal,
-        const SignalValue value)
+void IBufferAdapter::SetCommand(std::string device, std::string signal, SignalValue value)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
@@ -177,8 +176,7 @@ void IBufferAdapter::SetCommand(const std::string device, const std::string sign
 ///
 /// @limitations None.
 ////////////////////////////////////////////////////////////////////////////
-SignalValue IBufferAdapter::GetState(const std::string device, 
-        const std::string signal) const
+SignalValue IBufferAdapter::GetState(std::string device, std::string signal) const
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
@@ -213,8 +211,7 @@ SignalValue IBufferAdapter::GetState(const std::string device,
 ///
 /// @limitations None.
 ///////////////////////////////////////////////////////////////////////////////
-void IBufferAdapter::RegisterStateInfo(const std::string device,
-        const std::string signal, const std::size_t index )
+void IBufferAdapter::RegisterStateInfo(std::string device, std::string signal, std::size_t index)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     DeviceSignal devsig(device, signal);
@@ -265,8 +262,7 @@ void IBufferAdapter::RegisterStateInfo(const std::string device,
 ///
 /// @limitations None.
 ///////////////////////////////////////////////////////////////////////////////
-void IBufferAdapter::RegisterCommandInfo(const std::string device,
-        const std::string signal, const std::size_t index )
+void IBufferAdapter::RegisterCommandInfo(std::string device, std::string signal, std::size_t index)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     DeviceSignal devsig(device, signal);

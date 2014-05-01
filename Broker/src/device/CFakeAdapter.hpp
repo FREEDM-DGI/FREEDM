@@ -61,11 +61,10 @@ public:
     void Stop();
 
     /// Retrieves a value from a device.
-    SignalValue GetState(const std::string device, const std::string key) const;
+    SignalValue GetState(std::string device, std::string key) const;
 
     /// Sets a value on a device.
-    void SetCommand(const std::string device, const std::string key,
-        const SignalValue value);
+    void SetCommand(std::string device, std::string key, SignalValue value);
 
 private:
     /// Constructor

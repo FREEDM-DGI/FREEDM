@@ -78,18 +78,16 @@ public:
     virtual void Stop() = 0;
 
     /// Retrieves a value from a device.
-    virtual SignalValue GetState(const std::string device,
-            const std::string signal) const = 0;
+    virtual SignalValue GetState(std::string device, std::string signal) const = 0;
 
     /// Sets a value on a device.
-    virtual void SetCommand(const std::string device, const std::string signal,
-            const SignalValue value) = 0;
+    virtual void SetCommand(std::string device, std::string signal, SignalValue value) = 0;
 
     /// Virtual destructor for derived classes.
     virtual ~IAdapter();
 
     /// Register a device name with the adapter.
-    void RegisterDevice(const std::string devid);
+    void RegisterDevice(std::string devid);
 
     /// Get the list of registered device names.
     std::set<std::string> GetDevices() const;

@@ -92,18 +92,6 @@ def gm_invite_response_timeout(*args, **kwargs):
     n = kwargs.get('n')
     return (n+1) * round_trip_time(*args,**kwargs)
 
-def gm_check_timeout(*args,**kwargs):
-    return gm_phase_time(*args,**kwargs)+ONE_PER_ROUND
-
-def gm_timeout_timeout(*args,**kwargs):
-    return gm_phase_time(*args, **kwargs)+ONE_PER_ROUND
-
-def gm_global_timeout(*args, **kwargs):
-    return gm_phase_time(*args, **kwargs)+ONE_PER_ROUND
-
-def gm_fid_timeout(*args, **kwargs):
-    return gm_phase_time(*args, **kwargs)+ONE_PER_ROUND
-
 def gm_ayt_response_timeout(*args, **kwargs):
     tp = kwargs.get('tp')
     tm = kwargs.get('tm')
@@ -120,10 +108,6 @@ def csuc_resend_time(*args, **kwargs):
 
 def csrc_default_timeout(*args,**kwargs):
     return max(gm_phase_time(*args, **kwargs),sc_phase_time(*args,**kwargs),lb_phase_time(*args,**kwargs))
-
-def cs_exchange_time(*args,**kwargs):
-    rounds_per_sync = kwargs.get('rounds_per_sync')
-    return rounds_per_sync * (gm_phase_time(*args, **kwargs) + sc_phase_time(*args,**kwargs) + lb_phase_time(*args,**kwargs))
 
 def dev_rtds_delay(*args, **kwargs):
     return 50

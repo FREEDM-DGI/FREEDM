@@ -29,10 +29,6 @@ def dummy(*args, **kwargs):
 VARIABLES = {
     # GM VARIABLES
     'GM_PHASE_TIME': gm_phase_time,
-    'GM_CHECK_TIMEOUT': gm_check_timeout,
-    'GM_TIMEOUT_TIMEOUT': gm_timeout_timeout,
-    'GM_GLOBAL_TIMEOUT': gm_global_timeout,
-    'GM_FID_TIMEOUT': gm_fid_timeout,
     'GM_PREMERGE_MAX_TIMEOUT': gm_premerge_max_timeout,
     'GM_PREMERGE_MIN_TIMEOUT': gm_premerge_min_timeout,
     'GM_PREMERGE_GRANULARITY': gm_premerge_granularity,
@@ -44,15 +40,12 @@ VARIABLES = {
     # LB VARIABLES
     'LB_PHASE_TIME': lb_phase_time,
     'LB_GLOBAL_TIMER': lb_global_timer,
-    'LB_STATE_TIMER': lb_state_timer,
     'LB_SC_QUERY_TIME': lb_sc_query_time,
     # CSRC VARIABLES
     'CSRC_RESEND_TIME': csrc_resend_time,
     'CSRC_DEFAULT_TIMEOUT': csrc_default_timeout,
     # CSUC VARIABLES
     'CSUC_RESEND_TIME': csuc_resend_time,
-    # CS VARIABLES
-    'CS_EXCHANGE_TIME': cs_exchange_time,
     # DEV VARIABLES
     'DEV_RTDS_DELAY': dev_rtds_delay,
     'DEV_PNP_HEARTBEAT': dev_pnp_heartbeat,

@@ -71,7 +71,7 @@ IAdapter::~IAdapter()
 ///
 /// @limitations None.
 ////////////////////////////////////////////////////////////////////////////////
-void IAdapter::RegisterDevice(const std::string devid)
+void IAdapter::RegisterDevice(std::string devid)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     m_devices.insert(devid);

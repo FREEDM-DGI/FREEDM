@@ -161,7 +161,7 @@ int main(int argc, char* argv[])
                 po::value<std::string > ( &topologyCfgFile )->
                 default_value(""),
                 "name of the topology configuration file" )
-                ( "invariantSetting",
+                ( "check-lb-invariants",
                 po::value<std::string > ( &invariantSetting )->default_value("0"),
                 "Disable invariant check by default" )
                 ( "verbose,v",

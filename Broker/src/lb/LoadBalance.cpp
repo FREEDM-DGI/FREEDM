@@ -864,10 +864,9 @@ void LBAgent::HandleYes(MessagePtr /*msg*/, PeerNodePtr peer)
     
     //Get invariant check flag from freedm.cfg
     std::string invset = CGlobalConfiguration::Instance().GetInvariantCheckFlag();
-    bool invCheck = InvariantCheck();
     // If invaraint check is not set in freedm.cfg, no invariant check will be performed.
-    if (invset == "0")
-        invCheck = true;
+    bool invCheck = (invset == "0")? true : InvariantCheck();
+
     //Its better to check your status again before initiating drafting
     if( peer->GetUUID() != GetUUID() && LBAgent::SUPPLY == m_Status && invCheck )
     {
@@ -929,7 +928,7 @@ bool LBAgent::CyberInvariant()
     Logger.Info << "C1 in cyber invariant is " << (C1 ? "true" : "false") << std::endl;
     //knapsack invariant
     //there is an oscillation range for gateway
-    bool C2 = ((m_prevDemand - m_highestDemand > 0) || (m_prevDemand - m_highestDemand< 1));
+    bool C2 = ((m_prevDemand - m_highestDemand > 0) || (m_prevDemand - m_highestDemand < 1));
     Logger.Info << "m_prevDemand is " << m_prevDemand << " m_hightestDemand is " << m_highestDemand << std::endl;
     Logger.Info << "C2 in cyber invariant is " << (C2 ? "true" : "false") << std::endl;
     return C1*C2;

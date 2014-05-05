@@ -74,7 +74,7 @@ case $1 in
     "serial")
         case $2 in
             "test")
-                ./test-serial -v8 -c config/freedm.cfg \
+                ./test-serial -v7 -c config/freedm.cfg \
                       --adapter-config config/adapters/SerialTest.xml \
                       --logger-config config/serial-test-loggers.cfg
                 sleep 15

@@ -71,8 +71,21 @@ case $1 in
                 exit
         esac
         ;;
+    "serial")
+        case $2 in
+            "test")
+                ./test-serial -v8 -c config/freedm.cfg \
+                      --adapter-config config/adapters/SerialTest.xml \
+                      --logger-config config/serial-test-loggers.cfg
+                sleep 15
+                killall test-serial
+            ;;
+            *)
+                echo "Invalid serial test type: $rtds_test_type"
+                exit
+        esac
+        ;;
     *)
         echo "Invalid test category: $1"
         exit
 esac
-

@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="us-ascii" ?>
+<root>
+    <adapter name="controller-board-adapter" type="serial">
+        <info>
+            <terminal>/dev/ttyS0</terminal>
+        </info>
+        <state>
+            <entry index = "1">
+                <type>Desd</type>
+                <device>DESD1</device>
+                <signal>injected-current</signal>
+            </entry>
+        </state>
+        <command>
+            <entry index = "1">
+                <type>Desd</type>
+                <device>DESD1</device>
+                <signal>injected-current</signal>
+            </entry>
+        </command>
+    </adapter>
+</root>

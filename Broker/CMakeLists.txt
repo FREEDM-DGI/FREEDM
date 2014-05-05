@@ -48,6 +48,7 @@ include_directories("${PROJECT_BINARY_DIR}/src/device")
 
 # goto src/CMakeLists.txt
 add_subdirectory(src)
+add_subdirectory(testing)
 
 add_executable(PosixBroker src/PosixMain.cpp)
 

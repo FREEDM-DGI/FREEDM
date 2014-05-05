@@ -85,7 +85,11 @@ void CSerialAdapter::Start()
     boost::asio::read_until(m_serial_port, m_recv_buffer, ":");
     Logger.Debug << "Read complete" << std::endl;
 
-    // FIXME FIXME nothing will work unless we need to start the DESD with a 000001s command
+    // Nothing will work until we send this start command to the DESD.
+    // FIXME But do all serial devices support this command?
+    Logger.Debug << "Sending start command to DESD" << std::endl;
+    boost::asio::write(m_serial_port, boost::asio::buffer("000001s"));
+    Logger.Debug << "Write complete" << std::endl;
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -97,6 +101,11 @@ void CSerialAdapter::Start()
 void CSerialAdapter::Stop()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+
+    // FIXME do all serial devices support this command?
+    Logger.Debug << "Sending stop command to DESD" << std::endl;
+    boost::asio::write(m_serial_port, boost::asio::buffer("000000s"));
+    Logger.Debug << "Write complete" << std::endl;
 
     m_serial_port.close();
 }

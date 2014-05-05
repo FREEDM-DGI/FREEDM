@@ -87,7 +87,7 @@ public:
     virtual ~IAdapter();
 
     /// Register a device name with the adapter.
-    void RegisterDevice(std::string devid);
+    virtual void RegisterDevice(std::string devid);
 
     /// Get the list of registered device names.
     std::set<std::string> GetDevices() const;

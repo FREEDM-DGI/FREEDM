@@ -39,6 +39,7 @@
 #include "CAdapterFactory.hpp"
 #include "IBufferAdapter.hpp"
 #include "CRtdsAdapter.hpp"
+#include "CSerialAdapter.hpp"
 #include "CPnpAdapter.hpp"
 #include "CDeviceManager.hpp"
 #include "CGlobalConfiguration.hpp"
@@ -54,10 +55,13 @@
 
 #include <signal.h>
 
+#include <boost/ref.hpp>
 #include <boost/asio.hpp>
 #include <boost/bind.hpp>
 #include <boost/foreach.hpp>
 #include <boost/optional.hpp>
+#include <boost/make_shared.hpp>
+#include <boost/pointer_cast.hpp>
 #include <boost/property_tree/ptree.hpp>
 #include <boost/system/system_error.hpp>
 #include <boost/algorithm/string/regex.hpp>
@@ -300,6 +304,11 @@ void CAdapterFactory::CreateAdapter(const boost::property_tree::ptree & p)
     {
         adapter = CFakeAdapter::Create();
     }
+    else if( type == "serial" )
+    {
+        adapter = boost::dynamic_pointer_cast<IAdapter>(
+            boost::make_shared<CSerialAdapter>(boost::ref(m_ios), subtree));
+    }
     else
     {
         throw EDgiConfigError("Unregistered adapter type: " + type);
@@ -391,6 +400,7 @@ void CAdapterFactory::InitializeAdapter(IAdapter::Pointer adapter,
         throw EDgiConfigError("XML contains multiple command tags");
     }
 
+    // FIXME this is also very bad. We should not know about any of this.
     IBufferAdapter::Pointer buffer =
             boost::dynamic_pointer_cast<IBufferAdapter>(adapter);
     CFakeAdapter::Pointer fake =
@@ -458,6 +468,10 @@ void CAdapterFactory::InitializeAdapter(IAdapter::Pointer adapter,
             }
 
             // check if the device recognizes the associated signal
+            // FIXME access of public member variable?!?  Tom...
+            // FIXME std::map::at() is not in C++98
+            // FIXME assumes device is not unhidden during registration
+            if ( !fake && !buffer ) return; // no hidden devices, so rest of function is broken
             device = CDeviceManager::Instance().m_hidden_devices.at(name);
 
             if( i == 0 && device->HasState(signal) )
@@ -852,6 +866,17 @@ void CAdapterFactory::SessionProtocol()
     }
 
     m_server->StartAccept();
+}
+
+//////////////////////////////////////////////////////////////////////////////
+/// Wait forever or until the devices thread crashes, whichever comes first.
+/// This function should NEVER be called by the DGI. It is intended for use
+/// only by test cases.
+//////////////////////////////////////////////////////////////////////////////
+void CAdapterFactory::Join()
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    m_thread.join();
 }
 
 } // namespace device

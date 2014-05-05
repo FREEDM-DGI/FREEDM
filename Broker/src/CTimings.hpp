@@ -23,6 +23,8 @@ public:
 
     static unsigned int DEV_PNP_HEARTBEAT;
 
+    static unsigned int DEV_SERIAL_TIMEOUT;
+
     static unsigned int CSRC_RESEND_TIME;
 
     static unsigned int DEV_SOCKET_TIMEOUT;

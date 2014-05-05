@@ -119,5 +119,8 @@ def lb_sc_query_time(*args, **kwargs):
 def dev_socket_timeout(*args, **kwargs):
     return 1000
 
+def dev_serial_timeout(*args, **kwargs):
+    return 100
+
 def dev_pnp_heartbeat(*args, **kwargs):
     return 2000

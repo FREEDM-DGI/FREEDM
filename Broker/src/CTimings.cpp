@@ -32,6 +32,8 @@ unsigned int CTimings::GM_AYT_RESPONSE_TIMEOUT;
 
 unsigned int CTimings::DEV_PNP_HEARTBEAT;
 
+unsigned int CTimings::DEV_SERIAL_TIMEOUT;
+
 unsigned int CTimings::CSRC_RESEND_TIME;
 
 unsigned int CTimings::DEV_SOCKET_TIMEOUT;
@@ -97,6 +99,12 @@ void CTimings::SetTimings(const std::string timingsFile)
     desc = "The timing value DEV_PNP_HEARTBEAT";
     loggerOpts.add_options()
         ("DEV_PNP_HEARTBEAT",
+        po::value<unsigned int>( ),
+        desc.c_str() );
+
+    desc = "The timing value DEV_SERIAL_TIMEOUT";
+    loggerOpts.add_options()
+        ("DEV_SERIAL_TIMEOUT",
         po::value<unsigned int>( ),
         desc.c_str() );
 
@@ -241,6 +249,16 @@ void CTimings::SetTimings(const std::string timingsFile)
     {
         throw EDgiConfigError(
                 "DEV_PNP_HEARTBEAT is missing, please check your timings config");
+    }
+
+    try
+    {
+        DEV_SERIAL_TIMEOUT = vm["DEV_SERIAL_TIMEOUT"].as<unsigned int>();
+    }
+    catch (boost::bad_any_cast& e)
+    {
+        throw EDgiConfigError(
+                "DEV_SERIAL_TIMEOUT is missing, please check your timings config");
     }
 
     try

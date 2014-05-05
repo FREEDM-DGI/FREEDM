@@ -50,4 +50,5 @@ VARIABLES = {
     'DEV_RTDS_DELAY': dev_rtds_delay,
     'DEV_PNP_HEARTBEAT': dev_pnp_heartbeat,
     'DEV_SOCKET_TIMEOUT': dev_socket_timeout,
+    'DEV_SERIAL_TIMEOUT': dev_serial_timeout,
 }

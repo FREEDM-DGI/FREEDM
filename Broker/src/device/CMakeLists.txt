@@ -4,6 +4,7 @@ set(DEVICE_FILES
     CDeviceManager.cpp
     CFakeAdapter.cpp
     CRtdsAdapter.cpp
+    CSerialAdapter.cpp
     IBufferAdapter.cpp
     IAdapter.cpp
     CTcpServer.cpp

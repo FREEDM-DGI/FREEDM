@@ -69,6 +69,10 @@ public:
 
     /// Stop everything!
     void Stop();
+
+    /// Wait forever, or at least until the devices thread crashes
+    void Join();
+
 private:
     /// Constructs the factory.
     CAdapterFactory();

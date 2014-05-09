@@ -194,10 +194,10 @@ class LBAgent
         double m_highestDemand;
         /// The previous highest demand value
         double m_prevDemand;
+        /// The previous Normal value
+        double m_prevNormal;
         /// The messages that are send out by the supply but not received by the demand yet
         int m_outstandingMessages;
-        /// Flag to indicate power migration in progress
-        bool m_inProgress;
         /// Gross power flow for physical invariant
         double m_grossPowerFlow;
         /// Frequency from physical system

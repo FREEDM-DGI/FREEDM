@@ -49,6 +49,7 @@
 #include "gm/GroupManagement.hpp"
 #include "CDeviceManager.hpp"
 #include "CTimings.hpp"
+#include "CGlobalConfiguration.hpp"
 
 #include <algorithm>
 #include <cassert>
@@ -116,8 +117,6 @@ LBAgent::LBAgent(std::string uuid_):
     m_sstExists = false;
     // First time flag for invariant
     m_firstTimeInvariant = true;
-    // Flag to indicate power migration is in progress
-    m_inProgress = false;
     // Initialize imbalanced power K (predict the future power migration)
     m_outstandingMessages = 1;
     m_actuallyread = true;
@@ -184,7 +183,13 @@ LBAgent::PeerNodePtr LBAgent::GetPeer(std::string uuid)
     }
 }
 
-
+///////////////////////////////////////////////////////////////////////////////
+/// MessageStateChange
+/// @description Generates a state change message
+/// @pre None
+/// @post Returns the new message.
+/// @param newstate is a string describing the new state of Load Balancing
+///////////////////////////////////////////////////////////////////////////////
 CMessage LBAgent::MessageStateChange(std::string newstate)
 {
     CMessage m_;
@@ -194,13 +199,13 @@ CMessage LBAgent::MessageStateChange(std::string newstate)
 }
 
 ////////////////////////////////////////////////////////////
-/// SendMsg
-/// @description  Prepares a generic message and sends to a specific group
-/// @pre: The caller passes the message to be sent, as a string
-/// @post: Message is prepared and sent
+/// SendStateChange
+/// @description Pushes a new load balance state to a peer set.
+/// @pre: The caller provideds a new state and peer set to send it to.
+/// @post: A message announcing the new state is prepared and sent.
 /// @param msg: The message to be sent
-/// @param peerSet_: The group of peers that should receive the message
-/// @peers Each peer that exists in the peerSet_
+/// @param peerSet: The group of peers that should receive the message
+/// @peers Each peer that exists in the peerSet
 /// @ErrorHandling If the message cannot be sent, an exception is thrown and the
 ///    process continues
 /// @limitations Group should be a PeerSet
@@ -213,9 +218,18 @@ void LBAgent::SendStateChange(std::string newstate, PeerSet peerSet)
     SendToPeerSet(m, peerSet);
 }
 
-void LBAgent::SendToPeerSet(CMessage & m, const PeerSet & peerSet_)
+///////////////////////////////////////////////////////////////////////////////
+/// SendToPeerSet
+/// @description Given a message m, send it to every process in peerSet
+/// @pre None
+/// @post m is sent to all processes in peerSet
+/// @peers peerSet
+/// @param m The message to send
+/// @param peerSet the processes to send the message to.
+///////////////////////////////////////////////////////////////////////////////
+void LBAgent::SendToPeerSet(CMessage & m, const PeerSet & peerSet)
 {
-    BOOST_FOREACH( PeerNodePtr peer, peerSet_ | boost::adaptors::map_values)
+    BOOST_FOREACH( PeerNodePtr peer, peerSet | boost::adaptors::map_values)
     {
         if( peer->GetUUID() == GetUUID())
         {
@@ -236,6 +250,14 @@ void LBAgent::SendToPeerSet(CMessage & m, const PeerSet & peerSet_)
 
 }
 
+///////////////////////////////////////////////////////////////////////////////
+/// MessageNormal
+/// @description Given a normal, return a message that announces that new
+///     normal.
+/// @pre none
+/// @post returns a new message
+/// @param Normal the normal value to send out.
+///////////////////////////////////////////////////////////////////////////////
 CMessage LBAgent::MessageNormal(double Normal)
 {
     CMessage m_;
@@ -281,7 +303,13 @@ void LBAgent::SendNormal(double Normal)
     }
 }
 
-
+///////////////////////////////////////////////////////////////////////////////
+/// MessageCollectState
+/// @description Returns a message which is sent to state collection requesting
+///     that state collection runs for the given devices.
+/// @pre None
+/// @post A CollectState message is created.
+///////////////////////////////////////////////////////////////////////////////
 CMessage LBAgent::MessageCollectState()
 {
     CMessage m_cs;
@@ -402,6 +430,7 @@ void LBAgent::LoadManage()
     m_prevStatus = m_Status;
     ComputeGateway();
     //Call LoadTable to update load state of the system as observed by this node
+    ComputeGateway();
     LoadTable();
 
     using namespace device;
@@ -476,6 +505,14 @@ void LBAgent::LoadManage( const boost::system::error_code& err )
 }
 
 
+////////////////////////////////////////////////////////////
+/// ComputeGateway
+/// @description  Reads values from attached physical devices via the physical
+///       device manager and determines the demand state of this node
+/// @pre: LoadManage calls this function
+/// @post: Aggregate attributes are computed, new demand state is determined and
+///        demand states of peers are printed
+/////////////////////////////////////////////////////////
 void LBAgent::ComputeGateway()
 {
     using namespace device;
@@ -548,12 +585,9 @@ void LBAgent::ComputeGateway()
 
 ////////////////////////////////////////////////////////////
 /// LoadTable
-/// @description  Reads values from attached physical devices via the physical
-///       device manager, determines the demand state of this node
-///       and prints the load table
-/// @pre: LoadManage calls this function
-/// @post: Aggregate attributes are computed, new demand state is determined and
-///        demand states of peers are printed
+/// @description Prints the load table: A tool for observing the state of the system.
+/// @pre None
+/// @post None
 /// @limitations Some entries in Load table could become stale relative to the
 ///              global state. The definition of Supply/Normal/Demand could
 ///      change in future
@@ -574,9 +608,6 @@ void LBAgent::LoadTable()
     m_Load = CDeviceManager::Instance().GetNetValue("Load", "drain");
     m_SstGateway = CDeviceManager::Instance().GetNetValue("Sst", "gateway");
 
-    //calculate m_grossPowerFlow for test one supply and one demand
-    m_grossPowerFlow = 1000*m_SstGateway*m_SstGateway*1000;
-    Logger.Status << "-----The m_grossPowerFlow is  " << m_grossPowerFlow << std::endl;
 
     // used to ensure three digits before the decimal, two after
     unsigned int genWidth = (m_Gen > 0 ? 6 : 7);
@@ -664,7 +695,12 @@ void LBAgent::LoadTable()
     Logger.Status << ss.str() << std::endl;
 }//end LoadTable
 
-
+///////////////////////////////////////////////////////////////////////////////
+/// MessageDraftRequest
+/// @description Generates a new Draft Request Message.
+/// @pre None
+/// @post A new message is generated.
+///////////////////////////////////////////////////////////////////////////////
 CMessage LBAgent::MessageDraftRequest()
 {
     CMessage m_;
@@ -708,7 +744,7 @@ void LBAgent::SendDraftRequest()
 /// @return: Multiple objectives depending on the message received and
 ///          power migration on successful negotiation
 /// @param msg: The message dispatched by broker read handler
-/// @param peer
+/// @param peer: The peer that sent the message
 /// @peers The members of the group or a subset of, from whom message was received
 /// @limitations:
 /////////////////////////////////////////////////////////
@@ -727,7 +763,18 @@ void LBAgent::HandleAny(MessagePtr msg, PeerNodePtr /*peer*/)
         throw EUnhandledMessage("Unhandled Load Balancing Message");
     }
 }
-
+///////////////////////////////////////////////////////////////////////////////
+/// HandlePeerList
+/// @description Updates the list of peers this node is aware of.
+/// @pre There is a valid message pointer and peer passed into the module. All
+///     required ptree keys are present.
+/// @post The AllPeers, Normal, Supply, and Demand peersets are reset.
+/// @param msg The message body that was recieved by this process.
+/// @param peer The process that the message orginated from.
+/// @peers Group leader.
+/// @limitations Does not validate the source, integrity or contents of the
+///     message.
+///////////////////////////////////////////////////////////////////////////////
 void LBAgent::HandlePeerList(MessagePtr msg, PeerNodePtr peer)
 {
     // --------------------------------------------------------------
@@ -764,6 +811,19 @@ void LBAgent::HandlePeerList(MessagePtr msg, PeerNodePtr peer)
     }
 }
 
+///////////////////////////////////////////////////////////////////////////////
+/// HandleStateChange
+/// @description Handles a peer announcing it is in a new state
+/// @pre There is a valid message pointer and peer passed into the module. All
+///     required ptree keys are present.
+/// @post The peer is removed from any state sets it is currently in and placed
+///     in a set by the contents of the message.
+/// @param msg The message body that was recieved by this process.
+/// @param peer The process that the message orginated from.
+/// @peers A Group member.
+/// @limitations Does not validate the source, integrity or contents of the
+///     message.
+///////////////////////////////////////////////////////////////////////////////
 void LBAgent::HandleStateChange(MessagePtr msg, PeerNodePtr peer)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
@@ -814,6 +874,12 @@ void LBAgent::HandleStateChange(MessagePtr msg, PeerNodePtr peer)
     }
 }
 
+///////////////////////////////////////////////////////////////////////////////
+/// MessageDraft
+/// @pre None
+/// @post A new message is generated
+/// @description Creates a new draft message.
+///////////////////////////////////////////////////////////////////////////////
 CMessage LBAgent::MessageDraft()
 {
     CMessage m_;
@@ -821,6 +887,21 @@ CMessage LBAgent::MessageDraft()
     return m_;
 }
 
+///////////////////////////////////////////////////////////////////////////////
+/// HandleRequest
+/// @description Handler for a request message. A request message is sent by
+///     a supply node to see if a demand node still wants to perform a
+///     migration.
+/// @pre There is a valid message pointer and peer passed into the module. All
+///     required ptree keys are present.
+/// @post If this process is in the demand state, a draft message is sent back
+///     to the orginating process.
+/// @param msg The message body that was recieved by this process.
+/// @param peer The process that the message orginated from.
+/// @peers A group member who was in the supply state.
+/// @limitations Does not validate the source, integrity or contents of the
+///     message.
+///////////////////////////////////////////////////////////////////////////////
 void LBAgent::HandleRequest(MessagePtr /*msg*/, PeerNodePtr peer)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
@@ -859,6 +940,12 @@ void LBAgent::HandleRequest(MessagePtr /*msg*/, PeerNodePtr peer)
     }
 }
 
+///////////////////////////////////////////////////////////////////////////////
+/// MessageDrafting
+/// @description Generates a new drafting message.
+/// @pre None
+/// @post a new message is generated.
+///////////////////////////////////////////////////////////////////////////////
 CMessage LBAgent::MessageDrafting()
 {
     CMessage m_;
@@ -866,6 +953,23 @@ CMessage LBAgent::MessageDrafting()
     return m_;
 }
 
+///////////////////////////////////////////////////////////////////////////////
+/// HandleDraft
+/// @description A draft message is sent by the demand node to a supply
+///     no indicate it is still in a demand state and would like to migrate.
+///     After the message is recieved this node will respond with drafting to
+///     istruct the demand node to commit a power change.
+/// @pre There is a valid message pointer and peer passed into the module. All
+///     required ptree keys are present. This node should have sent a draft
+///     request message to peer previously.
+/// @post If in supply and the demand node is selected, a drafting message
+///     will be sent to the demand node.
+/// @param msg The message body that was recieved by this process.
+/// @param peer The process that the message orginated from.
+/// @peers A demand node in the group.
+/// @limitations Does not validate the source, integrity or contents of the
+///     message.
+///////////////////////////////////////////////////////////////////////////////
 void LBAgent::HandleDraft(MessagePtr /*msg*/, PeerNodePtr peer)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
@@ -882,9 +986,14 @@ void LBAgent::HandleDraft(MessagePtr /*msg*/, PeerNodePtr peer)
     //TODO: Selection of node that you are drafting with needs to be performed
     //      Currently, whoever responds to draft request gets the slice
     CMessage m_ = MessageDrafting();
+    
+    //Get invariant check flag from freedm.cfg
+    std::string invset = CGlobalConfiguration::Instance().GetInvariantCheckFlag();
+    // If invaraint check is not set in freedm.cfg, no invariant check will be performed.
+    bool invCheck = (invset == "0")? true : InvariantCheck();
 
     //Its better to check your status again before initiating drafting
-    if( peer->GetUUID() != GetUUID() && LBAgent::SUPPLY == m_Status && InvariantCheck() )
+    if( peer->GetUUID() != GetUUID() && LBAgent::SUPPLY == m_Status && invCheck )
     {
         try
         {
@@ -937,14 +1046,15 @@ bool LBAgent::CyberInvariant()
     //power invariant
     bool C1 = false;
     Logger.Status << "m_initialGateway is " << m_initialGateway << " and m_aggregateGateway " << m_aggregateGateway << std::endl;
-    
-    if ((m_initialGateway - m_aggregateGateway) < 1 && (m_initialGateway - m_aggregateGateway) > -1)
+    // there is an oscillation range for gateway 
+    if ((m_initialGateway - m_aggregateGateway) < 2 && (m_initialGateway - m_aggregateGateway) > -2)
         C1 = true;
         
     Logger.Info << "C1 in cyber invariant is " << (C1 ? "true" : "false") << std::endl;
     //knapsack invariant
-    bool C2 = (m_prevDemand - m_highestDemand >= 0);
-        
+    //there is an oscillation range for gateway
+    bool C2 = ((m_prevDemand - m_highestDemand > 0) || (m_prevDemand - m_highestDemand < 1));
+    Logger.Info << "m_prevDemand is " << m_prevDemand << " m_hightestDemand is " << m_highestDemand << std::endl;
     Logger.Info << "C2 in cyber invariant is " << (C2 ? "true" : "false") << std::endl;
     return C1*C2;
 }
@@ -964,9 +1074,11 @@ bool LBAgent::PhysicalInvariant()
     //Obtaining frequency from physical system
     m_frequency = device::CDeviceManager::Instance().GetNetValue("Omega", "frequency");
     const float OmegaNon = 376.8;
-
+    // In this simple test, all the power is concentrated on a single SST
+    m_grossPowerFlow = m_outstandingMessages;
+    Logger.Info << "The gross power flow is " << m_grossPowerFlow << std::endl;
     // Check left side and right side of physical invariant formula
-    double left = (0.08*m_frequency + 0.01)*(m_frequency-OmegaNon)*(m_frequency-OmegaNon) + (m_frequency-OmegaNon)*(5.001e-8*m_grossPowerFlow);
+    double left = (0.08*m_frequency + 0.01)*(m_frequency-OmegaNon)*(m_frequency-OmegaNon) + (m_frequency-OmegaNon)*(5.001e-8*m_grossPowerFlow*m_grossPowerFlow*10e6);
     double right = P_Migrate*m_outstandingMessages*(m_frequency - OmegaNon);
     Logger.Status << "Physical invaraint left side of formula is " << left << " and right side of formula is " << right << std::endl;
     
@@ -976,6 +1088,12 @@ bool LBAgent::PhysicalInvariant()
         return false;
 }
 
+///////////////////////////////////////////////////////////////////////////////
+/// MessageAccept
+/// @description Generates a new accept message
+/// @pre None
+/// @post an Accept message is generated.
+/////////////////////////////////////////////////////////////////////////////// 
 CMessage LBAgent::MessageAccept(float demandVal)
 {
     CMessage m;
@@ -984,6 +1102,24 @@ CMessage LBAgent::MessageAccept(float demandVal)
     return m;
 }
 
+///////////////////////////////////////////////////////////////////////////////
+/// HandleDrafting
+/// @description A drafting message is accepted by a demand node as an
+///     indication a supply node is about to give it some tasty power.
+///     When the drafting message arrives the demand node will actuate it's
+///     physical leaves and signal the supply node to do the same by sending
+///     back an accept message.
+/// @pre There is a valid message pointer and peer passed into the module. All
+///     required ptree keys are present.
+/// @post If the node is in demand and will take the supply node's power this
+///     node will generate an accept message and change a device value to
+///     accept the new float.
+/// @param msg The message body that was recieved by this process.
+/// @param peer The process that the message orginated from.
+/// @peers A supply node in my group.
+/// @limitations Does not validate the source, integrity or contents of the
+///     message.
+///////////////////////////////////////////////////////////////////////////////
 void LBAgent::HandleDrafting(MessagePtr /*msg*/, PeerNodePtr peer)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
@@ -1029,6 +1165,24 @@ void LBAgent::HandleDrafting(MessagePtr /*msg*/, PeerNodePtr peer)
     }
 }
 
+
+///////////////////////////////////////////////////////////////////////////////
+/// HandleAccept
+/// @description An accept message will arrive from a demand node that has
+///     selected to accept a migration from this supply node. When the supply
+///     node recieves this message and they are still in a supply state they
+///     will set their physical device to fulfill the contract they've provided
+///     to the demand node.
+/// @pre There is a valid message pointer and peer passed into the module. All
+///     required ptree keys are present.
+/// @post If the node is in supply, it will change its physical value to
+///     complete the migration.
+/// @param msg The message body that was recieved by this process.
+/// @param peer The process that the message orginated from.
+/// @peers A demand node in my group.
+/// @limitations Does not validate the source, integrity or contents of the
+///     message.
+///////////////////////////////////////////////////////////////////////////////
 void LBAgent::HandleAccept(MessagePtr msg, PeerNodePtr peer)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
@@ -1063,6 +1217,20 @@ void LBAgent::HandleAccept(MessagePtr msg, PeerNodePtr peer)
     }
 }
 
+///////////////////////////////////////////////////////////////////////////////
+/// HandleCollectedState
+/// @description State collection returns the collected state (via a message)
+///     this function handles that message and stores it into this node.
+/// @pre There is a valid message pointer and peer passed into the module. All
+///     required ptree keys are present.
+/// @post The aggregate gateway, normal and demand member variables are set.
+///     Sends the normal to the members of the group.
+/// @param msg The message body that was recieved by this process.
+/// @param peer The process that the message orginated from.
+/// @peers My state collection module, Members of my group.
+/// @limitations Does not validate the source, integrity or contents of the
+///     message.
+///////////////////////////////////////////////////////////////////////////////
 void LBAgent::HandleCollectedState(MessagePtr msg, PeerNodePtr /*peer*/)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
@@ -1071,7 +1239,7 @@ void LBAgent::HandleCollectedState(MessagePtr msg, PeerNodePtr /*peer*/)
     // --------------------------------------------------------------
     int peercount=0; // number of peers *with devices*
     m_aggregateGateway=0;
-    m_grossPowerFlow = 0;
+
     ptree &pt = msg->GetSubMessages();
     m_highestDemand = std::numeric_limits<double>::min();
     if(pt.get_child_optional("CollectedState.gateway"))
@@ -1136,16 +1304,6 @@ void LBAgent::HandleCollectedState(MessagePtr msg, PeerNodePtr /*peer*/)
              }
         }
     }
-    
-    // If first time checking invariant, assign aggregate gateway to m_initialGateway
-    if (m_firstTimeInvariant)
-    {
-        m_initialGateway = m_aggregateGateway;
-        m_prevDemand = m_highestDemand;
-        m_firstTimeInvariant = false;
-    }
-    
-    Logger.Status << "In collected state, m_initialGateway is " << m_initialGateway << "and m_aggregateGateway is " << m_aggregateGateway  << std::endl;
 
     if(peercount != 0)
     {
@@ -1156,6 +1314,26 @@ void LBAgent::HandleCollectedState(MessagePtr msg, PeerNodePtr /*peer*/)
     {
         m_Normal = 0;
     }
+
+    // If first time checking invariant, assign aggregate gateway to m_initialGateway
+    if (m_firstTimeInvariant)
+    {
+        m_initialGateway = m_aggregateGateway;
+        m_prevDemand = m_highestDemand;
+        m_prevNormal = m_Normal;
+        m_firstTimeInvariant = false;
+    }
+
+    // If the normal is changed, then assign aggreate gateway to m_initialGateway
+    if ((m_prevNormal - m_Normal) > -1 && (m_prevNormal - m_Normal ) < 1)
+    {
+        m_initialGateway = m_aggregateGateway;
+        m_prevNormal = m_Normal;
+    }    
+    Logger.Info << "In collected state, previous normal is " << m_prevNormal << " and m_Normal is " << m_Normal  << std::endl;
+
+    Logger.Info << "In collected state, m_initialGateway is " << m_initialGateway << " and m_aggregateGateway is " << m_aggregateGateway  << std::endl;
+
     //Check Cyber Invariant
     if (CyberInvariant())
         m_cyberInvariant = 1;
@@ -1166,6 +1344,22 @@ void LBAgent::HandleCollectedState(MessagePtr msg, PeerNodePtr /*peer*/)
     m_prevDemand = m_highestDemand;
 }
 
+///////////////////////////////////////////////////////////////////////////////
+/// HandleComputedNormal
+/// @description When the collected state arrives, the leader computes normal
+///     and pushes it out to all the peers. This method sets the normal value
+///     at this peer and marks the state of the cyber invariant. It will
+///     also print the loadtable and determine if it is in a new state.
+/// @pre There is a valid message pointer and peer passed into the module. All
+///     required ptree keys are present.
+/// @post The load table is printed and the new state of this process is
+///     determined. The state of the physical invariant is updated.
+/// @param msg The message body that was recieved by this process.
+/// @param peer The process that the message orginated from.
+/// @peers My leader.
+/// @limitations Does not validate the source, integrity or contents of the
+///     message.
+///////////////////////////////////////////////////////////////////////////////
 void LBAgent::HandleComputedNormal(MessagePtr msg, PeerNodePtr peer)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;

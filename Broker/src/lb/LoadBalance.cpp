@@ -400,6 +400,7 @@ void LBAgent::LoadManage()
 
     //Remember previous load before computing current load
     m_prevStatus = m_Status;
+    ComputeGateway();
     //Call LoadTable to update load state of the system as observed by this node
     LoadTable();
 

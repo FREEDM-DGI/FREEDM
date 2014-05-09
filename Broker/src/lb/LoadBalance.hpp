@@ -81,6 +81,7 @@ class LBAgent
         /// Advertises a draft request to demand nodes on Supply
         void SendDraftRequest();
         /// Maintains the load table
+        void ComputeGateway();
         void LoadTable();
         /// Monitors the demand changes and trigers the algorithm accordingly
         void LoadManage();
@@ -91,22 +92,29 @@ class LBAgent
 
         // Messages
         /// Sends a message 'msg' to the peers in 'peerSet_'
-        void SendMsg(std::string msg, PeerSet peerSet_);
+        void SendStateChange(std::string msg, PeerSet peerSet_);
+        void SendToPeerSet(CMessage & m, const PeerSet & peerSet_);
         /// Prepares and sends a state collection request to SC
         void CollectState();
         /// Sends the computed Normal to group members
         void SendNormal(double normal);
 
+
+        CMessage MessageStateChange(std::string newstate);
+        CMessage MessageNormal(double Normal);
+        CMessage MessageCollectState();
+        CMessage MessageDraftRequest();
+        CMessage MessageDraft();
+        CMessage MessageDrafting();
+        CMessage MessageAccept(float demandVal);
+
         // Handlers
         /// Handles the incoming messages according to the message label
         virtual void HandleAny(MessagePtr msg,PeerNodePtr peer);
         void HandlePeerList(MessagePtr msg, PeerNodePtr peer);
-        void HandleDemand(MessagePtr msg, PeerNodePtr peer);
-        void HandleNormal(MessagePtr msg, PeerNodePtr peer);
-        void HandleSupply(MessagePtr msg, PeerNodePtr peer);
+        void HandleStateChange(MessagePtr msg, PeerNodePtr peer);
         void HandleRequest(MessagePtr msg, PeerNodePtr peer);
-        void HandleYes(MessagePtr msg, PeerNodePtr peer);
-        void HandleNo(MessagePtr msg, PeerNodePtr peer);
+        void HandleDraft(MessagePtr msg, PeerNodePtr peer);
         void HandleDrafting(MessagePtr msg, PeerNodePtr peer);
         void HandleAccept(MessagePtr msg, PeerNodePtr peer);
         void HandleCollectedState(MessagePtr msg, PeerNodePtr peer);
@@ -143,11 +151,11 @@ class LBAgent
 
         // Peer lists
         /// Set of known peers in Demand State
-        PeerSet     m_HiNodes;
+        PeerSet     m_DemandNodes;
         /// Set of known peers in Normal State
-        PeerSet     m_NoNodes;
+        PeerSet     m_NormalNodes;
         /// Set of known peers in Supply State
-        PeerSet     m_LoNodes;
+        PeerSet     m_SupplyNodes;
         /// Set of all the known peers
         PeerSet     m_AllPeers;
 
@@ -186,10 +194,10 @@ class LBAgent
         double m_highestDemand;
         /// The previous highest demand value
         double m_prevDemand;
+        /// The previous Normal value
+        double m_prevNormal;
         /// The messages that are send out by the supply but not received by the demand yet
         int m_outstandingMessages;
-        /// Flag to indicate power migration in progress
-        bool m_inProgress;
         /// Gross power flow for physical invariant
         double m_grossPowerFlow;
         /// Frequency from physical system

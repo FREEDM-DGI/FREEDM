@@ -37,6 +37,9 @@ namespace {
 /// This file's logger.
 CLocalLogger Logger(__FILE__);
 
+/// A Prefix so that virtual names can't collide with real ones.
+static const std::string VNAME_PREFIX = "*VIRTUAL__";
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -100,6 +103,17 @@ CPhysicalTopology::VertexSet CPhysicalTopology::ReachablePeers(std::string sourc
 
     BFSPQueue openset;
     std::set<std::string> closedset;
+    std::set<std::string> solutionset;
+
+    // If the source isn't the adjacency list, let's throw an exception so
+    // We can detect bad configurations, I assume that there's no instance
+    // where you'd want a vertex (that is running ReachablePeers) to have
+    // no possible reachable peers.
+    if(m_adjlist.count(source) == 0)
+    {
+        // This will happen if you mistype a name in the topology config.
+        throw std::runtime_error("Source node doesn't have any peers in adjacency list.");
+    }
 
     openset.push(BFSExplorer(0,source));
     while(openset.size() > 0)
@@ -109,6 +123,10 @@ CPhysicalTopology::VertexSet CPhysicalTopology::ReachablePeers(std::string sourc
         std::string consider = tmp.second;
         int hops = tmp.first;
         closedset.insert(consider);
+
+        if(consider.find(VNAME_PREFIX) == std::string::npos)
+            solutionset.insert(consider);
+        
         Logger.Debug<<"Considering "<<consider<<" ("<<hops<<" hops) ("
                     <<m_adjlist[consider].size()<<" Neighbors)"<<std::endl;
 
@@ -152,7 +170,7 @@ CPhysicalTopology::VertexSet CPhysicalTopology::ReachablePeers(std::string sourc
             }
         }
     } 
-    return closedset;
+    return solutionset;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -174,7 +192,6 @@ void CPhysicalTopology::LoadTopology()
     
     CPhysicalTopology::AdjacencyListMap altmp;
     CPhysicalTopology::FIDControlMap fctmp;
-    std::map<std::string, std::string> strans; //Fake to real translation table
     CPhysicalTopology::VertexSet seennames;
 
     std::string fp = CGlobalConfiguration::Instance().GetTopologyConfigPath();
@@ -226,7 +243,7 @@ void CPhysicalTopology::LoadTopology()
             {
                 throw std::runtime_error("Failed Reading Vertex Topology Entry (EOF?)");
             }
-            strans[vsymbol] = uuid;
+            m_strans[vsymbol] = uuid;
             Logger.Debug<<"Got Vertex: "<<vsymbol<<"->"<<uuid<<std::endl;
         }
         else if(token == CONTROL_TOKEN)
@@ -262,31 +279,35 @@ void CPhysicalTopology::LoadTopology()
     topf.close();
 
     // Verify that all the virtual names have a real translation.
-    bool all_valid = true;
+    // bool all_valid = true;
     BOOST_FOREACH( std::string vname, seennames )
     {
-        if(strans.count(vname) == 0)
+        if(m_strans.count(vname) == 0)
         {
-            all_valid = false;
+            //all_valid = false;
             // Warn user about bad name.
-            Logger.Error<<"Couldn't find UUID for virtualname: "<<vname<<std::endl;
+            Logger.Warn<<"Couldn't find UUID for virtualname: "<<vname<<" (Might be OK)"<<std::endl;
         }
     }
+
+    /* Turns out, we don't want this.
     if(all_valid == false)
     {
         // raise exception missing real name.
         throw std::runtime_error("Physical Topology: UUID for virtual name missing.");
     }
+    */
 
     // Now we have to take the temporary ones and translate that into the real ones (Ugh!)
     BOOST_FOREACH( const AdjacencyListMap::value_type& mp, altmp )
     {
-        std::string name = strans[mp.first];
+        std::string name = RealNameFromVirtual(mp.first);
         VertexSet t = mp.second;
         VertexSet n;
         BOOST_FOREACH( std::string vname, t )
         {
-            n.insert(strans[vname]);
+            std::string name2 = RealNameFromVirtual(vname);
+            n.insert(name2);
         }
         m_adjlist[name] = n;
     }
@@ -294,8 +315,8 @@ void CPhysicalTopology::LoadTopology()
     // Mark how edges are controlled.
     BOOST_FOREACH( const FIDControlMap::value_type& mp, fctmp )
     {
-        std::string namea = strans[mp.first.first];
-        std::string nameb = strans[mp.first.second];
+        std::string namea = RealNameFromVirtual(mp.first.first);
+        std::string nameb = RealNameFromVirtual(mp.first.second);
         std::string fidname = mp.second;
         // Bidirectional
         m_fidcontrol.insert(FIDControlMap::value_type(VertexPair(namea,nameb), fidname));        
@@ -303,6 +324,25 @@ void CPhysicalTopology::LoadTopology()
     }
     // Done, yay!
     m_available = true; // Mark that a topology loaded successfully.    
+}
+
+///////////////////////////////////////////////////////////////////////////////
+/// Translates a virtual edge name to a real one.
+/// @pre The m_strans member property has been populated (happens as part of
+///     the topology loading process)
+/// @post Returns the real name of the node in the physical topology.
+/// @return The real name of the node in the physical topology. If the node
+///     is named by an SST entry, it gives that name. Otherwise it is the
+///     virtual name prepended by the VNAME_PREFIX.
+/// @param vname the virtual name to look up.
+///////////////////////////////////////////////////////////////////////////////
+std::string CPhysicalTopology::RealNameFromVirtual(std::string vname)
+{
+    if(m_strans.count(vname))
+    {
+        return m_strans[vname];
+    }
+    return VNAME_PREFIX+vname;
 }
 
     } // namespace broker

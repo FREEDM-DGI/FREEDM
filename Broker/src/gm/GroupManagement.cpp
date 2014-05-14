@@ -605,6 +605,17 @@ void GMAgent::Premerge( const boost::system::error_code &err )
             {
                 m_fidstate[ptr->GetID()] = ptr->GetState("state");
             }
+            // Print out a table to debug
+            Logger.Info<<"FID Table:"<<std::endl;
+            typedef std::pair< std::string , bool > FIDPair;
+            BOOST_FOREACH( const FIDPair& fid, m_fidstate )
+            {
+                Logger.Info<<"(FID) "<<fid.first<<" : ";
+                if(fid.second)
+                    Logger.Info<<"Closed"<<std::endl;
+                else
+                    Logger.Info<<"Open"<<std::endl;
+            }
             // Run BFS on the collected Data to make sure your group is still reachable.
             std::set<std::string> reachables = CPhysicalTopology::Instance().ReachablePeers(GetUUID(),  m_fidstate);
             std::stringstream table2;

@@ -68,9 +68,13 @@ private:
     /// Load the topology from a file
     void LoadTopology();
 
+    /// Gets the realname from the virtual name
+    std::string RealNameFromVirtual(std::string vname);
+
     AdjacencyListMap m_adjlist; /// Structure of physical layer
     FIDControlMap m_fidcontrol; /// Which edges FIDs control.
     bool m_available; /// If a physical topology has been loaded
+    std::map<std::string, std::string> m_strans; /// Fake to real translation table
 };
 
     } // namespace broker

@@ -118,7 +118,7 @@ LBAgent::LBAgent(std::string uuid_):
     // First time flag for invariant
     m_firstTimeInvariant = true;
     // Initialize imbalanced power K (predict the future power migration)
-    m_outstandingMessages = 1;
+    m_outstandingMessages = 0;
     m_actuallyread = true;
 }
 
@@ -524,33 +524,20 @@ void LBAgent::ComputeGateway()
     m_Storage = CDeviceManager::Instance().GetNetValue("Desd", "storage");
     m_Load = CDeviceManager::Instance().GetNetValue("Load", "drain");
     m_SstGateway = CDeviceManager::Instance().GetNetValue("Sst", "gateway");
-    bool isActive = (m_sstExists || numDESDs > 0);
     
     if(m_actuallyread)
     {
-        if (numSSTs >= 1)
-        {
-            m_sstExists = true;
-            // FIXME should consider other devices
-            m_NetGateway = m_SstGateway;
-        }
-        else
-        {
-            m_sstExists = false;
-            // FIXME should consider Gateway
-            m_NetGateway = m_Load - m_Gen - m_Storage;
-        }
+        m_NetGateway = m_SstGateway;
     }
-    
-    //Compute the Load state based on the current gateway value and Normal
-    if(isActive && m_NetGateway < m_Normal - NORMAL_TOLERANCE)
+    m_NetGeneration = m_Gen + m_Storage - m_Load;
+
+    if(m_sstExists && m_NetGeneration > m_NetGateway + P_Migrate)
     {
         m_Status = LBAgent::SUPPLY;
     }
-    else if(isActive && m_NetGateway > m_Normal + NORMAL_TOLERANCE)
+    else if(m_sstExists && m_NetGeneration < m_NetGateway - P_Migrate)
     {
         m_Status = LBAgent::DEMAND;
-        m_DemandVal = m_SstGateway-m_Normal;
     }
     else
     {
@@ -641,7 +628,7 @@ void LBAgent::LoadTable()
     // We will hide Overall Gateway for the time being as it is useless until
     // we properly support multiple device LBs.
     //
-    ss << "\t| Normal:        " << std::setw(7) << m_Normal << std::setfill(' ')
+    ss << "\t| Net Generation:" << std::setw(7) << m_NetGeneration << std::setfill(' ')
             << std::setw(32) << "|" << std::endl;
     ss << "\t| ---------------------------------------------------- |"
             << std::endl;
@@ -997,6 +984,10 @@ void LBAgent::HandleDraft(MessagePtr /*msg*/, PeerNodePtr peer)
     {
         try
         {
+            // Supply node commits to the power migration
+            Logger.Notice<<"Migrating power on request from: "<< peer->GetUUID() << std::endl;
+            Step_PStar();
+            m_outstandingMessages++;
             peer->Send(m_);
         }
         catch (boost::system::system_error& e)
@@ -1150,13 +1141,7 @@ void LBAgent::HandleDrafting(MessagePtr /*msg*/, PeerNodePtr peer)
 
             // Make necessary power setting accordingly to allow power migration
             // !!!NOTE: You may use Step_PStar() or PStar(m_DemandVal) currently
-            if (m_sstExists)
-        {
-               Step_PStar();
-            m_outstandingMessages ++;
-        }
-            else
-               Desd_PStar();
+            Step_PStar();
         }
         else
         {
@@ -1200,16 +1185,14 @@ void LBAgent::HandleAccept(MessagePtr msg, PeerNodePtr peer)
 
     if( LBAgent::SUPPLY == m_Status)
     {
-        // Make necessary power setting accordingly to allow power migration
-        Logger.Notice<<"Migrating power on request from: "<< peer->GetUUID() << std::endl;
-        // !!!NOTE: You may use Step_PStar() or PStar(DemandValue) currently
-        if (m_sstExists)
+        if(m_outstandingMessages == 0)
         {
-           Step_PStar();
-            m_outstandingMessages ++;
+            Logger.Warn << "Unexpected Accept message" << std::endl;
         }
         else
-           Desd_PStar();
+        {
+            m_outstandingMessages--;
+        }
     }//end if( LBAgent::SUPPLY == m_Status)
     else
     {
@@ -1397,13 +1380,13 @@ void LBAgent::Step_PStar()
         {
             m_NetGateway -= P_Migrate;
             (*it)->SetCommand("gateway", m_NetGateway);
-            Logger.Notice << "P* = " << m_PStar << std::endl;
+            Logger.Notice << "P* = " << m_NetGateway << std::endl;
         }
         else if(LBAgent::SUPPLY == m_Status)
         {
             m_NetGateway += P_Migrate;
             (*it)->SetCommand("gateway", m_NetGateway);
-            Logger.Notice << "P* = " << m_PStar << std::endl;
+            Logger.Notice << "P* = " << m_NetGateway << std::endl;
         }
         else
         {

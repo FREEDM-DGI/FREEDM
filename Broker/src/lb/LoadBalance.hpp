@@ -207,6 +207,8 @@ class LBAgent
         /// Set to true for the first get gateway call to indicate they should
         /// Actually read the value.
         bool m_actuallyread;
+        /// Net energy production of attached generation and load.
+        double m_NetGeneration;
 };
 
 } // namespace lb

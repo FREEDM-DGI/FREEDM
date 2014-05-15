@@ -531,11 +531,11 @@ void LBAgent::ComputeGateway()
     }
     m_NetGeneration = m_Gen + m_Storage - m_Load;
 
-    if(m_sstExists && m_NetGeneration > m_NetGateway + P_Migrate)
+    if(numSSTs > 0 && m_NetGeneration > m_NetGateway + P_Migrate)
     {
         m_Status = LBAgent::SUPPLY;
     }
-    else if(m_sstExists && m_NetGeneration < m_NetGateway - P_Migrate)
+    else if(numSSTs > 0 && m_NetGeneration < m_NetGateway - P_Migrate)
     {
         m_Status = LBAgent::DEMAND;
     }

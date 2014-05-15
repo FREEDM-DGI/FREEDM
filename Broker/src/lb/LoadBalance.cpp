@@ -1126,6 +1126,12 @@ void LBAgent::HandleDrafting(MessagePtr /*msg*/, PeerNodePtr peer)
 
     if(LBAgent::DEMAND == m_Status)
     {
+        if(CGlobalConfiguration::Instance().GetMaliciousFlag())
+        {
+            Logger.Notice << "(MALICIOUS) Dropped drafting message." << std::endl;
+            return;
+        }
+
         CMessage m_ = MessageAccept(m_DemandVal);
 
         if( peer->GetUUID() != GetUUID() && LBAgent::DEMAND == m_Status)

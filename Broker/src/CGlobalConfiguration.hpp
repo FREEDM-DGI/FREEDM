@@ -73,6 +73,8 @@ class CGlobalConfiguration : public boost::noncopyable
         void SetTopologyConfigPath(std::string p) { m_topologyConfigPath = p; }
         /// Set the flag to the invariant check
         void SetInvariantCheckFlag(std::string f) { m_invariantCheckFlag = f;}
+        /// Set the malicious load balance flag
+        void SetMaliciousFlag(bool flag) { m_malicious = flag; }
         /// Get the hostname
         std::string GetHostname() const { return m_hostname; };
         /// Get the port
@@ -96,6 +98,8 @@ class CGlobalConfiguration : public boost::noncopyable
         std::string GetTopologyConfigPath() const { return m_topologyConfigPath; }
         /// Get the flag to invariant check
         std::string GetInvariantCheckFlag() const { return m_invariantCheckFlag; }
+        /// Get the malicious load balance flag
+        bool GetMaliciousFlag() const { return m_malicious; }
         /// The maximum packet size in bytes
         static const unsigned int MAX_PACKET_SIZE = 60000;
     private:
@@ -110,6 +114,7 @@ class CGlobalConfiguration : public boost::noncopyable
         std::string m_deviceConfigPath; /// Path to the device class config
         std::string m_topologyConfigPath; /// Path to the topology config
         std::string m_invariantCheckFlag; /// Flag for invariant check
+        bool m_malicious; /// Flag to indicate whether load balance is malicious
 };
 
 } // namespace broker

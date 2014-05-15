@@ -117,6 +117,7 @@ int main(int argc, char* argv[])
     std::string cfgFile, loggerCfgFile, timingsFile, adapterCfgFile, topologyCfgFile;
     std::string deviceCfgFile, listenIP, port, hostname, fport, id, invariantSetting;
     unsigned int globalVerbosity;
+    bool malicious;
 
     try
     {
@@ -164,6 +165,9 @@ int main(int argc, char* argv[])
                 ( "check-lb-invariants",
                 po::value<std::string > ( &invariantSetting )->default_value("0"),
                 "Disable invariant check by default" )
+                ( "malicious-behavior",
+                po::value<bool> ( &malicious )->default_value(false),
+                "Disable accept messages when node is in demand" )
                 ( "verbose,v",
                 po::value<unsigned int>( &globalVerbosity )->
                 implicit_value(5)->default_value(5),
@@ -255,6 +259,7 @@ int main(int argc, char* argv[])
         CGlobalConfiguration::Instance().SetClockSkew(
                 boost::posix_time::milliseconds(0));
         CGlobalConfiguration::Instance().SetInvariantCheckFlag(invariantSetting);
+        CGlobalConfiguration::Instance().SetMaliciousFlag(malicious);
 
         // Specify socket endpoint address, if provided
         if( vm.count("devices-endpoint") )

@@ -18,6 +18,9 @@ set(BROKER_FILES
     IPeerNode.cpp
     IProtocol.cpp
     Messages.cpp
+    CClockSynchronizer.cpp
+    CTimings.cpp
+    CPhysicalTopology.cpp
     gm/GroupManagement.cpp
     lb/LoadBalance.cpp
     sc/StateCollection.cpp

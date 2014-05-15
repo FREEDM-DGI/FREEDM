@@ -23,30 +23,40 @@ package freedm.broker.lb;
 message ComputedNormalMessage
 {
     required double computed_normal = 1;
+    required int32 cyber_invariant = 2;
 }
 
-message AcceptMessage
+message StateChangeMessage
+{
+    required string new_state = 1;
+}
+
+message DraftMessage
 {
     required float demand_value = 1;
 }
 
+message DraftingMessage
+{
+    required float specify_migration_amount = 1;
+}
+
+message AcceptMessage
+{
+    required float confirm_migration_amount = 1;
+}
+
+message RequestMessage
+{
+    required int32 exists = 1;
+}
+
 message LoadBalancingMessage
 {
-    enum Type
-    {
-        COMPUTED_NORMAL_MESSAGE = 1;
-        REQUEST_MESSAGE = 2;
-        DRAFTING_MESSAGE = 3;
-        YES_MESSAGE = 4;
-        NO_MESSAGE = 5;
-        ACCEPT_MESSAGE = 6;
-        DEMAND_MESSAGE = 7;
-        NORMAL_MESSAGE = 8;
-        SUPPLY_MESSAGE = 9;
-    }
-
-    required Type type = 1;
-
-    optional ComputedNormalMessage computed_normal_message = 2;
-    optional AcceptMessage accept_message = 3;
+    optional ComputedNormalMessage computed_normal_message = 1;
+    optional AcceptMessage accept_message = 2;
+    optional StateChangeMessage state_change_message = 3;
+    optional DraftMessage draft_message = 4;
+    optional DraftingMessage drafting_message = 5;
+    optional RequestMessage request_message = 6;
 }

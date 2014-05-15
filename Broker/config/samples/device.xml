@@ -29,4 +29,8 @@
         <state>dgiEnable</state>
         <command>groupStatus</command>
     </deviceType>
+    <deviceType>
+        <id>Omega</id>
+        <state>frequency</state>
+    </deviceType>
 </root>

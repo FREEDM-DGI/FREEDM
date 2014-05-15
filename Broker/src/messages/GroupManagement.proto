@@ -20,6 +20,11 @@
 
 package freedm.broker.gm;
 
+message FidStateMessage {
+    required string deviceid = 1;
+    required bool state = 2;
+}
+
 message AreYouCoordinatorMessage
 {
     required uint32 sequence_no = 1;
@@ -40,6 +45,7 @@ message AreYouCoordinatorResponseMessage
     required string leader_host = 3;
     required string leader_port = 4;
     required uint32 sequence_no = 5;
+    repeated FidStateMessage fid_state = 6;
 }
 
 message AreYouThereResponseMessage

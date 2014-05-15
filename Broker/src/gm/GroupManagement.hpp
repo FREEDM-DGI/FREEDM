@@ -97,10 +97,6 @@ class GMAgent
     /// Sends the peer list to all group members.
     void PushPeerList();
 
-    // Sending Tools
-    /// Sends messages to remote peers if FIDs are closed.
-    void SendToPeer(PeerNodePtr peer, const ModuleMessage& msg);
-
     // Messages
     /// Creates AYC Message.
     ModuleMessage AreYouCoordinator();
@@ -141,8 +137,7 @@ class GMAgent
     void StartMonitor(const boost::system::error_code& err);
     /// Returns the coordinators uuid.
     std::string Coordinator() const { return m_GroupLeader; }
-    /// Checks the status of the FIDs
-    void FIDCheck(const boost::system::error_code& err);
+
 
     /// Wraps a GroupManagementMessage in a ModuleMessage
     static ModuleMessage PrepareForSending(
@@ -156,11 +151,6 @@ class GMAgent
     TimedPeerSet m_AYCResponse;
     /// Nodes expecting AYT response from
     TimedPeerSet m_AYTResponse;
-    /// Nodes that I need to inspect in the future
-    PeerSet m_AlivePeers;
-
-    // Mutex for protecting the m_UpNodes above
-    boost::mutex pList_Mutex;
 
     /// The ID number of the current group (Never initialized for fun)
     google::protobuf::uint32 m_GroupID;
@@ -172,8 +162,6 @@ class GMAgent
     /* IO and Timers */
     /// The io_service used.
     boost::asio::io_service m_localservice;
-    /// A mutex to make the timers threadsafe
-    boost::interprocess::interprocess_mutex m_timerMutex;
     /// A timer for stepping through the election process
     CBroker::TimerHandle m_timer;
     /// Timer for checking FIDs.
@@ -207,10 +195,8 @@ class GMAgent
     int m_membershipchecks;
     /// A store for the status of this node
     int m_status;
-    /// A store for if all the fids are closed
-    bool m_fidsclosed;
-    /// A store for if the response for the AYT is optional?
-    bool m_aytoptional;
+    /// A store for the state of attached FIDs.
+    std::map< std::string , bool > m_fidstate;
 };
 
 } // namespace gm

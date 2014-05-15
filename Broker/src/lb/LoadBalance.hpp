@@ -81,6 +81,7 @@ class LBAgent
         /// Advertises a draft request to demand nodes on Supply
         void SendDraftRequest();
         /// Maintains the load table
+        void ComputeGateway();
         void LoadTable();
         /// Monitors the demand changes and trigers the algorithm accordingly
         void LoadManage();
@@ -91,23 +92,30 @@ class LBAgent
 
         // Messages
         /// Sends a message 'msg' to the peers in 'peerSet_'
-        void SendMsg(const LoadBalancingMessage& msg, PeerSet peerSet_);
+        void SendStateChange(std::string msg, PeerSet peerSet);
+        void SendToPeerSet(const ModuleMessage& msg, const PeerSet & peerSet);
         /// Prepares and sends a state collection request to SC
         void CollectState();
         /// Sends the computed Normal to group members
         void SendNormal(double normal);
 
+
+        ModuleMessage MessageStateChange(std::string newstate);
+        ModuleMessage MessageNormal(double Normal);
+        ModuleMessage MessageCollectState();
+        ModuleMessage MessageDraftRequest();
+        ModuleMessage MessageDraft();
+        ModuleMessage MessageDrafting();
+        ModuleMessage MessageAccept();
+
         // Handlers
         /// Handles received messages
         void HandleIncomingMessage(boost::shared_ptr<const ModuleMessage> msg, PeerNodePtr peer);
         void HandlePeerList(const gm::PeerListMessage& msg, PeerNodePtr peer);
-        void HandleDemand(PeerNodePtr peer);
-        void HandleNormal(PeerNodePtr peer);
-        void HandleSupply(PeerNodePtr peer);
-        void HandleRequest(PeerNodePtr peer);
-        void HandleYes(PeerNodePtr peer);
-        void HandleNo(PeerNodePtr peer);
-        void HandleDrafting(PeerNodePtr peer);
+        void HandleStateChange(const StateChangeMessage& msg, PeerNodePtr peer);
+        void HandleRequest(const RequestMessage& msg, PeerNodePtr peer);
+        void HandleDraft(const DraftMessage& msg, PeerNodePtr peer);
+        void HandleDrafting(const DraftingMessage& msg, PeerNodePtr peer);
         void HandleAccept(const AcceptMessage& msg, PeerNodePtr peer);
         void HandleCollectedState(const sc::CollectedStateMessage& msg);
         void HandleComputedNormal(const ComputedNormalMessage& msg, PeerNodePtr peer);
@@ -147,11 +155,11 @@ class LBAgent
 
         // Peer lists
         /// Set of known peers in Demand State
-        PeerSet     m_HiNodes;
+        PeerSet     m_DemandNodes;
         /// Set of known peers in Normal State
-        PeerSet     m_NoNodes;
+        PeerSet     m_NormalNodes;
         /// Set of known peers in Supply State
-        PeerSet     m_LoNodes;
+        PeerSet     m_SupplyNodes;
         /// Set of all the known peers
         PeerSet     m_AllPeers;
 
@@ -168,6 +176,36 @@ class LBAgent
         CBroker::TimerHandle     m_GlobalTimer;
         /// Timer until next periodic state collection
         CBroker::TimerHandle      m_StateTimer;
+
+        // Invariant Function
+        /// Main function for invariant check
+        bool InvariantCheck();
+        /// Function for cyber invariant
+        bool CyberInvariant();
+        /// Function for physical invariant
+        bool PhysicalInvariant();
+
+        // Cyber and Physical Invariant
+	/// Flag for invariant check at the first time
+        bool m_firstTimeInvariant;
+        /// Cyber Invariant
+        int m_cyberInvariant;
+        /// Supply or draw of the system
+        double m_initialGateway;
+        /// Calculated gateway from load table
+        double m_aggregateGateway;
+        /// Highest demand value in the last migration cycle
+        double m_highestDemand;
+        /// The previous highest demand value
+        double m_prevDemand;
+        /// The previous Normal value
+        double m_prevNormal;
+        /// The messages that are send out by the supply but not received by the demand yet
+        int m_outstandingMessages;
+        /// Gross power flow for physical invariant
+        double m_grossPowerFlow;
+        /// Frequency from physical system
+        double m_frequency;
 
         bool m_sstExists;
         /// Set to true for the first get gateway call to indicate they should

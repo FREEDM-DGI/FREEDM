@@ -43,8 +43,6 @@ public:
 
     static unsigned int GM_PREMERGE_GRANULARITY;
 
-    static unsigned int LB_STATE_TIMER;
-
     static unsigned int LB_GLOBAL_TIMER;
 
     static void SetTimings(const std::string timingsFile);

@@ -144,7 +144,7 @@ void SCAgent::HandleIncomingMessage(boost::shared_ptr<const ModuleMessage> msg, 
     {
         lb::LoadBalancingMessage lbm = msg->load_balancing_message();
 
-        if (lbm.type() == lb::LoadBalancingMessage::ACCEPT_MESSAGE)
+        if (lbm.has_accept_message())
         {
             HandleAccept(peer);
         }

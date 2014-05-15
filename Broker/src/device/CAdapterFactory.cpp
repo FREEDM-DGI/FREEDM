@@ -423,7 +423,7 @@ void CAdapterFactory::InitializeAdapter(IAdapter::Pointer adapter,
                 value   = child.second.get_optional<SignalValue>("value");
                 index   = child.second.get<std::size_t>("<xmlattr>.index");
 
-                if( child.second.size() > 5 )
+                if( child.second.size() != 4 && !fake )
                 {
                     std::stringstream ss;
                     ss << "Invalid entry at " << (i == 0 ? "state" : "command")

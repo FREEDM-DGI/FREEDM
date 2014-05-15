@@ -11,7 +11,7 @@
                 <device>SST1</device>
                 <signal>gateway</signal>
             </entry>
-            <entry index = "3">
+            <entry index = "2">
                 <type>Sst</type>
                 <device>SST2</device>
                 <signal>gateway</signal>

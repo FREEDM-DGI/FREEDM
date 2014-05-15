@@ -117,8 +117,8 @@ int main(int argc, char* argv[])
     po::options_description cliOpts; // genOpts + cfgOpts
     po::variables_map vm;
     std::ifstream ifs;
-    std::string cfgFile, loggerCfgFile, timingsFile, adapterCfgFile;
-    std::string deviceCfgFile, listenIP, port, hostname, fport, id;
+    std::string cfgFile, loggerCfgFile, timingsFile, adapterCfgFile, topologyCfgFile;
+    std::string deviceCfgFile, listenIP, port, hostname, fport, id, invariantSetting;
     unsigned int globalVerbosity;
     try
     {
@@ -159,6 +159,13 @@ int main(int argc, char* argv[])
                 po::value<std::string > ( &timingsFile )->
                 default_value("./config/timings.cfg"),
                 "name of the timings configuration file" )
+                ( "topology-config",
+                po::value<std::string > ( &topologyCfgFile )->
+                default_value(""),
+                "name of the topology configuration file" )
+                ( "check-lb-invariants",
+                po::value<std::string > ( &invariantSetting )->default_value("0"),
+                "Disable invariant check by default" )
                 ( "verbose,v",
                 po::value<unsigned int>( &globalVerbosity )->
                 implicit_value(5)->default_value(5),
@@ -254,6 +261,7 @@ int main(int argc, char* argv[])
         CGlobalConfiguration::Instance().SetListenAddress(listenIP);
         CGlobalConfiguration::Instance().SetClockSkew(
                 boost::posix_time::milliseconds(0));
+        CGlobalConfiguration::Instance().SetInvariantCheckFlag(invariantSetting);
 
         // Specify socket endpoint address, if provided
         if( vm.count("devices-endpoint") )
@@ -283,6 +291,17 @@ int main(int argc, char* argv[])
         else
         {
             CGlobalConfiguration::Instance().SetAdapterConfigPath("");
+        }
+
+
+        if (vm.count("topology-config"))
+        {
+            CGlobalConfiguration::Instance().SetTopologyConfigPath(
+                topologyCfgFile);
+        }
+        else
+        {
+            CGlobalConfiguration::Instance().SetTopologyConfigPath("");
         }
 
         CGlobalConfiguration::Instance().SetDeviceConfigPath(deviceCfgFile);

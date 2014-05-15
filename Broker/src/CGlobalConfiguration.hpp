@@ -70,6 +70,10 @@ class CGlobalConfiguration : public boost::noncopyable
         void SetAdapterConfigPath(std::string ac) { m_adapterConfigPath = ac; };
         /// Set the path to the device class XML specification file
         void SetDeviceConfigPath(std::string p) { m_deviceConfigPath = p; }
+        /// Set the path to the topology config file
+        void SetTopologyConfigPath(std::string p) { m_topologyConfigPath = p; }
+        /// Set the flag to the invariant check
+        void SetInvariantCheckFlag(std::string f) { m_invariantCheckFlag = f;}
         /// Get the hostname
         std::string GetHostname() const { return m_hostname; };
         /// Get the port
@@ -91,6 +95,10 @@ class CGlobalConfiguration : public boost::noncopyable
         std::string GetDeviceConfigPath() const { return m_deviceConfigPath; }
         /// Intentionally signed. UINT16_MAX is too big for a UDP datagram, anyway.
         static const short MAX_PACKET_SIZE = SHRT_MAX;
+        /// Path to the topology specification file
+        std::string GetTopologyConfigPath() const { return m_topologyConfigPath; }
+        /// Get the flag to invariant check
+        std::string GetInvariantCheckFlag() const { return m_invariantCheckFlag; }
     private:
         std::string m_hostname; /// Node hostname
         std::string m_port; /// Port number
@@ -101,6 +109,8 @@ class CGlobalConfiguration : public boost::noncopyable
         std::string m_devicesEndpoint; /// Socket endpoint address for devices
         std::string m_adapterConfigPath; /// Path to the adapter configuration
         std::string m_deviceConfigPath; /// Path to the device class config
+        std::string m_topologyConfigPath; /// Path to the topology config
+        std::string m_invariantCheckFlag; /// Flag for invariant check
 };
 
 } // namespace broker

@@ -17,44 +17,33 @@ public:
 
     static unsigned int GM_INVITE_RESPONSE_TIMEOUT;
 
-    static unsigned int GM_CHECK_TIMEOUT;
-
     static unsigned int LB_PHASE_TIME;
 
     static unsigned int CSUC_RESEND_TIME;
 
     static unsigned int DEV_PNP_HEARTBEAT;
-
-    static unsigned int GM_GLOBAL_TIMEOUT;
-
+    
     static unsigned int DEV_RTDS_DELAY;
-
-    static unsigned int LB_REQUEST_TIMEOUT;
 
     static unsigned int GM_AYT_RESPONSE_TIMEOUT;
 
     static unsigned int GM_PHASE_TIME;
 
-    static unsigned int GM_FID_TIMEOUT;
-
     static unsigned int SC_PHASE_TIME;
 
-    static unsigned int CS_EXCHANGE_TIME;
-
     static unsigned int DEV_SOCKET_TIMEOUT;
-
-    static unsigned int LB_ROUND_TIME;
 
     static unsigned int CSRC_DEFAULT_TIMEOUT;
 
     static unsigned int GM_PREMERGE_MIN_TIMEOUT;
 
-    static unsigned int GM_TIMEOUT_TIMEOUT;
-
     static unsigned int CSRC_RESEND_TIME;
 
     static unsigned int GM_PREMERGE_GRANULARITY;
 
+    static unsigned int LB_ROUND_TIME;
+
+    static unsigned int LB_REQUEST_TIMEOUT;
 
     static void SetTimings(const std::string timingsFile);
 };

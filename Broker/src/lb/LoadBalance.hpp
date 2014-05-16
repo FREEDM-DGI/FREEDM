@@ -57,9 +57,12 @@ private:
     void ReadDevices();
     void UpdateState();
     void LoadTable();
+    void SendDraftRequest();
+    void HandleDraftRequest(MessagePtr m, PeerNodePtr peer);
     void SendStateChange(std::string state);
     void HandleStateChange(MessagePtr m, PeerNodePtr peer);
     void HandlePeerList(MessagePtr m, PeerNodePtr peer);
+    void SetPStar(float pstar);
 
     const boost::posix_time::time_duration ROUND_TIME;
 
@@ -80,6 +83,7 @@ private:
 
     bool m_FirstRound;
     bool m_ForceUpdate;
+    bool m_AcceptDraftRequest;
 };
 
 } // namespace lb

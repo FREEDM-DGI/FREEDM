@@ -23,9 +23,12 @@
 ///                 LBAgent::ReadDevices
 ///                 LBAgent::UpdateState
 ///                 LBAgent::LoadTable
+///                 LBAgent::SendDraftRequest
+///                 LBAgent::HandleDraftRequest
 ///                 LBAgent::SendStateChange
 ///                 LBAgent::HandleStateChange
 ///                 LBAgent::HandlePeerList
+///                 LBAgent::SetPStar
 ///
 /// These source code files were created at Missouri University of Science and
 /// Technology, and are intended for use in teaching or research. They may be
@@ -75,6 +78,7 @@ LBAgent::LBAgent(std::string uuid)
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
     m_ForceUpdate = true;
+    m_AcceptDraftRequest = true;
     m_State = LBAgent::NORMAL;
     m_PriorState = LBAgent::NORMAL;
     InsertInPeerSet(m_AllPeers, GetSelf());
@@ -83,6 +87,7 @@ LBAgent::LBAgent(std::string uuid)
 
     RegisterSubhandle("any.PeerList", boost::bind(&LBAgent::HandlePeerList, this, _1, _2));
     RegisterSubhandle("lb.state-change", boost::bind(&LBAgent::HandleStateChange, this, _1, _2));
+    RegisterSubhandle("lb.draft-request", boost::bind(&LBAgent::HandleDraftRequest, this, _1, _2));
 }
 
 int LBAgent::Run()
@@ -161,7 +166,19 @@ void LBAgent::LoadManage(const boost::system::error_code & error)
         UpdateState();
         LoadTable();
 
-        // INCOMPLETE
+        std::set<device::CDevice::Pointer> logger;
+        logger = device::CDeviceManager::Instance().GetDevicesOfType("Logger");
+        if(logger.empty() || (*logger.begin())->GetState("dgiEnable") == 1)
+        {
+            if(m_State == LBAgent::SUPPLY)
+            {
+                SendDraftRequest();
+            }
+        }
+        else
+        {
+            SetPStar(m_Gateway);
+        }
     }
     else if(error == boost::asio::error::operation_aborted)
     {
@@ -312,6 +329,53 @@ void LBAgent::LoadTable()
     Logger.Status << loadtable.str() << std::endl;
 }
 
+void LBAgent::SendDraftRequest()
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+
+    if(m_State == LBAgent::SUPPLY)
+    {
+        CMessage m;
+        m.SetHandler("lb.draft-request");
+
+        if(!m_InDemand.empty())
+        {
+            SendToPeerSet(m, m_InDemand);
+            // INCOMPLETE
+            Logger.Info << "Sent Draft Request" << std::endl;
+        }
+        else
+        {
+            Logger.Notice << "Draft Request Cancelled: no DEMAND" << std::endl;
+        }
+    }
+    else
+    {
+        Logger.Notice << "Draft Request Cancelled: not in SUPPLY" << std::endl;
+    }
+}
+
+void LBAgent::HandleDraftRequest(MessagePtr /*m*/, PeerNodePtr peer)
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Info << "Draft Request from " << peer->GetUUID() << std::endl;
+
+    if(CountInPeerSet(m_AllPeers, peer) == 0)
+    {
+        Logger.Notice << "Rejected Draft Request: unknown peer" << std::endl;
+    }
+    else if(!m_AcceptDraftRequest)
+    {
+        MoveToPeerSet(peer, m_InSupply);
+        Logger.Notice << "Rejected Draft Request: draft in progress" << std::endl;
+    }
+    else
+    {
+        MoveToPeerSet(peer, m_InSupply);
+        //SendDraftAge(peer);
+    }
+}
+
 void LBAgent::SendStateChange(std::string state)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
@@ -383,6 +447,30 @@ void LBAgent::HandlePeerList(MessagePtr m, PeerNodePtr peer)
     }
 
     m_ForceUpdate = true;
+}
+
+void LBAgent::SetPStar(float pstar)
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+
+    std::set<device::CDevice::Pointer> sstContainer;
+    sstContainer = device::CDeviceManager::Instance().GetDevicesOfType("Sst");
+
+    if(sstContainer.size() > 0)
+    {
+        if(sstContainer.size() > 1)
+        {
+            Logger.Warn << "Multiple attached SST devices" << std::endl;
+        }
+
+        (*sstContainer.begin())->SetCommand("gateway", pstar);
+        m_PredictedGateway = pstar;
+        Logger.Notice << "P* = " << pstar << std::endl;
+    }
+    else
+    {
+        Logger.Warn << "Failed to set P*: no attached SST device" << std::endl;
+    }
 }
 
 } // namespace lb

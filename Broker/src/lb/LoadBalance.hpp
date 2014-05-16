@@ -59,12 +59,16 @@ private:
     void LoadTable();
     void SendDraftRequest();
     void HandleDraftRequest(MessagePtr m, PeerNodePtr peer);
+    void SendDraftAge(PeerNodePtr peer);
+    void HandleDraftAge(MessagePtr m, PeerNodePtr peer);
+    void DraftStandard(const boost::system::error_code & error);
     void SendStateChange(std::string state);
     void HandleStateChange(MessagePtr m, PeerNodePtr peer);
     void HandlePeerList(MessagePtr m, PeerNodePtr peer);
     void SetPStar(float pstar);
 
     const boost::posix_time::time_duration ROUND_TIME;
+    const boost::posix_time::time_duration REQUEST_TIMEOUT;
 
     PeerSet m_AllPeers;
     PeerSet m_InSupply;
@@ -75,6 +79,7 @@ private:
     State m_PriorState;
 
     CBroker::TimerHandle m_RoundTimer;
+    CBroker::TimerHandle m_WaitTimer;
     
     float m_Gateway;
     float m_NetGeneration;
@@ -84,6 +89,9 @@ private:
     bool m_FirstRound;
     bool m_ForceUpdate;
     bool m_AcceptDraftRequest;
+    bool m_AcceptDraftAge;
+
+    std::map<std::string, float> m_DraftAge;
 };
 
 } // namespace lb

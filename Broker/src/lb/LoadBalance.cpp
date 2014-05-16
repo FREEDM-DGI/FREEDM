@@ -25,6 +25,9 @@
 ///                 LBAgent::LoadTable
 ///                 LBAgent::SendDraftRequest
 ///                 LBAgent::HandleDraftRequest
+///                 LBAgent::SendDraftAge
+///                 LBAgent::HandleDraftAge
+///                 LBAgent::DraftStandard
 ///                 LBAgent::SendStateChange
 ///                 LBAgent::HandleStateChange
 ///                 LBAgent::HandlePeerList
@@ -73,21 +76,25 @@ CLocalLogger Logger(__FILE__);
 LBAgent::LBAgent(std::string uuid)
     : IPeerNode(uuid)
     , ROUND_TIME(boost::posix_time::milliseconds(CTimings::LB_ROUND_TIME))
+    , REQUEST_TIMEOUT(boost::posix_time::milliseconds(CTimings::LB_REQUEST_TIMEOUT))
     , m_MigrationStep(CGlobalConfiguration::Instance().GetMigrationStep())
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
     m_ForceUpdate = true;
     m_AcceptDraftRequest = true;
+    m_AcceptDraftAge = false;
     m_State = LBAgent::NORMAL;
     m_PriorState = LBAgent::NORMAL;
     InsertInPeerSet(m_AllPeers, GetSelf());
     InsertInPeerSet(m_InNormal, GetSelf());
     m_RoundTimer = CBroker::Instance().AllocateTimer("lb");
+    m_WaitTimer = CBroker::Instance().AllocateTimer("lb");
 
     RegisterSubhandle("any.PeerList", boost::bind(&LBAgent::HandlePeerList, this, _1, _2));
     RegisterSubhandle("lb.state-change", boost::bind(&LBAgent::HandleStateChange, this, _1, _2));
     RegisterSubhandle("lb.draft-request", boost::bind(&LBAgent::HandleDraftRequest, this, _1, _2));
+    RegisterSubhandle("lb.draft-age", boost::bind(&LBAgent::HandleDraftAge, this, _1, _2));
 }
 
 int LBAgent::Run()
@@ -341,7 +348,9 @@ void LBAgent::SendDraftRequest()
         if(!m_InDemand.empty())
         {
             SendToPeerSet(m, m_InDemand);
-            // INCOMPLETE
+            CBroker::Instance().Schedule(m_WaitTimer, REQUEST_TIMEOUT,
+                boost::bind(&LBAgent::DraftStandard, this, boost::asio::placeholders::error));
+            m_AcceptDraftAge = true;
             Logger.Info << "Sent Draft Request" << std::endl;
         }
         else
@@ -372,7 +381,75 @@ void LBAgent::HandleDraftRequest(MessagePtr /*m*/, PeerNodePtr peer)
     else
     {
         MoveToPeerSet(peer, m_InSupply);
-        //SendDraftAge(peer);
+        SendDraftAge(peer);
+    }
+}
+
+void LBAgent::SendDraftAge(PeerNodePtr peer)
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+
+    CMessage m;
+    float age = 0;
+
+    m.SetHandler("lb.draft-age");
+    if(m_State == LBAgent::DEMAND)
+    {
+        age = -m_NetGeneration;
+    }
+    m.m_submessages.put("lb.age", age);
+    Logger.Info << "Calculated Draft Age: " << age << std::endl;
+
+    try
+    {
+        peer->Send(m);
+        m_AcceptDraftRequest = false;
+        Logger.Notice << "Sent Draft Age to " << peer->GetUUID() << std::endl;
+    }
+    catch(boost::system::system_error & e)
+    {
+        m_AcceptDraftRequest = true;
+        Logger.Warn << "Couldn't connect to peer" << std::endl;
+    }
+}
+
+void LBAgent::HandleDraftAge(MessagePtr m, PeerNodePtr peer)
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+
+    if(CountInPeerSet(m_AllPeers, peer) == 0)
+    {
+        Logger.Notice << "Rejected Draft Age: unknown peer" << std::endl;
+    }
+    else if(!m_AcceptDraftAge)
+    {
+        Logger.Notice << "Rejected Draft Age: request not in progress" << std::endl;
+    }
+    else
+    {
+        m_DraftAge[peer->GetUUID()] = m->GetSubMessages().get<float>("lb.age");
+        Logger.Info << "Received draft age from " << peer->GetUUID() << std::endl;
+    }
+}
+
+void LBAgent::DraftStandard(const boost::system::error_code & error)
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+
+    if(!error)
+    {
+        // INCOMPLETE
+        m_AcceptDraftAge = false;
+        m_DraftAge.clear();
+    }
+    else if(error == boost::asio::error::operation_aborted)
+    {
+        Logger.Notice << "Draft Standard Aborted" << std::endl;
+    }
+    else
+    {
+        Logger.Error << error << std::endl;
+        throw boost::system::system_error(error);
     }
 }
 

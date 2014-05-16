@@ -59,6 +59,10 @@ def lb_phase_time(*args,**kwargs):
     # Add 10ms of leeway of LB will one one time fewer than expected
     return c * lb_round_time(*args,**kwargs) + 10
 
+def lb_request_timeout(*args,**kwargs):
+    n = kwargs.get('n')
+    return (n+1) * round_trip_time(*args,**kwargs)
+
 def gm_phase_time(*args,**kwargs):
     tp = kwargs.get('tp')
     tm = kwargs.get('tm')

@@ -44,6 +44,7 @@ VARIABLES = {
     # LB VARIABLES
     'LB_PHASE_TIME': lb_phase_time,
     'LB_ROUND_TIME': lb_round_time,
+    'LB_REQUEST_TIMEOUT': lb_request_timeout,
     # CSRC VARIABLES
     'CSRC_RESEND_TIME': csrc_resend_time,
     'CSRC_DEFAULT_TIMEOUT': csrc_default_timeout,

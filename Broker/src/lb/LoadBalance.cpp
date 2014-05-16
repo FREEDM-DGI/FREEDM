@@ -93,7 +93,6 @@ LBAgent::LBAgent(std::string uuid)
     m_MigrationStep = CGlobalConfiguration::Instance().GetMigrationStep();
 
     m_ForceUpdate = true;
-    m_AcceptDraftRequest = true;
     m_AcceptDraftAge = false;
 
     RegisterSubhandle("lb.state-change", boost::bind(&LBAgent::HandleStateChange, this, _1, _2));
@@ -424,7 +423,7 @@ void LBAgent::HandleDraftRequest(MessagePtr /*m*/, PeerNodePtr peer)
     {
         Logger.Notice << "Rejected Draft Request: unknown peer" << std::endl;
     }
-    else if(!m_AcceptDraftRequest)
+    else if(!m_RequestPeer.empty())
     {
         MoveToPeerSet(m_InSupply, peer);
         Logger.Notice << "Rejected Draft Request: draft in progress" << std::endl;
@@ -454,12 +453,12 @@ void LBAgent::SendDraftAge(PeerNodePtr peer)
     try
     {
         peer->Send(m);
-        m_AcceptDraftRequest = false;
+        m_RequestPeer = peer->GetUUID();
         Logger.Notice << "Sent Draft Age to " << peer->GetUUID() << std::endl;
     }
     catch(boost::system::system_error & e)
     {
-        m_AcceptDraftRequest = true;
+        m_RequestPeer.clear();
         Logger.Warn << "Couldn't connect to peer" << std::endl;
     }
 }
@@ -557,19 +556,19 @@ void LBAgent::HandleDraftSelect(MessagePtr m, PeerNodePtr peer)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
-    if(CountInPeerSet(m_AllPeers, peer) == 0)
+    if(peer->GetUUID() != m_RequestPeer)
     {
-        Logger.Notice << "Rejected Draft Select: unknown peer" << std::endl;
+        Logger.Notice << "Rejected Draft Select: unexpected peer" << std::endl;
     }
-    else if(m_AcceptDraftRequest)
+    else if(CountInPeerSet(m_AllPeers, peer) == 0)
     {
-        Logger.Notice << "Rejected Draft Select: draft age not sent" << std::endl;
+        Logger.Notice << "Rejected Draft Select: peer node in group" << std::endl;
     }
     else
     {
         float amount = m->GetSubMessages().get<float>("lb.amount");
         SetPStar(m_PredictedGateway - amount);
-        m_AcceptDraftRequest = true;
+        m_RequestPeer.clear();
         SendDraftAccept(peer);
     }
 }

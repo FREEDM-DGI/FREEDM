@@ -31,6 +31,8 @@
 ///                 LBAgent::DraftStandard
 ///                 LBAgent::SendDraftSelect
 ///                 LBAgent::HandleDraftSelect
+///                 LBAgent::SendDraftAccept
+///                 LBAgent::HandleDraftAccept
 ///                 LBAgent::SendStateChange
 ///                 LBAgent::HandleStateChange
 ///                 LBAgent::HandlePeerList
@@ -99,6 +101,7 @@ LBAgent::LBAgent(std::string uuid)
     RegisterSubhandle("lb.draft-request", boost::bind(&LBAgent::HandleDraftRequest, this, _1, _2));
     RegisterSubhandle("lb.draft-age", boost::bind(&LBAgent::HandleDraftAge, this, _1, _2));
     RegisterSubhandle("lb.draft-select", boost::bind(&LBAgent::HandleDraftSelect, this, _1, _2));
+    RegisterSubhandle("lb.draft-accept", boost::bind(&LBAgent::HandleDraftAccept, this, _1, _2));
 }
 
 int LBAgent::Run()
@@ -534,7 +537,40 @@ void LBAgent::HandleDraftSelect(MessagePtr m, PeerNodePtr peer)
         float amount = m->GetSubMessages().get<float>("lb.amount");
         SetPStar(m_PredictedGateway - amount);
         m_AcceptDraftRequest = true;
-        //SendDraftAccept(peer);
+        SendDraftAccept(peer);
+    }
+}
+
+void LBAgent::SendDraftAccept(PeerNodePtr peer)
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    CMessage m;
+    m.SetHandler("lb.draft-accept");
+
+    try
+    {
+        peer->Send(m);
+    }
+    catch(boost::system::system_error & error)
+    {
+        Logger.Warn << "Couldn't connect to peer" << std::endl;
+    }
+}
+
+void LBAgent::HandleDraftAccept(MessagePtr /*m*/, PeerNodePtr peer)
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+
+    std::multiset<std::string>::iterator it;
+    it = m_Outstanding.find(peer->GetUUID());
+
+    if(it == m_Outstanding.end())
+    {
+        Logger.Warn << "Received unexpected accept message" << std::endl;
+    }
+    else
+    {
+        m_Outstanding.erase(it);
     }
 }
 

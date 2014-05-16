@@ -67,6 +67,8 @@ private:
     void DraftStandard(const boost::system::error_code & error);
     void SendDraftSelect(PeerNodePtr peer);
     void HandleDraftSelect(MessagePtr m, PeerNodePtr peer);
+    void SendDraftAccept(PeerNodePtr peer);
+    void HandleDraftAccept(MessagePtr m, PeerNodePtr peer);
     void SendStateChange(std::string state);
     void HandleStateChange(MessagePtr m, PeerNodePtr peer);
     void HandlePeerList(MessagePtr m, PeerNodePtr peer);

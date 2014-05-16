@@ -1006,12 +1006,17 @@ void LBAgent::HandleDraft(MessagePtr /*msg*/, PeerNodePtr peer)
 bool LBAgent::InvariantCheck()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    bool I1 = true;
     // Check if there is Omega device for cyber and physical invariant integration    
     int count = device::CDeviceManager::Instance().GetDevicesOfType("Omega").size();
     if (count != 0)
     {
-        bool I1 = (m_cyberInvariant==1);
-        Logger.Status << "Cyber invariant is " << (I1 ? "true" : "false") << std::endl;
+        //if malicious flag is true, ignore the result from cyber invariant by make I1 true
+        if(!CGlobalConfiguration::Instance().GetMaliciousFlag())
+        {
+            I1 = (m_cyberInvariant==1);
+            Logger.Status << "Cyber invariant is " << (I1 ? "true" : "false") << std::endl;
+        }
         bool I2 = PhysicalInvariant();
         Logger.Status << "Physical invariant is " << (I2 ? "true" : "false") << std::endl;
         return I1*I2;
@@ -1066,11 +1071,13 @@ bool LBAgent::PhysicalInvariant()
     m_frequency = device::CDeviceManager::Instance().GetNetValue("Omega", "frequency");
     const float OmegaNon = 376.8;
     // In this simple test, all the power is concentrated on a single SST
-    m_grossPowerFlow = m_outstandingMessages;
+    m_grossPowerFlow = 1000*m_outstandingMessages;
     Logger.Info << "The gross power flow is " << m_grossPowerFlow << std::endl;
     // Check left side and right side of physical invariant formula
-    double left = (0.08*m_frequency + 0.01)*(m_frequency-OmegaNon)*(m_frequency-OmegaNon) + (m_frequency-OmegaNon)*((5.001e-8)*m_grossPowerFlow*m_grossPowerFlow*(10e6));
-    double right = P_Migrate*m_outstandingMessages*(m_frequency - OmegaNon);
+    double left = (0.1*m_frequency + 0.008)*(m_frequency-OmegaNon)*(m_frequency-OmegaNon) + (m_frequency-OmegaNon)*((5.001e-8)*m_grossPowerFlow*m_grossPowerFlow);
+    // Imbalanced K is the predicted outstanding message for the next step
+    int predictedK = m_outstandingMessages + 1;
+    double right = P_Migrate*predictedK*(m_frequency - OmegaNon);
     Logger.Status << "Physical invaraint left side of formula is " << left << " and right side of formula is " << right << std::endl;
     
     if (left > right)

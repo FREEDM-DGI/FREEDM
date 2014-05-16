@@ -50,8 +50,8 @@ public:
 private:
     enum State { SUPPLY, DEMAND, NORMAL };
 
-    void MoveToPeerSet(PeerNodePtr peer, PeerSet & peerset);
-    void SendToPeerSet(CMessage & m, const PeerSet & peerset);
+    void MoveToPeerSet(PeerSet & ps, PeerNodePtr peer);
+    void SendToPeerSet(const PeerSet & ps, CMessage & m);
     void LoadManage(const boost::system::error_code & error);
     void FirstRound(const boost::system::error_code & error);
     void ScheduleNextRound();

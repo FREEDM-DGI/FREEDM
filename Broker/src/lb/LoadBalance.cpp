@@ -114,20 +114,20 @@ int LBAgent::Run()
     return 0;
 }
 
-void LBAgent::MoveToPeerSet(PeerNodePtr peer, PeerSet & peerset)
+void LBAgent::MoveToPeerSet(PeerSet & ps, PeerNodePtr peer)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     EraseInPeerSet(m_InSupply, peer);
     EraseInPeerSet(m_InDemand, peer);
     EraseInPeerSet(m_InNormal, peer);
-    InsertInPeerSet(peerset, peer);
+    InsertInPeerSet(ps, peer);
 }
 
-void LBAgent::SendToPeerSet(CMessage & m, const PeerSet & peerset)
+void LBAgent::SendToPeerSet(const PeerSet & ps, CMessage & m)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
-    BOOST_FOREACH(PeerNodePtr peer, peerset | boost::adaptors::map_values)
+    BOOST_FOREACH(PeerNodePtr peer, ps | boost::adaptors::map_values)
     {
         try
         {
@@ -200,7 +200,7 @@ void LBAgent::ScheduleNextRound()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
-    if(CBroker::Instance().TimeRemaining() > boost::posix_time::milliseconds(2*CTimings::LB_ROUND_TIME))
+    if(CBroker::Instance().TimeRemaining() > ROUND_TIME + ROUND_TIME)
     {
         CBroker::Instance().Schedule(m_RoundTimer, ROUND_TIME,
             boost::bind(&LBAgent::LoadManage, this, boost::asio::placeholders::error));
@@ -227,7 +227,7 @@ void LBAgent::ReadDevices()
 
     if(m_FirstRound)
     {
-        m_PredictedGateway = device::CDeviceManager::Instance().GetNetValue("Sst", "gateway");
+        m_PredictedGateway = m_Gateway;
         Logger.Info << "Reset Predicted Gateway: " << m_PredictedGateway << std::endl;
         m_FirstRound = false;
     }
@@ -351,7 +351,7 @@ void LBAgent::SendStateChange(std::string state)
     CMessage m;
     m.SetHandler("lb.state-change");
     m.m_submessages.put("lb.state", state);
-    SendToPeerSet(m, m_AllPeers);
+    SendToPeerSet(m_AllPeers, m);
 }
 
 void LBAgent::HandleStateChange(MessagePtr m, PeerNodePtr peer)
@@ -369,15 +369,15 @@ void LBAgent::HandleStateChange(MessagePtr m, PeerNodePtr peer)
 
         if(state == "supply")
         {
-            MoveToPeerSet(peer, m_InSupply);
+            MoveToPeerSet(m_InSupply, peer);
         }
         else if(state == "demand")
         {
-            MoveToPeerSet(peer, m_InDemand);
+            MoveToPeerSet(m_InDemand, peer);
         }
         else if(state == "normal")
         {
-            MoveToPeerSet(peer, m_InNormal);
+            MoveToPeerSet(m_InNormal, peer);
         }
         else
         {
@@ -397,9 +397,10 @@ void LBAgent::SendDraftRequest()
 
         if(!m_InDemand.empty())
         {
-            SendToPeerSet(m, m_InDemand);
+            SendToPeerSet(m_InDemand, m);
             CBroker::Instance().Schedule(m_WaitTimer, REQUEST_TIMEOUT,
                 boost::bind(&LBAgent::DraftStandard, this, boost::asio::placeholders::error));
+            m_DraftAge.clear();
             m_AcceptDraftAge = true;
             Logger.Info << "Sent Draft Request" << std::endl;
         }
@@ -425,12 +426,12 @@ void LBAgent::HandleDraftRequest(MessagePtr /*m*/, PeerNodePtr peer)
     }
     else if(!m_AcceptDraftRequest)
     {
-        MoveToPeerSet(peer, m_InSupply);
+        MoveToPeerSet(m_InSupply, peer);
         Logger.Notice << "Rejected Draft Request: draft in progress" << std::endl;
     }
     else
     {
-        MoveToPeerSet(peer, m_InSupply);
+        MoveToPeerSet(m_InSupply, peer);
         SendDraftAge(peer);
     }
 }
@@ -507,7 +508,7 @@ void LBAgent::DraftStandard(const boost::system::error_code & error)
 
             if(age == 0.0)
             {
-                MoveToPeerSet(peer, m_InNormal);
+                MoveToPeerSet(m_InNormal, peer);
             }
             else if(age > selected_age)
             {
@@ -516,7 +517,6 @@ void LBAgent::DraftStandard(const boost::system::error_code & error)
             }
         }
         m_AcceptDraftAge = false;
-        m_DraftAge.clear();
 
         if(selected_age > 0 && m_State == LBAgent::SUPPLY)
         {

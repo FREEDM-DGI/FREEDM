@@ -950,10 +950,13 @@ bool LBAgent::PhysicalInvariant()
     m_frequency = device::CDeviceManager::Instance().GetNetValue("Omega", "frequency");
     const float OmegaNon = 376.8;
     // In this simple test, all the power is concentrated on a single SST
-    m_grossPowerFlow = m_outstandingMessages;
+    //m_grossPowerFlow = m_outstandingMessages;
+    m_grossPowerFlow =1000*m_SstGateway;
     Logger.Info << "The gross power flow is " << m_grossPowerFlow << std::endl;
+    Logger.Info << "The frequency difference is " << m_frequency-OmegaNon << std::endl;
     // Check left side and right side of physical invariant formula
-    double left = (0.08*m_frequency + 0.01)*(m_frequency-OmegaNon)*(m_frequency-OmegaNon) + (m_frequency-OmegaNon)*(5.001e-8*m_grossPowerFlow*m_grossPowerFlow*10e6);
+    double left = (0.08*m_frequency + 0.01)*(m_frequency-OmegaNon)*(m_frequency-OmegaNon) + (m_frequency-OmegaNon)*(5.001e-8*m_grossPowerFlow*m_grossPowerFlow);
+    m_outstandingMessages = P_Migrate + m_SstGateway;
     double right = P_Migrate*m_outstandingMessages*(m_frequency - OmegaNon);
     Logger.Status << "Physical invaraint left side of formula is " << left << " and right side of formula is " << right << std::endl;
     
@@ -1015,7 +1018,7 @@ void LBAgent::HandleDrafting(MessagePtr /*msg*/, PeerNodePtr peer)
             if (m_sstExists)
 	    {
                Step_PStar();
-	        m_outstandingMessages ++;
+	       // m_outstandingMessages ++;
 	    }
             else
                Desd_PStar();
@@ -1053,7 +1056,7 @@ void LBAgent::HandleAccept(MessagePtr msg, PeerNodePtr peer)
         if (m_sstExists)
 	{
            Step_PStar();
-	    m_outstandingMessages ++;
+	   // m_outstandingMessages ++;
 	}
         else
            Desd_PStar();

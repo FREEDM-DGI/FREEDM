@@ -36,6 +36,7 @@
 ///                 LBAgent::SendStateChange
 ///                 LBAgent::HandleStateChange
 ///                 LBAgent::HandlePeerList
+///                 LBAgent::HandleAny
 ///                 LBAgent::SetPStar
 ///
 /// These source code files were created at Missouri University of Science and
@@ -96,6 +97,7 @@ LBAgent::LBAgent(std::string uuid)
     m_RoundTimer = CBroker::Instance().AllocateTimer("lb");
     m_WaitTimer = CBroker::Instance().AllocateTimer("lb");
 
+    RegisterSubhandle("any", boost::bind(&LBAgent::HandleAny, this, _1, _2));
     RegisterSubhandle("any.PeerList", boost::bind(&LBAgent::HandlePeerList, this, _1, _2));
     RegisterSubhandle("lb.state-change", boost::bind(&LBAgent::HandleStateChange, this, _1, _2));
     RegisterSubhandle("lb.draft-request", boost::bind(&LBAgent::HandleDraftRequest, this, _1, _2));
@@ -645,6 +647,18 @@ void LBAgent::HandlePeerList(MessagePtr m, PeerNodePtr peer)
     }
 
     m_ForceUpdate = true;
+}
+
+void LBAgent::HandleAny(MessagePtr m, PeerNodePtr peer)
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    if(m->GetHandler().find("lb") == 0)
+    {
+        Logger.Error << "Unhandled Load Balance Message" << std::endl;
+        m->Save(Logger.Error);
+        Logger.Error << std::endl;
+        throw EUnhandledMessage("Unhandled Load Balance Message");
+    }
 }
 
 void LBAgent::SetPStar(float pstar)

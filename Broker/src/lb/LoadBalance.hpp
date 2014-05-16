@@ -72,6 +72,7 @@ private:
     void SendStateChange(std::string state);
     void HandleStateChange(MessagePtr m, PeerNodePtr peer);
     void HandlePeerList(MessagePtr m, PeerNodePtr peer);
+    void HandleAny(MessagePtr m, PeerNodePtr peer);
     void SetPStar(float pstar);
 
     const boost::posix_time::time_duration ROUND_TIME;

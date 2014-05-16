@@ -519,7 +519,7 @@ void LBAgent::DraftStandard(const boost::system::error_code & error)
 
         if(selected_age > 0 && m_State == LBAgent::SUPPLY)
         {
-            SendDraftSelect(selected_peer);
+            SendDraftSelect(selected_peer, m_MigrationStep);
         }
     }
     else if(error == boost::asio::error::operation_aborted)
@@ -533,17 +533,17 @@ void LBAgent::DraftStandard(const boost::system::error_code & error)
     }
 }
 
-void LBAgent::SendDraftSelect(PeerNodePtr peer)
+void LBAgent::SendDraftSelect(PeerNodePtr peer, float step)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
     CMessage m;
     m.SetHandler("lb.draft-select");
-    m.m_submessages.put("lb.amount", m_MigrationStep);
+    m.m_submessages.put("lb.amount", step);
     try
     {
         peer->Send(m);
-        SetPStar(m_PredictedGateway + m_MigrationStep);
+        SetPStar(m_PredictedGateway + step);
         m_Outstanding.insert(peer->GetUUID());
     }
     catch(boost::system::system_error & e)

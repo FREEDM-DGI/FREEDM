@@ -65,7 +65,7 @@ private:
     void SendDraftAge(PeerNodePtr peer);
     void HandleDraftAge(MessagePtr m, PeerNodePtr peer);
     void DraftStandard(const boost::system::error_code & error);
-    void SendDraftSelect(PeerNodePtr peer);
+    void SendDraftSelect(PeerNodePtr peer, float step);
     void HandleDraftSelect(MessagePtr m, PeerNodePtr peer);
     void SendDraftAccept(PeerNodePtr peer);
     void HandleDraftAccept(MessagePtr m, PeerNodePtr peer);

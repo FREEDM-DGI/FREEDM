@@ -15,6 +15,7 @@
 /// @functions      LBAgent::LBAgent
 ///                 LBAgent::Run
 ///                 LBAgent::GetSelf
+///                 LBAgent::GetPeer
 ///                 LBAgent::MoveToPeerSet
 ///                 LBAgent::SendToPeerSet
 ///                 LBAgent::FirstRound
@@ -28,6 +29,8 @@
 ///                 LBAgent::SendDraftAge
 ///                 LBAgent::HandleDraftAge
 ///                 LBAgent::DraftStandard
+///                 LBAgent::SendDraftSelect
+///                 LBAgent::HandleDraftSelect
 ///                 LBAgent::SendStateChange
 ///                 LBAgent::HandleStateChange
 ///                 LBAgent::HandlePeerList
@@ -95,6 +98,7 @@ LBAgent::LBAgent(std::string uuid)
     RegisterSubhandle("lb.state-change", boost::bind(&LBAgent::HandleStateChange, this, _1, _2));
     RegisterSubhandle("lb.draft-request", boost::bind(&LBAgent::HandleDraftRequest, this, _1, _2));
     RegisterSubhandle("lb.draft-age", boost::bind(&LBAgent::HandleDraftAge, this, _1, _2));
+    RegisterSubhandle("lb.draft-select", boost::bind(&LBAgent::HandleDraftSelect, this, _1, _2));
 }
 
 int LBAgent::Run()
@@ -110,6 +114,18 @@ LBAgent::PeerNodePtr LBAgent::GetSelf()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     return CGlobalPeerList::instance().GetPeer(GetUUID());
+}
+
+LBAgent::PeerNodePtr LBAgent::GetPeer(std::string uuid)
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    PeerSet::iterator it = m_AllPeers.find(uuid);
+
+    if(it != m_AllPeers.end())
+    {
+        return it->second;
+    }
+    return PeerNodePtr();
 }
 
 void LBAgent::MoveToPeerSet(PeerNodePtr peer, PeerSet & peerset)
@@ -438,9 +454,38 @@ void LBAgent::DraftStandard(const boost::system::error_code & error)
 
     if(!error)
     {
-        // INCOMPLETE
+        std::map<std::string, float>::iterator it;
+        PeerNodePtr selected_peer;
+        float selected_age = 0;
+
+        for(it = m_DraftAge.begin(); it != m_DraftAge.end(); it++)
+        {
+            PeerNodePtr peer = GetPeer(it->first);
+            float age = it->second;
+
+            if(!peer)
+            {
+                Logger.Info << "Skipped unknown peer: " << it->first << std::endl;
+                continue;
+            }
+
+            if(age == 0.0)
+            {
+                MoveToPeerSet(peer, m_InNormal);
+            }
+            else if(age > selected_age)
+            {
+                selected_age = age;
+                selected_peer = peer;
+            }
+        }
         m_AcceptDraftAge = false;
         m_DraftAge.clear();
+
+        if(selected_age > 0 && m_State == LBAgent::SUPPLY)
+        {
+            SendDraftSelect(selected_peer);
+        }
     }
     else if(error == boost::asio::error::operation_aborted)
     {
@@ -450,6 +495,46 @@ void LBAgent::DraftStandard(const boost::system::error_code & error)
     {
         Logger.Error << error << std::endl;
         throw boost::system::system_error(error);
+    }
+}
+
+void LBAgent::SendDraftSelect(PeerNodePtr peer)
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+
+    CMessage m;
+    m.SetHandler("lb.draft-select");
+    m.m_submessages.put("lb.amount", m_MigrationStep);
+    try
+    {
+        peer->Send(m);
+        SetPStar(m_PredictedGateway + m_MigrationStep);
+        m_Outstanding.insert(peer->GetUUID());
+    }
+    catch(boost::system::system_error & e)
+    {
+        Logger.Warn << "Couldn't connect to peer" << std::endl;
+    }
+}
+
+void LBAgent::HandleDraftSelect(MessagePtr m, PeerNodePtr peer)
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+
+    if(CountInPeerSet(m_AllPeers, peer) == 0)
+    {
+        Logger.Notice << "Rejected Draft Select: unknown peer" << std::endl;
+    }
+    else if(m_AcceptDraftRequest)
+    {
+        Logger.Notice << "Rejected Draft Select: draft age not sent" << std::endl;
+    }
+    else
+    {
+        float amount = m->GetSubMessages().get<float>("lb.amount");
+        SetPStar(m_PredictedGateway - amount);
+        m_AcceptDraftRequest = true;
+        //SendDraftAccept(peer);
     }
 }
 

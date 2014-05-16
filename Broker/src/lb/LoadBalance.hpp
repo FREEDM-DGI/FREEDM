@@ -50,8 +50,6 @@ public:
 private:
     enum State { SUPPLY, DEMAND, NORMAL };
 
-    PeerNodePtr GetSelf();
-    PeerNodePtr GetPeer(std::string uuid);
     void MoveToPeerSet(PeerNodePtr peer, PeerSet & peerset);
     void SendToPeerSet(CMessage & m, const PeerSet & peerset);
     void LoadManage(const boost::system::error_code & error);

@@ -14,8 +14,6 @@
 ///
 /// @functions      LBAgent::LBAgent
 ///                 LBAgent::Run
-///                 LBAgent::GetSelf
-///                 LBAgent::GetPeer
 ///                 LBAgent::MoveToPeerSet
 ///                 LBAgent::SendToPeerSet
 ///                 LBAgent::FirstRound
@@ -116,24 +114,6 @@ int LBAgent::Run()
     return 0;
 }
 
-LBAgent::PeerNodePtr LBAgent::GetSelf()
-{
-    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    return CGlobalPeerList::instance().GetPeer(GetUUID());
-}
-
-LBAgent::PeerNodePtr LBAgent::GetPeer(std::string uuid)
-{
-    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    PeerSet::iterator it = m_AllPeers.find(uuid);
-
-    if(it != m_AllPeers.end())
-    {
-        return it->second;
-    }
-    return PeerNodePtr();
-}
-
 void LBAgent::MoveToPeerSet(PeerNodePtr peer, PeerSet & peerset)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
@@ -149,10 +129,6 @@ void LBAgent::SendToPeerSet(CMessage & m, const PeerSet & peerset)
 
     BOOST_FOREACH(PeerNodePtr peer, peerset | boost::adaptors::map_values)
     {
-        if(peer->GetUUID() == GetUUID())
-        {
-            continue;
-        }
         try
         {
             peer->Send(m);
@@ -274,7 +250,6 @@ void LBAgent::UpdateState()
         if(m_State != LBAgent::SUPPLY)
         {
             m_State = LBAgent::SUPPLY;
-            MoveToPeerSet(GetSelf(), m_InSupply);
             Logger.Info << "Changed to SUPPLY state." << std::endl;
         }
     }
@@ -283,7 +258,6 @@ void LBAgent::UpdateState()
         if(m_State != LBAgent::DEMAND)
         {
             m_State = LBAgent::DEMAND;
-            MoveToPeerSet(GetSelf(), m_InDemand);
             Logger.Info << "Changed to DEMAND state." << std::endl;
         }
     }
@@ -292,7 +266,6 @@ void LBAgent::UpdateState()
         if(m_State != LBAgent::NORMAL)
         {
             m_State = LBAgent::NORMAL;
-            MoveToPeerSet(GetSelf(), m_InNormal);
             Logger.Info << "Changed to NORMAL state." << std::endl;
         }
     }
@@ -334,6 +307,18 @@ void LBAgent::LoadTable()
     loadtable << "\tNet Generation: " << m_NetGeneration << std::endl;
     loadtable << "\t---------------------------------------------" << std::endl;
 
+    if(m_State == LBAgent::DEMAND)
+    {
+        loadtable << "\t(DEMAND) " << GetUUID() << std::endl;
+    }
+    else if(m_State == LBAgent::SUPPLY)
+    {
+        loadtable << "\t(SUPPLY) " << GetUUID() << std::endl;
+    }
+    else
+    {
+        loadtable << "\t(NORMAL) " << GetUUID() << std::endl;
+    }
     BOOST_FOREACH(PeerNodePtr peer, m_AllPeers | boost::adaptors::map_values)
     {
         if(CountInPeerSet(m_InDemand, peer) > 0)
@@ -509,14 +494,16 @@ void LBAgent::DraftStandard(const boost::system::error_code & error)
 
         for(it = m_DraftAge.begin(); it != m_DraftAge.end(); it++)
         {
-            PeerNodePtr peer = GetPeer(it->first);
-            float age = it->second;
+            PeerSet::iterator psit = m_AllPeers.find(it->first);
 
-            if(!peer)
+            if(psit == m_AllPeers.end())
             {
                 Logger.Info << "Skipped unknown peer: " << it->first << std::endl;
                 continue;
             }
+
+            PeerNodePtr peer = psit->second;
+            float age = it->second;
 
             if(age == 0.0)
             {
@@ -625,21 +612,14 @@ void LBAgent::HandlePeerList(MessagePtr m, PeerNodePtr peer)
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     Logger.Notice << "Updated peer list received from: " << peer->GetUUID() << std::endl;
 
-    BOOST_FOREACH(PeerNodePtr peer, m_AllPeers | boost::adaptors::map_values)
-    {
-        if(peer->GetUUID() == GetUUID())
-        {
-            continue;
-        }
-        EraseInPeerSet(m_AllPeers, peer);
-        EraseInPeerSet(m_InSupply, peer);
-        EraseInPeerSet(m_InDemand, peer);
-        EraseInPeerSet(m_InNormal, peer);
-    }
+    m_AllPeers.clear();
+    m_InSupply.clear();
+    m_InDemand.clear();
+    m_InNormal.clear();
 
     BOOST_FOREACH(PeerNodePtr peer, gm::GMAgent::ProcessPeerList(m) | boost::adaptors::map_values)
     {
-        if(CountInPeerSet(m_AllPeers, peer) == 0)
+        if(CountInPeerSet(m_AllPeers, peer) == 0 && peer->GetUUID() != GetUUID())
         {
             Logger.Debug << "Recognize new peer: " << peer->GetUUID() << std::endl;
             InsertInPeerSet(m_AllPeers, peer);
@@ -650,7 +630,7 @@ void LBAgent::HandlePeerList(MessagePtr m, PeerNodePtr peer)
     m_ForceUpdate = true;
 }
 
-void LBAgent::HandleAny(MessagePtr m, PeerNodePtr peer)
+void LBAgent::HandleAny(MessagePtr m, PeerNodePtr /*peer*/)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     if(m->GetHandler().find("lb") == 0)

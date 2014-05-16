@@ -616,13 +616,13 @@ void LBAgent::HandlePeerList(MessagePtr m, PeerNodePtr peer)
     m_InDemand.clear();
     m_InNormal.clear();
 
-    BOOST_FOREACH(PeerNodePtr peer, gm::GMAgent::ProcessPeerList(m) | boost::adaptors::map_values)
+    BOOST_FOREACH(PeerNodePtr p, gm::GMAgent::ProcessPeerList(m) | boost::adaptors::map_values)
     {
-        if(CountInPeerSet(m_AllPeers, peer) == 0 && peer->GetUUID() != GetUUID())
+        if(CountInPeerSet(m_AllPeers, p) == 0 && p->GetUUID() != GetUUID())
         {
-            Logger.Debug << "Recognize new peer: " << peer->GetUUID() << std::endl;
-            InsertInPeerSet(m_AllPeers, peer);
-            InsertInPeerSet(m_InNormal, peer);
+            Logger.Debug << "Recognize new peer: " << p->GetUUID() << std::endl;
+            InsertInPeerSet(m_AllPeers, p);
+            InsertInPeerSet(m_InNormal, p);
         }
     }
 

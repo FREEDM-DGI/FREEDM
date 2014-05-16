@@ -616,7 +616,8 @@ void LBAgent::HandlePeerList(MessagePtr m, PeerNodePtr peer)
     m_InDemand.clear();
     m_InNormal.clear();
 
-    BOOST_FOREACH(PeerNodePtr p, gm::GMAgent::ProcessPeerList(m) | boost::adaptors::map_values)
+    PeerSet temp = gm::GMAgent::ProcessPeerList(m);
+    BOOST_FOREACH(PeerNodePtr p, temp | boost::adaptors::map_values)
     {
         if(CountInPeerSet(m_AllPeers, p) == 0 && p->GetUUID() != GetUUID())
         {

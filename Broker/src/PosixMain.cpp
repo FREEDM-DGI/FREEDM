@@ -117,6 +117,7 @@ int main(int argc, char* argv[])
     std::string cfgFile, loggerCfgFile, timingsFile, adapterCfgFile, topologyCfgFile;
     std::string deviceCfgFile, listenIP, port, hostname, fport, id, invariantSetting;
     unsigned int globalVerbosity;
+    float migrationStep;
 
     try
     {
@@ -164,6 +165,9 @@ int main(int argc, char* argv[])
                 ( "check-lb-invariants",
                 po::value<std::string > ( &invariantSetting )->default_value("0"),
                 "Disable invariant check by default" )
+                ( "migration-step",
+                po::value<float>(&migrationStep)->default_value(1),
+                 "Size of power migrations in load balance" )
                 ( "verbose,v",
                 po::value<unsigned int>( &globalVerbosity )->
                 implicit_value(5)->default_value(5),
@@ -255,6 +259,7 @@ int main(int argc, char* argv[])
         CGlobalConfiguration::Instance().SetClockSkew(
                 boost::posix_time::milliseconds(0));
         CGlobalConfiguration::Instance().SetInvariantCheckFlag(invariantSetting);
+        CGlobalConfiguration::Instance().SetMigrationStep(migrationStep);
 
         // Specify socket endpoint address, if provided
         if( vm.count("devices-endpoint") )
@@ -316,7 +321,6 @@ int main(int argc, char* argv[])
         CBroker::Instance().RegisterModule("gm",boost::posix_time::milliseconds(CTimings::GM_PHASE_TIME));
         CDispatcher::Instance().RegisterReadHandler("gm", "any", &GM);
         // Instantiate and register the state collection module
-        CBroker::Instance().RegisterModule("lbq",boost::posix_time::milliseconds(CTimings::LB_SC_QUERY_TIME));
         CBroker::Instance().RegisterModule("sc",boost::posix_time::milliseconds(CTimings::SC_PHASE_TIME));
         CDispatcher::Instance().RegisterReadHandler("sc", "any", &SC);
         // Instantiate and register the power management module
@@ -359,7 +363,7 @@ int main(int argc, char* argv[])
 
         Logger.Debug << "Starting thread of Modules" << std::endl;
         CBroker::Instance().Schedule("gm", boost::bind(&gm::GMAgent::Run, &GM), false);
-        CBroker::Instance().Schedule("lbq", boost::bind(&lb::LBAgent::Run, &LB), false);
+        CBroker::Instance().Schedule("lb", boost::bind(&lb::LBAgent::Run, &LB), false);
     }
     catch (std::exception & e)
     {

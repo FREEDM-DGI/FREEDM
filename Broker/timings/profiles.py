@@ -42,10 +42,7 @@ def sc_phase_time(*args,**kwargs):
     part4 = tr_proc + ts_proc + (n-1) * (tp + tm)
     return part1 + part2 + part3 + part4
 
-def lb_state_timer(*args,**kwargs):
-    return lb_phase_time(*args,**kwargs)+ONE_PER_ROUND
-
-def lb_global_timer(*args,**kwargs):
+def lb_round_time(*args,**kwargs):
     tp = kwargs.get('tp')
     tm = kwargs.get('tm')
     tr_proc = kwargs.get('tr_proc')
@@ -60,7 +57,7 @@ def lb_global_timer(*args,**kwargs):
 def lb_phase_time(*args,**kwargs):
     c = kwargs.get('lb_per_phase')
     # Add 10ms of leeway of LB will one one time fewer than expected
-    return c * lb_global_timer(*args,**kwargs) + 10
+    return c * lb_round_time(*args,**kwargs) + 10
 
 def gm_phase_time(*args,**kwargs):
     tp = kwargs.get('tp')
@@ -127,10 +124,6 @@ def cs_exchange_time(*args,**kwargs):
 
 def dev_rtds_delay(*args, **kwargs):
     return 50
-
-def lb_sc_query_time(*args, **kwargs):
-    #This can be magic because the SC query should only generate a local message.
-    return 20
 
 def dev_socket_timeout(*args, **kwargs):
     return 1000

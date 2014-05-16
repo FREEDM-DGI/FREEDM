@@ -73,6 +73,8 @@ class CGlobalConfiguration : public boost::noncopyable
         void SetTopologyConfigPath(std::string p) { m_topologyConfigPath = p; }
         /// Set the flag to the invariant check
         void SetInvariantCheckFlag(std::string f) { m_invariantCheckFlag = f;}
+        /// Set the size of a load balance migration
+        void SetMigrationStep(float v) { m_migrationStep = v; }
         /// Get the hostname
         std::string GetHostname() const { return m_hostname; };
         /// Get the port
@@ -96,6 +98,8 @@ class CGlobalConfiguration : public boost::noncopyable
         std::string GetTopologyConfigPath() const { return m_topologyConfigPath; }
         /// Get the flag to invariant check
         std::string GetInvariantCheckFlag() const { return m_invariantCheckFlag; }
+        /// Get the size of a load balance migration.
+        float GetMigrationStep() const { return m_migrationStep; }
         /// The maximum packet size in bytes
         static const unsigned int MAX_PACKET_SIZE = 60000;
     private:
@@ -110,6 +114,7 @@ class CGlobalConfiguration : public boost::noncopyable
         std::string m_deviceConfigPath; /// Path to the device class config
         std::string m_topologyConfigPath; /// Path to the topology config
         std::string m_invariantCheckFlag; /// Flag for invariant check
+        float m_migrationStep; /// Size of a load balance migration
 };
 
 } // namespace broker

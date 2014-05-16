@@ -24,6 +24,8 @@
 ///                 LBAgent::ReadDevices
 ///                 LBAgent::UpdateState
 ///                 LBAgent::LoadTable
+///                 LBAgent::SendStateChange
+///                 LBAgent::HandleStateChange
 ///                 LBAgent::SendDraftRequest
 ///                 LBAgent::HandleDraftRequest
 ///                 LBAgent::SendDraftAge
@@ -33,8 +35,6 @@
 ///                 LBAgent::HandleDraftSelect
 ///                 LBAgent::SendDraftAccept
 ///                 LBAgent::HandleDraftAccept
-///                 LBAgent::SendStateChange
-///                 LBAgent::HandleStateChange
 ///                 LBAgent::HandlePeerList
 ///                 LBAgent::HandleAny
 ///                 LBAgent::SetPStar
@@ -83,27 +83,28 @@ LBAgent::LBAgent(std::string uuid)
     : IPeerNode(uuid)
     , ROUND_TIME(boost::posix_time::milliseconds(CTimings::LB_ROUND_TIME))
     , REQUEST_TIMEOUT(boost::posix_time::milliseconds(CTimings::LB_REQUEST_TIMEOUT))
-    , m_MigrationStep(CGlobalConfiguration::Instance().GetMigrationStep())
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+
+    m_RoundTimer = CBroker::Instance().AllocateTimer("lb");
+    m_WaitTimer = CBroker::Instance().AllocateTimer("lb");
+
+    m_State = LBAgent::NORMAL;
+    m_PriorState = LBAgent::NORMAL;
+
+    m_MigrationStep = CGlobalConfiguration::Instance().GetMigrationStep();
 
     m_ForceUpdate = true;
     m_AcceptDraftRequest = true;
     m_AcceptDraftAge = false;
-    m_State = LBAgent::NORMAL;
-    m_PriorState = LBAgent::NORMAL;
-    InsertInPeerSet(m_AllPeers, GetSelf());
-    InsertInPeerSet(m_InNormal, GetSelf());
-    m_RoundTimer = CBroker::Instance().AllocateTimer("lb");
-    m_WaitTimer = CBroker::Instance().AllocateTimer("lb");
 
-    RegisterSubhandle("any", boost::bind(&LBAgent::HandleAny, this, _1, _2));
-    RegisterSubhandle("any.PeerList", boost::bind(&LBAgent::HandlePeerList, this, _1, _2));
     RegisterSubhandle("lb.state-change", boost::bind(&LBAgent::HandleStateChange, this, _1, _2));
     RegisterSubhandle("lb.draft-request", boost::bind(&LBAgent::HandleDraftRequest, this, _1, _2));
     RegisterSubhandle("lb.draft-age", boost::bind(&LBAgent::HandleDraftAge, this, _1, _2));
     RegisterSubhandle("lb.draft-select", boost::bind(&LBAgent::HandleDraftSelect, this, _1, _2));
     RegisterSubhandle("lb.draft-accept", boost::bind(&LBAgent::HandleDraftAccept, this, _1, _2));
+    RegisterSubhandle("any.PeerList", boost::bind(&LBAgent::HandlePeerList, this, _1, _2));
+    RegisterSubhandle("any", boost::bind(&LBAgent::HandleAny, this, _1, _2));
 }
 
 int LBAgent::Run()
@@ -357,6 +358,49 @@ void LBAgent::LoadTable()
     Logger.Status << loadtable.str() << std::endl;
 }
 
+void LBAgent::SendStateChange(std::string state)
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Notice << "Sending state change, " << state << std::endl;
+
+    CMessage m;
+    m.SetHandler("lb.state-change");
+    m.m_submessages.put("lb.state", state);
+    SendToPeerSet(m, m_AllPeers);
+}
+
+void LBAgent::HandleStateChange(MessagePtr m, PeerNodePtr peer)
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+
+    if(CountInPeerSet(m_AllPeers, peer) == 0)
+    {
+        Logger.Warn << "State from unknown peer: " << peer->GetUUID() << std::endl;
+    }
+    else
+    {
+        std::string state = m->GetSubMessages().get<std::string>("lb.state");
+        Logger.Info << "Received " << state << " state from " << peer->GetUUID() << std::endl;
+
+        if(state == "supply")
+        {
+            MoveToPeerSet(peer, m_InSupply);
+        }
+        else if(state == "demand")
+        {
+            MoveToPeerSet(peer, m_InDemand);
+        }
+        else if(state == "normal")
+        {
+            MoveToPeerSet(peer, m_InNormal);
+        }
+        else
+        {
+            Logger.Warn << "Bad state from peer: " << peer->GetUUID() << std::endl;
+        }
+    }
+}
+
 void LBAgent::SendDraftRequest()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
@@ -573,49 +617,6 @@ void LBAgent::HandleDraftAccept(MessagePtr /*m*/, PeerNodePtr peer)
     else
     {
         m_Outstanding.erase(it);
-    }
-}
-
-void LBAgent::SendStateChange(std::string state)
-{
-    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    Logger.Notice << "Sending state change, " << state << std::endl;
-
-    CMessage m;
-    m.SetHandler("lb.state-change");
-    m.m_submessages.put("lb.state", state);
-    SendToPeerSet(m, m_AllPeers);
-}
-
-void LBAgent::HandleStateChange(MessagePtr m, PeerNodePtr peer)
-{
-    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-
-    if(CountInPeerSet(m_AllPeers, peer) == 0)
-    {
-        Logger.Warn << "State from unknown peer: " << peer->GetUUID() << std::endl;
-    }
-    else
-    {
-        std::string state = m->GetSubMessages().get<std::string>("lb.state");
-        Logger.Info << "Received " << state << " state from " << peer->GetUUID() << std::endl;
-
-        if(state == "supply")
-        {
-            MoveToPeerSet(peer, m_InSupply);
-        }
-        else if(state == "demand")
-        {
-            MoveToPeerSet(peer, m_InDemand);
-        }
-        else if(state == "normal")
-        {
-            MoveToPeerSet(peer, m_InNormal);
-        }
-        else
-        {
-            Logger.Warn << "Bad state from peer: " << peer->GetUUID() << std::endl;
-        }
     }
 }
 

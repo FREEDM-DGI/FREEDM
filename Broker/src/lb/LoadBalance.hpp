@@ -60,6 +60,8 @@ private:
     void ReadDevices();
     void UpdateState();
     void LoadTable();
+    void SendStateChange(std::string state);
+    void HandleStateChange(MessagePtr m, PeerNodePtr peer);
     void SendDraftRequest();
     void HandleDraftRequest(MessagePtr m, PeerNodePtr peer);
     void SendDraftAge(PeerNodePtr peer);
@@ -69,14 +71,15 @@ private:
     void HandleDraftSelect(MessagePtr m, PeerNodePtr peer);
     void SendDraftAccept(PeerNodePtr peer);
     void HandleDraftAccept(MessagePtr m, PeerNodePtr peer);
-    void SendStateChange(std::string state);
-    void HandleStateChange(MessagePtr m, PeerNodePtr peer);
     void HandlePeerList(MessagePtr m, PeerNodePtr peer);
     void HandleAny(MessagePtr m, PeerNodePtr peer);
     void SetPStar(float pstar);
 
     const boost::posix_time::time_duration ROUND_TIME;
     const boost::posix_time::time_duration REQUEST_TIMEOUT;
+
+    CBroker::TimerHandle m_RoundTimer;
+    CBroker::TimerHandle m_WaitTimer;
 
     PeerSet m_AllPeers;
     PeerSet m_InSupply;
@@ -86,13 +89,10 @@ private:
     State m_State;
     State m_PriorState;
 
-    CBroker::TimerHandle m_RoundTimer;
-    CBroker::TimerHandle m_WaitTimer;
-    
     float m_Gateway;
     float m_NetGeneration;
     float m_PredictedGateway;
-    float m_MigrationStep;
+    float m_MigrationStep;    
 
     bool m_FirstRound;
     bool m_ForceUpdate;

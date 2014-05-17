@@ -24,13 +24,15 @@
 #ifndef GROUPMANAGEMENT_HPP_
 #define GROUPMANAGEMENT_HPP_
 
-#include "CMessage.hpp"
+#include "CBroker.hpp"
 #include "IAgent.hpp"
-#include "IHandler.hpp"
+#include "IMessageHandler.hpp"
 #include "IPeerNode.hpp"
+#include "messages/ModuleMessage.pb.h"
 
 #include <boost/interprocess/sync/interprocess_mutex.hpp>
 #include <boost/shared_ptr.hpp>
+#include <boost/thread/mutex.hpp>
 
 namespace freedm {
 
@@ -40,7 +42,7 @@ namespace gm {
 
 /// Declaration of Garcia-Molina Invitation Leader Election algorithm.
 class GMAgent
-  : public IReadHandler, private IPeerNode,
+  : public IMessageHandler, private IPeerNode,
     public IAgent< boost::shared_ptr<IPeerNode> >
 {
   public:
@@ -53,7 +55,7 @@ class GMAgent
     /// Called to start the system
     int	Run();
     /// Handles Processing a PeerList
-    static PeerSet ProcessPeerList(MessagePtr msg);
+    static PeerSet ProcessPeerList(const PeerListMessage& msg);
 
   private:
     /// Resets the algorithm to the default startup state.
@@ -62,24 +64,24 @@ class GMAgent
     bool IsCoordinator() const { return (Coordinator() == GetUUID()); };
 
     // Handlers
-    /// Handles receiving incoming messages.
-    void HandleAny(MessagePtr msg,PeerNodePtr peer);
+    /// Handles received messages
+    void HandleIncomingMessage(boost::shared_ptr<const ModuleMessage> msg, PeerNodePtr peer);
     /// Hadles recieving peerlists
-    void HandlePeerList(MessagePtr msg,PeerNodePtr peer);
+    void HandlePeerList(const PeerListMessage& msg,PeerNodePtr peer);
     /// Handles recieving accept messsages
-    void HandleAccept(MessagePtr msg,PeerNodePtr peer);
+    void HandleAccept(const AcceptMessage& msg,PeerNodePtr peer);
     /// Handles recieving are you coordinator messages
-    void HandleAreYouCoordinator(MessagePtr msg,PeerNodePtr peer);
+    void HandleAreYouCoordinator(const AreYouCoordinatorMessage& msg,PeerNodePtr peer);
     /// Handles recieving are you there messsages
-    void HandleAreYouThere(MessagePtr msg,PeerNodePtr peer);
+    void HandleAreYouThere(const AreYouThereMessage& msg,PeerNodePtr peer);
     /// Handles recieving invite messages
-    void HandleInvite(MessagePtr msg,PeerNodePtr peer);
+    void HandleInvite(const InviteMessage& msg,PeerNodePtr peer);
     /// Handles recieving AYC responses
-    void HandleResponseAYC(MessagePtr msg,PeerNodePtr peer);
+    void HandleResponseAYC(const AreYouCoordinatorResponseMessage& msg,PeerNodePtr peer);
     /// Handles recieving AYT responses
-    void HandleResponseAYT(MessagePtr msg,PeerNodePtr peer);
+    void HandleResponseAYT(const AreYouThereResponseMessage& msg,PeerNodePtr peere);
     /// Handles recieving peerlist requests
-    void HandlePeerListQuery(MessagePtr msg, PeerNodePtr peer);
+    void HandlePeerListQuery(const PeerListQueryMessage& msg, PeerNodePtr peer);
 
     //Routines
     /// Checks for other up leaders
@@ -97,20 +99,21 @@ class GMAgent
 
     // Messages
     /// Creates AYC Message.
-    CMessage AreYouCoordinator();
+    ModuleMessage AreYouCoordinator();
     /// Creates Group Invitation Message
-    CMessage Invitation();
+    ModuleMessage Invitation();
     /// Creates A Response message
-    CMessage Response(std::string payload,std::string type,
-        const boost::posix_time::ptime& exp, int seq);
+    ModuleMessage AreYouCoordinatorResponse(std::string payload, int seq);
+    /// Creates A Response message
+    ModuleMessage AreYouThereResponse(std::string payload,int seq);
     /// Creates an Accept Message
-    CMessage Accept();
+    ModuleMessage Accept();
     /// Creates a AYT, used for Timeout
-    CMessage AreYouThere();
+    ModuleMessage AreYouThere();
     /// Generates a peer list
-    CMessage PeerList(std::string requester="any");
+    ModuleMessage PeerList(std::string requester="all");
     /// Generates a CMessage that can be used to query for the group
-    static CMessage PeerListQuery(std::string requester);
+    static ModuleMessage PeerListQuery(std::string requester);
 
     //Peer Set Manipulation
     /// Adds a peer to the peer set from UUID
@@ -134,11 +137,11 @@ class GMAgent
     void StartMonitor(const boost::system::error_code& err);
     /// Returns the coordinators uuid.
     std::string Coordinator() const { return m_GroupLeader; }
-    /// Checks the status of the FIDs
-    void UpdateFIDState(ptree& fidtree);
-    /// Packs the fid status into a ptree
-    ptree GetFIDState();
 
+
+    /// Wraps a GroupManagementMessage in a ModuleMessage
+    static ModuleMessage PrepareForSending(
+        const GroupManagementMessage& message, std::string recipient = "gm");
 
     /// Nodes In My Group
     PeerSet m_UpNodes;
@@ -150,7 +153,7 @@ class GMAgent
     TimedPeerSet m_AYTResponse;
 
     /// The ID number of the current group (Never initialized for fun)
-    unsigned int m_GroupID;
+    google::protobuf::uint32 m_GroupID;
     /// The uuid of the group leader
     std::string  m_GroupLeader;
     /// The number of groups being formed
@@ -169,8 +172,6 @@ class GMAgent
     boost::posix_time::time_duration CHECK_TIMEOUT;
     /// How long beteween AYT checks
     boost::posix_time::time_duration TIMEOUT_TIMEOUT;
-    /// How long to wait for some timeouts
-    boost::posix_time::time_duration GLOBAL_TIMEOUT;
     /// How long to wait before checking attached FIDs
     boost::posix_time::time_duration FID_TIMEOUT;
     /// How long to wait for responses from other nodes.

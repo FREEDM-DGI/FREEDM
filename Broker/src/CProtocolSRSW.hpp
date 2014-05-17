@@ -24,18 +24,14 @@
 #ifndef CPROTOCOLSRSW_HPP
 #define CPROTOCOLSRSW_HPP
 
-#include "CConnection.hpp"
-#include "CMessage.hpp"
 #include "IProtocol.hpp"
+#include "messages/ModuleMessage.pb.h"
+#include "messages/ProtocolMessage.pb.h"
 
 #include <deque>
-#include <iomanip>
 
-#include <boost/array.hpp>
-#include <boost/asio.hpp>
-#include <boost/enable_shared_from_this.hpp>
-#include <boost/noncopyable.hpp>
-#include <boost/shared_ptr.hpp>
+#include <boost/asio/deadline_timer.hpp>
+#include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/thread/shared_mutex.hpp>
 
 namespace freedm {
@@ -44,27 +40,22 @@ namespace freedm {
 
 /// A reliable connection protocol with sweet as expirations.
 class CProtocolSRSW : public IProtocol
-    , public boost::enable_shared_from_this<CProtocolSRSW>
 {
     public:
         /// Initializes the protocol with the underlying connection
-        explicit CProtocolSRSW(CConnection * conn);
+        explicit CProtocolSRSW(CConnection& conn);
         /// Public facing send function that sends a message
-        void Send(CMessage msg);
+        void Send(const ModuleMessage& msg);
         /// Public facing function that handles marking down ACKs for sent messages
-        void ReceiveACK(const CMessage &msg);
+        void ReceiveACK(const ProtocolMessage& msg);
         /// deterimines if a  messageshould be given to the dispatcher
-        bool Receive(const CMessage &msg);
+        bool Receive(const ProtocolMessage& msg);
         /// Handles Writing an ack for the input message to the channel
-        void SendACK(const CMessage &msg);
+        void SendACK(const ProtocolMessage& msg);
         /// Sends a synchronizer
         void SendSYN();
         /// Stops the timers
         void Stop() { m_timeout.cancel(); SetStopped(true); };
-        /// Returns the identifier
-        std::string GetIdentifier() { return Identifier(); };
-        /// Returns the identifier for this protocol.
-        static std::string Identifier() { return "SRSW"; };
         /// Handles Phase Changes
         void ChangePhase(bool newround);
     private:
@@ -73,7 +64,7 @@ class CProtocolSRSW : public IProtocol
         /// Timeout for resends
         boost::asio::deadline_timer m_timeout;
         /// The current ack to flood with
-        CMessage m_currentack;
+        ProtocolMessage m_currentack;
         /// The expected next in sequence number
         unsigned int m_inseq;
         /// The next number to assign to an outgoing message
@@ -89,9 +80,9 @@ class CProtocolSRSW : public IProtocol
         /// Keeps track of the last resync that we've seen
         boost::posix_time::ptime m_outsynctime;
         /// The window
-        std::deque<CMessage> m_window;
+        std::deque<ProtocolMessage> m_window;
         /// The outstanding window
-        std::deque<CMessage> m_outstandingwindow;
+        std::deque<ProtocolMessage> m_outstandingwindow;
         /// Sequence modulo
         static const unsigned int SEQUENCE_MODULO = 65536;
         /// Refire time in MS

@@ -1,9 +1,9 @@
 ////////////////////////////////////////////////////////////////////////////////
-/// @file         SRemoteHost.hpp
+/// @file         IMessageHandler.hpp
+///
+/// @author       Michael Catanzaro <michael.catanzaro@mst.edu>
 ///
 /// @project      FREEDM DGI
-///
-/// @description  A container which holds the hostname and port of a peer.
 ///
 /// These source code files were created at Missouri University of Science and
 /// Technology, and are intended for use in teaching or research. They may be
@@ -18,44 +18,41 @@
 /// Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
 ////////////////////////////////////////////////////////////////////////////////
 
-#ifndef REMOTEHOST_HPP
-#define REMOTEHOST_HPP
+#ifndef IHANDLER_HPP
+#define IHANDLER_HPP
 
-#include <string>
+#include "IPeerNode.hpp"
 
-#include <boost/lexical_cast.hpp>
+#include "messages/ModuleMessage.pb.h"
+
+#include <stdexcept>
+
+#include <boost/shared_ptr.hpp>
 
 namespace freedm {
+
 namespace broker {
 
-///////////////////////////////////////////////////////////////////////////////
-/// Determines whether the given string represents a valid port number.
-///
-/// @param port the string to checkt
-///
-/// @return true if port represents a valid port
-///////////////////////////////////////////////////////////////////////////////
-inline bool IsValidPort(std::string port)
+///An interface for an object which can handle recieving incoming messages
+class IMessageHandler
 {
-    try
-    {
-        int port_num = boost::lexical_cast<int>(port);
-        return port_num > 0 && port_num < 65535;
-    }
-    catch(boost::bad_lexical_cast&)
-    {
-        return false;
-    }
-}
+///////////////////////////////////////////////////////////////////////////////
+/// @class IMessageHandler
+///
+/// @description Provides interface for broker handlers that will be called
+/// after each successful read operation.
+///////////////////////////////////////////////////////////////////////////////
+public:
+    /// Handles received messages
+    virtual void HandleIncomingMessage(
+        boost::shared_ptr<const ModuleMessage> msg, boost::shared_ptr<IPeerNode> peer) = 0;
 
-/// A container which lists the hostname and and port of a peer.
-struct SRemoteHost
-{
-    std::string hostname; /// Remote endpoint hostnames
-    std::string port; /// Remote endpoint port
+    /// Virtual destructor
+    virtual ~IMessageHandler() {}
 };
 
-}
-}
+} // namespace freedm
 
-#endif
+} // namespace broker
+
+#endif // IHANDLER_HPP

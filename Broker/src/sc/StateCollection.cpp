@@ -40,15 +40,14 @@
 #include "CBroker.hpp"
 #include "CConnection.hpp"
 #include "CConnectionManager.hpp"
+#include "CDeviceManager.hpp"
 #include "CGlobalPeerList.hpp"
 #include "CLogger.hpp"
-#include "CMessage.hpp"
-#include "gm/GroupManagement.hpp"
 #include "IPeerNode.hpp"
-#include "CDeviceManager.hpp"
+#include "Messages.hpp"
+#include "gm/GroupManagement.hpp"
 
 #include <algorithm>
-#include <cassert>
 #include <cstdlib>
 #include <exception>
 #include <fstream>
@@ -57,6 +56,7 @@
 #include <map>
 #include <set>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <boost/asio.hpp>
@@ -66,7 +66,6 @@
 #include <boost/date_time/posix_time/posix_time_types.hpp>
 #include <boost/foreach.hpp>
 #include <boost/function.hpp>
-#include <boost/property_tree/ptree.hpp>
 #include <boost/range/adaptor/map.hpp>
 
 using boost::property_tree::ptree;
@@ -114,35 +113,68 @@ SCAgent::SCAgent(std::string uuid):
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     AddPeer(CGlobalPeerList::instance().GetPeer(uuid));
-    RegisterSubhandle("any.PeerList",boost::bind(&SCAgent::HandlePeerList,this,_1,_2));
-    RegisterSubhandle("sc.request",boost::bind(&SCAgent::HandleRequest,this,_1,_2));
-    RegisterSubhandle("sc.marker",boost::bind(&SCAgent::HandleMarker,this,_1,_2));
-    RegisterSubhandle("sc.state",boost::bind(&SCAgent::HandleState,this,_1,_2));
-    RegisterSubhandle("any",boost::bind(&SCAgent::HandleAny,this,_1,_2));
 }
 
-
 ///////////////////////////////////////////////////////////////////////////////
-/// Marker
-/// @description create a marker message
-/// @pre The node is the initiator and wants to collect state.
-/// @post No changes
-/// @peers SC modules in all peer list
-/// @return A CMessage with the contents of marker (UUID + Int) and its source UUID
+/// "Downcasts" incoming messages into a specific message type, and passes the
+/// message to an appropriate handler.
+///
+/// @param msg the incoming message
+/// @param peer the node that sent this message (could be this DGI)
 ///////////////////////////////////////////////////////////////////////////////
-
-CMessage SCAgent::marker()
+void SCAgent::HandleIncomingMessage(boost::shared_ptr<const ModuleMessage> msg, PeerNodePtr peer)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    CMessage m_;
-    m_.SetHandler("sc.marker");
-    m_.m_submessages.put("sc.source", GetUUID());
-    m_.m_submessages.put("sc.id", m_curversion.second);
-    //m_.m_submessages.put("sc.deviceType", m_deviceType);
-    //m_.m_submessages.put("sc.valueType", m_valueType);
-    return m_;
-}
 
+    if (msg->has_group_management_message())
+    {
+        gm::GroupManagementMessage gmm = msg->group_management_message();
+
+        if (gmm.has_peer_list_message())
+        {
+            HandlePeerList(gmm.peer_list_message(), peer);
+        }
+        else
+        {
+            Logger.Warn << "Dropped group management message of unexpected type:\n"
+                        << msg->DebugString();
+        }
+    }
+    else if (msg->has_load_balancing_message())
+    {
+        lb::LoadBalancingMessage lbm = msg->load_balancing_message();
+
+        if (lbm.has_draft_accept_message())
+        {
+            HandleAccept(peer);
+        }
+    }
+    else if (msg->has_state_collection_message())
+    {
+        StateCollectionMessage scm = msg->state_collection_message();
+
+        if (scm.has_marker_message())
+        {
+            HandleMarker(scm.marker_message(), peer);
+        }
+        else if (scm.has_state_message())
+        {
+            HandleState(scm.state_message(), peer);
+        }
+        else if (scm.has_request_message())
+        {
+            HandleRequest(scm.request_message(), peer);
+        }
+        else
+        {
+            Logger.Warn << "Dropped sc message of unexpected type:\n" << msg->DebugString();
+        }
+    }
+    else
+    {
+        Logger.Warn << "Dropped message of unexpected type:\n" << msg->DebugString();
+    }
+}
 
 ///////////////////////////////////////////////////////////////////
 /// Initiate
@@ -181,7 +213,7 @@ void SCAgent::Initiate()
     //TakeSnapshot(m_deviceType, m_valueType);
     TakeSnapshot(m_device);
     //save state into the multimap "collectstate"
-    collectstate.insert(std::pair<StateVersion, ptree>(m_curversion, m_curstate));
+    collectstate.insert(std::make_pair(m_curversion, m_curstate));
     m_countstate++;
 
     //set flag to start to record messages in channel
@@ -192,11 +224,16 @@ void SCAgent::Initiate()
 
     //prepare marker tagged with UUID + Int
     Logger.Info << "Marker is ready from " << GetUUID() << std::endl;
-    CMessage m_ = marker();
+
+    StateCollectionMessage scm;
+    MarkerMessage* mm = scm.mutable_marker_message();
+    mm->set_source(GetUUID());
+    mm->set_id(m_curversion.second);
+
     //add each device from m_device to marker message
     BOOST_FOREACH(std::string device, m_device)
     {
-        m_.m_submessages.add("sc.devices.device", device);
+        mm->add_device(device);
     }
     //send tagged marker to all other peers
     BOOST_FOREACH(PeerNodePtr peer, m_AllPeers | boost::adaptors::map_values)
@@ -204,7 +241,7 @@ void SCAgent::Initiate()
         if (peer->GetUUID()!= GetUUID())
         {
             Logger.Info << "Sending marker to " << peer->GetUUID() << std::endl;
-            peer->Send(m_);
+            peer->Send(PrepareForSending(scm));
         }
     }//end foreach
 }
@@ -223,106 +260,93 @@ void SCAgent::Initiate()
 void SCAgent::StateResponse()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    //Initiator extracts information from multimap "collectstate" and send back to request module
-    CMessage m_;
 
     if (m_countmarker == m_AllPeers.size() && m_NotifyToSave == false)
     {
         Logger.Status << "****************CollectedStates***************************" << std::endl;
         //prepare collect states
         Logger.Info << "Sending requested state back to " << m_module << " module" << std::endl;
-        m_.SetHandler(m_module+".CollectedState");
+
+        StateCollectionMessage scm;
+        CollectedStateMessage* csm = scm.mutable_collected_state_message();
+        csm->set_num_intransit_accepts(0);
 
         for (it = collectstate.begin(); it != collectstate.end(); it++)
         {
             if ((*it).first == m_curversion)
             {
-                BOOST_FOREACH(ptree::value_type &v, (*it).second.get_child("sc.collects"))
+                BOOST_FOREACH(
+                    const DeviceSignalStateMessage& dssm, it->second.device_signal_state_message())
                 {
-                    ptree sub_pt = v.second;
                     Logger.Status << (*it).first.first << "+++" << (*it).first.second << "    "
-                                  << sub_pt.get<std::string>("type") << " : "
-                                  << sub_pt.get<std::string>("signal") << " : "
-                                  << sub_pt.get<std::string>("value")<< std::endl;
-                    if (sub_pt.get<std::string>("type") == "Sst")
+                                  << dssm.type() << " : "
+                                  << dssm.signal() << " : "
+                                  << dssm.value() << std::endl;
+                    if (dssm.type() == "Sst")
                     {
-                        if(sub_pt.get<int>("count")>0)
+                        if(dssm.count()>0)
                         {
-                            m_.m_submessages.add("CollectedState.gateway.value", sub_pt.get<std::string>("value"));
+                            csm->add_gateway(dssm.value());
                         }
                         else
                         {
-                            m_.m_submessages.add("CollectedState.gateway.value", "no device");
+                            csm->clear_gateway();
                         }
                     }
-                    else if (sub_pt.get<std::string>("type") == "Drer")
+                    else if (dssm.type() == "Drer")
                     {
-                        if(sub_pt.get<int>("count")>0)
+                        if(dssm.count()>0)
                         {
-                            m_.m_submessages.add("CollectedState.generation.value", sub_pt.get<std::string>("value"));
+                            csm->add_generation(dssm.value());
                         }
                         else
                         {
-                            m_.m_submessages.add("CollectedState.generation.value", "no device");
+                            csm->clear_generation();
                         }
                     }
-                    else if (sub_pt.get<std::string>("type") == "Desd")
+                    else if (dssm.type() == "Desd")
                     {
-                        if(sub_pt.get<int>("count")>0)
+                        if(dssm.count()>0)
                         {
-                            m_.m_submessages.add("CollectedState.storage.value", sub_pt.get<std::string>("value"));
+                            csm->add_storage(dssm.value());
                         }
                         else
                         {
-                            m_.m_submessages.add("CollectedState.storage.value", "no device");
+                            csm->clear_storage();
                         }
                     }
-                    else if (sub_pt.get<std::string>("type") == "Load")
+                    else if (dssm.type() == "Load")
                     {
-                        if(sub_pt.get<int>("count")>0)
+                        if(dssm.count()>0)
                         {
-                            m_.m_submessages.add("CollectedState.drain.value", sub_pt.get<std::string>("value"));
+                            csm->add_drain(dssm.value());
                         }
                         else
                         {
-                            m_.m_submessages.add("CollectedState.drain.value", "no device");
+                            csm->clear_drain();
                         }
                     }
-                    else if (sub_pt.get<std::string>("type") == "Fid")
+                    else if (dssm.type() == "Fid")
                     {
-                        if(sub_pt.get<int>("count")>0)
+                        if(dssm.count()>0)
                         {
-                            m_.m_submessages.add("CollectedState.state.value", sub_pt.get<std::string>("value"));
+                            csm->add_state(dssm.value());
                         }
                         else
                         {
-                            m_.m_submessages.add("CollectedState.state.value", "no device");
+                            csm->clear_state();
                         }
                     }
-                    else if (sub_pt.get<std::string>("type") == "Message")
+                    else if (dssm.type() == "Message")
                     {
-                        m_.m_submessages.add("CollectedState.intransit.value", sub_pt.get<std::string>("value"));
+                        csm->set_num_intransit_accepts(csm->num_intransit_accepts() + dssm.value());
                     }
                 }
             }
         }//end for
 
         //send collected states to the request module
-        if (GetPeer(GetUUID()) != NULL)
-        {
-            try
-            {
-                GetPeer(GetUUID())->Send(m_);
-            }
-            catch (boost::system::system_error& e)
-            {
-                Logger.Info << "Couldn't Send Message To Peer" << std::endl;
-            }
-        }
-        else
-        {
-            Logger.Info << "Peer doesn't exist" << std::endl;
-        }
+        Send(PrepareForSending(scm, m_module));
 
         //clear collectstate
         collectstate.clear();
@@ -342,14 +366,8 @@ void SCAgent::StateResponse()
             Logger.Status << m_countmarker << " + " << "FALSE" << std::endl;
         }
 
-        for (it = collectstate.begin(); it!= collectstate.end(); it++)
-        {
-            //Logger.Status << (*it).first.first << "+++" << (*it).first.second << "    " << (*it).second.get<std::string>("sc.source") << std::endl;
-        }
-
         m_countmarker = 0;
         m_NotifyToSave = false;
-        //collectstate.clear();
     }
 }
 
@@ -370,8 +388,8 @@ void SCAgent::TakeSnapshot(const std::vector<std::string>& devicelist)
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     device::SignalValue PowerValue;
 
-    CMessage m_;
-    m_.m_submessages.put("sc.source", GetUUID());
+    m_curstate.Clear();
+    m_curstate.set_source(GetUUID());
 
     BOOST_FOREACH(std::string device, devicelist)
     {
@@ -380,30 +398,23 @@ void SCAgent::TakeSnapshot(const std::vector<std::string>& devicelist)
 
         if (colon == std::string::npos)
         {
-            std::stringstream ss;
-            ss << "Incorrect device specification: " << device;
-            throw std::runtime_error(ss.str());
+            throw std::runtime_error("Incorrect device specification: " + device);
         }
 
-        std::string name(device.begin(), device.begin() + colon);
-        std::string type(device.begin() + colon + 1, device.end());
+        std::string type(device.begin(), device.begin() + colon);
+        std::string signal(device.begin() + colon + 1, device.end());
 
-        PowerValue = device::CDeviceManager::Instance().GetNetValue(name, type);
-        Logger.Status << "Device:   "<< name << "  Signal:  "<< type << " Value:  " << PowerValue << std::endl;
-        count = device::CDeviceManager::Instance().GetDevicesOfType(name).size();
+        PowerValue = device::CDeviceManager::Instance().GetNetValue(type, signal);
+        Logger.Status << "Device:   "<< type << "  Signal:  "<< signal << " Value:  " << PowerValue << std::endl;
+        count = device::CDeviceManager::Instance().GetDevicesOfType(type).size();
 
 	//save device state
-        ptree sub_ptree;
-        sub_ptree.add("type", name);
-        sub_ptree.add("signal", type);
-        sub_ptree.add("value", PowerValue);
-	sub_ptree.add("count", count);
-        m_.m_submessages.add_child("sc.collects.collect", sub_ptree);
-
+        DeviceSignalStateMessage* dssm = m_curstate.add_device_signal_state_message();
+        dssm->set_type(type);
+        dssm->set_signal(signal);
+        dssm->set_value(PowerValue);
+        dssm->set_count(count);
     }
-
-    m_curstate = m_.GetSubMessages();
-
 }
 
 
@@ -419,46 +430,35 @@ void SCAgent::SendStateBack()
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     //Peer send collected states to initiator
     //for each in collectstate, extract ptree as a message then send to initiator
-    CMessage m_;
-    CMessage m_done;
     Logger.Status << "(Peer)The number of collected states is " << int(collectstate.size()) << std::endl;
 
-    m_.SetHandler("sc.state");
-    m_.m_submessages.put("sc.source", GetUUID());
-    m_.m_submessages.put("sc.marker.UUID", m_curversion.first);
-    m_.m_submessages.put("sc.marker.int", m_curversion.second);
+    StateCollectionMessage scm;
+    StateMessage* sm = scm.mutable_state_message();
+    sm->set_source(GetUUID());
+    sm->set_marker_uuid(m_curversion.first);
+    sm->set_marker_int(m_curversion.second);
 
     //send collected states to initiator
     for (it = collectstate.begin(); it != collectstate.end(); it++)
     {
         if ((*it).first == m_curversion)
         {
-            BOOST_FOREACH(ptree::value_type &v, (*it).second.get_child("sc.collects"))
+            BOOST_FOREACH(
+                const DeviceSignalStateMessage& stored, it->second.device_signal_state_message())
             {
-                ptree sub_pt1 = v.second;
-                ptree sub_pt2;
-                Logger.Status << "item:     " << sub_pt1.get<std::string>("type") << "   "
-                              << sub_pt1.get<std::string>("signal") << "    "
-                              <<  sub_pt1.get<std::string>("value") << std::endl;
-                sub_pt2.add ("type", sub_pt1.get<std::string>("type"));
-                sub_pt2.add ("signal", sub_pt1.get<std::string>("signal"));
-                sub_pt2.add ("value", sub_pt1.get<std::string>("value"));
-		sub_pt2.add ("count", sub_pt1.get<std::string>("count"));
-                m_.m_submessages.add_child("sc.collects.collect", sub_pt2);
+                Logger.Status << "item:     " << stored.type() << "   "
+                              << stored.signal() << "    "
+                              <<  stored.value() << std::endl;
+
+                DeviceSignalStateMessage* copy = sm->add_device_signal_state_message();
+                copy->CopyFrom(stored);
             }
         }
     }//end for
 
     if (GetPeer(m_curversion.first) != NULL)
     {
-        try
-        {
-            GetPeer(m_curversion.first)->Send(m_);
-        }
-        catch (boost::system::system_error& e)
-        {
-            Logger.Info << "Couldn't Send Message To Peer" << std::endl;
-        }
+        GetPeer(m_curversion.first)->Send(PrepareForSending(scm));
     }
     else
     {
@@ -475,39 +475,34 @@ void SCAgent::SendStateBack()
 /// @param latest the current marker's version
 /// @param msg the message tp semd
 //////////////////////////////////////////////////////////////////
-void SCAgent::SaveForward(StateVersion latest, CMessage msg)
+void SCAgent::SaveForward(StateVersion latest, const MarkerMessage& msg)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     collectstate.clear();
     //assign latest marker version to current version
     m_curversion = latest;
     //count unique marker
-    //recordmarker.insert(std::pair<StateVersion, int>(m_curversion, 1));
     m_countmarker = 1;
     Logger.Info << "Marker is " << m_curversion.first << " " << m_curversion.second << std::endl;
     //physical device information
     Logger.Debug << "SC module identified "<< device::CDeviceManager::Instance().DeviceCount()
     << " physical devices on this node" << std::endl;
     //collect local state
-    //TakeSnapshot(m_deviceType, m_valueType);
     TakeSnapshot(m_device);
     //save state into the multimap "collectstate"
-    collectstate.insert(std::pair<StateVersion, ptree>(m_curversion, m_curstate));
+    collectstate.insert(std::make_pair(m_curversion, m_curstate));
     m_countstate++;
+
+    StateCollectionMessage scm;
+    MarkerMessage* mm = scm.mutable_marker_message();
+    mm->CopyFrom(msg);
 
     if (m_AllPeers.size()==2)
     //only two nodes, peer finish collecting states: send marker then state back
     {
         if (GetPeer(m_curversion.first) != NULL)
         {
-            try
-            {
-                GetPeer(m_curversion.first)->Send(msg);
-            }
-            catch (boost::system::system_error& e)
-            {
-                Logger.Info << "Couldn't Send Message To Peer" << std::endl;
-            }
+            GetPeer(m_curversion.first)->Send(PrepareForSending(scm));
 
             //send collected states to initiator
             SendStateBack();
@@ -530,7 +525,7 @@ void SCAgent::SaveForward(StateVersion latest, CMessage msg)
             if (peer_->GetUUID()!= GetUUID())
             {
                 Logger.Info << "Forward marker to " << peer_->GetUUID() << std::endl;
-                peer_->Send(msg);
+                peer_->Send(PrepareForSending(scm));
             }
         }//end foreach
         //set flag to start to record messages in channel
@@ -538,63 +533,35 @@ void SCAgent::SaveForward(StateVersion latest, CMessage msg)
     }
 }
 
-
-
-///////////////////////////////////////////////////////////////////
-/// SCAgent::HandleAny
-/// @description This function will be called by any incoming messages
-///               which might be in-transit messages in the channel in
-///               one state collection cycle.
-/// @pre Messages are obtained.
-/// @post parsing messages, save if its in-transit message
-/// @peers Invoked by dispatcher, other SC
-/// @param msg the received message
-/// @param peer the node
-//////////////////////////////////////////////////////////////////
-
-void SCAgent::HandleAny(MessagePtr msg, PeerNodePtr peer)
+///////////////////////////////////////////////////////////////////////////////
+/// This function will be called to handle Accept messages from LoadBalancing.
+/// Normally, state collection can safely ignore these messages, but if they
+/// arrive during state collection's own phase, then there is a problem and
+/// they need to be added to the collected state.
+///
+/// @param peer the DGI that sent the message
+///////////////////////////////////////////////////////////////////////////////
+void SCAgent::HandleAccept(PeerNodePtr peer)
 {
-    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     if(CountInPeerSet(m_AllPeers,peer) == 0)
         return;
-    std::string line_;
-    std::string intransit;
-    std::stringstream ss_;
-    //ptree &pt = msg->GetSubMessages();
-    CMessage m_;
-    m_.m_submessages.put("sc.source", GetUUID());
-
-    //incomingVer_ records the coming version of the marker
-    //check the coming peer node
-    line_ = peer->GetUUID();
-
-    if(msg->GetHandler().find("sc") == 0)
-    {
-        Logger.Error<<"Unhandled State Collection Message"<<std::endl;
-        msg->Save(Logger.Error);
-        Logger.Error<<std::endl;
-        throw EUnhandledMessage("Unhandled State Collection Message");
-    }
-
-    intransit = msg->GetHandler() + " from " + line_ + " to " + GetUUID();
 
     if (m_NotifyToSave == true)
     {
-        Logger.Status << "Receiving message which is in transit......:" << msg->GetHandler() << std::endl;
+        Logger.Warn << "Received intransit accept message" << std::endl;
 
-        ptree sub_ptree;
-        sub_ptree.add("type", "Message");
-        sub_ptree.add("signal", "inchannel");
-        sub_ptree.add("value", intransit);
-        sub_ptree.add("count", 1);
-        m_.m_submessages.add_child("sc.collects.collect", sub_ptree);
+        // FIXME yes, the accept message is a device! you bet!
+        m_curstate.Clear();
+        DeviceSignalStateMessage* dssm = m_curstate.add_device_signal_state_message();
+        dssm->set_type("Message");
+        dssm->set_signal("inchannel");
+        dssm->set_value(1);
+        dssm->set_count(1);
 
-        m_curstate = m_.GetSubMessages();
-        collectstate.insert(std::pair<StateVersion, ptree>(m_curversion, m_curstate));
+        collectstate.insert(std::make_pair(m_curversion, m_curstate));
         m_countstate++;
     }
 }
-
 
 ///////////////////////////////////////////////////////////////////
 /// SCAgent::HandlePeerList
@@ -606,7 +573,7 @@ void SCAgent::HandleAny(MessagePtr msg, PeerNodePtr peer)
 /// @param msg the received message
 /// @param peer the node
 //////////////////////////////////////////////////////////////////
-void SCAgent::HandlePeerList(MessagePtr msg, PeerNodePtr peer)
+void SCAgent::HandlePeerList(const gm::PeerListMessage& msg, PeerNodePtr peer)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     std::string line_ = peer->GetUUID();
@@ -658,7 +625,7 @@ void SCAgent::HandlePeerList(MessagePtr msg, PeerNodePtr peer)
 /// @post start state collection by calling Initiate().
 /// @param msg, peer
 //////////////////////////////////////////////////////////////////
-void SCAgent::HandleRequest(MessagePtr msg, PeerNodePtr peer)
+void SCAgent::HandleRequest(const RequestMessage& msg, PeerNodePtr peer)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
@@ -668,30 +635,25 @@ void SCAgent::HandleRequest(MessagePtr msg, PeerNodePtr peer)
 
     if(CountInPeerSet(m_AllPeers,peer) == 0)
         return;
-    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    ptree &pt = msg->GetSubMessages();
-    //extract module that made request
-    m_module = pt.get<std::string>("sc.module");
 
-    //extract number of requested devices
-    m_deviceNum = boost::lexical_cast<int>(pt.get<std::string>("sc.deviceNum"));
+    //extract module that made request
+    m_module = msg.module();
 
     //extract type and value of devices and insert into lists
     //m_deviceType.insert
     //m_valueType.insert
-    BOOST_FOREACH(ptree::value_type &v, pt.get_child("sc.devices"))
+    BOOST_FOREACH(const DeviceSignalRequestMessage& dsrm, msg.device_signal_request_message())
     {
-        ptree sub_pt = v.second;
-        std::string deviceType = sub_pt.get<std::string>("deviceType");
-        std::string valueType = sub_pt.get<std::string>("valueType");
+        std::string deviceType = dsrm.type();
+        std::string valueType = dsrm.signal();
         std::string combine = deviceType + ":" + valueType;
         m_device.push_back(combine);
         Logger.Status<<"Device Item:  .." << combine << std::endl;
     }
 
     //call initiate to start state collection
-    Logger.Notice << "Receiving state collect request from " << m_module << " ( " << pt.get<std::string>("sc.source")
-                  << " )" << std::endl;
+    Logger.Notice << "Receiving state collect request from " << m_module << " ( "
+                  << peer->GetUUID() << " )" << std::endl;
 
     //Put the initiate call into the back of queue
     CBroker::Instance().Schedule("sc",boost::bind(&SCAgent::Initiate, this),true);
@@ -709,34 +671,32 @@ void SCAgent::HandleRequest(MessagePtr msg, PeerNodePtr peer)
 /// @param msg the received message
 /// @param peer the node
 //////////////////////////////////////////////////////////////////
-void SCAgent::HandleMarker(MessagePtr msg, PeerNodePtr peer)
+void SCAgent::HandleMarker(const MarkerMessage& msg, PeerNodePtr peer)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     if(CountInPeerSet(m_AllPeers,peer) == 0)
         return;
     StateVersion incomingVer_;
-    ptree &pt = msg->GetSubMessages();
     // marker value is present
     Logger.Info << "Received message is a marker!" << std::endl;
     // read the incoming version from marker
-    incomingVer_.first = pt.get<std::string>("sc.source");
-    incomingVer_.second = pt.get<unsigned int>("sc.id");
+    incomingVer_.first = msg.source();
+    incomingVer_.second = msg.id();
     m_device.clear();
 
     //parse the device information from msg to a vector
-	BOOST_FOREACH(ptree::value_type &v, pt.get_child("sc.devices"))
+    BOOST_FOREACH(std::string device, msg.device())
 	{
         //save power level for each node into a vector
-        m_device.push_back(v.second.data());
-	    Logger.Notice << "Needed device: "
-			  << v.second.data() << std::endl;
+        m_device.push_back(device);
+	    Logger.Notice << "Needed device: " << device << std::endl;
 	}
 
     if (m_curversion.first == "default")
         //peer receives first marker
     {
         Logger.Status << "------------------------first maker with default state ----------------" << std::endl;
-        SaveForward(incomingVer_, *msg);
+        SaveForward(incomingVer_, msg);
     }//first receive marker
     else if (m_curversion == incomingVer_ && m_curversion.first == GetUUID())
         //initiator receives his marker before
@@ -782,18 +742,18 @@ void SCAgent::HandleMarker(MessagePtr msg, PeerNodePtr peer)
         if (m_curversion.first == incomingVer_.first && incomingVer_.second > m_curversion.second)
         {
             Logger.Status << "Incoming marker is newer from same node, follow the newer" << std::endl;
-            SaveForward(incomingVer_, *msg);
+            SaveForward(incomingVer_, msg);
         }
         //assign incoming version to current version if the incoming is from leader
         else if (GetUUID() != m_scleader && incomingVer_.first == m_scleader && incomingVer_.second >  m_curversion.second)
         {
             Logger.Status << "Incoming marker is from leader and newer, follow the newer" << std::endl;
-            SaveForward(incomingVer_, *msg);
+            SaveForward(incomingVer_, msg);
         }
         else if (incomingVer_.first == m_scleader && m_curversion.first != incomingVer_.first)
         {
             Logger.Status << "Incoming marker is from leader, follow the leader" << std::endl;
-            SaveForward(incomingVer_, *msg);
+            SaveForward(incomingVer_, msg);
         }
         else
         {
@@ -813,21 +773,20 @@ void SCAgent::HandleMarker(MessagePtr msg, PeerNodePtr peer)
 /// @param msg the received message
 /// @param peer the node
 //////////////////////////////////////////////////////////////////
-void SCAgent::HandleState(MessagePtr msg, PeerNodePtr peer)
+void SCAgent::HandleState(const StateMessage& msg, PeerNodePtr peer)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     if(CountInPeerSet(m_AllPeers,peer) == 0)
         return;
-    ptree &pt = msg->GetSubMessages();
 
-    if (m_curversion.first==pt.get<std::string>("sc.marker.UUID") && m_curversion.second==boost::lexical_cast<int>(pt.get<std::string>("sc.marker.int")))
+    if (m_curversion.first==msg.marker_uuid() && m_curversion.second==msg.marker_int())
     {
         m_countdone++;
-        Logger.Notice << "Receive collected state from peer " << pt.get<std::string>("sc.source") << std::endl;
-        m_curstate = pt;
+        Logger.Notice << "Receive collected state from peer " << msg.source() << std::endl;
+        m_curstate.CopyFrom(msg);
 
         //save state into the map "collectstate"
-        collectstate.insert(std::pair<StateVersion, ptree>( m_curversion, m_curstate));
+        collectstate.insert(std::make_pair( m_curversion, m_curstate));
         m_countstate++;
     }
 
@@ -879,6 +838,26 @@ SCAgent::PeerNodePtr SCAgent::GetPeer(std::string uuid)
     {
         return PeerNodePtr();
     }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+/// Wraps a StateCollectionMessage in a ModuleMessage.
+///
+/// @param message the message to prepare. If any required field is unset,
+///                the DGI will abort.
+/// @param recipient the module (sc/lb/gm/clk etc.) the message should be
+///                  delivered to
+///
+/// @return a ModuleMessage containing a copy of the StateCollectionMessage
+///////////////////////////////////////////////////////////////////////////////
+ModuleMessage SCAgent::PrepareForSending(
+    const StateCollectionMessage& message, std::string recipient)
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    ModuleMessage mm;
+    mm.mutable_state_collection_message()->CopyFrom(message);
+    mm.set_recipient_module(recipient);
+    return mm;
 }
 
 } // namespace sc

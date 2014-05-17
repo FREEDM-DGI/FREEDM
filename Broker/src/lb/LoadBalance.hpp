@@ -24,10 +24,11 @@
 #ifndef LOAD_BALANCE_HPP
 #define LOAD_BALANCE_HPP
 
-#include "CMessage.hpp"
+#include "CBroker.hpp"
 #include "IAgent.hpp"
-#include "IHandler.hpp"
 #include "IPeerNode.hpp"
+#include "IMessageHandler.hpp"
+#include "messages/ModuleMessage.pb.h"
 
 #include <map>
 #include <set>
@@ -40,7 +41,7 @@ namespace broker {
 namespace lb {
 
 class LBAgent
-    : public IReadHandler
+    : public IMessageHandler
     , private IPeerNode
     , public IAgent<boost::shared_ptr<IPeerNode> >
 {
@@ -50,8 +51,9 @@ public:
 private:
     enum State { SUPPLY, DEMAND, NORMAL };
 
+    void HandleIncomingMessage(boost::shared_ptr<const ModuleMessage> m, PeerNodePtr peer);
     void MoveToPeerSet(PeerSet & ps, PeerNodePtr peer);
-    void SendToPeerSet(const PeerSet & ps, CMessage & m);
+    void SendToPeerSet(const PeerSet & ps, const ModuleMessage & m);
     void LoadManage(const boost::system::error_code & error);
     void FirstRound(const boost::system::error_code & error);
     void ScheduleNextRound();
@@ -59,19 +61,19 @@ private:
     void UpdateState();
     void LoadTable();
     void SendStateChange(std::string state);
-    void HandleStateChange(MessagePtr m, PeerNodePtr peer);
+    void HandleStateChange(const StateChangeMessage & m, PeerNodePtr peer);
     void SendDraftRequest();
-    void HandleDraftRequest(MessagePtr m, PeerNodePtr peer);
+    void HandleDraftRequest(const DraftRequestMessage & m, PeerNodePtr peer);
     void SendDraftAge(PeerNodePtr peer);
-    void HandleDraftAge(MessagePtr m, PeerNodePtr peer);
+    void HandleDraftAge(const DraftAgeMessage & m, PeerNodePtr peer);
     void DraftStandard(const boost::system::error_code & error);
     void SendDraftSelect(PeerNodePtr peer, float step);
-    void HandleDraftSelect(MessagePtr m, PeerNodePtr peer);
+    void HandleDraftSelect(const DraftSelectMessage & m, PeerNodePtr peer);
     void SendDraftAccept(PeerNodePtr peer);
-    void HandleDraftAccept(MessagePtr m, PeerNodePtr peer);
-    void HandlePeerList(MessagePtr m, PeerNodePtr peer);
-    void HandleAny(MessagePtr m, PeerNodePtr peer);
+    void HandleDraftAccept(const DraftAcceptMessage & m, PeerNodePtr peer);
+    void HandlePeerList(const gm::PeerListMessage & m, PeerNodePtr peer);
     void SetPStar(float pstar);
+    ModuleMessage PrepareForSending(const LoadBalancingMessage & m, std::string recipient = "lb");
 
     const boost::posix_time::time_duration ROUND_TIME;
     const boost::posix_time::time_duration REQUEST_TIMEOUT;

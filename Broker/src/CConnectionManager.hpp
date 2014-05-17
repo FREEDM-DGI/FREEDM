@@ -25,20 +25,17 @@
 #ifndef CONNECTIONMANAGER_HPP
 #define CONNECTIONMANAGER_HPP
 
-#include "CGlobalConfiguration.hpp"
-#include "CListener.hpp"
-#include "IHandler.hpp"
+#include "IMessageHandler.hpp"
 #include "SRemoteHost.hpp"
-
-#include <boost/bimap.hpp>
-#include <boost/enable_shared_from_this.hpp>
-#include <boost/noncopyable.hpp>
-#include <boost/shared_ptr.hpp>
-#include <boost/thread/mutex.hpp>
 
 #include <map>
 #include <set>
 #include <string>
+
+#include <boost/bimap.hpp>
+#include <boost/noncopyable.hpp>
+#include <boost/shared_ptr.hpp>
+#include <boost/thread/mutex.hpp>
 
 namespace freedm {
 namespace broker {

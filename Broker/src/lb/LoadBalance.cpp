@@ -34,8 +34,8 @@
 ///                 LBAgent::SendDraftAccept
 ///                 LBAgent::HandleDraftAccept
 ///                 LBAgent::HandlePeerList
-///                 LBAgent::HandleAny
 ///                 LBAgent::SetPStar
+///                 LBAgent::PrepareForSending
 ///
 /// These source code files were created at Missouri University of Science and
 /// Technology, and are intended for use in teaching or research. They may be
@@ -54,6 +54,7 @@
 #include "LoadBalance.hpp"
 
 #include "CLogger.hpp"
+#include "Messages.hpp"
 #include "CTimings.hpp"
 #include "CDeviceManager.hpp"
 #include "CGlobalPeerList.hpp"
@@ -94,14 +95,6 @@ LBAgent::LBAgent(std::string uuid)
 
     m_ForceUpdate = true;
     m_AcceptDraftAge = false;
-
-    RegisterSubhandle("lb.state-change", boost::bind(&LBAgent::HandleStateChange, this, _1, _2));
-    RegisterSubhandle("lb.draft-request", boost::bind(&LBAgent::HandleDraftRequest, this, _1, _2));
-    RegisterSubhandle("lb.draft-age", boost::bind(&LBAgent::HandleDraftAge, this, _1, _2));
-    RegisterSubhandle("lb.draft-select", boost::bind(&LBAgent::HandleDraftSelect, this, _1, _2));
-    RegisterSubhandle("lb.draft-accept", boost::bind(&LBAgent::HandleDraftAccept, this, _1, _2));
-    RegisterSubhandle("any.PeerList", boost::bind(&LBAgent::HandlePeerList, this, _1, _2));
-    RegisterSubhandle("any", boost::bind(&LBAgent::HandleAny, this, _1, _2));
 }
 
 int LBAgent::Run()
@@ -113,6 +106,58 @@ int LBAgent::Run()
     return 0;
 }
 
+void LBAgent::HandleIncomingMessage(boost::shared_ptr<const ModuleMessage> m, PeerNodePtr peer)
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+
+    if(m->has_group_management_message())
+    {
+        gm::GroupManagementMessage gmm = m->group_management_message();
+
+        if(gmm.has_peer_list_message())
+        {
+            HandlePeerList(gmm.peer_list_message(), peer);
+        }
+        else
+        {
+            Logger.Warn << "Dropped unexpected group management message:\n" << m->DebugString();
+        }
+    }
+    else if(m->has_load_balancing_message())
+    {
+        LoadBalancingMessage lbm = m->load_balancing_message();
+        
+        if(lbm.has_state_change_message())
+        {
+            HandleStateChange(lbm.state_change_message(), peer);
+        }
+        else if(lbm.has_draft_request_message())
+        {
+            HandleDraftRequest(lbm.draft_request_message(), peer);
+        }
+        else if(lbm.has_draft_age_message())
+        {
+            HandleDraftAge(lbm.draft_age_message(), peer);
+        }
+        else if(lbm.has_draft_select_message())
+        {
+            HandleDraftSelect(lbm.draft_select_message(), peer);
+        }
+        else if(lbm.has_draft_accept_message())
+        {
+            HandleDraftAccept(lbm.draft_accept_message(), peer);
+        }
+        else
+        {
+            Logger.Warn << "Dropped unexpected load balance message:\n" << m->DebugString();
+        }
+    }
+    else
+    {
+        Logger.Warn << "Dropped message of unexpected type:\n" << m->DebugString();
+    }
+}
+
 void LBAgent::MoveToPeerSet(PeerSet & ps, PeerNodePtr peer)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
@@ -122,9 +167,10 @@ void LBAgent::MoveToPeerSet(PeerSet & ps, PeerNodePtr peer)
     InsertInPeerSet(ps, peer);
 }
 
-void LBAgent::SendToPeerSet(const PeerSet & ps, CMessage & m)
+void LBAgent::SendToPeerSet(const PeerSet & ps, const ModuleMessage & m)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Notice << "Sending " << m.DebugString() << std::endl;
 
     BOOST_FOREACH(PeerNodePtr peer, ps | boost::adaptors::map_values)
     {
@@ -350,13 +396,13 @@ void LBAgent::SendStateChange(std::string state)
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     Logger.Notice << "Sending state change, " << state << std::endl;
 
-    CMessage m;
-    m.SetHandler("lb.state-change");
-    m.m_submessages.put("lb.state", state);
-    SendToPeerSet(m_AllPeers, m);
+    LoadBalancingMessage lbm;
+    StateChangeMessage * stm = lbm.mutable_state_change_message();
+    stm->set_state(state);
+    SendToPeerSet(m_AllPeers, PrepareForSending(lbm));
 }
 
-void LBAgent::HandleStateChange(MessagePtr m, PeerNodePtr peer)
+void LBAgent::HandleStateChange(const StateChangeMessage & m, PeerNodePtr peer)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
@@ -366,7 +412,7 @@ void LBAgent::HandleStateChange(MessagePtr m, PeerNodePtr peer)
     }
     else
     {
-        std::string state = m->GetSubMessages().get<std::string>("lb.state");
+        std::string state = m.state();
         Logger.Info << "Received " << state << " state from " << peer->GetUUID() << std::endl;
 
         if(state == "supply")
@@ -394,12 +440,12 @@ void LBAgent::SendDraftRequest()
 
     if(m_State == LBAgent::SUPPLY)
     {
-        CMessage m;
-        m.SetHandler("lb.draft-request");
-
         if(!m_InDemand.empty())
         {
-            SendToPeerSet(m_InDemand, m);
+            LoadBalancingMessage lbm;
+            DraftRequestMessage * drm = lbm.mutable_draft_request_message();
+            drm->set_exists(1);
+            SendToPeerSet(m_InDemand, PrepareForSending(lbm));
             CBroker::Instance().Schedule(m_WaitTimer, REQUEST_TIMEOUT,
                 boost::bind(&LBAgent::DraftStandard, this, boost::asio::placeholders::error));
             m_DraftAge.clear();
@@ -417,7 +463,7 @@ void LBAgent::SendDraftRequest()
     }
 }
 
-void LBAgent::HandleDraftRequest(MessagePtr /*m*/, PeerNodePtr peer)
+void LBAgent::HandleDraftRequest(const DraftRequestMessage & /*m*/, PeerNodePtr peer)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     Logger.Info << "Draft Request from " << peer->GetUUID() << std::endl;
@@ -442,20 +488,19 @@ void LBAgent::SendDraftAge(PeerNodePtr peer)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
-    CMessage m;
     float age = 0;
-
-    m.SetHandler("lb.draft-age");
     if(m_State == LBAgent::DEMAND)
     {
         age = -m_NetGeneration;
     }
-    m.m_submessages.put("lb.age", age);
     Logger.Info << "Calculated Draft Age: " << age << std::endl;
 
     try
     {
-        peer->Send(m);
+        LoadBalancingMessage lbm;
+        DraftAgeMessage * dam = lbm.mutable_draft_age_message();
+        dam->set_draft_age(age);
+        peer->Send(PrepareForSending(lbm));
         m_RequestPeer = peer->GetUUID();
         Logger.Notice << "Sent Draft Age to " << peer->GetUUID() << std::endl;
     }
@@ -466,7 +511,7 @@ void LBAgent::SendDraftAge(PeerNodePtr peer)
     }
 }
 
-void LBAgent::HandleDraftAge(MessagePtr m, PeerNodePtr peer)
+void LBAgent::HandleDraftAge(const DraftAgeMessage & m, PeerNodePtr peer)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
@@ -480,7 +525,7 @@ void LBAgent::HandleDraftAge(MessagePtr m, PeerNodePtr peer)
     }
     else
     {
-        m_DraftAge[peer->GetUUID()] = m->GetSubMessages().get<float>("lb.age");
+        m_DraftAge[peer->GetUUID()] = m.draft_age();
         Logger.Info << "Received draft age from " << peer->GetUUID() << std::endl;
     }
 }
@@ -540,12 +585,12 @@ void LBAgent::SendDraftSelect(PeerNodePtr peer, float step)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
-    CMessage m;
-    m.SetHandler("lb.draft-select");
-    m.m_submessages.put("lb.amount", step);
     try
     {
-        peer->Send(m);
+        LoadBalancingMessage lbm;
+        DraftSelectMessage * dsm = lbm.mutable_draft_select_message();
+        dsm->set_migrate_step(step);
+        peer->Send(PrepareForSending(lbm));
         SetPStar(m_PredictedGateway + step);
         m_Outstanding.insert(peer->GetUUID());
     }
@@ -555,7 +600,7 @@ void LBAgent::SendDraftSelect(PeerNodePtr peer, float step)
     }
 }
 
-void LBAgent::HandleDraftSelect(MessagePtr m, PeerNodePtr peer)
+void LBAgent::HandleDraftSelect(const DraftSelectMessage & m, PeerNodePtr peer)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
@@ -569,7 +614,7 @@ void LBAgent::HandleDraftSelect(MessagePtr m, PeerNodePtr peer)
     }
     else
     {
-        float amount = m->GetSubMessages().get<float>("lb.amount");
+        float amount = m.migrate_step();
         SetPStar(m_PredictedGateway - amount);
         m_RequestPeer.clear();
         SendDraftAccept(peer);
@@ -579,12 +624,13 @@ void LBAgent::HandleDraftSelect(MessagePtr m, PeerNodePtr peer)
 void LBAgent::SendDraftAccept(PeerNodePtr peer)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    CMessage m;
-    m.SetHandler("lb.draft-accept");
 
     try
     {
-        peer->Send(m);
+        LoadBalancingMessage lbm;
+        DraftAcceptMessage * dam = lbm.mutable_draft_accept_message();
+        dam->set_exists(1);
+        peer->Send(PrepareForSending(lbm));
     }
     catch(boost::system::system_error & error)
     {
@@ -592,7 +638,7 @@ void LBAgent::SendDraftAccept(PeerNodePtr peer)
     }
 }
 
-void LBAgent::HandleDraftAccept(MessagePtr /*m*/, PeerNodePtr peer)
+void LBAgent::HandleDraftAccept(const DraftAcceptMessage & /*m*/, PeerNodePtr peer)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
@@ -609,7 +655,7 @@ void LBAgent::HandleDraftAccept(MessagePtr /*m*/, PeerNodePtr peer)
     }
 }
 
-void LBAgent::HandlePeerList(MessagePtr m, PeerNodePtr peer)
+void LBAgent::HandlePeerList(const gm::PeerListMessage & m, PeerNodePtr peer)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     Logger.Notice << "Updated peer list received from: " << peer->GetUUID() << std::endl;
@@ -631,18 +677,6 @@ void LBAgent::HandlePeerList(MessagePtr m, PeerNodePtr peer)
     }
 
     m_ForceUpdate = true;
-}
-
-void LBAgent::HandleAny(MessagePtr m, PeerNodePtr /*peer*/)
-{
-    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    if(m->GetHandler().find("lb") == 0)
-    {
-        Logger.Error << "Unhandled Load Balance Message" << std::endl;
-        m->Save(Logger.Error);
-        Logger.Error << std::endl;
-        throw EUnhandledMessage("Unhandled Load Balance Message");
-    }
 }
 
 void LBAgent::SetPStar(float pstar)
@@ -667,6 +701,15 @@ void LBAgent::SetPStar(float pstar)
     {
         Logger.Warn << "Failed to set P*: no attached SST device" << std::endl;
     }
+}
+
+ModuleMessage LBAgent::PrepareForSending(const LoadBalancingMessage & m, std::string recipient)
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    ModuleMessage mm;
+    mm.mutable_load_balancing_message()->CopyFrom(m);
+    mm.set_recipient_module(recipient);
+    return mm;
 }
 
 } // namespace lb

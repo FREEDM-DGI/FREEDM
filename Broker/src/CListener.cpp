@@ -21,21 +21,25 @@
 /// Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
 ////////////////////////////////////////////////////////////////////////////////
 
+#include "config.hpp"
+
 #include "CBroker.hpp"
-#include "CConnection.hpp"
 #include "CConnectionManager.hpp"
 #include "CDispatcher.hpp"
 #include "CGlobalConfiguration.hpp"
 #include "CListener.hpp"
 #include "CLogger.hpp"
-#include "CMessage.hpp"
-#include "config.hpp"
 #include "CClockSynchronizer.hpp"
+#include "CConnection.hpp"
+#include "messages/ModuleMessage.pb.h"
+#include "messages/ProtocolMessage.pb.h"
 
 #include <vector>
 
 #include <boost/bind.hpp>
+#include <boost/make_shared.hpp>
 #include <boost/property_tree/ptree.hpp>
+#include <boost/system/error_code.hpp>
 
 using boost::property_tree::ptree;
 
@@ -56,7 +60,7 @@ CLocalLogger Logger(__FILE__);
 /// @post A new CConnection object is initialized.
 ///////////////////////////////////////////////////////////////////////////////
 CListener::CListener()
-  : m_socket(CBroker::Instance().GetIOService())
+    : m_socket(CBroker::Instance().GetIOService())
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 }
@@ -82,10 +86,7 @@ void CListener::Start(boost::asio::ip::udp::endpoint& endpoint)
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     m_socket.open(endpoint.protocol());
     m_socket.bind(endpoint);
-    m_socket.async_receive_from(boost::asio::buffer(m_buffer, CGlobalConfiguration::MAX_PACKET_SIZE),
-            m_endpoint, boost::bind(&CListener::HandleRead, this,
-            boost::asio::placeholders::error,
-            boost::asio::placeholders::bytes_transferred));
+    ScheduleListen();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -121,80 +122,89 @@ void CListener::HandleRead(const boost::system::error_code& e,
                            std::size_t bytes_transferred)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    if (!e)
+
+    if (e)
     {
-        /// I'm removing request parser because it is an appalling heap of junk
-        std::stringstream iss;
-        std::ostreambuf_iterator<char> iss_it(iss);
-        std::copy(m_buffer.begin(), m_buffer.begin()+bytes_transferred, iss_it);
-        // Create a new CMessage pointer
-        m_message = MessagePtr(new CMessage);
-
-        try
-        {
-            Logger.Debug<<"Loading xml:"<<std::endl;
-            m_message->Load(iss);
-        }
-        catch(std::exception &e)
-        {
-            Logger.Error<<"Couldn't parse message XML: "<<e.what()<<std::endl;
-            m_socket.async_receive_from(boost::asio::buffer(m_buffer, CGlobalConfiguration::MAX_PACKET_SIZE),
-                m_endpoint, boost::bind(&CListener::HandleRead, this,
-                boost::asio::placeholders::error,
-                boost::asio::placeholders::bytes_transferred));
-            return;
-        }
-
-        std::string uuid = m_message->GetSourceUUID();
-        SRemoteHost hostname = m_message->GetSourceHostname();
-        ///Make sure the hostname is registered:
-        CConnectionManager::Instance().PutHost(uuid,hostname);
-        ///Get the pointer to the connection:
-        CConnection::ConnectionPtr conn;
-        conn = CConnectionManager::Instance().GetConnectionByUUID(uuid);
-        Logger.Debug<<"Fetched Connection"<<std::endl;
-#ifdef CUSTOMNETWORK
-        if((rand()%100) >= GetReliability())
-        {
-            Logger.Debug<<"Dropped datagram "<<m_message->GetHash()<<":"
-                          <<m_message->GetSequenceNumber()<<std::endl;
-            goto listen;
-        }
-#endif
-        if(m_message->GetStatus() == freedm::broker::CMessage::Accepted)
-        {
-            Logger.Debug<<"Processing Accept Message"<<std::endl;
-            ptree pp = m_message->GetProtocolProperties();
-            size_t hash = pp.get<size_t>("src.hash");
-            Logger.Debug<<"Received ACK"<<hash<<":"
-                            <<m_message->GetSequenceNumber()<<std::endl;
-            conn->ReceiveACK(*m_message);
-        }
-        else if(m_message->GetStatus() == freedm::broker::CMessage::ClockReading && conn->Receive(*m_message))
-        {
-            Logger.Debug<<"Got A clock message"<<std::endl;
-            CBroker::Instance().GetClockSynchronizer().HandleRead(m_message);
-        }
-        else if(conn->Receive(*m_message))
-        {
-            Logger.Debug<<"Accepted message "<<m_message->GetHash()<<":"
-                          <<m_message->GetSequenceNumber()<<std::endl;
-            CDispatcher::Instance().HandleRequest(m_message);
-        }
-        else if(m_message->GetStatus() != freedm::broker::CMessage::Created)
-        {
-            Logger.Debug<<"Rejected message "<<m_message->GetHash()<<":"
-                          <<m_message->GetSequenceNumber()<<std::endl;
-        }
-#ifdef CUSTOMNETWORK
-listen:
-#endif
-        Logger.Debug<<"Listening for next message"<<std::endl;
-        m_socket.async_receive_from(boost::asio::buffer(m_buffer, CGlobalConfiguration::MAX_PACKET_SIZE),
-                m_endpoint, boost::bind(&CListener::HandleRead, this,
-                boost::asio::placeholders::error,
-                boost::asio::placeholders::bytes_transferred));
+        Logger.Error<<"HandleRead failed: " << e.message();
+        ScheduleListen();
     }
+
+    std::stringstream iss;
+    std::ostreambuf_iterator<char> output(iss);
+    std::copy(m_buffer.begin(), m_buffer.begin()+bytes_transferred, output);
+
+    Logger.Debug<<"Loading protobuf"<<std::endl;
+    ProtocolMessage pm;
+    if(!pm.ParseFromIstream(&iss))
+    {
+        Logger.Error<<"Failed to load protobuf"<<std::endl;
+        ScheduleListen();
+        return;
+    }
+
+#ifdef CUSTOMNETWORK
+    if((rand()%100) >= GetReliability())
+    {
+        Logger.Debug<<"Dropped datagram "<<pm.hash()<<":"<<pm.sequence_num()<<std::endl;
+        ScheduleListen();
+        return;
+    }
+#endif
+
+    if(!IsValidPort(pm.source_port()))
+    {
+        Logger.Warn<<"Received message with invalid source port"<<pm.source_port()<<std::endl;
+        ScheduleListen();
+        return;
+    }
+
+    std::string uuid = pm.source_uuid();
+    SRemoteHost host = { pm.source_hostname(), pm.source_port() };
+    ///Make sure the hostname is registered:
+    CConnectionManager::Instance().PutHost(uuid,host);
+    ///Get the pointer to the connection:
+    ConnectionPtr conn =
+            CConnectionManager::Instance().GetConnectionByUUID(uuid);
+    Logger.Debug<<"Fetched Connection"<<std::endl;
+
+    if(pm.status() == ProtocolMessage::ACCEPTED)
+    {
+        Logger.Debug<<"Processing Accept Message"<<std::endl;
+        Logger.Debug<<"Received ACK"<<pm.hash()<<":"<<pm.sequence_num()<<std::endl;
+        conn->ReceiveACK(pm);
+    }
+    else if(conn->Receive(pm))
+    {
+        Logger.Debug<<"Accepted message "<<pm.hash()<<":"<<pm.sequence_num()<<std::endl;
+        CDispatcher::Instance().HandleRequest(
+            boost::make_shared<const ModuleMessage>(
+                ModuleMessage(pm.module_message())), uuid);
+    }
+    else if(pm.status() != ProtocolMessage::CREATED)
+    {
+        Logger.Debug<<"Rejected message "<<pm.hash()<<":"<<pm.sequence_num()<<std::endl;
+    }
+
+    ScheduleListen();
+}
+
+///////////////////////////////////////////////////////////////////////////////
+/// Schedule an asynchronous listen for the next incoming message. Our
+/// invariant is that this function must be called after each HandleRead();
+/// otherwise, we'll never receive new messages.
+///////////////////////////////////////////////////////////////////////////////
+void CListener::ScheduleListen()
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Debug<<"Listening for next message"<<std::endl;
+    // We don't care where the messages are coming from, but async_receive_from
+    // requires that this variable remain valid until the handler is called.
+    static boost::asio::ip::udp::endpoint ignored_sender_endpoint;
+    m_socket.async_receive_from(
+        boost::asio::buffer(m_buffer, CGlobalConfiguration::MAX_PACKET_SIZE),
+        ignored_sender_endpoint, boost::bind(&CListener::HandleRead, this,
+            boost::asio::placeholders::error,
+            boost::asio::placeholders::bytes_transferred));
 }
 
     } // namespace broker

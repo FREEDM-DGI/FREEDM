@@ -22,7 +22,7 @@ public:
     static unsigned int CSUC_RESEND_TIME;
 
     static unsigned int DEV_PNP_HEARTBEAT;
-    
+
     static unsigned int DEV_RTDS_DELAY;
 
     static unsigned int GM_AYT_RESPONSE_TIMEOUT;

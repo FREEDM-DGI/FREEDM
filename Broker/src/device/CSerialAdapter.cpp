@@ -31,6 +31,7 @@
 #include <algorithm>
 #include <cassert>
 #include <cmath>
+#include <istream>
 #include <sstream>
 #include <string>
 
@@ -78,18 +79,16 @@ void CSerialAdapter::Start()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
-    // The colon character marks the end of the prompt
-    // FIXME
-//    TimedReadUntil(m_serial_port, m_recv_buffer, ":", CTimings::DEV_SERIAL_TIMEOUT);
-    Logger.Debug << "Reading through first colon" << std::endl;
-    boost::asio::read_until(m_serial_port, m_recv_buffer, ":");
-    Logger.Debug << "Read complete" << std::endl;
+    Logger.Debug << "Discarding prompt" << std::endl;
+    // The end of the prompt is the string "DESD"
+    (void) ReadUntil('D');
+    (void) ReadUntil('D');
 
-    // Nothing will work until we send this start command to the DESD.
-    // FIXME But do all serial devices support this command?
     Logger.Debug << "Sending start command to DESD" << std::endl;
-    boost::asio::write(m_serial_port, boost::asio::buffer("000001s"));
-    Logger.Debug << "Write complete" << std::endl;
+    Write("000001s");
+
+    Logger.Debug << "Discarding DESD's response to start command" << std::endl;
+    (void) ReadUntil('1');
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -102,10 +101,8 @@ void CSerialAdapter::Stop()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
-    // FIXME do all serial devices support this command?
     Logger.Debug << "Sending stop command to DESD" << std::endl;
-    boost::asio::write(m_serial_port, boost::asio::buffer("000000s"));
-    Logger.Debug << "Write complete" << std::endl;
+    Write("000000s");
 
     m_serial_port.close();
 }
@@ -118,7 +115,7 @@ void CSerialAdapter::Stop()
 ///               and knows its name, but is included here to match the
 ///               interface for an IAdapter. The DGI will crash if this is
 ///               incorrect, as a sanity check.
-/// @param signal the name of the state to receive
+/// @param signal the name of the state to receive, must be "gateway"
 ///
 /// @ErrorHandling throws std::runtime_error if the state does not exist
 ///
@@ -129,16 +126,26 @@ SignalValue CSerialAdapter::GetState(std::string device, std::string signal) con
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
     assert(device == m_device->GetID());
+    assert(signal == "gateway");
 
-    if (m_states.count(signal) == 1)
-    {
-        return m_states.find(signal)->second;
-    }
-    else
-    {
-        throw std::runtime_error(
-            "Cannot access invalid state " + signal + " on device " + device);
-    }
+    Logger.Debug << "Sending a power state request" << std::endl;
+    Write("000000m");
+
+    Logger.Debug << "Discarding DESD's state preamble" << std::endl;
+    (void) ReadUntil(':');
+
+    Logger.Debug << "Reading DESD state response" << std::endl;
+    std::string response = ReadUntil('W');
+    // cut off the W
+    response.resize(response.length() - 1);
+    // trim leading spaces
+    response.erase(std::remove(response.begin(), response.end(), ' '), response.end());
+
+    Logger.Debug << "Converting " << response << " to float..." << std::endl;
+    SignalValue result = boost::lexical_cast<SignalValue>(response);
+    Logger.Debug << "Result: " << result << std::endl;
+
+    return result;
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -149,9 +156,9 @@ SignalValue CSerialAdapter::GetState(std::string device, std::string signal) con
 ///               and knows its name, but is included here to match the
 ///               interface for an IAdapter. The DGI will crash if this is
 ///               incorrect, as a sanity check.
-/// @param signal the name of the state to be changed. Will be rounded to an
-///               int before it is sent to the device. Must be at most six
-///               digits, or five if negative
+/// @param signal the name of the state to be changed, must be "gateway". The
+///               state Will be rounded to an int before it is sent to the
+///               device. Must be at most six digits, or five if negative.
 /// @param value the desired value of the state
 ///
 /// @ErrorHandling throws a std::runtime_error on failure or after timeout,
@@ -164,14 +171,7 @@ void CSerialAdapter::SetCommand(std::string device, std::string signal, SignalVa
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
     assert(device == m_device->GetID());
-
-    if (m_states.count(signal) != 1)
-    {
-        throw std::out_of_range(
-            "Cannot access invalid state " + signal + " on device " + device);
-    }
-
-    assert(!signal.empty());
+    assert(signal == "gateway");
 
     std::ostringstream ss;
     // If value is negative, first character is the minus sign
@@ -185,45 +185,13 @@ void CSerialAdapter::SetCommand(std::string device, std::string signal, SignalVa
         ss.width(COMMAND_FIELD_WIDTH);
     }
     ss.fill('0');
-    ss << static_cast<int>(std::abs(::round(value))) << signal[0];
+    ss << static_cast<int>(std::abs(::round(value))) << 'i';
 
-    // Would be better to do this asynchronously, but that complicates the logic...
-    // FIXME
-//    TimedWrite(
-//        m_serial_port, boost::asio::buffer(ss.str()), CTimings::DEV_SERIAL_TIMEOUT);
-    Logger.Debug << "Writing command " << ss.str() << std::endl;
-    boost::asio::write(m_serial_port, boost::asio::buffer(ss.str()));
-    Logger.Debug << "Write complete" << std::endl;
+    Logger.Debug << "Sending power command: " << value << std::endl;
+    Write(ss.str());
 
-    // FIXME FIXME this is cheating!! how do we get states from the DESD?
-    m_states[signal] = value;
-
-    // FIXME
-    // Prepare for the next write. The colon character marks the end of the prompt.
-//    TimedReadUntil(m_serial_port, m_recv_buffer, ":", CTimings::DEV_SERIAL_TIMEOUT);
-    Logger.Debug << "Reading until next colon" << std::endl;
-    boost::asio::read_until(m_serial_port, m_recv_buffer, ":");
-    Logger.Debug << "Read complete" << std::endl;
-}
-
-namespace {
-
-//////////////////////////////////////////////////////////////////////////////
-/// Determines if two strings have the same first letter. Could trivially be
-/// generalized to a template HasIdenticalNthElement<T, N> but then it would
-/// have to go in a header file. Note that this is stupid and should be
-/// replaced as soon as we're allowed to use lambdas.
-///
-/// @param a first string to compare
-/// @param b second string to compare
-///
-/// @return true if the strings have the same first letter
-//////////////////////////////////////////////////////////////////////////////
-bool HasSameFirstLetter(std::string a, std::string b)
-{
-    return a[0] == b[0];
-}
-
+    Logger.Debug << "Discarding DESD's response to power command" << std::endl;
+    (void) ReadUntil('A');
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -244,12 +212,9 @@ void CSerialAdapter::RegisterDevice(std::string devid)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
-    // Register only if another device has not already been registered
     if (!m_device)
     {
         IAdapter::RegisterDevice(devid);
-        // FIXME bad bad bad - we must not call RevealDevice until after
-        // validating the device, yet we must do so to get the device...
         RevealDevices();
         m_device = CDeviceManager::Instance().GetDevice(devid);
     }
@@ -257,36 +222,51 @@ void CSerialAdapter::RegisterDevice(std::string devid)
     {
         throw std::logic_error("Cannot register a second device on one CSerialAdapter");
     }
-
-    // Make sure the states and commands obey the limitation on names
-    std::set<std::string> states = m_device->GetStateSet();
-    std::set<std::string>::iterator violator =
-        std::adjacent_find(states.begin(), states.end(), HasSameFirstLetter);
-    if (violator != states.end())
-    {
-        std::ostringstream oss;
-        oss << "Cannot register device " << devid << " with CSerialAdapter: states "
-            << *violator << " and " << *(++violator) << " share the same first letter.";
-        throw std::runtime_error(oss.str());
-    }
-
-    std::set<std::string> commands = m_device->GetCommandSet();
-    violator = std::adjacent_find(commands.begin(), commands.end(), HasSameFirstLetter);
-    if (violator != commands.end())
-    {
-        std::ostringstream oss;
-        oss << "Cannot register device " << devid << " with CSerialAdapter: commands "
-            << *violator << " and " << *(++violator) << " share the same first letter.";
-        throw std::runtime_error(oss.str());
-    }
-
-    // Now, populate our map of states to values
-    for (std::set<std::string>::const_iterator it = states.begin(); it != states.end(); it++)
-    {
-        m_states[*it] = NULL_COMMAND;
-        // FIXME: this cannot be NULL_COMMAND when we call reveal_devices()
-    }
 }
+
+//////////////////////////////////////////////////////////////////////////////
+/// Writes a command to the DESD
+///
+/// @param command the command to write
+//////////////////////////////////////////////////////////////////////////////
+void CSerialAdapter::Write(std::string command) const
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+
+    Logger.Debug << "Writing to DESD: " << command << std::endl;
+    boost::asio::write(m_serial_port, boost::asio::buffer(command));
+    Logger.Debug << "Write complete" << std::endl;
+}
+
+//////////////////////////////////////////////////////////////////////////////
+/// Reads a response from the DESD
+///
+/// @param until string to read until
+///
+/// @return the DESD's response
+//////////////////////////////////////////////////////////////////////////////
+std::string CSerialAdapter::ReadUntil(char until) const
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+
+    Logger.Debug << "Reading from DESD until: " << until << std::endl;
+    boost::asio::read_until(m_serial_port, m_streambuf, until);
+
+    std::istream is(&m_streambuf);
+    std::string result;
+    std::getline(is, result, until);
+    result += until; // getline discards delimiter
+
+    Logger.Debug << "Read: " << result << std::endl;
+
+    if (result.find("unrecognized command") != std::string::npos)
+    {
+        throw std::runtime_error("Confused the DESD: " + result);
+    }
+
+    return result;
+}
+
 
 } // namespace device
 } // namespace broker

@@ -6,16 +6,16 @@
         </info>
         <state>
             <entry index = "1">
-                <type>Desd</type>
-                <device>DESD1</device>
-                <signal>injected-current</signal>
+                <type>Sst</type>
+                <device>SST1</device>
+                <signal>gateway</signal>
             </entry>
         </state>
         <command>
             <entry index = "1">
-                <type>Desd</type>
-                <device>DESD1</device>
-                <signal>injected-current</signal>
+                <type>Sst</type>
+                <device>SST1</device>
+                <signal>gateway</signal>
             </entry>
         </command>
     </adapter>

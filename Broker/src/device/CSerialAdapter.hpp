@@ -77,17 +77,20 @@ public:
     void RegisterDevice(std::string devid);
 
 private:
-    /// The buffer to hold data received from the serial port
-    boost::asio::streambuf m_recv_buffer;
+    /// Write command to DESD
+    void Write(std::string command) const;
+
+    /// Read response from the DESD
+    std::string ReadUntil(char until) const;
 
     /// The serial connection used by this adapter
-    boost::asio::serial_port m_serial_port;
+    mutable boost::asio::serial_port m_serial_port;
+
+    /// Buffer for received data
+    mutable boost::asio::streambuf m_streambuf;
 
     /// The physical device on the other end of the serial connection
     boost::shared_ptr<CDevice> m_device;
-
-    /// Stores the most recent command for each state of the device
-    std::map<std::string, int> m_states;
 };
 
 } // namespace device

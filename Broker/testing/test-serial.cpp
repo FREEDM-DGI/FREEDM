@@ -179,12 +179,12 @@ int main(int argc, char* argv[])
     // Actual tests begin here. Everything up above needs to be split off somehow.
     CAdapterFactory::Instance();
     Logger.Info << "Great, escaped the adapter factory initialization" << std::endl;
-    boost::shared_ptr<CDevice> desd = CDeviceManager::Instance().GetDevice("DESD1");
-    Logger.Info << "We have the DESD we're looking for" << std::endl;
-    Logger.Info << "Injected current is " << desd->GetState("injected-current") << std::endl;
-    desd->SetCommand("injected-current", 42);
-    Logger.Info << "Successfully set injected current" << std::endl;
-    desd->SetCommand("injected-current", 117);
-    Logger.Info << "Successfully set injected current again, yay" << std::endl;
+    boost::shared_ptr<CDevice> desd = CDeviceManager::Instance().GetDevice("SST1");
+    Logger.Info << "Power level is " << desd->GetState("gateway") << std::endl;
+    desd->SetCommand("gateway", 42);
+    Logger.Info << "Successfully sent command: 42" << std::endl;
+    desd->SetCommand("gateway", 117);
+    Logger.Info << "Successfully sent command: 117" << std::endl;
+    Logger.Info << "Power level is " << desd->GetState("gateway") << std::endl;
     CAdapterFactory::Instance().Join();
 }

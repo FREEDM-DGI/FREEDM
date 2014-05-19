@@ -94,7 +94,6 @@ LBAgent::LBAgent(std::string uuid)
     m_MigrationStep = CGlobalConfiguration::Instance().GetMigrationStep();
 
     m_ForceUpdate = true;
-    m_AcceptDraftAge = false;
 }
 
 int LBAgent::Run()
@@ -223,10 +222,7 @@ void LBAgent::LoadManage(const boost::system::error_code & error)
         logger = device::CDeviceManager::Instance().GetDevicesOfType("Logger");
         if(logger.empty() || (*logger.begin())->GetState("dgiEnable") == 1)
         {
-            if(m_State == LBAgent::SUPPLY)
-            {
-                SendDraftRequest();
-            }
+            SendDraftRequest();
         }
         else
         {
@@ -448,7 +444,6 @@ void LBAgent::SendDraftRequest()
             CBroker::Instance().Schedule(m_WaitTimer, REQUEST_TIMEOUT,
                 boost::bind(&LBAgent::DraftStandard, this, boost::asio::placeholders::error));
             m_DraftAge.clear();
-            m_AcceptDraftAge = true;
             Logger.Info << "Sent Draft Request" << std::endl;
         }
         else
@@ -518,10 +513,6 @@ void LBAgent::HandleDraftAge(const DraftAgeMessage & m, PeerNodePtr peer)
     {
         Logger.Notice << "Rejected Draft Age: unknown peer" << std::endl;
     }
-    else if(!m_AcceptDraftAge)
-    {
-        Logger.Notice << "Rejected Draft Age: request not in progress" << std::endl;
-    }
     else
     {
         m_DraftAge[peer->GetUUID()] = m.draft_age();
@@ -562,7 +553,6 @@ void LBAgent::DraftStandard(const boost::system::error_code & error)
                 selected_peer = peer;
             }
         }
-        m_AcceptDraftAge = false;
 
         if(selected_age > 0 && m_State == LBAgent::SUPPLY)
         {

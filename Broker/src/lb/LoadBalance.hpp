@@ -96,7 +96,6 @@ private:
 
     bool m_FirstRound;
     bool m_ForceUpdate;
-    bool m_AcceptDraftAge;
 
     std::string m_RequestPeer;
     std::map<std::string, float> m_DraftAge;

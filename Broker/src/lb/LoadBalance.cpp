@@ -289,7 +289,7 @@ void LBAgent::UpdateState()
     int sstCount = device::CDeviceManager::Instance().GetDevicesOfType("Sst").size();
     Logger.Debug << "Recognize " << sstCount << " attached SST devices." << std::endl;
 
-    if(sstCount > 0 && m_NetGeneration > m_Gateway + m_MigrationStep)
+    if(sstCount > 0 && m_NetGeneration >= m_Gateway + m_MigrationStep)
     {
         if(m_State != LBAgent::SUPPLY)
         {
@@ -297,7 +297,7 @@ void LBAgent::UpdateState()
             Logger.Info << "Changed to SUPPLY state." << std::endl;
         }
     }
-    else if(sstCount > 0 && m_NetGeneration < m_Gateway - m_MigrationStep)
+    else if(sstCount > 0 && m_NetGeneration <= m_Gateway - m_MigrationStep)
     {
         if(m_State != LBAgent::DEMAND)
         {
@@ -469,7 +469,7 @@ void LBAgent::SendDraftAge(PeerNodePtr peer)
     float age = 0;
     if(m_State == LBAgent::DEMAND)
     {
-        age = -m_NetGeneration;
+        age = m_Gateway - m_NetGeneration;
     }
     Logger.Info << "Calculated Draft Age: " << age << std::endl;
 
@@ -536,7 +536,7 @@ void LBAgent::DraftStandard(const boost::system::error_code & error)
             }
         }
 
-        if(selected_age > 0 && m_State == LBAgent::SUPPLY)
+        if(selected_age >= m_MigrationStep && m_State == LBAgent::SUPPLY)
         {
             SendDraftSelect(selected_peer, m_MigrationStep);
         }
@@ -582,7 +582,7 @@ void LBAgent::HandleDraftSelect(const DraftSelectMessage & m, PeerNodePtr peer)
     {
         float amount = m.migrate_step();
 
-        if(m_PredictedGateway - amount >= m_NetGeneration)
+        if(m_NetGeneration <= m_PredictedGateway - amount)
         {
             SetPStar(m_PredictedGateway - amount);
             SendDraftAccept(peer);

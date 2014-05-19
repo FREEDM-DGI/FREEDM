@@ -27,7 +27,6 @@ message StateChangeMessage
 
 message DraftRequestMessage
 {
-    required int32 exists = 1;
 }
 
 message DraftAgeMessage
@@ -42,7 +41,6 @@ message DraftSelectMessage
 
 message DraftAcceptMessage
 {
-    required int32 exists = 1;
 }
 
 message LoadBalancingMessage

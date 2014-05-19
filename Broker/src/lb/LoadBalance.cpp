@@ -91,11 +91,8 @@ LBAgent::LBAgent(std::string uuid)
     m_WaitTimer = CBroker::Instance().AllocateTimer("lb");
 
     m_State = LBAgent::NORMAL;
-    m_PriorState = LBAgent::NORMAL;
 
     m_MigrationStep = CGlobalConfiguration::Instance().GetMigrationStep();
-
-    m_ForceUpdate = true;
 }
 
 int LBAgent::Run()
@@ -226,6 +223,11 @@ void LBAgent::LoadManage(const boost::system::error_code & error)
         if(logger.empty() || (*logger.begin())->GetState("dgiEnable") == 1)
         {
             SendDraftRequest();
+
+            if(m_State == LBAgent::DEMAND)
+            {
+                SendStateChange("demand");
+            }
         }
         else
         {
@@ -287,11 +289,6 @@ void LBAgent::UpdateState()
     int sstCount = device::CDeviceManager::Instance().GetDevicesOfType("Sst").size();
     Logger.Debug << "Recognize " << sstCount << " attached SST devices." << std::endl;
 
-    if(m_State != LBAgent::NORMAL)
-    {
-        m_PriorState = m_State;
-    }
-
     if(sstCount > 0 && m_NetGeneration > m_Gateway + m_MigrationStep)
     {
         if(m_State != LBAgent::SUPPLY)
@@ -315,17 +312,6 @@ void LBAgent::UpdateState()
             m_State = LBAgent::NORMAL;
             Logger.Info << "Changed to NORMAL state." << std::endl;
         }
-    }
-
-    if(m_State == LBAgent::SUPPLY && (m_PriorState == LBAgent::DEMAND || m_ForceUpdate))
-    {
-        SendStateChange("supply");
-        m_ForceUpdate = false;
-    }
-    else if(m_State == LBAgent::DEMAND && (m_PriorState == LBAgent::SUPPLY || m_ForceUpdate))
-    {
-        SendStateChange("demand");
-        m_ForceUpdate = false;
     }
 }
 
@@ -685,8 +671,6 @@ void LBAgent::HandlePeerList(const gm::PeerListMessage & m, PeerNodePtr peer)
             InsertInPeerSet(m_InNormal, p);
         }
     }
-
-    m_ForceUpdate = true;
 }
 
 void LBAgent::SetPStar(float pstar)

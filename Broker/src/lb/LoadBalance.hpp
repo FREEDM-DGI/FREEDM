@@ -89,7 +89,6 @@ private:
     PeerSet m_InNormal;
 
     State m_State;
-    State m_PriorState;
 
     float m_Gateway;
     float m_NetGeneration;
@@ -97,7 +96,6 @@ private:
     float m_MigrationStep;    
 
     bool m_FirstRound;
-    bool m_ForceUpdate;
 
     std::map<std::string, float> m_DraftAge;
     std::multiset<std::string> m_Outstanding;

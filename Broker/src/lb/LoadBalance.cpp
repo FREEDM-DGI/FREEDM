@@ -191,10 +191,7 @@ void LBAgent::FirstRound(const boost::system::error_code & error)
     if(!error)
     {
         m_FirstRound = true;
-        // LoadManage can't be the first job due to CBroker bug
-        // LoadManage(boost::system::error_code());
-        CBroker::Instance().Schedule(m_WaitTimer, boost::posix_time::milliseconds(0),
-            boost::bind(&LBAgent::LoadManage, this, _1));
+        LoadManage(boost::system::error_code());
     }
     else if(error == boost::asio::error::operation_aborted)
     {

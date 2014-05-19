@@ -339,7 +339,7 @@ void LBAgent::LoadTable()
 
     std::stringstream loadtable;
     loadtable << std::setprecision(2) << std::fixed;
-    loadtable << "-------- LOAD TABLE (Power Management) --------" << std::endl;
+    loadtable << "------- LOAD TABLE (Power Management) -------" << std::endl;
     loadtable << "\tNet DRER (" << std::setfill('0') << std::setw(2) << drer_count
         << "):  " << generation << std::endl;
     loadtable << "\tNet DESD (" << std::setfill('0') << std::setw(2) << desd_count

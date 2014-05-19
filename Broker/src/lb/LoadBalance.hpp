@@ -98,7 +98,6 @@ private:
     bool m_FirstRound;
 
     std::map<std::string, float> m_DraftAge;
-    std::multiset<std::string> m_Outstanding;
 };
 
 } // namespace lb

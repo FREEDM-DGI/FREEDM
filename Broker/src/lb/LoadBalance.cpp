@@ -563,7 +563,6 @@ void LBAgent::SendDraftSelect(PeerNodePtr peer, float step)
         dsm->set_migrate_step(step);
         peer->Send(PrepareForSending(lbm));
         SetPStar(m_PredictedGateway + step);
-        m_Outstanding.insert(peer->GetUUID());
     }
     catch(boost::system::system_error & e)
     {
@@ -631,18 +630,6 @@ void LBAgent::SendTooLate(PeerNodePtr peer, float step)
 void LBAgent::HandleDraftAccept(const DraftAcceptMessage & /*m*/, PeerNodePtr peer)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-
-    std::multiset<std::string>::iterator it;
-    it = m_Outstanding.find(peer->GetUUID());
-
-    if(it == m_Outstanding.end())
-    {
-        Logger.Warn << "Received unexpected accept message" << std::endl;
-    }
-    else
-    {
-        m_Outstanding.erase(it);
-    }
 }
 
 void LBAgent::HandleTooLate(const TooLateMessage & m)

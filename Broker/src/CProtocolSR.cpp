@@ -107,6 +107,7 @@ void CProtocolSR::Send(const ModuleMessage& msg)
     unsigned int msgseq = m_outseq;
     pm.set_sequence_num(msgseq);
     m_outseq = (m_outseq+1) % SEQUENCE_MODULO;
+    pm.set_hash(ComputeMessageHash(pm.module_message()));
 
     SetExpirationTimeFromNow(pm, boost::posix_time::millisec(CTimings::CSRC_DEFAULT_TIMEOUT));
     Logger.Debug<<"Set Expire time: "<< pm.expire_time() << std::endl;
@@ -215,7 +216,7 @@ void CProtocolSR::ReceiveACK(const ProtocolMessage& msg)
         // of the front message. On hit, we can accept the acknowledge.
         unsigned int fseq = m_window.front().sequence_num();
         Logger.Debug<<"Received ACK "<<seq<<" expecting ACK "<<fseq<<std::endl;
-        google::protobuf::uint64 expectedHash = ComputeMessageHash(m_window.front().module_message());
+        google::protobuf::uint64 expectedHash = m_window.front().hash();
         if(fseq == seq && expectedHash == msg.hash())
         {
             m_sendkill = fseq;
@@ -333,7 +334,11 @@ bool CProtocolSR::Receive(const ProtocolMessage& msg)
         kill = msg.sequence_num();
         usekill = false;
     }
-
+    // This protocol NEEDS hashes
+    if(msg.has_hash() == false)
+    {
+        return false;
+    }
     //Consider the window you expect to see
     // If the killed message is the one immediately preceeding this
     // message in terms of sequence number we should accept it
@@ -378,7 +383,7 @@ void CProtocolSR::SendACK(const ProtocolMessage& msg)
     outmsg.set_sequence_num(seq);
     Logger.Debug<<"Generating ACK. Source exp time "<<msg.expire_time()<<std::endl;
     outmsg.set_expire_time(msg.expire_time());
-    outmsg.set_hash(ComputeMessageHash(msg.module_message()));
+    outmsg.set_hash(msg.hash());
     Write(outmsg);
     /// Hook into resend until the message expires.
     m_timeout.cancel();

@@ -40,7 +40,7 @@ class GMAgent;
 
 }
 
-class CGlobalPeerList : public boost::noncopyable
+class CGlobalPeerList : private boost::noncopyable
 {
     public:
         friend class freedm::broker::gm::GMAgent;

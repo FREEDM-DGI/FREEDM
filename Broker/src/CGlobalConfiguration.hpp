@@ -41,7 +41,7 @@ namespace freedm {
 namespace broker {
 
 /// A singleton class which tracks commonly used configuration options.
-class CGlobalConfiguration : public boost::noncopyable
+class CGlobalConfiguration : private boost::noncopyable
 {
     public:
         /// Returns the singleton instance of the global configuration.

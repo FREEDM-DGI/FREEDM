@@ -53,7 +53,7 @@ struct EConnectionError
 
 /// Represents a single outgoing connection to a client.
 class CConnection
-    : public boost::noncopyable
+    : private boost::noncopyable
 {
 
 public:

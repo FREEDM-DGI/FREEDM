@@ -44,7 +44,7 @@ class CBroker;
 
 /// Represents a single CListener from a client.
 class CListener
-    : public boost::noncopyable
+    : private boost::noncopyable
 {
 
 public:

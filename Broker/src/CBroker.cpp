@@ -496,14 +496,14 @@ void CBroker::ChangePhase(const boost::system::error_code & /*err*/)
         }
     }
     //If the worker isn't going, start him again when you change phases.
+    boost::posix_time::time_duration r = boost::posix_time::milliseconds(sched_duration);
+    m_phaseends = now + r;
     if(!m_busy)
     {
         schlock.unlock();
         Worker();
         schlock.lock();
     }
-    boost::posix_time::time_duration r = boost::posix_time::milliseconds(sched_duration);
-    m_phaseends = now + r;
     m_phasetimer.expires_from_now(r);
     m_phasetimer.async_wait(boost::bind(&CBroker::ChangePhase,this,
         boost::asio::placeholders::error));

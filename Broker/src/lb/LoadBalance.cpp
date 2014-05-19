@@ -439,7 +439,7 @@ void LBAgent::SendDraftRequest()
         if(!m_InDemand.empty())
         {
             LoadBalancingMessage lbm;
-            DraftRequestMessage * drm = lbm.mutable_draft_request_message();
+            lbm.mutable_draft_request_message();
             SendToPeerSet(m_InDemand, PrepareForSending(lbm));
             CBroker::Instance().Schedule(m_WaitTimer, REQUEST_TIMEOUT,
                 boost::bind(&LBAgent::DraftStandard, this, boost::asio::placeholders::error));
@@ -617,7 +617,7 @@ void LBAgent::SendDraftAccept(PeerNodePtr peer)
     try
     {
         LoadBalancingMessage lbm;
-        DraftAcceptMessage * dam = lbm.mutable_draft_accept_message();
+        lbm.mutable_draft_accept_message();
         peer->Send(PrepareForSending(lbm));
     }
     catch(boost::system::system_error & error)

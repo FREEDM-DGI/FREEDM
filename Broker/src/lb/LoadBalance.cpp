@@ -32,7 +32,9 @@
 ///                 LBAgent::SendDraftSelect
 ///                 LBAgent::HandleDraftSelect
 ///                 LBAgent::SendDraftAccept
+///                 LBAgent::SendTooLate
 ///                 LBAgent::HandleDraftAccept
+///                 LBAgent::HandleTooLate
 ///                 LBAgent::HandlePeerList
 ///                 LBAgent::SetPStar
 ///                 LBAgent::PrepareForSending
@@ -145,6 +147,10 @@ void LBAgent::HandleIncomingMessage(boost::shared_ptr<const ModuleMessage> m, Pe
         else if(lbm.has_draft_accept_message())
         {
             HandleDraftAccept(lbm.draft_accept_message(), peer);
+        }
+        else if(lbm.has_too_late_message())
+        {
+            HandleTooLate(lbm.too_late_message());
         }
         else
         {
@@ -463,11 +469,6 @@ void LBAgent::HandleDraftRequest(const DraftRequestMessage & /*m*/, PeerNodePtr 
     {
         Logger.Notice << "Rejected Draft Request: unknown peer" << std::endl;
     }
-    else if(!m_RequestPeer.empty())
-    {
-        MoveToPeerSet(m_InSupply, peer);
-        Logger.Notice << "Rejected Draft Request: draft in progress" << std::endl;
-    }
     else
     {
         MoveToPeerSet(m_InSupply, peer);
@@ -492,12 +493,10 @@ void LBAgent::SendDraftAge(PeerNodePtr peer)
         DraftAgeMessage * dam = lbm.mutable_draft_age_message();
         dam->set_draft_age(age);
         peer->Send(PrepareForSending(lbm));
-        m_RequestPeer = peer->GetUUID();
         Logger.Notice << "Sent Draft Age to " << peer->GetUUID() << std::endl;
     }
     catch(boost::system::system_error & e)
     {
-        m_RequestPeer.clear();
         Logger.Warn << "Couldn't connect to peer" << std::endl;
     }
 }
@@ -590,20 +589,23 @@ void LBAgent::HandleDraftSelect(const DraftSelectMessage & m, PeerNodePtr peer)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
-    if(peer->GetUUID() != m_RequestPeer)
-    {
-        Logger.Notice << "Rejected Draft Select: unexpected peer" << std::endl;
-    }
-    else if(CountInPeerSet(m_AllPeers, peer) == 0)
+    if(CountInPeerSet(m_AllPeers, peer) == 0)
     {
         Logger.Notice << "Rejected Draft Select: peer node in group" << std::endl;
     }
     else
     {
         float amount = m.migrate_step();
-        SetPStar(m_PredictedGateway - amount);
-        m_RequestPeer.clear();
-        SendDraftAccept(peer);
+
+        if(m_PredictedGateway - amount >= m_NetGeneration)
+        {
+            SetPStar(m_PredictedGateway - amount);
+            SendDraftAccept(peer);
+        }
+        else
+        {
+            SendTooLate(peer, amount);
+        }
     }
 }
 
@@ -615,6 +617,23 @@ void LBAgent::SendDraftAccept(PeerNodePtr peer)
     {
         LoadBalancingMessage lbm;
         lbm.mutable_draft_accept_message();
+        peer->Send(PrepareForSending(lbm));
+    }
+    catch(boost::system::system_error & error)
+    {
+        Logger.Warn << "Couldn't connect to peer" << std::endl;
+    }
+}
+
+void LBAgent::SendTooLate(PeerNodePtr peer, float step)
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+
+    try
+    {
+        LoadBalancingMessage lbm;
+        TooLateMessage * submsg = lbm.mutable_too_late_message();
+        submsg->set_migrate_step(step);
         peer->Send(PrepareForSending(lbm));
     }
     catch(boost::system::system_error & error)
@@ -638,6 +657,12 @@ void LBAgent::HandleDraftAccept(const DraftAcceptMessage & /*m*/, PeerNodePtr pe
     {
         m_Outstanding.erase(it);
     }
+}
+
+void LBAgent::HandleTooLate(const TooLateMessage & m)
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    SetPStar(m_PredictedGateway - m.migrate_step());
 }
 
 void LBAgent::HandlePeerList(const gm::PeerListMessage & m, PeerNodePtr peer)

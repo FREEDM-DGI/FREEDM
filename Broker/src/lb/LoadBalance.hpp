@@ -70,7 +70,9 @@ private:
     void SendDraftSelect(PeerNodePtr peer, float step);
     void HandleDraftSelect(const DraftSelectMessage & m, PeerNodePtr peer);
     void SendDraftAccept(PeerNodePtr peer);
+    void SendTooLate(PeerNodePtr peer, float step);
     void HandleDraftAccept(const DraftAcceptMessage & m, PeerNodePtr peer);
+    void HandleTooLate(const TooLateMessage & m);
     void HandlePeerList(const gm::PeerListMessage & m, PeerNodePtr peer);
     void SetPStar(float pstar);
     ModuleMessage PrepareForSending(const LoadBalancingMessage & m, std::string recipient = "lb");
@@ -97,7 +99,6 @@ private:
     bool m_FirstRound;
     bool m_ForceUpdate;
 
-    std::string m_RequestPeer;
     std::map<std::string, float> m_DraftAge;
     std::multiset<std::string> m_Outstanding;
 };

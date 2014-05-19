@@ -43,6 +43,11 @@ message DraftAcceptMessage
 {
 }
 
+message TooLateMessage
+{
+    required float migrate_step = 1;
+}
+
 message LoadBalancingMessage
 {
     optional StateChangeMessage state_change_message = 1;
@@ -50,5 +55,6 @@ message LoadBalancingMessage
     optional DraftAgeMessage draft_age_message = 3;
     optional DraftSelectMessage draft_select_message = 4;
     optional DraftAcceptMessage draft_accept_message = 5;
+    optional TooLateMessage too_late_message = 6;
 }
 

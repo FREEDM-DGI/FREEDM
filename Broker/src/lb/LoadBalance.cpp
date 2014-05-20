@@ -129,6 +129,7 @@ void LBAgent::HandleIncomingMessage(boost::shared_ptr<const ModuleMessage> m, Pe
     
         if(scm.has_collected_state_message())
         {
+            Logger.Debug << "Collected State: " << m->DebugString();
             HandleCollectedState(scm.collected_state_message());
         }
         else
@@ -354,6 +355,7 @@ void LBAgent::LoadTable()
     loadtable << "\t---------------------------------------------" << std::endl;
     loadtable << "\tSST Gateway:    " << m_Gateway << std::endl;
     loadtable << "\tNet Generation: " << m_NetGeneration << std::endl;
+    loadtable << "\tPredicted K:    " << m_GrossPowerFlow << std::endl;
     loadtable << "\t---------------------------------------------" << std::endl;
 
     if(m_State == LBAgent::DEMAND)
@@ -778,6 +780,9 @@ void LBAgent::Synchronize(float k)
     m_GrossPowerFlow = k;
     m_PredictedGateway = m_Gateway;
     m_Synchronized = true;
+
+    Logger.Info << "Reset Gross Power Flow: " << k << std::endl;
+    Logger.Info << "Reset Predicted Gateway: " << m_Gateway << std::endl;
 }
 
 } // namespace lb

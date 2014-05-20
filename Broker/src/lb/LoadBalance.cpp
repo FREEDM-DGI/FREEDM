@@ -602,7 +602,7 @@ void LBAgent::HandleDraftSelect(const DraftSelectMessage & m, PeerNodePtr peer)
         if(m_NetGeneration <= m_PredictedGateway - amount)
         {
             SetPStar(m_PredictedGateway - amount);
-            SendDraftAccept(peer);
+            SendDraftAccept(peer, amount);
         }
         else
         {
@@ -611,14 +611,15 @@ void LBAgent::HandleDraftSelect(const DraftSelectMessage & m, PeerNodePtr peer)
     }
 }
 
-void LBAgent::SendDraftAccept(PeerNodePtr peer)
+void LBAgent::SendDraftAccept(PeerNodePtr peer, float step)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
     try
     {
         LoadBalancingMessage lbm;
-        lbm.mutable_draft_accept_message();
+        DraftAcceptMessage * dsm = lbm.mutable_draft_accept_message();
+        dsm->set_migrate_step(step);
         peer->Send(PrepareForSending(lbm));
     }
     catch(boost::system::system_error & error)

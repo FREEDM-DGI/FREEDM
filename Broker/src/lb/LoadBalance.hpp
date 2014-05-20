@@ -69,7 +69,7 @@ private:
     void DraftStandard(const boost::system::error_code & error);
     void SendDraftSelect(PeerNodePtr peer, float step);
     void HandleDraftSelect(const DraftSelectMessage & m, PeerNodePtr peer);
-    void SendDraftAccept(PeerNodePtr peer);
+    void SendDraftAccept(PeerNodePtr peer, float step);
     void SendTooLate(PeerNodePtr peer, float step);
     void HandleDraftAccept(const DraftAcceptMessage & m, PeerNodePtr peer);
     void HandleTooLate(const TooLateMessage & m);

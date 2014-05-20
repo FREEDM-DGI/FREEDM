@@ -91,7 +91,9 @@ LBAgent::LBAgent(std::string uuid)
     m_WaitTimer = CBroker::Instance().AllocateTimer("lb");
 
     m_State = LBAgent::NORMAL;
+    m_Leader = uuid;
 
+    m_GrossPowerFlow = 0;
     m_MigrationStep = CGlobalConfiguration::Instance().GetMigrationStep();
 }
 
@@ -115,6 +117,19 @@ void LBAgent::HandleIncomingMessage(boost::shared_ptr<const ModuleMessage> m, Pe
         if(gmm.has_peer_list_message())
         {
             HandlePeerList(gmm.peer_list_message(), peer);
+        }
+        else
+        {
+            Logger.Warn << "Dropped unexpected group management message:\n" << m->DebugString();
+        }
+    }
+    else if(m->has_state_collection_message())
+    {
+        sc::StateCollectionMessage scm = m->state_collection_message();
+    
+        if(scm.has_collected_state_message())
+        {
+            HandleCollectedState(scm.collected_state_message());
         }
         else
         {
@@ -148,6 +163,10 @@ void LBAgent::HandleIncomingMessage(boost::shared_ptr<const ModuleMessage> m, Pe
         else if(lbm.has_too_late_message())
         {
             HandleTooLate(lbm.too_late_message());
+        }
+        else if(lbm.has_collected_state_message())
+        {
+            HandleCollectedState(lbm.collected_state_message());
         }
         else
         {
@@ -193,7 +212,8 @@ void LBAgent::FirstRound(const boost::system::error_code & error)
 
     if(!error)
     {
-        m_FirstRound = true;
+        m_Synchronized = false;
+        ScheduleStateCollection();
         LoadManage(boost::system::error_code());
     }
     else if(error == boost::asio::error::operation_aborted)
@@ -222,11 +242,14 @@ void LBAgent::LoadManage(const boost::system::error_code & error)
         logger = device::CDeviceManager::Instance().GetDevicesOfType("Logger");
         if(logger.empty() || (*logger.begin())->GetState("dgiEnable") == 1)
         {
-            SendDraftRequest();
-
             if(m_State == LBAgent::DEMAND)
             {
                 SendStateChange("demand");
+            }
+
+            if(m_Synchronized)
+            {
+                SendDraftRequest();
             }
         }
         else
@@ -273,13 +296,6 @@ void LBAgent::ReadDevices()
 
     m_Gateway = device::CDeviceManager::Instance().GetNetValue("Sst", "gateway");
     m_NetGeneration = generation + storage - load;
-
-    if(m_FirstRound)
-    {
-        m_PredictedGateway = m_Gateway;
-        Logger.Info << "Reset Predicted Gateway: " << m_PredictedGateway << std::endl;
-        m_FirstRound = false;
-    }
 }
 
 void LBAgent::UpdateState()
@@ -563,6 +579,7 @@ void LBAgent::SendDraftSelect(PeerNodePtr peer, float step)
         dsm->set_migrate_step(step);
         peer->Send(PrepareForSending(lbm));
         SetPStar(m_PredictedGateway + step);
+        m_GrossPowerFlow += step;
     }
     catch(boost::system::system_error & e)
     {
@@ -627,15 +644,17 @@ void LBAgent::SendTooLate(PeerNodePtr peer, float step)
     }
 }
 
-void LBAgent::HandleDraftAccept(const DraftAcceptMessage & /*m*/, PeerNodePtr peer)
+void LBAgent::HandleDraftAccept(const DraftAcceptMessage & m, PeerNodePtr peer)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    m_GrossPowerFlow -= m.migrate_step();
 }
 
 void LBAgent::HandleTooLate(const TooLateMessage & m)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     SetPStar(m_PredictedGateway - m.migrate_step());
+    m_GrossPowerFlow -= m.migrate_step();
 }
 
 void LBAgent::HandlePeerList(const gm::PeerListMessage & m, PeerNodePtr peer)
@@ -658,6 +677,7 @@ void LBAgent::HandlePeerList(const gm::PeerListMessage & m, PeerNodePtr peer)
             InsertInPeerSet(m_InNormal, p);
         }
     }
+    m_Leader = peer->GetUUID();
 }
 
 void LBAgent::SetPStar(float pstar)
@@ -691,6 +711,72 @@ ModuleMessage LBAgent::PrepareForSending(const LoadBalancingMessage & m, std::st
     mm.mutable_load_balancing_message()->CopyFrom(m);
     mm.set_recipient_module(recipient);
     return mm;
+}
+
+void LBAgent::ScheduleStateCollection()
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+
+    if(m_Leader == GetUUID())
+    {
+        try
+        {
+            ModuleMessage mm;
+            sc::StateCollectionMessage scm;
+            sc::RequestMessage * rm = scm.mutable_request_message();
+            rm->set_module("lb");
+            sc::DeviceSignalRequestMessage * dsrm = rm->add_device_signal_request_message();
+            dsrm->set_type("Sst");
+            dsrm->set_signal("gateway");
+            mm.mutable_state_collection_message()->CopyFrom(scm);
+            mm.set_recipient_module("sc");
+            CGlobalPeerList::instance().GetPeer(GetUUID())->Send(mm);
+        }
+        catch(boost::system::system_error & error)
+        {
+            Logger.Info << "Couldn't send message to peer" << std::endl;
+        }
+    }
+}
+
+void LBAgent::HandleCollectedState(const sc::CollectedStateMessage & m)
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+
+    float net_power = 0;
+    BOOST_FOREACH(float v, m.gateway())
+    {
+        net_power += v;
+    }
+    // should this include intransit?
+    Synchronize(net_power);
+    BroadcastCollectedState(net_power);
+}
+
+void LBAgent::BroadcastCollectedState(float state)
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+
+    LoadBalancingMessage lbm;
+    CollectedStateMessage * csm = lbm.mutable_collected_state_message();
+    csm->set_gross_power_flow(state);
+    SendToPeerSet(m_AllPeers, PrepareForSending(lbm));
+}
+
+void LBAgent::HandleCollectedState(const CollectedStateMessage & m)
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    Synchronize(m.gross_power_flow());
+}
+
+void LBAgent::Synchronize(float k)
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    
+    ReadDevices();
+    m_GrossPowerFlow = k;
+    m_PredictedGateway = m_Gateway;
+    m_Synchronized = true;
 }
 
 } // namespace lb

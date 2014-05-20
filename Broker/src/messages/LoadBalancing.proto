@@ -41,11 +41,17 @@ message DraftSelectMessage
 
 message DraftAcceptMessage
 {
+    required float migrate_step = 1;
 }
 
 message TooLateMessage
 {
     required float migrate_step = 1;
+}
+
+message CollectedStateMessage
+{
+    required float gross_power_flow = 1;
 }
 
 message LoadBalancingMessage
@@ -56,5 +62,6 @@ message LoadBalancingMessage
     optional DraftSelectMessage draft_select_message = 4;
     optional DraftAcceptMessage draft_accept_message = 5;
     optional TooLateMessage too_late_message = 6;
+    optional CollectedStateMessage collected_state_message = 7;
 }
 

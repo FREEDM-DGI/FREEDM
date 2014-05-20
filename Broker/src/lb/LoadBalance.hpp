@@ -76,6 +76,11 @@ private:
     void HandlePeerList(const gm::PeerListMessage & m, PeerNodePtr peer);
     void SetPStar(float pstar);
     ModuleMessage PrepareForSending(const LoadBalancingMessage & m, std::string recipient = "lb");
+    void ScheduleStateCollection();
+    void HandleCollectedState(const sc::CollectedStateMessage & m);
+    void HandleCollectedState(const CollectedStateMessage & m);
+    void BroadcastCollectedState(float state);
+    void Synchronize(float k);
 
     const boost::posix_time::time_duration ROUND_TIME;
     const boost::posix_time::time_duration REQUEST_TIMEOUT;
@@ -93,10 +98,12 @@ private:
     float m_Gateway;
     float m_NetGeneration;
     float m_PredictedGateway;
-    float m_MigrationStep;    
+    float m_MigrationStep;
+    float m_GrossPowerFlow;
 
-    bool m_FirstRound;
+    bool m_Synchronized;
 
+    std::string m_Leader;
     std::map<std::string, float> m_DraftAge;
 };
 

@@ -65,8 +65,8 @@ const double NORMAL_TOLERANCE = 0.5;
 /////////////////////////////////////////////////////////
 class LBAgent
     : public IReadHandler,
-      private IPeerNode,
-      public IAgent< boost::shared_ptr<IPeerNode> >
+      private CPeerNode,
+      public MPeerSet< CPeerNode >
 {
     public:
         /// Constructor for using this object as a module
@@ -110,20 +110,20 @@ class LBAgent
 
         // Handlers
         /// Handles the incoming messages according to the message label
-        virtual void HandleAny(MessagePtr msg,PeerNodePtr peer);
-        void HandlePeerList(MessagePtr msg, PeerNodePtr peer);
-        void HandleStateChange(MessagePtr msg, PeerNodePtr peer);
-        void HandleRequest(MessagePtr msg, PeerNodePtr peer);
-        void HandleDraft(MessagePtr msg, PeerNodePtr peer);
-        void HandleDrafting(MessagePtr msg, PeerNodePtr peer);
-        void HandleAccept(MessagePtr msg, PeerNodePtr peer);
-        void HandleCollectedState(MessagePtr msg, PeerNodePtr peer);
-        void HandleComputedNormal(MessagePtr msg, PeerNodePtr peer);
+        virtual void HandleAny(MessagePtr msg,CPeerNode peer);
+        void HandlePeerList(MessagePtr msg, CPeerNode peer);
+        void HandleStateChange(MessagePtr msg, CPeerNode peer);
+        void HandleRequest(MessagePtr msg, CPeerNode peer);
+        void HandleDraft(MessagePtr msg, CPeerNode peer);
+        void HandleDrafting(MessagePtr msg, CPeerNode peer);
+        void HandleAccept(MessagePtr msg, CPeerNode peer);
+        void HandleCollectedState(MessagePtr msg, CPeerNode peer);
+        void HandleComputedNormal(MessagePtr msg, CPeerNode peer);
 
         /// Adds a new peer by a pointer
-        PeerNodePtr AddPeer(PeerNodePtr peer);
+        CPeerNode AddPeer(CPeerNode peer);
         /// Returns a pointer to the peer based on its UUID
-        PeerNodePtr GetPeer(std::string uuid);
+        CPeerNode GetPeer(std::string uuid);
 
         // Variables
         /// Calculated Normal

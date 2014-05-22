@@ -171,9 +171,9 @@ void SCAgent::Initiate()
     m_countmarker = 1;
     //current peers in a group
     Logger.Debug << " ------------ INITIAL, current peerList : -------------- "<<std::endl;
-    BOOST_FOREACH(PeerNodePtr peer, m_AllPeers | boost::adaptors::map_values)
+    BOOST_FOREACH(CPeerNode peer, m_AllPeers | boost::adaptors::map_values)
     {
-        Logger.Trace << peer->GetUUID() <<std::endl;
+        Logger.Trace << peer.GetUUID() <<std::endl;
     }
     Logger.Debug << " --------------------------------------------- "<<std::endl;
     //collect states of local devices
@@ -199,12 +199,12 @@ void SCAgent::Initiate()
         m_.m_submessages.add("sc.devices.device", device);
     }
     //send tagged marker to all other peers
-    BOOST_FOREACH(PeerNodePtr peer, m_AllPeers | boost::adaptors::map_values)
+    BOOST_FOREACH(CPeerNode peer, m_AllPeers | boost::adaptors::map_values)
     {
-        if (peer->GetUUID()!= GetUUID())
+        if (peer.GetUUID()!= GetUUID())
         {
-            Logger.Info << "Sending marker to " << peer->GetUUID() << std::endl;
-            peer->Send(m_);
+            Logger.Info << "Sending marker to " << peer.GetUUID() << std::endl;
+            peer.Send(m_);
         }
     }//end foreach
 }
@@ -312,7 +312,7 @@ void SCAgent::StateResponse()
         {
             try
             {
-                GetPeer(GetUUID())->Send(m_);
+                GetPeer(GetUUID()).Send(m_);
             }
             catch (boost::system::system_error& e)
             {
@@ -453,7 +453,7 @@ void SCAgent::SendStateBack()
     {
         try
         {
-            GetPeer(m_curversion.first)->Send(m_);
+            GetPeer(m_curversion.first).Send(m_);
         }
         catch (boost::system::system_error& e)
         {
@@ -502,7 +502,7 @@ void SCAgent::SaveForward(StateVersion latest, CMessage msg)
         {
             try
             {
-                GetPeer(m_curversion.first)->Send(msg);
+                GetPeer(m_curversion.first).Send(msg);
             }
             catch (boost::system::system_error& e)
             {
@@ -525,12 +525,12 @@ void SCAgent::SaveForward(StateVersion latest, CMessage msg)
     //more than two nodes
     {
         //broadcast marker to all other peers
-        BOOST_FOREACH(PeerNodePtr peer_, m_AllPeers | boost::adaptors::map_values)
+        BOOST_FOREACH(CPeerNode peer_, m_AllPeers | boost::adaptors::map_values)
         {
-            if (peer_->GetUUID()!= GetUUID())
+            if (peer_.GetUUID()!= GetUUID())
             {
-                Logger.Info << "Forward marker to " << peer_->GetUUID() << std::endl;
-                peer_->Send(msg);
+                Logger.Info << "Forward marker to " << peer_.GetUUID() << std::endl;
+                peer_.Send(msg);
             }
         }//end foreach
         //set flag to start to record messages in channel
@@ -552,7 +552,7 @@ void SCAgent::SaveForward(StateVersion latest, CMessage msg)
 /// @param peer the node
 //////////////////////////////////////////////////////////////////
 
-void SCAgent::HandleAny(MessagePtr msg, PeerNodePtr peer)
+void SCAgent::HandleAny(MessagePtr msg, CPeerNode peer)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     if(CountInPeerSet(m_AllPeers,peer) == 0)
@@ -566,7 +566,7 @@ void SCAgent::HandleAny(MessagePtr msg, PeerNodePtr peer)
 
     //incomingVer_ records the coming version of the marker
     //check the coming peer node
-    line_ = peer->GetUUID();
+    line_ = peer.GetUUID();
 
     if(msg->GetHandler().find("sc") == 0)
     {
@@ -606,12 +606,12 @@ void SCAgent::HandleAny(MessagePtr msg, PeerNodePtr peer)
 /// @param msg the received message
 /// @param peer the node
 //////////////////////////////////////////////////////////////////
-void SCAgent::HandlePeerList(MessagePtr msg, PeerNodePtr peer)
+void SCAgent::HandlePeerList(MessagePtr msg, CPeerNode peer)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    std::string line_ = peer->GetUUID();
-    m_scleader = peer->GetUUID();
-    Logger.Info << "Peer List received from Group Leader: " << peer->GetUUID() <<std::endl;
+    std::string line_ = peer.GetUUID();
+    m_scleader = peer.GetUUID();
+    Logger.Info << "Peer List received from Group Leader: " << peer.GetUUID() <<std::endl;
     // Process the peer list.
     m_AllPeers = gm::GMAgent::ProcessPeerList(msg);
 
@@ -658,7 +658,7 @@ void SCAgent::HandlePeerList(MessagePtr msg, PeerNodePtr peer)
 /// @post start state collection by calling Initiate().
 /// @param msg, peer
 //////////////////////////////////////////////////////////////////
-void SCAgent::HandleRequest(MessagePtr msg, PeerNodePtr peer)
+void SCAgent::HandleRequest(MessagePtr msg, CPeerNode peer)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
@@ -709,7 +709,7 @@ void SCAgent::HandleRequest(MessagePtr msg, PeerNodePtr peer)
 /// @param msg the received message
 /// @param peer the node
 //////////////////////////////////////////////////////////////////
-void SCAgent::HandleMarker(MessagePtr msg, PeerNodePtr peer)
+void SCAgent::HandleMarker(MessagePtr msg, CPeerNode peer)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     if(CountInPeerSet(m_AllPeers,peer) == 0)
@@ -813,7 +813,7 @@ void SCAgent::HandleMarker(MessagePtr msg, PeerNodePtr peer)
 /// @param msg the received message
 /// @param peer the node
 //////////////////////////////////////////////////////////////////
-void SCAgent::HandleState(MessagePtr msg, PeerNodePtr peer)
+void SCAgent::HandleState(MessagePtr msg, CPeerNode peer)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     if(CountInPeerSet(m_AllPeers,peer) == 0)
@@ -850,7 +850,7 @@ void SCAgent::HandleState(MessagePtr msg, PeerNodePtr peer)
 /// @param peer
 /// @return a pointer to a peer node
 /////////////////////////////////////////////////////////
-SCAgent::PeerNodePtr SCAgent::AddPeer(PeerNodePtr peer)
+SCAgent::CPeerNode SCAgent::AddPeer(CPeerNode peer)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     InsertInPeerSet(m_AllPeers,peer);
@@ -866,7 +866,7 @@ SCAgent::PeerNodePtr SCAgent::AddPeer(PeerNodePtr peer)
 /// @param uuid string
 /// @return a pointer to the peer
 /////////////////////////////////////////////////////////
-SCAgent::PeerNodePtr SCAgent::GetPeer(std::string uuid)
+SCAgent::CPeerNode SCAgent::GetPeer(std::string uuid)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     PeerSet::iterator it = m_AllPeers.find(uuid);
@@ -877,7 +877,7 @@ SCAgent::PeerNodePtr SCAgent::GetPeer(std::string uuid)
     }
     else
     {
-        return PeerNodePtr();
+        return CPeerNode();
     }
 }
 

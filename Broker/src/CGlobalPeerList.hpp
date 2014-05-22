@@ -23,7 +23,7 @@
 #ifndef CGLOBALPEERLIST_HPP
 #define CGLOBALPEERLIST_HPP
 
-#include "IPeerNode.hpp"
+#include "CPeerNode.hpp"
 
 #include <map>
 
@@ -44,10 +44,8 @@ class CGlobalPeerList : public boost::noncopyable
 {
     public:
         friend class freedm::broker::gm::GMAgent;
-        /// Provides a PeerNodePtr type
-        typedef boost::shared_ptr<IPeerNode> PeerNodePtr;
         /// The peerset type
-        typedef std::map<std::string, PeerNodePtr> PeerSet;
+        typedef std::map<std::string, CPeerNode> PeerSet;
         /// Provides and Iterator
         typedef PeerSet::iterator PeerSetIterator;
         /// Provides the global instance
@@ -57,11 +55,11 @@ class CGlobalPeerList : public boost::noncopyable
             return inst;
         }
         /// Fetch a peer based on uuid, throws an exception if they aren't found
-        PeerNodePtr GetPeer(std::string uuid);
+        CPeerNode GetPeer(const std::string& uuid);
         /// Count the number of peers with a specified uuid (should be 1 or 0)
-        int Count(std::string uuid);
+        int Count(const std::string& uuid);
         /// Return an iterator to the peer with the given uuid
-        PeerSetIterator Find(std::string uuid);
+        PeerSetIterator Find(const std::string& uuid);
         /// Iterator to the beginning of the peerset
         PeerSetIterator begin();
         /// Iterator to the end of the peerset
@@ -69,9 +67,9 @@ class CGlobalPeerList : public boost::noncopyable
         /// Returns a copy of the peer map
         PeerSet& PeerList();
         /// Construct a peer
-        PeerNodePtr Create(std::string uuid);
+        CPeerNode Create(std::string uuid);
         /// Pushes a peer node into the set
-        void Insert(PeerNodePtr p);
+        void Insert(CPeerNode p);
     private:
         /// The set of peers to present
         PeerSet m_peerlist;

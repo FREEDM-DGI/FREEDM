@@ -1,5 +1,5 @@
 ////////////////////////////////////////////////////////////////////////////////
-/// @file         IPeerNode.cpp
+/// @file         CPeerNode.cpp
 ///
 /// @author       Derek Ditch <dpdm85@mst.edu>
 /// @author       Ravi Akella <rcaq5c@mst.edu>
@@ -25,15 +25,7 @@
 #include "CConnection.hpp"
 #include "CConnectionManager.hpp"
 #include "CLogger.hpp"
-#include "CMessage.hpp"
-#include "IPeerNode.hpp"
-
-#include <map>
-#include <sstream>
-
-#include <boost/bind.hpp>
-#include <boost/shared_ptr.hpp>
-#include <boost/thread/locks.hpp>
+#include "CPeerNode.hpp"
 
 namespace freedm {
 
@@ -47,12 +39,12 @@ CLocalLogger Logger(__FILE__);
 }
 
 /////////////////////////////////////////////////////////////
-/// @fn IPeerNode::IPeerNode
+/// @fn CPeerNode::IPeerNode
 /// @description Prepares a peer node. Provides node status
 ///   and sending functions to the agent in a very clean manner.
 /// @param uuid The uuid of the node
 /////////////////////////////////////////////////////////////
-IPeerNode::IPeerNode(std::string uuid)
+CPeerNode::CPeerNode(std::string uuid)
     : m_uuid(uuid)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
@@ -60,35 +52,35 @@ IPeerNode::IPeerNode(std::string uuid)
 
 
 ////////////////////////////////////////////////////////////
-/// @fn IPeerNode::GetUUID
+/// @fn CPeerNode::GetUUID
 /// @description Returns the uuid of this peer node as a
 ///              string.
 /////////////////////////////////////////////////////////////
-std::string IPeerNode::GetUUID() const
+std::string CPeerNode::GetUUID() const
 {
     return m_uuid;
 }
 
 /////////////////////////////////////////////////////////////
-/// @fn IPeerNode::GetHostname
+/// @fn CPeerNode::GetHostname
 /// @description Returns the hostname of this peer node as a
 ///              string
 /////////////////////////////////////////////////////////////
-std::string IPeerNode::GetHostname() const
+std::string CPeerNode::GetHostname() const
 {
     return CConnectionManager::Instance().GetHostByUUID(GetUUID()).hostname;
 }
 ////////////////////////////////////////////////////////////
-/// IPeerNode::GetPort
+/// CPeerNode::GetPort
 /// @description Returns the port number this node communicates on
 ////////////////////////////////////////////////////////////
-std::string IPeerNode::GetPort() const
+std::string CPeerNode::GetPort() const
 {
     return CConnectionManager::Instance().GetHostByUUID(GetUUID()).port;
 }
 
 /////////////////////////////////////////////////////////////
-/// @fn IPeerNode::GetConnection
+/// @fn CPeerNode::GetConnection
 /// @description Uses the connection manager to attempt to
 ///   get a connection pointer to this node.
 /// @pre None
@@ -96,13 +88,13 @@ std::string IPeerNode::GetPort() const
 ///   will exist with the connection manager.
 /// @return A ConnectionPtr for the connection to this peer.
 /////////////////////////////////////////////////////////////
-broker::ConnectionPtr IPeerNode::GetConnection()
+broker::ConnectionPtr CPeerNode::GetConnection()
 {
     return CConnectionManager::Instance().GetConnectionByUUID(m_uuid);
 }
 
 /////////////////////////////////////////////////////////////
-/// @fn IPeerNode::Send
+/// @fn CPeerNode::Send
 /// @description This method will attempt to construct a
 ///   connection to the peer this object represents and send
 ///   a message. Before, when this was done with TCP, it was
@@ -114,7 +106,7 @@ broker::ConnectionPtr IPeerNode::GetConnection()
 /// @param msg The message to write to channel
 /// @return True if the message was sent.
 /////////////////////////////////////////////////////////////
-bool IPeerNode::Send(freedm::broker::CMessage msg)
+bool CPeerNode::Send(const freedm::broker::CMessage msg)
 {
     try
     {
@@ -143,7 +135,7 @@ bool IPeerNode::Send(freedm::broker::CMessage msg)
 /// @description Compares two peernodes.
 /// @return True if the peer nodes have the same uuid.
 ///////////////////////////////////////////////////////////////////////////////
-bool operator==(const IPeerNode& a, const IPeerNode& b)
+bool operator==(const CPeerNode& a, const CPeerNode& b)
 {
   return (a.GetUUID() == b.GetUUID());
 }
@@ -152,7 +144,7 @@ bool operator==(const IPeerNode& a, const IPeerNode& b)
 /// @description Provides a < operator for the maps these get stored in.
 /// @return True if a's uuid is < b's.
 /////////////////////////////////////////////////////////////////////////////
-bool operator<(const IPeerNode& a, const IPeerNode& b)
+bool operator<(const CPeerNode& a, const CPeerNode& b)
 {
   return (a.GetUUID() < b.GetUUID());
 }

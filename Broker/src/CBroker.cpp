@@ -35,7 +35,6 @@
 #include "CConnectionManager.hpp"
 #include "CLogger.hpp"
 #include "CGlobalPeerList.hpp"
-#include "IPeerNode.hpp"
 
 #include <boost/asio/io_service.hpp>
 #include <boost/bind.hpp>

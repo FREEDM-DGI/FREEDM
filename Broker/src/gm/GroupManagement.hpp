@@ -25,9 +25,9 @@
 #define GROUPMANAGEMENT_HPP_
 
 #include "CMessage.hpp"
-#include "IAgent.hpp"
+#include "MPeerSet.hpp"
 #include "IHandler.hpp"
-#include "IPeerNode.hpp"
+#include "CPeerNode.hpp"
 
 #include <boost/interprocess/sync/interprocess_mutex.hpp>
 #include <boost/shared_ptr.hpp>
@@ -40,8 +40,9 @@ namespace gm {
 
 /// Declaration of Garcia-Molina Invitation Leader Election algorithm.
 class GMAgent
-  : public IReadHandler, private IPeerNode,
-    public IAgent< boost::shared_ptr<IPeerNode> >
+  : public IReadHandler
+  , private CPeerNode
+  , public MPeerSet
 {
   public:
     /// Module states
@@ -63,23 +64,23 @@ class GMAgent
 
     // Handlers
     /// Handles receiving incoming messages.
-    void HandleAny(MessagePtr msg,PeerNodePtr peer);
+    void HandleAny(MessagePtr msg,CPeerNode peer);
     /// Hadles recieving peerlists
-    void HandlePeerList(MessagePtr msg,PeerNodePtr peer);
+    void HandlePeerList(MessagePtr msg,CPeerNode peer);
     /// Handles recieving accept messsages
-    void HandleAccept(MessagePtr msg,PeerNodePtr peer);
+    void HandleAccept(MessagePtr msg,CPeerNode peer);
     /// Handles recieving are you coordinator messages
-    void HandleAreYouCoordinator(MessagePtr msg,PeerNodePtr peer);
+    void HandleAreYouCoordinator(MessagePtr msg,CPeerNode peer);
     /// Handles recieving are you there messsages
-    void HandleAreYouThere(MessagePtr msg,PeerNodePtr peer);
+    void HandleAreYouThere(MessagePtr msg,CPeerNode peer);
     /// Handles recieving invite messages
-    void HandleInvite(MessagePtr msg,PeerNodePtr peer);
+    void HandleInvite(MessagePtr msg,CPeerNode peer);
     /// Handles recieving AYC responses
-    void HandleResponseAYC(MessagePtr msg,PeerNodePtr peer);
+    void HandleResponseAYC(MessagePtr msg,CPeerNode peer);
     /// Handles recieving AYT responses
-    void HandleResponseAYT(MessagePtr msg,PeerNodePtr peer);
+    void HandleResponseAYT(MessagePtr msg,CPeerNode peer);
     /// Handles recieving peerlist requests
-    void HandlePeerListQuery(MessagePtr msg, PeerNodePtr peer);
+    void HandlePeerListQuery(MessagePtr msg, CPeerNode peer);
 
     //Routines
     /// Checks for other up leaders
@@ -114,11 +115,11 @@ class GMAgent
 
     //Peer Set Manipulation
     /// Adds a peer to the peer set from UUID
-    PeerNodePtr AddPeer(std::string uuid);
+    CPeerNode AddPeer(std::string uuid);
     /// Adds a peer from a pointer to a peer node object
-    PeerNodePtr AddPeer(PeerNodePtr peer);
+    CPeerNode AddPeer(CPeerNode peer);
     /// Gets a pointer to a peer from UUID.
-    PeerNodePtr GetPeer(std::string uuid);
+    CPeerNode GetPeer(std::string uuid);
 
     /// Gets the status of a node
     int GetStatus() const;

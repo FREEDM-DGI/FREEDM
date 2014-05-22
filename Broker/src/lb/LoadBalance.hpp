@@ -60,16 +60,21 @@ private:
     void ReadDevices();
     void UpdateState();
     void LoadTable();
-    void SendStateChange(std::string state);
+    ModuleMessage MessageStateChange(std::string state);
     void HandleStateChange(const StateChangeMessage & m, PeerNodePtr peer);
+    ModuleMessage MessageDraftRequest();
     void SendDraftRequest();
     void HandleDraftRequest(const DraftRequestMessage & m, PeerNodePtr peer);
+    ModuleMessage MessageDraftAge(float age);
     void SendDraftAge(PeerNodePtr peer);
     void HandleDraftAge(const DraftAgeMessage & m, PeerNodePtr peer);
     void DraftStandard(const boost::system::error_code & error);
+    ModuleMessage MessageDraftSelect(float amount);
     void SendDraftSelect(PeerNodePtr peer, float step);
     void HandleDraftSelect(const DraftSelectMessage & m, PeerNodePtr peer);
+    ModuleMessage MessageDraftAccept(float amount);
     void SendDraftAccept(PeerNodePtr peer, float step);
+    ModuleMessage MessageTooLate(float amount);
     void SendTooLate(PeerNodePtr peer, float step);
     void HandleDraftAccept(const DraftAcceptMessage & m, PeerNodePtr peer);
     void HandleTooLate(const TooLateMessage & m);
@@ -79,7 +84,8 @@ private:
     void ScheduleStateCollection();
     void HandleCollectedState(const sc::CollectedStateMessage & m);
     void HandleCollectedState(const CollectedStateMessage & m);
-    void BroadcastCollectedState(float state);
+    ModuleMessage MessageStateCollection();
+    ModuleMessage MessageCollectedState(float state);
     void Synchronize(float k);
 
     const boost::posix_time::time_duration ROUND_TIME;

@@ -245,7 +245,8 @@ void LBAgent::LoadManage(const boost::system::error_code & error)
         {
             if(m_State == LBAgent::DEMAND)
             {
-                SendStateChange("demand");
+                SendToPeerSet(m_AllPeers, MessageStateChange("demand"));
+                Logger.Notice << "Sending state change, DEMAND" << std::endl;
             }
 
             if(m_Synchronized)
@@ -394,15 +395,13 @@ void LBAgent::LoadTable()
     Logger.Status << loadtable.str() << std::endl;
 }
 
-void LBAgent::SendStateChange(std::string state)
+ModuleMessage LBAgent::MessageStateChange(std::string state)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    Logger.Notice << "Sending state change, " << state << std::endl;
-
-    LoadBalancingMessage lbm;
-    StateChangeMessage * stm = lbm.mutable_state_change_message();
-    stm->set_state(state);
-    SendToPeerSet(m_AllPeers, PrepareForSending(lbm));
+    LoadBalancingMessage msg;
+    StateChangeMessage * submsg = msg.mutable_state_change_message();
+    submsg->set_state(state);
+    return PrepareForSending(msg);
 }
 
 void LBAgent::HandleStateChange(const StateChangeMessage & m, PeerNodePtr peer)
@@ -437,6 +436,14 @@ void LBAgent::HandleStateChange(const StateChangeMessage & m, PeerNodePtr peer)
     }
 }
 
+ModuleMessage LBAgent::MessageDraftRequest()
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    LoadBalancingMessage msg;
+    msg.mutable_draft_request_message();
+    return PrepareForSending(msg);
+}
+
 void LBAgent::SendDraftRequest()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
@@ -445,9 +452,7 @@ void LBAgent::SendDraftRequest()
     {
         if(!m_InDemand.empty())
         {
-            LoadBalancingMessage lbm;
-            lbm.mutable_draft_request_message();
-            SendToPeerSet(m_InDemand, PrepareForSending(lbm));
+            SendToPeerSet(m_InDemand, MessageDraftRequest());
             CBroker::Instance().Schedule(m_WaitTimer, REQUEST_TIMEOUT,
                 boost::bind(&LBAgent::DraftStandard, this, boost::asio::placeholders::error));
             m_DraftAge.clear();
@@ -480,6 +485,15 @@ void LBAgent::HandleDraftRequest(const DraftRequestMessage & /*m*/, PeerNodePtr 
     }
 }
 
+ModuleMessage LBAgent::MessageDraftAge(float age)
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    LoadBalancingMessage msg;
+    DraftAgeMessage * submsg = msg.mutable_draft_age_message();
+    submsg->set_draft_age(age);
+    return PrepareForSending(msg);
+}
+
 void LBAgent::SendDraftAge(PeerNodePtr peer)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
@@ -493,10 +507,7 @@ void LBAgent::SendDraftAge(PeerNodePtr peer)
 
     try
     {
-        LoadBalancingMessage lbm;
-        DraftAgeMessage * dam = lbm.mutable_draft_age_message();
-        dam->set_draft_age(age);
-        peer->Send(PrepareForSending(lbm));
+        peer->Send(MessageDraftAge(age));
         Logger.Notice << "Sent Draft Age to " << peer->GetUUID() << std::endl;
     }
     catch(boost::system::system_error & e)
@@ -570,16 +581,22 @@ void LBAgent::DraftStandard(const boost::system::error_code & error)
     }
 }
 
+ModuleMessage LBAgent::MessageDraftSelect(float amount)
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    LoadBalancingMessage msg;
+    DraftSelectMessage * submsg = msg.mutable_draft_select_message();
+    submsg->set_migrate_step(amount);
+    return PrepareForSending(msg);
+}
+
 void LBAgent::SendDraftSelect(PeerNodePtr peer, float step)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
     try
     {
-        LoadBalancingMessage lbm;
-        DraftSelectMessage * dsm = lbm.mutable_draft_select_message();
-        dsm->set_migrate_step(step);
-        peer->Send(PrepareForSending(lbm));
+        peer->Send(MessageDraftSelect(step));
         SetPStar(m_PredictedGateway + step);
         m_GrossPowerFlow += step;
     }
@@ -601,50 +618,41 @@ void LBAgent::HandleDraftSelect(const DraftSelectMessage & m, PeerNodePtr peer)
     {
         float amount = m.migrate_step();
 
-        if(m_NetGeneration <= m_PredictedGateway - amount)
+        try
         {
-            SetPStar(m_PredictedGateway - amount);
-            SendDraftAccept(peer, amount);
+            if(m_NetGeneration <= m_PredictedGateway - amount)
+            {
+                peer->Send(MessageDraftAccept(amount));
+                SetPStar(m_PredictedGateway - amount);
+            }
+            else
+            {
+                peer->Send(MessageTooLate(amount));
+            }
         }
-        else
+        catch(boost::system::system_error & error)
         {
-            SendTooLate(peer, amount);
+            Logger.Warn << "Couldn't connect to peer" << std::endl;
         }
     }
 }
 
-void LBAgent::SendDraftAccept(PeerNodePtr peer, float step)
+ModuleMessage LBAgent::MessageDraftAccept(float amount)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-
-    try
-    {
-        LoadBalancingMessage lbm;
-        DraftAcceptMessage * dsm = lbm.mutable_draft_accept_message();
-        dsm->set_migrate_step(step);
-        peer->Send(PrepareForSending(lbm));
-    }
-    catch(boost::system::system_error & error)
-    {
-        Logger.Warn << "Couldn't connect to peer" << std::endl;
-    }
+    LoadBalancingMessage msg;
+    DraftAcceptMessage * submsg = msg.mutable_draft_accept_message();
+    submsg->set_migrate_step(amount);
+    return PrepareForSending(msg);
 }
 
-void LBAgent::SendTooLate(PeerNodePtr peer, float step)
+ModuleMessage LBAgent::MessageTooLate(float amount)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-
-    try
-    {
-        LoadBalancingMessage lbm;
-        TooLateMessage * submsg = lbm.mutable_too_late_message();
-        submsg->set_migrate_step(step);
-        peer->Send(PrepareForSending(lbm));
-    }
-    catch(boost::system::system_error & error)
-    {
-        Logger.Warn << "Couldn't connect to peer" << std::endl;
-    }
+    LoadBalancingMessage msg;
+    TooLateMessage * submsg = msg.mutable_too_late_message();
+    submsg->set_migrate_step(amount);
+    return PrepareForSending(msg);
 }
 
 void LBAgent::HandleDraftAccept(const DraftAcceptMessage & m, PeerNodePtr peer)
@@ -716,6 +724,23 @@ ModuleMessage LBAgent::PrepareForSending(const LoadBalancingMessage & m, std::st
     return mm;
 }
 
+ModuleMessage LBAgent::MessageStateCollection()
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+
+    sc::StateCollectionMessage msg;
+    sc::RequestMessage * submsg = msg.mutable_request_message();
+    sc::DeviceSignalRequestMessage * subsubmsg = submsg->add_device_signal_request_message();
+    submsg->set_module("lb");
+    subsubmsg->set_type("Sst");
+    subsubmsg->set_signal("gateway");
+
+    ModuleMessage m;
+    m.mutable_state_collection_message()->CopyFrom(msg);
+    m.set_recipient_module("sc");
+    return m;
+}
+
 void LBAgent::ScheduleStateCollection()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
@@ -724,16 +749,8 @@ void LBAgent::ScheduleStateCollection()
     {
         try
         {
-            ModuleMessage mm;
-            sc::StateCollectionMessage scm;
-            sc::RequestMessage * rm = scm.mutable_request_message();
-            rm->set_module("lb");
-            sc::DeviceSignalRequestMessage * dsrm = rm->add_device_signal_request_message();
-            dsrm->set_type("Sst");
-            dsrm->set_signal("gateway");
-            mm.mutable_state_collection_message()->CopyFrom(scm);
-            mm.set_recipient_module("sc");
-            CGlobalPeerList::instance().GetPeer(GetUUID())->Send(mm);
+            PeerNodePtr self = CGlobalPeerList::instance().GetPeer(GetUUID());
+            self->Send(MessageStateCollection());
         }
         catch(boost::system::system_error & error)
         {
@@ -753,17 +770,16 @@ void LBAgent::HandleCollectedState(const sc::CollectedStateMessage & m)
     }
     // should this include intransit?
     Synchronize(net_power);
-    BroadcastCollectedState(net_power);
+    SendToPeerSet(m_AllPeers, MessageCollectedState(net_power));
 }
 
-void LBAgent::BroadcastCollectedState(float state)
+ModuleMessage LBAgent::MessageCollectedState(float state)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-
-    LoadBalancingMessage lbm;
-    CollectedStateMessage * csm = lbm.mutable_collected_state_message();
-    csm->set_gross_power_flow(state);
-    SendToPeerSet(m_AllPeers, PrepareForSending(lbm));
+    LoadBalancingMessage msg;
+    CollectedStateMessage * submsg = msg.mutable_collected_state_message();
+    submsg->set_gross_power_flow(state);
+    return PrepareForSending(msg);
 }
 
 void LBAgent::HandleCollectedState(const CollectedStateMessage & m)

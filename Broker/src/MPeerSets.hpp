@@ -25,10 +25,13 @@
 #include <map>
 #include <string>
 
+#include <boost/date_time/posix_time/ptime.hpp>
+
+#include "CPeerNode.hpp"
+
 namespace freedm {
 namespace broker {
 
-template<class T>
 /// Common functions useful for all sorts of broker modules
 class MPeerSets
 {
@@ -38,9 +41,9 @@ public:
     /// Provides a PeerSet iterator templated on T
     typedef typename PeerSet::iterator PeerSetIterator;
     /// Provides count() for a PeerSet
-    static int CountInPeerSet(PeerSet& ps, const CPeerNode& m) const;
+    static int CountInPeerSet(PeerSet& ps, const CPeerNode& m);
     /// Provides find() for a PeerSet
-    static PeerSetIterator FindInPeerSet(PeerSet& ps, const CPeerNode& m) const;
+    static PeerSetIterator FindInPeerSet(PeerSet& ps, const CPeerNode& m);
     /// Provides erase() for a PeerSet
     static void EraseInPeerSet(PeerSet& ps, const CPeerNode& m);
     /// Provides insert() for a PeerSet
@@ -48,7 +51,7 @@ public:
 
     /// Similar to a PeerSet, but also tracks the time a peer was inserted
     typedef std::map<std::string,
-                     std::pair<T, boost::posix_time::ptime> > TimedPeerSet;
+                     std::pair<CPeerNode, boost::posix_time::ptime> > TimedPeerSet;
 
     /// Provides a TimedPeerSet iterator templated on T
     typedef typename TimedPeerSet::iterator TimedPeerSetIterator;

@@ -86,4 +86,3 @@ private:
 } // namespace freedm
 
 #endif // C_DEVICE_BUILDER_HPP
-

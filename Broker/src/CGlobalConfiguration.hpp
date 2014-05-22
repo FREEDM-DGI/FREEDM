@@ -32,6 +32,7 @@
 #ifndef CGLOBALCONFIGURATION_HPP
 #define CGLOBALCONFIGURATION_HPP
 
+#include <climits>
 #include <string>
 
 #include <boost/date_time/posix_time/posix_time.hpp>
@@ -92,12 +93,12 @@ class CGlobalConfiguration : public boost::noncopyable
         std::string GetAdapterConfigPath() const { return m_adapterConfigPath; };
         /// Get the path to the device class XML specification file
         std::string GetDeviceConfigPath() const { return m_deviceConfigPath; }
+        /// Intentionally signed. UINT16_MAX is too big for a UDP datagram, anyway.
+        static const short MAX_PACKET_SIZE = SHRT_MAX;
         /// Path to the topology specification file
         std::string GetTopologyConfigPath() const { return m_topologyConfigPath; }
         /// Get the flag to invariant check
         std::string GetInvariantCheckFlag() const { return m_invariantCheckFlag; }
-        /// The maximum packet size in bytes
-        static const unsigned int MAX_PACKET_SIZE = 60000;
     private:
         std::string m_hostname; /// Node hostname
         std::string m_port; /// Port number

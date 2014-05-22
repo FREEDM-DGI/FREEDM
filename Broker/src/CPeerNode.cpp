@@ -22,10 +22,16 @@
 /// Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
 ////////////////////////////////////////////////////////////////////////////////
 
-#include "CConnection.hpp"
-#include "CConnectionManager.hpp"
 #include "CLogger.hpp"
 #include "CPeerNode.hpp"
+#include "CConnectionManager.hpp"
+#include "CConnection.hpp"
+#include "messages/ModuleMessage.pb.h"
+
+#include <map>
+#include <stdexcept>
+
+#include <boost/shared_ptr.hpp>
 
 namespace freedm {
 
@@ -39,13 +45,17 @@ CLocalLogger Logger(__FILE__);
 }
 
 /////////////////////////////////////////////////////////////
-/// @fn CPeerNode::IPeerNode
+/// @fn CPeerNode::CPeerNode
 /// @description Prepares a peer node. Provides node status
 ///   and sending functions to the agent in a very clean manner.
 /// @param uuid The uuid of the node
 /////////////////////////////////////////////////////////////
 CPeerNode::CPeerNode(std::string uuid)
     : m_uuid(uuid)
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+}
+CPeerNode::CPeerNode()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 }
@@ -80,20 +90,6 @@ std::string CPeerNode::GetPort() const
 }
 
 /////////////////////////////////////////////////////////////
-/// @fn CPeerNode::GetConnection
-/// @description Uses the connection manager to attempt to
-///   get a connection pointer to this node.
-/// @pre None
-/// @post If enough is known about the uuid, a connection
-///   will exist with the connection manager.
-/// @return A ConnectionPtr for the connection to this peer.
-/////////////////////////////////////////////////////////////
-broker::ConnectionPtr CPeerNode::GetConnection()
-{
-    return CConnectionManager::Instance().GetConnectionByUUID(m_uuid);
-}
-
-/////////////////////////////////////////////////////////////
 /// @fn CPeerNode::Send
 /// @description This method will attempt to construct a
 ///   connection to the peer this object represents and send
@@ -103,32 +99,26 @@ broker::ConnectionPtr CPeerNode::GetConnection()
 /// @pre None
 /// @post A message is sent to the peer represented by this
 ///   object
-/// @param msg The message to write to channel
+/// @param msg the message to write to channel.
 /// @return True if the message was sent.
 /////////////////////////////////////////////////////////////
-bool CPeerNode::Send(const freedm::broker::CMessage msg)
+void CPeerNode::Send(const ModuleMessage& msg)
 {
-    try
+    if(m_uuid.size() == 0)
     {
-        broker::ConnectionPtr c = GetConnection();
-        if(c.get() != NULL)
-        {
-            //Schedule the send with the io_service thread
-            c->Send(msg);
-        }
-        else
-        {
-            Logger.Warn << "Couldn't Send Message To Peer (Couldn't make connection)" << std::endl;
-            return false;
-        }
+        throw std::runtime_error("Couldn't send to peer, CPeerNode is empty");
     }
-    catch(boost::system::system_error& e)
+    boost::shared_ptr<CConnection> c
+            = CConnectionManager::Instance().GetConnectionByUUID(m_uuid);
+    if(c.get() != NULL)
     {
-        Logger.Warn << "Couldn't Send Message To Peer (Sending Failed)" << std::endl;
-        return false;
+        c->Send(msg);
     }
-    Logger.Debug << "Sent message to peer" << std::endl;
-    return true;
+    else
+    {
+        Logger.Error << "Got empty pointer back for peer: "<<m_uuid<<std::endl;        
+        throw std::runtime_error("Couldn't send to peer, CConnectionManager returned empty pointer");
+    }
 }
 ///////////////////////////////////////////////////////////////////////////////
 /// @fn operator==

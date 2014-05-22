@@ -298,7 +298,7 @@ SignalValue CDeviceManager::GetNetValue(std::string type, std::string signal)
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
     SignalValue result = 0;
-    
+
     std::set<CDevice::Pointer> devices = GetDevicesOfType(type);
     std::set<CDevice::Pointer>::iterator it, end;
 

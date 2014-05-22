@@ -25,29 +25,30 @@
 #ifndef CPEERNODE_HPP_
 #define CPEERNODE_HPP_
 
-#include "CConnection.hpp"
-#include "CMessage.hpp"
+#include <string>
 
 namespace freedm {
 
 namespace broker {
 
-/// A basic reference to another peer.
+class ModuleMessage;
+
+/// Base interface for agents/broker modules
 class CPeerNode
 {
     public:
         /// Construct a peer node
+        CPeerNode();
+        /// Construct a peer node
         CPeerNode(std::string uuid);
         /// Gets the uuid of the node this addresses
         std::string GetUUID() const;
-        /// Gives a connection ptr to this peer
-        broker::ConnectionPtr GetConnection();
         /// Gets the hostname of this peer
         std::string GetHostname() const;
         /// Gets the port of this peer.
         std::string GetPort() const;
         /// Sends a message to peer
-        bool Send(const freedm::broker::CMessage msg);
+        void Send(const ModuleMessage& msg);
     private:
         std::string m_uuid; /// This node's uuid.
 };

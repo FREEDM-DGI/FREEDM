@@ -119,4 +119,3 @@ private:
 } // namespace freedm
 
 #endif // C_DEVICE_HPP
-

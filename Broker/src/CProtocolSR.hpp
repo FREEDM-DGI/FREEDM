@@ -24,54 +24,44 @@
 #ifndef CPROTOCOLSR_HPP
 #define CPROTOCOLSR_HPP
 
-#include "CConnection.hpp"
-#include "CMessage.hpp"
 #include "IProtocol.hpp"
 
-#include <deque>
-#include <iomanip>
+#include "messages/ProtocolMessage.pb.h"
 
-#include <boost/array.hpp>
-#include <boost/asio.hpp>
-#include <boost/enable_shared_from_this.hpp>
-#include <boost/noncopyable.hpp>
-#include <boost/shared_ptr.hpp>
-#include <boost/thread/shared_mutex.hpp>
+#include <deque>
+
+#include <boost/asio/deadline_timer.hpp>
+#include <boost/date_time/posix_time/posix_time.hpp>
 
 namespace freedm {
     namespace broker {
 
-
 /// A reliable connection protocol with sweet as expirations.
-class CProtocolSR : public IProtocol
-    , public boost::enable_shared_from_this<CProtocolSR>
+class CProtocolSR
+    : public IProtocol
 {
     public:
         /// Initializes the protocol with the underlying connection
-        explicit CProtocolSR(CConnection * conn);
+        explicit CProtocolSR(CConnection& conn);
         /// Public facing send function that sends a message
-        void Send(CMessage msg);
+        void Send(const ModuleMessage& msg);
         /// Public facing function that handles marking down ACKs for sent messages
-        void ReceiveACK(const CMessage &msg);
+        void ReceiveACK(const ProtocolMessage& msg);
         /// deterimines if a  messageshould be given to the dispatcher
-        bool Receive(const CMessage &msg);
+        bool Receive(const ProtocolMessage& msg);
         /// Handles Writing an ack for the input message to the channel
-        void SendACK(const CMessage &msg);
+        void SendACK(const ProtocolMessage& msg);
         /// Sends a synchronizer
         void SendSYN();
         /// Stops the timers
         void Stop() { m_timeout.cancel(); SetStopped(true); };
-        /// Returns the identifier
-        std::string GetIdentifier() { return Identifier(); };
-        /// Returns the identifier for this protocol.
-        static std::string Identifier() { return "SRC"; };
+        /// Handles writing the message to the underlying connection
+        void Write(ProtocolMessage& msg);
     private:
         /// Resend outstanding messages
         void Resend(const boost::system::error_code& err);
         /// Timeout for resends
         boost::asio::deadline_timer m_timeout;
-        /// The current ack to flood with
-        CMessage m_currentack;
         /// The expected next in sequence number
         unsigned int m_inseq;
         /// The next number to assign to an outgoing message
@@ -89,15 +79,13 @@ class CProtocolSR : public IProtocol
         /// Marks if we should send the kill hash.
         bool m_sendkills;
         /// The hash to... MURDER.
-        unsigned int  m_sendkill;
+        unsigned int m_sendkill;
         /// The window
-        std::deque<CMessage> m_window;
+        std::deque<ProtocolMessage> m_window;
         /// Sequence modulo
         static const unsigned int SEQUENCE_MODULO = 1024;
         /// Refire time in MS
         static const unsigned int REFIRE_TIME = 10;
-        /// Mutex for the current ack
-        boost::shared_mutex m_ackmutex;
         /// The number of messages that have to be dropped before the connection is dead
         static const unsigned int MAX_DROPPED_MSGS = 3;
         /// The number that have been dropped.

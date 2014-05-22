@@ -1,23 +1,24 @@
-# goto src/device/CMakeLists.txt
 add_subdirectory(device)
+add_subdirectory(messages)
 
 # list the source files for the project
 set(BROKER_FILES
     CBroker.cpp
+    CClockSynchronizer.cpp
     CConnection.cpp
     CConnectionManager.cpp
     CDispatcher.cpp
     CGlobalPeerList.cpp
     CListener.cpp
     CLogger.cpp
-    CMessage.cpp
     CProtocolSR.cpp
     CProtocolSU.cpp
     CProtocolSRSW.cpp
     CPeerNode.cpp
     MPeerSets.cpp
+    CTimings.cpp
     IProtocol.cpp
-    IHandler.cpp
+    Messages.cpp
     CClockSynchronizer.cpp
     CTimings.cpp
     CPhysicalTopology.cpp
@@ -32,3 +33,5 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/config.hpp.cmake
               )
 
 add_library(broker ${BROKER_FILES})
+
+target_link_libraries(broker messages)

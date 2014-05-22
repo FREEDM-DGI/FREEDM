@@ -1,13 +1,9 @@
 ////////////////////////////////////////////////////////////////////////////////
-/// @file           FreedmExceptions.hpp
+/// @file         ModuleMessage.proto
 ///
-/// @author         Michael Catanzaro <michael.catanzaro@mst.edu>
+/// @author       Michael Catanzaro <michael.catanzaro@mst.edu>
 ///
-/// @project        FREEDM DGI
-///
-/// @description    A header for FREEDM exceptions applicable across the tree.
-///                 Exceptions applicable to specific files or modules belong
-///                 in those locations.
+/// @description  A ModuleMessages encapsulates a message from some DGI module.
 ///
 /// These source code files were created at Missouri University of Science and
 /// Technology, and are intended for use in teaching or research. They may be
@@ -22,32 +18,18 @@
 /// Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
 ////////////////////////////////////////////////////////////////////////////////
 
-#ifndef FREEDM_EXCEPTIONS_HPP
-#define FREEDM_EXCEPTIONS_HPP
+import "ClockSynchronizer.proto";
+import "GroupManagement.proto";
+import "LoadBalancing.proto";
+import "StateCollection.proto";
 
-#include <stdexcept>
+package freedm.broker;
 
-namespace freedm {
-namespace broker {
-
-/// Used when the DGI has been misconfigured
-struct EDgiConfigError
-    : virtual std::runtime_error
+message ModuleMessage
 {
-    explicit EDgiConfigError(const std::string& what)
-        : std::runtime_error(what) { }
-};
-
-struct EDgiNoSuchPeerError
-    : virtual std::runtime_error
-{
-    explicit EDgiNoSuchPeerError(const std::string& what)
-        : std::runtime_error(what) { }
-};
-
-
+    required string recipient_module = 1;
+    optional gm.GroupManagementMessage group_management_message = 2;
+    optional sc.StateCollectionMessage state_collection_message = 3;
+    optional lb.LoadBalancingMessage load_balancing_message = 4;
+    optional ClockSynchronizerMessage clock_synchronizer_message = 5;
 }
-}
-
-#endif
-

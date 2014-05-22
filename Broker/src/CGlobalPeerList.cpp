@@ -21,11 +21,11 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 #include "CGlobalPeerList.hpp"
+#include "CPeerNode.hpp"
+#include "FreedmExceptions.hpp"
 
 #include <stdexcept>
 #include <string>
-
-#include <boost/make_shared.hpp>
 
 namespace freedm {
 
@@ -43,7 +43,7 @@ CPeerNode CGlobalPeerList::GetPeer(const std::string& uuid)
     PeerSetIterator pst = Find(uuid);
     if(pst == end())
     {
-        throw std::runtime_error("Peer " + uuid + " was not found in the global table");
+        throw EDgiNoSuchPeerError("Peer " + uuid + " was not found in the global table");
     }
     return pst->second;
 }

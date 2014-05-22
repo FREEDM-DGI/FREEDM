@@ -23,11 +23,10 @@
 #ifndef CGLOBALPEERLIST_HPP
 #define CGLOBALPEERLIST_HPP
 
-#include "CPeerNode.hpp"
-
 #include <map>
+#include <string>
 
-#include <boost/shared_ptr.hpp>
+#include <boost/noncopyable.hpp>
 
 namespace freedm {
 
@@ -40,7 +39,10 @@ class GMAgent;
 
 }
 
-class CGlobalPeerList : public boost::noncopyable
+class CPeerNode;
+
+class CGlobalPeerList
+    : public boost::noncopyable
 {
     public:
         friend class freedm::broker::gm::GMAgent;

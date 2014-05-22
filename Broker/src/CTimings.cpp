@@ -20,35 +20,35 @@ CLocalLogger Logger(__FILE__);
 
 }
 unsigned int CTimings::GM_AYC_RESPONSE_TIMEOUT;
-                       
+
 unsigned int CTimings::GM_PREMERGE_MAX_TIMEOUT;
-                       
+
 unsigned int CTimings::GM_INVITE_RESPONSE_TIMEOUT;
-                       
+
 unsigned int CTimings::LB_PHASE_TIME;
-                       
+
 unsigned int CTimings::CSUC_RESEND_TIME;
-                       
+
 unsigned int CTimings::DEV_PNP_HEARTBEAT;
 
 unsigned int CTimings::DEV_RTDS_DELAY;
-                       
+
 unsigned int CTimings::GM_AYT_RESPONSE_TIMEOUT;
-                       
+
 unsigned int CTimings::GM_PHASE_TIME;
-                       
+
 unsigned int CTimings::SC_PHASE_TIME;
-                       
+
 unsigned int CTimings::DEV_SOCKET_TIMEOUT;
-                       
+
 unsigned int CTimings::CSRC_DEFAULT_TIMEOUT;
-                       
+
 unsigned int CTimings::LB_SC_QUERY_TIME;
-                       
+
 unsigned int CTimings::GM_PREMERGE_MIN_TIMEOUT;
-                       
+
 unsigned int CTimings::CSRC_RESEND_TIME;
-                       
+
 unsigned int CTimings::GM_PREMERGE_GRANULARITY;
 
 unsigned int CTimings::LB_GLOBAL_TIMER;

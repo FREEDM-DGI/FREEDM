@@ -24,12 +24,13 @@
 #ifndef CSTATECOLLECTION_HPP_
 #define CSTATECOLLECTION_HPP_
 
-#include "CMessage.hpp"
-#include "IAgent.hpp"
-#include "IHandler.hpp"
-#include "IPeerNode.hpp"
+#include "MPeerSets.hpp"
+#include "IMessageHandler.hpp"
+#include "CPeerNode.hpp"
+#include "messages/ModuleMessage.pb.h"
 
 #include <map>
+#include <memory>
 #include <vector>
 
 #include <boost/shared_ptr.hpp>
@@ -56,8 +57,10 @@ using boost::property_tree::ptree;
 ///                 other nodes (these messages belong to the channel between the nodes).
 ///////////////////////////////////////////////////////////////////////////////
 
-class SCAgent : public IReadHandler, private IPeerNode,
-        public IAgent< boost::shared_ptr<IPeerNode> >
+class SCAgent
+      : public IMessageHandler,
+        private CPeerNode,
+        public MPeerSets
 {
     public:
         ///Constructor
@@ -69,11 +72,13 @@ class SCAgent : public IReadHandler, private IPeerNode,
 
         //Handler
         ///Handle receiving messages
-        void HandleAny(MessagePtr msg, PeerNodePtr peer);
-        void HandlePeerList(MessagePtr msg, PeerNodePtr peer);
-        void HandleRequest(MessagePtr msg, PeerNodePtr peer);
-        void HandleMarker(MessagePtr msg, PeerNodePtr peer);
-        void HandleState(MessagePtr msg, PeerNodePtr peer);
+        void HandleAccept(CPeerNode peer);
+        void HandlePeerList(const gm::PeerListMessage& msg, CPeerNode peer);
+        void HandleRequest(const RequestMessage& msg, CPeerNode peer);
+        void HandleMarker(const MarkerMessage& msg, CPeerNode peer);
+        void HandleState(const StateMessage& msg, CPeerNode peer);
+        /// Handles received messages
+        void HandleIncomingMessage(boost::shared_ptr<const ModuleMessage> msg, CPeerNode peer);
 
         //Internal
         ///Initiator starts state collection
@@ -85,21 +90,21 @@ class SCAgent : public IReadHandler, private IPeerNode,
         ///Initiator sends collected states back to the request module
         void    StateResponse();
         ///Peer save local state and forward maker
-        void    SaveForward(StateVersion latest, CMessage msg);
-
-        // Messages
-        ///Create a marker message
-        CMessage marker();
+        void    SaveForward(StateVersion latest, const MarkerMessage& msg);
 
         //Peer set operations
         ///Add a peer to peer set from a pointer to a peer node object
-        PeerNodePtr AddPeer(PeerNodePtr peer);
+        CPeerNode AddPeer(CPeerNode peer);
         ///Get a pointer to a peer from UUID
-        PeerNodePtr GetPeer(std::string uuid);
+        CPeerNode GetPeer(std::string uuid);
+
+        /// Wraps a StateCollectionMessage in a ModuleMessage
+        static ModuleMessage PrepareForSending(
+            const StateCollectionMessage& message, std::string recipient = "sc");
 
         ///collect states container and its iterator
-        std::multimap<StateVersion, ptree> collectstate;
-        std::multimap<StateVersion, ptree>::iterator it;
+        std::multimap<StateVersion, StateMessage> collectstate;
+        std::multimap<StateVersion, StateMessage>::iterator it;
 
         ///count number of states
         unsigned int m_countstate;
@@ -117,16 +122,13 @@ class SCAgent : public IReadHandler, private IPeerNode,
         ///module that request state collection
         std::string m_module;
 
-        ///number of requested device
-        unsigned int m_deviceNum;
-
         //For multidevices state collection the following variables have to be changed
         std::vector<std::string> m_device;
 
         ///current version of marker
         StateVersion        m_curversion;
         ///current state
-        ptree               m_curstate;
+        StateMessage m_curstate;
 
         ///all known peers
         PeerSet m_AllPeers;

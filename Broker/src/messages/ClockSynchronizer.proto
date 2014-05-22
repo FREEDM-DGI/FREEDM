@@ -1,13 +1,9 @@
 ////////////////////////////////////////////////////////////////////////////////
-/// @file           FreedmExceptions.hpp
+/// @file         ClockSynchronizer.proto
 ///
-/// @author         Michael Catanzaro <michael.catanzaro@mst.edu>
+/// @author       Michael Catanzaro <michael.catanzaro@mst.edu>
 ///
-/// @project        FREEDM DGI
-///
-/// @description    A header for FREEDM exceptions applicable across the tree.
-///                 Exceptions applicable to specific files or modules belong
-///                 in those locations.
+/// @description  Declaration of all clock synchronizer message types
 ///
 /// These source code files were created at Missouri University of Science and
 /// Technology, and are intended for use in teaching or research. They may be
@@ -22,32 +18,31 @@
 /// Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
 ////////////////////////////////////////////////////////////////////////////////
 
-#ifndef FREEDM_EXCEPTIONS_HPP
-#define FREEDM_EXCEPTIONS_HPP
+package freedm.broker;
 
-#include <stdexcept>
-
-namespace freedm {
-namespace broker {
-
-/// Used when the DGI has been misconfigured
-struct EDgiConfigError
-    : virtual std::runtime_error
+message ExchangeMessage
 {
-    explicit EDgiConfigError(const std::string& what)
-        : std::runtime_error(what) { }
-};
-
-struct EDgiNoSuchPeerError
-    : virtual std::runtime_error
-{
-    explicit EDgiNoSuchPeerError(const std::string& what)
-        : std::runtime_error(what) { }
-};
-
-
-}
+    required uint32 query = 1;
 }
 
-#endif
+message ExchangeResponseMessage
+{
+    message TableEntry
+    {
+        required string uuid = 1;
+        required uint32 offset_secs = 2;
+        required uint64 offset_fracs = 3;
+        required double skew = 4;
+        required double weight = 5;
+    }
 
+    repeated TableEntry table_entry = 1;
+    required uint32 response = 2;
+    required string unsynchronized_sendtime = 3;
+}
+
+message ClockSynchronizerMessage
+{
+    optional ExchangeMessage exchange_message = 1;
+    optional ExchangeResponseMessage exchange_response_message = 2;
+}

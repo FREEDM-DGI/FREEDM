@@ -42,13 +42,14 @@
 
 #include "LoadBalance.hpp"
 
+#include "CBroker.hpp"
 #include "CConnectionManager.hpp"
 #include "CGlobalPeerList.hpp"
 #include "CLogger.hpp"
-#include "CMessage.hpp"
-#include "gm/GroupManagement.hpp"
 #include "CDeviceManager.hpp"
 #include "CTimings.hpp"
+#include "Messages.hpp"
+#include "gm/GroupManagement.hpp"
 #include "CGlobalConfiguration.hpp"
 
 #include <algorithm>
@@ -95,7 +96,7 @@ CLocalLogger Logger(__FILE__);
 /// @limitations: None
 ///////////////////////////////////////////////////////////////////////////////
 LBAgent::LBAgent(std::string uuid_):
-    IPeerNode(uuid_)
+    CPeerNode(uuid_)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     CPeerNode self_ = CGlobalPeerList::instance().GetPeer(uuid_);
@@ -105,21 +106,76 @@ LBAgent::LBAgent(std::string uuid_):
     m_GlobalTimer = CBroker::Instance().AllocateTimer("lb");
     // Bound to lbq so it resolves before the state collection round
     m_StateTimer = CBroker::Instance().AllocateTimer("lbq");
-    RegisterSubhandle("any.PeerList",boost::bind(&LBAgent::HandlePeerList, this, _1, _2));
-    RegisterSubhandle("lb.statechange",boost::bind(&LBAgent::HandleStateChange, this, _1, _2));
-    RegisterSubhandle("lb.request",boost::bind(&LBAgent::HandleRequest, this, _1, _2));
-    RegisterSubhandle("lb.draft",boost::bind(&LBAgent::HandleDraft, this, _1, _2));
-    RegisterSubhandle("lb.drafting",boost::bind(&LBAgent::HandleDrafting, this, _1, _2));
-    RegisterSubhandle("lb.accept",boost::bind(&LBAgent::HandleAccept, this, _1, _2));
-    RegisterSubhandle("lb.CollectedState",boost::bind(&LBAgent::HandleCollectedState, this, _1, _2));
-    RegisterSubhandle("lb.ComputedNormal",boost::bind(&LBAgent::HandleComputedNormal, this, _1, _2));
-    RegisterSubhandle("any",boost::bind(&LBAgent::HandleAny, this, _1, _2));
     m_sstExists = false;
     // First time flag for invariant
     m_firstTimeInvariant = true;
     // Initialize imbalanced power K (predict the future power migration)
     m_outstandingMessages = 1;
     m_actuallyread = true;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+/// "Downcasts" incoming messages into a specific message type, and passes the
+/// message to an appropriate handler.
+///
+/// @param msg the incoming message
+/// @param peer the node that sent this message (could be this DGI)
+///////////////////////////////////////////////////////////////////////////////
+void LBAgent::HandleIncomingMessage(boost::shared_ptr<const ModuleMessage> msg, CPeerNode peer)
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+
+    if(msg->has_group_management_message())
+    {
+        gm::GroupManagementMessage gmm = msg->group_management_message();
+
+        if(gmm.has_peer_list_message())
+        {
+            HandlePeerList(gmm.peer_list_message(), peer);
+        }
+        else
+        {
+            Logger.Warn << "Dropped group management message of unexpected type:\n"
+                        << msg->DebugString();
+        }
+    }
+    else if(msg->has_state_collection_message())
+    {
+        sc::StateCollectionMessage scm = msg->state_collection_message();
+
+        if(scm.has_collected_state_message())
+        {
+            HandleCollectedState(scm.collected_state_message());
+        }
+        else
+        {
+            Logger.Warn << "Dropped state collection message of unexpected type:\n"
+                        << msg->DebugString();
+        }
+    }
+    else if(msg->has_load_balancing_message())
+    {
+        LoadBalancingMessage lbm = msg->load_balancing_message();
+
+        if(lbm.has_state_change_message())
+            HandleStateChange(lbm.state_change_message(), peer);
+        else if(lbm.has_request_message())
+            HandleRequest(lbm.request_message(), peer);
+        else if(lbm.has_draft_message())
+            HandleDraft(lbm.draft_message(), peer);
+        else if(lbm.has_drafting_message())
+            HandleDrafting(lbm.drafting_message(), peer);
+        else if(lbm.has_accept_message())
+            HandleAccept(lbm.accept_message(), peer);
+        else if(lbm.has_computed_normal_message())
+            HandleComputedNormal(lbm.computed_normal_message(), peer);
+        else
+            Logger.Warn << "Dropped gm message of unexpected type:\n" << msg->DebugString();
+    }
+    else
+    {
+        Logger.Warn << "Dropped message of unexpected type:\n" << msg->DebugString();
+    }
 }
 
 ////////////////////////////////////////////////////////////
@@ -190,12 +246,12 @@ LBAgent::CPeerNode LBAgent::GetPeer(std::string uuid)
 /// @post Returns the new message.
 /// @param newstate is a string describing the new state of Load Balancing
 ///////////////////////////////////////////////////////////////////////////////
-CMessage LBAgent::MessageStateChange(std::string newstate)
+ModuleMessage LBAgent::MessageStateChange(std::string newstate)
 {
-    CMessage m_;
-    m_.SetHandler("lb.statechange");
-    m_.m_submessages.put("lb.newstate",newstate);
-    return m_;
+    LoadBalancingMessage lbm;
+    StateChangeMessage* stm = lbm.mutable_state_change_message();
+    stm->set_new_state(newstate);
+    return PrepareForSending(lbm);
 }
 
 ////////////////////////////////////////////////////////////
@@ -213,9 +269,9 @@ CMessage LBAgent::MessageStateChange(std::string newstate)
 void LBAgent::SendStateChange(std::string newstate, PeerSet peerSet)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    CMessage m = MessageStateChange(newstate);
+    ModuleMessage mm = MessageStateChange(newstate);
     Logger.Notice << "Sending '" << newstate << std::endl;
-    SendToPeerSet(m, peerSet);
+    SendToPeerSet(mm, peerSet);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -227,8 +283,10 @@ void LBAgent::SendStateChange(std::string newstate, PeerSet peerSet)
 /// @param m The message to send
 /// @param peerSet the processes to send the message to.
 ///////////////////////////////////////////////////////////////////////////////
-void LBAgent::SendToPeerSet(CMessage & m, const PeerSet & peerSet)
+void LBAgent::SendToPeerSet(const ModuleMessage& msg, const PeerSet & peerSet)
 {
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Notice << "Sending " << msg.DebugString() << std::endl;
     BOOST_FOREACH( CPeerNode peer, peerSet | boost::adaptors::map_values)
     {
         if( peer.GetUUID() == GetUUID())
@@ -239,7 +297,7 @@ void LBAgent::SendToPeerSet(CMessage & m, const PeerSet & peerSet)
         {
             try
             {
-                peer.Send(m);
+                peer.Send(msg);
             }
             catch (boost::system::system_error& e)
             {
@@ -258,14 +316,13 @@ void LBAgent::SendToPeerSet(CMessage & m, const PeerSet & peerSet)
 /// @post returns a new message
 /// @param Normal the normal value to send out.
 ///////////////////////////////////////////////////////////////////////////////
-CMessage LBAgent::MessageNormal(double Normal)
+ModuleMessage LBAgent::MessageNormal(double Normal)
 {
-    CMessage m_;
-    m_.SetHandler("lb.ComputedNormal");
-    m_.m_submessages.put("lb.cnorm", boost::lexical_cast<std::string>(Normal));
-    //for cyber invariant
-    m_.m_submessages.put("lb.cyberInvariant", boost::lexical_cast<std::string>(m_cyberInvariant));
-    return m_;
+    LoadBalancingMessage lbm;
+    ComputedNormalMessage* cnm = lbm.mutable_computed_normal_message();
+    cnm->set_computed_normal(Normal);
+    cnm->set_cyber_invariant(m_cyberInvariant);
+    return PrepareForSending(lbm);
 }
 
 ////////////////////////////////////////////////////////////
@@ -287,19 +344,8 @@ void LBAgent::SendNormal(double Normal)
 
     if(m_Leader == GetUUID())
     {
-        CMessage msg = MessageNormal(Normal);
-        Logger.Status <<"Sending Computed Normal to the group members" <<std::endl;
-        BOOST_FOREACH( CPeerNode peer, m_AllPeers | boost::adaptors::map_values)
-        {
-            try
-            {
-                peer.Send(msg);
-            }
-            catch (boost::system::system_error& e)
-            {
-                Logger.Info << "Couldn't Send Message To Peer" << std::endl;
-            }
-        }//end foreach
+        ModuleMessage msg = MessageNormal(Normal);
+        SendToPeerSet(msg, m_AllPeers);
     }
 }
 
@@ -310,46 +356,38 @@ void LBAgent::SendNormal(double Normal)
 /// @pre None
 /// @post A CollectState message is created.
 ///////////////////////////////////////////////////////////////////////////////
-CMessage LBAgent::MessageCollectState()
+ModuleMessage LBAgent::MessageCollectState()
 {
-    CMessage m_cs;
-    m_cs.SetHandler("sc.request");
-    m_cs.m_submessages.put("sc.source", GetUUID());
-    m_cs.m_submessages.put("sc.module", "lb");
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
-    //for multiple devices
-    m_cs.m_submessages.put("sc.deviceNum", 4);
-    //SST device
-    ptree subPtree1;
-    subPtree1.add("deviceType", "Sst");
-    subPtree1.add("valueType", "gateway");
-    m_cs.m_submessages.add_child("sc.devices.device", subPtree1);
+    sc::StateCollectionMessage scm;
+    sc::RequestMessage* rm = scm.mutable_request_message();
+    rm->set_module("lb");
 
-    //DRER device
-    ptree subPtree2;
-    subPtree2.add("deviceType", "Drer");
-    subPtree2.add("valueType", "generation");
-    m_cs.m_submessages.add_child("sc.devices.device", subPtree2);
+    sc::DeviceSignalRequestMessage* dsrm = rm->add_device_signal_request_message();
+    dsrm->set_type("Sst");
+    dsrm->set_signal("gateway");
 
-    //LOAD device
-    ptree subPtree3;
-    subPtree3.add("deviceType", "Load");
-    subPtree3.add("valueType", "drain");
-    m_cs.m_submessages.add_child("sc.devices.device", subPtree3);
+    dsrm = rm->add_device_signal_request_message();
+    dsrm->set_type("Drer");
+    dsrm->set_signal("generation");
 
-    //FID device
-    ptree subPtree4;
-    subPtree4.add("deviceType", "Fid");
-    subPtree4.add("valueType", "state");
-    m_cs.m_submessages.add_child("sc.devices.device", subPtree4);
+    dsrm = rm->add_device_signal_request_message();
+    dsrm->set_type("Load");
+    dsrm->set_signal("drain");
 
-    //DESD device
-    ptree subPtree5;
-    subPtree5.add("deviceType", "Desd");
-    subPtree5.add("valueType", "storage");
-    m_cs.m_submessages.add_child("sc.devices.device", subPtree5);
+    dsrm = rm->add_device_signal_request_message();
+    dsrm->set_type("Fid");
+    dsrm->set_signal("state");
 
-    return m_cs;
+    dsrm = rm->add_device_signal_request_message();
+    dsrm->set_type("Desd");
+    dsrm->set_signal("storage");
+
+    ModuleMessage mm;
+    mm.mutable_state_collection_message()->CopyFrom(scm);
+    mm.set_recipient_module("sc");
+    return mm;
 }
 
 ////////////////////////////////////////////////////////////
@@ -370,9 +408,9 @@ void LBAgent::CollectState()
 
     try
     {
-        CMessage msg = MessageCollectState();
-        Send(msg);
-        Logger.Notice << "LB module requested State Collection" << std::endl;
+       ModuleMessage mm = MessageCollectState();
+       Logger.Notice << "LB module requested State Collection" << std::endl;
+       Send(mm);
     }
     catch (boost::system::system_error& e)
     {
@@ -516,9 +554,9 @@ void LBAgent::LoadManage( const boost::system::error_code& err )
 void LBAgent::ComputeGateway()
 {
     using namespace device;
-    int numDRERs = CDeviceManager::Instance().GetDevicesOfType("Drer").size();
+    //int numDRERs = CDeviceManager::Instance().GetDevicesOfType("Drer").size();
     int numDESDs = CDeviceManager::Instance().GetDevicesOfType("Desd").size();
-    int numLOADs = CDeviceManager::Instance().GetDevicesOfType("Load").size();
+    //int numLOADs = CDeviceManager::Instance().GetDevicesOfType("Load").size();
     int numSSTs  = CDeviceManager::Instance().GetDevicesOfType("Sst").size();
     m_Gen = CDeviceManager::Instance().GetNetValue("Drer", "generation");
     m_Storage = CDeviceManager::Instance().GetNetValue("Desd", "storage");
@@ -562,21 +600,21 @@ void LBAgent::ComputeGateway()
     {
         if( self.GetUUID() == GetUUID())
         {
-            EraseInPeerSet(m_SupplyNodes,self_);
-            EraseInPeerSet(m_DemandNodes,self_);
-            EraseInPeerSet(m_NormalNodes,self_);
+            EraseInPeerSet(m_SupplyNodes,self);
+            EraseInPeerSet(m_DemandNodes,self);
+            EraseInPeerSet(m_NormalNodes,self);
 
             if (LBAgent::SUPPLY == m_Status)
             {
-                InsertInPeerSet(m_SupplyNodes,self_);
+                InsertInPeerSet(m_SupplyNodes,self);
             }
             else if (LBAgent::NORM == m_Status)
             {
-                InsertInPeerSet(m_NormalNodes,self_);
+                InsertInPeerSet(m_NormalNodes,self);
             }
             else if (LBAgent::DEMAND == m_Status)
             {
-                InsertInPeerSet(m_DemandNodes,self_);
+                InsertInPeerSet(m_DemandNodes,self);
             }
         }
     }
@@ -701,11 +739,13 @@ void LBAgent::LoadTable()
 /// @pre None
 /// @post A new message is generated.
 ///////////////////////////////////////////////////////////////////////////////
-CMessage LBAgent::MessageDraftRequest()
+ModuleMessage LBAgent::MessageDraftRequest()
 {
-    CMessage m_;
-    m_.SetHandler("lb.request");
-    return m_;
+    LoadBalancingMessage lbm;
+
+    RequestMessage* rm = lbm.mutable_request_message();
+    rm->set_exists(1);
+    return PrepareForSending(lbm);
 }
 
 ////////////////////////////////////////////////////////////
@@ -720,7 +760,6 @@ void LBAgent::SendDraftRequest()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
-    CMessage m = MessageDraftRequest();
     if(LBAgent::SUPPLY == m_Status)
     {
         if(m_DemandNodes.empty())
@@ -730,39 +769,12 @@ void LBAgent::SendDraftRequest()
         else
         {
             //Create new request and send it to all DEMAND nodes
-            SendToPeerSet(m, m_DemandNodes);
+            ModuleMessage mm = MessageDraftRequest();
+            SendToPeerSet(mm, m_DemandNodes);
         }//end else
     }//end if
 }//end SendDraftRequest
 
-////////////////////////////////////////////////////////////
-/// HandleRead
-/// @description: Handles the incoming messages meant for lb module and performs
-///               action accordingly
-/// @pre: The message obtained as ptree should be intended for this module
-/// @post: The sender of the message always gets a response from this node
-/// @return: Multiple objectives depending on the message received and
-///          power migration on successful negotiation
-/// @param msg: The message dispatched by broker read handler
-/// @param peer: The peer that sent the message
-/// @peers The members of the group or a subset of, from whom message was received
-/// @limitations:
-/////////////////////////////////////////////////////////
-void LBAgent::HandleAny(MessagePtr msg, CPeerNode /*peer*/)
-{
-    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    PeerSet tempSet_;
-    MessagePtr m_;
-    std::string line_;
-    line_ = msg->GetSourceUUID();
-    if(msg->GetHandler().find("lb") == 0)
-    {
-        Logger.Error<<"Unhandled Load Balancing Message"<<std::endl;
-        msg->Save(Logger.Error);
-        Logger.Error<<std::endl;
-        throw EUnhandledMessage("Unhandled Load Balancing Message");
-    }
-}
 ///////////////////////////////////////////////////////////////////////////////
 /// HandlePeerList
 /// @description Updates the list of peers this node is aware of.
@@ -775,7 +787,7 @@ void LBAgent::HandleAny(MessagePtr msg, CPeerNode /*peer*/)
 /// @limitations Does not validate the source, integrity or contents of the
 ///     message.
 ///////////////////////////////////////////////////////////////////////////////
-void LBAgent::HandlePeerList(MessagePtr msg, CPeerNode peer)
+void LBAgent::HandlePeerList(const gm::PeerListMessage& msg, CPeerNode peer)
 {
     // --------------------------------------------------------------
     // If you receive a peerList from your new leader, process it and
@@ -824,15 +836,14 @@ void LBAgent::HandlePeerList(MessagePtr msg, CPeerNode peer)
 /// @limitations Does not validate the source, integrity or contents of the
 ///     message.
 ///////////////////////////////////////////////////////////////////////////////
-void LBAgent::HandleStateChange(MessagePtr msg, CPeerNode peer)
+void LBAgent::HandleStateChange(const StateChangeMessage & msg, CPeerNode peer)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    ptree &pt = msg->GetSubMessages();
     if(CountInPeerSet(m_AllPeers,peer) == 0)
         return;
     if(peer.GetUUID() == GetUUID())
         return;
-    if(pt.get<std::string>("lb.newstate") == "demand")
+    if(msg.new_state() == "demand")
     {    
         Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
         // --------------------------------------------------------------
@@ -845,12 +856,11 @@ void LBAgent::HandleStateChange(MessagePtr msg, CPeerNode peer)
         EraseInPeerSet(m_SupplyNodes,peer);
         InsertInPeerSet(m_DemandNodes,peer);
     }
-    else if(pt.get<std::string>("lb.newstate") == "normal")
+    else if(msg.new_state() == "normal")
     {
         // --------------------------------------------------------------
         // You received a Load change of source to Normal state
         // --------------------------------------------------------------
-        ptree &pt = msg->GetSubMessages();
         Logger.Notice << "Normal message received from: "
                        << peer.GetUUID() <<std::endl;
         EraseInPeerSet(m_NormalNodes,peer);
@@ -858,13 +868,12 @@ void LBAgent::HandleStateChange(MessagePtr msg, CPeerNode peer)
         EraseInPeerSet(m_SupplyNodes,peer);
         InsertInPeerSet(m_NormalNodes,peer);
     }
-    else if(pt.get<std::string>("lb.newstate") == "supply")
+    else if(msg.new_state() == "supply")
     {
         // --------------------------------------------------------------
         // You received a message saying the source is in Supply state, which means
         // you are (were, recently) in Demand state; else you would not have received
         // --------------------------------------------------------------
-        ptree &pt = msg->GetSubMessages();
         Logger.Notice << "Supply message received from: "
                        << peer.GetUUID() <<std::endl;
         EraseInPeerSet(m_SupplyNodes,peer);
@@ -880,11 +889,12 @@ void LBAgent::HandleStateChange(MessagePtr msg, CPeerNode peer)
 /// @post A new message is generated
 /// @description Creates a new draft message.
 ///////////////////////////////////////////////////////////////////////////////
-CMessage LBAgent::MessageDraft()
+ModuleMessage LBAgent::MessageDraft()
 {
-    CMessage m_;
-    m_.SetHandler("lb.draft");
-    return m_;
+    LoadBalancingMessage lbm;
+    DraftMessage* dm = lbm.mutable_draft_message();
+    dm->set_demand_value(m_DemandVal);
+    return PrepareForSending(lbm);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -902,7 +912,7 @@ CMessage LBAgent::MessageDraft()
 /// @limitations Does not validate the source, integrity or contents of the
 ///     message.
 ///////////////////////////////////////////////////////////////////////////////
-void LBAgent::HandleRequest(MessagePtr /*msg*/, CPeerNode peer)
+void LBAgent::HandleRequest(const RequestMessage& /*msg*/, CPeerNode peer)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     if(CountInPeerSet(m_AllPeers,peer) == 0)
@@ -919,23 +929,17 @@ void LBAgent::HandleRequest(MessagePtr /*msg*/, CPeerNode peer)
     EraseInPeerSet(m_NormalNodes,peer);
     // Insert into set of Supply nodes
     InsertInPeerSet(m_SupplyNodes,peer);
-    // Create your response to the Draft request sent by the source
-
-    // If you are in Demand State, accept the request with a 'yes'
-    if(LBAgent::DEMAND == m_Status)
+    // Send your response
+    if( peer.GetUUID() != GetUUID() && m_Status == LBAgent::DEMAND)
     {
-        CMessage m_ = MessageDraft();
-        // Send your response
-        if( peer.GetUUID() != GetUUID())
+        ModuleMessage mm = MessageDraft();
+        try
         {
-            try
-            {
-                peer.Send(m_);
-            }
-            catch (boost::system::system_error& e)
-            {
-                Logger.Info << "Couldn't Send Message To Peer" << std::endl;
-            }
+            peer.Send(mm);
+        }
+        catch (boost::system::system_error& e)
+        {
+            Logger.Info << "Couldn't Send Message To Peer" << std::endl;
         }
     }
 }
@@ -946,11 +950,12 @@ void LBAgent::HandleRequest(MessagePtr /*msg*/, CPeerNode peer)
 /// @pre None
 /// @post a new message is generated.
 ///////////////////////////////////////////////////////////////////////////////
-CMessage LBAgent::MessageDrafting()
+ModuleMessage LBAgent::MessageDrafting()
 {
-    CMessage m_;
-    m_.SetHandler("lb.drafting");
-    return m_;
+    LoadBalancingMessage lbm;
+    DraftingMessage* dm = lbm.mutable_drafting_message();
+    dm->set_specify_migration_amount(P_Migrate);
+    return PrepareForSending(lbm);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -970,7 +975,7 @@ CMessage LBAgent::MessageDrafting()
 /// @limitations Does not validate the source, integrity or contents of the
 ///     message.
 ///////////////////////////////////////////////////////////////////////////////
-void LBAgent::HandleDraft(MessagePtr /*msg*/, CPeerNode peer)
+void LBAgent::HandleDraft(const DraftMessage& /* msg */, CPeerNode peer)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     // --------------------------------------------------------------
@@ -985,7 +990,6 @@ void LBAgent::HandleDraft(MessagePtr /*msg*/, CPeerNode peer)
     //Initiate drafting with a message accordingly
     //TODO: Selection of node that you are drafting with needs to be performed
     //      Currently, whoever responds to draft request gets the slice
-    CMessage m_ = MessageDrafting();
     
     //Get invariant check flag from freedm.cfg
     std::string invset = CGlobalConfiguration::Instance().GetInvariantCheckFlag();
@@ -993,11 +997,12 @@ void LBAgent::HandleDraft(MessagePtr /*msg*/, CPeerNode peer)
     bool invCheck = (invset == "0")? true : InvariantCheck();
 
     //Its better to check your status again before initiating drafting
-    if( peer.GetUUID() != GetUUID() && LBAgent::SUPPLY == m_Status && invCheck )
+    if( LBAgent::SUPPLY == m_Status && invCheck )
     {
         try
         {
-            peer.Send(m_);
+            ModuleMessage mm = MessageDrafting();
+            peer.Send(mm);
         }
         catch (boost::system::system_error& e)
         {
@@ -1094,12 +1099,12 @@ bool LBAgent::PhysicalInvariant()
 /// @pre None
 /// @post an Accept message is generated.
 /////////////////////////////////////////////////////////////////////////////// 
-CMessage LBAgent::MessageAccept(float demandVal)
+ModuleMessage LBAgent::MessageAccept()
 {
-    CMessage m;
-    m.SetHandler("lb.accept");
-    m.m_submessages.put("lb.value", demandVal);
-    return m;
+    LoadBalancingMessage lbm;
+    AcceptMessage* am = lbm.mutable_accept_message();
+    am->set_confirm_migration_amount(P_Migrate);
+    return PrepareForSending(lbm);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1120,7 +1125,7 @@ CMessage LBAgent::MessageAccept(float demandVal)
 /// @limitations Does not validate the source, integrity or contents of the
 ///     message.
 ///////////////////////////////////////////////////////////////////////////////
-void LBAgent::HandleDrafting(MessagePtr /*msg*/, CPeerNode peer)
+void LBAgent::HandleDrafting(const DraftingMessage& /*msg*/, CPeerNode peer)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     // --------------------------------------------------------------
@@ -1133,38 +1138,33 @@ void LBAgent::HandleDrafting(MessagePtr /*msg*/, CPeerNode peer)
         return;
     Logger.Notice << "Drafting message received from: " << peer.GetUUID() << std::endl;
 
-    if(LBAgent::DEMAND == m_Status)
+    if(LBAgent::DEMAND == m_Status && peer.GetUUID() != GetUUID())
     {
-        CMessage m_ = MessageAccept(m_DemandVal);
-
-        if( peer.GetUUID() != GetUUID() && LBAgent::DEMAND == m_Status)
+        try
         {
-            try
-            {
-                peer.Send(m_);
-            }
-            catch (boost::system::system_error& e)
-            {
-                Logger.Info << "Couldn't Send Message To Peer" << std::endl;
-            }
-
-            // Make necessary power setting accordingly to allow power migration
-            // !!!NOTE: You may use Step_PStar() or PStar(m_DemandVal) currently
-            if (m_sstExists)
+            ModuleMessage mm = MessageAccept();
+            //TODO: Demand cost should be sent with draft response (yes/no) so
+            //      that the supply node can select
+            peer.Send(mm);
+        }
+        catch (boost::system::system_error& e)
         {
-               Step_PStar();
+            Logger.Info << "Couldn't Send Message To Peer" << std::endl;
+        }
+    
+        // Make necessary power setting accordingly to allow power migration
+        // !!!NOTE: You may use Step_PStar() or PStar(m_DemandVal) currently
+        if (m_sstExists)
+        {
+            Step_PStar();
             m_outstandingMessages ++;
         }
-            else
-               Desd_PStar();
-        }
-        else
+        else 
         {
-            //Nothing; Local Load change from Demand state (Migration will not proceed)
+            Desd_PStar();
         }
     }
 }
-
 
 ///////////////////////////////////////////////////////////////////////////////
 /// HandleAccept
@@ -1183,7 +1183,7 @@ void LBAgent::HandleDrafting(MessagePtr /*msg*/, CPeerNode peer)
 /// @limitations Does not validate the source, integrity or contents of the
 ///     message.
 ///////////////////////////////////////////////////////////////////////////////
-void LBAgent::HandleAccept(MessagePtr msg, CPeerNode peer)
+void LBAgent::HandleAccept(const AcceptMessage& /* msg */, CPeerNode peer)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     if(peer.GetUUID() == GetUUID())
@@ -1193,10 +1193,7 @@ void LBAgent::HandleAccept(MessagePtr msg, CPeerNode peer)
     // --------------------------------------------------------------
     // The Demand node you agreed to supply power to, is awaiting migration
     // --------------------------------------------------------------
-    ptree &pt = msg->GetSubMessages();
-    device::SignalValue DemValue = pt.get<device::SignalValue>("lb.value");
-    Logger.Notice << " Draft Accept message received from: " << peer.GetUUID()
-                   << " with demand of "<< DemValue << std::endl;
+    Logger.Notice << " Draft Accept message received from: " << peer.GetUUID() << std::endl;
 
     if( LBAgent::SUPPLY == m_Status)
     {
@@ -1231,79 +1228,42 @@ void LBAgent::HandleAccept(MessagePtr msg, CPeerNode peer)
 /// @limitations Does not validate the source, integrity or contents of the
 ///     message.
 ///////////////////////////////////////////////////////////////////////////////
-void LBAgent::HandleCollectedState(MessagePtr msg, CPeerNode /*peer*/)
+void LBAgent::HandleCollectedState(const sc::CollectedStateMessage& msg)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     // --------------------------------------------------------------
     // You received the collected global state in response to your SC Request
     // --------------------------------------------------------------
-    int peercount=0; // number of peers *with devices*
-    m_aggregateGateway=0;
+    int peercount=0; // number of peers *with SSTs*
+    double agg_gateway=0;
 
-    ptree &pt = msg->GetSubMessages();
-    m_highestDemand = std::numeric_limits<double>::min();
-    if(pt.get_child_optional("CollectedState.gateway"))
+    BOOST_FOREACH(double v, msg.gateway())
     {
-        BOOST_FOREACH(ptree::value_type &v, pt.get_child("CollectedState.gateway"))
-        {
-            Logger.Notice << "SC module returned gateway values: "
-                          << v.second.data() << std::endl;
-            if (v.second.data() != "no device")
-            {
-                    double p = boost::lexical_cast<double>(v.second.data());
-                    peercount++;
-                    m_aggregateGateway += p;
-                    if (p > m_highestDemand)
-                        m_highestDemand = p;
-            }
-        }
+        Logger.Notice << "SC module returned gateway values: " << v << std::endl;
+        peercount++;
+        agg_gateway += v;
     }
-    if(pt.get_child_optional("CollectedState.generation"))
+    BOOST_FOREACH(double v, msg.generation())
     {
-        BOOST_FOREACH(ptree::value_type &v, pt.get_child("CollectedState.generation"))
-        {
-            Logger.Notice << "SC module returned generation values: "
-                          << v.second.data() << std::endl;
-        }
+        Logger.Notice << "SC module returned generation values " << v << std::endl;
     }
-    if(pt.get_child_optional("CollectedState.storage"))
+    BOOST_FOREACH(double v, msg.storage())
     {
-        BOOST_FOREACH(ptree::value_type &v, pt.get_child("CollectedState.storage"))
-        {
-            Logger.Notice << "SC module returned storage values: "
-                          << v.second.data() << std::endl;
-        }
+        Logger.Notice << "SC module returned storage values: " << v << std::endl;
     }
-    if(pt.get_child_optional("CollectedState.drain"))
+    BOOST_FOREACH(double v, msg.drain())
     {
-        BOOST_FOREACH(ptree::value_type &v, pt.get_child("CollectedState.drain"))
-        {
-            Logger.Notice << "SC module returned drain values: "
-                          << v.second.data() << std::endl;
-        }
+        Logger.Notice << "SC module returned drain values: " << v << std::endl;
     }
-    if(pt.get_child_optional("CollectedState.state"))
+    BOOST_FOREACH(double v, msg.state())
     {
-        BOOST_FOREACH(ptree::value_type &v, pt.get_child("CollectedState.state"))
-        {
-        Logger.Notice << "SC module returned state values: "
-                      << v.second.data() << std::endl;
-        }
+	    Logger.Notice << "SC module returned state values: " << v << std::endl;
     }
-    //Consider any intransit "accept" messages in m_aggregateGateway calculation
-    if(pt.get_child_optional("CollectedState.intransit"))
-    {
-        BOOST_FOREACH(ptree::value_type &v, pt.get_child("CollectedState.intransit"))
-        {
-            Logger.Status << "SC module returned intransit messages: "
-                << v.second.data() << std::endl;
-            if(v.second.data() == "accept"){
-            Logger.Notice << "SC module returned values: "
-              << v.second.data() << std::endl;
-                m_aggregateGateway += P_Migrate;
-             }
-        }
-    }
+
+    //Consider any intransit "accept" messages in agg_gateway calculation
+    Logger.Status << "SC module returned " << msg.num_intransit_accepts()
+                  << " intransit messages: " << std::endl;
+    agg_gateway += P_Migrate * msg.num_intransit_accepts();
 
     if(peercount != 0)
     {
@@ -1360,18 +1320,17 @@ void LBAgent::HandleCollectedState(MessagePtr msg, CPeerNode /*peer*/)
 /// @limitations Does not validate the source, integrity or contents of the
 ///     message.
 ///////////////////////////////////////////////////////////////////////////////
-void LBAgent::HandleComputedNormal(MessagePtr msg, CPeerNode peer)
+void LBAgent::HandleComputedNormal(const ComputedNormalMessage& msg, CPeerNode peer)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     // --------------------------------------------------------------
     // You received the new Normal value calculated and sent by your leader
     // --------------------------------------------------------------
-    ptree &pt = msg->GetSubMessages();
-    m_Normal = pt.get<double>("lb.cnorm");
+    m_Normal = msg.computed_normal();
     Logger.Notice << "Computed Normal " << m_Normal << " received from "
                    << peer.GetUUID() << std::endl;
     //for cyber invariant
-    m_cyberInvariant = boost::lexical_cast<int>(pt.get<std::string>("lb.cyberInvariant"));
+    m_cyberInvariant = msg.cyber_invariant();
     ComputeGateway();
     LoadTable();
 }
@@ -1511,6 +1470,25 @@ void LBAgent::HandleStateTimer( const boost::system::error_code & error )
 
     CBroker::Instance().Schedule(m_StateTimer, boost::posix_time::not_a_date_time,
         boost::bind(&LBAgent::HandleStateTimer, this, boost::asio::placeholders::error));
+}
+
+///////////////////////////////////////////////////////////////////////////////
+/// Wraps a LoadBalancingMessage in a ModuleMessage.
+///
+/// @param message the message to prepare. If any required field is unset,
+///                the DGI will abort.
+/// @param recipient the module (sc/lb/gm/clk etc.) the message should be
+///                delivered to
+///
+/// @return a ModuleMessage containing a copy of the LoadBalancingMessage
+///////////////////////////////////////////////////////////////////////////////
+ModuleMessage LBAgent::PrepareForSending(const LoadBalancingMessage& message, std::string recipient)
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    ModuleMessage mm;
+    mm.mutable_load_balancing_message()->CopyFrom(message);
+    mm.set_recipient_module(recipient);
+    return mm;
 }
 
 } // namespace lb

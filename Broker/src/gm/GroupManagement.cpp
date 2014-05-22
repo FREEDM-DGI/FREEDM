@@ -1108,7 +1108,7 @@ void GMAgent::HandleInvite(const InviteMessage& msg, CPeerNode peer)
         CPeerNode p;
         try
         {
-            CPeerNode p = CGlobalPeerList::instance().GetPeer(m_GroupLeader);
+            p = CGlobalPeerList::instance().GetPeer(m_GroupLeader);
         }
         catch(EDgiNoSuchPeerError &e)
         {

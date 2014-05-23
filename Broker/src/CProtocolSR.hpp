@@ -90,6 +90,8 @@ class CProtocolSR
         static const unsigned int MAX_DROPPED_MSGS = 3;
         /// The number that have been dropped.
         unsigned int m_dropped;
+        /// True if a resend is pending
+        bool m_resend_pending;
 };
 
     }

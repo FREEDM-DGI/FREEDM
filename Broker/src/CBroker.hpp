@@ -55,11 +55,38 @@ class CDispatcher;
 const unsigned int ALIGNMENT_DURATION = 250;
 const unsigned int BEACON_FREQUENCY = 2000;
 
+/*
+
+This is the best worst code that I've ever written (assuming that it actually
+make the DGI faster.) Allow me to explain this travesty:
+
+1) boost::function exists. It provides a very clean syntax for storing the
+   functors created by boost bind which is lovely. However, because it is
+   so lovely, what I read online said it was also very slow :((( So, I set
+   out to replace it, as shown below.
+
+2) The type of boost bind can't be known (well, it probably can, but nobody
+   posted on StackOverflow what the resulting type was, and the boost docs
+   are zero help.
+
+So, these classes allow you to store boost binds without using boost::function
+(which, as a reminder, was slow!)
+*/
+
 
 class CBoundScheduleableBase
 {
+    ///////////////////////////////////////////////////////////////////////////
+    /// CBoundScheduleableBase
+    /// This class is the base class for a CBoundScheduleable. This class
+    /// exists because you can store a pointer to the derived class in a
+    /// pointer for this class. This allows us to store functors without
+    /// knowing their type.
+    ///////////////////////////////////////////////////////////////////////////
     public:
+        /// Executes the stored functor.
         virtual void operator()() = 0;
+        /// Virtual destructor, as required.
         virtual ~CBoundScheduleableBase() {};
 };
 
@@ -67,13 +94,30 @@ template<typename T>
 class CBoundScheduleable
     : public CBoundScheduleableBase
 {
+    ///////////////////////////////////////////////////////////////////////////
+    /// CBoundScheduleable
+    /// This class, templated on T, stores a functor. You can't know what the
+    /// type of the functor is, hence you template this on T.
+    ///////////////////////////////////////////////////////////////////////////
     public:
+        /// Create an instance using the functor functor.
         CBoundScheduleable(T functor): m_functor(functor) { }
+        /// Executes the functor stored in this class using operator()
         virtual void operator()() { m_functor(); }
     private:
+        /// The stored functor
         T m_functor;
 };
 
+///////////////////////////////////////////////////////////////////////////////
+/// CreateBoundScheduleable
+/// Creates a new CBoundScheduleable. The type of the created scheduleable is
+/// determined implicitly by the type of the functor provided. This function
+/// returns a pointer THAT YOU ARE RESPONSIBLE FOR which can be stored as a
+/// CBoundScheduleableBase*.
+/// @param functor The functor to create the scheduleable with.
+/// @return a pointer to a CBoundScheduleable that stores the functor.
+///////////////////////////////////////////////////////////////////////////////
 template<typename T>
 CBoundScheduleable<T>* CreateBoundScheduleable(T functor)
 {
@@ -82,8 +126,16 @@ CBoundScheduleable<T>* CreateBoundScheduleable(T functor)
 
 class CScheduleableBase
 {
+    ///////////////////////////////////////////////////////////////////////////
+    /// CScheduleableBase
+    /// This class is the base for a CScheduleable. It exists for the same
+    /// reason as CBoundScheduleableBase. However, this class is for a functor
+    /// which still has one paramter to fulfill: the system::error_code.
+    ///////////////////////////////////////////////////////////////////////////
     public:
+        /// Virtual destructor for a base class.
         virtual ~CScheduleableBase() {};
+        /// Binds the error code to the contained functor.
         virtual CBoundScheduleableBase* BindErrorCode(boost::system::error_code err) = 0;
 };
 
@@ -91,16 +143,33 @@ template<typename T>
 class CScheduleable
     : public CScheduleableBase
 {
+    ///////////////////////////////////////////////////////////////////////////
+    /// CScheduleable
+    /// This class, templated on T, stores a functor. You can't know what the
+    /// type of the functor is, hence you template this on T.
+    ///////////////////////////////////////////////////////////////////////////
     public:
+        /// Stores the functor in this object
         CScheduleable(T functor): m_functor(functor) { }
+        /// Binds the error code to the functor this object contains and returns a new schedulable
         CBoundScheduleableBase* BindErrorCode(boost::system::error_code err)
         {
             return CreateBoundScheduleable(boost::bind(m_functor,err));
         }
     private:
+        /// The stored functor
         T m_functor;
 };
 
+///////////////////////////////////////////////////////////////////////////////
+/// CreateScheduleable
+/// Creates a new CScheduleable. The type of the created scheduleable is
+/// determined implicitly by the type of the functor provided. This function
+/// returns a pointer THAT YOU ARE RESPONSIBLE FOR which can be stored as a
+/// CScheduleableBase*.
+/// @param functor The functor to create the scheduleable with.
+/// @return a pointer to a CBoundScheduleable that stores the functor.
+///////////////////////////////////////////////////////////////////////////////
 template<typename T>
 CScheduleable<T>* CreateScheduleable(T functor)
 {

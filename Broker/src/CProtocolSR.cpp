@@ -76,6 +76,7 @@ CProtocolSR::CProtocolSR(CConnection& conn)
     m_sendkills = false;
     m_sendkill = 0;
     m_dropped = 0;
+    m_resend_pending = false;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -146,6 +147,7 @@ void CProtocolSR::Resend(const boost::system::error_code& err)
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     if(!err && !GetStopped())
     {
+        m_resend_pending = false;
         while(m_window.size() > 0 && MessageIsExpired(m_window.front()))
         {
             Logger.Trace<<__PRETTY_FUNCTION__<<" Flushing"<<std::endl;
@@ -189,6 +191,7 @@ void CProtocolSR::Resend(const boost::system::error_code& err)
             // FIXME could crash
             m_timeout.async_wait(boost::bind(&CProtocolSR::Resend,this,
                 boost::asio::placeholders::error));
+            m_resend_pending = true;
         }
     }
     Logger.Trace<<__PRETTY_FUNCTION__<<" Resend Finished"<<std::endl;
@@ -386,11 +389,15 @@ void CProtocolSR::SendACK(const ProtocolMessage& msg)
     outmsg.set_hash(msg.hash());
     Write(outmsg);
     /// Hook into resend until the message expires.
-    m_timeout.cancel();
-    m_timeout.expires_from_now(boost::posix_time::milliseconds(CTimings::CSRC_RESEND_TIME));
-    // FIXME could crash
-    m_timeout.async_wait(boost::bind(&CProtocolSR::Resend,this,
-        boost::asio::placeholders::error));
+    if(!m_resend_pending)
+    {
+        m_timeout.cancel();
+        m_timeout.expires_from_now(boost::posix_time::milliseconds(CTimings::CSRC_RESEND_TIME));
+        // FIXME could crash
+        m_timeout.async_wait(boost::bind(&CProtocolSR::Resend,this,
+            boost::asio::placeholders::error));
+        m_resend_pending = true;
+    }
 }
 
 ///////////////////////////////////////////////////////////////////////////////

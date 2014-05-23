@@ -129,13 +129,9 @@ void CListener::HandleRead(const boost::system::error_code& e,
         ScheduleListen();
     }
 
-    std::stringstream iss;
-    std::ostreambuf_iterator<char> output(iss);
-    std::copy(m_buffer.begin(), m_buffer.begin()+bytes_transferred, output);
-
     Logger.Debug<<"Loading protobuf"<<std::endl;
     ProtocolMessage pm;
-    if(!pm.ParseFromIstream(&iss))
+    if(!pm.ParseFromArray(m_buffer.begin(), bytes_transferred))
     {
         Logger.Error<<"Failed to load protobuf"<<std::endl;
         ScheduleListen();

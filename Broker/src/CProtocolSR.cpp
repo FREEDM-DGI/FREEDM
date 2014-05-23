@@ -107,7 +107,7 @@ void CProtocolSR::Send(const ModuleMessage& msg)
     unsigned int msgseq = m_outseq;
     pm.set_sequence_num(msgseq);
     m_outseq = (m_outseq+1) % SEQUENCE_MODULO;
-    pm.set_hash(ComputeMessageHash(pm.module_message()));
+    pm.set_hash(rand());
 
     SetExpirationTimeFromNow(pm, boost::posix_time::millisec(CTimings::CSRC_DEFAULT_TIMEOUT));
     Logger.Debug<<"Set Expire time: "<< pm.expire_time() << std::endl;

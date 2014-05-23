@@ -30,6 +30,7 @@
 #include "CProtocolSR.hpp"
 #include "CProtocolSU.hpp"
 #include "CProtocolSRSW.hpp"
+#include "CStopwatch.hpp"
 #include "messages/ModuleMessage.pb.h"
 #include "messages/ProtocolMessage.pb.h"
 
@@ -111,7 +112,7 @@ void CConnection::ChangePhase(bool newround)
 void CConnection::Send(const ModuleMessage& msg)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-
+    CStopwatch me(__PRETTY_FUNCTION__);
     // If the UUID of the recipient (The value stored by GetUUID of this
     // object) is the same as the this node's uuid, place the message directly
     // into the received Queue.
@@ -152,13 +153,11 @@ void CConnection::ReceiveACK(const ProtocolMessage& msg)
 bool CConnection::Receive(const ProtocolMessage& msg)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-
     if(m_protocol->Receive(msg))
     {
         m_protocol->SendACK(msg);
         return true;
     }
-
     return false;
 }
 

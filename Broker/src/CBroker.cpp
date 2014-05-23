@@ -77,6 +77,7 @@ CBroker::CBroker()
     , m_synchronizer()
     , m_signals(m_ioService, SIGINT, SIGTERM)
     , m_stopping(false)
+    , m_schedule_alloc(0)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
@@ -317,91 +318,6 @@ CBroker::TimerHandle CBroker::AllocateTimer(CBroker::ModuleIdent module)
     return myhandle;
 }
 
-///////////////////////////////////////////////////////////////////////////////
-/// @fn CBroker::Schedule
-/// @description Given a binding to a function that should be run into the
-///   future, prepares it to be run... in the future. The attempt to schedule
-///   may be rejected if the Broker is stopping.
-/// @param h The handle to the timer being set.
-/// @param wait the amount of the time to wait. If this value is "not_a_date_time"
-///     The wait is converted to positive infinity and the time will expire as
-///     soon as the module no longer owns the context.
-/// @param x The partially bound function that will be scheduled.
-/// @pre The module is registered
-/// @post A function is scheduled to be called in the future. If a next time
-///     function is scheduled, its timer will expire as soon as its round ends.
-/// @return 0 on success, -1 if rejected
-///////////////////////////////////////////////////////////////////////////////
-int CBroker::Schedule(CBroker::TimerHandle h,
-    boost::posix_time::time_duration wait, CBroker::Scheduleable x)
-{
-    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    {
-        boost::unique_lock<boost::mutex> lock(m_stoppingMutex);
-        if (m_stopping)
-        {
-            return -1;
-        }
-    }
-
-    boost::mutex::scoped_lock schlock(m_schmutex);
-    CBroker::Scheduleable s;
-    if(wait.is_not_a_date_time())
-    {
-        wait = boost::posix_time::time_duration(boost::posix_time::pos_infin);
-        m_nexttime[h] = true;
-    }
-    else
-    {
-        m_nexttime[h] = false;
-    }
-    m_timers[h]->expires_from_now(wait);
-    s = boost::bind(&CBroker::ScheduledTask,this,x,h,boost::asio::placeholders::error);
-    Logger.Debug<<"Scheduled task for timer "<<h<<std::endl;
-    m_timers[h]->async_wait(s);
-
-    return 0;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-/// @fn CBroker::Schedule
-/// @description Given a module and a bound schedulable, enter that schedulable
-///     into that modules job queue. The attempt to schedule may be rejected if
-///     the Broker is stopping.
-/// @pre The module is registered.
-/// @post The task is placed in the work queue for the module m. If the
-///     start_worker parameter is set to true, the module's worker will be
-///     activated if it isn't already.
-/// @param m The module the schedulable should be run as.
-/// @param x The method that will be run.
-/// @param start_worker tells the worker to begin processing again, if it is
-///     currently idle [The worker will be idle if the work queue is empty; this
-///     can be useful to defer an activity to the next round if the node is not busy
-/// @return 0 on success, -1 if rejected
-///////////////////////////////////////////////////////////////////////////////
-int CBroker::Schedule(ModuleIdent m, BoundScheduleable x, bool start_worker)
-{
-    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    {
-        boost::unique_lock<boost::mutex> lock(m_stoppingMutex);
-        if (m_stopping)
-        {
-            return -1;
-        }
-    }
-
-    boost::mutex::scoped_lock schlock(m_schmutex);
-    m_ready[m].push_back(x);
-    if(!m_busy && start_worker)
-    {
-        schlock.unlock();
-        Worker();
-        schlock.lock();
-    }
-    Logger.Debug<<"Module "<<m<<" now has queue size: "<<m_ready[m].size()<<std::endl;
-    Logger.Debug<<"Scheduled task (NODELAY) for "<<m<<std::endl;
-    return 0;
-}
 
 ///////////////////////////////////////////////////////////////////////////////
 /// @fn CBroker::ChangePhase
@@ -531,10 +447,9 @@ boost::posix_time::time_duration CBroker::TimeRemaining()
 /// @pre A task is scheduled for execution
 /// @post The task is entered into th ready queue.
 ///////////////////////////////////////////////////////////////////////////////
-void CBroker::ScheduledTask(CBroker::Scheduleable x, CBroker::TimerHandle handle,
+void CBroker::ScheduledTask(CBroker::ScheduleHandle schandle, CBroker::TimerHandle handle,
     const boost::system::error_code &err)
 {
-    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     boost::mutex::scoped_lock schlock(m_schmutex);
     ModuleIdent module = m_allocs[handle];
     boost::system::error_code serr;
@@ -546,12 +461,13 @@ void CBroker::ScheduledTask(CBroker::Scheduleable x, CBroker::TimerHandle handle
     {
         serr = err;
     }
-    Logger.Debug<<"Handle finished: "<<handle<<" For module "<<module<<std::endl;
     // First, prepare another bind, which uses the given error
-    CBroker::BoundScheduleable y = boost::bind(x,serr);
     // Put it into the ready queue
-    m_ready[module].push_back(y);
-    Logger.Debug<<"Module "<<module<<" now has queue size: "<<m_ready[module].size()<<std::endl;
+    m_ready[module].push_back( m_schedule_map[schandle]->BindErrorCode(serr) );
+    // The bound functor is no longer needed.
+    delete m_schedule_map[schandle];
+    // Free the schedule map entry:
+    m_schedule_map.erase(schandle);
     if(!m_busy)
     {
         schlock.unlock();
@@ -584,11 +500,12 @@ void CBroker::Worker()
         // Mark that the worker has something to do
         m_busy = true;
         // Extract the first item from the work queue:
-        CBroker::BoundScheduleable x = m_ready[active].front();
+        CBoundScheduleableBase* x = m_ready[active].front();
         m_ready[active].pop_front();
         // Execute the task.
         schlock.unlock();
-        x();
+        (*x)();
+        delete x;
         schlock.lock();
     }
     else

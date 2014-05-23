@@ -39,8 +39,9 @@
 #include <string>
 
 #include <boost/asio.hpp>
-#include <boost/asio/deadline_timer.hpp>
+#include <boost/bind.hpp>
 #include <boost/function.hpp>
+#include <boost/asio/deadline_timer.hpp>
 #include <boost/noncopyable.hpp>
 #include <boost/thread/shared_mutex.hpp>
 
@@ -54,21 +55,73 @@ class CDispatcher;
 const unsigned int ALIGNMENT_DURATION = 250;
 const unsigned int BEACON_FREQUENCY = 2000;
 
+
+class CBoundScheduleableBase
+{
+    public:
+        virtual void operator()() = 0;
+        virtual ~CBoundScheduleableBase() {};
+};
+
+template<typename T>
+class CBoundScheduleable
+    : public CBoundScheduleableBase
+{
+    public:
+        CBoundScheduleable(T functor): m_functor(functor) { }
+        virtual void operator()() { m_functor(); }
+    private:
+        T m_functor;
+};
+
+template<typename T>
+CBoundScheduleable<T>* CreateBoundScheduleable(T functor)
+{
+    return new CBoundScheduleable<T>(functor);
+}
+
+class CScheduleableBase
+{
+    public:
+        virtual ~CScheduleableBase() {};
+        virtual CBoundScheduleableBase* BindErrorCode(boost::system::error_code err) = 0;
+};
+
+template<typename T>
+class CScheduleable
+    : public CScheduleableBase
+{
+    public:
+        CScheduleable(T functor): m_functor(functor) { }
+        CBoundScheduleableBase* BindErrorCode(boost::system::error_code err)
+        {
+            return CreateBoundScheduleable(boost::bind(m_functor,err));
+        }
+    private:
+        T m_functor;
+};
+
+template<typename T>
+CScheduleable<T>* CreateScheduleable(T functor)
+{
+    return new CScheduleable<T>(functor);
+}
+
 /// Central monolith of the Broker Architecture.
 class CBroker : private boost::noncopyable
 {
 public:
-    typedef boost::function<void (boost::system::error_code)> Scheduleable;
-    typedef boost::function<void ()> BoundScheduleable;
     typedef std::string ModuleIdent;
     typedef std::pair<ModuleIdent, boost::posix_time::time_duration> PhaseTuple;
     typedef std::vector< PhaseTuple > ModuleVector;
     typedef unsigned int PhaseMarker;
     typedef unsigned int TimerHandle;
+    typedef unsigned int ScheduleHandle;
     typedef std::map<TimerHandle, ModuleIdent> TimerAlloc;
     typedef std::map<TimerHandle, boost::asio::deadline_timer* > TimersMap;
     typedef std::map<TimerHandle, bool > NextTimeMap;
-    typedef std::map<ModuleIdent, std::list< BoundScheduleable > > ReadyMap;
+    typedef std::map<ModuleIdent, std::list< CBoundScheduleableBase* > > ReadyMap;
+    typedef std::map<ScheduleHandle, CScheduleableBase* > ScheduleMap;
 
     /// Get the singleton instance of this class
     static CBroker& Instance();
@@ -92,10 +145,12 @@ public:
     void HandleStop(unsigned int signum = 0);
 
     /// Schedule a task
-    int Schedule(TimerHandle h, boost::posix_time::time_duration wait, Scheduleable x);
+    template<typename T>
+    int Schedule(TimerHandle h, boost::posix_time::time_duration wait, T scheduleable);
 
     /// Schedule a task
-    int Schedule(ModuleIdent m, BoundScheduleable x, bool start_worker=true);
+    template<typename T>
+    int Schedule(ModuleIdent m, T bound_scheduleable, bool start_worker=true);
 
     /// Allocate a timer
     TimerHandle AllocateTimer(ModuleIdent module);
@@ -129,7 +184,7 @@ private:
     void ChangePhase(const boost::system::error_code &err);
 
     ///Check to see if the scheduled task should actually be run.
-    void ScheduledTask(Scheduleable x, TimerHandle handle, const boost::system::error_code &err);
+    void ScheduledTask(ScheduleHandle schandle, TimerHandle handle, const boost::system::error_code &err);
 
     ///Verify the queue is empty
     void Worker();
@@ -184,7 +239,103 @@ private:
 
     ///Lock for m_stopping
     boost::mutex m_stoppingMutex;
+
+    ///The next schedule handle to allocate
+    ScheduleHandle m_schedule_alloc;
+
+    ScheduleMap m_schedule_map;
 };
+
+///////////////////////////////////////////////////////////////////////////////
+/// @fn CBroker::Schedule
+/// @description Given a binding to a function that should be run into the
+///   future, prepares it to be run... in the future. The attempt to schedule
+///   may be rejected if the Broker is stopping.
+/// @param h The handle to the timer being set.
+/// @param wait the amount of the time to wait. If this value is "not_a_date_time"
+///     The wait is converted to positive infinity and the time will expire as
+///     soon as the module no longer owns the context.
+/// @param x The partially bound function that will be scheduled.
+/// @pre The module is registered
+/// @post A function is scheduled to be called in the future. If a next time
+///     function is scheduled, its timer will expire as soon as its round ends.
+/// @return 0 on success, -1 if rejected
+///////////////////////////////////////////////////////////////////////////////
+template<typename T>
+int CBroker::Schedule(TimerHandle h, boost::posix_time::time_duration wait, T scheduleable)
+{
+    {
+        boost::unique_lock<boost::mutex> lock(m_stoppingMutex);
+        if (m_stopping)
+        {
+            return -1;
+        }
+    }
+
+    boost::mutex::scoped_lock schlock(m_schmutex);
+    if(wait.is_not_a_date_time())
+    {
+        wait = boost::posix_time::time_duration(boost::posix_time::pos_infin);
+        m_nexttime[h] = true;
+    }
+    else
+    {
+        m_nexttime[h] = false;
+    }
+    // Place the bound task into a map because we can't put it directly into
+    // the io service.
+    // First, reserve a handle.
+    ScheduleHandle handle = m_schedule_alloc;
+    m_schedule_alloc++;
+    // Next, take scheduleable and put it into the schedule map.
+    m_schedule_map[handle] = CreateScheduleable(scheduleable);
+    // Bind the task execution unit with the handle we will use.
+    m_timers[h]->expires_from_now(wait);
+    m_timers[h]->async_wait(
+        boost::bind(&CBroker::ScheduledTask, this, handle, h, boost::asio::placeholders::error)
+    );
+
+    return 0;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+/// @fn CBroker::Schedule
+/// @description Given a module and a bound schedulable, enter that schedulable
+///     into that modules job queue. The attempt to schedule may be rejected if
+///     the Broker is stopping.
+/// @pre The module is registered.
+/// @post The task is placed in the work queue for the module m. If the
+///     start_worker parameter is set to true, the module's worker will be
+///     activated if it isn't already.
+/// @param m The module the schedulable should be run as.
+/// @param x The method that will be run.
+/// @param start_worker tells the worker to begin processing again, if it is
+///     currently idle [The worker will be idle if the work queue is empty; this
+///     can be useful to defer an activity to the next round if the node is not busy
+/// @return 0 on success, -1 if rejected
+///////////////////////////////////////////////////////////////////////////////
+template<typename T>
+int CBroker::Schedule(ModuleIdent m, T bound_scheduleable, bool start_worker)
+{
+    {
+        boost::unique_lock<boost::mutex> lock(m_stoppingMutex);
+        if (m_stopping)
+        {
+            return -1;
+        }
+    }
+
+    boost::mutex::scoped_lock schlock(m_schmutex);
+    m_ready[m].push_back(CreateBoundScheduleable<T>(bound_scheduleable));
+    if(!m_busy && start_worker)
+    {
+        schlock.unlock();
+        Worker();
+        schlock.lock();
+    }
+    return 0;
+}
+
 
     } // namespace broker
 } // namespace freedm

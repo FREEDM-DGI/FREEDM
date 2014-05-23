@@ -61,7 +61,7 @@ CDispatcher& CDispatcher::Instance()
 /// @param msg The message to distribute to modules
 /// @param uuid The UUID of the DGI that sent the message
 ///////////////////////////////////////////////////////////////////////////////
-void CDispatcher::HandleRequest(boost::shared_ptr<const ModuleMessage> msg, std::string uuid)
+void CDispatcher::HandleRequest(const ModuleMessage& msg, std::string uuid)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     Logger.Debug << "Processing message addressed to: " << msg->recipient_module() << std::endl;
@@ -106,7 +106,7 @@ void CDispatcher::HandleRequest(boost::shared_ptr<const ModuleMessage> msg, std:
 /// @param uuid the UUID of the DGI that sent
 ///////////////////////////////////////////////////////////////////////////////
 void CDispatcher::ReadHandlerCallback(
-    boost::shared_ptr<IMessageHandler> h, boost::shared_ptr<const ModuleMessage> msg, std::string uuid)
+    boost::shared_ptr<IMessageHandler> h, const ModuleMessage msg, std::string uuid)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     boost::shared_ptr<IPeerNode> peer;

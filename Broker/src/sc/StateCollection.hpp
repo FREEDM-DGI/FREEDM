@@ -24,9 +24,9 @@
 #ifndef CSTATECOLLECTION_HPP_
 #define CSTATECOLLECTION_HPP_
 
-#include "IAgent.hpp"
+#include "MPeerSets.hpp"
 #include "IMessageHandler.hpp"
-#include "IPeerNode.hpp"
+#include "CPeerNode.hpp"
 #include "messages/ModuleMessage.pb.h"
 
 #include <map>
@@ -57,8 +57,10 @@ using boost::property_tree::ptree;
 ///                 other nodes (these messages belong to the channel between the nodes).
 ///////////////////////////////////////////////////////////////////////////////
 
-class SCAgent : public IMessageHandler, private IPeerNode,
-        public IAgent< boost::shared_ptr<IPeerNode> >
+class SCAgent
+      : public IMessageHandler,
+        private CPeerNode,
+        public MPeerSets
 {
     public:
         ///Constructor
@@ -70,13 +72,13 @@ class SCAgent : public IMessageHandler, private IPeerNode,
 
         //Handler
         ///Handle receiving messages
-        void HandleAccept(PeerNodePtr peer);
-        void HandlePeerList(const gm::PeerListMessage& msg, PeerNodePtr peer);
-        void HandleRequest(const RequestMessage& msg, PeerNodePtr peer);
-        void HandleMarker(const MarkerMessage& msg, PeerNodePtr peer);
-        void HandleState(const StateMessage& msg, PeerNodePtr peer);
+        void HandleAccept(CPeerNode peer);
+        void HandlePeerList(const gm::PeerListMessage& msg, CPeerNode peer);
+        void HandleRequest(const RequestMessage& msg, CPeerNode peer);
+        void HandleMarker(const MarkerMessage& msg, CPeerNode peer);
+        void HandleState(const StateMessage& msg, CPeerNode peer);
         /// Handles received messages
-        void HandleIncomingMessage(boost::shared_ptr<const ModuleMessage> msg, PeerNodePtr peer);
+        void HandleIncomingMessage(const ModuleMessage msg, CPeerNode peer);
 
         //Internal
         ///Initiator starts state collection
@@ -92,9 +94,9 @@ class SCAgent : public IMessageHandler, private IPeerNode,
 
         //Peer set operations
         ///Add a peer to peer set from a pointer to a peer node object
-        PeerNodePtr AddPeer(PeerNodePtr peer);
+        CPeerNode AddPeer(CPeerNode peer);
         ///Get a pointer to a peer from UUID
-        PeerNodePtr GetPeer(std::string uuid);
+        CPeerNode GetPeer(std::string uuid);
 
         /// Wraps a StateCollectionMessage in a ModuleMessage
         static ModuleMessage PrepareForSending(

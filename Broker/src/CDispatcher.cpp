@@ -64,7 +64,7 @@ CDispatcher& CDispatcher::Instance()
 void CDispatcher::HandleRequest(const ModuleMessage& msg, std::string uuid)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    Logger.Debug << "Processing message addressed to: " << msg->recipient_module() << std::endl;
+    Logger.Debug << "Processing message addressed to: " << msg.recipient_module() << std::endl;
 
     bool processed = false;
 
@@ -72,7 +72,7 @@ void CDispatcher::HandleRequest(const ModuleMessage& msg, std::string uuid)
             = m_registrations.begin();
         it != m_registrations.end(); ++it)
     {
-        if (it->second == msg->recipient_module() || msg->recipient_module() == "all")
+        if (it->second == msg.recipient_module() || msg.recipient_module() == "all")
         {
             // Scheduled modules receive messages only during that module's phase.
             // Unscheduled modules receive messages immediately.
@@ -93,7 +93,7 @@ void CDispatcher::HandleRequest(const ModuleMessage& msg, std::string uuid)
 
     if( processed == false )
     {
-        Logger.Warn << "Message was not processed by any module:\n" << msg->DebugString();
+        Logger.Warn << "Message was not processed by any module:\n" << msg.DebugString();
     }
 
 }
@@ -109,7 +109,7 @@ void CDispatcher::ReadHandlerCallback(
     boost::shared_ptr<IMessageHandler> h, const ModuleMessage msg, std::string uuid)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    boost::shared_ptr<IPeerNode> peer;
+    CPeerNode peer;
     try
     {
         peer = CGlobalPeerList::instance().GetPeer(uuid);

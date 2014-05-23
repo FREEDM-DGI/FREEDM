@@ -36,15 +36,13 @@ namespace freedm {
     namespace broker {
 
 class CBroker;
-class IPeerNode;
+class CPeerNode;
 
 class CClockSynchronizer
     : public IMessageHandler
     , private boost::noncopyable
 {
 public:
-    /// PeerNodePtr
-    typedef boost::shared_ptr<IPeerNode> PeerNodePtr;
     /// Initialize module
     explicit CClockSynchronizer(boost::asio::io_service& ios);
     /// Returns the synchronized time
@@ -54,7 +52,7 @@ public:
     /// Stops the stuff
     void Stop();
     /// Handles received messages
-    void HandleIncomingMessage(boost::shared_ptr<const ModuleMessage> msg, PeerNodePtr peer);
+    void HandleIncomingMessage(const ModuleMessage msg, CPeerNode peer);
 
 private:
     /// Does the i,j referencing
@@ -81,9 +79,9 @@ private:
     typedef std::map< MapIndex, unsigned int > LastResponseMap;
 
     /// Receiver
-    void HandleExchangeResponse(const ExchangeResponseMessage& msg, PeerNodePtr peer);
+    void HandleExchangeResponse(const ExchangeResponseMessage& msg, CPeerNode peer);
     /// Receiver
-    void HandleExchange(const ExchangeMessage& msg, PeerNodePtr peer);
+    void HandleExchange(const ExchangeMessage& msg, CPeerNode peer);
     /// Broadcaster
     void Exchange(const boost::system::error_code& err );
 

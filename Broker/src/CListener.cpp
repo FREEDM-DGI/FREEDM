@@ -172,9 +172,7 @@ void CListener::HandleRead(const boost::system::error_code& e,
     else if(conn->Receive(pm))
     {
         Logger.Debug<<"Accepted message "<<pm.hash()<<":"<<pm.sequence_num()<<std::endl;
-        CDispatcher::Instance().HandleRequest(
-            boost::make_shared<const ModuleMessage>(
-                ModuleMessage(pm.module_message())), uuid);
+        CDispatcher::Instance().HandleRequest(pm.module_message(), uuid);
     }
     else if(pm.status() != ProtocolMessage::CREATED)
     {

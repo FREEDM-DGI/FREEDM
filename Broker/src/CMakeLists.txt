@@ -14,8 +14,9 @@ set(BROKER_FILES
     CProtocolSR.cpp
     CProtocolSU.cpp
     CProtocolSRSW.cpp
+    CPeerNode.cpp
+    MPeerSets.cpp
     CTimings.cpp
-    IPeerNode.cpp
     IProtocol.cpp
     Messages.cpp
     CClockSynchronizer.cpp

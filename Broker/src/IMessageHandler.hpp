@@ -21,7 +21,7 @@
 #ifndef IHANDLER_HPP
 #define IHANDLER_HPP
 
-#include "IPeerNode.hpp"
+#include "CPeerNode.hpp"
 
 #include "messages/ModuleMessage.pb.h"
 
@@ -45,7 +45,7 @@ class IMessageHandler
 public:
     /// Handles received messages
     virtual void HandleIncomingMessage(
-        boost::shared_ptr<const ModuleMessage> msg, boost::shared_ptr<IPeerNode> peer) = 0;
+        const ModuleMessage msg, CPeerNode peer) = 0;
 
     /// Virtual destructor
     virtual ~IMessageHandler() {}

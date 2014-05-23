@@ -26,7 +26,7 @@
 #include "CGlobalConfiguration.hpp"
 #include "CGlobalPeerList.hpp"
 #include "CLogger.hpp"
-#include "IPeerNode.hpp"
+#include "CPeerNode.hpp"
 #include "Messages.hpp"
 #include "messages/ModuleMessage.pb.h"
 
@@ -109,18 +109,17 @@ void CClockSynchronizer::Stop()
 /// @param msg the incoming message
 /// @param peer the node that sent this message (could be this DGI)
 ///////////////////////////////////////////////////////////////////////////////
-void CClockSynchronizer::HandleIncomingMessage(
-    boost::shared_ptr<const ModuleMessage> msg, PeerNodePtr peer)
+void CClockSynchronizer::HandleIncomingMessage(const ModuleMessage msg, CPeerNode peer)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
-    if (!msg->has_clock_synchronizer_message())
+    if (!msg.has_clock_synchronizer_message())
     {
-        Logger.Warn << "Dropped message of unexpected type:\n" << msg->DebugString();
+        Logger.Warn << "Dropped message of unexpected type:\n" << msg.DebugString();
         return;
     }
 
-    ClockSynchronizerMessage csm = msg->clock_synchronizer_message();
+    ClockSynchronizerMessage csm = msg.clock_synchronizer_message();
     if(csm.has_exchange_message())
     {
         HandleExchange(csm.exchange_message(), peer);
@@ -131,7 +130,7 @@ void CClockSynchronizer::HandleIncomingMessage(
     }
     else
     {
-        Logger.Warn << "Dropped clk message of unexpected type:\n" << msg->DebugString();
+        Logger.Warn << "Dropped clk message of unexpected type:\n" << msg.DebugString();
     }
 }
 
@@ -144,12 +143,12 @@ void CClockSynchronizer::HandleIncomingMessage(
 /// @param msg The message from the remote node
 /// @param peer The peer sending the message.
 ///////////////////////////////////////////////////////////////////////////////
-void CClockSynchronizer::HandleExchange(const ExchangeMessage& msg, PeerNodePtr peer)
+void CClockSynchronizer::HandleExchange(const ExchangeMessage& msg, CPeerNode peer)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
     // Respond to the query ID
-    peer->Send(CreateExchangeResponse(msg.query()));
+    peer.Send(CreateExchangeResponse(msg.query()));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -162,10 +161,10 @@ void CClockSynchronizer::HandleExchange(const ExchangeMessage& msg, PeerNodePtr 
 /// @param msg The message from the remote node
 /// @param peer The remote node.
 ///////////////////////////////////////////////////////////////////////////////
-void CClockSynchronizer::HandleExchangeResponse(const ExchangeResponseMessage& msg, PeerNodePtr peer)
+void CClockSynchronizer::HandleExchangeResponse(const ExchangeResponseMessage& msg, CPeerNode peer)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    std::string sender = peer->GetUUID();
+    std::string sender = peer.GetUUID();
     MapIndex ij(m_uuid,sender);
     boost::posix_time::ptime challenge;
     boost::posix_time::ptime now = boost::posix_time::microsec_clock::universal_time();
@@ -275,7 +274,7 @@ void CClockSynchronizer::HandleExchangeResponse(const ExchangeResponseMessage& m
     {
         const ExchangeResponseMessage::TableEntry te = msg.table_entry(i);
         std::string neighbor = te.uuid();
-        if(neighbor == peer->GetUUID() || neighbor == m_uuid)
+        if(neighbor == peer.GetUUID() || neighbor == m_uuid)
             continue;
         boost::posix_time::time_duration cjl = boost::posix_time::seconds(te.offset_secs())+boost::posix_time::microseconds(te.offset_fracs());
         double wjl = te.weight()-.1; // Abritrarily remove some trust to account for lag.
@@ -310,12 +309,12 @@ void CClockSynchronizer::Exchange(const boost::system::error_code& err)
     if(err)
         return;
     // Loop through the peers and send them beacons
-    std::deque< boost::shared_ptr<IPeerNode> > tmplist;
-    std::deque< boost::shared_ptr<IPeerNode> > tmplist2;
+    std::deque< CPeerNode > tmplist;
+    std::deque< CPeerNode > tmplist2;
     bool flop = false;
-    BOOST_FOREACH(boost::shared_ptr<IPeerNode> peer, CGlobalPeerList::instance().PeerList() | boost::adaptors::map_values)
+    BOOST_FOREACH(CPeerNode peer, CGlobalPeerList::instance().PeerList() | boost::adaptors::map_values)
     {
-        if(peer->GetUUID() == m_uuid)
+        if(peer.GetUUID() == m_uuid)
            flop = true;
         else if(flop == false)
             tmplist2.push_back(peer); // put elements before me into list b
@@ -325,10 +324,10 @@ void CClockSynchronizer::Exchange(const boost::system::error_code& err)
     // put elements from list b into list a
     tmplist.insert(tmplist.end(),tmplist2.begin(),tmplist2.end());
     // This should do a circular shift of the queries, which SHOULD help with traffic if I have postulated correctly.
-    BOOST_FOREACH(boost::shared_ptr<IPeerNode> peer, tmplist)
+    BOOST_FOREACH(CPeerNode peer, tmplist)
     {
-        peer->Send(CreateExchangeMessage(m_kcounter));
-        MapIndex ij(m_uuid,peer->GetUUID());
+        peer.Send(CreateExchangeMessage(m_kcounter));
+        MapIndex ij(m_uuid,peer.GetUUID());
         m_queries[ij] = QueryRecord(m_kcounter, boost::posix_time::microsec_clock::universal_time());
     }
     m_kcounter++;

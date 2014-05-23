@@ -43,8 +43,8 @@
 
 #include "CBroker.hpp"
 #include "CDevice.hpp"
-#include "IPeerNode.hpp"
-#include "IAgent.hpp"
+#include "CPeerNode.hpp"
+#include "MPeerSets.hpp"
 #include "IMessageHandler.hpp"
 #include "messages/ModuleMessage.pb.h"
 
@@ -65,8 +65,8 @@ const double NORMAL_TOLERANCE = 0.5;
 /////////////////////////////////////////////////////////
 class LBAgent
     : public IMessageHandler,
-      private IPeerNode,
-      public IAgent< boost::shared_ptr<IPeerNode> >
+      private CPeerNode,
+      public MPeerSets
 {
     public:
         /// Constructor for using this object as a module
@@ -110,20 +110,20 @@ class LBAgent
 
         // Handlers
         /// Handles received messages
-        void HandleIncomingMessage(boost::shared_ptr<const ModuleMessage> msg, PeerNodePtr peer);
-        void HandlePeerList(const gm::PeerListMessage& msg, PeerNodePtr peer);
-        void HandleStateChange(const StateChangeMessage& msg, PeerNodePtr peer);
-        void HandleRequest(const RequestMessage& msg, PeerNodePtr peer);
-        void HandleDraft(const DraftMessage& msg, PeerNodePtr peer);
-        void HandleDrafting(const DraftingMessage& msg, PeerNodePtr peer);
-        void HandleAccept(const AcceptMessage& msg, PeerNodePtr peer);
+        void HandleIncomingMessage(const ModuleMessage msg, CPeerNode peer);
+        void HandlePeerList(const gm::PeerListMessage& msg, CPeerNode peer);
+        void HandleStateChange(const StateChangeMessage& msg, CPeerNode peer);
+        void HandleRequest(const RequestMessage& msg, CPeerNode peer);
+        void HandleDraft(const DraftMessage& msg, CPeerNode peer);
+        void HandleDrafting(const DraftingMessage& msg, CPeerNode peer);
+        void HandleAccept(const AcceptMessage& msg, CPeerNode peer);
         void HandleCollectedState(const sc::CollectedStateMessage& msg);
-        void HandleComputedNormal(const ComputedNormalMessage& msg, PeerNodePtr peer);
+        void HandleComputedNormal(const ComputedNormalMessage& msg, CPeerNode peer);
 
         /// Adds a new peer by a pointer
-        PeerNodePtr AddPeer(PeerNodePtr peer);
+        CPeerNode AddPeer(CPeerNode peer);
         /// Returns a pointer to the peer based on its UUID
-        PeerNodePtr GetPeer(std::string uuid);
+        CPeerNode GetPeer(std::string uuid);
 
         /// Wraps a LoadBalancingMessage in a ModuleMessage
         static ModuleMessage PrepareForSending(

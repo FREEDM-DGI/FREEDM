@@ -1,5 +1,5 @@
 ////////////////////////////////////////////////////////////////////////////////
-/// @file         IPeerNode.cpp
+/// @file         CPeerNode.cpp
 ///
 /// @author       Derek Ditch <dpdm85@mst.edu>
 /// @author       Ravi Akella <rcaq5c@mst.edu>
@@ -22,13 +22,14 @@
 /// Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
 ////////////////////////////////////////////////////////////////////////////////
 
-#include "CConnectionManager.hpp"
 #include "CLogger.hpp"
+#include "CPeerNode.hpp"
+#include "CConnectionManager.hpp"
 #include "CConnection.hpp"
-#include "IPeerNode.hpp"
 #include "messages/ModuleMessage.pb.h"
 
 #include <map>
+#include <stdexcept>
 
 #include <boost/shared_ptr.hpp>
 
@@ -44,48 +45,52 @@ CLocalLogger Logger(__FILE__);
 }
 
 /////////////////////////////////////////////////////////////
-/// @fn IPeerNode::IPeerNode
+/// @fn CPeerNode::CPeerNode
 /// @description Prepares a peer node. Provides node status
 ///   and sending functions to the agent in a very clean manner.
 /// @param uuid The uuid of the node
 /////////////////////////////////////////////////////////////
-IPeerNode::IPeerNode(std::string uuid)
+CPeerNode::CPeerNode(std::string uuid)
     : m_uuid(uuid)
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+}
+CPeerNode::CPeerNode()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 }
 
 
 ////////////////////////////////////////////////////////////
-/// @fn IPeerNode::GetUUID
+/// @fn CPeerNode::GetUUID
 /// @description Returns the uuid of this peer node as a
 ///              string.
 /////////////////////////////////////////////////////////////
-std::string IPeerNode::GetUUID() const
+std::string CPeerNode::GetUUID() const
 {
     return m_uuid;
 }
 
 /////////////////////////////////////////////////////////////
-/// @fn IPeerNode::GetHostname
+/// @fn CPeerNode::GetHostname
 /// @description Returns the hostname of this peer node as a
 ///              string
 /////////////////////////////////////////////////////////////
-std::string IPeerNode::GetHostname() const
+std::string CPeerNode::GetHostname() const
 {
     return CConnectionManager::Instance().GetHostByUUID(GetUUID()).hostname;
 }
 ////////////////////////////////////////////////////////////
-/// IPeerNode::GetPort
+/// CPeerNode::GetPort
 /// @description Returns the port number this node communicates on
 ////////////////////////////////////////////////////////////
-std::string IPeerNode::GetPort() const
+std::string CPeerNode::GetPort() const
 {
     return CConnectionManager::Instance().GetHostByUUID(GetUUID()).port;
 }
 
 /////////////////////////////////////////////////////////////
-/// @fn IPeerNode::Send
+/// @fn CPeerNode::Send
 /// @description This method will attempt to construct a
 ///   connection to the peer this object represents and send
 ///   a message. Before, when this was done with TCP, it was
@@ -97,38 +102,30 @@ std::string IPeerNode::GetPort() const
 /// @param msg the message to write to channel.
 /// @return True if the message was sent.
 /////////////////////////////////////////////////////////////
-bool IPeerNode::Send(const ModuleMessage& msg)
+void CPeerNode::Send(const ModuleMessage& msg)
 {
-    try
+    if(m_uuid.size() == 0)
     {
-        boost::shared_ptr<CConnection> c
-                = CConnectionManager::Instance().GetConnectionByUUID(m_uuid);
-        if(c.get() != NULL)
-        {
-            c->Send(msg);
-        }
-        else
-        {
-            Logger.Warn << "Couldn't Send Message To Peer"
-                    << " (Couldn't make connection)" << std::endl;
-            return false;
-        }
+        throw std::runtime_error("Couldn't send to peer, CPeerNode is empty");
     }
-    catch(boost::system::system_error& e)
+    boost::shared_ptr<CConnection> c
+            = CConnectionManager::Instance().GetConnectionByUUID(m_uuid);
+    if(c.get() != NULL)
     {
-        Logger.Warn << "Couldn't Send Message To Peer (Sending Failed)"
-                << std::endl;
-        return false;
+        c->Send(msg);
     }
-    Logger.Debug << "Sent message to peer" << std::endl;
-    return true;
+    else
+    {
+        Logger.Error << "Got empty pointer back for peer: "<<m_uuid<<std::endl;        
+        throw std::runtime_error("Couldn't send to peer, CConnectionManager returned empty pointer");
+    }
 }
 ///////////////////////////////////////////////////////////////////////////////
 /// @fn operator==
 /// @description Compares two peernodes.
 /// @return True if the peer nodes have the same uuid.
 ///////////////////////////////////////////////////////////////////////////////
-bool operator==(const IPeerNode& a, const IPeerNode& b)
+bool operator==(const CPeerNode& a, const CPeerNode& b)
 {
   return (a.GetUUID() == b.GetUUID());
 }
@@ -137,7 +134,7 @@ bool operator==(const IPeerNode& a, const IPeerNode& b)
 /// @description Provides a < operator for the maps these get stored in.
 /// @return True if a's uuid is < b's.
 /////////////////////////////////////////////////////////////////////////////
-bool operator<(const IPeerNode& a, const IPeerNode& b)
+bool operator<(const CPeerNode& a, const CPeerNode& b)
 {
   return (a.GetUUID() < b.GetUUID());
 }

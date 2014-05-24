@@ -124,6 +124,7 @@ void CListener::HandleRead(const boost::system::error_code& e,
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     CStopwatch me(__PRETTY_FUNCTION__);
+    CStopwatch* me2 = new CStopwatch(std::string(__PRETTY_FUNCTION__)+std::string(" CONNMGR"));
     if (e)
     {
         Logger.Error<<"HandleRead failed: " << e.message();
@@ -141,7 +142,10 @@ void CListener::HandleRead(const boost::system::error_code& e,
             return;
         }
     }
-    
+
+    delete me2;    
+    me2 = new CStopwatch(std::string(__PRETTY_FUNCTION__)+std::string(" CONNMGR"));
+
 #ifdef CUSTOMNETWORK
     if((rand()%100) >= GetReliability())
     {
@@ -159,7 +163,6 @@ void CListener::HandleRead(const boost::system::error_code& e,
     }
 
     
-    CStopwatch* me3 = new CStopwatch(std::string(__PRETTY_FUNCTION__)+std::string(" CONNMGR"));
     std::string uuid = pm.source_uuid();
     SRemoteHost host = { pm.source_hostname(), pm.source_port() };
     ///Make sure the hostname is registered:
@@ -168,28 +171,28 @@ void CListener::HandleRead(const boost::system::error_code& e,
     ConnectionPtr conn =
             CConnectionManager::Instance().GetConnectionByUUID(uuid);
     Logger.Debug<<"Fetched Connection"<<std::endl;
-    delete me3;
-
+    
+    delete me2;
+    me2 = new CStopwatch(std::string(__PRETTY_FUNCTION__)+std::string(" PROTOCOL"));
+    
+    if(pm.status() == ProtocolMessage::ACCEPTED)
     {
-        CStopwatch me2(std::string(__PRETTY_FUNCTION__)+std::string(" PROTOCOL"));
-        if(pm.status() == ProtocolMessage::ACCEPTED)
-        {
-            Logger.Debug<<"Processing Accept Message"<<std::endl;
-            Logger.Debug<<"Received ACK"<<pm.hash()<<":"<<pm.sequence_num()<<std::endl;
-            conn->ReceiveACK(pm);
-        }
-        else if(conn->Receive(pm))
-        {
-            Logger.Debug<<"Accepted message "<<pm.hash()<<":"<<pm.sequence_num()<<std::endl;
-            CDispatcher::Instance().HandleRequest(pm.module_message(), uuid);
-        }
-        else if(pm.status() != ProtocolMessage::CREATED)
-        {
-            Logger.Debug<<"Rejected message "<<pm.hash()<<":"<<pm.sequence_num()<<std::endl;
-        }
+        Logger.Debug<<"Processing Accept Message"<<std::endl;
+        Logger.Debug<<"Received ACK"<<pm.hash()<<":"<<pm.sequence_num()<<std::endl;
+        conn->ReceiveACK(pm);
+    }
+    else if(conn->Receive(pm))
+    {
+        Logger.Debug<<"Accepted message "<<pm.hash()<<":"<<pm.sequence_num()<<std::endl;
+        CDispatcher::Instance().HandleRequest(pm.module_message(), uuid);
+    }
+    else if(pm.status() != ProtocolMessage::CREATED)
+    {
+        Logger.Debug<<"Rejected message "<<pm.hash()<<":"<<pm.sequence_num()<<std::endl;
     }
 
     ScheduleListen();
+    delete me2;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

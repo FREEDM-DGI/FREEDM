@@ -124,7 +124,7 @@ void CListener::HandleRead(const boost::system::error_code& e,
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     CStopwatch me(__PRETTY_FUNCTION__);
-    CStopwatch* me2 = new CStopwatch(std::string(__PRETTY_FUNCTION__)+std::string(" CONNMGR"));
+    CStopwatch* me2 = new CStopwatch(std::string(__PRETTY_FUNCTION__)+std::string(" SECTOR1"));
     if (e)
     {
         Logger.Error<<"HandleRead failed: " << e.message();
@@ -134,7 +134,6 @@ void CListener::HandleRead(const boost::system::error_code& e,
     Logger.Debug<<"Loading protobuf"<<std::endl;
     ProtocolMessage pm;
     {
-        CStopwatch me2(std::string(__PRETTY_FUNCTION__)+std::string(" PB UNPACK"));
         if(!pm.ParseFromArray(m_buffer.begin(), bytes_transferred))
         {
             Logger.Error<<"Failed to load protobuf"<<std::endl;
@@ -144,7 +143,7 @@ void CListener::HandleRead(const boost::system::error_code& e,
     }
 
     delete me2;    
-    me2 = new CStopwatch(std::string(__PRETTY_FUNCTION__)+std::string(" CONNMGR"));
+    me2 = new CStopwatch(std::string(__PRETTY_FUNCTION__)+std::string(" SECTOR2"));
 
 #ifdef CUSTOMNETWORK
     if((rand()%100) >= GetReliability())
@@ -173,7 +172,7 @@ void CListener::HandleRead(const boost::system::error_code& e,
     Logger.Debug<<"Fetched Connection"<<std::endl;
     
     delete me2;
-    me2 = new CStopwatch(std::string(__PRETTY_FUNCTION__)+std::string(" PROTOCOL"));
+    me2 = new CStopwatch(std::string(__PRETTY_FUNCTION__)+std::string(" SECTOR3"));
     
     if(pm.status() == ProtocolMessage::ACCEPTED)
     {

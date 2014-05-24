@@ -37,6 +37,7 @@
 
 #include <list>
 #include <string>
+#include <set>
 
 #include <boost/asio.hpp>
 #include <boost/asio/deadline_timer.hpp>
@@ -63,6 +64,7 @@ public:
     typedef std::string ModuleIdent;
     typedef std::pair<ModuleIdent, boost::posix_time::time_duration> PhaseTuple;
     typedef std::vector< PhaseTuple > ModuleVector;
+    typedef std::set<ModuleIdent> ModuleSet;
     typedef unsigned int PhaseMarker;
     typedef unsigned int TimerHandle;
     typedef std::map<TimerHandle, ModuleIdent> TimerAlloc;
@@ -95,7 +97,7 @@ public:
     int Schedule(TimerHandle h, boost::posix_time::time_duration wait, Scheduleable x);
 
     /// Schedule a task
-    int Schedule(ModuleIdent m, BoundScheduleable x, bool start_worker=true);
+    int Schedule(const ModuleIdent& m, const BoundScheduleable& x, const bool start_worker=true);
 
     /// Allocate a timer
     TimerHandle AllocateTimer(ModuleIdent module);
@@ -143,6 +145,9 @@ private:
     ///List of modules for the scheduler
     ModuleVector m_modules;
 
+    ///List of modules registered
+    ModuleSet m_modules_set;
+
     ///Whose turn is it for round robin.
     PhaseMarker m_phase;
 
@@ -174,7 +179,7 @@ private:
     boost::mutex m_schmutex;
 
     ///The magical clock synchronizer
-    boost::shared_ptr<CClockSynchronizer> m_synchronizer;
+    CClockSynchronizer m_synchronizer;
 
     ///The register for signal handling.
     boost::asio::signal_set m_signals;

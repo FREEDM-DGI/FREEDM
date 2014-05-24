@@ -19,7 +19,7 @@ option(WARNINGS "warnings displayed during project compile" ON)
 
 # Boost
 find_package(Boost 1.47 REQUIRED
-             COMPONENTS date_time program_options system thread
+             COMPONENTS date_time chrono program_options system thread
             )
 include_directories(SYSTEM ${Boost_INCLUDE_DIRS})
 link_directories(${Boost_LIBRARY_DIRS})
@@ -60,6 +60,7 @@ target_link_libraries(PosixBroker
                       broker
                       device
                       ${Boost_DATE_TIME_LIBRARY}
+                      ${Boost_CHRONO_LIBRARY}
                       ${Boost_PROGRAM_OPTIONS_LIBRARY}
                       ${Boost_SYSTEM_LIBRARY}
                       ${Boost_THREAD_LIBRARY}

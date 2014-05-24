@@ -57,23 +57,25 @@ public:
     static CDispatcher& Instance();
 
     /// Called upon incoming message
-    void HandleRequest(const ModuleMessage& msg, std::string uuid);
+    void HandleRequest(const ModuleMessage& msg,const std::string& uuid);
 
     /// Registers a handler that will be called with HandleRequest
-    void RegisterReadHandler(boost::shared_ptr<IMessageHandler> p_handler, std::string id);
+    void RegisterReadHandler(IMessageHandler* p_handler, std::string id);
 
+    /// Module handler registrations
+    typedef std::multimap<const std::string, IMessageHandler* > RegistrationsMap;
 private:
     /// Private constructor for the singleton instance
     CDispatcher() {};
 
     /// Making the handler calls bindable
     void ReadHandlerCallback(
-        boost::shared_ptr<IMessageHandler> h,
+        IMessageHandler* h,
         const ModuleMessage msg,
         std::string uuid);
 
     /// Reverse map to get the calling module from the handler pointer.
-    std::multimap<boost::shared_ptr<IMessageHandler>, const std::string> m_registrations;
+    RegistrationsMap m_registrations;
 };
 
 } // namespace broker

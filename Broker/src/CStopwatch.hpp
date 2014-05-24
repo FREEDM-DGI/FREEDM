@@ -1,4 +1,5 @@
-#include <boost/date_time/posix_time/posix_time.hpp>
+#include <boost/chrono.hpp>
+#include <boost/chrono/thread_clock.hpp>
 #include <iostream>
 
 #ifndef CSTOPWATCH_HPP
@@ -10,16 +11,17 @@ class CStopwatch
     CStopwatch(std::string name)
         : m_name(name)
     {
-        m_start = boost::posix_time::microsec_clock::universal_time();
+        m_start=boost::chrono::thread_clock::now();
     }
     ~CStopwatch()
     {
-        boost::posix_time::ptime end = boost::posix_time::microsec_clock::universal_time();
-        std::cout<<"STOPWATCH "<<m_name<<" : "<<end-m_start<<std::endl;
+        typedef boost::chrono::duration<double> sec;
+        sec d = (boost::chrono::thread_clock::now()-m_start);
+        std::cout<<"STOPWATCH "<<m_name<<" : "<< d.count() <<"\n";
     }
     private:
     std::string m_name;
-    boost::posix_time::ptime m_start;
+    boost::chrono::thread_clock::time_point m_start;
 };
 
 #endif

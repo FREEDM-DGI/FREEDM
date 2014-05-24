@@ -74,13 +74,11 @@ CBroker& CBroker::Instance()
 ///////////////////////////////////////////////////////////////////////////////
 CBroker::CBroker()
     : m_phasetimer(m_ioService)
-    , m_synchronizer()
+    , m_synchronizer(m_ioService)
     , m_signals(m_ioService, SIGINT, SIGTERM)
     , m_stopping(false)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-
-    m_synchronizer = boost::make_shared<CClockSynchronizer>(boost::ref(m_ioService));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -133,8 +131,8 @@ void CBroker::Run()
     m_signals.async_wait(boost::bind(&CBroker::HandleSignal, this, _1, _2));
     device::CAdapterFactory::Instance(); // create it
 
-    CDispatcher::Instance().RegisterReadHandler(m_synchronizer, "clk");
-    m_synchronizer->Run();
+    CDispatcher::Instance().RegisterReadHandler(&m_synchronizer, "clk");
+    m_synchronizer.Run();
 
     // The io_service::run() call will block until all asynchronous operations
     // have finished. While the server is running, there is always at least one
@@ -225,7 +223,7 @@ void CBroker::HandleStop(unsigned int signum)
         m_signals.clear();
     }
 
-    m_synchronizer->Stop();
+    m_synchronizer.Stop();
     CConnectionManager::Instance().StopAll();
 
     // The server is stopped by canceling all outstanding asynchronous
@@ -262,6 +260,7 @@ void CBroker::RegisterModule(CBroker::ModuleIdent m, boost::posix_time::time_dur
     if(!IsModuleRegistered(m))
     {
         m_modules.push_back(PhaseTuple(m,phase));
+        m_modules_set.insert(m);
         if(m_modules.size() == 1)
         {
             schlock.unlock();
@@ -281,16 +280,7 @@ void CBroker::RegisterModule(CBroker::ModuleIdent m, boost::posix_time::time_dur
 ///////////////////////////////////////////////////////////////////////////////
 bool CBroker::IsModuleRegistered(ModuleIdent m)
 {
-    bool exists = false;
-    for(unsigned int i=0; i < m_modules.size(); i++)
-    {
-        if(m_modules[i].first == m)
-        {
-            exists = true;
-            break;
-        }
-    }
-    return exists;
+    return m_modules_set.count(m);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -379,7 +369,7 @@ int CBroker::Schedule(CBroker::TimerHandle h,
 ///     can be useful to defer an activity to the next round if the node is not busy
 /// @return 0 on success, -1 if rejected
 ///////////////////////////////////////////////////////////////////////////////
-int CBroker::Schedule(ModuleIdent m, BoundScheduleable x, bool start_worker)
+int CBroker::Schedule(const ModuleIdent &m, const BoundScheduleable &x, const bool start_worker)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     {
@@ -605,7 +595,7 @@ void CBroker::Worker()
 //////////////////////////////////
 CClockSynchronizer& CBroker::GetClockSynchronizer()
 {
-    return *m_synchronizer;
+    return m_synchronizer;
 }
 
     } // namespace broker

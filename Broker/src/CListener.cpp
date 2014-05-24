@@ -123,7 +123,7 @@ void CListener::HandleRead(const boost::system::error_code& e,
                            std::size_t bytes_transferred)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    CStopwatch* me = new CStopwatch(__PRETTY_FUNCTION__);
+    CStopwatch me(__PRETTY_FUNCTION__);
     CStopwatch* me2 = new CStopwatch(std::string(__PRETTY_FUNCTION__)+std::string(" SECTOR1"));
     if (e)
     {
@@ -176,12 +176,14 @@ void CListener::HandleRead(const boost::system::error_code& e,
     
     if(pm.status() == ProtocolMessage::ACCEPTED)
     {
+        CStopwatch me3(std::string(__PRETTY_FUNCTION__)+std::string(" SECTOR3A"));
         Logger.Debug<<"Processing Accept Message"<<std::endl;
         Logger.Debug<<"Received ACK"<<pm.hash()<<":"<<pm.sequence_num()<<std::endl;
         conn->ReceiveACK(pm);
     }
     else if(conn->Receive(pm))
     {
+        CStopwatch me3(std::string(__PRETTY_FUNCTION__)+std::string(" SECTOR3B"));
         Logger.Debug<<"Accepted message "<<pm.hash()<<":"<<pm.sequence_num()<<std::endl;
         CDispatcher::Instance().HandleRequest(pm.module_message(), uuid);
     }
@@ -192,7 +194,6 @@ void CListener::HandleRead(const boost::system::error_code& e,
 
     ScheduleListen();
     delete me2;
-    delete me;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

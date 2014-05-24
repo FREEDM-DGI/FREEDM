@@ -313,24 +313,24 @@ int main(int argc, char* argv[])
     }
 
     // Initialize modules
-    boost::shared_ptr<IMessageHandler> GM = boost::make_shared<gm::GMAgent>(id);
-    boost::shared_ptr<IMessageHandler> SC = boost::make_shared<sc::SCAgent>(id);
-    boost::shared_ptr<IMessageHandler> LB = boost::make_shared<lb::LBAgent>(id);
+    gm::GMAgent GM(id);
+    sc::SCAgent SC(id);
+    lb::LBAgent LB(id);
 
     try
     {
         // Instantiate and register the group management module
         CBroker::Instance().RegisterModule("gm",boost::posix_time::milliseconds(CTimings::GM_PHASE_TIME));
-        CDispatcher::Instance().RegisterReadHandler(GM, "gm");
+        CDispatcher::Instance().RegisterReadHandler(&GM, "gm");
         CBroker::Instance().RegisterModule("lbq",boost::posix_time::milliseconds(CTimings::LB_SC_QUERY_TIME));
         // Instantiate and register the state collection module
         CBroker::Instance().RegisterModule("sc",boost::posix_time::milliseconds(CTimings::SC_PHASE_TIME));
-        CDispatcher::Instance().RegisterReadHandler(SC, "sc");
+        CDispatcher::Instance().RegisterReadHandler(&SC, "sc");
         // StateCollection wants to receive Accept messages addressed to lb.
-        CDispatcher::Instance().RegisterReadHandler(SC, "lb");
+        CDispatcher::Instance().RegisterReadHandler(&SC, "lb");
         // Instantiate and register the power management module
         CBroker::Instance().RegisterModule("lb",boost::posix_time::milliseconds(CTimings::LB_PHASE_TIME));
-        CDispatcher::Instance().RegisterReadHandler(LB, "lb");
+        CDispatcher::Instance().RegisterReadHandler(&LB, "lb");
 
         // The peerlist should be passed into constructors as references or
         // pointers to each submodule to allow sharing peers. NOTE this requires
@@ -369,11 +369,11 @@ int main(int argc, char* argv[])
         Logger.Debug << "Starting thread of Modules" << std::endl;
         CBroker::Instance().Schedule(
             "gm",
-            boost::bind(&gm::GMAgent::Run, boost::dynamic_pointer_cast<gm::GMAgent>(GM)),
+            boost::bind(&gm::GMAgent::Run, &GM),
             false);
         CBroker::Instance().Schedule(
             "lb",
-            boost::bind(&lb::LBAgent::Run, boost::dynamic_pointer_cast<lb::LBAgent>(LB)),
+            boost::bind(&lb::LBAgent::Run, &LB),
             false);
     }
     catch (std::exception & e)

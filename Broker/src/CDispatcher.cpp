@@ -27,6 +27,7 @@
 #include "CGlobalPeerList.hpp"
 #include "CLogger.hpp"
 #include "IMessageHandler.hpp"
+#include "CStopwatch.hpp"
 
 #include <boost/bind.hpp>
 #include <boost/smart_ptr/shared_ptr.hpp>
@@ -61,36 +62,49 @@ CDispatcher& CDispatcher::Instance()
 /// @param msg The message to distribute to modules
 /// @param uuid The UUID of the DGI that sent the message
 ///////////////////////////////////////////////////////////////////////////////
-void CDispatcher::HandleRequest(const ModuleMessage& msg, std::string uuid)
+void CDispatcher::HandleRequest(const ModuleMessage& msg, const std::string& uuid)
 {
+    CStopwatch me(__PRETTY_FUNCTION__);
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     Logger.Debug << "Processing message addressed to: " << msg.recipient_module() << std::endl;
 
     bool processed = false;
 
-    for(std::multimap<boost::shared_ptr<IMessageHandler>, const std::string>::const_iterator it
-            = m_registrations.begin();
-        it != m_registrations.end(); ++it)
+    RegistrationsMap::const_iterator it;
+    RegistrationsMap::const_iterator itend;
+    CBroker& broker = CBroker::Instance();
+    if(msg.recipient_module() == "all")
     {
-        if (it->second == msg.recipient_module() || msg.recipient_module() == "all")
+        it = m_registrations.begin();
+        itend = m_registrations.end();
+    }
+    else
+    {
+        std::pair<RegistrationsMap::const_iterator, RegistrationsMap::const_iterator> r;
+        r = m_registrations.equal_range(msg.recipient_module());
+        it = r.first;
+        itend = r.second;
+    }
+    if(it != itend)
+        processed = true;
+    for(; it != itend; ++it)
+    {
+        // Scheduled modules receive messages only during that module's phase.
+        // Unscheduled modules receive messages immediately.
+        if (broker.IsModuleRegistered(it->first))
         {
-            // Scheduled modules receive messages only during that module's phase.
-            // Unscheduled modules receive messages immediately.
-            if (CBroker::Instance().IsModuleRegistered(it->second))
-            {
-                CBroker::Instance().Schedule(
-                    it->second,
-                    boost::bind(
-                        &CDispatcher::ReadHandlerCallback, this, it->first, msg, uuid));
-            }
-            else
-            {
-                ReadHandlerCallback(it->first, msg, uuid);
-            }
-            processed = true;
+            CStopwatch me2(std::string(__PRETTY_FUNCTION__)+std::string(" LOOP BODY"));
+            broker.Schedule(
+                it->first,
+                boost::bind(
+                    &CDispatcher::ReadHandlerCallback, this, it->second, msg, uuid));
+            std::cout<<"Loop for "<<it->first<<"\n";
+        }
+        else
+        {
+            ReadHandlerCallback(it->second, msg, uuid);
         }
     }
-
     if( processed == false )
     {
         Logger.Warn << "Message was not processed by any module:\n" << msg.DebugString();
@@ -106,7 +120,7 @@ void CDispatcher::HandleRequest(const ModuleMessage& msg, std::string uuid)
 /// @param uuid the UUID of the DGI that sent
 ///////////////////////////////////////////////////////////////////////////////
 void CDispatcher::ReadHandlerCallback(
-    boost::shared_ptr<IMessageHandler> h, const ModuleMessage msg, std::string uuid)
+    IMessageHandler* h, const ModuleMessage msg, std::string uuid)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     CPeerNode peer;
@@ -136,11 +150,11 @@ void CDispatcher::ReadHandlerCallback(
 /// @param id this module will receive messages addressed to id
 ///////////////////////////////////////////////////////////////////////////////
 void CDispatcher::RegisterReadHandler(
-    boost::shared_ptr<IMessageHandler> handler, std::string id)
+    IMessageHandler* handler, std::string id)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     Logger.Debug << "Registered module listening on " << id << std::endl;
-    m_registrations.insert(std::make_pair(handler,id));
+    m_registrations.insert(std::make_pair(id,handler));
 }
 
     } //namespace broker

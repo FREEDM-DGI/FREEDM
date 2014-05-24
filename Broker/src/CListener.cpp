@@ -141,7 +141,7 @@ void CListener::HandleRead(const boost::system::error_code& e,
             return;
         }
     }
-
+    
 #ifdef CUSTOMNETWORK
     if((rand()%100) >= GetReliability())
     {
@@ -158,6 +158,8 @@ void CListener::HandleRead(const boost::system::error_code& e,
         return;
     }
 
+    
+    CStopwatch* me3 = new CStopwatch(std::string(__PRETTY_FUNCTION__)+std::string(" CONNMGR"));
     std::string uuid = pm.source_uuid();
     SRemoteHost host = { pm.source_hostname(), pm.source_port() };
     ///Make sure the hostname is registered:
@@ -166,6 +168,7 @@ void CListener::HandleRead(const boost::system::error_code& e,
     ConnectionPtr conn =
             CConnectionManager::Instance().GetConnectionByUUID(uuid);
     Logger.Debug<<"Fetched Connection"<<std::endl;
+    delete me3;
 
     {
         CStopwatch me2(std::string(__PRETTY_FUNCTION__)+std::string(" PROTOCOL"));

@@ -123,7 +123,7 @@ void CListener::HandleRead(const boost::system::error_code& e,
                            std::size_t bytes_transferred)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    CStopwatch me(__PRETTY_FUNCTION__);
+    CStopwatch* me = new CStopwatch(__PRETTY_FUNCTION__);
     CStopwatch* me2 = new CStopwatch(std::string(__PRETTY_FUNCTION__)+std::string(" SECTOR1"));
     if (e)
     {
@@ -192,6 +192,7 @@ void CListener::HandleRead(const boost::system::error_code& e,
 
     ScheduleListen();
     delete me2;
+    delete me;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

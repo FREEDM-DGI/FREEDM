@@ -133,14 +133,14 @@ void CListener::HandleRead(const boost::system::error_code& e,
     Logger.Debug<<"Loading protobuf"<<std::endl;
     ProtocolMessage pm;
     {
-        CStopwatch me2(__PRETTY_FUNCTION__+" PB UNPACK");
+        CStopwatch me2(std::string(__PRETTY_FUNCTION__)+std::string(" PB UNPACK"));
         if(!pm.ParseFromArray(m_buffer.begin(), bytes_transferred))
         {
             Logger.Error<<"Failed to load protobuf"<<std::endl;
             ScheduleListen();
             return;
         }
-    {
+    }
 
 #ifdef CUSTOMNETWORK
     if((rand()%100) >= GetReliability())
@@ -168,7 +168,7 @@ void CListener::HandleRead(const boost::system::error_code& e,
     Logger.Debug<<"Fetched Connection"<<std::endl;
 
     {
-        CStopwatch me2(__PRETTY_FUNCTION__+" PROTOCOL");
+        CStopwatch me2(std::string(__PRETTY_FUNCTION__)+std::string(" PROTOCOL"));
         if(pm.status() == ProtocolMessage::ACCEPTED)
         {
             Logger.Debug<<"Processing Accept Message"<<std::endl;

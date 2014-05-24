@@ -15,7 +15,7 @@ class CStopwatch
     ~CStopwatch()
     {
         boost::posix_time::ptime end = boost::posix_time::microsec_clock::universal_time();
-        std::cout<<"STOPWATCH "<<m_name<<" : "<<end-m_start;
+        std::cout<<"STOPWATCH "<<m_name<<" : "<<end-m_start<<std::endl;
     }
     private:
     std::string m_name;

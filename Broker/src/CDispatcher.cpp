@@ -27,7 +27,6 @@
 #include "CGlobalPeerList.hpp"
 #include "CLogger.hpp"
 #include "IMessageHandler.hpp"
-#include "CStopwatch.hpp"
 
 #include <boost/bind.hpp>
 #include <boost/smart_ptr/shared_ptr.hpp>
@@ -66,7 +65,6 @@ void CDispatcher::HandleRequest(
     const boost::shared_ptr<const ModuleMessage>& msg,
     const std::string& uuid)
 {
-    CStopwatch me(__PRETTY_FUNCTION__);
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     Logger.Debug << "Processing message addressed to: " << msg->recipient_module() << std::endl;
 
@@ -94,11 +92,9 @@ void CDispatcher::HandleRequest(
         // Unscheduled modules receive messages immediately.
         if (CBroker::Instance().IsModuleRegistered(it->first))
         {
-            CStopwatch me2(std::string(__PRETTY_FUNCTION__)+std::string(" LOOP BODY"));
             CBroker::Instance().Schedule(
                 it->first,
                 boost::bind(&CDispatcher::ReadHandlerCallback, this, it->second, msg, uuid));
-            std::cout<<"Loop for "<<it->first<<"\n";
         }
         else
         {

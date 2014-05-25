@@ -385,7 +385,6 @@ int CBroker::Schedule(const ModuleIdent &m, const BoundScheduleable &x, const bo
     if(!m_busy && start_worker)
     {
         schlock.unlock();
-        std::cout<<"Executing worker!!"<<std::endl;
         Worker();
         schlock.lock();
     }

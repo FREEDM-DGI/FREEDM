@@ -31,7 +31,6 @@
 #include "CLogger.hpp"
 #include "CClockSynchronizer.hpp"
 #include "CConnection.hpp"
-#include "CStopwatch.hpp"
 #include "messages/ModuleMessage.pb.h"
 #include "messages/ProtocolMessage.pb.h"
 
@@ -123,8 +122,6 @@ void CListener::HandleRead(const boost::system::error_code& e,
                            std::size_t bytes_transferred)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    CStopwatch me(__PRETTY_FUNCTION__);
-    CStopwatch* me2 = new CStopwatch(std::string(__PRETTY_FUNCTION__)+std::string(" SECTOR1"));
     if (e)
     {
         Logger.Error<<"HandleRead failed: " << e.message();
@@ -142,8 +139,6 @@ void CListener::HandleRead(const boost::system::error_code& e,
         }
     }
 
-    delete me2;    
-    me2 = new CStopwatch(std::string(__PRETTY_FUNCTION__)+std::string(" SECTOR2"));
 
 #ifdef CUSTOMNETWORK
     if((rand()%100) >= GetReliability())
@@ -171,19 +166,15 @@ void CListener::HandleRead(const boost::system::error_code& e,
             CConnectionManager::Instance().GetConnectionByUUID(uuid);
     Logger.Debug<<"Fetched Connection"<<std::endl;
     
-    delete me2;
-    me2 = new CStopwatch(std::string(__PRETTY_FUNCTION__)+std::string(" SECTOR3"));
     
     if(pm.status() == ProtocolMessage::ACCEPTED)
     {
-        CStopwatch me3(std::string(__PRETTY_FUNCTION__)+std::string(" SECTOR3A"));
         Logger.Debug<<"Processing Accept Message"<<std::endl;
         Logger.Debug<<"Received ACK"<<pm.hash()<<":"<<pm.sequence_num()<<std::endl;
         conn->ReceiveACK(pm);
     }
     else if(conn->Receive(pm))
     {
-        CStopwatch me3(std::string(__PRETTY_FUNCTION__)+std::string(" SECTOR3B"));
         Logger.Debug<<"Accepted message "<<pm.hash()<<":"<<pm.sequence_num()<<std::endl;
         boost::shared_ptr<const ModuleMessage> mm(pm.release_module_message());
         CDispatcher::Instance().HandleRequest(mm, uuid);
@@ -194,7 +185,6 @@ void CListener::HandleRead(const boost::system::error_code& e,
     }
 
     ScheduleListen();
-    delete me2;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

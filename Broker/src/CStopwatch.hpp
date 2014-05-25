@@ -17,7 +17,7 @@ class CStopwatch
     {
         typedef boost::chrono::duration<double> sec;
         sec d = (boost::chrono::thread_clock::now()-m_start);
-        std::cout<<"STOPWATCH "<<m_name<<" : "<< d.count() <<"\n";
+        std::cout<<"STOPWATCH "<<m_name<<" : "<< d.count() <<std::endl;
     }
     private:
     std::string m_name;

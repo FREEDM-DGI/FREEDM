@@ -35,6 +35,7 @@
 #include "Messages.hpp"
 #include "CPhysicalTopology.hpp"
 #include "FreedmExceptions.hpp"
+#include "CStopwatch.hpp"
 
 #include <algorithm>
 #include <exception>
@@ -123,40 +124,49 @@ GMAgent::~GMAgent()
 void GMAgent::HandleIncomingMessage(const ModuleMessage& msg, CPeerNode peer)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    CStopwatch me("Incoming message");
 
     if(msg.has_group_management_message())
     {
         GroupManagementMessage gmm = msg.group_management_message();
         if(gmm.has_invite_message())
         {
+            CStopwatch me("Invite");
             HandleInvite(gmm.invite_message(),peer);
         }
         else if(gmm.has_accept_message())
         {
+            CStopwatch me("Accept");
             HandleAccept(gmm.accept_message(),peer);
         }
         else if(gmm.has_are_you_coordinator_message())
         {
+            CStopwatch me("AYC");
             HandleAreYouCoordinator(gmm.are_you_coordinator_message(),peer);
         }
         else if(gmm.has_are_you_coordinator_response_message())
         {
+            CStopwatch me("Resp. AYC");
             HandleResponseAYC(gmm.are_you_coordinator_response_message(),peer);
         }
         else if(gmm.has_are_you_there_message())
         {
+            CStopwatch me("AYT");
             HandleAreYouThere(gmm.are_you_there_message(),peer);
         }
         else if(gmm.has_are_you_there_response_message())
         {
+            CStopwatch me("Resp. AYT");
             HandleResponseAYT(gmm.are_you_there_response_message(),peer);
         }
         else if(gmm.has_peer_list_query_message())
         {
+            CStopwatch me("Query");
             HandlePeerListQuery(gmm.peer_list_query_message(),peer);
         }
         else if(gmm.has_peer_list_message())
         {
+            CStopwatch me("Peerlist");
             HandlePeerList(gmm.peer_list_message(),peer);
         }
         else
@@ -531,7 +541,7 @@ void GMAgent::Check( const boost::system::error_code& err )
                 if( peer.GetUUID() == GetUUID())
                     continue;
                 peer.Send(m_);
-                InsertInTimedPeerSet(m_AYCResponse, peer, boost::posix_time::microsec_clock::universal_time());
+                InsertInTimedPeerSet(m_AYCResponse, peer);
             }
             // The AlivePeers set is no longer good, we should clear it and make them
             // Send us new messages
@@ -868,7 +878,7 @@ void GMAgent::Timeout( const boost::system::error_code& err )
             {
                 peer.Send(m_);
                 Logger.Info << "Expecting response from "<<peer.GetUUID()<<std::endl;
-                InsertInTimedPeerSet(m_AYTResponse, peer, boost::posix_time::microsec_clock::universal_time());
+                InsertInTimedPeerSet(m_AYTResponse, peer);
             }
             Logger.Info << "TIMER: Setting TimeoutTimer (Recovery):" << __LINE__ << std::endl;
             CBroker::Instance().Schedule(m_timer, AYT_RESPONSE_TIMEOUT,
@@ -1157,8 +1167,8 @@ void GMAgent::HandleResponseAYC(const AreYouCoordinatorResponseMessage& msg, CPe
     bool expected = CountInTimedPeerSet(m_AYCResponse,peer);
     if(expected)
     {
-        boost::posix_time::time_duration interval = boost::posix_time::microsec_clock::universal_time() - GetTimeFromPeerSet(m_AYCResponse, peer);
-        Logger.Info << "AYC response received " << interval << " after query sent" << std::endl;
+        ChronoDuration interval = GetTimeInPeerSet(m_AYCResponse, peer);
+        Logger.Info << "AYC response received " << interval.count() << " after query sent" << std::endl;
         //Update the states of the available FIDs
         BOOST_FOREACH(const FidStateMessage &fsm, msg.fid_state())
         {
@@ -1218,8 +1228,8 @@ void GMAgent::HandleResponseAYT(const AreYouThereResponseMessage& msg, CPeerNode
     bool expected = CountInTimedPeerSet(m_AYTResponse,peer);
     if(expected)
     {
-        boost::posix_time::time_duration interval = boost::posix_time::microsec_clock::universal_time() - GetTimeFromPeerSet(m_AYTResponse, peer);
-        Logger.Info << "AYT response received " << interval << " after query sent" << std::endl;
+        ChronoDuration interval = GetTimeInPeerSet(m_AYTResponse, peer);
+        Logger.Info << "AYT response received " << interval.count() << " after query sent" << std::endl;
     }
 
     EraseInTimedPeerSet(m_AYTResponse,peer);

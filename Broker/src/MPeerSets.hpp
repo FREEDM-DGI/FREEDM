@@ -25,7 +25,7 @@
 #include <map>
 #include <string>
 
-#include <boost/date_time/posix_time/ptime.hpp>
+#include <boost/chrono.hpp>
 
 #include "CPeerNode.hpp"
 
@@ -51,7 +51,9 @@ public:
 
     /// Similar to a PeerSet, but also tracks the time a peer was inserted
     typedef std::map<std::string,
-                     std::pair<CPeerNode, boost::posix_time::ptime> > TimedPeerSet;
+                     std::pair<CPeerNode, boost::chrono::steady_clock::time_point> > TimedPeerSet;
+    /// The type for the amount of time it takes to get a response
+    typedef boost::chrono::duration<double> ChronoDuration;
 
     /// Provides a TimedPeerSet iterator templated on T
     typedef typename TimedPeerSet::iterator TimedPeerSetIterator;
@@ -59,16 +61,14 @@ public:
     /// Provides count() for a TimedPeerSet
     static int CountInTimedPeerSet(TimedPeerSet& tps, const CPeerNode& m);
 
-    /// Get the time a peer was placed into the TimedPeerSet; only sensible if the peer is in the set exactly once
-    static boost::posix_time::ptime GetTimeFromPeerSet(TimedPeerSet& tps, const CPeerNode& m);
+    /// Get the time since a peer was placed into the TimedPeerSet
+    static boost::chrono::duration<double> GetTimeInPeerSet(TimedPeerSet& tps, const CPeerNode& m);
 
     /// Provides erase() for a TimedPeerSet
     static void EraseInTimedPeerSet(TimedPeerSet& tps, const CPeerNode& m);
     
     /// Provides insert() for a TimedPeerSet
-    static void InsertInTimedPeerSet(TimedPeerSet& tps,
-                                     const CPeerNode& m,
-                                     boost::posix_time::ptime time);
+    static void InsertInTimedPeerSet(TimedPeerSet& tps, const CPeerNode& m);
 };
 
 } // namespace freedm

@@ -21,6 +21,7 @@
 #include <algorithm>
 #include <exception>
 
+
 #include "MPeerSets.hpp"
 
 namespace freedm {
@@ -50,53 +51,29 @@ void MPeerSets::InsertInPeerSet(PeerSet& ps, const CPeerNode& m)
 /// Provides count() for a TimedPeerSet
 int MPeerSets::CountInTimedPeerSet(TimedPeerSet& tps, const CPeerNode& m)
 {
-    ssize_t count = 0;
-    for (TimedPeerSetIterator it = tps.begin(); it != tps.end(); it++)
-    {
-        if (it->first == m.GetUUID())
-        {
-            count++;
-        }
-    }
-    return count;
+    return tps.count(m.GetUUID());
 }
 
-/// Get the time a peer was placed into the TimedPeerSet; only sensible if the peer is in the set exactly once
-boost::posix_time::ptime MPeerSets::GetTimeFromPeerSet(TimedPeerSet& tps, const CPeerNode& m)
+/// Get the time a peer was placed into the TimedPeerSet
+boost::chrono::duration<double> MPeerSets::GetTimeInPeerSet(TimedPeerSet& tps, const CPeerNode& m)
 {
-    for (TimedPeerSetIterator it = tps.begin(); it != tps.end(); it++)
-    {
-        if (it->first == m.GetUUID())
-        {
-            return it->second.second;
-        }
-    }
-    throw std::runtime_error("Expected peer wasn't found in peer set");
+    if(CountInTimedPeerSet(tps, m) == 0)
+        return ChronoDuration(0);
+    ChronoDuration d = tps[m.GetUUID()].second - boost::chrono::steady_clock::now();
+    return d;
 }
 
 /// Provides erase() for a TimedPeerSet
 void MPeerSets::EraseInTimedPeerSet(TimedPeerSet& tps, const CPeerNode& m)
 {
-    for (TimedPeerSetIterator it = tps.begin(); it != tps.end(); )
-    {
-        if (it->first == m.GetUUID())
-        {
-            // careful not to invalidate the iterator
-            tps.erase((it++)->first);
-        }
-        else
-        {
-            it++;
-        }
-    }
+    tps.erase(m.GetUUID());
 }
 
 /// Provides insert() for a TimedPeerSet
 void MPeerSets::InsertInTimedPeerSet(TimedPeerSet& tps,
-                             const CPeerNode& m,
-                             boost::posix_time::ptime time)
-{
-    tps[m.GetUUID()] = std::make_pair(m, time);
+                             const CPeerNode& m)
+{     
+    tps[m.GetUUID()] = std::make_pair(m, boost::chrono::steady_clock::now());
 }
 
 } // namespace freedm

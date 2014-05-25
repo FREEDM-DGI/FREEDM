@@ -45,7 +45,7 @@ class IMessageHandler
 public:
     /// Handles received messages
     virtual void HandleIncomingMessage(
-        const ModuleMessage msg, CPeerNode peer) = 0;
+        const ModuleMessage& msg, CPeerNode peer) = 0;
 
     /// Virtual destructor
     virtual ~IMessageHandler() {}

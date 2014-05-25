@@ -110,7 +110,7 @@ class LBAgent
 
         // Handlers
         /// Handles received messages
-        void HandleIncomingMessage(const ModuleMessage msg, CPeerNode peer);
+        void HandleIncomingMessage(const ModuleMessage& msg, CPeerNode peer);
         void HandlePeerList(const gm::PeerListMessage& msg, CPeerNode peer);
         void HandleStateChange(const StateChangeMessage& msg, CPeerNode peer);
         void HandleRequest(const RequestMessage& msg, CPeerNode peer);

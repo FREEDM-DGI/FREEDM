@@ -66,7 +66,7 @@ class GMAgent
 
     // Handlers
     /// Handles received messages
-    void HandleIncomingMessage(const ModuleMessage msg, CPeerNode peer);
+    void HandleIncomingMessage(const ModuleMessage& msg, CPeerNode peer);
     /// Hadles recieving peerlists
     void HandlePeerList(const PeerListMessage& msg,CPeerNode peer);
     /// Handles recieving accept messsages

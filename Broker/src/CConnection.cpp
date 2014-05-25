@@ -118,7 +118,9 @@ void CConnection::Send(const ModuleMessage& msg)
     // into the received Queue.
     if(m_uuid == CGlobalConfiguration::Instance().GetUUID())
     {
-        CDispatcher::Instance().HandleRequest(msg, m_uuid);
+        boost::shared_ptr<ModuleMessage> copy = boost::make_shared<ModuleMessage>();
+        copy->CopyFrom(msg);
+        CDispatcher::Instance().HandleRequest(copy, m_uuid);
     }
     else
     {

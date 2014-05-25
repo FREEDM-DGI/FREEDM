@@ -57,7 +57,7 @@ public:
     static CDispatcher& Instance();
 
     /// Called upon incoming message
-    void HandleRequest(const ModuleMessage& msg,const std::string& uuid);
+    void HandleRequest(const boost::shared_ptr<const ModuleMessage>& msg,const std::string& uuid);
 
     /// Registers a handler that will be called with HandleRequest
     void RegisterReadHandler(IMessageHandler* p_handler, std::string id);
@@ -71,7 +71,7 @@ private:
     /// Making the handler calls bindable
     void ReadHandlerCallback(
         IMessageHandler* h,
-        const ModuleMessage msg,
+        const boost::shared_ptr<const ModuleMessage> msg,
         std::string uuid);
 
     /// Reverse map to get the calling module from the handler pointer.

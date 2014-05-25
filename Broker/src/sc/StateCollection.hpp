@@ -78,7 +78,7 @@ class SCAgent
         void HandleMarker(const MarkerMessage& msg, CPeerNode peer);
         void HandleState(const StateMessage& msg, CPeerNode peer);
         /// Handles received messages
-        void HandleIncomingMessage(const ModuleMessage msg, CPeerNode peer);
+        void HandleIncomingMessage(const ModuleMessage& msg, CPeerNode peer);
 
         //Internal
         ///Initiator starts state collection

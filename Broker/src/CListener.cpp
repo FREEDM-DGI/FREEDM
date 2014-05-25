@@ -185,7 +185,8 @@ void CListener::HandleRead(const boost::system::error_code& e,
     {
         CStopwatch me3(std::string(__PRETTY_FUNCTION__)+std::string(" SECTOR3B"));
         Logger.Debug<<"Accepted message "<<pm.hash()<<":"<<pm.sequence_num()<<std::endl;
-        CDispatcher::Instance().HandleRequest(pm.module_message(), uuid);
+        boost::shared_ptr<const ModuleMessage> mm(pm.release_module_message());
+        CDispatcher::Instance().HandleRequest(mm, uuid);
     }
     else if(pm.status() != ProtocolMessage::CREATED)
     {

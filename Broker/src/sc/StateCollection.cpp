@@ -123,7 +123,7 @@ SCAgent::SCAgent(std::string uuid):
 /// @param msg the incoming message
 /// @param peer the node that sent this message (could be this DGI)
 ///////////////////////////////////////////////////////////////////////////////
-void SCAgent::HandleIncomingMessage(const ModuleMessage msg, CPeerNode peer)
+void SCAgent::HandleIncomingMessage(const ModuleMessage& msg, CPeerNode peer)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 

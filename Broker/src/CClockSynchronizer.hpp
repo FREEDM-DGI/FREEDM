@@ -52,7 +52,7 @@ public:
     /// Stops the stuff
     void Stop();
     /// Handles received messages
-    void HandleIncomingMessage(const ModuleMessage msg, CPeerNode peer);
+    void HandleIncomingMessage(const ModuleMessage& msg, CPeerNode peer);
 
 private:
     /// Does the i,j referencing

@@ -62,18 +62,19 @@ CDispatcher& CDispatcher::Instance()
 /// @param msg The message to distribute to modules
 /// @param uuid The UUID of the DGI that sent the message
 ///////////////////////////////////////////////////////////////////////////////
-void CDispatcher::HandleRequest(const ModuleMessage& msg, const std::string& uuid)
+void CDispatcher::HandleRequest(
+    const boost::shared_ptr<const ModuleMessage>& msg,
+    const std::string& uuid)
 {
     CStopwatch me(__PRETTY_FUNCTION__);
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    Logger.Debug << "Processing message addressed to: " << msg.recipient_module() << std::endl;
+    Logger.Debug << "Processing message addressed to: " << msg->recipient_module() << std::endl;
 
     bool processed = false;
 
     RegistrationsMap::const_iterator it;
     RegistrationsMap::const_iterator itend;
-    CBroker& broker = CBroker::Instance();
-    if(msg.recipient_module() == "all")
+    if(msg->recipient_module() == "all")
     {
         it = m_registrations.begin();
         itend = m_registrations.end();
@@ -81,7 +82,7 @@ void CDispatcher::HandleRequest(const ModuleMessage& msg, const std::string& uui
     else
     {
         std::pair<RegistrationsMap::const_iterator, RegistrationsMap::const_iterator> r;
-        r = m_registrations.equal_range(msg.recipient_module());
+        r = m_registrations.equal_range(msg->recipient_module());
         it = r.first;
         itend = r.second;
     }
@@ -91,13 +92,12 @@ void CDispatcher::HandleRequest(const ModuleMessage& msg, const std::string& uui
     {
         // Scheduled modules receive messages only during that module's phase.
         // Unscheduled modules receive messages immediately.
-        if (broker.IsModuleRegistered(it->first))
+        if (CBroker::Instance().IsModuleRegistered(it->first))
         {
             CStopwatch me2(std::string(__PRETTY_FUNCTION__)+std::string(" LOOP BODY"));
-            broker.Schedule(
+            CBroker::Instance().Schedule(
                 it->first,
-                boost::bind(
-                    &CDispatcher::ReadHandlerCallback, this, it->second, msg, uuid));
+                boost::bind(&CDispatcher::ReadHandlerCallback, this, it->second, msg, uuid));
             std::cout<<"Loop for "<<it->first<<"\n";
         }
         else
@@ -107,7 +107,7 @@ void CDispatcher::HandleRequest(const ModuleMessage& msg, const std::string& uui
     }
     if( processed == false )
     {
-        Logger.Warn << "Message was not processed by any module:\n" << msg.DebugString();
+        Logger.Warn << "Message was not processed by any module:\n" << msg->DebugString();
     }
 
 }
@@ -120,7 +120,7 @@ void CDispatcher::HandleRequest(const ModuleMessage& msg, const std::string& uui
 /// @param uuid the UUID of the DGI that sent
 ///////////////////////////////////////////////////////////////////////////////
 void CDispatcher::ReadHandlerCallback(
-    IMessageHandler* h, const ModuleMessage msg, std::string uuid)
+    IMessageHandler* h, const boost::shared_ptr<const ModuleMessage> msg, std::string uuid)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     CPeerNode peer;
@@ -137,7 +137,7 @@ void CDispatcher::ReadHandlerCallback(
         }
         peer = CGlobalPeerList::instance().Create(uuid);
     }
-    h->HandleIncomingMessage(msg, peer);
+    h->HandleIncomingMessage(*msg, peer);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

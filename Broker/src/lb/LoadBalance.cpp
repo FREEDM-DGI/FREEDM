@@ -80,6 +80,14 @@ namespace {
 CLocalLogger Logger(__FILE__);
 }
 
+///////////////////////////////////////////////////////////////////////////////
+/// LBAgent
+/// @description: Constructor for the load balancing module
+/// @pre: Posix Main should register read handler and invoke this module
+/// @post: Object is initialized and ready to run load balancing
+/// @param uuid: This object's uuid
+/// @limitations: None
+///////////////////////////////////////////////////////////////////////////////
 LBAgent::LBAgent(std::string uuid)
     : IPeerNode(uuid)
     , ROUND_TIME(boost::posix_time::milliseconds(CTimings::LB_ROUND_TIME))
@@ -97,6 +105,13 @@ LBAgent::LBAgent(std::string uuid)
     m_MigrationStep = CGlobalConfiguration::Instance().GetMigrationStep();
 }
 
+////////////////////////////////////////////////////////////
+/// Run
+/// @description Main function which initiates the algorithm
+/// @pre: Posix Main should invoke this function
+/// @post: Triggers the drafting algorithm by calling LoadManage()
+/// @limitations None
+/////////////////////////////////////////////////////////
 int LBAgent::Run()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
@@ -106,6 +121,16 @@ int LBAgent::Run()
     return 0;
 }
 
+///////////////////////////////////////////////////////////////////////////////
+/// HandleIncomingMessage
+/// "Downcasts" incoming messages into a specific message type, and passes the
+/// message to an appropriate handler.
+/// @pre None
+/// @post The message is handled by the target handler or a warning is
+///     produced.
+/// @param msg the incoming message
+/// @param peer the node that sent this message (could be this DGI)
+///////////////////////////////////////////////////////////////////////////////
 void LBAgent::HandleIncomingMessage(boost::shared_ptr<const ModuleMessage> m, PeerNodePtr peer)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
@@ -180,6 +205,15 @@ void LBAgent::HandleIncomingMessage(boost::shared_ptr<const ModuleMessage> m, Pe
     }
 }
 
+///////////////////////////////////////////////////////////////////////////////
+/// MoveToPeerSet
+/// Moves the given peer to the given peerset, removing it from all other
+/// categorized peersets (Normal, Supply Demand).
+/// @pre None
+/// @post Peer is removed from all specialized peersets, and then readded to ps.
+/// @param ps The peerset to move the peer to.
+/// @param peer the peer to move.
+///////////////////////////////////////////////////////////////////////////////
 void LBAgent::MoveToPeerSet(PeerSet & ps, PeerNodePtr peer)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
@@ -189,6 +223,15 @@ void LBAgent::MoveToPeerSet(PeerSet & ps, PeerNodePtr peer)
     InsertInPeerSet(ps, peer);
 }
 
+///////////////////////////////////////////////////////////////////////////////
+/// SendToPeerSet
+/// @description Given a message m, send it to every process in peerSet
+/// @pre None
+/// @post m is sent to all processes in peerSet
+/// @peers peerSet
+/// @param m The message to send
+/// @param peerSet the processes to send the message to.
+///////////////////////////////////////////////////////////////////////////////
 void LBAgent::SendToPeerSet(const PeerSet & ps, const ModuleMessage & m)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
@@ -207,6 +250,15 @@ void LBAgent::SendToPeerSet(const PeerSet & ps, const ModuleMessage & m)
     }
 }
 
+///////////////////////////////////////////////////////////////////////////////
+/// FirstRound
+/// @description The code that is executed as part of the first loadbalance
+///     each round.
+/// @pre None
+/// @post if the timer wasn't cancelled this function requests state collection
+///     and calls the first load balance.
+/// @param error The reason this function was called.
+///////////////////////////////////////////////////////////////////////////////
 void LBAgent::FirstRound(const boost::system::error_code & error)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
@@ -228,6 +280,18 @@ void LBAgent::FirstRound(const boost::system::error_code & error)
     }
 }
 
+////////////////////////////////////////////////////////////
+/// LoadManage
+/// @description: Manages the execution of the load balancing algorithm by
+///               broadcasting load changes  and initiating SendDraftRequest()
+///               if in Supply
+/// @pre: Node is not in Fail state
+/// @post: Load state change is monitored, specific load changes are
+///        advertised to peers and restarts on timeout
+/// @peers All peers in case of Demand state and transition to Normal from
+///        Demand;
+/// @limitations
+/////////////////////////////////////////////////////////
 void LBAgent::LoadManage(const boost::system::error_code & error)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
@@ -270,6 +334,14 @@ void LBAgent::LoadManage(const boost::system::error_code & error)
     }
 }
 
+///////////////////////////////////////////////////////////////////////////////
+/// ScheduleNextRound
+/// @Description Computes how much time is remaining and if there isn't enough
+///     requests the loadbalance that will run next round.
+/// @pre None
+/// @post LoadManage is scheduled for this round OR FirstRound is scheduled
+///     for next time.
+///////////////////////////////////////////////////////////////////////////////
 void LBAgent::ScheduleNextRound()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
@@ -288,6 +360,12 @@ void LBAgent::ScheduleNextRound()
     }
 }
 
+///////////////////////////////////////////////////////////////////////////////
+/// ReadDevices
+/// @description Reads the device state and updates the appropriate member vars.
+/// @pre None
+/// @post m_gateway and m_netgeneration are updated.
+///////////////////////////////////////////////////////////////////////////////
 void LBAgent::ReadDevices()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
@@ -300,6 +378,14 @@ void LBAgent::ReadDevices()
     m_NetGeneration = generation + storage - load;
 }
 
+///////////////////////////////////////////////////////////////////////////////
+/// UpdateState
+/// @description Determines the state of this node with respect to Supply,
+///     Demand, Normal.
+/// @pre The values used such as the gateway and migration step are valid and
+///     up to date.
+/// @post This node may change state.
+///////////////////////////////////////////////////////////////////////////////
 void LBAgent::UpdateState()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
@@ -333,6 +419,15 @@ void LBAgent::UpdateState()
     }
 }
 
+////////////////////////////////////////////////////////////
+/// LoadTable
+/// @description Prints the load table: A tool for observing the state of the system.
+/// @pre None
+/// @post None
+/// @limitations Some entries in Load table could become stale relative to the
+///              global state. The definition of Supply/Normal/Demand could
+///      change in future
+/////////////////////////////////////////////////////////
 void LBAgent::LoadTable()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
@@ -395,6 +490,13 @@ void LBAgent::LoadTable()
     Logger.Status << loadtable.str() << std::endl;
 }
 
+///////////////////////////////////////////////////////////////////////////////
+/// MessageStateChange
+/// @description Generates a state change message
+/// @pre None
+/// @post Returns the new message.
+/// @param state is a string describing the new state of Load Balancing
+///////////////////////////////////////////////////////////////////////////////
 ModuleMessage LBAgent::MessageStateChange(std::string state)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
@@ -404,6 +506,18 @@ ModuleMessage LBAgent::MessageStateChange(std::string state)
     return PrepareForSending(msg);
 }
 
+///////////////////////////////////////////////////////////////////////////////
+/// HandleStateChange
+/// @description Handles a peer announcing it is in a new state
+/// @pre The state message is fully populated. The peer is valid. 
+/// @post The peer is removed from any state sets it is currently in and placed
+///     in a set by the contents of the message.
+/// @param m The message body that was recieved by this process.
+/// @param peer The process that the message orginated from.
+/// @peers A Group member.
+/// @limitations Does not validate the source, integrity or contents of the
+///     message.
+///////////////////////////////////////////////////////////////////////////////
 void LBAgent::HandleStateChange(const StateChangeMessage & m, PeerNodePtr peer)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
@@ -436,6 +550,12 @@ void LBAgent::HandleStateChange(const StateChangeMessage & m, PeerNodePtr peer)
     }
 }
 
+///////////////////////////////////////////////////////////////////////////////
+/// MessageDraftRequest
+/// @pre None
+/// @post A new message is generated
+/// @description Creates a new DraftRequest message.
+///////////////////////////////////////////////////////////////////////////////
 ModuleMessage LBAgent::MessageDraftRequest()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
@@ -444,6 +564,12 @@ ModuleMessage LBAgent::MessageDraftRequest()
     return PrepareForSending(msg);
 }
 
+////////////////////////////////////////////////////////////
+/// SendDraftRequest
+/// @description Advertise willingness to share load whenever you can supply
+/// @pre: Current load state of this node is 'Supply'
+/// @post: Send DraftRequest message to peers in demand state
+/////////////////////////////////////////////////////////
 void LBAgent::SendDraftRequest()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
@@ -469,6 +595,20 @@ void LBAgent::SendDraftRequest()
     }
 }
 
+///////////////////////////////////////////////////////////////////////////////
+/// HandleDraftRequest
+/// @description Handler for a DraftRequest message. A request message is sent by
+///     a supply node to see if a demand node wants to perform a
+///     migration.
+/// @pre The message is fully populated. The peer is valid. 
+/// @post If this process is in the demand state, a DraftAge message is sent back
+///     to the orginating process.
+/// @param m The message body that was recieved by this process.
+/// @param peer The process that the message orginated from.
+/// @peers A group member who was in the supply state.
+/// @limitations Does not validate the source, integrity or contents of the
+///     message.
+///////////////////////////////////////////////////////////////////////////////
 void LBAgent::HandleDraftRequest(const DraftRequestMessage & /*m*/, PeerNodePtr peer)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
@@ -485,6 +625,12 @@ void LBAgent::HandleDraftRequest(const DraftRequestMessage & /*m*/, PeerNodePtr 
     }
 }
 
+///////////////////////////////////////////////////////////////////////////////
+/// MessageDraftAge
+/// @pre None
+/// @post A new message is generated
+/// @description Creates a new DraftAge message.
+///////////////////////////////////////////////////////////////////////////////
 ModuleMessage LBAgent::MessageDraftAge(float age)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
@@ -494,6 +640,14 @@ ModuleMessage LBAgent::MessageDraftAge(float age)
     return PrepareForSending(msg);
 }
 
+///////////////////////////////////////////////////////////////////////////////
+/// SendDraftAge
+/// @description Sends a DraftAge message to specified peer announcing how
+/// much demand this node has.
+/// @param peer The process to send this to.
+/// @pre None
+/// @post Sends a DraftAge message if this process was in the demand state.
+///////////////////////////////////////////////////////////////////////////////
 void LBAgent::SendDraftAge(PeerNodePtr peer)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
@@ -516,6 +670,22 @@ void LBAgent::SendDraftAge(PeerNodePtr peer)
     }
 }
 
+///////////////////////////////////////////////////////////////////////////////
+/// HandleDraftAge
+/// @description A DraftAge message is sent by the demand node to a supply
+///     to indicate it is still in a demand state and would like to migrate.
+///     After the message is recieved this node will respond with drafting to
+///     instruct the demand node to commit a power change.
+/// @pre The message and peer are valid. This node should have sent a draft
+///     request message to peer previously.
+/// @post If in supply and the demand node is selected, a drafting message
+///     will be sent to the demand node.
+/// @param m The message body that was recieved by this process.
+/// @param peer The process that the message orginated from.
+/// @peers A demand node in the group.
+/// @limitations Does not validate the source, integrity or contents of the
+///     message.
+///////////////////////////////////////////////////////////////////////////////
 void LBAgent::HandleDraftAge(const DraftAgeMessage & m, PeerNodePtr peer)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
@@ -531,6 +701,14 @@ void LBAgent::HandleDraftAge(const DraftAgeMessage & m, PeerNodePtr peer)
     }
 }
 
+///////////////////////////////////////////////////////////////////////////////
+/// DraftStandard
+/// @description This function is used to select the process(es) that the
+///     migration will happen with. The demand nodes send DraftAge messages
+///     indicating the amount of demand to fill.
+/// @pre DraftRequests were sent to the nodes whose replies will be processed
+/// @post DraftSelect messages are sent to the selected demand nodes.
+///////////////////////////////////////////////////////////////////////////////
 void LBAgent::DraftStandard(const boost::system::error_code & error)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
@@ -581,6 +759,12 @@ void LBAgent::DraftStandard(const boost::system::error_code & error)
     }
 }
 
+///////////////////////////////////////////////////////////////////////////////
+/// MessageDrafting
+/// @description Generates a new DraftSelect message.
+/// @pre None
+/// @post a new message is generated.
+///////////////////////////////////////////////////////////////////////////////
 ModuleMessage LBAgent::MessageDraftSelect(float amount)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
@@ -590,6 +774,12 @@ ModuleMessage LBAgent::MessageDraftSelect(float amount)
     return PrepareForSending(msg);
 }
 
+///////////////////////////////////////////////////////////////////////////////
+/// SendDraftSelect
+/// @description Sends a DraftSelect Message to specified peer.
+/// @pre Peer and step are valid
+/// @post A Draft select emssage is sent to the peer
+///////////////////////////////////////////////////////////////////////////////
 void LBAgent::SendDraftSelect(PeerNodePtr peer, float step)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
@@ -606,6 +796,24 @@ void LBAgent::SendDraftSelect(PeerNodePtr peer, float step)
     }
 }
 
+///////////////////////////////////////////////////////////////////////////////
+/// HandleDraftSelect
+/// @description A draft select message is accepted by a demand node as an
+///     indication a supply node is about to give it some tasty power.
+///     When the drafting message arrives the demand node will actuate it's
+///     physical leaves and signal the supply node to do the same by sending
+///     back an accept message.
+/// @pre There is a valid message pointer and peer passed into the module. All
+///     required ptree keys are present.
+/// @post If the node is in demand and will take the supply node's power this
+///     node will generate an accept message and change a device value to
+///     accept the new float.
+/// @param msg The message body that was recieved by this process.
+/// @param peer The process that the message orginated from.
+/// @peers A supply node in my group.
+/// @limitations Does not validate the source, integrity or contents of the
+///     message.
+///////////////////////////////////////////////////////////////////////////////
 void LBAgent::HandleDraftSelect(const DraftSelectMessage & m, PeerNodePtr peer)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
@@ -637,6 +845,12 @@ void LBAgent::HandleDraftSelect(const DraftSelectMessage & m, PeerNodePtr peer)
     }
 }
 
+///////////////////////////////////////////////////////////////////////////////
+/// MessageDraftAccept
+/// @description Generates a new accept message
+/// @pre None
+/// @post an Accept message is generated.
+/////////////////////////////////////////////////////////////////////////////// 
 ModuleMessage LBAgent::MessageDraftAccept(float amount)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
@@ -646,6 +860,12 @@ ModuleMessage LBAgent::MessageDraftAccept(float amount)
     return PrepareForSending(msg);
 }
 
+///////////////////////////////////////////////////////////////////////////////
+/// MessageTooLate
+/// @description Generates a new too late message
+/// @pre None
+/// @post A too late message is generated.
+///////////////////////////////////////////////////////////////////////////////
 ModuleMessage LBAgent::MessageTooLate(float amount)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
@@ -655,12 +875,39 @@ ModuleMessage LBAgent::MessageTooLate(float amount)
     return PrepareForSending(msg);
 }
 
+///////////////////////////////////////////////////////////////////////////////
+/// HandleDraftAccept
+/// @description An accept message will arrive from a demand node that has
+///     selected to accept a migration from this supply node.
+/// @pre m and peer is valid. 
+/// @post If the node is in supply, it will adjust the gross powerflow to note
+///     the reciever has adjusted their power. 
+/// @param msg The message body that was recieved by this process.
+/// @param peer The process that the message orginated from.
+/// @peers A demand node in my group.
+/// @limitations Does not validate the source, integrity or contents of the
+///     message.
+///////////////////////////////////////////////////////////////////////////////
 void LBAgent::HandleDraftAccept(const DraftAcceptMessage & m, PeerNodePtr peer)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     m_GrossPowerFlow -= m.migrate_step();
 }
 
+///////////////////////////////////////////////////////////////////////////////
+/// HandleTooLate
+/// @description An accept message will arrive from a demand node that has
+///     selected to accept a migration from this supply node, but no longer
+///     needs that power.
+/// @pre m and peer is valid. 
+/// @post This node will adjust its gross powerflow and revert the
+///     power setting to cancel the migration.
+/// @param msg The message body that was recieved by this process.
+/// @param peer The process that the message orginated from.
+/// @peers A demand node in my group.
+/// @limitations Does not validate the source, integrity or contents of the
+///     message.
+///////////////////////////////////////////////////////////////////////////////
 void LBAgent::HandleTooLate(const TooLateMessage & m)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
@@ -668,6 +915,17 @@ void LBAgent::HandleTooLate(const TooLateMessage & m)
     m_GrossPowerFlow -= m.migrate_step();
 }
 
+///////////////////////////////////////////////////////////////////////////////
+/// HandlePeerList
+/// @description Updates the list of peers this node is aware of.
+/// @pre There is a valid message pointer and peer passed into the module.
+/// @post The AllPeers, Normal, Supply, and Demand peersets are reset.
+/// @param msg The message body that was recieved by this process.
+/// @param peer The process that the message orginated from.
+/// @peers Group leader.
+/// @limitations Does not validate the source, integrity or contents of the
+///     message.
+///////////////////////////////////////////////////////////////////////////////
 void LBAgent::HandlePeerList(const gm::PeerListMessage & m, PeerNodePtr peer)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
@@ -691,6 +949,14 @@ void LBAgent::HandlePeerList(const gm::PeerListMessage & m, PeerNodePtr peer)
     m_Leader = peer->GetUUID();
 }
 
+////////////////////////////////////////////////////////////
+/// SetPStar
+/// @description Migrates power by adjusting the gateway settings of the
+///     attched SSTs
+/// @pre: Current load state of this node is 'Supply' or 'Demand'
+/// @post: Set command(s) to SST
+/// @param pstar the new pstar setting to use. 
+/////////////////////////////////////////////////////////
 void LBAgent::SetPStar(float pstar)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
@@ -715,6 +981,16 @@ void LBAgent::SetPStar(float pstar)
     }
 }
 
+///////////////////////////////////////////////////////////////////////////////
+/// Wraps a LoadBalancingMessage in a ModuleMessage.
+///
+/// @param message the message to prepare. If any required field is unset,
+///                the DGI will abort.
+/// @param recipient the module (sc/lb/gm/clk etc.) the message should be
+///                delivered to
+///
+/// @return a ModuleMessage containing a copy of the LoadBalancingMessage
+///////////////////////////////////////////////////////////////////////////////
 ModuleMessage LBAgent::PrepareForSending(const LoadBalancingMessage & m, std::string recipient)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
@@ -724,6 +1000,13 @@ ModuleMessage LBAgent::PrepareForSending(const LoadBalancingMessage & m, std::st
     return mm;
 }
 
+///////////////////////////////////////////////////////////////////////////////
+/// MessageStateCollection
+/// @description Returns a message which is sent to state collection requesting
+///     that state collection runs for the given devices.
+/// @pre None
+/// @post A CollectState message is created.
+///////////////////////////////////////////////////////////////////////////////
 ModuleMessage LBAgent::MessageStateCollection()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
@@ -741,6 +1024,13 @@ ModuleMessage LBAgent::MessageStateCollection()
     return m;
 }
 
+///////////////////////////////////////////////////////////////////////////////
+/// ScheduleStateCollection
+/// @description Sends the request to the state collection module to perform
+///     state collection
+/// @pre None
+/// @post If this node is the leader a state collection request is sent.
+///////////////////////////////////////////////////////////////////////////////
 void LBAgent::ScheduleStateCollection()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
@@ -759,6 +1049,18 @@ void LBAgent::ScheduleStateCollection()
     }
 }
 
+///////////////////////////////////////////////////////////////////////////////
+/// HandleCollectedState
+/// @description State collection returns the collected state (via a message)
+///     this function handles that message and stores it into this node.
+/// @pre The message is valid 
+/// @post The aggregate gateway, normal and demand member variables are set.
+///     Sends the normal to the members of the group.
+/// @param m The message body that was recieved by this process.
+/// @peers My state collection module, Members of my group.
+/// @limitations Does not validate the source, integrity or contents of the
+///     message.
+///////////////////////////////////////////////////////////////////////////////
 void LBAgent::HandleCollectedState(const sc::CollectedStateMessage & m)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
@@ -773,6 +1075,14 @@ void LBAgent::HandleCollectedState(const sc::CollectedStateMessage & m)
     SendToPeerSet(m_AllPeers, MessageCollectedState(net_power));
 }
 
+///////////////////////////////////////////////////////////////////////////////
+/// MessageCollectedState
+/// @description Given a state, return a message that announces that new
+///     state.
+/// @pre none
+/// @post returns a new message
+/// @param state the normal value to send out.
+///////////////////////////////////////////////////////////////////////////////
 ModuleMessage LBAgent::MessageCollectedState(float state)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
@@ -782,6 +1092,18 @@ ModuleMessage LBAgent::MessageCollectedState(float state)
     return PrepareForSending(msg);
 }
 
+///////////////////////////////////////////////////////////////////////////////
+/// HandleCollectedState
+/// @description When the collected state arrives, the leader computes normal
+///     and pushes it out to all the peers. This method sets the normal value
+///     at this peer.
+/// @pre The message is valid
+/// @post This node is resynchronized.
+/// @param m The message body that was recieved by this process.
+/// @peers My leader.
+/// @limitations Does not validate the source, integrity or contents of the
+///     message.
+///////////////////////////////////////////////////////////////////////////////
 void LBAgent::HandleCollectedState(const CollectedStateMessage & m)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;

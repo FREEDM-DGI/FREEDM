@@ -286,7 +286,7 @@ void CPhysicalTopology::LoadTopology()
         {
             //all_valid = false;
             // Warn user about bad name.
-            Logger.Warn<<"Couldn't find UUID for virtualname: "<<vname<<" (Might be OK)"<<std::endl;
+            Logger.Status<<"Couldn't find UUID for virtualname: "<<vname<<" (Might be OK)"<<std::endl;
         }
     }
 

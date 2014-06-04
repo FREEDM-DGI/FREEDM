@@ -41,12 +41,12 @@
 #ifndef LOADBALANCE_HPP_
 #define LOADBALANCE_HPP_
 
-#include "CMessage.hpp"
+#include "CBroker.hpp"
 #include "CDevice.hpp"
-
 #include "IPeerNode.hpp"
 #include "IAgent.hpp"
-#include "IHandler.hpp"
+#include "IMessageHandler.hpp"
+#include "messages/ModuleMessage.pb.h"
 
 #include <boost/shared_ptr.hpp>
 
@@ -64,7 +64,7 @@ const double NORMAL_TOLERANCE = 0.5;
 /// Declaration of LBAgent class for load balancing algorithm
 /////////////////////////////////////////////////////////
 class LBAgent
-    : public IReadHandler,
+    : public IMessageHandler,
       private IPeerNode,
       public IAgent< boost::shared_ptr<IPeerNode> >
 {
@@ -92,38 +92,42 @@ class LBAgent
 
         // Messages
         /// Sends a message 'msg' to the peers in 'peerSet_'
-        void SendStateChange(std::string msg, PeerSet peerSet_);
-        void SendToPeerSet(CMessage & m, const PeerSet & peerSet_);
+        void SendStateChange(std::string msg, PeerSet peerSet);
+        void SendToPeerSet(const ModuleMessage& msg, const PeerSet & peerSet);
         /// Prepares and sends a state collection request to SC
         void CollectState();
         /// Sends the computed Normal to group members
         void SendNormal(double normal);
 
 
-        CMessage MessageStateChange(std::string newstate);
-        CMessage MessageNormal(double Normal);
-        CMessage MessageCollectState();
-        CMessage MessageDraftRequest();
-        CMessage MessageDraft();
-        CMessage MessageDrafting();
-        CMessage MessageAccept(float demandVal);
+        ModuleMessage MessageStateChange(std::string newstate);
+        ModuleMessage MessageNormal(double Normal);
+        ModuleMessage MessageCollectState();
+        ModuleMessage MessageDraftRequest();
+        ModuleMessage MessageDraft();
+        ModuleMessage MessageDrafting();
+        ModuleMessage MessageAccept();
 
         // Handlers
-        /// Handles the incoming messages according to the message label
-        virtual void HandleAny(MessagePtr msg,PeerNodePtr peer);
-        void HandlePeerList(MessagePtr msg, PeerNodePtr peer);
-        void HandleStateChange(MessagePtr msg, PeerNodePtr peer);
-        void HandleRequest(MessagePtr msg, PeerNodePtr peer);
-        void HandleDraft(MessagePtr msg, PeerNodePtr peer);
-        void HandleDrafting(MessagePtr msg, PeerNodePtr peer);
-        void HandleAccept(MessagePtr msg, PeerNodePtr peer);
-        void HandleCollectedState(MessagePtr msg, PeerNodePtr peer);
-        void HandleComputedNormal(MessagePtr msg, PeerNodePtr peer);
+        /// Handles received messages
+        void HandleIncomingMessage(boost::shared_ptr<const ModuleMessage> msg, PeerNodePtr peer);
+        void HandlePeerList(const gm::PeerListMessage& msg, PeerNodePtr peer);
+        void HandleStateChange(const StateChangeMessage& msg, PeerNodePtr peer);
+        void HandleRequest(const RequestMessage& msg, PeerNodePtr peer);
+        void HandleDraft(const DraftMessage& msg, PeerNodePtr peer);
+        void HandleDrafting(const DraftingMessage& msg, PeerNodePtr peer);
+        void HandleAccept(const AcceptMessage& msg, PeerNodePtr peer);
+        void HandleCollectedState(const sc::CollectedStateMessage& msg);
+        void HandleComputedNormal(const ComputedNormalMessage& msg, PeerNodePtr peer);
 
         /// Adds a new peer by a pointer
         PeerNodePtr AddPeer(PeerNodePtr peer);
         /// Returns a pointer to the peer based on its UUID
         PeerNodePtr GetPeer(std::string uuid);
+
+        /// Wraps a LoadBalancingMessage in a ModuleMessage
+        static ModuleMessage PrepareForSending(
+            const LoadBalancingMessage& message, std::string recipient = "lb");
 
         // Variables
         /// Calculated Normal

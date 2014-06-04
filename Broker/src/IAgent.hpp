@@ -21,14 +21,12 @@
 #ifndef IAGENT_HPP_
 #define IAGENT_HPP_
 
+#include <algorithm>
+#include <exception>
 #include <map>
 #include <string>
 
-// TODO - this shouldn't be included in a .hpp
-//      - it's about time to create IAgent.cpp
-//      - (providing a logger would also be good)
-#include <algorithm>
-#include <exception>
+#include <boost/date_time/posix_time/ptime.hpp>
 
 namespace freedm {
 namespace broker {

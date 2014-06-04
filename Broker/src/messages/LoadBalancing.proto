@@ -1,0 +1,62 @@
+////////////////////////////////////////////////////////////////////////////////
+/// @file         LoadBalancing.proto
+///
+/// @author       Michael Catanzaro <michael.catanzaro@mst.edu>
+///
+/// @description  Declaration of all load balancing message types
+///
+/// These source code files were created at Missouri University of Science and
+/// Technology, and are intended for use in teaching or research. They may be
+/// freely copied, modified, and redistributed as long as modified versions are
+/// clearly marked as such and this notice is not removed. Neither the authors
+/// nor Missouri S&T make any warranty, express or implied, nor assume any legal
+/// responsibility for the accuracy, completeness, or usefulness of these files
+/// or any information distributed with these files.
+///
+/// Suggested modifications or questions about these files can be directed to
+/// Dr. Bruce McMillin, Department of Computer Science, Missouri University of
+/// Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
+////////////////////////////////////////////////////////////////////////////////
+
+package freedm.broker.lb;
+
+message ComputedNormalMessage
+{
+    required double computed_normal = 1;
+    required int32 cyber_invariant = 2;
+}
+
+message StateChangeMessage
+{
+    required string new_state = 1;
+}
+
+message DraftMessage
+{
+    required float demand_value = 1;
+}
+
+message DraftingMessage
+{
+    required float specify_migration_amount = 1;
+}
+
+message AcceptMessage
+{
+    required float confirm_migration_amount = 1;
+}
+
+message RequestMessage
+{
+    required int32 exists = 1;
+}
+
+message LoadBalancingMessage
+{
+    optional ComputedNormalMessage computed_normal_message = 1;
+    optional AcceptMessage accept_message = 2;
+    optional StateChangeMessage state_change_message = 3;
+    optional DraftMessage draft_message = 4;
+    optional DraftingMessage drafting_message = 5;
+    optional RequestMessage request_message = 6;
+}

@@ -25,28 +25,22 @@
 #define CLISTENER_HPP
 
 #include "CGlobalConfiguration.hpp"
-#include "CMessage.hpp"
-
-#include <iomanip>
 
 #include <boost/asio.hpp>
 #include <boost/array.hpp>
-#include <boost/date_time/posix_time/posix_time.hpp>
-#include <boost/enable_shared_from_this.hpp>
 #include <boost/noncopyable.hpp>
 #include <boost/shared_ptr.hpp>
 
 namespace freedm {
     namespace broker {
 
-class CConnectionManager;
 class CBroker;
+class CConnectionManager;
 
 /// Represents a single CListener from a client.
 class CListener
     : private boost::noncopyable
 {
-
 public:
     /// Access the singleton instance of the CListener
     static CListener& Instance();
@@ -64,19 +58,13 @@ private:
     /// Handle completion of a read operation.
     void HandleRead(const boost::system::error_code& e, std::size_t bytes_transferred);
 
-    /// Variable used for tracking the remote endpoint of incoming messages.
-    boost::asio::ip::udp::endpoint m_endpoint;
+    /// Asynchronously listen for a new message
+    void ScheduleListen();
 
     /// Buffer for incoming data.
     boost::array<char, CGlobalConfiguration::MAX_PACKET_SIZE> m_buffer;
 
-    /// The incoming request.
-    MessagePtr m_message;
-
-    /// The UUID of the remote endpoint for the connection
-    std::string m_uuid;
-
-    /// Listening socket
+    /// Socket for the CConnection.
     boost::asio::ip::udp::socket m_socket;
 };
 

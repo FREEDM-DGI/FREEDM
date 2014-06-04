@@ -24,18 +24,11 @@
 #ifndef CPROTOCOLSU_HPP
 #define CPROTOCOLSU_HPP
 
-#include "CConnection.hpp"
-#include "CMessage.hpp"
 #include "IProtocol.hpp"
+#include "messages/ModuleMessage.pb.h"
+#include "messages/ProtocolMessage.pb.h"
 
 #include <deque>
-#include <iomanip>
-
-#include <boost/array.hpp>
-#include <boost/asio.hpp>
-#include <boost/enable_shared_from_this.hpp>
-#include <boost/noncopyable.hpp>
-#include <boost/shared_ptr.hpp>
 
 namespace freedm {
     namespace broker {
@@ -45,21 +38,17 @@ class CProtocolSU : public IProtocol
 {
     public:
         /// Initializes the protocol with the underlying connection
-        explicit CProtocolSU(CConnection * conn);
+        explicit CProtocolSU(CConnection& conn);
         /// Public facing send function that sends a message
-        void Send(CMessage msg);
+        void Send(const ModuleMessage& msg);
         /// Public facing function that handles marking down ACKs for sent messages
-        void ReceiveACK(const CMessage &msg);
+        void ReceiveACK(const ProtocolMessage& msg);
         /// deterimines if a  messageshould be given to the dispatcher
-        bool Receive(const CMessage &msg);
+        bool Receive(const ProtocolMessage& msg);
         /// Handles Writing an ack for the input message to the channel
-        void SendACK(const CMessage &msg);
+        void SendACK(const ProtocolMessage& msg);
         /// Stops the timers
         void Stop() { m_timeout.cancel(); };
-        /// Returns the identifier
-        std::string GetIdentifier() { return Identifier(); };
-        /// Returns the identifier for this protocol.
-        static std::string Identifier() { return "SUC"; };
     private:
         /// Resend outstanding messages
         void Resend(const boost::system::error_code& err);
@@ -80,7 +69,7 @@ class CProtocolSU : public IProtocol
         /// Queue item
         struct QueueItem {
             int ret; //The retries remaining
-            CMessage msg; //the message in queue
+            ProtocolMessage msg; //the message in queue
         };
         /// The window
         std::deque<QueueItem> m_window;

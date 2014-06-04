@@ -24,21 +24,21 @@
 #ifndef IPROTOCOL_HPP
 #define IPROTOCOL_HPP
 
-#include "CConnection.hpp"
-#include "CMessage.hpp"
+#include "CGlobalConfiguration.hpp"
 
-#include <iomanip>
+#include <memory>
 #include <set>
 
-#include <boost/array.hpp>
 #include <boost/asio.hpp>
 #include <boost/enable_shared_from_this.hpp>
-#include <boost/logic/tribool.hpp>
 #include <boost/noncopyable.hpp>
-#include <boost/shared_ptr.hpp>
 
 namespace freedm {
     namespace broker {
+
+class CConnection;
+class ModuleMessage;
+class ProtocolMessage;
 
 /// A connection protocol
 class IProtocol
@@ -48,13 +48,13 @@ class IProtocol
         /// Destroy all humans
         virtual ~IProtocol() { };
         /// Public write to channel function
-        virtual void Send(CMessage msg) = 0;
+        virtual void Send(const ModuleMessage& msg) = 0;
         /// Public facing function that handles marking ACKS
-        virtual void ReceiveACK(const CMessage &msg) = 0;
+        virtual void ReceiveACK(const ProtocolMessage& msg) = 0;
         /// Function that determines if a message should dispatched
-        virtual bool Receive(const CMessage &msg) = 0;
+        virtual bool Receive(const ProtocolMessage& msg) = 0;
         /// Handles Writing an ack for the input message to the channel
-        virtual void SendACK(const CMessage &msg) = 0;
+        virtual void SendACK(const ProtocolMessage& msg) = 0;
         /// Handles Stopping the timers etc
         virtual void Stop() = 0;
         /// Handles the change phase even
@@ -63,22 +63,18 @@ class IProtocol
         bool GetStopped() { return m_stopped; };
         /// Handles setting the stopped variable
         void SetStopped(bool v) { m_stopped = v; };
-        /// Returns the identifier for this protocol
-        virtual std::string GetIdentifier() = 0;
         /// Returns a pointer to the underlying connection.
-        CConnection* GetConnection() { return m_conn; };
+        CConnection& GetConnection() { return m_conn; };
     protected:
         /// Initializes the protocol with the underlying connection
-        explicit IProtocol(CConnection * conn) : m_conn(conn), m_stopped(false) { };
+        explicit IProtocol(CConnection& conn) : m_conn(conn), m_stopped(false) { };
         /// Callback for when a write completes.
         virtual void WriteCallback(const boost::system::error_code&) { }
         /// Handles writing the message to the underlying connection
-        virtual void Write(CMessage msg);
+        virtual void Write(ProtocolMessage& msg);
     private:
-        /// Write buffer
-        boost::array<char, CGlobalConfiguration::MAX_PACKET_SIZE> m_buffer;
         /// The underlying and related connection object.
-        CConnection * m_conn;
+        CConnection& m_conn;
         /// Tracker for the stoppedness of the connection
         bool m_stopped;
 };

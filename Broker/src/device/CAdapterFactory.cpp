@@ -568,12 +568,12 @@ void CAdapterFactory::CreateDevice(const std::string name,
     {
         throw std::runtime_error("The device " + name + " already exists.");
     }
-    
+
     if( !adapter )
     {
         throw std::runtime_error("Tried to create device using null adapter.");
     }
-   
+
     CDevice::Pointer device = m_builder.CreateDevice(name, type, adapter);
     CDeviceManager::Instance().AddDevice(device);
 

@@ -24,19 +24,21 @@
 #ifndef CCONNECTION_HPP
 #define CCONNECTION_HPP
 
+#include "CProtocolSR.hpp"
 #include "CDispatcher.hpp"
-#include "CMessage.hpp"
 #include "SRemoteHost.hpp"
 
-#include <deque>
-#include <iomanip>
-#include <set>
+#include <memory>
 
-#include <boost/array.hpp>
-#include <boost/asio.hpp>
-#include <boost/enable_shared_from_this.hpp>
 #include <boost/noncopyable.hpp>
-#include <boost/shared_ptr.hpp>
+
+namespace google {
+  namespace protobuf {
+
+class Message;
+
+  }
+}
 
 namespace freedm {
     namespace broker {
@@ -57,23 +59,25 @@ class CConnection
 {
 
 public:
-    /// ConnectionPtr Typedef
     typedef boost::shared_ptr<CConnection> ConnectionPtr;
 
     /// Construct a CConnection to a peer
     CConnection(std::string uuid);
 
+    /// Destructor
+    ~CConnection();
+
     /// Stop all asynchronous operations associated with the CConnection.
     void Stop();
 
-    /// Puts a CMessage into the channel.
-    void Send(CMessage & p_mesg);
+    /// Puts a message into the channel.
+    void Send(const ModuleMessage& msg);
 
     /// Handles Notification of an acknowledment being received
-    void ReceiveACK(const CMessage &msg);
+    void ReceiveACK(const ProtocolMessage& msg);
 
     /// Handler that calls the correct protocol for accept logic
-    bool Receive(const CMessage &msg);
+    bool Receive(const ProtocolMessage& msg);
 
     /// Change Phase Event
     void ChangePhase(bool newround);
@@ -91,16 +95,11 @@ public:
     int GetReliability() const;
 
 private:
-    typedef boost::shared_ptr<IProtocol> ProtocolPtr;
-    typedef std::map<std::string,ProtocolPtr> ProtocolMap;
-    /// Protocol Handler Map
-    ProtocolMap m_protocols;
-
-    /// Default protocol
-    std::string m_defaultprotocol;
-
     /// Datagram socket connected to a single peer DGI
     boost::asio::ip::udp::socket m_socket;
+
+    /// The custom network protocol to use for sending/receiving messages
+    IProtocol* m_protocol;
 
     /// The UUID of the remote endpoint for the connection
     std::string m_uuid;

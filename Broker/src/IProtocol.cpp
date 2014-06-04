@@ -21,13 +21,17 @@
 /// Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
 ////////////////////////////////////////////////////////////////////////////////
 
-#include "CConnection.hpp"
-#include "CGlobalConfiguration.hpp"
-#include "CLogger.hpp"
 #include "config.hpp"
+
 #include "IProtocol.hpp"
 
-#include <exception>
+#include "CConnection.hpp"
+#include "CConnectionManager.hpp"
+#include "CLogger.hpp"
+#include "Messages.hpp"
+#include "messages/ProtocolMessage.pb.h"
+
+#include <stdexcept>
 
 namespace freedm {
     namespace broker {
@@ -39,44 +43,41 @@ CLocalLogger Logger(__FILE__);
 
 }
 
-void IProtocol::Write(CMessage msg)
+///////////////////////////////////////////////////////////////////////////////
+/// Sends a message over the connection associated with this IProtocol. This
+/// is a blocking send. An asynchronous send is not currently provided because
+/// (a) this would require a second io_service, or a second thread in our
+/// io_service's thread pool, (b) because it would make the code more
+/// complicated: e.g. modules would be required to use an async callback (write
+/// handler) if they want custom error handling, and we would need to be more
+/// careful with our output buffer, and (c) because we don't know whether this
+/// actually slows down the DGI or not, or if so, how much. A TODO item would be
+/// to look into this. Synchronous writes usually slow things down dramatically,
+/// but that may not be the case with the DGI, given our custom scheduling.
+///
+/// @param msg the message to send to this p
+///////////////////////////////////////////////////////////////////////////////
+void IProtocol::Write(ProtocolMessage& msg)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    boost::array<char, CGlobalConfiguration::MAX_PACKET_SIZE>::iterator it;
 
-    /// Previously, we would call Synthesize here. Unfortunately, that was an
-    /// Appalling heap of junk that didn't even work the way you expected it
-    /// to. So, we're going to do something different.
+    msg.set_source_uuid(CConnectionManager::Instance().GetUUID());
+    msg.set_source_hostname(CConnectionManager::Instance().GetHost().hostname);
+    msg.set_source_port(CConnectionManager::Instance().GetHost().port);
+    StampMessageSendtime(msg);
 
-    if(GetStopped())
+    msg.CheckInitialized();
+
+    if(m_stopped)
         return;
 
-    std::stringstream oss;
-    std::string raw;
-    /// Record the out message to the stream
-    try
+    /// Check to make sure it isn't going to overfill our message packet
+    if(msg.ByteSize() > CGlobalConfiguration::MAX_PACKET_SIZE)
     {
-        msg.Save(oss);
+        Logger.Warn << "Message too long for buffer: " << std::endl
+                << msg.DebugString() << std::endl;
+        throw std::runtime_error("Outgoing message is too long for buffer");
     }
-    catch( std::exception &e )
-    {
-        Logger.Error<<"Couldn't write message to string stream."<<std::endl;
-        throw;
-    }
-    raw = oss.str();
-    /// Check to make sure it isn't goint to overfill our message packet:
-    if(raw.length() > CGlobalConfiguration::MAX_PACKET_SIZE)
-    {
-        Logger.Info << "Message too long for buffer" << std::endl;
-        Logger.Info << raw << std::endl;
-        throw std::runtime_error("Outgoing message is to long for buffer");
-    }
-    /// If that looks good, lets write it into our buffer.
-    it = m_buffer.begin();
-    /// Use std::copy to copy the string into the buffer starting at it.
-    std::copy(raw.begin(),raw.end(),it);
-
-    Logger.Debug<<"Writing "<<raw.length()<<" bytes to channel"<<std::endl;
 
     #ifdef CUSTOMNETWORK
     if((rand()%100) >= GetConnection()->GetReliability())
@@ -86,16 +87,21 @@ void IProtocol::Write(CMessage msg)
         return;
     }
     #endif
-    // The length of the contents placed in the buffer should be the same length as
-    // The string that was written into it.
+
+    boost::array<char, CGlobalConfiguration::MAX_PACKET_SIZE> write_buffer;
+    msg.SerializeToArray(&write_buffer[0], CGlobalConfiguration::MAX_PACKET_SIZE);
+
+    Logger.Debug<<"Writing "<<msg.ByteSize()<<" bytes to channel"<<std::endl;
+
     try
     {
-        GetConnection()->GetSocket().send(boost::asio::buffer(m_buffer,raw.length()));
+        GetConnection().GetSocket().send(
+            boost::asio::buffer(&write_buffer[0], msg.ByteSize()));
     }
     catch(boost::system::system_error &e)
     {
         Logger.Debug << "Writing Failed: " << e.what() << std::endl;
-        GetConnection()->Stop();
+        GetConnection().Stop();
     }
 }
 

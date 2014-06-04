@@ -25,22 +25,16 @@
 #ifndef IPEERNODE_HPP_
 #define IPEERNODE_HPP_
 
-#include "CConnection.hpp"
+#include <string>
 
-#include <list>
-#include <set>
-
-#include <boost/asio.hpp>
-#include <boost/bind.hpp>
-#include <boost/enable_shared_from_this.hpp>
-#include <boost/shared_ptr.hpp>
-#include <boost/thread/mutex.hpp>
+#include <boost/noncopyable.hpp>
 
 namespace freedm {
 
 namespace broker {
 
-typedef boost::shared_ptr<freedm::broker::CMessage> MessagePtr;
+class CConnectionManager;
+class ModuleMessage;
 
 /// Base interface for agents/broker modules
 class IPeerNode
@@ -62,16 +56,12 @@ class IPeerNode
         IPeerNode(std::string uuid);
         /// Gets the uuid of the node this addresses
         std::string GetUUID() const;
-        /// Gives a connection ptr to this peer
-        ConnectionPtr GetConnection();
         /// Gets the hostname of this peer
         std::string GetHostname() const;
         /// Gets the port of this peer.
         std::string GetPort() const;
         /// Sends a message to peer
-        bool Send(freedm::broker::CMessage msg);
-    protected:
-        friend class CAgent;
+        bool Send(const ModuleMessage& msg);
     private:
         std::string m_uuid; /// This node's uuid.
 };

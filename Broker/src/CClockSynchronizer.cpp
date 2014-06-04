@@ -60,11 +60,10 @@ const int QUERY_INTERVAL = 10000;
 /// @param ios the broker's ioservice
 ///////////////////////////////////////////////////////////////////////////////
 CClockSynchronizer::CClockSynchronizer(boost::asio::io_service& ios)
-    : m_exchangetimer(ios),
-      m_uuid(CConnectionManager::Instance().GetUUID())
+    : m_exchangetimer(ios)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    MapIndex ii(m_uuid,m_uuid);
+    MapIndex ii(GetUUID(),GetUUID());
     m_offsets[ii] = boost::posix_time::milliseconds(0);
     SetWeight(ii, 1.0);
     m_skews[ii] = 0.0;
@@ -166,7 +165,7 @@ void CClockSynchronizer::HandleExchangeResponse(const ExchangeResponseMessage& m
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     std::string sender = peer.GetUUID();
-    MapIndex ij(m_uuid,sender);
+    MapIndex ij(GetUUID(),sender);
     boost::posix_time::ptime challenge;
     boost::posix_time::ptime now = boost::posix_time::microsec_clock::universal_time();
     boost::posix_time::ptime response =
@@ -275,12 +274,12 @@ void CClockSynchronizer::HandleExchangeResponse(const ExchangeResponseMessage& m
     {
         const ExchangeResponseMessage::TableEntry te = msg.table_entry(i);
         std::string neighbor = te.uuid();
-        if(neighbor == peer.GetUUID() || neighbor == m_uuid)
+        if(neighbor == peer.GetUUID() || neighbor == GetUUID())
             continue;
         boost::posix_time::time_duration cjl = boost::posix_time::seconds(te.offset_secs())+boost::posix_time::microseconds(te.offset_fracs());
         double wjl = te.weight()-.1; // Abritrarily remove some trust to account for lag.
         double fjl = te.skew();
-        MapIndex il(m_uuid,neighbor);
+        MapIndex il(GetUUID(),neighbor);
         if(m_offsets.find(il) == m_offsets.end())
         {
             m_offsets[il] = boost::posix_time::milliseconds(0);
@@ -315,7 +314,7 @@ void CClockSynchronizer::Exchange(const boost::system::error_code& err)
     bool flop = false;
     BOOST_FOREACH(CPeerNode peer, CGlobalPeerList::instance().PeerList() | boost::adaptors::map_values)
     {
-        if(peer.GetUUID() == m_uuid)
+        if(peer.GetUUID() == GetUUID())
            flop = true;
         else if(flop == false)
             tmplist2.push_back(peer); // put elements before me into list b
@@ -328,7 +327,7 @@ void CClockSynchronizer::Exchange(const boost::system::error_code& err)
     BOOST_FOREACH(CPeerNode peer, tmplist)
     {
         peer.Send(CreateExchangeMessage(m_kcounter));
-        MapIndex ij(m_uuid,peer.GetUUID());
+        MapIndex ij(GetUUID(),peer.GetUUID());
         m_queries[ij] = QueryRecord(m_kcounter, boost::posix_time::microsec_clock::universal_time());
     }
     m_kcounter++;
@@ -337,7 +336,7 @@ void CClockSynchronizer::Exchange(const boost::system::error_code& err)
     m_exchangetimer.async_wait(boost::bind(&CClockSynchronizer::Exchange,this,
         boost::asio::placeholders::error));
     //make sure the self referential entries stay sane.
-    MapIndex ii(m_uuid,m_uuid);
+    MapIndex ii(GetUUID(),GetUUID());
     m_offsets[ii] = boost::posix_time::milliseconds(0);
     SetWeight(ii, 1.0);
     m_skews[ii] = 0.0;
@@ -450,7 +449,7 @@ double CClockSynchronizer::GetWeight(MapIndex i) const
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     WeightMap::const_iterator it = m_weights.find(i);
     boost::posix_time::ptime set;
-    if(i == MapIndex(m_uuid,m_uuid))
+    if(i == MapIndex(GetUUID(),GetUUID()))
         return 1.0;
     if(it == m_weights.end())
         throw std::runtime_error("Can't find that index in the weights table");

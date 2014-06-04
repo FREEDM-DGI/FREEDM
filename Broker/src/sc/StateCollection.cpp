@@ -102,18 +102,16 @@ CLocalLogger Logger(__FILE__);
 /// @description: Constructor for the state collection module.
 /// @pre PoxisMain prepares parameters and invokes module.
 /// @post Object initialized and ready to enter run state.
-/// @param uuid: This object's uuid.
 /// @limitations: None
 ///////////////////////////////////////////////////////////////////////////////
 
-SCAgent::SCAgent(std::string uuid):
-        CPeerNode(uuid),
+SCAgent::SCAgent():
         m_countstate(0),
         m_NotifyToSave(false),
         m_curversion("default", 0)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    AddPeer(CGlobalPeerList::instance().GetPeer(uuid));
+    AddPeer(GetMe());
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -347,7 +345,7 @@ void SCAgent::StateResponse()
         }//end for
 
         //send collected states to the request module
-        Send(PrepareForSending(scm, m_module));
+        GetMe().Send(PrepareForSending(scm, m_module));
 
         //clear collectstate
         collectstate.clear();
@@ -801,7 +799,7 @@ void SCAgent::HandleState(const StateMessage& msg, CPeerNode peer)
 /// @param peer
 /// @return a pointer to a peer node
 /////////////////////////////////////////////////////////
-SCAgent::CPeerNode SCAgent::AddPeer(CPeerNode peer)
+CPeerNode SCAgent::AddPeer(CPeerNode peer)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     InsertInPeerSet(m_AllPeers,peer);
@@ -817,7 +815,7 @@ SCAgent::CPeerNode SCAgent::AddPeer(CPeerNode peer)
 /// @param uuid string
 /// @return a pointer to the peer
 /////////////////////////////////////////////////////////
-SCAgent::CPeerNode SCAgent::GetPeer(std::string uuid)
+CPeerNode SCAgent::GetPeer(std::string uuid)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     PeerSet::iterator it = m_AllPeers.find(uuid);

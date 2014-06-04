@@ -25,9 +25,10 @@
 #define GROUPMANAGEMENT_HPP_
 
 #include "CBroker.hpp"
-#include "MPeerSets.hpp"
-#include "IMessageHandler.hpp"
+#include "IDGIModule.hpp"
 #include "CPeerNode.hpp"
+#include "PeerSets.hpp"
+
 #include "messages/ModuleMessage.pb.h"
 
 #include <boost/interprocess/sync/interprocess_mutex.hpp>
@@ -42,15 +43,13 @@ namespace gm {
 
 /// Declaration of Garcia-Molina Invitation Leader Election algorithm.
 class GMAgent
-  : public IMessageHandler
-  , private CPeerNode
-  , public MPeerSets
+  : public IDGIModule
 {
   public:
     /// Module states
     enum { NORMAL,DOWN,RECOVERY,REORGANIZATION,ELECTION };
     /// Constructor for using this object as a module.
-    GMAgent(std::string uuid_);
+    GMAgent();
     /// Module destructor
     ~GMAgent();
     /// Called to start the system

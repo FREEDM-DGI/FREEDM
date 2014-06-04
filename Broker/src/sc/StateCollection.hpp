@@ -24,8 +24,8 @@
 #ifndef CSTATECOLLECTION_HPP_
 #define CSTATECOLLECTION_HPP_
 
-#include "MPeerSets.hpp"
-#include "IMessageHandler.hpp"
+#include "PeerSets.hpp"
+#include "IDGIModule.hpp"
 #include "CPeerNode.hpp"
 #include "messages/ModuleMessage.pb.h"
 
@@ -58,13 +58,11 @@ using boost::property_tree::ptree;
 ///////////////////////////////////////////////////////////////////////////////
 
 class SCAgent
-      : public IMessageHandler,
-        private CPeerNode,
-        public MPeerSets
+      : public IDGIModule
 {
     public:
         ///Constructor
-        SCAgent(std::string uuid);
+        SCAgent();
 
     private:
         //Marker structure

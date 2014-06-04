@@ -74,19 +74,17 @@ CLocalLogger Logger(__FILE__);
 /// @limitations None
 /// @pre None
 /// @post Object initialized and ready to enter run state.
-/// @param p_uuid: This object's uuid.
 ///////////////////////////////////////////////////////////////////////////////
-GMAgent::GMAgent(std::string p_uuid)
-    : CPeerNode(p_uuid),
-    CHECK_TIMEOUT(boost::posix_time::not_a_date_time),
-    TIMEOUT_TIMEOUT(boost::posix_time::not_a_date_time),
-    FID_TIMEOUT(boost::posix_time::not_a_date_time),
-    AYC_RESPONSE_TIMEOUT(boost::posix_time::milliseconds(CTimings::GM_AYC_RESPONSE_TIMEOUT)),
-    AYT_RESPONSE_TIMEOUT(boost::posix_time::milliseconds(CTimings::GM_AYT_RESPONSE_TIMEOUT)),
-    INVITE_RESPONSE_TIMEOUT(boost::posix_time::milliseconds(CTimings::GM_INVITE_RESPONSE_TIMEOUT))
+GMAgent::GMAgent()
+    : CHECK_TIMEOUT(boost::posix_time::not_a_date_time),
+      TIMEOUT_TIMEOUT(boost::posix_time::not_a_date_time),
+      FID_TIMEOUT(boost::posix_time::not_a_date_time),
+      AYC_RESPONSE_TIMEOUT(boost::posix_time::milliseconds(CTimings::GM_AYC_RESPONSE_TIMEOUT)),
+      AYT_RESPONSE_TIMEOUT(boost::posix_time::milliseconds(CTimings::GM_AYT_RESPONSE_TIMEOUT)),
+      INVITE_RESPONSE_TIMEOUT(boost::posix_time::milliseconds(CTimings::GM_INVITE_RESPONSE_TIMEOUT))
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    AddPeer(GetUUID());
+    AddPeer(GetMe());
     m_groupsformed = 0;
     m_groupsbroken = 0;
     m_groupselection = 0;
@@ -312,8 +310,8 @@ ModuleMessage GMAgent::PeerList(std::string requester)
     }
     ConnectedPeerMessage* cpm = plm->add_connected_peer_message();
     cpm->set_uuid(GetUUID());
-    cpm->set_host(GetHostname());
-    cpm->set_port(GetPort());
+    cpm->set_host(GetMe().GetHostname());
+    cpm->set_port(GetMe().GetPort());
     return PrepareForSending(gmm, requester);
 }
 
@@ -423,7 +421,7 @@ void GMAgent::PushPeerList()
     {
         peer.Send(m_);
     }
-    Send(m_);
+    GetMe().Send(m_);
     Logger.Trace << __PRETTY_FUNCTION__ << "FINISH" <<    std::endl;
 }
 
@@ -894,7 +892,7 @@ void GMAgent::Timeout( const boost::system::error_code& err )
 /// @param msg The message to parse
 /// @return A PeerSet with all nodes in the group.
 ///////////////////////////////////////////////////////////////////////////////
-GMAgent::PeerSet GMAgent::ProcessPeerList(const PeerListMessage& msg)
+PeerSet GMAgent::ProcessPeerList(const PeerListMessage& msg)
 {
     // Note: The group leader inserts himself into the peer list.
     PeerSet tmp;

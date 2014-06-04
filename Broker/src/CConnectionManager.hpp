@@ -25,7 +25,6 @@
 #ifndef CONNECTIONMANAGER_HPP
 #define CONNECTIONMANAGER_HPP
 
-#include "IMessageHandler.hpp"
 #include "SRemoteHost.hpp"
 
 #include <map>

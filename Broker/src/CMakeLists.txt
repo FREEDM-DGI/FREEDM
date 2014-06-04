@@ -15,9 +15,10 @@ set(BROKER_FILES
     CProtocolSU.cpp
     CProtocolSRSW.cpp
     CPeerNode.cpp
-    MPeerSets.cpp
+    PeerSets.cpp
     CTimings.cpp
     IProtocol.cpp
+    IDGIModule.cpp
     Messages.cpp
     CClockSynchronizer.cpp
     CTimings.cpp

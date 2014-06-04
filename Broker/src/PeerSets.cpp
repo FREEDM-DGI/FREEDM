@@ -1,9 +1,9 @@
 ////////////////////////////////////////////////////////////////////////////////
-/// @file         MPeerSetss.cpp
+/// @file         PeerSets.cpp
 ///
 /// @project      FREEDM DGI
 ///
-/// @description  Base class for Broker modules.
+/// @description  Functions for manipulating peersets.
 ///
 /// These source code files were created at Missouri University of Science and
 /// Technology, and are intended for use in teaching or research. They may be
@@ -21,34 +21,34 @@
 #include <algorithm>
 #include <exception>
 
-#include "MPeerSets.hpp"
+#include "PeerSets.hpp"
 
 namespace freedm {
 namespace broker {
 
-int MPeerSets::CountInPeerSet(PeerSet& ps, const CPeerNode& m)
+int CountInPeerSet(PeerSet& ps, const CPeerNode& m)
 {
     return ps.count(m.GetUUID());
 }
 /// Provides find() for a PeerSet
-MPeerSets::PeerSetIterator MPeerSets::FindInPeerSet(PeerSet& ps, const CPeerNode& m)
+PeerSetIterator FindInPeerSet(PeerSet& ps, const CPeerNode& m)
 {
     return ps.find(m.GetUUID()); 
 }
 
 /// Provides erase() for a PeerSet
-void MPeerSets::EraseInPeerSet(PeerSet& ps, const CPeerNode& m)
+void EraseInPeerSet(PeerSet& ps, const CPeerNode& m)
 {
     ps.erase(m.GetUUID());
 }
 /// Provides insert() for a PeerSet
-void MPeerSets::InsertInPeerSet(PeerSet& ps, const CPeerNode& m)
+void InsertInPeerSet(PeerSet& ps, const CPeerNode& m)
 {
     ps.insert(std::make_pair(m.GetUUID(),m));
 }
 
 /// Provides count() for a TimedPeerSet
-int MPeerSets::CountInTimedPeerSet(TimedPeerSet& tps, const CPeerNode& m)
+int CountInTimedPeerSet(TimedPeerSet& tps, const CPeerNode& m)
 {
     ssize_t count = 0;
     for (TimedPeerSetIterator it = tps.begin(); it != tps.end(); it++)
@@ -62,7 +62,7 @@ int MPeerSets::CountInTimedPeerSet(TimedPeerSet& tps, const CPeerNode& m)
 }
 
 /// Get the time a peer was placed into the TimedPeerSet; only sensible if the peer is in the set exactly once
-boost::posix_time::ptime MPeerSets::GetTimeFromPeerSet(TimedPeerSet& tps, const CPeerNode& m)
+boost::posix_time::ptime GetTimeFromPeerSet(TimedPeerSet& tps, const CPeerNode& m)
 {
     for (TimedPeerSetIterator it = tps.begin(); it != tps.end(); it++)
     {
@@ -75,7 +75,7 @@ boost::posix_time::ptime MPeerSets::GetTimeFromPeerSet(TimedPeerSet& tps, const 
 }
 
 /// Provides erase() for a TimedPeerSet
-void MPeerSets::EraseInTimedPeerSet(TimedPeerSet& tps, const CPeerNode& m)
+void EraseInTimedPeerSet(TimedPeerSet& tps, const CPeerNode& m)
 {
     for (TimedPeerSetIterator it = tps.begin(); it != tps.end(); )
     {
@@ -92,7 +92,7 @@ void MPeerSets::EraseInTimedPeerSet(TimedPeerSet& tps, const CPeerNode& m)
 }
 
 /// Provides insert() for a TimedPeerSet
-void MPeerSets::InsertInTimedPeerSet(TimedPeerSet& tps,
+void InsertInTimedPeerSet(TimedPeerSet& tps,
                              const CPeerNode& m,
                              boost::posix_time::ptime time)
 {
@@ -101,4 +101,3 @@ void MPeerSets::InsertInTimedPeerSet(TimedPeerSet& tps,
 
 } // namespace freedm
 } // namespace broker
-

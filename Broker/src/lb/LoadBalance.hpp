@@ -44,8 +44,8 @@
 #include "CBroker.hpp"
 #include "CDevice.hpp"
 #include "CPeerNode.hpp"
-#include "MPeerSets.hpp"
-#include "IMessageHandler.hpp"
+#include "PeerSets.hpp"
+#include "IDGIModule.hpp"
 #include "messages/ModuleMessage.pb.h"
 
 #include <boost/shared_ptr.hpp>
@@ -64,13 +64,11 @@ const double NORMAL_TOLERANCE = 0.5;
 /// Declaration of LBAgent class for load balancing algorithm
 /////////////////////////////////////////////////////////
 class LBAgent
-    : public IMessageHandler,
-      private CPeerNode,
-      public MPeerSets
+    : public IDGIModule
 {
     public:
         /// Constructor for using this object as a module
-        LBAgent(std::string uuid_);
+        LBAgent();
 
         /// Main loop of the algorithm called from PosixBroker
         int Run();

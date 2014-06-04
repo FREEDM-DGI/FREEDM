@@ -92,15 +92,12 @@ CLocalLogger Logger(__FILE__);
 /// @description: Constructor for the load balancing module
 /// @pre: Posix Main should register read handler and invoke this module
 /// @post: Object is initialized and ready to run load balancing
-/// @param uuid_: This object's uuid
 /// @limitations: None
 ///////////////////////////////////////////////////////////////////////////////
-LBAgent::LBAgent(std::string uuid_):
-    CPeerNode(uuid_)
+LBAgent::LBAgent()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    CPeerNode self_ = CGlobalPeerList::instance().GetPeer(uuid_);
-    InsertInPeerSet(m_AllPeers, self_);
+    InsertInPeerSet(m_AllPeers, GetMe());
     m_Leader = GetUUID();
     m_Normal = 0;
     m_GlobalTimer = CBroker::Instance().AllocateTimer("lb");
@@ -211,7 +208,7 @@ int LBAgent::Run()
 /// @post: Peer set is populated with a pointer to the added node
 /// @limitations Addition of new peers is strictly based on group membership
 /////////////////////////////////////////////////////////
-LBAgent::CPeerNode LBAgent::AddPeer(CPeerNode peer)
+CPeerNode LBAgent::AddPeer(CPeerNode peer)
 {
     InsertInPeerSet(m_AllPeers,peer);
     InsertInPeerSet(m_NormalNodes,peer);
@@ -225,7 +222,7 @@ LBAgent::CPeerNode LBAgent::AddPeer(CPeerNode peer)
 /// @post: Returns a pointer to the requested peer, if exists
 /// @limitations Limited to members in this group
 /////////////////////////////////////////////////////////
-LBAgent::CPeerNode LBAgent::GetPeer(std::string uuid)
+CPeerNode LBAgent::GetPeer(std::string uuid)
 {
     PeerSet::iterator it = m_AllPeers.find(uuid);
 
@@ -259,7 +256,7 @@ ModuleMessage LBAgent::MessageStateChange(std::string newstate)
 /// @description Pushes a new load balance state to a peer set.
 /// @pre: The caller provideds a new state and peer set to send it to.
 /// @post: A message announcing the new state is prepared and sent.
-/// @param msg: The message to be sent
+/// @param newstate: The new state the node is in
 /// @param peerSet: The group of peers that should receive the message
 /// @peers Each peer that exists in the peerSet
 /// @ErrorHandling If the message cannot be sent, an exception is thrown and the
@@ -278,9 +275,9 @@ void LBAgent::SendStateChange(std::string newstate, PeerSet peerSet)
 /// SendToPeerSet
 /// @description Given a message m, send it to every process in peerSet
 /// @pre None
-/// @post m is sent to all processes in peerSet
+/// @post msg is sent to all processes in peerSet
 /// @peers peerSet
-/// @param m The message to send
+/// @param msg The message to send
 /// @param peerSet the processes to send the message to.
 ///////////////////////////////////////////////////////////////////////////////
 void LBAgent::SendToPeerSet(const ModuleMessage& msg, const PeerSet & peerSet)
@@ -410,7 +407,7 @@ void LBAgent::CollectState()
     {
        ModuleMessage mm = MessageCollectState();
        Logger.Notice << "LB module requested State Collection" << std::endl;
-       Send(mm);
+       GetMe().Send(mm);
     }
     catch (boost::system::system_error& e)
     {
@@ -1223,7 +1220,6 @@ void LBAgent::HandleAccept(const AcceptMessage& /* msg */, CPeerNode peer)
 /// @post The aggregate gateway, normal and demand member variables are set.
 ///     Sends the normal to the members of the group.
 /// @param msg The message body that was recieved by this process.
-/// @param peer The process that the message orginated from.
 /// @peers My state collection module, Members of my group.
 /// @limitations Does not validate the source, integrity or contents of the
 ///     message.

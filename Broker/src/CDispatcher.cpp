@@ -26,7 +26,7 @@
 #include "CDispatcher.hpp"
 #include "CGlobalPeerList.hpp"
 #include "CLogger.hpp"
-#include "IMessageHandler.hpp"
+#include "IDGIModule.hpp"
 
 #include <boost/bind.hpp>
 #include <boost/smart_ptr/shared_ptr.hpp>
@@ -68,7 +68,7 @@ void CDispatcher::HandleRequest(boost::shared_ptr<const ModuleMessage> msg, std:
 
     bool processed = false;
 
-    for(std::multimap<boost::shared_ptr<IMessageHandler>, const std::string>::const_iterator it
+    for(std::multimap<boost::shared_ptr<IDGIModule>, const std::string>::const_iterator it
             = m_registrations.begin();
         it != m_registrations.end(); ++it)
     {
@@ -106,7 +106,7 @@ void CDispatcher::HandleRequest(boost::shared_ptr<const ModuleMessage> msg, std:
 /// @param uuid the UUID of the DGI that sent
 ///////////////////////////////////////////////////////////////////////////////
 void CDispatcher::ReadHandlerCallback(
-    boost::shared_ptr<IMessageHandler> h, boost::shared_ptr<const ModuleMessage> msg, std::string uuid)
+    boost::shared_ptr<IDGIModule> h, boost::shared_ptr<const ModuleMessage> msg, std::string uuid)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     CPeerNode peer;
@@ -136,7 +136,7 @@ void CDispatcher::ReadHandlerCallback(
 /// @param id this module will receive messages addressed to id
 ///////////////////////////////////////////////////////////////////////////////
 void CDispatcher::RegisterReadHandler(
-    boost::shared_ptr<IMessageHandler> handler, std::string id)
+    boost::shared_ptr<IDGIModule> handler, std::string id)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     Logger.Debug << "Registered module listening on " << id << std::endl;

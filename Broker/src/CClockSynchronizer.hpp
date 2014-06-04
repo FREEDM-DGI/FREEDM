@@ -23,7 +23,7 @@
 #ifndef FREEDM_CLOCK_HPP
 #define FREEDM_CLOCK_HPP
 
-#include "IMessageHandler.hpp"
+#include "IDGIModule.hpp"
 
 #include <list>
 #include <map>
@@ -39,8 +39,7 @@ class CBroker;
 class CPeerNode;
 
 class CClockSynchronizer
-    : public IMessageHandler
-    , private boost::noncopyable
+    : public IDGIModule
 {
 public:
     /// Initialize module
@@ -116,9 +115,6 @@ private:
 
     ///Time for the exchange
     boost::asio::deadline_timer m_exchangetimer;
-
-    /// The UUID
-    std::string m_uuid;
 
     /// Gets the weight with a decay
     double GetWeight(MapIndex i) const;

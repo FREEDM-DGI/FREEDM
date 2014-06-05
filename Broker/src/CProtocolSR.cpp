@@ -10,7 +10,7 @@
 /// These source code files were created at Missouri University of Science and
 /// Technology, and are intended for use in teaching or research. They may be
 /// freely copied, modified, and redistributed as long as modified versions are
-/// clearly marked as such and this notice is not removed. Neither the authors
+/// clearly marked as such and shared_from_this() notice is not removed. Neither the authors
 /// nor Missouri S&T make any warranty, express or implied, nor assume any legal
 /// responsibility for the accuracy, completeness, or usefulness of these files
 /// or any information distributed with these files.
@@ -20,12 +20,10 @@
 /// Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
 ////////////////////////////////////////////////////////////////////////////////
 
-#include "CConnectionManager.hpp"
 #include "CLogger.hpp"
 #include "CProtocolSR.hpp"
-#include "IProtocol.hpp"
-#include "CConnection.hpp"
 #include "CTimings.hpp"
+
 #include "Messages.hpp"
 #include "messages/ProtocolMessage.pb.h"
 
@@ -33,10 +31,9 @@
 #include <iomanip>
 #include <set>
 
-#include <boost/array.hpp>
 #include <boost/asio.hpp>
-#include <boost/noncopyable.hpp>
-#include <boost/shared_ptr.hpp>
+#include <boost/bind.hpp>
+
 #include <google/protobuf/message.h>
 
 namespace freedm {
@@ -56,11 +53,11 @@ CLocalLogger Logger(__FILE__);
 /// @post The object is initialized: m_killwindow is empty, the connection is
 ///       marked as unsynced, It won't be sending kill statuses. Its first
 ///       message will be numbered as 0 for outgoing and the timer is not set.
-/// @param conn The underlying connection object this protocol writes to
+/// @param uuid The peer this connection is made to.
 ///////////////////////////////////////////////////////////////////////////////
-CProtocolSR::CProtocolSR(CConnection& conn)
-    : IProtocol(conn),
-      m_timeout(conn.GetSocket().get_io_service())
+CProtocolSR::CProtocolSR(std::string uuid)
+    : IProtocol(uuid),
+      m_timeout(GetSocket().get_io_service())
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     //Sequence Numbers
@@ -80,7 +77,7 @@ CProtocolSR::CProtocolSR(CConnection& conn)
 
 ///////////////////////////////////////////////////////////////////////////////
 /// CProtocolSR::CProtocolSR
-/// @description Send function for the CProtocolSR. Sending using this
+/// @description Send function for the CProtocolSR. Sending using shared_from_this()
 ///   protocol involves an alternating bit scheme. Messages can expire and
 ///   delivery won't be attempted after the deadline is passed. Killed messages
 ///   are noted in the next outgoing message. The receiver tracks the killed
@@ -158,8 +155,8 @@ void CProtocolSR::Resend(const boost::system::error_code& err)
         }
         if(m_dropped > MAX_DROPPED_MSGS)
         {
-            Logger.Warn<<"Connection to "<<GetConnection().GetUUID()<<" has lost "<<m_dropped<<" messages. Attempting to reconnect."<<std::endl;
-            GetConnection().Stop();
+            Logger.Warn<<"Connection to "<<GetUUID()<<" has lost "<<m_dropped<<" messages. Attempting to reconnect."<<std::endl;
+            Stop();
             return;
         }
         Logger.Trace<<__PRETTY_FUNCTION__<<" Flushed Expired"<<std::endl;
@@ -186,9 +183,11 @@ void CProtocolSR::Resend(const boost::system::error_code& err)
             // Head of window can be killed.
             m_timeout.cancel();
             m_timeout.expires_from_now(boost::posix_time::milliseconds(CTimings::CSRC_RESEND_TIME));
-            // FIXME could crash
-            m_timeout.async_wait(boost::bind(&CProtocolSR::Resend,this,
-                boost::asio::placeholders::error));
+            /// We use static pointer cast to convert the IPROTOCOL pointer to this
+            /// derived type
+            m_timeout.async_wait(boost::bind(&CProtocolSR::Resend,
+            boost::static_pointer_cast<CProtocolSR>(shared_from_this()),
+            boost::asio::placeholders::error));
         }
     }
     Logger.Trace<<__PRETTY_FUNCTION__<<" Resend Finished"<<std::endl;
@@ -235,10 +234,10 @@ void CProtocolSR::ReceiveACK(const ProtocolMessage& msg)
 ///////////////////////////////////////////////////////////////////////////////
 /// CProtocolSR::Receive
 /// @description Accepts a message into the protocol, if that message should
-///   be accepted. If this function returns true, the message is passed to
-///   the dispatcher. Since this message accepts SYNs there might be times
+///   be accepted. If shared_from_this() function returns true, the message is passed to
+///   the dispatcher. Since shared_from_this() message accepts SYNs there might be times
 ///   when processing and state changes but the message is marked as "rejected"
-///   this is normal.
+///   shared_from_this() is normal.
 /// @pre Accept logic can be complicated, there are several scenarios that
 ///      should be addressed.
 ///      1) A bad request has been received
@@ -289,14 +288,14 @@ bool CProtocolSR::Receive(const ProtocolMessage& msg)
             }
             else
             {
-                Logger.Debug<<"Already synced for this time"<<std::endl;
+                Logger.Debug<<"Already synced for shared_from_this() time"<<std::endl;
             }
         }
         return false;
     }
     if(msg.has_status() && msg.status() == ProtocolMessage::CREATED)
     {
-        //Check to see if we've already seen this SYN:
+        //Check to see if we've already seen shared_from_this() SYN:
         if(sendtime == m_insynctime)
         {
             return false;
@@ -340,7 +339,7 @@ bool CProtocolSR::Receive(const ProtocolMessage& msg)
         return false;
     }
     //Consider the window you expect to see
-    // If the killed message is the one immediately preceeding this
+    // If the killed message is the one immediately preceeding shared_from_this()
     // message in terms of sequence number we should accept it
     Logger.Debug<<"Recv: "<<msg.sequence_num()<<" Expected "<<m_inseq<<" Using kill: "<<usekill<<" with "<<kill<<std::endl;
     if(msg.sequence_num() == m_inseq)
@@ -388,8 +387,10 @@ void CProtocolSR::SendACK(const ProtocolMessage& msg)
     /// Hook into resend until the message expires.
     m_timeout.cancel();
     m_timeout.expires_from_now(boost::posix_time::milliseconds(CTimings::CSRC_RESEND_TIME));
-    // FIXME could crash
-    m_timeout.async_wait(boost::bind(&CProtocolSR::Resend,this,
+    /// We use static pointer cast to convert the IPROTOCOL pointer to this
+    /// derived type
+    m_timeout.async_wait(boost::bind(&CProtocolSR::Resend,
+        boost::static_pointer_cast<CProtocolSR>(shared_from_this()),
         boost::asio::placeholders::error));
 }
 

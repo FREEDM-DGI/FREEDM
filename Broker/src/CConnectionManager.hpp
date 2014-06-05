@@ -77,12 +77,6 @@ public:
     /// Handle Rounds
     void ChangePhase(bool newround);
 
-    /// Get The UUID
-    std::string GetUUID() const { return m_uuid; }
-
-    /// Get The Host
-    SRemoteHost GetHost() const { return m_host; }
-
     /// Get the host from the UUID.
     SRemoteHost GetHostByUUID( std::string uuid ) const;
 
@@ -113,12 +107,8 @@ private:
     CConnectionManager();
     /// Mapping from uuid to host.
     hostnamemap m_hosts;
-    /// Host/port of this node.
-    SRemoteHost m_host;
     /// Forward map (UUID->Connection)
     connectionmap m_connections;
-    /// Node UUID
-    std::string m_uuid;
     /// Mutex for protecting the handler maps above
     boost::mutex m_Mutex;
 };

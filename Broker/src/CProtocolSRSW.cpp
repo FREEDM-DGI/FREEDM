@@ -48,11 +48,11 @@ CLocalLogger Logger(__FILE__);
 /// @post The object is initialized: m_killwindow is empty, the connection is
 ///       marked as unsynced, It won't be sending kill statuses. Its first
 ///       message will be numbered as 0 for outgoing and the timer is not set.
-/// @param conn The underlying connection object this protocol writes to
+/// @param uuid The peer this connection is to.
 ///////////////////////////////////////////////////////////////////////////////
-CProtocolSRSW::CProtocolSRSW(CConnection& conn)
-    : IProtocol(conn),
-      m_timeout(conn.GetSocket().get_io_service())
+CProtocolSRSW::CProtocolSRSW(std::string uuid)
+    : IProtocol(uuid),
+      m_timeout(GetSocket().get_io_service())
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     //Sequence Numbers
@@ -151,7 +151,8 @@ void CProtocolSRSW::Resend(const boost::system::error_code& err)
             // Head of window can be killed.
             m_timeout.cancel();
             m_timeout.expires_from_now(boost::posix_time::milliseconds(REFIRE_TIME));
-            m_timeout.async_wait(boost::bind(&CProtocolSRSW::Resend,this,
+            m_timeout.async_wait(boost::bind(&CProtocolSRSW::Resend,
+                boost::static_pointer_cast<CProtocolSRSW>(shared_from_this()),
                 boost::asio::placeholders::error));
         }
     }
@@ -322,7 +323,8 @@ void CProtocolSRSW::SendACK(const ProtocolMessage& msg)
     /// Hook into resend until the message expires.
     m_timeout.cancel();
     m_timeout.expires_from_now(boost::posix_time::milliseconds(REFIRE_TIME));
-    m_timeout.async_wait(boost::bind(&CProtocolSRSW::Resend,this,
+    m_timeout.async_wait(boost::bind(&CProtocolSRSW::Resend,
+        boost::static_pointer_cast<CProtocolSRSW>(shared_from_this()),
         boost::asio::placeholders::error));
 }
 

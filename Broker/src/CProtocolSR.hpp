@@ -42,7 +42,7 @@ class CProtocolSR
 {
     public:
         /// Initializes the protocol with the underlying connection
-        explicit CProtocolSR(CConnection& conn);
+        explicit CProtocolSR(std::string uuid);
         /// Public facing send function that sends a message
         void Send(const ModuleMessage& msg);
         /// Public facing function that handles marking down ACKs for sent messages
@@ -54,7 +54,7 @@ class CProtocolSR
         /// Sends a synchronizer
         void SendSYN();
         /// Stops the timers
-        void Stop() { m_timeout.cancel(); SetStopped(true); };
+        void Stop() { m_timeout.cancel(); SetStopped(true); GetSocket().close(); };
         /// Handles writing the message to the underlying connection
         void Write(ProtocolMessage& msg);
     private:

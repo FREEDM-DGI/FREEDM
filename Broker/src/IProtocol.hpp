@@ -25,6 +25,7 @@
 #define IPROTOCOL_HPP
 
 #include "CGlobalConfiguration.hpp"
+
 #include <memory>
 #include <set>
 
@@ -35,13 +36,13 @@
 namespace freedm {
     namespace broker {
 
+class CConnection;
 class ModuleMessage;
 class ProtocolMessage;
 
 /// A connection protocol
 class IProtocol
-    : private boost::noncopyable,
-      public boost::enable_shared_from_this<IProtocol>
+    : private boost::noncopyable
 {
     public:
         /// Destroy all humans
@@ -62,33 +63,20 @@ class IProtocol
         bool GetStopped() { return m_stopped; };
         /// Handles setting the stopped variable
         void SetStopped(bool v) { m_stopped = v; };
-        /// Get a socket connected to a single peer DGI
-        boost::asio::ip::udp::socket& GetSocket();
-        /// Set the connection reliability for DCUSTOMNETWORK
-        void SetReliability(int r);
-        /// Get the connection reliability for DCUSTOMNETWORK
-        int GetReliability() const;
-        /// Gets the uuid:
-        std::string GetUUID() const;
+        /// Returns a pointer to the underlying connection.
+        CConnection& GetConnection() { return m_conn; };
     protected:
         /// Initializes the protocol with the underlying connection
-        IProtocol(std::string uuid);
+        explicit IProtocol(CConnection& conn) : m_conn(conn), m_stopped(false) { };
         /// Callback for when a write completes.
         virtual void WriteCallback(const boost::system::error_code&) { }
         /// Handles writing the message to the underlying connection
         virtual void Write(ProtocolMessage& msg);
     private:
-        /// Datagram socket connected to a single peer DGI
-        boost::asio::ip::udp::socket m_socket;
- 
-        /// The UUID of the remote endpoint for the connection
-        std::string m_uuid;
-
+        /// The underlying and related connection object.
+        CConnection& m_conn;
         /// Tracker for the stoppedness of the connection
         bool m_stopped;
-
-        /// The reliability of the connection (FOR -DCUSTOMNETWORK)
-        int m_reliability;
 };
 
     }

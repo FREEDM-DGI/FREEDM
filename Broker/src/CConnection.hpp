@@ -90,13 +90,22 @@ public:
 
     /// Set the connection reliability for DCUSTOMNETWORK
     void SetReliability(int r);
-    
+
     /// Get the connection reliability for DCUSTOMNETWORK
     int GetReliability() const;
+
 private:
+    /// Datagram socket connected to a single peer DGI
+    boost::asio::ip::udp::socket m_socket;
 
     /// The custom network protocol to use for sending/receiving messages
-    boost::shared_ptr<IProtocol> m_protocol;
+    IProtocol* m_protocol;
+
+    /// The UUID of the remote endpoint for the connection
+    std::string m_uuid;
+
+    /// The reliability of the connection (FOR -DCUSTOMNETWORK)
+    int m_reliability;
 };
 
 typedef boost::shared_ptr<CConnection> ConnectionPtr;

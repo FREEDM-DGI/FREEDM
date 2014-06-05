@@ -43,7 +43,7 @@ class CProtocolSRSW : public IProtocol
 {
     public:
         /// Initializes the protocol with the underlying connection
-        explicit CProtocolSRSW(std::string uuid);
+        explicit CProtocolSRSW(CConnection& conn);
         /// Public facing send function that sends a message
         void Send(const ModuleMessage& msg);
         /// Public facing function that handles marking down ACKs for sent messages

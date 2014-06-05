@@ -52,7 +52,10 @@ CLocalLogger Logger(__FILE__);
 /// @param uuid the UUID of the peer to connect to
 ///////////////////////////////////////////////////////////////////////////////
 CConnection::CConnection(std::string uuid)
-  : m_protocol(boost::make_shared<CProtocolSR>(uuid))   // FIXME hardcoded protocol
+  : m_socket(CBroker::Instance().GetIOService())
+  , m_protocol(new CProtocolSR(*this))   // FIXME hardcoded protocol
+  , m_uuid(uuid)
+  , m_reliability(100)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 }
@@ -62,7 +65,7 @@ CConnection::CConnection(std::string uuid)
 ///////////////////////////////////////////////////////////////////////////////
 CConnection::~CConnection()
 {
-    // Pass, protocol is smart pointer
+    delete m_protocol;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -76,7 +79,7 @@ void CConnection::Stop()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     m_protocol->Stop();
-    m_protocol->GetSocket().close();
+    GetSocket().close();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -112,11 +115,11 @@ void CConnection::Send(const ModuleMessage& msg)
     // If the UUID of the recipient (The value stored by GetUUID of this
     // object) is the same as the this node's uuid, place the message directly
     // into the received Queue.
-    if(m_protocol->GetUUID() == CGlobalConfiguration::Instance().GetUUID())
+    if(m_uuid == CGlobalConfiguration::Instance().GetUUID())
     {
         boost::shared_ptr<ModuleMessage> copy = boost::make_shared<ModuleMessage>();
         copy->CopyFrom(msg);
-        CDispatcher::Instance().HandleRequest(copy, m_protocol->GetUUID());
+        CDispatcher::Instance().HandleRequest(copy, m_uuid);
     }
     else
     {
@@ -170,7 +173,7 @@ boost::asio::ip::udp::socket& CConnection::GetSocket()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
-    return m_protocol->GetSocket();
+    return m_socket;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -182,7 +185,7 @@ std::string CConnection::GetUUID() const
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
-    return m_protocol->GetUUID();
+    return m_uuid;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -195,7 +198,7 @@ void CConnection::SetReliability(int r)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
-    return m_protocol->SetReliability(r);
+    m_reliability = r;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -207,7 +210,7 @@ int CConnection::GetReliability() const
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
-    return m_protocol->GetReliability();
+    return m_reliability;
 }
 
     } // namespace broker

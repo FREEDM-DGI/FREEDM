@@ -72,14 +72,14 @@ class IProtocol
         std::string GetUUID() const;
     protected:
         /// Initializes the protocol with the underlying connection
-        IProtocol(std::string uuid);
+        IProtocol(std::string uuid, boost::asio::ip::udp::endpoint endpoint);
         /// Callback for when a write completes.
         virtual void WriteCallback(const boost::system::error_code&) { }
         /// Handles writing the message to the underlying connection
         virtual void Write(ProtocolMessage& msg);
     private:
         /// Datagram socket connected to a single peer DGI
-        boost::asio::ip::udp::socket m_socket;
+        boost::asio::ip::udp::endpoint m_endpoint;
  
         /// The UUID of the remote endpoint for the connection
         std::string m_uuid;

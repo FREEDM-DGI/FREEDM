@@ -23,12 +23,13 @@
 #include "CProtocolSRSW.hpp"
 
 #include "CConnection.hpp"
-#include "CConnectionManager.hpp"
 #include "CLogger.hpp"
+#include "CBroker.hpp"
 #include "messages/ModuleMessage.pb.h"
 #include "messages/ProtocolMessage.pb.h"
 
 #include <boost/asio.hpp>
+#include <boost/bind.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
 
 namespace freedm {
@@ -50,9 +51,9 @@ CLocalLogger Logger(__FILE__);
 ///       message will be numbered as 0 for outgoing and the timer is not set.
 /// @param uuid The peer this connection is to.
 ///////////////////////////////////////////////////////////////////////////////
-CProtocolSRSW::CProtocolSRSW(std::string uuid)
-    : IProtocol(uuid),
-      m_timeout(GetSocket().get_io_service())
+CProtocolSRSW::CProtocolSRSW(std::string uuid,boost::asio::ip::udp::endpoint endpoint)
+    : IProtocol(uuid,endpoint),
+      m_timeout(CBroker::Instance().GetIOService())
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     //Sequence Numbers

@@ -51,6 +51,8 @@ public:
     /// Stop any current async read and close the socket
     void Stop();
 
+    /// Gets the listener socket
+    boost::asio::ip::udp::socket& GetSocket() { return m_socket; };
 private:
     /// Private constructor for the singleton instance
     CListener();
@@ -66,6 +68,9 @@ private:
 
     /// Socket for the CConnection.
     boost::asio::ip::udp::socket m_socket;
+
+    /// Endpoint for incoming message
+    boost::asio::ip::udp::endpoint m_recv_from;
 };
 
 

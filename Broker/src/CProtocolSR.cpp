@@ -23,6 +23,7 @@
 #include "CLogger.hpp"
 #include "CProtocolSR.hpp"
 #include "CTimings.hpp"
+#include "CBroker.hpp"
 
 #include "Messages.hpp"
 #include "messages/ProtocolMessage.pb.h"
@@ -55,9 +56,9 @@ CLocalLogger Logger(__FILE__);
 ///       message will be numbered as 0 for outgoing and the timer is not set.
 /// @param uuid The peer this connection is made to.
 ///////////////////////////////////////////////////////////////////////////////
-CProtocolSR::CProtocolSR(std::string uuid)
-    : IProtocol(uuid),
-      m_timeout(GetSocket().get_io_service())
+CProtocolSR::CProtocolSR(std::string uuid, boost::asio::ip::udp::endpoint endpoint)
+    : IProtocol(uuid, endpoint),
+      m_timeout(CBroker::Instance().GetIOService())
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     //Sequence Numbers

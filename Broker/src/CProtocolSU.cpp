@@ -25,6 +25,7 @@
 
 #include "CLogger.hpp"
 #include "CTimings.hpp"
+#include "CBroker.hpp"
 #include "messages/ModuleMessage.pb.h"
 #include "messages/ProtocolMessage.pb.h"
 
@@ -41,9 +42,9 @@ CLocalLogger Logger(__FILE__);
 
 }
 
-CProtocolSU::CProtocolSU(std::string uuid)
-    : IProtocol(uuid),
-      m_timeout(GetSocket().get_io_service())
+CProtocolSU::CProtocolSU(std::string uuid,boost::asio::ip::udp::endpoint endpoint)
+    : IProtocol(uuid,endpoint),
+      m_timeout(CBroker::Instance().GetIOService())
 {
     m_outseq = 0;
     m_inseq = 0;

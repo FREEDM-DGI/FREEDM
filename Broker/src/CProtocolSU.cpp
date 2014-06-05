@@ -11,7 +11,7 @@
 /// These source code files were created at Missouri University of Science and
 /// Technology, and are intended for use in teaching or research. They may be
 /// freely copied, modified, and redistributed as long as modified versions are
-/// clearly marked as such and this notice is not removed. Neither the authors
+/// clearly marked as such and shared_from_this() notice is not removed. Neither the authors
 /// nor Missouri S&T make any warranty, express or implied, nor assume any legal
 /// responsibility for the accuracy, completeness, or usefulness of these files
 /// or any information distributed with these files.
@@ -23,14 +23,13 @@
 
 #include "CProtocolSU.hpp"
 
-#include "CConnection.hpp"
-#include "CConnectionManager.hpp"
 #include "CLogger.hpp"
 #include "CTimings.hpp"
 #include "messages/ModuleMessage.pb.h"
 #include "messages/ProtocolMessage.pb.h"
 
 #include <boost/asio.hpp>
+#include <boost/bind.hpp>
 
 namespace freedm {
     namespace broker {
@@ -42,9 +41,9 @@ CLocalLogger Logger(__FILE__);
 
 }
 
-CProtocolSU::CProtocolSU(CConnection& conn)
-    : IProtocol(conn),
-      m_timeout(conn.GetSocket().get_io_service())
+CProtocolSU::CProtocolSU(std::string uuid)
+    : IProtocol(uuid),
+      m_timeout(GetSocket().get_io_service())
 {
     m_outseq = 0;
     m_inseq = 0;
@@ -71,7 +70,8 @@ void CProtocolSU::Send(const ModuleMessage& msg)
         Write(pm);
         m_timeout.cancel();
         m_timeout.expires_from_now(boost::posix_time::milliseconds(CTimings::CSUC_RESEND_TIME));
-        m_timeout.async_wait(boost::bind(&CProtocolSU::Resend,this,
+        m_timeout.async_wait(boost::bind(&CProtocolSU::Resend,
+            boost::static_pointer_cast<CProtocolSU>(shared_from_this()),
             boost::asio::placeholders::error));
     }
 }
@@ -105,7 +105,8 @@ void CProtocolSU::Resend(const boost::system::error_code& err)
         {
             m_timeout.cancel();
             m_timeout.expires_from_now(boost::posix_time::milliseconds(CTimings::CSUC_RESEND_TIME));
-            m_timeout.async_wait(boost::bind(&CProtocolSU::Resend,this,
+            m_timeout.async_wait(boost::bind(&CProtocolSU::Resend,
+                boost::static_pointer_cast<CProtocolSU>(shared_from_this()),
                 boost::asio::placeholders::error));
         }
     }

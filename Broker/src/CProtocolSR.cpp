@@ -279,7 +279,7 @@ bool CProtocolSR::Receive(const ProtocolMessage& msg)
     if(msg.has_status() && msg.status() == ProtocolMessage::BAD_REQUEST)
     {
         //See if we are already trying to sync:
-        if(m_window.front().has_status() && m_window.front().status() != ProtocolMessage::CREATED)
+        if(!m_window.front().has_status() || m_window.front().status() != ProtocolMessage::CREATED)
         {
             if(m_outsynctime != sendtime)
             {

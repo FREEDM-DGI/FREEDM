@@ -61,9 +61,9 @@ void IProtocol::Write(ProtocolMessage& msg)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
-    msg.set_source_uuid(CGlobalConfiguration::Instance().GetUUID());
-    msg.set_source_hostname(CGlobalConfiguration::Instance().GetHostname());
-    msg.set_source_port(CGlobalConfiguration::Instance().GetListenPort());
+    msg.set_source_uuid(CConnectionManager::Instance().GetUUID());
+    msg.set_source_hostname(CConnectionManager::Instance().GetHost().hostname);
+    msg.set_source_port(CConnectionManager::Instance().GetHost().port);
     StampMessageSendtime(msg);
 
     msg.CheckInitialized();

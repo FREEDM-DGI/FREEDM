@@ -28,7 +28,6 @@
 #include "CDispatcher.hpp"
 #include "CGlobalConfiguration.hpp"
 #include "CListener.hpp"
-#include "CLogger.hpp"
 #include "CClockSynchronizer.hpp"
 #include "CConnection.hpp"
 #include "messages/ModuleMessage.pb.h"
@@ -49,7 +48,6 @@ namespace freedm {
 namespace {
 
 /// This file's logger.
-CLocalLogger Logger(__FILE__);
 
 }
 
@@ -62,7 +60,6 @@ CLocalLogger Logger(__FILE__);
 CListener::CListener()
     : m_socket(CBroker::Instance().GetIOService())
 {
-    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -83,7 +80,6 @@ CListener& CListener::Instance()
 ///////////////////////////////////////////////////////////////////////////////
 void CListener::Start(boost::asio::ip::udp::endpoint& endpoint)
 {
-    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     m_socket.open(endpoint.protocol());
     m_socket.bind(endpoint);
     ScheduleListen();
@@ -94,7 +90,6 @@ void CListener::Start(boost::asio::ip::udp::endpoint& endpoint)
 ///////////////////////////////////////////////////////////////////////////////
 void CListener::Stop()
 {
-    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
     try
     {
@@ -102,7 +97,6 @@ void CListener::Stop()
     }
     catch (boost::system::system_error& e)
     {
-        Logger.Error << "Error calling close: " << e.what() << std::endl;
     }
 }
 
@@ -121,19 +115,15 @@ void CListener::Stop()
 void CListener::HandleRead(const boost::system::error_code& e,
                            std::size_t bytes_transferred)
 {
-    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
     if (e)
     {
-        Logger.Error<<"HandleRead failed: " << e.message();
         ScheduleListen();
     }
 
-    Logger.Debug<<"Loading protobuf"<<std::endl;
     ProtocolMessage pm;
     if(!pm.ParseFromArray(m_buffer.begin(), bytes_transferred))
     {
-        Logger.Error<<"Failed to load protobuf"<<std::endl;
         ScheduleListen();
         return;
     }
@@ -141,13 +131,11 @@ void CListener::HandleRead(const boost::system::error_code& e,
 #ifdef CUSTOMNETWORK
     if((rand()%100) >= GetReliability())
     {
-        Logger.Debug<<"Dropped datagram "<<pm.hash()<<":"<<pm.sequence_num()<<std::endl;
         ScheduleListen();
         return;
     }
 #endif
 
-    Logger.Debug<<"Fetching Connection"<<std::endl;
     std::string uuid = pm.source_uuid();
     /// We can make the remote host from the endpoint:
     SRemoteHost host = { m_recv_from.address().to_string(), boost::lexical_cast<std::string>(m_recv_from.port()) };
@@ -157,24 +145,19 @@ void CListener::HandleRead(const boost::system::error_code& e,
 
     ///Get the pointer to the connection:
     ConnectionPtr conn = CConnectionManager::Instance().CreateConnection(uuid, m_recv_from);
-    Logger.Debug<<"Fetched Connection"<<std::endl;
 
     if(pm.status() == ProtocolMessage::ACCEPTED)
     {
-        Logger.Debug<<"Processing Accept Message"<<std::endl;
-        Logger.Debug<<"Received ACK"<<pm.hash()<<":"<<pm.sequence_num()<<std::endl;
         conn->ReceiveACK(pm);
     }
     else if(conn->Receive(pm))
     {
-        Logger.Debug<<"Accepted message "<<pm.hash()<<":"<<pm.sequence_num()<<std::endl;
         CDispatcher::Instance().HandleRequest(
             boost::make_shared<const ModuleMessage>(
                 ModuleMessage(pm.module_message())), uuid);
     }
     else if(pm.status() != ProtocolMessage::CREATED)
     {
-        Logger.Debug<<"Rejected message "<<pm.hash()<<":"<<pm.sequence_num()<<std::endl;
     }
 
     ScheduleListen();
@@ -187,8 +170,6 @@ void CListener::HandleRead(const boost::system::error_code& e,
 ///////////////////////////////////////////////////////////////////////////////
 void CListener::ScheduleListen()
 {
-    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    Logger.Debug<<"Listening for next message"<<std::endl;
     // We don't care where the messages are coming from, but async_receive_from
     // requires that this variable remain valid until the handler is called.
     m_socket.async_receive_from(

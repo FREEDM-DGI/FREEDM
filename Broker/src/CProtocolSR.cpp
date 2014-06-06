@@ -78,7 +78,7 @@ CProtocolSR::CProtocolSR(std::string uuid, boost::asio::ip::udp::endpoint endpoi
 
 ///////////////////////////////////////////////////////////////////////////////
 /// CProtocolSR::CProtocolSR
-/// @description Send function for the CProtocolSR. Sending using shared_from_this()
+/// @description Send function for the CProtocolSR. Sending using this
 ///   protocol involves an alternating bit scheme. Messages can expire and
 ///   delivery won't be attempted after the deadline is passed. Killed messages
 ///   are noted in the next outgoing message. The receiver tracks the killed
@@ -235,8 +235,8 @@ void CProtocolSR::ReceiveACK(const ProtocolMessage& msg)
 ///////////////////////////////////////////////////////////////////////////////
 /// CProtocolSR::Receive
 /// @description Accepts a message into the protocol, if that message should
-///   be accepted. If shared_from_this() function returns true, the message is passed to
-///   the dispatcher. Since shared_from_this() message accepts SYNs there might be times
+///   be accepted. If this function returns true, the message is passed to
+///   the dispatcher. Since this message accepts SYNs there might be times
 ///   when processing and state changes but the message is marked as "rejected"
 ///   shared_from_this() is normal.
 /// @pre Accept logic can be complicated, there are several scenarios that
@@ -289,14 +289,14 @@ bool CProtocolSR::Receive(const ProtocolMessage& msg)
             }
             else
             {
-                Logger.Debug<<"Already synced for shared_from_this() time"<<std::endl;
+                Logger.Debug<<"Already synced for this time"<<std::endl;
             }
         }
         return false;
     }
     if(msg.has_status() && msg.status() == ProtocolMessage::CREATED)
     {
-        //Check to see if we've already seen shared_from_this() SYN:
+        //Check to see if we've already seen this SYN:
         if(sendtime == m_insynctime)
         {
             return false;
@@ -340,7 +340,7 @@ bool CProtocolSR::Receive(const ProtocolMessage& msg)
         return false;
     }
     //Consider the window you expect to see
-    // If the killed message is the one immediately preceeding shared_from_this()
+    // If the killed message is the one immediately preceeding this
     // message in terms of sequence number we should accept it
     Logger.Debug<<"Recv: "<<msg.sequence_num()<<" Expected "<<m_inseq<<" Using kill: "<<usekill<<" with "<<kill<<std::endl;
     if(msg.sequence_num() == m_inseq)

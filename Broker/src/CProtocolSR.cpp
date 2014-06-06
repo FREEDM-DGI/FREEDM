@@ -58,8 +58,8 @@ CLocalLogger Logger(__FILE__);
 ///////////////////////////////////////////////////////////////////////////////
 CProtocolSR::CProtocolSR(std::string uuid, boost::asio::ip::udp::endpoint endpoint)
     : IProtocol(uuid, endpoint),
-      m_timeout(CBroker::Instance().GetIOService())
-	  m_timer_active(false);
+      m_timeout(CBroker::Instance().GetIOService()),
+	  m_timer_active(false)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     //Sequence Numbers

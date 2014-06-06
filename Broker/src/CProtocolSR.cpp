@@ -365,10 +365,6 @@ bool CProtocolSR::Receive(const ProtocolMessage& msg)
         m_inseq = (msg.sequence_num()+1)%SEQUENCE_MODULO;
         return true;
     }
-    else if(usekill == true)
-    {
-                      <<msg.sequence_num()<<std::endl;
-    }
     // Justin case.
     return false;
 }

@@ -59,6 +59,7 @@ CLocalLogger Logger(__FILE__);
 CProtocolSR::CProtocolSR(std::string uuid, boost::asio::ip::udp::endpoint endpoint)
     : IProtocol(uuid, endpoint),
       m_timeout(CBroker::Instance().GetIOService())
+	  m_timer_active(false);
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     //Sequence Numbers
@@ -110,13 +111,22 @@ void CProtocolSR::Send(const ModuleMessage& msg)
     SetExpirationTimeFromNow(pm, boost::posix_time::millisec(CTimings::CSRC_DEFAULT_TIMEOUT));
     Logger.Debug<<"Set Expire time: "<< pm.expire_time() << std::endl;
 
-    if(m_window.size() == 0)
+	m_window.push_back(pm);
+    if(m_window.size() == 1)
     {
+		// Implies m_timer_active == false
         Write(pm);
-        boost::system::error_code x;
-        Resend(x);
     }
-    m_window.push_back(pm);
+	if(m_timer_active == false)
+	{
+		m_timeout.cancel();
+        m_timeout.expires_from_now(boost::posix_time::milliseconds(CTimings::CSRC_RESEND_TIME));
+        m_timeout.async_wait(boost::bind(&CProtocolSR::Resend,
+				boost::static_pointer_cast<CProtocolSR>(shared_from_this()),
+				boost::asio::placeholders::error));
+		m_timer_active = true;
+	}
+    
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -142,8 +152,9 @@ void CProtocolSR::Send(const ModuleMessage& msg)
 void CProtocolSR::Resend(const boost::system::error_code& err)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    if(!err && !GetStopped())
+	if(!err && !GetStopped())
     {
+	    m_timer_active = false;
         while(m_window.size() > 0 && MessageIsExpired(m_window.front()))
         {
             Logger.Trace<<__PRETTY_FUNCTION__<<" Flushing"<<std::endl;
@@ -187,8 +198,9 @@ void CProtocolSR::Resend(const boost::system::error_code& err)
             /// We use static pointer cast to convert the IPROTOCOL pointer to this
             /// derived type
             m_timeout.async_wait(boost::bind(&CProtocolSR::Resend,
-            boost::static_pointer_cast<CProtocolSR>(shared_from_this()),
-            boost::asio::placeholders::error));
+				boost::static_pointer_cast<CProtocolSR>(shared_from_this()),
+				boost::asio::placeholders::error));
+			m_timer_active = true;
         }
     }
     Logger.Trace<<__PRETTY_FUNCTION__<<" Resend Finished"<<std::endl;
@@ -223,12 +235,30 @@ void CProtocolSR::ReceiveACK(const ProtocolMessage& msg)
             m_window.pop_front();
             m_sendkills = false;
             m_dropped = 0;
+			// If your recieve a message, and it was the ack you expected
+			// you can go ahead and send the next message
+			m_timeout.cancel();
+			boost::system::error_code x;
+			Resend(x);
         }
-    }
-    if(m_window.size() > 0)
-    {
-        boost::system::error_code x;
-        Resend(x);
+		else
+		{
+			// The has wasn't what we expected, we should back off and wait:
+			// If we respond with a message, you can get into a very agressive
+			// cycle where you can get ACKS for messages you've already
+			// received
+			if(m_timer_active == false)
+			{
+				m_timeout.cancel();
+				m_timeout.expires_from_now(boost::posix_time::milliseconds(CTimings::CSRC_RESEND_TIME));
+				/// We use static pointer cast to convert the IPROTOCOL pointer to this
+				/// derived type
+				m_timeout.async_wait(boost::bind(&CProtocolSR::Resend,
+					boost::static_pointer_cast<CProtocolSR>(shared_from_this()),
+					boost::asio::placeholders::error));
+				m_timer_active = true;
+			}
+		}
     }
 }
 
@@ -272,19 +302,17 @@ void CProtocolSR::ReceiveACK(const ProtocolMessage& msg)
 ///////////////////////////////////////////////////////////////////////////////
 bool CProtocolSR::Receive(const ProtocolMessage& msg)
 {
-    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    unsigned int kill = 0;
-    bool usekill = false; //If true, we should accept any inseq
-    boost::posix_time::ptime sendtime = boost::posix_time::time_from_string(msg.send_time());
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;  
     if(msg.has_status() && msg.status() == ProtocolMessage::BAD_REQUEST)
     {
         //See if we are already trying to sync:
         if(!m_window.front().has_status() || m_window.front().status() != ProtocolMessage::CREATED)
         {
-            if(m_outsynctime != sendtime)
+			// See if we are getting a bad request we've already synced for.
+            if(msg.hash() != m_outsynchash)
             {
                 Logger.Debug<<"Syncronizing Connection (BAD REQUEST)"<<std::endl;
-                m_outsynctime = sendtime;
+                m_outsynchash = msg.hash();
                 SendSYN();
             }
             else
@@ -296,11 +324,12 @@ bool CProtocolSR::Receive(const ProtocolMessage& msg)
     }
     if(msg.has_status() && msg.status() == ProtocolMessage::CREATED)
     {
+		boost::posix_time::ptime sendtime = boost::posix_time::time_from_string(msg.send_time());
         //Check to see if we've already seen this SYN:
         if(sendtime == m_insynctime)
         {
+		    Logger.Debug<<"Duplicate Sync"<<std::endl;
             return false;
-            Logger.Debug<<"Duplicate Sync"<<std::endl;
         }
         Logger.Debug<<"Got Sync"<<std::endl;
         m_inseq = (msg.sequence_num()+1)%SEQUENCE_MODULO;
@@ -318,10 +347,12 @@ bool CProtocolSR::Receive(const ProtocolMessage& msg)
         ProtocolMessage outmsg;
         // Presumably, if we are here, the connection is registered
         outmsg.set_status(ProtocolMessage::BAD_REQUEST);
-        outmsg.set_sequence_num(m_inresyncs%SEQUENCE_MODULO);
+        outmsg.set_hash(msg.hash());
         Write(outmsg);
         return false;
     }
+	unsigned int kill = 0;
+    bool usekill = false; //If true, we should accept any inseq
     // See if the message contains kill data. If it does, read it and mark
     // we should use it.
     if (msg.has_kill())

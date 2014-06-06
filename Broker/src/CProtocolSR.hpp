@@ -75,7 +75,7 @@ class CProtocolSR
         /// Marks if we've sent the outsync for this connection
         bool m_outsync;
         /// Keeps track of the last resync that we've seen
-        boost::posix_time::ptime m_outsynctime;
+        google::protobuf::uint64 m_outsynchash;
         /// Marks if we should send the kill hash.
         bool m_sendkills;
         /// The hash to... MURDER.
@@ -90,6 +90,8 @@ class CProtocolSR
         static const unsigned int MAX_DROPPED_MSGS = 3;
         /// The number that have been dropped.
         unsigned int m_dropped;
+		/// Indicates if the timer is active.
+		bool m_timer_active;
 };
 
     }

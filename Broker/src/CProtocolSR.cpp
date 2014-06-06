@@ -348,6 +348,7 @@ bool CProtocolSR::Receive(const ProtocolMessage& msg)
         // Presumably, if we are here, the connection is registered
         outmsg.set_status(ProtocolMessage::BAD_REQUEST);
         outmsg.set_hash(msg.hash());
+        outmsg.set_sequence_num(m_inresyncs%SEQUENCE_MODULO);
         Write(outmsg);
         return false;
     }

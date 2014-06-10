@@ -231,14 +231,7 @@ void CClockSynchronizer::HandleExchangeResponse(const ExchangeResponseMessage& m
         }
     }
     double lag = (TDToDouble(sumlag))/rlist.size();
-    if(lag < 0.015)
-    {
-        Logger.Notice<<"Computed lag ("<<sender<<"): "<<lag<<std::endl;
-    }
-    else
-    {
-        Logger.Warn<<"Computed lag ("<<sender<<"): "<<lag<<std::endl;
-    }
+    Logger.Notice<<"Computed lag ("<<sender<<"): "<<lag<<std::endl;
     double dxbar = TDToDouble(sumx)/rlist.size();
     double dybar = TDToDouble(sumy)/rlist.size();
     boost::posix_time::time_duration xbar = DoubleToTD(dxbar);

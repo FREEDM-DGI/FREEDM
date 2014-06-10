@@ -624,7 +624,7 @@ void CAdapterFactory::StartSession()
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
     Logger.Notice << "A wild client appears!" << std::endl;
-    m_timeout.expires_from_now(boost::posix_time::seconds(2));
+    m_timeout.expires_from_now(boost::posix_time::seconds(CTimings::DEV_PNP_HEARTBEAT));
     m_timeout.async_wait(boost::bind(&CAdapterFactory::Timeout, this,
             boost::asio::placeholders::error));
 

@@ -42,7 +42,7 @@ class ProtocolMessage;
 
 /// A connection protocol
 class IProtocol
-    : public boost::noncopyable
+    : private boost::noncopyable
 {
     public:
         /// Destroy all humans

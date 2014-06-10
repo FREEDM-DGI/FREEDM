@@ -38,6 +38,8 @@
 ///                 LBAgent::HandlePeerList
 ///                 LBAgent::SetPStar
 ///                 LBAgent::PrepareForSending
+///                 LBAgent::Synchronize
+///                 LBAgent::CheckInvariant
 ///
 /// These source code files were created at Missouri University of Science and
 /// Technology, and are intended for use in teaching or research. They may be
@@ -101,7 +103,7 @@ LBAgent::LBAgent(std::string uuid)
     m_State = LBAgent::NORMAL;
     m_Leader = uuid;
 
-    m_GrossPowerFlow = 0;
+    m_PowerDifferential = 0;
     m_MigrationStep = CGlobalConfiguration::Instance().GetMigrationStep();
 }
 
@@ -452,7 +454,7 @@ void LBAgent::LoadTable()
     loadtable << "\t---------------------------------------------" << std::endl;
     loadtable << "\tSST Gateway:    " << m_Gateway << std::endl;
     loadtable << "\tNet Generation: " << m_NetGeneration << std::endl;
-    loadtable << "\tPredicted K:    " << m_GrossPowerFlow << std::endl;
+    loadtable << "\tPredicted K:    " << m_PowerDifferential << std::endl;
     loadtable << "\t---------------------------------------------" << std::endl;
 
     if(m_State == LBAgent::DEMAND)
@@ -575,24 +577,25 @@ void LBAgent::SendDraftRequest()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
-    if(m_State == LBAgent::SUPPLY)
+    if(m_State != LBAgent::SUPPLY)
     {
-        if(!m_InDemand.empty())
-        {
-            SendToPeerSet(m_InDemand, MessageDraftRequest());
-            CBroker::Instance().Schedule(m_WaitTimer, REQUEST_TIMEOUT,
-                boost::bind(&LBAgent::DraftStandard, this, boost::asio::placeholders::error));
-            m_DraftAge.clear();
-            Logger.Info << "Sent Draft Request" << std::endl;
-        }
-        else
-        {
-            Logger.Notice << "Draft Request Cancelled: no DEMAND" << std::endl;
-        }
+        Logger.Notice << "Draft Request Cancelled: not in SUPPLY" << std::endl;
+    }
+    else if(!m_InDemand.empty())
+    {
+        Logger.Notice << "Draft Request Cancelled: no DEMAND" << std::endl;
+    }
+    else if(!InvariantCheck())
+    {
+        Logger.Notice << "Draft Request Cancelled: invariant false" << std::endl;
     }
     else
     {
-        Logger.Notice << "Draft Request Cancelled: not in SUPPLY" << std::endl;
+        SendToPeerSet(m_InDemand, MessageDraftRequest());
+        CBroker::Instance().Schedule(m_WaitTimer, REQUEST_TIMEOUT,
+            boost::bind(&LBAgent::DraftStandard, this, boost::asio::placeholders::error));
+        m_DraftAge.clear();
+        Logger.Info << "Sent Draft Request" << std::endl;
     }
 }
 
@@ -789,7 +792,7 @@ void LBAgent::SendDraftSelect(PeerNodePtr peer, float step)
     {
         peer->Send(MessageDraftSelect(step));
         SetPStar(m_PredictedGateway + step);
-        m_GrossPowerFlow += step;
+        m_PowerDifferential += step;
     }
     catch(boost::system::system_error & e)
     {
@@ -892,7 +895,7 @@ ModuleMessage LBAgent::MessageTooLate(float amount)
 void LBAgent::HandleDraftAccept(const DraftAcceptMessage & m, PeerNodePtr peer)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    m_GrossPowerFlow -= m.migrate_step();
+    m_PowerDifferential -= m.migrate_step();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -913,7 +916,7 @@ void LBAgent::HandleTooLate(const TooLateMessage & m)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     SetPStar(m_PredictedGateway - m.migrate_step());
-    m_GrossPowerFlow -= m.migrate_step();
+    m_PowerDifferential -= m.migrate_step();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1111,12 +1114,20 @@ void LBAgent::HandleCollectedState(const CollectedStateMessage & m)
     Synchronize(m.gross_power_flow());
 }
 
+///////////////////////////////////////////////////////////////////////////////
+/// Synchronize
+/// @description Sets the start of phase values for member variables using the
+///     results obtained from state collection.
+/// @pre none
+/// @post sets the value of m_PowerDifferential and m_PredictedGateway
+/// @param k The new value to use for m_PowerDifferential
+///////////////////////////////////////////////////////////////////////////////
 void LBAgent::Synchronize(float k)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     
     ReadDevices();
-    m_GrossPowerFlow = k;
+    m_PowerDifferential = k;
     m_PredictedGateway = m_Gateway;
     m_Synchronized = true;
 
@@ -1124,7 +1135,53 @@ void LBAgent::Synchronize(float k)
     Logger.Info << "Reset Predicted Gateway: " << m_Gateway << std::endl;
 }
 
+///////////////////////////////////////////////////////////////////////////////
+/// InvariantCheck
+/// @description Evaluates the current truth of the physical invariant
+/// @pre none
+/// @post calculate the physical invariant using the Omega device
+/// @return the truth value of the physical invariant 
+///////////////////////////////////////////////////////////////////////////////
+bool LBAgent::InvariantCheck()
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+
+    const float OMEGA_STEADY_STATE = 376.8;
+    const int SCALING_FACTOR = 1000;
+
+    bool result = true;
+    std::set<device::CDevice::Pointer> container;
+    container = device::CDeviceManager::Instance().GetDevicesOfType("Omega");
+
+    if(container.size() > 0)
+    {
+        if(container.size() > 1)
+        {
+            Logger.Warn << "Multiple attached frequency devices." << std::endl;
+        }
+        float w  = (*container.begin())->GetState("frequency");
+        float P  = SCALING_FACTOR * m_PowerDifferential;
+        float dK = SCALING_FACTOR * (m_PowerDifferential + m_MigrationStep);
+        float freq_diff = w - OMEGA_STEADY_STATE;
+
+        Logger.Info << "Invariant Variables:"
+            << "\n\tw  = " << w
+            << "\n\tP  = " << P
+            << "\n\tdK = " << dK << std::endl;
+
+        result &= freq_diff*freq_diff*(0.1*w+0.008)+freq_diff*((5.001e-8)*P*P) > freq_diff*dK;
+
+        if(!result)
+        {
+            Logger.Info << "The physical invariant is false." << std::endl;
+        }
+    }
+
+    return result;
+}
+
 } // namespace lb
 } // namespace broker
 } // namespace freedm
+
 

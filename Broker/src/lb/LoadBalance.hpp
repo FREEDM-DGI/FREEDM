@@ -128,6 +128,8 @@ private:
     void ScheduleStateCollection();
     /// Synchronizes the Fast-Style Loadbalance with the physical system.
     void Synchronize(float k);
+    /// Check the invariant prior to starting a new migration.
+    bool InvariantCheck();
 
     /// The amount of time it takes to do an LB round
     const boost::posix_time::time_duration ROUND_TIME;
@@ -160,7 +162,7 @@ private:
     /// The amount to migrate.
     float m_MigrationStep;
     /// The powerflow used by the physical invariant.
-    float m_GrossPowerFlow;
+    float m_PowerDifferential;
 
     /// If the system is synchronized with the physical system.
     bool m_Synchronized;

@@ -826,6 +826,10 @@ void LBAgent::HandleDraftSelect(const DraftSelectMessage & m, PeerNodePtr peer)
     {
         Logger.Notice << "Rejected Draft Select: peer node in group" << std::endl;
     }
+    else if(CGlobalConfiguration::Instance().GetMaliciousFlag())
+    {
+        Logger.Notice << "(MALICIOUS) Dropped draft select message." << std::endl;
+    }
     else
     {
         float amount = m.migrate_step();

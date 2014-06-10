@@ -121,6 +121,7 @@ int main(int argc, char* argv[])
     std::string deviceCfgFile, listenIP, port, hostname, fport, id, invariantSetting;
     unsigned int globalVerbosity;
     float migrationStep;
+    bool malicious;
 
     try
     {
@@ -171,6 +172,9 @@ int main(int argc, char* argv[])
                 ( "migration-step",
                 po::value<float>(&migrationStep)->default_value(1),
                  "Size of power migrations in load balance" )
+                ( "malicious-behavior",
+                po::value<bool> ( &malicious )->default_value(false),
+                "Disable acept messages when node is in demand" )
                 ( "verbose,v",
                 po::value<unsigned int>( &globalVerbosity )->
                 implicit_value(5)->default_value(5),
@@ -268,6 +272,7 @@ int main(int argc, char* argv[])
                 boost::posix_time::milliseconds(0));
         CGlobalConfiguration::Instance().SetInvariantCheckFlag(invariantSetting);
         CGlobalConfiguration::Instance().SetMigrationStep(migrationStep);
+        CGlobalConfiguration::Instance().SetMaliciousFlag(malicious);
 
         // Specify socket endpoint address, if provided
         if( vm.count("devices-endpoint") )

@@ -10,7 +10,7 @@
 /// These source code files were created at Missouri University of Science and
 /// Technology, and are intended for use in teaching or research. They may be
 /// freely copied, modified, and redistributed as long as modified versions are
-/// clearly marked as such and shared_from_this() notice is not removed. Neither the authors
+/// clearly marked as such and this notice is not removed. Neither the authors
 /// nor Missouri S&T make any warranty, express or implied, nor assume any legal
 /// responsibility for the accuracy, completeness, or usefulness of these files
 /// or any information distributed with these files.
@@ -75,6 +75,10 @@ CProtocolSR::CProtocolSR(std::string uuid, boost::asio::ip::udp::endpoint endpoi
     m_sendkills = false;
     m_sendkill = 0;
     m_dropped = 0;
+    m_timeout.expires_from_now(boost::posix_time::milliseconds(CTimings::CSRC_RESEND_TIME));
+    m_timeout.async_wait(boost::bind(&CProtocolSR::Resend,
+            boost::static_pointer_cast<CProtocolSR>(shared_from_this()),
+            boost::asio::placeholders::error));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -117,16 +121,6 @@ void CProtocolSR::Send(const ModuleMessage& msg)
 		// Implies m_timer_active == false
         Write(pm);
     }
-	if(m_timer_active == false)
-	{
-		m_timeout.cancel();
-        m_timeout.expires_from_now(boost::posix_time::milliseconds(CTimings::CSRC_RESEND_TIME));
-        m_timeout.async_wait(boost::bind(&CProtocolSR::Resend,
-				boost::static_pointer_cast<CProtocolSR>(shared_from_this()),
-				boost::asio::placeholders::error));
-		m_timer_active = true;
-	}
-    
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -192,16 +186,13 @@ void CProtocolSR::Resend(const boost::system::error_code& err)
             }
             Logger.Trace<<__PRETTY_FUNCTION__<<" Writing"<<std::endl;
             Write(m_window.front());
-            // Head of window can be killed.
-            m_timeout.cancel();
-            m_timeout.expires_from_now(boost::posix_time::milliseconds(CTimings::CSRC_RESEND_TIME));
-            /// We use static pointer cast to convert the IPROTOCOL pointer to this
-            /// derived type
-            m_timeout.async_wait(boost::bind(&CProtocolSR::Resend,
-				boost::static_pointer_cast<CProtocolSR>(shared_from_this()),
-				boost::asio::placeholders::error));
-			m_timer_active = true;
         }
+        /// We use static pointer cast to convert the IPROTOCOL pointer to this
+        /// derived type
+        m_timeout.expires_from_now(boost::posix_time::milliseconds(CTimings::CSRC_RESEND_TIME));
+        m_timeout.async_wait(boost::bind(&CProtocolSR::Resend,
+            boost::static_pointer_cast<CProtocolSR>(shared_from_this()),
+            boost::asio::placeholders::error));
     }
     Logger.Trace<<__PRETTY_FUNCTION__<<" Resend Finished"<<std::endl;
 }
@@ -241,24 +232,6 @@ void CProtocolSR::ReceiveACK(const ProtocolMessage& msg)
 			boost::system::error_code x;
 			Resend(x);
         }
-		else
-		{
-			// The has wasn't what we expected, we should back off and wait:
-			// If we respond with a message, you can get into a very agressive
-			// cycle where you can get ACKS for messages you've already
-			// received
-			if(m_timer_active == false)
-			{
-				m_timeout.cancel();
-				m_timeout.expires_from_now(boost::posix_time::milliseconds(CTimings::CSRC_RESEND_TIME));
-				/// We use static pointer cast to convert the IPROTOCOL pointer to this
-				/// derived type
-				m_timeout.async_wait(boost::bind(&CProtocolSR::Resend,
-					boost::static_pointer_cast<CProtocolSR>(shared_from_this()),
-					boost::asio::placeholders::error));
-				m_timer_active = true;
-			}
-		}
     }
 }
 
@@ -417,14 +390,6 @@ void CProtocolSR::SendACK(const ProtocolMessage& msg)
     outmsg.set_expire_time(msg.expire_time());
     outmsg.set_hash(msg.hash());
     Write(outmsg);
-    /// Hook into resend until the message expires.
-    m_timeout.cancel();
-    m_timeout.expires_from_now(boost::posix_time::milliseconds(CTimings::CSRC_RESEND_TIME));
-    /// We use static pointer cast to convert the IPROTOCOL pointer to this
-    /// derived type
-    m_timeout.async_wait(boost::bind(&CProtocolSR::Resend,
-        boost::static_pointer_cast<CProtocolSR>(shared_from_this()),
-        boost::asio::placeholders::error));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -467,9 +432,6 @@ void CProtocolSR::SendSYN()
     Write(outmsg);
     m_window.push_front(outmsg);
     m_outsync = true;
-    /// Hook into resend until the message expires.
-    boost::system::error_code x;
-    Resend(x);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

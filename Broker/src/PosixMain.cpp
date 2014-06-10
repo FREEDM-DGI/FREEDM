@@ -118,7 +118,7 @@ int main(int argc, char* argv[])
     po::variables_map vm;
     std::ifstream ifs;
     std::string cfgFile, loggerCfgFile, timingsFile, adapterCfgFile, topologyCfgFile;
-    std::string deviceCfgFile, listenIP, port, hostname, fport, id, invariantSetting;
+    std::string deviceCfgFile, listenIP, port, hostname, fport, id;
     unsigned int globalVerbosity;
     float migrationStep;
     bool malicious;
@@ -166,9 +166,6 @@ int main(int argc, char* argv[])
                 po::value<std::string > ( &topologyCfgFile )->
                 default_value(""),
                 "name of the topology configuration file" )
-                ( "check-lb-invariants",
-                po::value<std::string > ( &invariantSetting )->default_value("0"),
-                "Disable invariant check by default" )
                 ( "migration-step",
                 po::value<float>(&migrationStep)->default_value(1),
                  "Size of power migrations in load balance" )
@@ -270,7 +267,6 @@ int main(int argc, char* argv[])
         CGlobalConfiguration::Instance().SetListenAddress(listenIP);
         CGlobalConfiguration::Instance().SetClockSkew(
                 boost::posix_time::milliseconds(0));
-        CGlobalConfiguration::Instance().SetInvariantCheckFlag(invariantSetting);
         CGlobalConfiguration::Instance().SetMigrationStep(migrationStep);
         CGlobalConfiguration::Instance().SetMaliciousFlag(malicious);
 

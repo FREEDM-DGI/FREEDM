@@ -241,7 +241,7 @@ void CProtocolSR::ReceiveACK(const ProtocolMessage& msg)
 ///   be accepted. If this function returns true, the message is passed to
 ///   the dispatcher. Since this message accepts SYNs there might be times
 ///   when processing and state changes but the message is marked as "rejected"
-///   shared_from_this() is normal.
+///   this is normal.
 /// @pre Accept logic can be complicated, there are several scenarios that
 ///      should be addressed.
 ///      1) A bad request has been received

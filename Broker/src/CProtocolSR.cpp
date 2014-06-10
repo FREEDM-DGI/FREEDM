@@ -20,6 +20,7 @@
 /// Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
 ////////////////////////////////////////////////////////////////////////////////
 
+#include "CLogger.hpp"
 #include "CProtocolSR.hpp"
 #include "CTimings.hpp"
 #include "CBroker.hpp"
@@ -42,6 +43,7 @@ namespace freedm {
 namespace {
 
 /// This file's logger.
+CLocalLogger Logger(__FILE__);
 
 }
 
@@ -59,6 +61,7 @@ CProtocolSR::CProtocolSR(std::string uuid, boost::asio::ip::udp::endpoint endpoi
       m_timeout(CBroker::Instance().GetIOService()),
 	  m_timer_active(false)
 {
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     //Sequence Numbers
     m_outseq = 0;
     m_inseq = 0;
@@ -90,6 +93,7 @@ CProtocolSR::CProtocolSR(std::string uuid, boost::asio::ip::udp::endpoint endpoi
 ///////////////////////////////////////////////////////////////////////////////
 void CProtocolSR::Send(const ModuleMessage& msg)
 {
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
     if(m_outsync == false)
     {
@@ -105,6 +109,7 @@ void CProtocolSR::Send(const ModuleMessage& msg)
     pm.set_hash(ComputeMessageHash(pm.module_message()));
 
     SetExpirationTimeFromNow(pm, boost::posix_time::millisec(CTimings::CSRC_DEFAULT_TIMEOUT));
+    Logger.Debug<<"Set Expire time: "<< pm.expire_time() << std::endl;
 
 	m_window.push_back(pm);
     if(m_window.size() == 1)
@@ -146,22 +151,27 @@ void CProtocolSR::Send(const ModuleMessage& msg)
 ///////////////////////////////////////////////////////////////////////////////
 void CProtocolSR::Resend(const boost::system::error_code& err)
 {
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 	if(!err && !GetStopped())
     {
 	    m_timer_active = false;
         while(m_window.size() > 0 && MessageIsExpired(m_window.front()))
         {
+            Logger.Trace<<__PRETTY_FUNCTION__<<" Flushing"<<std::endl;
             //First message in the window should be the only one
             //ever to have been written.
             m_sendkills = true;
+            Logger.Debug<<"Message Expired: "<<m_window.front().DebugString();
             m_window.pop_front();
             m_dropped++;
         }
         if(m_dropped > MAX_DROPPED_MSGS)
         {
+            Logger.Warn<<"Connection to "<<GetUUID()<<" has lost "<<m_dropped<<" messages. Attempting to reconnect."<<std::endl;
             Stop();
             return;
         }
+        Logger.Trace<<__PRETTY_FUNCTION__<<" Flushed Expired"<<std::endl;
         if(m_window.size() > 0)
         {
             if(m_sendkills &&  m_sendkill > m_window.front().sequence_num())
@@ -180,6 +190,7 @@ void CProtocolSR::Resend(const boost::system::error_code& err)
                 // (and whose ack has been received)
                 m_window.front().set_kill(m_sendkill);
             }
+            Logger.Trace<<__PRETTY_FUNCTION__<<" Writing"<<std::endl;
             Write(m_window.front());
             // Head of window can be killed.
             m_timeout.cancel();
@@ -192,6 +203,7 @@ void CProtocolSR::Resend(const boost::system::error_code& err)
 			m_timer_active = true;
         }
     }
+    Logger.Trace<<__PRETTY_FUNCTION__<<" Resend Finished"<<std::endl;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -208,12 +220,14 @@ void CProtocolSR::Resend(const boost::system::error_code& err)
 ///////////////////////////////////////////////////////////////////////////////
 void CProtocolSR::ReceiveACK(const ProtocolMessage& msg)
 {
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     unsigned int seq = msg.sequence_num();
     if(m_window.size() > 0)
     {
         // Assuming hash collisions are small, we will check the hash
         // of the front message. On hit, we can accept the acknowledge.
         unsigned int fseq = m_window.front().sequence_num();
+        Logger.Debug<<"Received ACK "<<seq<<" expecting ACK "<<fseq<<std::endl;
         google::protobuf::uint64 expectedHash = m_window.front().hash();
         if(fseq == seq && expectedHash == msg.hash())
         {
@@ -288,6 +302,7 @@ void CProtocolSR::ReceiveACK(const ProtocolMessage& msg)
 ///////////////////////////////////////////////////////////////////////////////
 bool CProtocolSR::Receive(const ProtocolMessage& msg)
 {
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;  
     if(msg.has_status() && msg.status() == ProtocolMessage::BAD_REQUEST)
     {
         //See if we are already trying to sync:
@@ -296,11 +311,13 @@ bool CProtocolSR::Receive(const ProtocolMessage& msg)
 			// See if we are getting a bad request we've already synced for.
             if(msg.hash() != m_outsynchash)
             {
+                Logger.Debug<<"Syncronizing Connection (BAD REQUEST)"<<std::endl;
                 m_outsynchash = msg.hash();
                 SendSYN();
             }
             else
             {
+                Logger.Debug<<"Already synced for this time"<<std::endl;
             }
         }
         return false;
@@ -311,8 +328,10 @@ bool CProtocolSR::Receive(const ProtocolMessage& msg)
         //Check to see if we've already seen this SYN:
         if(sendtime == m_insynctime)
         {
+		    Logger.Debug<<"Duplicate Sync"<<std::endl;
             return false;
         }
+        Logger.Debug<<"Got Sync"<<std::endl;
         m_inseq = (msg.sequence_num()+1)%SEQUENCE_MODULO;
         m_insynctime = sendtime;
         m_inresyncs++;
@@ -322,6 +341,7 @@ bool CProtocolSR::Receive(const ProtocolMessage& msg)
     }
     if(m_insync == false)
     {
+        Logger.Debug<<"Connection Needs Resync"<<std::endl;
         //If the connection hasn't been synchronized, we want to
         //tell them it is a bad request so they know they need to sync.
         ProtocolMessage outmsg;
@@ -354,6 +374,7 @@ bool CProtocolSR::Receive(const ProtocolMessage& msg)
     //Consider the window you expect to see
     // If the killed message is the one immediately preceeding this
     // message in terms of sequence number we should accept it
+    Logger.Debug<<"Recv: "<<msg.sequence_num()<<" Expected "<<m_inseq<<" Using kill: "<<usekill<<" with "<<kill<<std::endl;
     if(msg.sequence_num() == m_inseq)
     {
         m_inseq = (m_inseq+1)%SEQUENCE_MODULO;
@@ -367,6 +388,7 @@ bool CProtocolSR::Receive(const ProtocolMessage& msg)
     }
     else if(usekill == true)
     {
+        Logger.Debug<<"KILL: "<<kill<<" INSEQ "<<m_inseq<<" SEQ: "
                       <<msg.sequence_num()<<std::endl;
     }
     // Justin case.
@@ -385,11 +407,13 @@ bool CProtocolSR::Receive(const ProtocolMessage& msg)
 ///////////////////////////////////////////////////////////////////////////////
 void CProtocolSR::SendACK(const ProtocolMessage& msg)
 {
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     unsigned int seq = msg.sequence_num();
     ProtocolMessage outmsg;
     // Presumably, if we are here, the connection is registered
     outmsg.set_status(ProtocolMessage::ACCEPTED);
     outmsg.set_sequence_num(seq);
+    Logger.Debug<<"Generating ACK. Source exp time "<<msg.expire_time()<<std::endl;
     outmsg.set_expire_time(msg.expire_time());
     outmsg.set_hash(msg.hash());
     Write(outmsg);
@@ -411,6 +435,7 @@ void CProtocolSR::SendACK(const ProtocolMessage& msg)
 ///////////////////////////////////////////////////////////////////////////////
 void CProtocolSR::SendSYN()
 {
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     unsigned int seq = m_outseq;
     if(m_window.size() == 0)
     {
@@ -455,6 +480,7 @@ void CProtocolSR::SendSYN()
 ///////////////////////////////////////////////////////////////////////////////
 void CProtocolSR::Write(ProtocolMessage& msg)
 {
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
     if(!msg.has_expire_time())
     {

@@ -13,12 +13,10 @@
     <deviceType>
         <id>Drer</id>
         <state>generation</state>
-        <command>generation</command>
     </deviceType>
     <deviceType>
         <id>Load</id>
         <state>drain</state>
-        <command>drain</command>
     </deviceType>
     <deviceType>
         <id>Fid</id>

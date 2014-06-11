@@ -237,7 +237,7 @@ void LBAgent::MoveToPeerSet(PeerSet & ps, PeerNodePtr peer)
 void LBAgent::SendToPeerSet(const PeerSet & ps, const ModuleMessage & m)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    Logger.Notice << "Sending " << m.DebugString() << std::endl;
+    Logger.Info << "Sending " << m.DebugString() << std::endl;
 
     BOOST_FOREACH(PeerNodePtr peer, ps | boost::adaptors::map_values)
     {

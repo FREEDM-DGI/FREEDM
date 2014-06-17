@@ -76,6 +76,8 @@ class CGlobalConfiguration : private boost::noncopyable
         void SetMigrationStep(float v) { m_migrationStep = v; }
         /// Set the malicious load balance flag
         void SetMaliciousFlag(bool flag) { m_malicious = flag; }
+        /// Set the invariant check flag
+        void SetInvariantCheck(bool flag) { m_invariant = flag; }
         /// Get the hostname
         std::string GetHostname() const { return m_hostname; };
         /// Get the port
@@ -103,6 +105,8 @@ class CGlobalConfiguration : private boost::noncopyable
         float GetMigrationStep() const { return m_migrationStep; }
         /// Get the malicious load balance flag
         bool GetMaliciousFlag() const { return m_malicious; }
+        /// Get the invariant check flag
+        bool GetInvariantCheck() const { return m_invariant; }
     private:
         std::string m_hostname; /// Node hostname
         std::string m_port; /// Port number
@@ -116,6 +120,7 @@ class CGlobalConfiguration : private boost::noncopyable
         std::string m_topologyConfigPath; /// Path to the topology config
         float m_migrationStep; /// Size of a load balance migration
         bool m_malicious; // Flag to indicate whether load balance is malicious
+        bool m_invariant; // Flag that indicates whether to check the invariant
 };
 
 } // namespace broker

@@ -121,7 +121,7 @@ int main(int argc, char* argv[])
     std::string deviceCfgFile, listenIP, port, hostname, fport, id;
     unsigned int globalVerbosity;
     float migrationStep;
-    bool malicious;
+    bool malicious, invariant;
 
     try
     {
@@ -172,6 +172,9 @@ int main(int argc, char* argv[])
                 ( "malicious-behavior",
                 po::value<bool> ( &malicious )->default_value(false),
                 "Disable acept messages when node is in demand" )
+                ( "check-invariant",
+                po::value<bool> ( &invariant )->default_value(false),
+                "Check the invariant prior to power migrations" )
                 ( "verbose,v",
                 po::value<unsigned int>( &globalVerbosity )->
                 implicit_value(5)->default_value(5),

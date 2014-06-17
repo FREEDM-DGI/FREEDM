@@ -1157,7 +1157,7 @@ bool LBAgent::InvariantCheck()
     std::set<device::CDevice::Pointer> container;
     container = device::CDeviceManager::Instance().GetDevicesOfType("Omega");
 
-    if(container.size() > 0)
+    if(container.size() > 0 && CGlobalConfiguration::Instance().GetInvariantCheck())
     {
         if(container.size() > 1)
         {

@@ -320,6 +320,10 @@ void LBAgent::LoadManage(const boost::system::error_code & error)
             {
                 SendDraftRequest();
             }
+            else
+            {
+                Logger.Notice << "Draft Request Cancelled: state too old" << std::endl;
+            }
         }
         else
         {

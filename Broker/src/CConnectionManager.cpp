@@ -256,6 +256,7 @@ ConnectionPtr CConnectionManager::CreateConnection(std::string uuid, boost::asio
 {
     if(HasConnection(uuid))
         return m_connections.left.at(uuid);
+    Logger.Warn<<"EP = "<<endpoint<<std::endl;
     // Create a new CConnection object for this host
     Logger.Debug<<"Constructing CConnection"<<std::endl;
     ConnectionPtr c = boost::make_shared<CConnection>(uuid, endpoint);

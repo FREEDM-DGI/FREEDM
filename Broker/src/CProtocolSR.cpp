@@ -115,12 +115,8 @@ void CProtocolSR::Send(const ModuleMessage& msg)
     if(m_window.size() == 1)
     {
 		// Implies m_timer_active == false
-        Write(pm);
-        m_timeout.cancel();
-        m_timeout.expires_from_now(boost::posix_time::milliseconds(CTimings::CSRC_RESEND_TIME));
-        m_timeout.async_wait(boost::bind(&CProtocolSR::Resend,
-                boost::static_pointer_cast<CProtocolSR>(shared_from_this()),
-                boost::asio::placeholders::error));
+        boost::system::error_code x;
+        Resend(x);
     }
 }
 

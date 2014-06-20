@@ -61,7 +61,7 @@ const int QUERY_INTERVAL = 10000;
 ///////////////////////////////////////////////////////////////////////////////
 CClockSynchronizer::CClockSynchronizer(boost::asio::io_service& ios)
     : m_exchangetimer(ios),
-      m_uuid(CConnectionManager::Instance().GetUUID())
+      m_uuid(CGlobalConfiguration::Instance().GetUUID())
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     MapIndex ii(m_uuid,m_uuid);

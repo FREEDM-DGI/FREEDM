@@ -129,13 +129,9 @@ void CListener::HandleRead(const boost::system::error_code& e,
         ScheduleListen();
     }
 
-    std::stringstream iss;
-    std::ostreambuf_iterator<char> output(iss);
-    std::copy(m_buffer.begin(), m_buffer.begin()+bytes_transferred, output);
-
     Logger.Debug<<"Loading protobuf"<<std::endl;
     ProtocolMessage pm;
-    if(!pm.ParseFromIstream(&iss))
+    if(!pm.ParseFromArray(m_buffer.begin(), bytes_transferred))
     {
         Logger.Error<<"Failed to load protobuf"<<std::endl;
         ScheduleListen();
@@ -151,20 +147,16 @@ void CListener::HandleRead(const boost::system::error_code& e,
     }
 #endif
 
-    if(!IsValidPort(pm.source_port()))
-    {
-        Logger.Warn<<"Received message with invalid source port"<<pm.source_port()<<std::endl;
-        ScheduleListen();
-        return;
-    }
-
+    Logger.Debug<<"Fetching Connection"<<std::endl;
     std::string uuid = pm.source_uuid();
-    SRemoteHost host = { pm.source_hostname(), pm.source_port() };
+    /// We can make the remote host from the endpoint:
+    SRemoteHost host = { m_recv_from.address().to_string(), boost::lexical_cast<std::string>(m_recv_from.port()) };
+
     ///Make sure the hostname is registered:
     CConnectionManager::Instance().PutHost(uuid,host);
+
     ///Get the pointer to the connection:
-    ConnectionPtr conn =
-            CConnectionManager::Instance().GetConnectionByUUID(uuid);
+    ConnectionPtr conn = CConnectionManager::Instance().CreateConnection(uuid, m_recv_from);
     Logger.Debug<<"Fetched Connection"<<std::endl;
 
     if(pm.status() == ProtocolMessage::ACCEPTED)
@@ -199,10 +191,9 @@ void CListener::ScheduleListen()
     Logger.Debug<<"Listening for next message"<<std::endl;
     // We don't care where the messages are coming from, but async_receive_from
     // requires that this variable remain valid until the handler is called.
-    static boost::asio::ip::udp::endpoint ignored_sender_endpoint;
     m_socket.async_receive_from(
         boost::asio::buffer(m_buffer, CGlobalConfiguration::MAX_PACKET_SIZE),
-        ignored_sender_endpoint, boost::bind(&CListener::HandleRead, this,
+        m_recv_from, boost::bind(&CListener::HandleRead, this,
             boost::asio::placeholders::error,
             boost::asio::placeholders::bytes_transferred));
 }

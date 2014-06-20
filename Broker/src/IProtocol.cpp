@@ -30,6 +30,8 @@
 #include "CLogger.hpp"
 #include "Messages.hpp"
 #include "messages/ProtocolMessage.pb.h"
+#include "CBroker.hpp"
+#include "CListener.hpp"
 
 #include <stdexcept>
 
@@ -43,6 +45,14 @@ CLocalLogger Logger(__FILE__);
 
 }
 
+IProtocol::IProtocol(std::string uuid, boost::asio::ip::udp::endpoint endpoint)
+    : m_endpoint(endpoint)
+    , m_uuid(uuid)
+    , m_stopped(false)
+    , m_reliability(100)
+{
+    //pass
+}
 ///////////////////////////////////////////////////////////////////////////////
 /// Sends a message over the connection associated with this IProtocol. This
 /// is a blocking send. An asynchronous send is not currently provided because
@@ -61,9 +71,7 @@ void IProtocol::Write(ProtocolMessage& msg)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
-    msg.set_source_uuid(CConnectionManager::Instance().GetUUID());
-    msg.set_source_hostname(CConnectionManager::Instance().GetHost().hostname);
-    msg.set_source_port(CConnectionManager::Instance().GetHost().port);
+    msg.set_source_uuid(CGlobalConfiguration::Instance().GetUUID());
     StampMessageSendtime(msg);
 
     msg.CheckInitialized();
@@ -80,10 +88,10 @@ void IProtocol::Write(ProtocolMessage& msg)
     }
 
     #ifdef CUSTOMNETWORK
-    if((rand()%100) >= GetConnection()->GetReliability())
+    if((rand()%100) >= GetReliability())
     {
-        Logger.Info<<"Outgoing Packet Dropped ("<<GetConnection()->GetReliability()
-                      <<") -> "<<GetConnection()->GetUUID()<<std::endl;
+        Logger.Info<<"Outgoing Packet Dropped ("<<GetReliability()
+                      <<") -> "<<GetUUID()<<std::endl;
         return;
     }
     #endif
@@ -95,14 +103,53 @@ void IProtocol::Write(ProtocolMessage& msg)
 
     try
     {
-        GetConnection().GetSocket().send(
-            boost::asio::buffer(&write_buffer[0], msg.ByteSize()));
+        CListener::Instance().GetSocket().send_to(
+            boost::asio::buffer(&write_buffer[0], msg.ByteSize()),
+            m_endpoint
+        );
     }
     catch(boost::system::system_error &e)
     {
         Logger.Debug << "Writing Failed: " << e.what() << std::endl;
-        GetConnection().Stop();
+        Stop();
     }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+/// Gets the UUID of the DGI on the other end of this connection.
+///
+/// @return the peer's UUID
+///////////////////////////////////////////////////////////////////////////////
+std::string IProtocol::GetUUID() const
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+
+    return m_uuid;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+/// Set the connection reliability for DCUSTOMNETWORK. 0 all packets are
+/// artifically dropped. 100 means no packets are artifically dropped.
+///
+/// @param r between 0 and 100
+///////////////////////////////////////////////////////////////////////////////
+void IProtocol::SetReliability(int r)
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+
+    m_reliability = r;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+/// Get the connection reliability for DCUSTOMNETWORK
+///
+/// @return percentage of packets that are allowed through
+///////////////////////////////////////////////////////////////////////////////
+int IProtocol::GetReliability() const
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+
+    return m_reliability;
 }
 
     }

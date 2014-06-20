@@ -38,7 +38,7 @@ class CProtocolSU : public IProtocol
 {
     public:
         /// Initializes the protocol with the underlying connection
-        explicit CProtocolSU(CConnection& conn);
+        explicit CProtocolSU(std::string uuid, boost::asio::ip::udp::endpoint endpoint);
         /// Public facing send function that sends a message
         void Send(const ModuleMessage& msg);
         /// Public facing function that handles marking down ACKs for sent messages
@@ -48,7 +48,7 @@ class CProtocolSU : public IProtocol
         /// Handles Writing an ack for the input message to the channel
         void SendACK(const ProtocolMessage& msg);
         /// Stops the timers
-        void Stop() { m_timeout.cancel(); };
+        void Stop() { m_timeout.cancel(); GetSocket().close(); };
     private:
         /// Resend outstanding messages
         void Resend(const boost::system::error_code& err);

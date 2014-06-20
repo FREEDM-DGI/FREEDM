@@ -62,13 +62,16 @@ public:
     typedef boost::shared_ptr<CConnection> ConnectionPtr;
 
     /// Construct a CConnection to a peer
-    CConnection(std::string uuid);
+    CConnection(std::string uuid, boost::asio::ip::udp::endpoint endpoint);
 
     /// Destructor
     ~CConnection();
 
     /// Stop all asynchronous operations associated with the CConnection.
     void Stop();
+
+    /// Tests to see if the protocol is stopped
+    bool GetStopped();
 
     /// Puts a message into the channel.
     void Send(const ModuleMessage& msg);
@@ -82,30 +85,18 @@ public:
     /// Change Phase Event
     void ChangePhase(bool newround);
 
-    /// Get a socket connected to a single peer DGI
-    boost::asio::ip::udp::socket& GetSocket();
-
     /// Get associated UUID
     std::string GetUUID() const;
 
     /// Set the connection reliability for DCUSTOMNETWORK
     void SetReliability(int r);
-
+    
     /// Get the connection reliability for DCUSTOMNETWORK
     int GetReliability() const;
-
 private:
-    /// Datagram socket connected to a single peer DGI
-    boost::asio::ip::udp::socket m_socket;
 
     /// The custom network protocol to use for sending/receiving messages
-    IProtocol* m_protocol;
-
-    /// The UUID of the remote endpoint for the connection
-    std::string m_uuid;
-
-    /// The reliability of the connection (FOR -DCUSTOMNETWORK)
-    int m_reliability;
+    boost::shared_ptr<IProtocol> m_protocol;
 };
 
 typedef boost::shared_ptr<CConnection> ConnectionPtr;

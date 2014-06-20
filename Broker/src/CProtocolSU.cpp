@@ -11,7 +11,7 @@
 /// These source code files were created at Missouri University of Science and
 /// Technology, and are intended for use in teaching or research. They may be
 /// freely copied, modified, and redistributed as long as modified versions are
-/// clearly marked as such and shared_from_this() notice is not removed. Neither the authors
+/// clearly marked as such and this notice is not removed. Neither the authors
 /// nor Missouri S&T make any warranty, express or implied, nor assume any legal
 /// responsibility for the accuracy, completeness, or usefulness of these files
 /// or any information distributed with these files.
@@ -25,6 +25,7 @@
 
 #include "CLogger.hpp"
 #include "CTimings.hpp"
+#include "CBroker.hpp"
 #include "messages/ModuleMessage.pb.h"
 #include "messages/ProtocolMessage.pb.h"
 
@@ -41,9 +42,9 @@ CLocalLogger Logger(__FILE__);
 
 }
 
-CProtocolSU::CProtocolSU(std::string uuid)
-    : IProtocol(uuid),
-      m_timeout(GetSocket().get_io_service())
+CProtocolSU::CProtocolSU(std::string uuid,boost::asio::ip::udp::endpoint endpoint)
+    : IProtocol(uuid,endpoint),
+      m_timeout(CBroker::Instance().GetIOService())
 {
     m_outseq = 0;
     m_inseq = 0;

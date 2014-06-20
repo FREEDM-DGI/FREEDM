@@ -10,7 +10,7 @@
 /// These source code files were created at Missouri University of Science and
 /// Technology, and are intended for use in teaching or research. They may be
 /// freely copied, modified, and redistributed as long as modified versions are
-/// clearly marked as such and shared_from_this() notice is not removed. Neither the authors
+/// clearly marked as such and this notice is not removed. Neither the authors
 /// nor Missouri S&T make any warranty, express or implied, nor assume any legal
 /// responsibility for the accuracy, completeness, or usefulness of these files
 /// or any information distributed with these files.
@@ -23,6 +23,7 @@
 #include "CLogger.hpp"
 #include "CProtocolSR.hpp"
 #include "CTimings.hpp"
+#include "CBroker.hpp"
 
 #include "Messages.hpp"
 #include "messages/ProtocolMessage.pb.h"
@@ -55,9 +56,10 @@ CLocalLogger Logger(__FILE__);
 ///       message will be numbered as 0 for outgoing and the timer is not set.
 /// @param uuid The peer this connection is made to.
 ///////////////////////////////////////////////////////////////////////////////
-CProtocolSR::CProtocolSR(std::string uuid)
-    : IProtocol(uuid),
-      m_timeout(GetSocket().get_io_service())
+CProtocolSR::CProtocolSR(std::string uuid, boost::asio::ip::udp::endpoint endpoint)
+    : IProtocol(uuid, endpoint),
+      m_timeout(CBroker::Instance().GetIOService()),
+      m_timer_active(false)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     //Sequence Numbers
@@ -77,7 +79,7 @@ CProtocolSR::CProtocolSR(std::string uuid)
 
 ///////////////////////////////////////////////////////////////////////////////
 /// CProtocolSR::CProtocolSR
-/// @description Send function for the CProtocolSR. Sending using shared_from_this()
+/// @description Send function for the CProtocolSR. Sending using this
 ///   protocol involves an alternating bit scheme. Messages can expire and
 ///   delivery won't be attempted after the deadline is passed. Killed messages
 ///   are noted in the next outgoing message. The receiver tracks the killed
@@ -97,6 +99,12 @@ void CProtocolSR::Send(const ModuleMessage& msg)
     {
         SendSYN();
     }
+    if(m_timer_active == false)
+    {
+        boost::system::error_code x;
+        Resend(x);
+        m_timer_active = true;
+    }
 
     ProtocolMessage pm;
     pm.mutable_module_message()->CopyFrom(msg);
@@ -109,13 +117,11 @@ void CProtocolSR::Send(const ModuleMessage& msg)
     SetExpirationTimeFromNow(pm, boost::posix_time::millisec(CTimings::CSRC_DEFAULT_TIMEOUT));
     Logger.Debug<<"Set Expire time: "<< pm.expire_time() << std::endl;
 
-    if(m_window.size() == 0)
+	m_window.push_back(pm);
+    if(m_window.size() == 1)
     {
         Write(pm);
-        boost::system::error_code x;
-        Resend(x);
     }
-    m_window.push_back(pm);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -141,7 +147,7 @@ void CProtocolSR::Send(const ModuleMessage& msg)
 void CProtocolSR::Resend(const boost::system::error_code& err)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    if(!err && !GetStopped())
+	if(!err && !GetStopped())
     {
         while(m_window.size() > 0 && MessageIsExpired(m_window.front()))
         {
@@ -180,15 +186,13 @@ void CProtocolSR::Resend(const boost::system::error_code& err)
             }
             Logger.Trace<<__PRETTY_FUNCTION__<<" Writing"<<std::endl;
             Write(m_window.front());
-            // Head of window can be killed.
-            m_timeout.cancel();
-            m_timeout.expires_from_now(boost::posix_time::milliseconds(CTimings::CSRC_RESEND_TIME));
-            /// We use static pointer cast to convert the IPROTOCOL pointer to this
-            /// derived type
-            m_timeout.async_wait(boost::bind(&CProtocolSR::Resend,
+        }
+        /// We use static pointer cast to convert the IPROTOCOL pointer to this
+        /// derived type
+        m_timeout.expires_from_now(boost::posix_time::milliseconds(CTimings::CSRC_RESEND_TIME));
+        m_timeout.async_wait(boost::bind(&CProtocolSR::Resend,
             boost::static_pointer_cast<CProtocolSR>(shared_from_this()),
             boost::asio::placeholders::error));
-        }
     }
     Logger.Trace<<__PRETTY_FUNCTION__<<" Resend Finished"<<std::endl;
 }
@@ -222,22 +226,19 @@ void CProtocolSR::ReceiveACK(const ProtocolMessage& msg)
             m_window.pop_front();
             m_sendkills = false;
             m_dropped = 0;
+            // TODO: Pull resend code into seperate function so you can resend
+            // w/o distrupting timer.
         }
-    }
-    if(m_window.size() > 0)
-    {
-        boost::system::error_code x;
-        Resend(x);
     }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 /// CProtocolSR::Receive
 /// @description Accepts a message into the protocol, if that message should
-///   be accepted. If shared_from_this() function returns true, the message is passed to
-///   the dispatcher. Since shared_from_this() message accepts SYNs there might be times
+///   be accepted. If this function returns true, the message is passed to
+///   the dispatcher. Since this message accepts SYNs there might be times
 ///   when processing and state changes but the message is marked as "rejected"
-///   shared_from_this() is normal.
+///   this is normal.
 /// @pre Accept logic can be complicated, there are several scenarios that
 ///      should be addressed.
 ///      1) A bad request has been received
@@ -271,35 +272,34 @@ void CProtocolSR::ReceiveACK(const ProtocolMessage& msg)
 ///////////////////////////////////////////////////////////////////////////////
 bool CProtocolSR::Receive(const ProtocolMessage& msg)
 {
-    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    unsigned int kill = 0;
-    bool usekill = false; //If true, we should accept any inseq
-    boost::posix_time::ptime sendtime = boost::posix_time::time_from_string(msg.send_time());
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;  
     if(msg.has_status() && msg.status() == ProtocolMessage::BAD_REQUEST)
     {
         //See if we are already trying to sync:
-        if(m_window.front().has_status() && m_window.front().status() != ProtocolMessage::CREATED)
+        if(!m_window.front().has_status() || m_window.front().status() != ProtocolMessage::CREATED)
         {
-            if(m_outsynctime != sendtime)
+			// See if we are getting a bad request we've already synced for.
+            if(msg.hash() != m_outsynchash)
             {
                 Logger.Debug<<"Syncronizing Connection (BAD REQUEST)"<<std::endl;
-                m_outsynctime = sendtime;
+                m_outsynchash = msg.hash();
                 SendSYN();
             }
             else
             {
-                Logger.Debug<<"Already synced for shared_from_this() time"<<std::endl;
+                Logger.Debug<<"Already synced for this time"<<std::endl;
             }
         }
         return false;
     }
     if(msg.has_status() && msg.status() == ProtocolMessage::CREATED)
     {
-        //Check to see if we've already seen shared_from_this() SYN:
+		boost::posix_time::ptime sendtime = boost::posix_time::time_from_string(msg.send_time());
+        //Check to see if we've already seen this SYN:
         if(sendtime == m_insynctime)
         {
+		    Logger.Debug<<"Duplicate Sync"<<std::endl;
             return false;
-            Logger.Debug<<"Duplicate Sync"<<std::endl;
         }
         Logger.Debug<<"Got Sync"<<std::endl;
         m_inseq = (msg.sequence_num()+1)%SEQUENCE_MODULO;
@@ -317,10 +317,13 @@ bool CProtocolSR::Receive(const ProtocolMessage& msg)
         ProtocolMessage outmsg;
         // Presumably, if we are here, the connection is registered
         outmsg.set_status(ProtocolMessage::BAD_REQUEST);
+        outmsg.set_hash(msg.hash());
         outmsg.set_sequence_num(m_inresyncs%SEQUENCE_MODULO);
         Write(outmsg);
         return false;
     }
+	unsigned int kill = 0;
+    bool usekill = false; //If true, we should accept any inseq
     // See if the message contains kill data. If it does, read it and mark
     // we should use it.
     if (msg.has_kill())
@@ -339,7 +342,7 @@ bool CProtocolSR::Receive(const ProtocolMessage& msg)
         return false;
     }
     //Consider the window you expect to see
-    // If the killed message is the one immediately preceeding shared_from_this()
+    // If the killed message is the one immediately preceeding this
     // message in terms of sequence number we should accept it
     Logger.Debug<<"Recv: "<<msg.sequence_num()<<" Expected "<<m_inseq<<" Using kill: "<<usekill<<" with "<<kill<<std::endl;
     if(msg.sequence_num() == m_inseq)
@@ -384,14 +387,6 @@ void CProtocolSR::SendACK(const ProtocolMessage& msg)
     outmsg.set_expire_time(msg.expire_time());
     outmsg.set_hash(msg.hash());
     Write(outmsg);
-    /// Hook into resend until the message expires.
-    m_timeout.cancel();
-    m_timeout.expires_from_now(boost::posix_time::milliseconds(CTimings::CSRC_RESEND_TIME));
-    /// We use static pointer cast to convert the IPROTOCOL pointer to this
-    /// derived type
-    m_timeout.async_wait(boost::bind(&CProtocolSR::Resend,
-        boost::static_pointer_cast<CProtocolSR>(shared_from_this()),
-        boost::asio::placeholders::error));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -434,9 +429,6 @@ void CProtocolSR::SendSYN()
     Write(outmsg);
     m_window.push_front(outmsg);
     m_outsync = true;
-    /// Hook into resend until the message expires.
-    boost::system::error_code x;
-    Resend(x);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

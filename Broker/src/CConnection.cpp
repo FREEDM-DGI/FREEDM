@@ -51,8 +51,8 @@ CLocalLogger Logger(__FILE__);
 ///
 /// @param uuid the UUID of the peer to connect to
 ///////////////////////////////////////////////////////////////////////////////
-CConnection::CConnection(std::string uuid)
-  : m_protocol(boost::make_shared<CProtocolSR>(uuid))   // FIXME hardcoded protocol
+CConnection::CConnection(std::string uuid, boost::asio::ip::udp::endpoint endpoint)
+  : m_protocol(boost::make_shared<CProtocolSR>(uuid,endpoint))   // FIXME hardcoded protocol
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 }
@@ -76,7 +76,16 @@ void CConnection::Stop()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     m_protocol->Stop();
-    m_protocol->GetSocket().close();
+}
+
+///////////////////////////////////////////////////////////////////////////////
+/// @fn CConnection::GetStopped
+/// @description Returns true if the underlying protocol has been stopped.
+/// @return True if the underlying protocol is stopped.
+///////////////////////////////////////////////////////////////////////////////
+bool CConnection::GetStopped()
+{
+    return m_protocol->GetStopped();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -159,18 +168,6 @@ bool CConnection::Receive(const ProtocolMessage& msg)
     }
 
     return false;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-/// Returns the socket used by this node.
-///
-/// @return A reference to the socket used by this connection.
-///////////////////////////////////////////////////////////////////////////////
-boost::asio::ip::udp::socket& CConnection::GetSocket()
-{
-    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-
-    return m_protocol->GetSocket();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

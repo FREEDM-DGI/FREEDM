@@ -78,7 +78,11 @@ std::string CPeerNode::GetUUID() const
 /////////////////////////////////////////////////////////////
 std::string CPeerNode::GetHostname() const
 {
-    return CConnectionManager::Instance().GetHostByUUID(GetUUID()).hostname;
+    /// An iterator to the end of the hostname map.
+    CConnectionManager::hostnamemap::iterator it=CConnectionManager::Instance().GetHost(GetUUID());
+    if(it != CConnectionManager::Instance().GetHostsEnd())
+        return it->second.hostname;
+    throw std::runtime_error("IPeerNode("+GetUUID()+") does not refer to hostname");
 }
 ////////////////////////////////////////////////////////////
 /// CPeerNode::GetPort
@@ -86,7 +90,10 @@ std::string CPeerNode::GetHostname() const
 ////////////////////////////////////////////////////////////
 std::string CPeerNode::GetPort() const
 {
-    return CConnectionManager::Instance().GetHostByUUID(GetUUID()).port;
+    CConnectionManager::hostnamemap::iterator it=CConnectionManager::Instance().GetHost(GetUUID());
+    if(it != CConnectionManager::Instance().GetHostsEnd())
+        return it->second.port;
+    throw std::runtime_error("IPeerNode("+GetUUID()+") does not refer to hostname");
 }
 
 /////////////////////////////////////////////////////////////

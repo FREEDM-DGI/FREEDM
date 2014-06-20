@@ -31,6 +31,7 @@
 #include "Messages.hpp"
 #include "messages/ProtocolMessage.pb.h"
 #include "CBroker.hpp"
+#include "CListener.hpp"
 
 #include <stdexcept>
 
@@ -44,8 +45,8 @@ CLocalLogger Logger(__FILE__);
 
 }
 
-IProtocol::IProtocol(std::string uuid)
-    : m_socket(CBroker::Instance().GetIOService())
+IProtocol::IProtocol(std::string uuid, boost::asio::ip::udp::endpoint endpoint)
+    : m_endpoint(endpoint)
     , m_uuid(uuid)
     , m_stopped(false)
     , m_reliability(100)
@@ -71,8 +72,6 @@ void IProtocol::Write(ProtocolMessage& msg)
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
     msg.set_source_uuid(CGlobalConfiguration::Instance().GetUUID());
-    msg.set_source_hostname(CGlobalConfiguration::Instance().GetHostname());
-    msg.set_source_port(CGlobalConfiguration::Instance().GetListenPort());
     StampMessageSendtime(msg);
 
     msg.CheckInitialized();
@@ -104,27 +103,16 @@ void IProtocol::Write(ProtocolMessage& msg)
 
     try
     {
-        GetSocket().send(
-            boost::asio::buffer(&write_buffer[0], msg.ByteSize()));
+        CListener::Instance().GetSocket().send_to(
+            boost::asio::buffer(&write_buffer[0], msg.ByteSize()),
+            m_endpoint
+        );
     }
     catch(boost::system::system_error &e)
     {
         Logger.Debug << "Writing Failed: " << e.what() << std::endl;
         Stop();
-        GetSocket().close();
     }
-}
-
-///////////////////////////////////////////////////////////////////////////////
-/// Returns the socket used by this node.
-///
-/// @return A reference to the socket used by this connection.
-///////////////////////////////////////////////////////////////////////////////
-boost::asio::ip::udp::socket& IProtocol::GetSocket()
-{
-    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-
-    return m_socket;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

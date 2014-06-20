@@ -62,13 +62,16 @@ public:
     typedef boost::shared_ptr<CConnection> ConnectionPtr;
 
     /// Construct a CConnection to a peer
-    CConnection(std::string uuid);
+    CConnection(std::string uuid, boost::asio::ip::udp::endpoint endpoint);
 
     /// Destructor
     ~CConnection();
 
     /// Stop all asynchronous operations associated with the CConnection.
     void Stop();
+
+    /// Tests to see if the protocol is stopped
+    bool GetStopped();
 
     /// Puts a message into the channel.
     void Send(const ModuleMessage& msg);
@@ -81,9 +84,6 @@ public:
 
     /// Change Phase Event
     void ChangePhase(bool newround);
-
-    /// Get a socket connected to a single peer DGI
-    boost::asio::ip::udp::socket& GetSocket();
 
     /// Get associated UUID
     std::string GetUUID() const;

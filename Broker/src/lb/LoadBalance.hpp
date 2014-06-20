@@ -25,9 +25,10 @@
 #define LOAD_BALANCE_HPP
 
 #include "CBroker.hpp"
-#include "IAgent.hpp"
-#include "IPeerNode.hpp"
-#include "IMessageHandler.hpp"
+#include "CDevice.hpp"
+#include "CPeerNode.hpp"
+#include "PeerSets.hpp"
+#include "IDGIModule.hpp"
 #include "messages/ModuleMessage.pb.h"
 
 #include <map>
@@ -41,12 +42,10 @@ namespace broker {
 namespace lb {
 
 class LBAgent
-    : public IMessageHandler
-    , private IPeerNode
-    , public IAgent<boost::shared_ptr<IPeerNode> >
+    : public IDGIModule
 {
 public:
-    LBAgent(std::string uuid);
+    LBAgent();
     int Run();
 private:
     enum State { SUPPLY, DEMAND, NORMAL };
@@ -74,28 +73,28 @@ private:
     void SendToPeerSet(const PeerSet & ps, const ModuleMessage & m);
 
     /// First handler for an incoming message.
-    void HandleIncomingMessage(boost::shared_ptr<const ModuleMessage> m, PeerNodePtr peer);
+    void HandleIncomingMessage(boost::shared_ptr<const ModuleMessage> m, CPeerNode peer);
     /// Handles a node announcing its state change.
-    void HandleStateChange(const StateChangeMessage & m, PeerNodePtr peer);
+    void HandleStateChange(const StateChangeMessage & m, CPeerNode peer);
     /// Handles the draft request originating from the supply node.
-    void HandleDraftRequest(const DraftRequestMessage & m, PeerNodePtr peer);
+    void HandleDraftRequest(const DraftRequestMessage & m, CPeerNode peer);
     /// Handles the draft age message coming from the demand node.
-    void HandleDraftAge(const DraftAgeMessage & m, PeerNodePtr peer);
+    void HandleDraftAge(const DraftAgeMessage & m, CPeerNode peer);
     /// Handles the draft select message coming from the supply node.
-    void HandleDraftSelect(const DraftSelectMessage & m, PeerNodePtr peer);
+    void HandleDraftSelect(const DraftSelectMessage & m, CPeerNode peer);
     /// Handles the draft accept message coming from the demand node.
-    void HandleDraftAccept(const DraftAcceptMessage & m, PeerNodePtr peer);
+    void HandleDraftAccept(const DraftAcceptMessage & m, CPeerNode peer);
     /// Handles the draft reject message coming from the demand node.
     void HandleTooLate(const TooLateMessage & m);
     /// Handles the peerlist coming from the group leader.
-    void HandlePeerList(const gm::PeerListMessage & m, PeerNodePtr peer);
+    void HandlePeerList(const gm::PeerListMessage & m, CPeerNode peer);
     /// Handles the collected state coming from state collection
     void HandleCollectedState(const sc::CollectedStateMessage & m);
     /// Handles the collected state coming from load balancing
     void HandleCollectedState(const CollectedStateMessage & m);
     
     /// Moves a peer to the specified peerset.
-    void MoveToPeerSet(PeerSet & ps, PeerNodePtr peer);
+    void MoveToPeerSet(PeerSet & ps, CPeerNode peer);
     
     /// The code that the supply nodes use to start doing migrations
     void LoadManage(const boost::system::error_code & error);
@@ -115,13 +114,13 @@ private:
     /// Sends Draft request to all the demand peers.
     void SendDraftRequest();
     /// Sends draftage to the specified peer.
-    void SendDraftAge(PeerNodePtr peer);
+    void SendDraftAge(CPeerNode peer);
     /// Sends a draft select to the specified peer.
-    void SendDraftSelect(PeerNodePtr peer, float step);
+    void SendDraftSelect(CPeerNode peer, float step);
     /// Sends draft accept to the specified peer.
-    void SendDraftAccept(PeerNodePtr peer, float step);
+    void SendDraftAccept(CPeerNode peer, float step);
     /// Sends too late to the specified peer.
-    void SendTooLate(PeerNodePtr peer, float step);
+    void SendTooLate(CPeerNode peer, float step);
     /// Sets PStar to the specified level
     void SetPStar(float pstar);
     /// Sends the request to perform state collection.

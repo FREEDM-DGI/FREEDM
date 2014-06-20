@@ -46,7 +46,7 @@
 namespace freedm {
     namespace broker {
 
-class IMessageHandler;
+class IDGIModule;
 
 /// Handles applying read handlers to incoming messages
 class CDispatcher
@@ -60,7 +60,7 @@ public:
     void HandleRequest(boost::shared_ptr<const ModuleMessage> msg, std::string uuid);
 
     /// Registers a handler that will be called with HandleRequest
-    void RegisterReadHandler(boost::shared_ptr<IMessageHandler> p_handler, std::string id);
+    void RegisterReadHandler(boost::shared_ptr<IDGIModule> p_handler, std::string id);
 
 private:
     /// Private constructor for the singleton instance
@@ -68,12 +68,12 @@ private:
 
     /// Making the handler calls bindable
     void ReadHandlerCallback(
-        boost::shared_ptr<IMessageHandler> h,
+        boost::shared_ptr<IDGIModule> h,
         boost::shared_ptr<const ModuleMessage> msg,
         std::string uuid);
 
     /// Reverse map to get the calling module from the handler pointer.
-    std::multimap<boost::shared_ptr<IMessageHandler>, const std::string> m_registrations;
+    std::multimap<boost::shared_ptr<IDGIModule>, const std::string> m_registrations;
 };
 
 } // namespace broker

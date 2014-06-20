@@ -26,7 +26,7 @@
 #include "CGlobalConfiguration.hpp"
 #include "CGlobalPeerList.hpp"
 #include "CLogger.hpp"
-#include "IPeerNode.hpp"
+#include "CPeerNode.hpp"
 #include "Messages.hpp"
 #include "messages/ModuleMessage.pb.h"
 
@@ -60,11 +60,10 @@ const int QUERY_INTERVAL = 10000;
 /// @param ios the broker's ioservice
 ///////////////////////////////////////////////////////////////////////////////
 CClockSynchronizer::CClockSynchronizer(boost::asio::io_service& ios)
-    : m_exchangetimer(ios),
-      m_uuid(CGlobalConfiguration::Instance().GetUUID())
+    : m_exchangetimer(ios)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    MapIndex ii(m_uuid,m_uuid);
+    MapIndex ii(GetUUID(),GetUUID());
     m_offsets[ii] = boost::posix_time::milliseconds(0);
     SetWeight(ii, 1.0);
     m_skews[ii] = 0.0;
@@ -110,7 +109,7 @@ void CClockSynchronizer::Stop()
 /// @param peer the node that sent this message (could be this DGI)
 ///////////////////////////////////////////////////////////////////////////////
 void CClockSynchronizer::HandleIncomingMessage(
-    boost::shared_ptr<const ModuleMessage> msg, PeerNodePtr peer)
+    boost::shared_ptr<const ModuleMessage> msg, CPeerNode peer)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
@@ -144,12 +143,12 @@ void CClockSynchronizer::HandleIncomingMessage(
 /// @param msg The message from the remote node
 /// @param peer The peer sending the message.
 ///////////////////////////////////////////////////////////////////////////////
-void CClockSynchronizer::HandleExchange(const ExchangeMessage& msg, PeerNodePtr peer)
+void CClockSynchronizer::HandleExchange(const ExchangeMessage& msg, CPeerNode peer)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
     // Respond to the query ID
-    peer->Send(CreateExchangeResponse(msg.query()));
+    peer.Send(CreateExchangeResponse(msg.query()));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -162,11 +161,11 @@ void CClockSynchronizer::HandleExchange(const ExchangeMessage& msg, PeerNodePtr 
 /// @param msg The message from the remote node
 /// @param peer The remote node.
 ///////////////////////////////////////////////////////////////////////////////
-void CClockSynchronizer::HandleExchangeResponse(const ExchangeResponseMessage& msg, PeerNodePtr peer)
+void CClockSynchronizer::HandleExchangeResponse(const ExchangeResponseMessage& msg, CPeerNode peer)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    std::string sender = peer->GetUUID();
-    MapIndex ij(m_uuid,sender);
+    std::string sender = peer.GetUUID();
+    MapIndex ij(GetUUID(),sender);
     boost::posix_time::ptime challenge;
     boost::posix_time::ptime now = boost::posix_time::microsec_clock::universal_time();
     boost::posix_time::ptime response =
@@ -268,12 +267,12 @@ void CClockSynchronizer::HandleExchangeResponse(const ExchangeResponseMessage& m
     {
         const ExchangeResponseMessage::TableEntry te = msg.table_entry(i);
         std::string neighbor = te.uuid();
-        if(neighbor == peer->GetUUID() || neighbor == m_uuid)
+        if(neighbor == peer.GetUUID() || neighbor == GetUUID())
             continue;
         boost::posix_time::time_duration cjl = boost::posix_time::seconds(te.offset_secs())+boost::posix_time::microseconds(te.offset_fracs());
         double wjl = te.weight()-.1; // Abritrarily remove some trust to account for lag.
         double fjl = te.skew();
-        MapIndex il(m_uuid,neighbor);
+        MapIndex il(GetUUID(),neighbor);
         if(m_offsets.find(il) == m_offsets.end())
         {
             m_offsets[il] = boost::posix_time::milliseconds(0);
@@ -303,12 +302,12 @@ void CClockSynchronizer::Exchange(const boost::system::error_code& err)
     if(err)
         return;
     // Loop through the peers and send them beacons
-    std::deque< boost::shared_ptr<IPeerNode> > tmplist;
-    std::deque< boost::shared_ptr<IPeerNode> > tmplist2;
+    std::deque< CPeerNode > tmplist;
+    std::deque< CPeerNode > tmplist2;
     bool flop = false;
-    BOOST_FOREACH(boost::shared_ptr<IPeerNode> peer, CGlobalPeerList::instance().PeerList() | boost::adaptors::map_values)
+    BOOST_FOREACH(CPeerNode peer, CGlobalPeerList::instance().PeerList() | boost::adaptors::map_values)
     {
-        if(peer->GetUUID() == m_uuid)
+        if(peer.GetUUID() == GetUUID())
            flop = true;
         else if(flop == false)
             tmplist2.push_back(peer); // put elements before me into list b
@@ -318,10 +317,10 @@ void CClockSynchronizer::Exchange(const boost::system::error_code& err)
     // put elements from list b into list a
     tmplist.insert(tmplist.end(),tmplist2.begin(),tmplist2.end());
     // This should do a circular shift of the queries, which SHOULD help with traffic if I have postulated correctly.
-    BOOST_FOREACH(boost::shared_ptr<IPeerNode> peer, tmplist)
+    BOOST_FOREACH(CPeerNode peer, tmplist)
     {
-        peer->Send(CreateExchangeMessage(m_kcounter));
-        MapIndex ij(m_uuid,peer->GetUUID());
+        peer.Send(CreateExchangeMessage(m_kcounter));
+        MapIndex ij(GetUUID(),peer.GetUUID());
         m_queries[ij] = QueryRecord(m_kcounter, boost::posix_time::microsec_clock::universal_time());
     }
     m_kcounter++;
@@ -330,7 +329,7 @@ void CClockSynchronizer::Exchange(const boost::system::error_code& err)
     m_exchangetimer.async_wait(boost::bind(&CClockSynchronizer::Exchange,this,
         boost::asio::placeholders::error));
     //make sure the self referential entries stay sane.
-    MapIndex ii(m_uuid,m_uuid);
+    MapIndex ii(GetUUID(),GetUUID());
     m_offsets[ii] = boost::posix_time::milliseconds(0);
     SetWeight(ii, 1.0);
     m_skews[ii] = 0.0;
@@ -443,7 +442,7 @@ double CClockSynchronizer::GetWeight(MapIndex i) const
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     WeightMap::const_iterator it = m_weights.find(i);
     boost::posix_time::ptime set;
-    if(i == MapIndex(m_uuid,m_uuid))
+    if(i == MapIndex(GetUUID(),GetUUID()))
         return 1.0;
     if(it == m_weights.end())
         throw std::runtime_error("Can't find that index in the weights table");

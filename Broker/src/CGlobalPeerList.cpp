@@ -21,11 +21,11 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 #include "CGlobalPeerList.hpp"
+#include "CPeerNode.hpp"
+#include "FreedmExceptions.hpp"
 
 #include <stdexcept>
 #include <string>
-
-#include <boost/make_shared.hpp>
 
 namespace freedm {
 
@@ -38,12 +38,12 @@ namespace broker {
 /// @return A shared pointer to the node.
 /// @ErrorHandling Runtime exception if no peer matches that description.
 ////////////////////////////////////////////////////////
-CGlobalPeerList::PeerNodePtr CGlobalPeerList::GetPeer(std::string uuid)
+CPeerNode CGlobalPeerList::GetPeer(const std::string& uuid)
 {
     PeerSetIterator pst = Find(uuid);
     if(pst == end())
     {
-        throw std::runtime_error("Peer " + uuid + " was not found in the global table");
+        throw EDgiNoSuchPeerError("Peer " + uuid + " was not found in the global table");
     }
     return pst->second;
 }
@@ -53,7 +53,7 @@ CGlobalPeerList::PeerNodePtr CGlobalPeerList::GetPeer(std::string uuid)
 /// @param uuid The UUID of the peer you are attempting to access
 /// @return A count of all nodes with that uuid in the table.
 ////////////////////////////////////////////////////////
-int CGlobalPeerList::Count(std::string uuid)
+int CGlobalPeerList::Count(const std::string& uuid)
 {
     return m_peerlist.count(uuid);
 }
@@ -63,7 +63,7 @@ int CGlobalPeerList::Count(std::string uuid)
 /// @param uuid The UUID of the peer you are attempting to access
 /// @return An iterator to the peer if found or end() if not found.
 ///////////////////////////////////////////////////////
-CGlobalPeerList::PeerSetIterator CGlobalPeerList::Find(std::string uuid)
+CGlobalPeerList::PeerSetIterator CGlobalPeerList::Find(const std::string& uuid)
 {
     return m_peerlist.find(uuid);
 }
@@ -90,22 +90,22 @@ CGlobalPeerList::PeerSetIterator CGlobalPeerList::end()
 /// @description Pushes a peer node into the set
 /// @param p A peernode pointer to put into the container.
 //////////////////////////////////////////////////////
-void CGlobalPeerList::Insert(PeerNodePtr p)
+void CGlobalPeerList::Insert(CPeerNode p)
 {
-    m_peerlist.insert(std::pair<std::string, PeerNodePtr>(p->GetUUID(),p));
+    m_peerlist.insert(std::make_pair(p.GetUUID(),p));
 }
 //////////////////////////////////////////////////////
 /// CGlobalPeerList::Create
 /// @description Constructs a new peernode pointer, intserts it, and returns it
 /// @param uuid The UUID this pointer addresses.
 //////////////////////////////////////////////////////
-CGlobalPeerList::PeerNodePtr CGlobalPeerList::Create(std::string uuid)
+CPeerNode CGlobalPeerList::Create(std::string uuid)
 {
     if(Count(uuid) > 0)
     {
         return GetPeer(uuid);
     }
-    PeerNodePtr p = boost::make_shared<IPeerNode>(uuid);
+    CPeerNode p = CPeerNode(uuid);
     Insert(p);
     return p;
 }

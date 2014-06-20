@@ -25,9 +25,10 @@
 #define GROUPMANAGEMENT_HPP_
 
 #include "CBroker.hpp"
-#include "IAgent.hpp"
-#include "IMessageHandler.hpp"
-#include "IPeerNode.hpp"
+#include "IDGIModule.hpp"
+#include "CPeerNode.hpp"
+#include "PeerSets.hpp"
+
 #include "messages/ModuleMessage.pb.h"
 
 #include <boost/interprocess/sync/interprocess_mutex.hpp>
@@ -42,14 +43,13 @@ namespace gm {
 
 /// Declaration of Garcia-Molina Invitation Leader Election algorithm.
 class GMAgent
-  : public IMessageHandler, private IPeerNode,
-    public IAgent< boost::shared_ptr<IPeerNode> >
+  : public IDGIModule
 {
   public:
     /// Module states
     enum { NORMAL,DOWN,RECOVERY,REORGANIZATION,ELECTION };
     /// Constructor for using this object as a module.
-    GMAgent(std::string uuid_);
+    GMAgent();
     /// Module destructor
     ~GMAgent();
     /// Called to start the system
@@ -65,23 +65,23 @@ class GMAgent
 
     // Handlers
     /// Handles received messages
-    void HandleIncomingMessage(boost::shared_ptr<const ModuleMessage> msg, PeerNodePtr peer);
+    void HandleIncomingMessage(boost::shared_ptr<const ModuleMessage> msg, CPeerNode peer);
     /// Hadles recieving peerlists
-    void HandlePeerList(const PeerListMessage& msg,PeerNodePtr peer);
+    void HandlePeerList(const PeerListMessage& msg,CPeerNode peer);
     /// Handles recieving accept messsages
-    void HandleAccept(const AcceptMessage& msg,PeerNodePtr peer);
+    void HandleAccept(const AcceptMessage& msg,CPeerNode peer);
     /// Handles recieving are you coordinator messages
-    void HandleAreYouCoordinator(const AreYouCoordinatorMessage& msg,PeerNodePtr peer);
+    void HandleAreYouCoordinator(const AreYouCoordinatorMessage& msg,CPeerNode peer);
     /// Handles recieving are you there messsages
-    void HandleAreYouThere(const AreYouThereMessage& msg,PeerNodePtr peer);
+    void HandleAreYouThere(const AreYouThereMessage& msg,CPeerNode peer);
     /// Handles recieving invite messages
-    void HandleInvite(const InviteMessage& msg,PeerNodePtr peer);
+    void HandleInvite(const InviteMessage& msg,CPeerNode peer);
     /// Handles recieving AYC responses
-    void HandleResponseAYC(const AreYouCoordinatorResponseMessage& msg,PeerNodePtr peer);
+    void HandleResponseAYC(const AreYouCoordinatorResponseMessage& msg,CPeerNode peer);
     /// Handles recieving AYT responses
-    void HandleResponseAYT(const AreYouThereResponseMessage& msg,PeerNodePtr peere);
+    void HandleResponseAYT(const AreYouThereResponseMessage& msg,CPeerNode peere);
     /// Handles recieving peerlist requests
-    void HandlePeerListQuery(const PeerListQueryMessage& msg, PeerNodePtr peer);
+    void HandlePeerListQuery(const PeerListQueryMessage& msg, CPeerNode peer);
 
     //Routines
     /// Checks for other up leaders
@@ -117,11 +117,11 @@ class GMAgent
 
     //Peer Set Manipulation
     /// Adds a peer to the peer set from UUID
-    PeerNodePtr AddPeer(std::string uuid);
+    CPeerNode AddPeer(std::string uuid);
     /// Adds a peer from a pointer to a peer node object
-    PeerNodePtr AddPeer(PeerNodePtr peer);
+    CPeerNode AddPeer(CPeerNode peer);
     /// Gets a pointer to a peer from UUID.
-    PeerNodePtr GetPeer(std::string uuid);
+    CPeerNode GetPeer(const std::string& uuid);
 
     /// Gets the status of a node
     int GetStatus() const;

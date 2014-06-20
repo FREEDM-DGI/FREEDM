@@ -1,5 +1,5 @@
 ////////////////////////////////////////////////////////////////////////////////
-/// @file         IMessageHandler.hpp
+/// @file         IDGIModule.hpp
 ///
 /// @author       Michael Catanzaro <michael.catanzaro@mst.edu>
 ///
@@ -18,15 +18,14 @@
 /// Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
 ////////////////////////////////////////////////////////////////////////////////
 
-#ifndef IHANDLER_HPP
-#define IHANDLER_HPP
+#ifndef IDGIMODULE_HPP
+#define IDGIMODULE_HPP
 
-#include "IPeerNode.hpp"
+#include "CPeerNode.hpp"
 
 #include "messages/ModuleMessage.pb.h"
 
-#include <stdexcept>
-
+#include <boost/noncopyable.hpp>
 #include <boost/shared_ptr.hpp>
 
 namespace freedm {
@@ -34,21 +33,35 @@ namespace freedm {
 namespace broker {
 
 ///An interface for an object which can handle recieving incoming messages
-class IMessageHandler
+class IDGIModule
+    : private boost::noncopyable
 {
 ///////////////////////////////////////////////////////////////////////////////
-/// @class IMessageHandler
+/// @class IDGIModule
 ///
-/// @description Provides interface for broker handlers that will be called
-/// after each successful read operation.
+/// @description Provides common interfaces and boilerplate for DGI modules
 ///////////////////////////////////////////////////////////////////////////////
 public:
+    /// Constructor, initializes the reference to self
+    IDGIModule();
+    
+    /// Virtual destructor for inhertiance
+    virtual ~IDGIModule() {};
+
     /// Handles received messages
     virtual void HandleIncomingMessage(
-        boost::shared_ptr<const ModuleMessage> msg, boost::shared_ptr<IPeerNode> peer) = 0;
+        boost::shared_ptr<const ModuleMessage> msg, CPeerNode peer) = 0;
 
-    /// Virtual destructor
-    virtual ~IMessageHandler() {}
+protected:
+    /// Gets the UUID of this process.
+    std::string GetUUID() const;
+    
+    /// Gets a CPeerNode representing this process.
+    CPeerNode GetMe();
+
+private: 
+    /// The CPeerNode this represents.
+    CPeerNode m_me;
 };
 
 } // namespace freedm

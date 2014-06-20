@@ -323,9 +323,9 @@ int main(int argc, char* argv[])
     }
 
     // Initialize modules
-    boost::shared_ptr<IMessageHandler> GM = boost::make_shared<gm::GMAgent>(id);
-    boost::shared_ptr<IMessageHandler> SC = boost::make_shared<sc::SCAgent>(id);
-    boost::shared_ptr<IMessageHandler> LB = boost::make_shared<lb::LBAgent>(id);
+    boost::shared_ptr<IDGIModule> GM = boost::make_shared<gm::GMAgent>();
+    boost::shared_ptr<IDGIModule> SC = boost::make_shared<sc::SCAgent>();
+    boost::shared_ptr<IDGIModule> LB = boost::make_shared<lb::LBAgent>();
 
     try
     {

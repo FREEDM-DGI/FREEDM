@@ -42,7 +42,7 @@ class GMAgent;
 class CPeerNode;
 
 class CGlobalPeerList
-    : public boost::noncopyable
+    : private boost::noncopyable
 {
     public:
         friend class freedm::broker::gm::GMAgent;

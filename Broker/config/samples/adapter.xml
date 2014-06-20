@@ -11,6 +11,31 @@
                 <device>SST1</device>
                 <signal>gateway</signal>
             </entry>
+            <entry index = "2">
+                <type>Drer</type>
+                <device>DRER1</device>
+                <signal>generation</signal>
+            </entry>
+            <entry index = "3">
+                <type>Load</type>
+                <device>LOAD1</device>
+                <signal>drain</signal>
+            </entry>
+            <entry index = "4">
+                <type>Fid</type>
+                <device>FID7</device>
+                <signal>state</signal>
+            </entry>
+            <entry index = "5">
+                <type>Fid</type>
+                <device>FID1</device>
+                <signal>state</signal>
+            </entry>
+            <entry index = "6">
+                <type>Omega</type>
+                <device>FREQ</device>
+                <signal>frequency</signal>
+            </entry>
         </state>
         <command>
             <entry index = "1">

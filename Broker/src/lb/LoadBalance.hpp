@@ -1,29 +1,12 @@
 ////////////////////////////////////////////////////////////////////////////////
-/// @file         LoadBalance.hpp
+/// @file           LoadBalance.hpp
 ///
-/// @author       Ravi Akella <rcaq5c@mst.edu>
+/// @author         Ravi Akella <rcaq5c@mst.edu>
+/// @author         Thomas Roth <tprfh7@mst.edu>
 ///
-/// @project      FREEDM DGI
+/// @project        FREEDM DGI
 ///
-/// @description  DGI Load Balancing Module
-///
-/// @functions
-///     LBAgent
-///     LB
-///     AddPeer
-///     GetPeer
-///     SendMsg
-///     SendNormal
-///     CollectState
-///     LoadManage
-///     LoadTable
-///     SendDraftRequest
-///     HandleRead
-///     Step_PStar
-///     PStar
-///     InitiatePowerMigration
-///     StartStateTimer
-///     HandleStateTimer
+/// @description    A distributed load balance algorithm for power management.
 ///
 /// These source code files were created at Missouri University of Science and
 /// Technology, and are intended for use in teaching or research. They may be
@@ -38,8 +21,8 @@
 /// Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
 ////////////////////////////////////////////////////////////////////////////////
 
-#ifndef LOADBALANCE_HPP_
-#define LOADBALANCE_HPP_
+#ifndef LOAD_BALANCE_HPP
+#define LOAD_BALANCE_HPP
 
 #include "CBroker.hpp"
 #include "CDevice.hpp"
@@ -48,174 +31,150 @@
 #include "IDGIModule.hpp"
 #include "messages/ModuleMessage.pb.h"
 
+#include <map>
+#include <set>
+#include <string>
 #include <boost/shared_ptr.hpp>
+#include <boost/date_time/posix_time/posix_time_types.hpp>
 
 namespace freedm {
-
 namespace broker {
-
 namespace lb {
 
-const double NORMAL_TOLERANCE = 0.5;
-//////////////////////////////////////////////////////////
-/// class LBAgent
-///
-/// @description
-/// Declaration of LBAgent class for load balancing algorithm
-/////////////////////////////////////////////////////////
 class LBAgent
     : public IDGIModule
 {
-    public:
-        /// Constructor for using this object as a module
-        LBAgent();
+public:
+    LBAgent();
+    int Run();
+private:
+    enum State { SUPPLY, DEMAND, NORMAL };
+    //     
+    /// Generates the message announcing current node state
+    ModuleMessage MessageStateChange(std::string state);
+    /// Generates message supply nodes send to demand nodes
+    ModuleMessage MessageDraftRequest();
+    /// Generates message demand nodes send in response to DraftRequest
+    ModuleMessage MessageDraftAge(float age);
+    /// Generates the message that the supply node uses to select a demand node.
+    ModuleMessage MessageDraftSelect(float amount);
+    /// Generates the message that the demand node uses to confirm the migration
+    ModuleMessage MessageDraftAccept(float amount);
+    /// Generates the message sent by the demand node to refuse migration.
+    ModuleMessage MessageTooLate(float amount);
+    /// Generates the message used to request a state collection.
+    ModuleMessage MessageStateCollection();
+    //// Generates the message used to announce the collected normal.
+    ModuleMessage MessageCollectedState(float state);
+    
+    /// Boilerplate for preparing a message.
+    ModuleMessage PrepareForSending(const LoadBalancingMessage & m, std::string recipient = "lb");
+    /// Sends a message to all peers in a peerset.
+    void SendToPeerSet(const PeerSet & ps, const ModuleMessage & m);
 
-        /// Main loop of the algorithm called from PosixBroker
-        int Run();
+    /// First handler for an incoming message.
+    void HandleIncomingMessage(boost::shared_ptr<const ModuleMessage> m, CPeerNode peer);
+    /// Handles a node announcing its state change.
+    void HandleStateChange(const StateChangeMessage & m, CPeerNode peer);
+    /// Handles the draft request originating from the supply node.
+    void HandleDraftRequest(const DraftRequestMessage & m, CPeerNode peer);
+    /// Handles the draft age message coming from the demand node.
+    void HandleDraftAge(const DraftAgeMessage & m, CPeerNode peer);
+    /// Handles the draft select message coming from the supply node.
+    void HandleDraftSelect(const DraftSelectMessage & m, CPeerNode peer);
+    /// Handles the draft accept message coming from the demand node.
+    void HandleDraftAccept(const DraftAcceptMessage & m, CPeerNode peer);
+    /// Handles the draft reject message coming from the demand node.
+    void HandleTooLate(const TooLateMessage & m);
+    /// Handles the peerlist coming from the group leader.
+    void HandlePeerList(const gm::PeerListMessage & m, CPeerNode peer);
+    /// Handles the collected state coming from state collection
+    void HandleCollectedState(const sc::CollectedStateMessage & m);
+    /// Handles the collected state coming from load balancing
+    void HandleCollectedState(const CollectedStateMessage & m);
+    
+    /// Moves a peer to the specified peerset.
+    void MoveToPeerSet(PeerSet & ps, CPeerNode peer);
+    
+    /// The code that the supply nodes use to start doing migrations
+    void LoadManage(const boost::system::error_code & error);
+    /// The code that runs the firtst round of the LB phase
+    void FirstRound(const boost::system::error_code & error);
+    /// The code that runs after the draft request replies have arrived.
+    void DraftStandard(const boost::system::error_code & error);
+    
+    /// Schedules the LoadManage that runs next round.
+    void ScheduleNextRound();
+    /// Updates the state from the devices.
+    void ReadDevices();
+    /// Updates the node's state.
+    void UpdateState();
+    /// Displays the load table to show DGI state.
+    void LoadTable();
+    /// Sends Draft request to all the demand peers.
+    void SendDraftRequest();
+    /// Sends draftage to the specified peer.
+    void SendDraftAge(CPeerNode peer);
+    /// Sends a draft select to the specified peer.
+    void SendDraftSelect(CPeerNode peer, float step);
+    /// Sends draft accept to the specified peer.
+    void SendDraftAccept(CPeerNode peer, float step);
+    /// Sends too late to the specified peer.
+    void SendTooLate(CPeerNode peer, float step);
+    /// Sets PStar to the specified level
+    void SetPStar(float pstar);
+    /// Sends the request to perform state collection.
+    void ScheduleStateCollection();
+    /// Synchronizes the Fast-Style Loadbalance with the physical system.
+    void Synchronize(float k);
+    /// Check the invariant prior to starting a new migration.
+    bool InvariantCheck();
 
-    private:
-        enum EStatus { SUPPLY, NORM, DEMAND };
-         // Routines
-        /// Advertises a draft request to demand nodes on Supply
-        void SendDraftRequest();
-        /// Maintains the load table
-        void ComputeGateway();
-        void LoadTable();
-        /// Monitors the demand changes and trigers the algorithm accordingly
-        void LoadManage();
-        /// Triggers the LoadManage routine on timeout
-        void LoadManage( const boost::system::error_code& err );
-        /// Sends request to SC module to initiate state collection on timeout
-        void HandleStateTimer( const boost::system::error_code & error);
+    /// The amount of time it takes to do an LB round
+    const boost::posix_time::time_duration ROUND_TIME;
+    /// The time it takes to get a draftrequest response
+    const boost::posix_time::time_duration REQUEST_TIMEOUT;
 
-        // Messages
-        /// Sends a message 'msg' to the peers in 'peerSet_'
-        void SendStateChange(std::string msg, PeerSet peerSet);
-        void SendToPeerSet(const ModuleMessage& msg, const PeerSet & peerSet);
-        /// Prepares and sends a state collection request to SC
-        void CollectState();
-        /// Sends the computed Normal to group members
-        void SendNormal(double normal);
+    /// Timer handle for the round timer
+    CBroker::TimerHandle m_RoundTimer;
+    /// Timer handle for the request timer
+    CBroker::TimerHandle m_WaitTimer;
 
+    /// All peers in group.
+    PeerSet m_AllPeers;
+    /// Peers in the supply state
+    PeerSet m_InSupply;
+    /// Peers in the demand state
+    PeerSet m_InDemand;
+    /// Peers in the normal state
+    PeerSet m_InNormal;
 
-        ModuleMessage MessageStateChange(std::string newstate);
-        ModuleMessage MessageNormal(double Normal);
-        ModuleMessage MessageCollectState();
-        ModuleMessage MessageDraftRequest();
-        ModuleMessage MessageDraft();
-        ModuleMessage MessageDrafting();
-        ModuleMessage MessageAccept();
+    /// The current state of this peer.
+    State m_State;
 
-        // Handlers
-        /// Handles received messages
-        void HandleIncomingMessage(boost::shared_ptr<const ModuleMessage> msg, CPeerNode peer);
-        void HandlePeerList(const gm::PeerListMessage& msg, CPeerNode peer);
-        void HandleStateChange(const StateChangeMessage& msg, CPeerNode peer);
-        void HandleRequest(const RequestMessage& msg, CPeerNode peer);
-        void HandleDraft(const DraftMessage& msg, CPeerNode peer);
-        void HandleDrafting(const DraftingMessage& msg, CPeerNode peer);
-        void HandleAccept(const AcceptMessage& msg, CPeerNode peer);
-        void HandleCollectedState(const sc::CollectedStateMessage& msg);
-        void HandleComputedNormal(const ComputedNormalMessage& msg, CPeerNode peer);
+    /// The gateway of this node.
+    float m_Gateway;
+    /// The amount of generation created by attached devices
+    float m_NetGeneration;
+    /// The gateway that we predict will be met by the devices.
+    float m_PredictedGateway;
+    /// The amount to migrate.
+    float m_MigrationStep;
+    /// The powerflow used by the physical invariant.
+    float m_PowerDifferential;
 
-        /// Adds a new peer by a pointer
-        CPeerNode AddPeer(CPeerNode peer);
-        /// Returns a pointer to the peer based on its UUID
-        CPeerNode GetPeer(std::string uuid);
+    /// If the system is synchronized with the physical system.
+    bool m_Synchronized;
 
-        /// Wraps a LoadBalancingMessage in a ModuleMessage
-        static ModuleMessage PrepareForSending(
-            const LoadBalancingMessage& message, std::string recipient = "lb");
-
-        // Variables
-        /// Calculated Normal
-        double m_Normal;
-        /// Leader of this group
-        std::string m_Leader;
-        /// Aggregate Load
-        float   m_Load;
-        /// Aggregate Generation
-        float   m_Gen;
-        /// Aggregate Storage
-        float   m_Storage;
-        /// Target value of gateway
-        float   m_PStar;
-        /// Aggregate gateway from SST devices only
-        float   m_SstGateway;
-        /// equals m_SstGateway when an SST exists; don't run LB without an SST
-        float   m_NetGateway;
-        /// Demand cost of this node in Demand
-        float   m_DemandVal;
-        /// Current Demand state of this node
-        EStatus   m_Status;
-        /// Previous demand state of this node before state change
-        EStatus   m_prevStatus;
-
-        // Peer lists
-        /// Set of known peers in Demand State
-        PeerSet     m_DemandNodes;
-        /// Set of known peers in Normal State
-        PeerSet     m_NormalNodes;
-        /// Set of known peers in Supply State
-        PeerSet     m_SupplyNodes;
-        /// Set of all the known peers
-        PeerSet     m_AllPeers;
-
-        // Power migration functions
-        /// 'Power migration' by stepping up/down P* by a constant value
-        void Step_PStar();
-        /// 'Power migration' by stepping up/down P* basing on the demand cost
-        void PStar(device::SignalValue DemandValue);
-        /// 'Power migration' through controlling DESD devices
-        void Desd_PStar();
-
-        // IO and Timers
-        /// Timer until check of demand state change
-        CBroker::TimerHandle     m_GlobalTimer;
-        /// Timer until next periodic state collection
-        CBroker::TimerHandle      m_StateTimer;
-
-        // Invariant Function
-        /// Main function for invariant check
-        bool InvariantCheck();
-        /// Function for cyber invariant
-        bool CyberInvariant();
-        /// Function for physical invariant
-        bool PhysicalInvariant();
-
-        // Cyber and Physical Invariant
-	/// Flag for invariant check at the first time
-        bool m_firstTimeInvariant;
-        /// Cyber Invariant
-        int m_cyberInvariant;
-        /// Supply or draw of the system
-        double m_initialGateway;
-        /// Calculated gateway from load table
-        double m_aggregateGateway;
-        /// Highest demand value in the last migration cycle
-        double m_highestDemand;
-        /// The previous highest demand value
-        double m_prevDemand;
-        /// The previous Normal value
-        double m_prevNormal;
-        /// The messages that are send out by the supply but not received by the demand yet
-        int m_outstandingMessages;
-        /// Gross power flow for physical invariant
-        double m_grossPowerFlow;
-        /// Frequency from physical system
-        double m_frequency;
-
-        bool m_sstExists;
-        /// Set to true for the first get gateway call to indicate they should
-        /// Actually read the value.
-        bool m_actuallyread;
+    /// The coordinator of  the group.
+    std::string m_Leader;
+    /// Pending migrations.
+    std::map<std::string, float> m_DraftAge;
 };
 
 } // namespace lb
-
 } // namespace broker
-
 } // namespace freedm
 
-#endif
+#endif // LOAD_BALANCE_HPP
 

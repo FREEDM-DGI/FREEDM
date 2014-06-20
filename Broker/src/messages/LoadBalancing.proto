@@ -20,43 +20,48 @@
 
 package freedm.broker.lb;
 
-message ComputedNormalMessage
-{
-    required double computed_normal = 1;
-    required int32 cyber_invariant = 2;
-}
-
 message StateChangeMessage
 {
-    required string new_state = 1;
+    required string state = 1;
 }
 
-message DraftMessage
+message DraftRequestMessage
 {
-    required float demand_value = 1;
 }
 
-message DraftingMessage
+message DraftAgeMessage
 {
-    required float specify_migration_amount = 1;
+    required float draft_age = 1;
 }
 
-message AcceptMessage
+message DraftSelectMessage
 {
-    required float confirm_migration_amount = 1;
+    required float migrate_step = 1;
 }
 
-message RequestMessage
+message DraftAcceptMessage
 {
-    required int32 exists = 1;
+    required float migrate_step = 1;
+}
+
+message TooLateMessage
+{
+    required float migrate_step = 1;
+}
+
+message CollectedStateMessage
+{
+    required float gross_power_flow = 1;
 }
 
 message LoadBalancingMessage
 {
-    optional ComputedNormalMessage computed_normal_message = 1;
-    optional AcceptMessage accept_message = 2;
-    optional StateChangeMessage state_change_message = 3;
-    optional DraftMessage draft_message = 4;
-    optional DraftingMessage drafting_message = 5;
-    optional RequestMessage request_message = 6;
+    optional StateChangeMessage state_change_message = 1;
+    optional DraftRequestMessage draft_request_message = 2;
+    optional DraftAgeMessage draft_age_message = 3;
+    optional DraftSelectMessage draft_select_message = 4;
+    optional DraftAcceptMessage draft_accept_message = 5;
+    optional TooLateMessage too_late_message = 6;
+    optional CollectedStateMessage collected_state_message = 7;
 }
+

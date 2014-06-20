@@ -118,8 +118,11 @@ int main(int argc, char* argv[])
     po::variables_map vm;
     std::ifstream ifs;
     std::string cfgFile, loggerCfgFile, timingsFile, adapterCfgFile, topologyCfgFile;
-    std::string deviceCfgFile, listenIP, port, hostname, fport, id, invariantSetting;
+    std::string deviceCfgFile, listenIP, port, hostname, fport, id;
     unsigned int globalVerbosity;
+    float migrationStep;
+    bool malicious, invariant;
+
     try
     {
         // These options are only allowed on the command line.
@@ -163,9 +166,15 @@ int main(int argc, char* argv[])
                 po::value<std::string > ( &topologyCfgFile )->
                 default_value(""),
                 "name of the topology configuration file" )
-                ( "check-lb-invariants",
-                po::value<std::string > ( &invariantSetting )->default_value("0"),
-                "Disable invariant check by default" )
+                ( "migration-step",
+                po::value<float>(&migrationStep)->default_value(1),
+                 "Size of power migrations in load balance" )
+                ( "malicious-behavior",
+                po::value<bool> ( &malicious )->default_value(false),
+                "Disable acept messages when node is in demand" )
+                ( "check-invariant",
+                po::value<bool> ( &invariant )->default_value(false),
+                "Check the invariant prior to power migrations" )
                 ( "verbose,v",
                 po::value<unsigned int>( &globalVerbosity )->
                 implicit_value(5)->default_value(5),
@@ -261,7 +270,8 @@ int main(int argc, char* argv[])
         CGlobalConfiguration::Instance().SetListenAddress(listenIP);
         CGlobalConfiguration::Instance().SetClockSkew(
                 boost::posix_time::milliseconds(0));
-        CGlobalConfiguration::Instance().SetInvariantCheckFlag(invariantSetting);
+        CGlobalConfiguration::Instance().SetMigrationStep(migrationStep);
+        CGlobalConfiguration::Instance().SetMaliciousFlag(malicious);
 
         // Specify socket endpoint address, if provided
         if( vm.count("devices-endpoint") )
@@ -322,7 +332,6 @@ int main(int argc, char* argv[])
         // Instantiate and register the group management module
         CBroker::Instance().RegisterModule("gm",boost::posix_time::milliseconds(CTimings::GM_PHASE_TIME));
         CDispatcher::Instance().RegisterReadHandler(GM, "gm");
-        CBroker::Instance().RegisterModule("lbq",boost::posix_time::milliseconds(CTimings::LB_SC_QUERY_TIME));
         // Instantiate and register the state collection module
         CBroker::Instance().RegisterModule("sc",boost::posix_time::milliseconds(CTimings::SC_PHASE_TIME));
         CDispatcher::Instance().RegisterReadHandler(SC, "sc");

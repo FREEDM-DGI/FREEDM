@@ -59,7 +59,7 @@ CLocalLogger Logger(__FILE__);
 CProtocolSR::CProtocolSR(std::string uuid, boost::asio::ip::udp::endpoint endpoint)
     : IProtocol(uuid, endpoint),
       m_timeout(CBroker::Instance().GetIOService()),
-	  m_timer_active(false)
+      m_timer_active(false)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     //Sequence Numbers
@@ -99,6 +99,12 @@ void CProtocolSR::Send(const ModuleMessage& msg)
     {
         SendSYN();
     }
+    if(m_timer_active == false)
+    {
+        boost::system::error_code x;
+        Resend(x);
+        m_timer_active = true;
+    }
 
     ProtocolMessage pm;
     pm.mutable_module_message()->CopyFrom(msg);
@@ -114,9 +120,7 @@ void CProtocolSR::Send(const ModuleMessage& msg)
 	m_window.push_back(pm);
     if(m_window.size() == 1)
     {
-		// Implies m_timer_active == false
-        boost::system::error_code x;
-        Resend(x);
+        Write(pm);
     }
 }
 
@@ -145,7 +149,6 @@ void CProtocolSR::Resend(const boost::system::error_code& err)
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 	if(!err && !GetStopped())
     {
-	    m_timer_active = false;
         while(m_window.size() > 0 && MessageIsExpired(m_window.front()))
         {
             Logger.Trace<<__PRETTY_FUNCTION__<<" Flushing"<<std::endl;
@@ -225,9 +228,7 @@ void CProtocolSR::ReceiveACK(const ProtocolMessage& msg)
             m_dropped = 0;
 			// If your recieve a message, and it was the ack you expected
 			// you can go ahead and send the next message
-			m_timeout.cancel();
-			boost::system::error_code x;
-			Resend(x);
+            Write(m_window.front());
         }
     }
 }

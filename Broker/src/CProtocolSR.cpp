@@ -75,10 +75,6 @@ CProtocolSR::CProtocolSR(std::string uuid, boost::asio::ip::udp::endpoint endpoi
     m_sendkills = false;
     m_sendkill = 0;
     m_dropped = 0;
-    m_timeout.expires_from_now(boost::posix_time::milliseconds(CTimings::CSRC_RESEND_TIME));
-    m_timeout.async_wait(boost::bind(&CProtocolSR::Resend,
-            boost::static_pointer_cast<CProtocolSR>(shared_from_this()),
-            boost::asio::placeholders::error));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -120,6 +116,11 @@ void CProtocolSR::Send(const ModuleMessage& msg)
     {
 		// Implies m_timer_active == false
         Write(pm);
+        m_timeout.cancel();
+        m_timeout.expires_from_now(boost::posix_time::milliseconds(CTimings::CSRC_RESEND_TIME));
+        m_timeout.async_wait(boost::bind(&CProtocolSR::Resend,
+                boost::static_pointer_cast<CProtocolSR>(shared_from_this()),
+                boost::asio::placeholders::error));
     }
 }
 

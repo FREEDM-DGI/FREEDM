@@ -226,9 +226,8 @@ void CProtocolSR::ReceiveACK(const ProtocolMessage& msg)
             m_window.pop_front();
             m_sendkills = false;
             m_dropped = 0;
-			// If your recieve a message, and it was the ack you expected
-			// you can go ahead and send the next message
-            Write(m_window.front());
+            // TODO: Pull resend code into seperate function so you can resend
+            // w/o distrupting timer.
         }
     }
 }

@@ -156,7 +156,8 @@ void CListener::HandleRead(const boost::system::error_code& e,
     CConnectionManager::Instance().PutHost(uuid,host);
 
     ///Get the pointer to the connection:
-    ConnectionPtr conn = CConnectionManager::Instance().CreateConnection(uuid, m_recv_from);
+    //ConnectionPtr conn = CConnectionManager::Instance().CreateConnection(uuid, m_recv_from);
+    ConnectionPtr conn = CConnectionManager::Instance().GetConnectionByUUID(uuid);
     Logger.Debug<<"Fetched Connection"<<std::endl;
 
     if(pm.status() == ProtocolMessage::ACCEPTED)

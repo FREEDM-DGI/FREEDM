@@ -51,7 +51,14 @@ message TooLateMessage
 
 message CollectedStateMessage
 {
-    required float gross_power_flow = 1;
+    required uint32 phase_id = 1;
+    required float gross_power_flow = 2;
+}
+
+message MigrationReport
+{
+    required uint32 phase_id = 1;
+    required float migration_total = 2;
 }
 
 message LoadBalancingMessage
@@ -63,5 +70,6 @@ message LoadBalancingMessage
     optional DraftAcceptMessage draft_accept_message = 5;
     optional TooLateMessage too_late_message = 6;
     optional CollectedStateMessage collected_state_message = 7;
+    optional MigrationReport migration_report = 8;
 }
 

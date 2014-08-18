@@ -66,6 +66,8 @@ private:
     ModuleMessage MessageStateCollection();
     //// Generates the message used to announce the collected normal.
     ModuleMessage MessageCollectedState(float state);
+    /// Generates the report on the total amount of power migrated.
+    ModuleMessage MessageMigrationReport();
     
     /// Boilerplate for preparing a message.
     ModuleMessage PrepareForSending(const LoadBalancingMessage & m, std::string recipient = "lb");
@@ -92,6 +94,8 @@ private:
     void HandleCollectedState(const sc::CollectedStateMessage & m);
     /// Handles the collected state coming from load balancing
     void HandleCollectedState(const CollectedStateMessage & m);
+    /// Handles the total migrated power report from another DGI.
+    void HandleMigrationReport(const MigrationReport & m, CPeerNode peer);
     
     /// Moves a peer to the specified peerset.
     void MoveToPeerSet(PeerSet & ps, CPeerNode peer);
@@ -160,8 +164,14 @@ private:
     float m_PredictedGateway;
     /// The amount to migrate.
     float m_MigrationStep;
-    /// The powerflow used by the physical invariant.
-    float m_PowerDifferential;
+    /// The total amount of power exchanged during power migrations.
+    float m_MigrationTotal;
+    /// The current power of the shared line generator.
+    float m_GeneratorPower;
+    /// Unique identifier for the current load manage phase.
+    google::protobuf::uint32 m_PhaseID;
+    /// The last migration total received from other peers.
+    std::map<std::string, float> m_MigrationReport;
 
     /// If the system is synchronized with the physical system.
     bool m_Synchronized;

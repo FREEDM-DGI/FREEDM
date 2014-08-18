@@ -36,6 +36,7 @@
 ///                 LBAgent::HandleDraftAccept
 ///                 LBAgent::HandleTooLate
 ///                 LBAgent::HandlePeerList
+///                 LBAgent::HandleMigrationReport
 ///                 LBAgent::SetPStar
 ///                 LBAgent::PrepareForSending
 ///                 LBAgent::Synchronize
@@ -80,6 +81,8 @@ namespace lb {
 
 namespace {
 CLocalLogger Logger(__FILE__);
+float GENERATOR_INIT_POWER = 0;
+float GENERATOR_MAX_POWER = 100;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -101,8 +104,10 @@ LBAgent::LBAgent()
     m_State = LBAgent::NORMAL;
     m_Leader = GetUUID();
 
-    m_PowerDifferential = 0;
     m_MigrationStep = CGlobalConfiguration::Instance().GetMigrationStep();
+    m_GeneratorPower = GENERATOR_INIT_POWER;
+    m_MigrationTotal = 0;
+    m_PhaseID = 0;
 }
 
 ////////////////////////////////////////////////////////////
@@ -193,6 +198,10 @@ void LBAgent::HandleIncomingMessage(boost::shared_ptr<const ModuleMessage> m, CP
         else if(lbm.has_collected_state_message())
         {
             HandleCollectedState(lbm.collected_state_message());
+        }
+        else if(lbm.has_migration_report())
+        {
+            HandleMigrationReport(lbm.migration_report(), peer);
         }
         else
         {
@@ -456,7 +465,6 @@ void LBAgent::LoadTable()
     loadtable << "\t---------------------------------------------" << std::endl;
     loadtable << "\tSST Gateway:    " << m_Gateway << std::endl;
     loadtable << "\tNet Generation: " << m_NetGeneration << std::endl;
-    loadtable << "\tPredicted K:    " << m_PowerDifferential << std::endl;
     loadtable << "\t---------------------------------------------" << std::endl;
 
     if(m_State == LBAgent::DEMAND)
@@ -793,8 +801,6 @@ void LBAgent::SendDraftSelect(CPeerNode peer, float step)
     try
     {
         peer.Send(MessageDraftSelect(step));
-        SetPStar(m_PredictedGateway + step);
-        m_PowerDifferential += step;
     }
     catch(boost::system::system_error & e)
     {
@@ -842,6 +848,11 @@ void LBAgent::HandleDraftSelect(const DraftSelectMessage & m, CPeerNode peer)
             {
                 peer.Send(MessageDraftAccept(amount));
                 SetPStar(m_PredictedGateway - amount);
+                m_MigrationTotal -= amount;
+                // it is alright if this fails but the above send does not
+                // migration reports can tolerate being dropped
+                SendToPeerSet(m_AllPeers, MessageMigrationReport());
+                
             }
             else
             {
@@ -898,10 +909,13 @@ ModuleMessage LBAgent::MessageTooLate(float amount)
 /// @limitations Does not validate the source, integrity or contents of the
 ///     message.
 ///////////////////////////////////////////////////////////////////////////////
-void LBAgent::HandleDraftAccept(const DraftAcceptMessage & m, CPeerNode /* peer */)
+void LBAgent::HandleDraftAccept(const DraftAcceptMessage & m, CPeerNode /* peer */ )
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    m_PowerDifferential -= m.migrate_step();
+    SetPStar(m_PredictedGateway + m.migrate_step());
+    m_MigrationTotal += m.migrate_step();
+    // it is alright if this fails, migration reports can tolerate being dropped
+    SendToPeerSet(m_AllPeers, MessageMigrationReport());
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -910,18 +924,13 @@ void LBAgent::HandleDraftAccept(const DraftAcceptMessage & m, CPeerNode /* peer 
 ///     selected to accept a migration from this supply node, but no longer
 ///     needs that power.
 /// @pre m and peer is valid. 
-/// @post This node will adjust its gross powerflow and revert the
-///     power setting to cancel the migration.
+/// @post none, this message is not currently used
 /// @param m The message body that was recieved by this process.
 /// @peers A demand node in my group.
-/// @limitations Does not validate the source, integrity or contents of the
-///     message.
 ///////////////////////////////////////////////////////////////////////////////
 void LBAgent::HandleTooLate(const TooLateMessage & m)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    SetPStar(m_PredictedGateway - m.migrate_step());
-    m_PowerDifferential -= m.migrate_step();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1079,6 +1088,10 @@ void LBAgent::HandleCollectedState(const sc::CollectedStateMessage & m)
     {
         net_power += v;
     }
+
+    // state collection needs to collect m_PhaseID
+    // the m_PhaseID.max + 1 should then be calculated here
+    m_PhaseID = m_PhaseID + 1;
     // should this include intransit?
     Synchronize(net_power);
     SendToPeerSet(m_AllPeers, MessageCollectedState(net_power));
@@ -1097,6 +1110,7 @@ ModuleMessage LBAgent::MessageCollectedState(float state)
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     LoadBalancingMessage msg;
     CollectedStateMessage * submsg = msg.mutable_collected_state_message();
+    submsg->set_phase_id(m_PhaseID);
     submsg->set_gross_power_flow(state);
     return PrepareForSending(msg);
 }
@@ -1116,7 +1130,54 @@ ModuleMessage LBAgent::MessageCollectedState(float state)
 void LBAgent::HandleCollectedState(const CollectedStateMessage & m)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    m_PhaseID = m.phase_id();
     Synchronize(m.gross_power_flow());
+}
+
+///////////////////////////////////////////////////////////////////////////////
+/// MessageMigrationReport
+/// @description Return a message that contains the power migration total.
+/// @pre none
+/// @post returns a new message
+///////////////////////////////////////////////////////////////////////////////
+ModuleMessage LBAgent::MessageMigrationReport()
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    LoadBalancingMessage msg;
+    MigrationReport * submsg = msg.mutable_migration_report();
+    submsg->set_phase_id(m_PhaseID);
+    submsg->set_migration_total(m_MigrationTotal);
+    return PrepareForSending(msg);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+/// HandleMigrationReport
+/// @description A migration report is sent by a peer when it changes its
+///     gateway value to keep the invariant evaluation up-to-date. The most
+///     recent version of this report (based on order received) is stored for
+///     use in the invariant calculation.
+/// @pre The peer belongs to the peer set of this DGI instance.
+/// @post The contents of the migration report are stored in m_DraftReport.
+/// @param m The received migration report message.
+/// @param peer The peer who sent the migration report.
+///////////////////////////////////////////////////////////////////////////////
+void LBAgent::HandleMigrationReport(const MigrationReport & m, CPeerNode peer)
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    if(CountInPeerSet(m_AllPeers, peer) == 0)
+    {
+        Logger.Notice << "Rejected Migration Report: unknown peer" << std::endl;
+    }
+    else if(m.phase_id() != m_PhaseID)
+    {
+        Logger.Notice << "Rejected Migration Report: wrong phase" << std::endl;
+    }
+    else
+    {
+        Logger.Debug << "Received migration total of " << m.migration_total()
+            << " from peer " << peer.GetUUID() << std::endl;
+        m_MigrationReport[peer.GetUUID()] = m.migration_total();
+    }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1125,14 +1186,16 @@ void LBAgent::HandleCollectedState(const CollectedStateMessage & m)
 ///     results obtained from state collection.
 /// @pre none
 /// @post sets the value of m_PowerDifferential and m_PredictedGateway
-/// @param k The new value to use for m_PowerDifferential
+/// @param k The sum of the gateway values from state collection.
 ///////////////////////////////////////////////////////////////////////////////
 void LBAgent::Synchronize(float k)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     
     ReadDevices();
-    m_PowerDifferential = k;
+    m_GeneratorPower = k;
+    m_MigrationTotal = 0;
+    m_MigrationReport.clear();
     m_PredictedGateway = m_Gateway;
     m_Synchronized = true;
 
@@ -1144,37 +1207,25 @@ void LBAgent::Synchronize(float k)
 /// InvariantCheck
 /// @description Evaluates the current truth of the physical invariant
 /// @pre none
-/// @post calculate the physical invariant using the Omega device
+/// @post calculate the physical invariant using the Generator device
 /// @return the truth value of the physical invariant 
 ///////////////////////////////////////////////////////////////////////////////
 bool LBAgent::InvariantCheck()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
-    const float OMEGA_STEADY_STATE = 376.8;
-    const int SCALING_FACTOR = 1000;
-
     bool result = true;
-    std::set<device::CDevice::Pointer> container;
-    container = device::CDeviceManager::Instance().GetDevicesOfType("Omega");
 
-    if(container.size() > 0 && CGlobalConfiguration::Instance().GetInvariantCheck())
+    if(CGlobalConfiguration::Instance().GetInvariantCheck())
     {
-        if(container.size() > 1)
+        float total_power_difference = m_MigrationTotal;
+        BOOST_FOREACH(float power_difference, m_MigrationReport | boost::adaptors::map_values)
         {
-            Logger.Warn << "Multiple attached frequency devices." << std::endl;
+            total_power_difference += power_difference;
         }
-        float w  = (*container.begin())->GetState("frequency");
-        float P  = SCALING_FACTOR * m_PowerDifferential;
-        float dK = SCALING_FACTOR * (m_PowerDifferential + m_MigrationStep);
-        float freq_diff = w - OMEGA_STEADY_STATE;
 
-        Logger.Info << "Invariant Variables:"
-            << "\n\tw  = " << w
-            << "\n\tP  = " << P
-            << "\n\tdK = " << dK << std::endl;
-
-        result &= freq_diff*freq_diff*(0.1*w+0.008)+freq_diff*((5.001e-8)*P*P) > freq_diff*dK;
+        result &= m_GeneratorPower - total_power_difference >= m_MigrationStep;
+        result &= m_GeneratorPower - total_power_difference <= GENERATOR_MAX_POWER;
 
         if(!result)
         {

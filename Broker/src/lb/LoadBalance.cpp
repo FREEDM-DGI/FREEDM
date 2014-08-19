@@ -82,7 +82,7 @@ namespace lb {
 namespace {
 CLocalLogger Logger(__FILE__);
 float GENERATOR_INIT_POWER = 0;
-float GENERATOR_MAX_POWER = 100;
+float GENERATOR_MAX_POWER = 10;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1249,8 +1249,14 @@ bool LBAgent::InvariantCheck()
             << "\n\tMigration Step Size:       " << m_MigrationStep
             << "\n\tMax Generator Power:       " << GENERATOR_MAX_POWER << std::endl;
     
-        result &= m_GeneratorPower - total_power_difference >= m_MigrationStep;
-        result &= m_GeneratorPower - total_power_difference <= GENERATOR_MAX_POWER;
+        if(m_State == LBAgent::SUPPLY)
+        {
+            result &= m_GeneratorPower - total_power_difference >= m_MigrationStep;
+        }
+        if(m_State == LBAgent::DEMAND)
+        {
+            result &= m_GeneratorPower - total_power_difference <= GENERATOR_MAX_POWER;
+        }
 
         if(!result)
         {

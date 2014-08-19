@@ -1231,7 +1231,11 @@ bool LBAgent::InvariantCheck()
     {
         Logger.Notice << "(MALICIOUS) Skipping invariant check." << std::endl;
     }
-    else if(CGlobalConfiguration::Instance().GetInvariantCheck())
+    else if(!CGlobalConfiguration::Instance().GetInvariantCheck())
+    {
+        Logger.Info << "Skipped invariant check, disabled." << std::endl;
+    }
+    else
     {
         float total_power_difference = m_MigrationTotal;
         BOOST_FOREACH(float power_difference, m_MigrationReport | boost::adaptors::map_values)

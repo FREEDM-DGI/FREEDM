@@ -173,7 +173,7 @@ int main(int argc, char* argv[])
                 po::value<bool> ( &malicious )->default_value(false),
                 "Disable acept messages when node is in demand" )
                 ( "check-invariant",
-                po::value<bool> ( &invariant )->default_value(false),
+                po::value<bool> ( &invariant )->default_value(true),
                 "Check the invariant prior to power migrations" )
                 ( "verbose,v",
                 po::value<unsigned int>( &globalVerbosity )->
@@ -272,6 +272,7 @@ int main(int argc, char* argv[])
                 boost::posix_time::milliseconds(0));
         CGlobalConfiguration::Instance().SetMigrationStep(migrationStep);
         CGlobalConfiguration::Instance().SetMaliciousFlag(malicious);
+        CGlobalConfiguration::Instance().SetInvariantCheck(invariant);
 
         // Specify socket endpoint address, if provided
         if( vm.count("devices-endpoint") )

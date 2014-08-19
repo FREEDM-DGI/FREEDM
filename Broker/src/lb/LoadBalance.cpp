@@ -1232,7 +1232,11 @@ bool LBAgent::InvariantCheck()
 
     bool result = true;
 
-    if(CGlobalConfiguration::Instance().GetInvariantCheck() && !CGlobalConfiguration::Instance().GetMaliciousFlag())
+    if(CGlobalConfiguration::Instance().GetMaliciousFlag())
+    {
+        Logger.Notice << "(MALICIOUS) Skipping invariant check." << std::endl;
+    }
+    else if(CGlobalConfiguration::Instance().GetInvariantCheck())
     {
         float total_power_difference = m_MigrationTotal;
         BOOST_FOREACH(float power_difference, m_MigrationReport | boost::adaptors::map_values)
@@ -1240,6 +1244,12 @@ bool LBAgent::InvariantCheck()
             total_power_difference += power_difference;
         }
 
+        Logger.Debug << "Invariant Variables:"
+            << "\n\tEstimated Generator Power: " << m_GeneratorPower
+            << "\n\tExpected Power Difference: " << total_power_difference
+            << "\n\tMigration Step Size:       " << m_MigrationStep
+            << "\n\tMax Generator Power:       " << GENERATOR_MAX_POWER << std::endl;
+    
         result &= m_GeneratorPower - total_power_difference >= m_MigrationStep;
         result &= m_GeneratorPower - total_power_difference <= GENERATOR_MAX_POWER;
 

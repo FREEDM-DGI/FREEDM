@@ -830,20 +830,25 @@ void LBAgent::HandleDraftSelect(const DraftSelectMessage & m, CPeerNode peer)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
-    if(CountInPeerSet(m_AllPeers, peer) == 0)
+    try
     {
-        Logger.Notice << "Rejected Draft Select: peer node in group" << std::endl;
-    }
-    else if(CGlobalConfiguration::Instance().GetMaliciousFlag())
-    {
-        Logger.Notice << "(MALICIOUS) Dropped draft select message." << std::endl;
-    }
-    else
-    {
-        float amount = m.migrate_step();
-
-        try
+        if(CountInPeerSet(m_AllPeers, peer) == 0)
         {
+            Logger.Notice << "Rejected Draft Select: peer node in group" << std::endl;
+        }
+        else if(CGlobalConfiguration::Instance().GetMaliciousFlag())
+        {
+            Logger.Notice << "(MALICIOUS) Accepted Draft Accept" << std::endl;
+            peer.Send(MessageDraftAccept(m.migrate_step()));
+        }
+        else if(!InvariantCheck())
+        {
+            Logger.Notice << "Rejected Draft Select: invariant false" << std::endl;
+        }
+        else
+        {
+            float amount = m.migrate_step();
+
             if(m_NetGeneration <= m_PredictedGateway - amount)
             {
                 peer.Send(MessageDraftAccept(amount));
@@ -859,10 +864,10 @@ void LBAgent::HandleDraftSelect(const DraftSelectMessage & m, CPeerNode peer)
                 peer.Send(MessageTooLate(amount));
             }
         }
-        catch(boost::system::system_error & error)
-        {
-            Logger.Warn << "Couldn't connect to peer" << std::endl;
-        }
+    }
+    catch(boost::system::system_error & error)
+    {
+        Logger.Warn << "Couldn't connect to peer" << std::endl;
     }
 }
 
@@ -912,10 +917,21 @@ ModuleMessage LBAgent::MessageTooLate(float amount)
 void LBAgent::HandleDraftAccept(const DraftAcceptMessage & m, CPeerNode /* peer */ )
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    SetPStar(m_PredictedGateway + m.migrate_step());
-    m_MigrationTotal += m.migrate_step();
-    // it is alright if this fails, migration reports can tolerate being dropped
-    SendToPeerSet(m_AllPeers, MessageMigrationReport());
+    if(CGlobalConfiguration::Instance().GetMaliciousFlag())
+    {
+        Logger.Notice << "(MALICIOUS) Dropped Draft Accept." << std::endl;
+    }
+    else if(!InvariantCheck())
+    {
+        Logger.Notice << "Rejected Draft Accept: invariant false" << std::endl;
+    }
+    else
+    {
+        SetPStar(m_PredictedGateway + m.migrate_step());
+        m_MigrationTotal += m.migrate_step();
+        // it is alright if this fails, migration reports can tolerate being dropped
+        SendToPeerSet(m_AllPeers, MessageMigrationReport());
+    }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1216,7 +1232,7 @@ bool LBAgent::InvariantCheck()
 
     bool result = true;
 
-    if(CGlobalConfiguration::Instance().GetInvariantCheck())
+    if(CGlobalConfiguration::Instance().GetInvariantCheck() && !CGlobalConfiguration::Instance().GetMaliciousFlag())
     {
         float total_power_difference = m_MigrationTotal;
         BOOST_FOREACH(float power_difference, m_MigrationReport | boost::adaptors::map_values)

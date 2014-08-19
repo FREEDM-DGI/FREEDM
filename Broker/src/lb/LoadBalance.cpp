@@ -836,6 +836,11 @@ void LBAgent::HandleDraftSelect(const DraftSelectMessage & m, CPeerNode peer)
         {
             Logger.Notice << "Rejected Draft Select: peer node in group" << std::endl;
         }
+        else if(CGlobalConfiguration::Instance().GetMaliciousFlag())
+        {
+            Logger.Notice << "(MALICIOUS) Accepted Draft Select" << std::endl;
+            peer.Send(MessageDraftAccept(m.migrate_step()));
+        }
         else if(!InvariantCheck())
         {
             Logger.Notice << "Rejected Draft Select: invariant false" << std::endl;
@@ -912,7 +917,11 @@ ModuleMessage LBAgent::MessageTooLate(float amount)
 void LBAgent::HandleDraftAccept(const DraftAcceptMessage & m, CPeerNode /* peer */ )
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    if(!InvariantCheck())
+    if(CGlobalConfiguration::Instance().GetMaliciousFlag())
+    {
+        Logger.Notice << "(MALICIOUS) Dropped Draft Accept" << std::endl;
+    }
+    else if(!InvariantCheck())
     {
         Logger.Notice << "Rejected Draft Accept: invariant false" << std::endl;
     }
@@ -989,11 +998,7 @@ void LBAgent::SetPStar(float pstar)
     std::set<device::CDevice::Pointer> sstContainer;
     sstContainer = device::CDeviceManager::Instance().GetDevicesOfType("Sst");
 
-    if(CGlobalConfiguration::Instance().GetMaliciousFlag())
-    {
-        Logger.Notice << "(MALICIOUS) Dropped power command." << std::endl;
-    }
-    else if(sstContainer.size() > 0)
+    if(sstContainer.size() > 0)
     {
         if(sstContainer.size() > 1)
         {
@@ -1227,11 +1232,7 @@ bool LBAgent::InvariantCheck()
 
     bool result = true;
 
-    if(CGlobalConfiguration::Instance().GetMaliciousFlag())
-    {
-        Logger.Notice << "(MALICIOUS) Skipping invariant check." << std::endl;
-    }
-    else if(!CGlobalConfiguration::Instance().GetInvariantCheck())
+    if(!CGlobalConfiguration::Instance().GetInvariantCheck())
     {
         Logger.Info << "Skipped invariant check, disabled." << std::endl;
     }

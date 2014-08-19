@@ -595,10 +595,6 @@ void LBAgent::SendDraftRequest()
     {
         Logger.Notice << "Draft Request Cancelled: no DEMAND" << std::endl;
     }
-    else if(!InvariantCheck())
-    {
-        Logger.Notice << "Draft Request Cancelled: invariant false" << std::endl;
-    }
     else
     {
         SendToPeerSet(m_InDemand, MessageDraftRequest());

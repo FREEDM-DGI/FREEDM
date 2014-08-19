@@ -1204,7 +1204,7 @@ void LBAgent::Synchronize(float k)
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     
     ReadDevices();
-    m_GeneratorPower = k;
+    m_GeneratorPower = -k;
     m_MigrationTotal = 0;
     m_MigrationReport.clear();
     m_PredictedGateway = m_Gateway;
@@ -1251,10 +1251,12 @@ bool LBAgent::InvariantCheck()
     
         if(m_State == LBAgent::SUPPLY)
         {
+            Logger.Debug << "Checking the supply invariant." << std::endl;
             result &= m_GeneratorPower - total_power_difference >= m_MigrationStep;
         }
         if(m_State == LBAgent::DEMAND)
         {
+            Logger.Debug << "Checking the demand invariant." << std::endl;
             result &= m_GeneratorPower - total_power_difference <= GENERATOR_MAX_POWER;
         }
 

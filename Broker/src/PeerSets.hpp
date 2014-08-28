@@ -49,7 +49,7 @@ typedef std::map<std::string,
                  std::pair<CPeerNode, boost::posix_time::ptime> > TimedPeerSet;
 
 /// Provides a TimedPeerSet iterator templated on T
-typedef typename TimedPeerSet::iterator TimedPeerSetIterator;
+typedef TimedPeerSet::iterator TimedPeerSetIterator;
 
 /// Provides count() for a TimedPeerSet
 int CountInTimedPeerSet(TimedPeerSet& tps, const CPeerNode& m);

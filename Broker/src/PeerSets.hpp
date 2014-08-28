@@ -34,7 +34,7 @@ namespace broker {
 /// Provides a PeerSet type for a module templated on T
 typedef std::map<std::string, CPeerNode> PeerSet;
 /// Provides a PeerSet iterator templated on T
-typedef typename PeerSet::iterator PeerSetIterator;
+typedef PeerSet::iterator PeerSetIterator;
 /// Provides count() for a PeerSet
 int CountInPeerSet(PeerSet& ps, const CPeerNode& m);
 /// Provides find() for a PeerSet

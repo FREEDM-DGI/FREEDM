@@ -82,7 +82,7 @@ namespace lb {
 namespace {
 CLocalLogger Logger(__FILE__);
 float GENERATOR_INIT_POWER = 0;
-float GENERATOR_MAX_POWER = 10;
+float GENERATOR_MAX_POWER = 100;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -58,6 +58,7 @@
 #include <boost/bind.hpp>
 #include <boost/foreach.hpp>
 #include <boost/optional.hpp>
+#include <boost/range/adaptor/map.hpp>
 #include <boost/property_tree/ptree.hpp>
 #include <boost/system/system_error.hpp>
 #include <boost/algorithm/string/regex.hpp>
@@ -233,6 +234,16 @@ void CAdapterFactory::Stop()
     {
         Logger.Error << "Caught exception when stopping AdapterFactory: "
                 << e.what() << std::endl;
+    }
+}
+
+void CAdapterFactory::Save(const std::string tag)
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+
+    BOOST_FOREACH(IAdapter::Pointer adapter, m_adapters | boost::adaptors::map_values)
+    {
+        adapter->Save(tag);
     }
 }
 

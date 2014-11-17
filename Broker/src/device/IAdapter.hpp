@@ -68,6 +68,9 @@ class IAdapter
     : private boost::noncopyable
 {
 public:
+    /// Maximum number of tags that can be saved.
+    static const std::size_t MAX_NUM_TAGS = 1000;
+
     /// Pointer to a physical adapter.
     typedef boost::shared_ptr<IAdapter> Pointer;
 
@@ -77,9 +80,19 @@ public:
     /// Stops the adapter.  Guaranteed to be thread-safe.
     virtual void Stop() = 0;
 
+    /// Save the current adapter state with a given tag.
+    virtual void Save(const std::string tag) = 0;
+
+    /// Delete the data stored under a tag.
+    virtual void Delete(const std::string tag) = 0;
+
     /// Retrieves a value from a device.
     virtual SignalValue GetState(const std::string device,
             const std::string signal) const = 0;
+
+    /// Retrives a tagged value from a device.
+    virtual SignalValue GetState(const std::string device,
+            const std::string signal, const std::string tag) const = 0;
 
     /// Sets a value on a device.
     virtual void SetCommand(const std::string device, const std::string signal,

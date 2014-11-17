@@ -75,6 +75,8 @@ public:
     /// Returns the result of a binary operation on a set of device signals.
     SignalValue GetNetValue(std::string type, std::string signal);
 
+    /// Tag and save the current device state.
+    void TagDeviceState(std::string tag);
 private:
     /// A typedef for the mapping of identifier to device pointers.
     typedef std::map<std::string, CDevice::Pointer> PhysicalDeviceSet;

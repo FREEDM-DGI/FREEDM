@@ -194,6 +194,20 @@ SignalValue CDevice::GetState(std::string signal) const
     return m_adapter->GetState(m_devid, signal);
 }
 
+SignalValue CDevice::GetState(std::string signal, std::string tag) const
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+
+    if( !HasState(signal) )
+    {
+        Logger.Error << "Bad Device State: " << signal << "\n" << m_devid
+                << "\n" << m_devinfo << std::endl;
+        throw std::runtime_error("Bad Device State: " + signal);
+    }
+
+    return m_adapter->GetState(m_devid, signal, tag);
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 /// Accessor for the set of recognized state signals.
 ///

@@ -94,6 +94,9 @@ public:
     /// Gets the current state of some signal from the adapter.
     SignalValue GetState(std::string signal) const;
 
+    /// Gets a previous value of some state signal.
+    SignalValue GetState(std::string signal, std::string tag) const;
+
     /// Gets the set of state signals recognized by the device.
     std::set<std::string> GetStateSet() const;
 

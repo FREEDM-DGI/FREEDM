@@ -103,6 +103,9 @@ public:
     /// Gets the set of command signals recognized by the device.
     std::set<std::string> GetCommandSet() const;
 
+    /// Gets the set of saved tags for this device.
+    std::set<std::string> GetTagSet() const;
+
     /// Sets the next command for some signal in the adapter.
     void SetCommand(std::string signal, SignalValue value);
 

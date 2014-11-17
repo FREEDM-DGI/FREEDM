@@ -238,6 +238,12 @@ std::set<std::string> CDevice::GetCommandSet() const
     return m_devinfo.s_command;
 }
 
+std::set<std::string> CDevice::GetTagSet() const
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    return m_adapter->GetTags();
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 /// Sets the value of a device command in the adapter.
 ///

@@ -92,6 +92,12 @@ std::set<std::string> IAdapter::GetDevices() const
     return m_devices;
 }
 
+std::set<std::string> IAdapter::GetTags() const
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    return m_tags;
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 /// Reveals the associated devices in the device manager.
 ///

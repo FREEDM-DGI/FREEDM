@@ -61,9 +61,17 @@ public:
     /// Returns if the physical topology is available.
     bool IsAvailable();
 
+    /// Get the resistance between two vertex identifiers.
+    float GetResistance(std::string u, std::string v);
+
+    /// Get the reactance between two vertex identifiers.
+    float GetReactance(std::string u, std::string v);
 private:
     /// Private constructor for the singleton instance
     CPhysicalTopology();
+
+    /// Converts vertex identifiers into a pair
+    VertexPair LineID(std::string u, std::string v);
 
     /// Load the topology from a file
     void LoadTopology();
@@ -75,6 +83,8 @@ private:
     FIDControlMap m_fidcontrol; /// Which edges FIDs control.
     bool m_available; /// If a physical topology has been loaded
     std::map<std::string, std::string> m_strans; /// Fake to real translation table
+    std::map<VertexPair, float> m_resistance; /// Transmission line resistance
+    std::map<VertexPair, float> m_reactance; /// Transmission line reactance
 };
 
     } // namespace broker

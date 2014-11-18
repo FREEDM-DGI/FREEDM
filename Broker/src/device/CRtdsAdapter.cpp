@@ -37,6 +37,7 @@
 #include "CLogger.hpp"
 #include "CTimings.hpp"
 #include "SynchronousTimeout.hpp"
+#include "CDeviceManager.hpp"
 
 #include <sys/param.h>
 
@@ -236,6 +237,28 @@ void CRtdsAdapter::Run(const boost::system::error_code & e)
         }
 
         Logger.Debug << "Releasing the rxBuffer mutex." << std::endl;
+    }
+
+    // Get the current time
+    //  WARNING: this will lock the mutex for this instance
+    std::set<CDevice::Pointer> clocks;
+    clocks = CDeviceManager::Instance().GetDevicesOfType("Clock");
+
+    if( clocks.size() > 0 )
+    {
+        // Get the string form of the current time
+        std::string tag = boost::lexical_cast<std::string>((*clocks.begin())->GetState("time"));
+
+        // Make room for the new tag (if needed)
+        if(m_tagged.size() == MAX_NUM_TAGS)
+        {
+            Delete(m_TagQueue.front());
+            m_TagQueue.pop_front();
+        }
+
+        // Tag the new device state
+        m_TagQueue.push_back(tag);
+        Save(tag);
     }
 
     // Start the timer; on timeout, this function is called again

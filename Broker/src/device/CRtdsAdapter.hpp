@@ -28,6 +28,8 @@
 
 #include "IBufferAdapter.hpp"
 
+#include <list>
+
 #include <boost/enable_shared_from_this.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/asio/io_service.hpp>
@@ -102,6 +104,9 @@ private:
 
     /// The port number of the remote host.
     std::string m_port;
+
+    /// The order of added tags.
+    std::list<std::string> m_TagQueue;
 };
 
 } //namespace device

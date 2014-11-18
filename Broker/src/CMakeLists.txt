@@ -23,6 +23,7 @@ set(BROKER_FILES
     CClockSynchronizer.cpp
     CTimings.cpp
     CPhysicalTopology.cpp
+    ExampleFunctions.cpp
     gm/GroupManagement.cpp
     lb/LoadBalance.cpp
     sc/StateCollection.cpp

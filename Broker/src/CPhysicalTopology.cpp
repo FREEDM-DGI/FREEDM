@@ -217,7 +217,8 @@ void CPhysicalTopology::LoadTopology()
         {
             std::string v_symbol1;
             std::string v_symbol2;
-            if(!(topf>>v_symbol1>>v_symbol2))
+            float resistance, reactance;
+            if(!(topf>>v_symbol1>>v_symbol2>>resistance>>reactance))
             {
                 throw std::runtime_error("Failed Reading Edge Topology Entry (EOF?)");
             }
@@ -234,6 +235,10 @@ void CPhysicalTopology::LoadTopology()
 
             seennames.insert(v_symbol1);
             seennames.insert(v_symbol2);
+
+            VertexPair line_id = LineID(v_symbol1, v_symbol2);
+            m_resistance[line_id] = resistance;
+            m_reactance[line_id] = reactance;
         }
         else if(token == VERTEX_TOKEN)
         {
@@ -343,6 +348,35 @@ std::string CPhysicalTopology::RealNameFromVirtual(std::string vname)
         return m_strans[vname];
     }
     return VNAME_PREFIX+vname;
+}
+
+CPhysicalTopology::VertexPair CPhysicalTopology::LineID(std::string u, std::string v)
+{
+    return u < v ? VertexPair(u, v) : VertexPair(v, u);
+}
+
+float CPhysicalTopology::GetResistance(std::string u, std::string v)
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+
+    VertexPair line = LineID(u, v);
+    if(m_resistance.count(line) == 0)
+    {
+        throw std::runtime_error("No such line: " + u + "," + v);
+    }
+    return m_resistance[line];
+}
+
+float CPhysicalTopology::GetReactance(std::string u, std::string v)
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+
+    VertexPair line = LineID(u, v);
+    if(m_reactance.count(line) == 0)
+    {
+        throw std::runtime_error("No such line: " + u + "," + v);
+    }
+    return m_reactance[line];
 }
 
     } // namespace broker

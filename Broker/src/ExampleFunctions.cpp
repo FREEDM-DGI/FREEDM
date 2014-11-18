@@ -93,6 +93,13 @@ float GetValue(CDevice::Pointer device, std::string signal, float time)
     return device->GetState(signal, tag);
 }
 
+// vertexA and vertexB must be defined as an edge in topology.cfg
+float GetResistance(std::string vertexA, std::string vertexB)
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    return CPhysicalTopology::Instance().GetResistance(vertexA, vertexB);
+}
+
 } // namespace sample
 } // namespace broker
 } // namespace freedm

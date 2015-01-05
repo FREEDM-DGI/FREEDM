@@ -60,8 +60,18 @@ public:
     /// Stop the fake adapter.
     void Stop();
 
+    /// Save the adapter state with a tag.
+    void Save(const std::string tag);
+
+    /// Delete a tag.
+    void Delete(const std::string tag);
+
     /// Retrieves a value from a device.
     SignalValue GetState(const std::string device, const std::string key) const;
+
+    /// Retrives a tagged value from a device.
+    SignalValue GetState(const std::string device, const std::string key,
+        const std::string tag) const;
 
     /// Sets a value on a device.
     void SetCommand(const std::string device, const std::string key,
@@ -79,6 +89,9 @@ private:
 
     /// Registry of device keys and values.
     mutable DeviceMap m_registry;
+
+    /// Map from a tag to its associated data.
+    mutable std::map<std::string, DeviceMap> m_tagged;
 
     /// Is the adapter stopped?
     bool m_stopped;

@@ -37,6 +37,7 @@
 
 #include "CDeviceManager.hpp"
 #include "CLogger.hpp"
+#include "CAdapterFactory.hpp"
 
 #include <stdexcept>
 
@@ -308,6 +309,12 @@ SignalValue CDeviceManager::GetNetValue(std::string type, std::string signal)
     }
 
     return result;
+}
+
+void CDeviceManager::TagDeviceState(std::string tag)
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    CAdapterFactory::Instance().Save(tag);
 }
 
 } // namespace device

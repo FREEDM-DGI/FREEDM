@@ -81,6 +81,23 @@ void CFakeAdapter::Stop()
     m_stopMutex.unlock();
 }
 
+void CFakeAdapter::Save(const std::string tag)
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+
+    if(m_tagged.size() >= MAX_NUM_TAGS && m_tagged.count(tag) == 0)
+    {
+        throw std::runtime_error("Exceeded maximum number of adapter tags.");
+    }
+    m_tagged[tag] = m_registry;
+}
+
+void CFakeAdapter::Delete(const std::string tag)
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    m_tagged.erase(tag);
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 /// Sets the value of a device's setting. If the device is not currently
 /// registered with the adapter, it is added. If the setting does not
@@ -114,6 +131,29 @@ SignalValue CFakeAdapter::GetState(const std::string device,
     }
 
     return keyIter->second;
+}
+
+SignalValue CFakeAdapter::GetState(const std::string device,
+    const std::string key, const std::string tag) const
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    
+    if(m_tagged.count(tag) == 0)
+    {
+        Logger.Error << "Unknown tag " << tag << std::endl;
+        throw std::runtime_error("Unknown Adapter Tag");
+    }
+
+    try
+    {
+        return m_tagged[tag].at(device).at(key);
+    }
+    catch(const std::exception & e)
+    {
+        Logger.Error << "Unknown signal (" << device
+            << "," << key << ") at tag " << tag << std::endl;
+        throw std::runtime_error("Unknown device signal.");
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////

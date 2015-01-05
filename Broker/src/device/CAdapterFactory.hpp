@@ -69,6 +69,9 @@ public:
 
     /// Stop everything!
     void Stop();
+
+    /// Save the current adapter states under a tag.
+    void Save(const std::string tag);
 private:
     /// Constructs the factory.
     CAdapterFactory();

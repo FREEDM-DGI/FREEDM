@@ -51,12 +51,22 @@ public:
     /// Pointer to a physical adapter.
     typedef boost::shared_ptr<IBufferAdapter> Pointer;
 
+    /// Saves the rxBuffer under a tag.
+    void Save(const std::string tag);
+
+    /// Deletes a stored tag.
+    void Delete(const std::string tag);
+
     /// Set data in txBuffer.
     void SetCommand(const std::string device, const std::string signal,
             const SignalValue value);
 
     /// Retrieve data from rxBuffer.
     SignalValue GetState(const std::string device, const std::string signal) const;
+
+    /// Retrieves tagged data.
+    SignalValue GetState(const std::string device, const std::string signal,
+        const std::string tag) const;
 
     /// Registers a new device signal with the physical adapter.
     void RegisterStateInfo(const std::string device, const std::string signal,
@@ -86,6 +96,9 @@ protected:
 
     /// The "command table" buffer sent to the external host.
     std::vector<SignalValue> m_txBuffer;
+
+    /// The tagged rxBuffers
+    std::map<std::string, std::vector<SignalValue> > m_tagged;
 
     /// Provides synchronization for m_rxBuffer.
     mutable boost::shared_mutex m_rxMutex;

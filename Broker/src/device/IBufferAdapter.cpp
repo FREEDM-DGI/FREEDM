@@ -129,6 +129,24 @@ void IBufferAdapter::Start()
     }
 }
 
+void IBufferAdapter::Save(const std::string tag)
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+
+    if(m_tagged.size() >= MAX_NUM_TAGS && m_tagged.count(tag) == 0)
+    {
+        throw std::runtime_error("Exceeded maximum number of adapter tags.");
+    }
+    boost::shared_lock<boost::shared_mutex> readLock(m_rxMutex);
+    m_tagged[tag] = m_rxBuffer;
+}
+
+void IBufferAdapter::Delete(const std::string tag)
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    m_tagged.erase(tag);
+}
+
 ////////////////////////////////////////////////////////////////////////////
 /// Update the specified value in the txBuffer.
 ///
@@ -196,6 +214,26 @@ SignalValue IBufferAdapter::GetState(const std::string device,
     Logger.Debug << device << " " << signal << ": " << value << std::endl;
 
     return value;
+}
+
+SignalValue IBufferAdapter::GetState(const std::string device,
+        const std::string signal, const std::string tag) const
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+
+    const DeviceSignal devsig(device, signal);
+
+    if(m_tagged.count(tag) == 0)
+    {
+        Logger.Error << "No such adapter tag, " << tag << std::endl;
+        throw std::runtime_error("Unknown Adapter Tag");
+    }
+    if(m_stateInfo.count(devsig) == 0)
+    {
+        throw std::runtime_error("Attempted to get a device signal (" + device
+                + "," + signal + ") that does not exist at tag " + tag);
+    }
+    return m_tagged.at(tag).at(m_stateInfo.find(devsig)->second);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -139,6 +139,7 @@ void IBufferAdapter::Save(const std::string tag)
     }
     boost::shared_lock<boost::shared_mutex> readLock(m_rxMutex);
     m_tagged[tag] = m_rxBuffer;
+    m_tags.insert(tag);
 }
 
 void IBufferAdapter::Delete(const std::string tag)

@@ -107,12 +107,18 @@ public:
     /// Get the list of registered device names.
     std::set<std::string> GetDevices() const;
 
+    /// Get the list of saved tags.
+    std::set<std::string> GetTags() const;
+
 protected:
     /// Constructor
     IAdapter();
 
     /// Reveals devices in the device manager.
     void RevealDevices();
+
+    /// The set of saved tags.
+    std::set<std::string> m_tags;
 
 private:
     /// Set of registered device names.

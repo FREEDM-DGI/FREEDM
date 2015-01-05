@@ -90,6 +90,7 @@ void CFakeAdapter::Save(const std::string tag)
         throw std::runtime_error("Exceeded maximum number of adapter tags.");
     }
     m_tagged[tag] = m_registry;
+    m_tags.insert(tag);
 }
 
 void CFakeAdapter::Delete(const std::string tag)

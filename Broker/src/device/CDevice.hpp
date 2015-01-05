@@ -94,11 +94,17 @@ public:
     /// Gets the current state of some signal from the adapter.
     SignalValue GetState(std::string signal) const;
 
+    /// Gets a previous value of some state signal.
+    SignalValue GetState(std::string signal, std::string tag) const;
+
     /// Gets the set of state signals recognized by the device.
     std::set<std::string> GetStateSet() const;
 
     /// Gets the set of command signals recognized by the device.
     std::set<std::string> GetCommandSet() const;
+
+    /// Gets the set of saved tags for this device.
+    std::set<std::string> GetTagSet() const;
 
     /// Sets the next command for some signal in the adapter.
     void SetCommand(std::string signal, SignalValue value);

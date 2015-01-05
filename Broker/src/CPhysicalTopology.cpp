@@ -95,7 +95,7 @@ bool CPhysicalTopology::IsAvailable()
 ///     open FID is false. If an FID is open edges it controls are not used.
 ///////////////////////////////////////////////////////////////////////////////
 CPhysicalTopology::VertexSet CPhysicalTopology::ReachablePeers(std::string source,
-    CPhysicalTopology::FIDState fidstate)
+    CPhysicalTopology::FIDState fidstate, int depth)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     typedef std::pair<int, std::string> BFSExplorer;
@@ -126,7 +126,10 @@ CPhysicalTopology::VertexSet CPhysicalTopology::ReachablePeers(std::string sourc
 
         if(consider.find(VNAME_PREFIX) == std::string::npos)
             solutionset.insert(consider);
-        
+
+        if(depth >= 0 && hops > depth)
+            continue;        
+
         Logger.Debug<<"Considering "<<consider<<" ("<<hops<<" hops) ("
                     <<m_adjlist[consider].size()<<" Neighbors)"<<std::endl;
 

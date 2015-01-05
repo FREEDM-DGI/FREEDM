@@ -26,6 +26,8 @@ set(BROKER_FILES
     gm/GroupManagement.cpp
     lb/LoadBalance.cpp
     sc/StateCollection.cpp
+    pa/PhysicalAttestation.cpp
+    pa/CAttestationFramework.cpp
    )
 
 # generate the configuration file

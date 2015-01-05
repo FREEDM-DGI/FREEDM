@@ -167,6 +167,19 @@ void LBAgent::HandleIncomingMessage(boost::shared_ptr<const ModuleMessage> m, CP
             Logger.Warn << "Dropped unexpected group management message:\n" << m->DebugString();
         }
     }
+    else if(m->has_physical_attestation_message())
+    {
+        pa::PhysicalAttestationMessage pam = m->physical_attestation_message();
+
+        if(pam.has_attestation_failure_message())
+        {
+            HandleAttestationFailure(pam.attestation_failure_message());
+        }
+        else
+        {
+            Logger.Warn << "Dropped unexpected group management message:\n" << m->DebugString();
+        }
+    }
     else if(m->has_load_balancing_message())
     {
         LoadBalancingMessage lbm = m->load_balancing_message();
@@ -757,6 +770,10 @@ void LBAgent::DraftStandard(const boost::system::error_code & error)
         {
             SendDraftSelect(selected_peer, m_MigrationStep);
         }
+        else
+        {
+            Logger.Notice << "Unable to complete migration." << std::endl;
+        }
     }
     else if(error == boost::asio::error::operation_aborted)
     {
@@ -775,12 +792,13 @@ void LBAgent::DraftStandard(const boost::system::error_code & error)
 /// @pre None
 /// @post a new message is generated.
 ///////////////////////////////////////////////////////////////////////////////
-ModuleMessage LBAgent::MessageDraftSelect(float amount)
+ModuleMessage LBAgent::MessageDraftSelect(float time, float amount)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     LoadBalancingMessage msg;
     DraftSelectMessage * submsg = msg.mutable_draft_select_message();
     submsg->set_migrate_step(amount);
+    submsg->set_commit_time(time);
     return PrepareForSending(msg);
 }
 
@@ -796,11 +814,19 @@ void LBAgent::SendDraftSelect(CPeerNode peer, float step)
 
     try
     {
-        peer.Send(MessageDraftSelect(step));
+        float time = SetPStar(m_PredictedGateway + step);
+        m_MigrationTotal += step;
+        peer.Send(MessageDraftSelect(time, step));
+        // it is alright if this fails, migration reports can tolerate being dropped
+        SendToPeerSet(m_AllPeers, MessageMigrationReport());
     }
     catch(boost::system::system_error & e)
     {
         Logger.Warn << "Couldn't connect to peer" << std::endl;
+    }
+    catch(std::runtime_error & e)
+    {
+        Logger.Warn << "Couldn't set PStar" << std::endl;
     }
 }
 
@@ -831,15 +857,21 @@ void LBAgent::HandleDraftSelect(const DraftSelectMessage & m, CPeerNode peer)
         if(CountInPeerSet(m_AllPeers, peer) == 0)
         {
             Logger.Notice << "Rejected Draft Select: peer node in group" << std::endl;
+            peer.Send(MessageTooLate(m.migrate_step()));
         }
         else if(CGlobalConfiguration::Instance().GetMaliciousFlag())
         {
             Logger.Notice << "(MALICIOUS) Accepted Draft Select" << std::endl;
-            peer.Send(MessageDraftAccept(m.migrate_step()));
+
+            std::set<device::CDevice::Pointer> clock;
+            clock = device::CDeviceManager::Instance().GetDevicesOfType("Clock");
+            float time = clock.empty() ? 0 : (*clock.begin())->GetState("time");
+            peer.Send(MessageDraftAccept(time, m.migrate_step()));
         }
         else if(!InvariantCheck())
         {
             Logger.Notice << "Rejected Draft Select: invariant false" << std::endl;
+            peer.Send(MessageTooLate(m.migrate_step()));
         }
         else
         {
@@ -847,13 +879,21 @@ void LBAgent::HandleDraftSelect(const DraftSelectMessage & m, CPeerNode peer)
 
             if(m_NetGeneration <= m_PredictedGateway - amount)
             {
-                peer.Send(MessageDraftAccept(amount));
-                SetPStar(m_PredictedGateway - amount);
-                m_MigrationTotal -= amount;
-                // it is alright if this fails but the above send does not
-                // migration reports can tolerate being dropped
-                SendToPeerSet(m_AllPeers, MessageMigrationReport());
-                
+                // should perform attestation prior to the following (future work)
+                try
+                {
+                    float time = SetPStar(m_PredictedGateway - amount);
+                    m_MigrationTotal -= amount;
+                    peer.Send(MessageDraftAccept(time, amount));
+                    // it is alright if this fails but the above send does not
+                    // migration reports can tolerate being dropped
+                    SendToPeerSet(m_AllPeers, MessageMigrationReport());
+                }
+                catch(std::runtime_error & e)
+                {
+                    // catch pstar failures
+                    peer.Send(MessageTooLate(amount));
+                }
             }
             else
             {
@@ -873,12 +913,13 @@ void LBAgent::HandleDraftSelect(const DraftSelectMessage & m, CPeerNode peer)
 /// @pre None
 /// @post an Accept message is generated.
 /////////////////////////////////////////////////////////////////////////////// 
-ModuleMessage LBAgent::MessageDraftAccept(float amount)
+ModuleMessage LBAgent::MessageDraftAccept(float time, float amount)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     LoadBalancingMessage msg;
     DraftAcceptMessage * submsg = msg.mutable_draft_accept_message();
     submsg->set_migrate_step(amount);
+    submsg->set_commit_time(time);
     return PrepareForSending(msg);
 }
 
@@ -910,7 +951,7 @@ ModuleMessage LBAgent::MessageTooLate(float amount)
 /// @limitations Does not validate the source, integrity or contents of the
 ///     message.
 ///////////////////////////////////////////////////////////////////////////////
-void LBAgent::HandleDraftAccept(const DraftAcceptMessage & m, CPeerNode /* peer */ )
+void LBAgent::HandleDraftAccept(const DraftAcceptMessage & m, CPeerNode peer)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     if(CGlobalConfiguration::Instance().GetMaliciousFlag())
@@ -923,11 +964,35 @@ void LBAgent::HandleDraftAccept(const DraftAcceptMessage & m, CPeerNode /* peer 
     }
     else
     {
-        SetPStar(m_PredictedGateway + m.migrate_step());
-        m_MigrationTotal += m.migrate_step();
-        // it is alright if this fails, migration reports can tolerate being dropped
-        SendToPeerSet(m_AllPeers, MessageMigrationReport());
+        m_MigrationTotal -= m.migrate_step();
+        CPeerNode self = CGlobalPeerList::instance().GetPeer(GetUUID());
+        self.Send(MessageAttestationRequest(m.commit_time(), peer.GetUUID(), m.migrate_step()));
     }
+}
+
+ModuleMessage LBAgent::MessageAttestationRequest(float time, std::string target, float change)
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+
+    pa::PhysicalAttestationMessage msg;
+    pa::AttestationRequestMessage * submsg = msg.mutable_attestation_request_message();
+    submsg->set_request_time(time);
+    submsg->set_attestation_target(target);
+    submsg->set_expected_value(change);
+
+    ModuleMessage mm;
+    mm.mutable_physical_attestation_message()->CopyFrom(msg);
+    mm.set_recipient_module("pa");
+    return mm;
+}
+
+void LBAgent::HandleAttestationFailure(const pa::AttestationFailureMessage & m)
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    SetPStar(m_PredictedGateway - m.adjustment());
+    m_MigrationTotal -= m.adjustment();
+    // really do need to inform the other party...
+    // also need to cancel the migration alert...
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -943,6 +1008,9 @@ void LBAgent::HandleDraftAccept(const DraftAcceptMessage & m, CPeerNode /* peer 
 void LBAgent::HandleTooLate(const TooLateMessage & m)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    SetPStar(m_PredictedGateway - m.migrate_step());
+    m_MigrationTotal -= m.migrate_step();
+    // what happens about the migration alert sent earlier?
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -987,14 +1055,15 @@ void LBAgent::HandlePeerList(const gm::PeerListMessage & m, CPeerNode peer)
 /// @post: Set command(s) to SST
 /// @param pstar the new pstar setting to use. 
 /////////////////////////////////////////////////////////
-void LBAgent::SetPStar(float pstar)
+float LBAgent::SetPStar(float pstar)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
-    std::set<device::CDevice::Pointer> sstContainer;
+    std::set<device::CDevice::Pointer> sstContainer, clock;
     sstContainer = device::CDeviceManager::Instance().GetDevicesOfType("Sst");
+    clock = device::CDeviceManager::Instance().GetDevicesOfType("Clock");
 
-    if(sstContainer.size() > 0)
+    if(sstContainer.size() > 0 && clock.size() > 0)
     {
         if(sstContainer.size() > 1)
         {
@@ -1008,7 +1077,10 @@ void LBAgent::SetPStar(float pstar)
     else
     {
         Logger.Warn << "Failed to set P*: no attached SST device" << std::endl;
+        throw std::runtime_error("Missing Devices");
     }
+
+    return (*clock.begin())->GetState("time");
 }
 
 ///////////////////////////////////////////////////////////////////////////////

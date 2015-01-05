@@ -53,6 +53,10 @@ unsigned int CTimings::LB_ROUND_TIME;
 
 unsigned int CTimings::LB_REQUEST_TIMEOUT;
 
+unsigned int CTimings::PA_ROUND_TIME;
+
+unsigned int CTimings::PA_REQUEST_TIMEOUT;
+
 
 void CTimings::SetTimings(const std::string timingsFile)
 {
@@ -163,6 +167,18 @@ void CTimings::SetTimings(const std::string timingsFile)
         ("LB_REQUEST_TIMEOUT",
         po::value<unsigned int>( ),
         desc.c_str() );
+
+    desc = "The timing value PA_ROUND_TIME";
+    loggerOpts.add_options()
+        ("PA_ROUND_TIME",
+        po::value<unsigned int>( ),
+        desc.c_str() );
+
+    desc = "The timing value PA_REQUEST_TIMEOUT";
+    loggerOpts.add_options()
+        ("PA_REQUEST_TIMEOUT",
+        po::value<unsigned int>( ),
+        desc.c_str());
 
 
     ifs.open(timingsFile.c_str());
@@ -349,6 +365,26 @@ void CTimings::SetTimings(const std::string timingsFile)
     {
         throw EDgiConfigError(
                 "LB_REQUEST_TIMEOUT is missing, please check your timings config");
+    }
+
+    try
+    {
+        PA_ROUND_TIME = vm["PA_ROUND_TIME"].as<unsigned int>();
+    }
+    catch (boost::bad_any_cast& e)
+    {
+        throw EDgiConfigError(
+                "PA_ROUND_TIME is missing, please chcek your timings config");
+    }
+
+    try
+    {
+        PA_REQUEST_TIMEOUT = vm["PA_REQUEST_TIMEOUT"].as<unsigned int>();
+    }
+    catch (boost::bad_any_cast& e)
+    {
+        throw EDgiConfigError(
+                "PA_REQUEST_TIMEOUT is missing, please chcek your timings config");
     }
 }
 

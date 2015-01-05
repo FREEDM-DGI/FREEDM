@@ -56,7 +56,7 @@ public:
     ~CPhysicalTopology();
 
     /// Find the reachable peers.
-    VertexSet ReachablePeers(std::string source, FIDState fidstate);
+    VertexSet ReachablePeers(std::string source, FIDState fidstate, int depth = -1);
 
     /// Returns if the physical topology is available.
     bool IsAvailable();

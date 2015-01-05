@@ -1,0 +1,44 @@
+package freedm.broker.pa;
+
+message AttestationRequestMessage
+{
+    required float request_time = 1;
+    required string attestation_target = 2;
+    required float expected_value = 3;
+}
+
+message StateRequestMessage
+{
+    required float time_before = 1;
+    required float time_after = 2;
+}
+
+message StateResponseMessage
+{
+    required bool valid = 1;
+    required DeviceStateMessage state_before = 2;
+    required DeviceStateMessage state_after = 3;
+}
+
+message DeviceStateMessage
+{
+    required float time = 1;
+    required float real_power = 2;
+    required float bus_voltage = 3;
+    required float voltage_phase = 4;
+}
+
+message AttestationFailureMessage
+{
+    required string target = 1;
+    required float adjustment = 2;
+}
+
+message PhysicalAttestationMessage
+{
+    optional AttestationRequestMessage attestation_request_message = 1;
+    optional AttestationFailureMessage attestation_failure_message = 2;
+    optional StateRequestMessage state_request_message = 3;
+    optional StateResponseMessage state_response_message = 4;
+}
+

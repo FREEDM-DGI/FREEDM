@@ -57,9 +57,9 @@ private:
     /// Generates message demand nodes send in response to DraftRequest
     ModuleMessage MessageDraftAge(float age);
     /// Generates the message that the supply node uses to select a demand node.
-    ModuleMessage MessageDraftSelect(float amount);
+    ModuleMessage MessageDraftSelect(float time, float amount);
     /// Generates the message that the demand node uses to confirm the migration
-    ModuleMessage MessageDraftAccept(float amount);
+    ModuleMessage MessageDraftAccept(float time, float amount);
     /// Generates the message sent by the demand node to refuse migration.
     ModuleMessage MessageTooLate(float amount);
     /// Generates the message used to request a state collection.
@@ -68,7 +68,8 @@ private:
     ModuleMessage MessageCollectedState(float state);
     /// Generates the report on the total amount of power migrated.
     ModuleMessage MessageMigrationReport();
-    
+    ModuleMessage MessageAttestationRequest(float time, std::string target, float change);
+
     /// Boilerplate for preparing a message.
     ModuleMessage PrepareForSending(const LoadBalancingMessage & m, std::string recipient = "lb");
     /// Sends a message to all peers in a peerset.
@@ -95,8 +96,9 @@ private:
     /// Handles the collected state coming from load balancing
     void HandleCollectedState(const CollectedStateMessage & m);
     /// Handles the total migrated power report from another DGI.
-    void HandleMigrationReport(const MigrationReport & m, CPeerNode peer);
-    
+    void HandleMigrationReport(const MigrationReport & m, CPeerNode peer);    
+    void HandleAttestationFailure(const pa::AttestationFailureMessage & m);
+
     /// Moves a peer to the specified peerset.
     void MoveToPeerSet(PeerSet & ps, CPeerNode peer);
     
@@ -126,7 +128,7 @@ private:
     /// Sends too late to the specified peer.
     void SendTooLate(CPeerNode peer, float step);
     /// Sets PStar to the specified level
-    void SetPStar(float pstar);
+    float SetPStar(float pstar);
     /// Sends the request to perform state collection.
     void ScheduleStateCollection();
     /// Synchronizes the Fast-Style Loadbalance with the physical system.

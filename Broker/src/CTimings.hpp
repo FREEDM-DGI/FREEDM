@@ -45,6 +45,10 @@ public:
 
     static unsigned int LB_REQUEST_TIMEOUT;
 
+    static unsigned int PA_ROUND_TIME;
+
+    static unsigned int PA_REQUEST_TIMEOUT;
+
     static void SetTimings(const std::string timingsFile);
 };
 

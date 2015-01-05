@@ -68,6 +68,8 @@ CLocalLogger Logger(__FILE__);
 
 }
 
+std::map< std::string, std::map< std::string, bool > > GMAgent::m_oldfidstate;
+
 ///////////////////////////////////////////////////////////////////////////////
 /// GMAgent::GMAgent
 /// @description Constructor for the group management module.
@@ -109,6 +111,27 @@ GMAgent::~GMAgent()
     m_Coordinators.clear();
     m_AYCResponse.clear();
     m_AYTResponse.clear();
+}
+
+CPhysicalTopology::VertexSet GMAgent::ReachablePeers(std::string tag, std::string uuid, int depth)
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+
+    std::string key;
+
+    BOOST_FOREACH(std::string k, m_oldfidstate | boost::adaptors::map_keys)
+    {
+        if(k <= tag)
+        {
+            key = tag;
+        }
+        else
+        {
+            break;
+        }
+    }
+
+    return CPhysicalTopology::Instance().ReachablePeers(uuid, m_oldfidstate[key], depth);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -593,6 +616,19 @@ void GMAgent::Premerge( const boost::system::error_code &err )
             BOOST_FOREACH(device::CDevice::Pointer ptr, attachedFIDs)
             {
                 m_fidstate[ptr->GetID()] = ptr->GetState("state");
+            }
+            // save the historic fid state
+            std::set<device::CDevice::Pointer> clock;
+            clock = device::CDeviceManager::Instance().GetDevicesOfType("Clock");
+            if(!clock.empty())
+            {
+                std::string tag = boost::lexical_cast<std::string>((*clock.begin())->GetState("time"));
+                m_oldfidstate[tag] = m_fidstate;
+                // might want to make this 'better'
+                if(m_oldfidstate.size() > 1000)
+                {
+                    m_oldfidstate.erase(m_oldfidstate.begin());
+                }
             }
             // Print out a table to debug
             Logger.Info<<"FID Table:"<<std::endl;
@@ -1163,6 +1199,19 @@ void GMAgent::HandleResponseAYC(const AreYouCoordinatorResponseMessage& msg, CPe
             std::string devid = fsm.deviceid();
             bool state = fsm.state(); 
             m_fidstate[devid] = state;
+        }
+        // save the historic fid state
+        std::set<device::CDevice::Pointer> clock;
+        clock = device::CDeviceManager::Instance().GetDevicesOfType("Clock");
+        if(!clock.empty())
+        {
+            std::string tag = boost::lexical_cast<std::string>((*clock.begin())->GetState("time"));
+            m_oldfidstate[tag] = m_fidstate;
+            // might want to make this 'better'
+            if(m_oldfidstate.size() > 1000)
+            {
+                m_oldfidstate.erase(m_oldfidstate.begin());
+            }
         }
     }
     EraseInTimedPeerSet(m_AYCResponse,peer);

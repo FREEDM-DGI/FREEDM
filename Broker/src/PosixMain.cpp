@@ -30,6 +30,7 @@
 #include "gm/GroupManagement.hpp"
 #include "lb/LoadBalance.hpp"
 #include "sc/StateCollection.hpp"
+#include "pa/PhysicalAttestation.hpp"
 #include "CTimings.hpp"
 #include "SRemoteHost.hpp"
 #include "FreedmExceptions.hpp"
@@ -327,6 +328,7 @@ int main(int argc, char* argv[])
     boost::shared_ptr<IDGIModule> GM = boost::make_shared<gm::GMAgent>();
     boost::shared_ptr<IDGIModule> SC = boost::make_shared<sc::SCAgent>();
     boost::shared_ptr<IDGIModule> LB = boost::make_shared<lb::LBAgent>();
+    boost::shared_ptr<IDGIModule> PA = boost::make_shared<pa::PAAgent>();
 
     try
     {
@@ -341,6 +343,9 @@ int main(int argc, char* argv[])
         // Instantiate and register the power management module
         CBroker::Instance().RegisterModule("lb",boost::posix_time::milliseconds(CTimings::LB_PHASE_TIME));
         CDispatcher::Instance().RegisterReadHandler(LB, "lb");
+
+        CBroker::Instance().RegisterModule("pa",boost::posix_time::milliseconds(CTimings::PA_ROUND_TIME));
+        CDispatcher::Instance().RegisterReadHandler(PA, "pa");
 
         // The peerlist should be passed into constructors as references or
         // pointers to each submodule to allow sharing peers. NOTE this requires
@@ -384,6 +389,10 @@ int main(int argc, char* argv[])
         CBroker::Instance().Schedule(
             "lb",
             boost::bind(&lb::LBAgent::Run, boost::dynamic_pointer_cast<lb::LBAgent>(LB)),
+            false);
+        CBroker::Instance().Schedule(
+            "pa",
+            boost::bind(&pa::PAAgent::Run, boost::dynamic_pointer_cast<pa::PAAgent>(PA)),
             false);
     }
     catch (std::exception & e)

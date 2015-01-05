@@ -28,6 +28,7 @@
 #include "IDGIModule.hpp"
 #include "CPeerNode.hpp"
 #include "PeerSets.hpp"
+#include "CPhysicalTopology.hpp"
 
 #include "messages/ModuleMessage.pb.h"
 
@@ -56,6 +57,8 @@ class GMAgent
     int	Run();
     /// Handles Processing a PeerList
     static PeerSet ProcessPeerList(const PeerListMessage& msg);
+
+    static CPhysicalTopology::VertexSet ReachablePeers(std::string tag, std::string uuid, int depth);
 
   private:
     /// Resets the algorithm to the default startup state.
@@ -197,6 +200,7 @@ class GMAgent
     int m_status;
     /// A store for the state of attached FIDs.
     std::map< std::string , bool > m_fidstate;
+    static std::map< std::string, std::map< std::string, bool > > m_oldfidstate;
 };
 
 } // namespace gm

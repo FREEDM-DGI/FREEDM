@@ -34,6 +34,7 @@
 #include <algorithm>
 
 #include <boost/bind.hpp>
+#include <boost/lexical_cast.hpp>
 #include <boost/make_shared.hpp>
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/xml_parser.hpp>
@@ -58,9 +59,6 @@ CLocalLogger Logger(__FILE__);
 CConnectionManager::CConnectionManager()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    m_uuid = CGlobalConfiguration::Instance().GetUUID();
-    m_host.hostname = CGlobalConfiguration::Instance().GetHostname();
-    m_host.port = CGlobalConfiguration::Instance().GetListenPort();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -103,6 +101,8 @@ void CConnectionManager::PutHost(std::string u, std::string host, std::string po
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     {
         boost::lock_guard< boost::mutex > scopedLock_( m_Mutex );
+        if(m_hosts.count(u) != 0)
+            return;
         SRemoteHost x;
         x.hostname = host;
         x.port = port;
@@ -123,6 +123,8 @@ void CConnectionManager::PutHost(std::string u, SRemoteHost host)
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     {
         boost::lock_guard< boost::mutex > scopedLock_( m_Mutex );
+        if(m_hosts.count(u) != 0)
+            return;
         m_hosts.insert(std::pair<std::string, SRemoteHost>(u, host));
     }
 }
@@ -165,28 +167,6 @@ void CConnectionManager::StopAll()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// @fn CConnectionManager::GetHostByUUID
-/// @description Tries to fetch the hostname of a given uuid from the hostnames
-///              table.
-/// @param uuid The uuid to look up.
-/// @pre None
-/// @post No change.
-/// @return The hostname of the node with that uuid or an empty string.
-///////////////////////////////////////////////////////////////////////////////
-SRemoteHost CConnectionManager::GetHostByUUID(std::string uuid) const
-{
-    if(m_hosts.count(uuid))
-    {
-        return m_hosts.find(uuid)->second;
-    }
-    else
-    {
-        SRemoteHost x;
-        return x;
-    }
-}
-
-///////////////////////////////////////////////////////////////////////////////
 /// @fn CConnectionManager::GetConnectionByUUID
 /// @description Constructs or retrieves from cache a connection to a specific
 ///              UUID.
@@ -202,17 +182,56 @@ ConnectionPtr CConnectionManager::GetConnectionByUUID(std::string uuid)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
-    std::string s,port;
-
     // See if there is a connection in the open connections already
+    if(HasConnection(uuid))
+        return m_connections.left.at(uuid);
+
+    Logger.Info << "Making Fresh Connection to " << uuid << std::endl;
+
+    // Find the requested host from the list of known hosts
+    std::map<std::string, SRemoteHost>::iterator mapIt;
+    mapIt = m_hosts.find(uuid);
+    if(mapIt == m_hosts.end())
+    {
+        throw std::runtime_error("Couldn't find peer in hostlist: "+uuid);
+    }
+    std::string s = mapIt->second.hostname;
+    std::string port = boost::lexical_cast<std::string>(mapIt->second.port);
+
+
+    // Initiate the UDP connection
+    Logger.Debug<<"Computing remote endpoint"<<std::endl;
+    boost::asio::ip::udp::resolver resolver(CBroker::Instance().GetIOService());
+    boost::asio::ip::udp::resolver::query query(s, port);
+    boost::asio::ip::udp::endpoint endpoint;
+    try
+    {
+        endpoint = *resolver.resolve(query);
+    }
+    catch (boost::system::system_error& e)
+    {
+        //Pass Couldn't resolve endpoint, let the protocol handle the bad connection
+        //Exception thrown if no endpoints found.
+    }
+    Logger.Info<<"Resolved: "<<endpoint<<std::endl;
+    return CreateConnection(uuid,endpoint);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+/// @fn CConnectionManager::HasConnection
+/// Checks to see if a connection exists in the connections map.
+/// @return Returns true if the connection exists and has not stopped.
+//////////////////////////////////////////////////////////////////////////////
+bool CConnectionManager::HasConnection(std::string uuid)
+{
     if(m_connections.left.count(uuid))
     {
-        if(m_connections.left.at(uuid)->GetSocket().is_open())
+        if(!m_connections.left.at(uuid)->GetStopped())
         {
             #ifdef CUSTOMNETWORK
             LoadNetworkConfig();
             #endif
-            return m_connections.left.at(uuid);
+            return true;
         }
         else
         {
@@ -222,50 +241,31 @@ ConnectionPtr CConnectionManager::GetConnectionByUUID(std::string uuid)
             Stop(m_connections.left.at(uuid));
         }
     }
+    return false;
+}
 
-    Logger.Info << "Making Fresh Connection to " << uuid << std::endl;
-
-    // Find the requested host from the list of known hosts
-    std::map<std::string, SRemoteHost>::iterator mapIt;
-    mapIt = m_hosts.find(uuid);
-    if(mapIt == m_hosts.end())
-    {
-        Logger.Warn<<"Couldn't find peer in host list"<<std::endl;
-        return ConnectionPtr();
-    }
-    s = mapIt->second.hostname;
-    port = mapIt->second.port;
-
+///////////////////////////////////////////////////////////////////////////////
+/// @fn CConnectionManager::CreateConnection
+/// Creates the CConnection object and binds it to an endpoint & uuid.
+/// @param uuid The uuid of the remote endpoint
+/// @param endpoint The remote port to bind to
+/// @pre endpoint is a valid endpoint
+/// @post A new CConnection is created and bound to and endpoint.
+///////////////////////////////////////////////////////////////////////////////
+ConnectionPtr CConnectionManager::CreateConnection(std::string uuid, boost::asio::ip::udp::endpoint endpoint)
+{
+    if(HasConnection(uuid))
+        return m_connections.left.at(uuid);
+    Logger.Warn<<"EP = "<<endpoint<<std::endl;
     // Create a new CConnection object for this host
     Logger.Debug<<"Constructing CConnection"<<std::endl;
-    ConnectionPtr c = boost::make_shared<CConnection>(uuid);
-
-    // Initiate the UDP connection
-    Logger.Debug<<"Computing remote endpoint"<<std::endl;
-    boost::asio::ip::udp::resolver resolver(CBroker::Instance().GetIOService());
-    boost::asio::ip::udp::resolver::query query(s, port);
-    boost::asio::ip::udp::resolver::iterator it;
-    try
-    {
-        it = resolver.resolve(query);
-        boost::asio::connect(c->GetSocket(), it);
-    }
-    catch (boost::system::system_error& e)
-    {
-        Logger.Warn<<"Error connecting to host "<<s<<":"<<port<<": "<< e.what()<<std::endl;
-        PutConnection(uuid,c);
-        return c;
-    }
-    // *it is safe only if we get here
-    Logger.Info<<"Resolved: "<<static_cast<boost::asio::ip::udp::endpoint>(*it)<<std::endl;
-
-    //Once the connection is built, connection manager gets a call back to register it.
-    Logger.Debug<<"Inserting connection"<<std::endl;
+    ConnectionPtr c = boost::make_shared<CConnection>(uuid, endpoint);
+    // Add to the connection list
     PutConnection(uuid,c);
 #ifdef CUSTOMNETWORK
     LoadNetworkConfig();
 #endif
-    return c;
+    return c;    
 }
 
 ///////////////////////////////////////////////////////////////////////////////

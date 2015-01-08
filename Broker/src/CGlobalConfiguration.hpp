@@ -32,6 +32,7 @@
 #ifndef CGLOBALCONFIGURATION_HPP
 #define CGLOBALCONFIGURATION_HPP
 
+#include <climits>
 #include <string>
 
 #include <boost/date_time/posix_time/posix_time.hpp>
@@ -41,7 +42,7 @@ namespace freedm {
 namespace broker {
 
 /// A singleton class which tracks commonly used configuration options.
-class CGlobalConfiguration : public boost::noncopyable
+class CGlobalConfiguration : private boost::noncopyable
 {
     public:
         /// Returns the singleton instance of the global configuration.
@@ -71,10 +72,12 @@ class CGlobalConfiguration : public boost::noncopyable
         void SetDeviceConfigPath(std::string p) { m_deviceConfigPath = p; }
         /// Set the path to the topology config file
         void SetTopologyConfigPath(std::string p) { m_topologyConfigPath = p; }
-        /// Set the flag to the invariant check
-        void SetInvariantCheckFlag(std::string f) { m_invariantCheckFlag = f;}
+        /// Set the size of a load balance migration
+        void SetMigrationStep(float v) { m_migrationStep = v; }
         /// Set the malicious load balance flag
         void SetMaliciousFlag(bool flag) { m_malicious = flag; }
+        /// Set the invariant check flag
+        void SetInvariantCheck(bool flag) { m_invariant = flag; }
         /// Get the hostname
         std::string GetHostname() const { return m_hostname; };
         /// Get the port
@@ -94,14 +97,16 @@ class CGlobalConfiguration : public boost::noncopyable
         std::string GetAdapterConfigPath() const { return m_adapterConfigPath; };
         /// Get the path to the device class XML specification file
         std::string GetDeviceConfigPath() const { return m_deviceConfigPath; }
+        /// Intentionally signed. UINT16_MAX is too big for a UDP datagram, anyway.
+        static const short MAX_PACKET_SIZE = SHRT_MAX;
         /// Path to the topology specification file
         std::string GetTopologyConfigPath() const { return m_topologyConfigPath; }
-        /// Get the flag to invariant check
-        std::string GetInvariantCheckFlag() const { return m_invariantCheckFlag; }
+        /// Get the size of a load balance migration.
+        float GetMigrationStep() const { return m_migrationStep; }
         /// Get the malicious load balance flag
         bool GetMaliciousFlag() const { return m_malicious; }
-        /// The maximum packet size in bytes
-        static const unsigned int MAX_PACKET_SIZE = 60000;
+        /// Get the invariant check flag
+        bool GetInvariantCheck() const { return m_invariant; }
     private:
         std::string m_hostname; /// Node hostname
         std::string m_port; /// Port number
@@ -113,8 +118,9 @@ class CGlobalConfiguration : public boost::noncopyable
         std::string m_adapterConfigPath; /// Path to the adapter configuration
         std::string m_deviceConfigPath; /// Path to the device class config
         std::string m_topologyConfigPath; /// Path to the topology config
-        std::string m_invariantCheckFlag; /// Flag for invariant check
-        bool m_malicious; /// Flag to indicate whether load balance is malicious
+        float m_migrationStep; /// Size of a load balance migration
+        bool m_malicious; // Flag to indicate whether load balance is malicious
+        bool m_invariant; // Flag that indicates whether to check the invariant
 };
 
 } // namespace broker

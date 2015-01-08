@@ -177,7 +177,7 @@ void IBufferAdapter::SetCommand(const std::string device, const std::string sign
 ///
 /// @limitations None.
 ////////////////////////////////////////////////////////////////////////////
-SignalValue IBufferAdapter::GetState(const std::string device, 
+SignalValue IBufferAdapter::GetState(const std::string device,
         const std::string signal) const
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;

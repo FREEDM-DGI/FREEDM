@@ -2,6 +2,7 @@
 /// @file         CDispatcher.hpp
 ///
 /// @author       Derek Ditch <derek.ditch@mst.edu>
+/// @author       Michael Catanzaro <michael.catanzaro@mst.edu>
 ///
 /// @project      FREEDM DGI
 ///
@@ -33,23 +34,21 @@
 #ifndef CDISPATCHER_HPP
 #define CDISPATCHER_HPP
 
-#include "CBroker.hpp"
-#include "IHandler.hpp"
-#include "CMessage.hpp"
+#include "messages/ModuleMessage.pb.h"
 
 #include <boost/noncopyable.hpp>
-#include <boost/property_tree/ptree.hpp>
+#include <boost/smart_ptr/shared_ptr.hpp>
 #include <boost/thread/mutex.hpp>
 
 #include <map>
 #include <string>
 
-using boost::property_tree::ptree;
-
 namespace freedm {
     namespace broker {
 
-/// Handles applying read and write handlers to incoming messages
+class IDGIModule;
+
+/// Handles applying read handlers to incoming messages
 class CDispatcher
   : private boost::noncopyable
 {
@@ -58,39 +57,23 @@ public:
     static CDispatcher& Instance();
 
     /// Called upon incoming message
-    void HandleRequest(MessagePtr msg );
-
-    /// Called prior to sending a message
-    void HandleWrite( ptree &p_mesg );
+    void HandleRequest(boost::shared_ptr<const ModuleMessage> msg, std::string uuid);
 
     /// Registers a handler that will be called with HandleRequest
-    void RegisterReadHandler( const std::string &module, const std::string &p_type,
-            IReadHandler *p_handler );
-
-    /// Registers a handler that will be called with HandleWrite
-    void RegisterWriteHandler( const std::string &module, const std::string &p_type,
-            IWriteHandler *p_handler );
+    void RegisterReadHandler(boost::shared_ptr<IDGIModule> p_handler, std::string id);
 
 private:
     /// Private constructor for the singleton instance
     CDispatcher() {};
 
     /// Making the handler calls bindable
-    void ReadHandlerCallback(IReadHandler *h, MessagePtr msg);
-
-    /// All the registered read handlers.
-    std::multimap< const std::string, IReadHandler *> m_readHandlers;
-
-    /// All the registered write handlers.
-    std::map< const std::string, IWriteHandler *> m_writeHandlers;
+    void ReadHandlerCallback(
+        boost::shared_ptr<IDGIModule> h,
+        boost::shared_ptr<const ModuleMessage> msg,
+        std::string uuid);
 
     /// Reverse map to get the calling module from the handler pointer.
-    std::map< IReadHandler *, const std::string > m_handlerToModule;
-
-    /// Mutexes for protecting the handler maps above
-    boost::mutex m_rMutex,
-                 m_wMutex;
-
+    std::multimap<boost::shared_ptr<IDGIModule>, const std::string> m_registrations;
 };
 
 } // namespace broker

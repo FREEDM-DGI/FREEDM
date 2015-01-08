@@ -57,7 +57,7 @@ class CLocalLogger;
 typedef CLocalLogger* CLoggerPointer;
 
 /// Tracks the global logging configuration
-class CGlobalLogger : public boost::noncopyable
+class CGlobalLogger : private boost::noncopyable
 {
     ///////////////////////////////////////////////////////////////////////////
     /// @description The GlobalLogger is responsible for tracking a table which

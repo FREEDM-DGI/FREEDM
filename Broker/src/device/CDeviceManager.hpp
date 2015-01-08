@@ -55,7 +55,7 @@ class CDeviceManager
 public:
     /// Gets the instance of the device manager.
     static CDeviceManager & Instance();
-    
+
     /// Counts the number of managed devices.
     std::size_t DeviceCount() const;
 
@@ -64,17 +64,17 @@ public:
 
     /// Gets a device by its identifier.
     CDevice::Pointer GetDevice(std::string devid);
-    
+
     /// Retrieves all the stored devices of a specified type.
     std::set<CDevice::Pointer> GetDevicesOfType(std::string type);
-    
+
     /// Retrieves a multiset of stored values for the given device signal.
     std::multiset<SignalValue> GetValues(std::string type,
             std::string signal);
-    
+
     /// Returns the result of a binary operation on a set of device signals.
     SignalValue GetNetValue(std::string type, std::string signal);
-    
+
 private:
     /// A typedef for the mapping of identifier to device pointers.
     typedef std::map<std::string, CDevice::Pointer> PhysicalDeviceSet;

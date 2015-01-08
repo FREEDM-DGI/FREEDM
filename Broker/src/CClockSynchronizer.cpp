@@ -20,13 +20,23 @@
 /// Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
 ////////////////////////////////////////////////////////////////////////////////
 
+#include "CBroker.hpp"
 #include "CClockSynchronizer.hpp"
 #include "CConnectionManager.hpp"
+#include "CGlobalConfiguration.hpp"
 #include "CGlobalPeerList.hpp"
 #include "CLogger.hpp"
+#include "CPeerNode.hpp"
+#include "Messages.hpp"
+#include "messages/ModuleMessage.pb.h"
 
+#include <memory>
+#include <utility>
+
+#include <boost/date_time/posix_time/ptime.hpp>
 #include <boost/foreach.hpp>
 #include <boost/range/adaptor/map.hpp>
+#include <boost/smart_ptr.hpp>
 
 namespace freedm {
     namespace broker {
@@ -50,11 +60,10 @@ const int QUERY_INTERVAL = 10000;
 /// @param ios the broker's ioservice
 ///////////////////////////////////////////////////////////////////////////////
 CClockSynchronizer::CClockSynchronizer(boost::asio::io_service& ios)
-    : m_exchangetimer(ios),
-      m_uuid(CConnectionManager::Instance().GetUUID())
+    : m_exchangetimer(ios)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    MapIndex ii(m_uuid,m_uuid);
+    MapIndex ii(GetUUID(),GetUUID());
     m_offsets[ii] = boost::posix_time::milliseconds(0);
     SetWeight(ii, 1.0);
     m_skews[ii] = 0.0;
@@ -62,8 +71,6 @@ CClockSynchronizer::CClockSynchronizer(boost::asio::io_service& ios)
     m_kcounter = 0;
     m_myoffset = boost::posix_time::milliseconds(0);
     m_myskew = 0.0;
-    RegisterSubhandle("clk.Exchange",boost::bind(&CClockSynchronizer::HandleExchange, this, _1, _2));
-    RegisterSubhandle("clk.ExchangeResponse",boost::bind(&CClockSynchronizer::HandleExchangeResponse, this, _1, _2));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -95,6 +102,39 @@ void CClockSynchronizer::Stop()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+/// "Downcasts" incoming messages into a specific message type, and passes the
+/// message to an appropriate handler.
+///
+/// @param msg the incoming message
+/// @param peer the node that sent this message (could be this DGI)
+///////////////////////////////////////////////////////////////////////////////
+void CClockSynchronizer::HandleIncomingMessage(
+    boost::shared_ptr<const ModuleMessage> msg, CPeerNode peer)
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+
+    if (!msg->has_clock_synchronizer_message())
+    {
+        Logger.Warn << "Dropped message of unexpected type:\n" << msg->DebugString();
+        return;
+    }
+
+    ClockSynchronizerMessage csm = msg->clock_synchronizer_message();
+    if(csm.has_exchange_message())
+    {
+        HandleExchange(csm.exchange_message(), peer);
+    }
+    else if(csm.has_exchange_response_message())
+    {
+        HandleExchangeResponse(csm.exchange_response_message(), peer);
+    }
+    else
+    {
+        Logger.Warn << "Dropped clk message of unexpected type:\n" << msg->DebugString();
+    }
+}
+
+///////////////////////////////////////////////////////////////////////////////
 /// CClockSynchronizer::HandleExchange
 /// @description Responds to a challenge issued by a remote node.
 /// @limitations none
@@ -103,13 +143,12 @@ void CClockSynchronizer::Stop()
 /// @param msg The message from the remote node
 /// @param peer The peer sending the message.
 ///////////////////////////////////////////////////////////////////////////////
-void CClockSynchronizer::HandleExchange(MessagePtr msg, PeerNodePtr peer)
+void CClockSynchronizer::HandleExchange(const ExchangeMessage& msg, CPeerNode peer)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    //Pull out the message identifier
-    unsigned int k = msg->GetSubMessages().get<unsigned int>("clk.query");
-    CMessage resp = ExchangeResponse(k);
-    peer->Send(resp);
+
+    // Respond to the query ID
+    peer.Send(CreateExchangeResponse(msg.query()));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -122,16 +161,16 @@ void CClockSynchronizer::HandleExchange(MessagePtr msg, PeerNodePtr peer)
 /// @param msg The message from the remote node
 /// @param peer The remote node.
 ///////////////////////////////////////////////////////////////////////////////
-void CClockSynchronizer::HandleExchangeResponse(MessagePtr msg, PeerNodePtr peer)
+void CClockSynchronizer::HandleExchangeResponse(const ExchangeResponseMessage& msg, CPeerNode peer)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    std::string sender = peer->GetUUID();
-    MapIndex ij(m_uuid,sender);
+    std::string sender = peer.GetUUID();
+    MapIndex ij(GetUUID(),sender);
     boost::posix_time::ptime challenge;
     boost::posix_time::ptime now = boost::posix_time::microsec_clock::universal_time();
-    ptree& pt = msg->GetSubMessages();
-    boost::posix_time::ptime response = msg->GetSendTimestamp();
-    unsigned int k = pt.get<unsigned int>("clk.response");
+    boost::posix_time::ptime response =
+        boost::posix_time::time_from_string(msg.unsynchronized_sendtime());
+    unsigned int k = msg.response();
     Logger.Debug<<__FILE__<<":"<<__LINE__<<std::endl;
     if(m_queries.find(ij) == m_queries.end() || m_queries[ij].first != k)
         return;
@@ -191,14 +230,7 @@ void CClockSynchronizer::HandleExchangeResponse(MessagePtr msg, PeerNodePtr peer
         }
     }
     double lag = (TDToDouble(sumlag))/rlist.size();
-    if(lag < 0.015)
-    {
-        Logger.Notice<<"Computed lag ("<<sender<<"): "<<lag<<std::endl;
-    }
-    else
-    {
-        Logger.Warn<<"Computed lag ("<<sender<<"): "<<lag<<std::endl;
-    }
+    Logger.Notice<<"Computed lag ("<<sender<<"): "<<lag<<std::endl;
     double dxbar = TDToDouble(sumx)/rlist.size();
     double dybar = TDToDouble(sumy)/rlist.size();
     boost::posix_time::time_duration xbar = DoubleToTD(dxbar);
@@ -231,19 +263,16 @@ void CClockSynchronizer::HandleExchangeResponse(MessagePtr msg, PeerNodePtr peer
     m_offsets[ij] = -DoubleToTD(alpha);
     SetWeight(ij, 1);
     m_skews[ij] = fij-1;
-    // we help spread information by loading a table of j's known nodes.
-    //msg.Save(Logger.Debug);
-    //Logger.Debug<<std::endl;
-    BOOST_FOREACH(ptree::value_type &v, pt.get_child("clk.table"))
+    for (unsigned i = 0; i < static_cast<unsigned>(msg.table_entry_size()); ++i)
     {
-        ptree sub_pt = v.second;
-        std::string neighbor = sub_pt.get<std::string>("uuid");
-        if(neighbor == peer->GetUUID() || neighbor == m_uuid)
+        const ExchangeResponseMessage::TableEntry te = msg.table_entry(i);
+        std::string neighbor = te.uuid();
+        if(neighbor == peer.GetUUID() || neighbor == GetUUID())
             continue;
-        boost::posix_time::time_duration cjl = boost::posix_time::seconds(sub_pt.get<long>("offset.secs"))+boost::posix_time::microseconds(sub_pt.get<long>("offset.fracs"));
-        double wjl = sub_pt.get<double>("weight")-.1; // Abritrarily remove some trust to account for lag.
-        double fjl = sub_pt.get<double>("skew");
-        MapIndex il(m_uuid,neighbor);
+        boost::posix_time::time_duration cjl = boost::posix_time::seconds(te.offset_secs())+boost::posix_time::microseconds(te.offset_fracs());
+        double wjl = te.weight()-.1; // Abritrarily remove some trust to account for lag.
+        double fjl = te.skew();
+        MapIndex il(GetUUID(),neighbor);
         if(m_offsets.find(il) == m_offsets.end())
         {
             m_offsets[il] = boost::posix_time::milliseconds(0);
@@ -273,12 +302,12 @@ void CClockSynchronizer::Exchange(const boost::system::error_code& err)
     if(err)
         return;
     // Loop through the peers and send them beacons
-    std::deque< boost::shared_ptr<IPeerNode> > tmplist;
-    std::deque< boost::shared_ptr<IPeerNode> > tmplist2;
+    std::deque< CPeerNode > tmplist;
+    std::deque< CPeerNode > tmplist2;
     bool flop = false;
-    BOOST_FOREACH(boost::shared_ptr<IPeerNode> peer, CGlobalPeerList::instance().PeerList() | boost::adaptors::map_values)
+    BOOST_FOREACH(CPeerNode peer, CGlobalPeerList::instance().PeerList() | boost::adaptors::map_values)
     {
-        if(peer->GetUUID() == m_uuid)
+        if(peer.GetUUID() == GetUUID())
            flop = true;
         else if(flop == false)
             tmplist2.push_back(peer); // put elements before me into list b
@@ -288,10 +317,10 @@ void CClockSynchronizer::Exchange(const boost::system::error_code& err)
     // put elements from list b into list a
     tmplist.insert(tmplist.end(),tmplist2.begin(),tmplist2.end());
     // This should do a circular shift of the queries, which SHOULD help with traffic if I have postulated correctly.
-    BOOST_FOREACH(boost::shared_ptr<IPeerNode> peer, tmplist)
+    BOOST_FOREACH(CPeerNode peer, tmplist)
     {
-        peer->Send(ExchangeMessage(m_kcounter));
-        MapIndex ij(m_uuid,peer->GetUUID());
+        peer.Send(CreateExchangeMessage(m_kcounter));
+        MapIndex ij(GetUUID(),peer.GetUUID());
         m_queries[ij] = QueryRecord(m_kcounter, boost::posix_time::microsec_clock::universal_time());
     }
     m_kcounter++;
@@ -300,7 +329,7 @@ void CClockSynchronizer::Exchange(const boost::system::error_code& err)
     m_exchangetimer.async_wait(boost::bind(&CClockSynchronizer::Exchange,this,
         boost::asio::placeholders::error));
     //make sure the self referential entries stay sane.
-    MapIndex ii(m_uuid,m_uuid);
+    MapIndex ii(GetUUID(),GetUUID());
     m_offsets[ii] = boost::posix_time::milliseconds(0);
     SetWeight(ii, 1.0);
     m_skews[ii] = 0.0;
@@ -346,18 +375,13 @@ void CClockSynchronizer::Exchange(const boost::system::error_code& err)
 /// @param k The sequence number to be delivered so that old messages are not
 ///     used.
 ///////////////////////////////////////////////////////////////////////////////
-CMessage CClockSynchronizer::ExchangeMessage(unsigned int k)
+ModuleMessage CClockSynchronizer::CreateExchangeMessage(unsigned int k)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    CMessage m;
-    m.SetHandler("clk.Exchange");
-    m.GetSubMessages().put("clk.exchange",GetSynchronizedTime());
-    m.GetSubMessages().put("clk.offset.secs",m_myoffset.total_seconds());
-    m.GetSubMessages().put("clk.offset.fracs",m_myoffset.fractional_seconds());
-    m.GetSubMessages().put("clk.skew",m_myskew);
-    m.GetSubMessages().put("clk.query",k);
-    m.SetStatus(freedm::broker::CMessage::ClockReading);
-    return m;
+    ClockSynchronizerMessage csm;
+    ExchangeMessage* em = csm.mutable_exchange_message();
+    em->set_query(k);
+    return PrepareForSending(csm);
 }
 
 
@@ -370,26 +394,24 @@ CMessage CClockSynchronizer::ExchangeMessage(unsigned int k)
 /// @param k The sequence number to be delivered so that old messages are not
 ///     used.
 ///////////////////////////////////////////////////////////////////////////////
-CMessage CClockSynchronizer::ExchangeResponse(unsigned int k)
+ModuleMessage CClockSynchronizer::CreateExchangeResponse(unsigned int k)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    CMessage m;
-    m.SetHandler("clk.ExchangeResponse");
-    OffsetMap::iterator oit;
-    for(oit=m_offsets.begin(); oit != m_offsets.end(); oit++)
+    ClockSynchronizerMessage csm;
+    ExchangeResponseMessage* erm = csm.mutable_exchange_response_message();
+    erm->set_response(k);
+    erm->set_unsynchronized_sendtime(boost::posix_time::to_simple_string(
+        boost::posix_time::microsec_clock::universal_time()));
+    for(OffsetMap::iterator oit=m_offsets.begin(); oit != m_offsets.end(); oit++)
     {
-        ptree sub_pt;
-        sub_pt.add("uuid",oit->first.second);
-        sub_pt.add("offset.secs",oit->second.total_seconds());
-        sub_pt.add("offset.fracs",oit->second.fractional_seconds());
-        sub_pt.add("skew",m_skews[oit->first]);
-        sub_pt.add("weight",GetWeight(oit->first));
-        m.GetSubMessages().add_child("clk.table.entry",sub_pt);
+        ExchangeResponseMessage::TableEntry* te = erm->add_table_entry();
+        te->set_uuid(oit->first.second);
+        te->set_offset_secs(oit->second.total_seconds());
+        te->set_offset_fracs(oit->second.fractional_seconds());
+        te->set_skew(m_skews[oit->first]);
+        te->set_weight(GetWeight(oit->first));
     }
-    m.GetSubMessages().put("clk.sendtime",GetSynchronizedTime());
-    m.GetSubMessages().put("clk.response",k);
-    m.SetStatus(freedm::broker::CMessage::ClockReading);
-    return m;
+    return PrepareForSending(csm);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -420,7 +442,7 @@ double CClockSynchronizer::GetWeight(MapIndex i) const
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     WeightMap::const_iterator it = m_weights.find(i);
     boost::posix_time::ptime set;
-    if(i == MapIndex(m_uuid,m_uuid))
+    if(i == MapIndex(GetUUID(),GetUUID()))
         return 1.0;
     if(it == m_weights.end())
         throw std::runtime_error("Can't find that index in the weights table");
@@ -473,6 +495,23 @@ boost::posix_time::time_duration CClockSynchronizer::DoubleToTD(double td)
     tmp *= 1000000; // Shift out to the microseconds
     modf(tmp, &fractional);
     return boost::posix_time::seconds(seconds) + boost::posix_time::microseconds(fractional);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+/// Wraps a ClockSynchronizerMessage in a ModuleMessage.
+///
+/// @param message the message to prepare. If any required field is unset,
+///     the DGI will abort.
+///
+/// @return a ModuleMessage containing a copy of the ClockSynchronizerMessage
+///////////////////////////////////////////////////////////////////////////////
+ModuleMessage CClockSynchronizer::PrepareForSending(const ClockSynchronizerMessage& message)
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    ModuleMessage mm;
+    mm.mutable_clock_synchronizer_message()->CopyFrom(message);
+    mm.set_recipient_module("clk");
+    return mm;
 }
 
 }

@@ -21,21 +21,16 @@
 /// Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
 ////////////////////////////////////////////////////////////////////////////////
 
-#include "CConnectionManager.hpp"
-#include "CLogger.hpp"
-#include "CMessage.hpp"
 #include "CProtocolSU.hpp"
-#include "IProtocol.hpp"
+
+#include "CLogger.hpp"
 #include "CTimings.hpp"
+#include "CBroker.hpp"
+#include "messages/ModuleMessage.pb.h"
+#include "messages/ProtocolMessage.pb.h"
 
-#include <iomanip>
-#include <set>
-
-#include <boost/array.hpp>
 #include <boost/asio.hpp>
-#include <boost/enable_shared_from_this.hpp>
-#include <boost/noncopyable.hpp>
-#include <boost/shared_ptr.hpp>
+#include <boost/bind.hpp>
 
 namespace freedm {
     namespace broker {
@@ -47,42 +42,37 @@ CLocalLogger Logger(__FILE__);
 
 }
 
-CProtocolSU::CProtocolSU(CConnection *  conn)
-    : IProtocol(conn),
-      m_timeout(conn->GetSocket().get_io_service())
+CProtocolSU::CProtocolSU(std::string uuid,boost::asio::ip::udp::endpoint endpoint)
+    : IProtocol(uuid,endpoint),
+      m_timeout(CBroker::Instance().GetIOService())
 {
     m_outseq = 0;
     m_inseq = 0;
     m_acceptmod = SEQUENCE_MODULO/WINDOW_SIZE;
 }
 
-void CProtocolSU::Send(CMessage msg)
+void CProtocolSU::Send(const ModuleMessage& msg)
 {
-    unsigned int msgseq;
+    ProtocolMessage pm;
+    pm.mutable_module_message()->CopyFrom(msg);
 
-
-    msgseq = m_outseq;
-    msg.SetSequenceNumber(msgseq);
+    pm.set_sequence_num(m_outseq);
     m_outseq = (m_outseq+1) % SEQUENCE_MODULO;
-
-    msg.SetSourceUUID(CConnectionManager::Instance().GetUUID());
-    msg.SetSourceHostname(CConnectionManager::Instance().GetHost());
-    msg.SetProtocol(GetIdentifier());
-    msg.SetSendTimestampNow();
 
     QueueItem q;
 
     q.ret = MAX_RETRIES;
-    q.msg = msg;
+    q.msg = pm;
 
     m_window.push_back(q);
 
     if(m_window.size() < WINDOW_SIZE)
     {
-        Write(msg);
+        Write(pm);
         m_timeout.cancel();
         m_timeout.expires_from_now(boost::posix_time::milliseconds(CTimings::CSUC_RESEND_TIME));
-        m_timeout.async_wait(boost::bind(&CProtocolSU::Resend,this,
+        m_timeout.async_wait(boost::bind(&CProtocolSU::Resend,
+            boost::static_pointer_cast<CProtocolSU>(shared_from_this()),
             boost::asio::placeholders::error));
     }
 }
@@ -109,26 +99,26 @@ void CProtocolSU::Resend(const boost::system::error_code& err)
             }
             else
             {
-                Logger.Notice<<"Gave Up Sending (No Retries) "<<f.msg.GetHash()
-                              <<":"<<f.msg.GetSequenceNumber()<<std::endl;
+                Logger.Notice<<"Gave Up Sending (No Retries) "<<f.msg.DebugString();
             }
         }
         if(m_window.size() > 0)
         {
             m_timeout.cancel();
             m_timeout.expires_from_now(boost::posix_time::milliseconds(CTimings::CSUC_RESEND_TIME));
-            m_timeout.async_wait(boost::bind(&CProtocolSU::Resend,this,
+            m_timeout.async_wait(boost::bind(&CProtocolSU::Resend,
+                boost::static_pointer_cast<CProtocolSU>(shared_from_this()),
                 boost::asio::placeholders::error));
         }
     }
 }
 
-void CProtocolSU::ReceiveACK(const CMessage &msg)
+void CProtocolSU::ReceiveACK(const ProtocolMessage& msg)
 {
-    unsigned int seq = msg.GetSequenceNumber();
+    unsigned int seq = msg.sequence_num();
     while(m_window.size() > 0)
     {
-        unsigned int fseq = m_window.front().msg.GetSequenceNumber();
+        unsigned int fseq = m_window.front().msg.sequence_num();
         unsigned int bounda = fseq;
         unsigned int boundb = (fseq+WINDOW_SIZE)%SEQUENCE_MODULO;
         if(bounda <= seq || (seq < boundb and boundb < bounda))
@@ -147,12 +137,12 @@ void CProtocolSU::ReceiveACK(const CMessage &msg)
     }
 }
 
-bool CProtocolSU::Receive(const CMessage &msg)
+bool CProtocolSU::Receive(const ProtocolMessage& msg)
 {
     //Consider the window you expect to see
     unsigned int bounda = m_inseq;
     unsigned int boundb = (m_inseq+WINDOW_SIZE*m_acceptmod)%SEQUENCE_MODULO;
-    unsigned int seq = msg.GetSequenceNumber();
+    unsigned int seq = msg.sequence_num();
     if(bounda <= seq || (seq < boundb and boundb < bounda))
     {
         m_acceptmod = 1;
@@ -167,17 +157,12 @@ bool CProtocolSU::Receive(const CMessage &msg)
     return false;
 }
 
-void CProtocolSU::SendACK(const CMessage &msg)
+void CProtocolSU::SendACK(const ProtocolMessage& msg)
 {
-    unsigned int seq = msg.GetSequenceNumber();
-    freedm::broker::CMessage outmsg;
+    ProtocolMessage outmsg;
     // Presumably, if we are here, the connection is registered
-    outmsg.SetSourceUUID(CConnectionManager::Instance().GetUUID());
-    outmsg.SetSourceHostname(CConnectionManager::Instance().GetHost());
-    outmsg.SetStatus(freedm::broker::CMessage::Accepted);
-    outmsg.SetSequenceNumber(seq);
-    outmsg.SetProtocol(GetIdentifier());
-    outmsg.SetSendTimestampNow();
+    outmsg.set_status(ProtocolMessage::ACCEPTED);
+    outmsg.set_sequence_num(msg.sequence_num());
     Write(outmsg);
 }
 

@@ -2,6 +2,7 @@
 /// @file         CDispatcher.cpp
 ///
 /// @author       Derek Ditch <derek.ditch@mst.edu>
+/// @author       Michael Catanzaro <michael.catanzaro@mst.edu>
 ///
 /// @project      FREEDM DGI
 ///
@@ -21,11 +22,15 @@
 /// Science and Technology, Rolla, MO 65409 <ff@mst.edu>.
 ////////////////////////////////////////////////////////////////////////////////
 
-#include <boost/thread/locks.hpp>
-
+#include "CBroker.hpp"
 #include "CDispatcher.hpp"
+#include "CGlobalPeerList.hpp"
 #include "CLogger.hpp"
-#include "IHandler.hpp"
+#include "IDGIModule.hpp"
+
+#include <boost/bind.hpp>
+#include <boost/smart_ptr/shared_ptr.hpp>
+#include <boost/thread/locks.hpp>
 
 namespace freedm {
     namespace broker {
@@ -54,220 +59,88 @@ CDispatcher& CDispatcher::Instance()
 /// @pre Modules have registered their read handlers.
 /// @post Message delievered to a module
 /// @param msg The message to distribute to modules
+/// @param uuid The UUID of the DGI that sent the message
 ///////////////////////////////////////////////////////////////////////////////
-void CDispatcher::HandleRequest(MessagePtr msg)
+void CDispatcher::HandleRequest(boost::shared_ptr<const ModuleMessage> msg, std::string uuid)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    ptree sub_;
-    ptree::const_iterator it_;
-    std::map< std::string, IReadHandler *>::const_iterator mapIt_;
-    ptree p_mesg = static_cast<ptree>(*msg);
+    Logger.Debug << "Processing message addressed to: " << msg->recipient_module() << std::endl;
+
     bool processed = false;
 
-    try
+    for(std::multimap<boost::shared_ptr<IDGIModule>, const std::string>::const_iterator it
+            = m_registrations.begin();
+        it != m_registrations.end(); ++it)
     {
-        // Scoped lock, will release mutex at end of try {}
-        //boost::lock_guard< boost::mutex > scopedLock_( m_rMutex );
-
-        // This allows for a handler to process all messages using
-        // the special keyword "any"
-        for( mapIt_ = m_readHandlers.lower_bound( "any" );
-             mapIt_ != m_readHandlers.upper_bound( "any" );
-             ++mapIt_ )
+        if (it->second == msg->recipient_module() || msg->recipient_module() == "all")
         {
-            CBroker::BoundScheduleable x = boost::bind(&CDispatcher::ReadHandlerCallback,
-                this, mapIt_->second, msg);
-            CBroker::Instance().Schedule(m_handlerToModule[mapIt_->second],x);
+            // Scheduled modules receive messages only during that module's phase.
+            // Unscheduled modules receive messages immediately.
+            if (CBroker::Instance().IsModuleRegistered(it->second))
+            {
+                CBroker::Instance().Schedule(
+                    it->second,
+                    boost::bind(
+                        &CDispatcher::ReadHandlerCallback, this, it->first, msg, uuid));
+            }
+            else
+            {
+                ReadHandlerCallback(it->first, msg, uuid);
+            }
             processed = true;
         }
-
-	    // Loop through all submessages of this message to call its
-        // handler
-        std::string handler = msg->GetHandler();
-
-        Logger.Debug << "Processing " << handler << std::endl;
-
-        // Special keyword any which gives the submessage to all modules.
-        if(handler.find("any") == 0)
-        {
-            for( mapIt_ =  m_readHandlers.begin();
-                 mapIt_ != m_readHandlers.end();
-                 ++mapIt_)
-            {
-                if(mapIt_->first == "any")
-                {
-                    //Prevents modules with any flags from processing some messages twice
-                    continue;
-                }
-                CBroker::BoundScheduleable x = boost::bind(&CDispatcher::ReadHandlerCallback,
-                    this, mapIt_->second, msg);
-                CBroker::Instance().Schedule(m_handlerToModule[mapIt_->second],x);
-                processed = true;
-            }
-        }
-        else
-        {
-            for( mapIt_ = m_readHandlers.begin();
-                mapIt_ != m_readHandlers.end(); ++mapIt_ )
-            {
-                if(handler.find(mapIt_->first) == 0)
-                {
-                    CBroker::BoundScheduleable x = boost::bind(&CDispatcher::ReadHandlerCallback,
-                        this, mapIt_->second, msg);
-                    CBroker::Instance().Schedule(m_handlerToModule[mapIt_->second],x);
-                    processed = true;
-                }
-            }
-        }
-        // XXX Should anything be done if the message didn't have any submessages?
-        if( sub_.begin() == sub_.end() )
-        {
-            // Just log this for now
-            Logger.Debug << "Message had no submessages.";
-        }
-        if( processed == false)
-        {
-            Logger.Warn << "Message was not processed by any module" << std::endl;
-        }
     }
-    catch( boost::property_tree::ptree_bad_path &e )
+
+    if( processed == false )
     {
-        Logger.Error
-            << "Malformed message. Does not contain 'submessages'."
-            << std::endl << "\t" << e.what() << std::endl;
+        Logger.Warn << "Message was not processed by any module:\n" << msg->DebugString();
     }
 
 }
 
-void CDispatcher::ReadHandlerCallback(IReadHandler *h, MessagePtr msg)
-{
-    (h)->HandleRead(msg);
-}
-
 ///////////////////////////////////////////////////////////////////////////////
-/// @fn CDispatcher::HandleWrite
-/// @description Handles calling modules write handlers which allows them to
-///   touch messages before they are sent.
-/// @pre Write handlers have been registered with the dispatcher
-/// @post The outgoing message is touched before being delivered.
-/// @param p_mesg The message to affect before sending them out.
+/// Forward a received message to a local DGI module.
+///
+/// @param h the module to send the message to
+/// @param msg the message to send
+/// @param uuid the UUID of the DGI that sent
 ///////////////////////////////////////////////////////////////////////////////
-void CDispatcher::HandleWrite( ptree &p_mesg )
+void CDispatcher::ReadHandlerCallback(
+    boost::shared_ptr<IDGIModule> h, boost::shared_ptr<const ModuleMessage> msg, std::string uuid)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    ptree sub_;
-    ptree::const_iterator it_;
-    std::map< std::string, IWriteHandler *>::const_iterator mapIt_;
-    std::string key_;
-
+    CPeerNode peer;
     try
     {
-        // Scoped lock, will release mutex at end of try {}
-        boost::lock_guard< boost::mutex > scopedLock_( m_wMutex );
-
-        // This allows for a handler to process all messages using
-        // the special keyword "any". This happens before the other
-        // sections in case a specific handler depends upon a
-        // general handler
-        for( mapIt_ = m_writeHandlers.lower_bound( "any" );
-                mapIt_ != m_writeHandlers.upper_bound( "any" );
-                ++mapIt_ )
-        {
-           Logger.Debug << "Processing 'any'" << std::endl;
-	  (mapIt_->second)->HandleWrite( p_mesg );
-        }
-
-        // Loop through all submessages of this message to call its
-        // handler
-        ptree sub_ = p_mesg.get_child("message.submessages");
-        for( it_ = sub_.begin(); it_ != sub_.end(); ++it_ )
-        {
-            Logger.Debug << "Processing " << it_->first
-                    << std::endl;
-
-            // Retrieve current key and iterate through all matching
-            // handlers of that key. If the key doesn't exist in the
-            // map, lower_bound(key) == upper_bound(key).
-            key_ = it_->first;
-            for( mapIt_ = m_writeHandlers.lower_bound( key_ );
-                    mapIt_ != m_writeHandlers.upper_bound(key_);
-                    ++mapIt_ )
-            {
-                (mapIt_->second)->HandleWrite( p_mesg );
-            }
-
-            // XXX Should anything be done if the message didn't
-            // have a handler?
-            if( m_writeHandlers.lower_bound( key_ ) ==
-                m_writeHandlers.upper_bound( key_)     )
-            {
-                // Just log this for now
-                Logger.Debug << "Submessage '" << key_ << "' had no write handlers.";
-            }
-        }
-
-
+        peer = CGlobalPeerList::instance().GetPeer(uuid);
     }
-    catch( boost::property_tree::ptree_bad_path &e )
+    catch(std::runtime_error& e)
     {
-        Logger.Error
-            << __PRETTY_FUNCTION__ << " (" << __LINE__ << "): "
-            << "Malformed message. Does not contain 'submessages'."
-            << std::endl << "\t" << e.what() << std::endl;
+        if(CGlobalPeerList::instance().begin() == CGlobalPeerList::instance().end())
+        {
+            Logger.Info<<"Didn't have a peer to construct the new peer from (might be ok)"<<std::endl;
+            return;
+        }
+        peer = CGlobalPeerList::instance().Create(uuid);
     }
+    h->HandleIncomingMessage(msg, peer);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// @fn CDispatcher::RegisterReadHandler
-/// @description Registers a module that provides a read handler with the
-///   dispatcher.
-/// @pre A module that inherits from IReadHandler is provided.
-/// @post A module is registered with a read handler.
-/// @param module The module name that the handler is on behalf of.
-/// @param p_type the tree key used to identify which messages the module
-///   would like to receive.
-/// @param p_handler The module which will be called to receive the message.
+/// Registers a module to receive messages addressed to id. Every registered
+/// module will additionally receive messages addressed to "all". Call this
+/// function multiple times if you want to promiscuously listen to messages
+/// intended for other modules.
+///
+/// @param handler the module that will receive the message
+/// @param id this module will receive messages addressed to id
 ///////////////////////////////////////////////////////////////////////////////
-void CDispatcher::RegisterReadHandler(const std::string &module, const std::string &p_type,
-        IReadHandler *p_handler)
+void CDispatcher::RegisterReadHandler(
+    boost::shared_ptr<IDGIModule> handler, std::string id)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-
-    {
-        // Scoped lock, will release mutex at end of {}
-        boost::lock_guard< boost::mutex > scopedLock_( m_rMutex );
-        m_readHandlers.insert(
-                std::pair< const std::string, IReadHandler *>
-                    (p_type, p_handler));
-        m_handlerToModule.insert(std::pair<IReadHandler *,
-                const std::string>(p_handler,module));
-    }
-}
-
-///////////////////////////////////////////////////////////////////////////////
-/// @fn CDispatcher::RegisterWriteHandler
-/// @description Registers a module that provides a write handler with the
-///   dispatcher.
-/// @pre A module that inhertis from IWriteHandler is provided
-/// @post The module will be registered to touch outgoing messages that contain
-///   the p_type key.
-/// @param module The module the read handler is on behalf of.
-/// @param p_type A ptree key that will be used to identify which messages
-///   should be touched.
-/// @param p_handler The module that will be invoked to perform the touch
-///////////////////////////////////////////////////////////////////////////////
-void CDispatcher::RegisterWriteHandler(const std::string & /*module*/, const std::string &p_type,
-        IWriteHandler *p_handler )
-{
-    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    {
-        // Scoped lock, will release mutex at end of {}
-        boost::lock_guard< boost::mutex > scopedLock_( m_wMutex );
-        m_writeHandlers.insert(
-                std::pair< const std::string, IWriteHandler *>
-                    (p_type, p_handler)
-        );
-    }
+    Logger.Debug << "Registered module listening on " << id << std::endl;
+    m_registrations.insert(std::make_pair(handler,id));
 }
 
     } //namespace broker

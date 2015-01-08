@@ -23,21 +23,18 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 #include "CConnection.hpp"
-#include "CConnectionManager.hpp"
+
+#include "CBroker.hpp"
 #include "CDispatcher.hpp"
 #include "CLogger.hpp"
-#include "CMessage.hpp"
-#include "config.hpp"
 #include "CProtocolSR.hpp"
 #include "CProtocolSU.hpp"
 #include "CProtocolSRSW.hpp"
+#include "messages/ModuleMessage.pb.h"
+#include "messages/ProtocolMessage.pb.h"
 
-#include <vector>
-
-#include <boost/bind.hpp>
-#include <boost/property_tree/ptree.hpp>
-
-using boost::property_tree::ptree;
+#include <boost/asio.hpp>
+#include <boost/make_shared.hpp>
 
 namespace freedm {
 namespace broker {
@@ -54,19 +51,18 @@ CLocalLogger Logger(__FILE__);
 ///
 /// @param uuid the UUID of the peer to connect to
 ///////////////////////////////////////////////////////////////////////////////
-CConnection::CConnection(std::string uuid)
-  : m_socket(CBroker::Instance().GetIOService())
-  , m_uuid(uuid)
-  , m_reliability(100)
+CConnection::CConnection(std::string uuid, boost::asio::ip::udp::endpoint endpoint)
+  : m_protocol(boost::make_shared<CProtocolSR>(uuid,endpoint))   // FIXME hardcoded protocol
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    m_protocols.insert(ProtocolMap::value_type(CProtocolSU::Identifier(),
-        ProtocolPtr(new CProtocolSU(this))));
-    m_protocols.insert(ProtocolMap::value_type(CProtocolSR::Identifier(),
-        ProtocolPtr(new CProtocolSR(this))));
-    m_protocols.insert(ProtocolMap::value_type(CProtocolSRSW::Identifier(),
-        ProtocolPtr(new CProtocolSRSW(this))));
-    m_defaultprotocol = CProtocolSR::Identifier();
+}
+
+///////////////////////////////////////////////////////////////////////////////
+/// Destructor
+///////////////////////////////////////////////////////////////////////////////
+CConnection::~CConnection()
+{
+    // Pass, protocol is smart pointer
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -79,13 +75,17 @@ CConnection::CConnection(std::string uuid)
 void CConnection::Stop()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    ProtocolMap::iterator sit;
-    for(sit = m_protocols.begin(); sit != m_protocols.end(); sit++)
-    {
-        (*sit).second->Stop();
-    }
-    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    GetSocket().close();
+    m_protocol->Stop();
+}
+
+///////////////////////////////////////////////////////////////////////////////
+/// @fn CConnection::GetStopped
+/// @description Returns true if the underlying protocol has been stopped.
+/// @return True if the underlying protocol is stopped.
+///////////////////////////////////////////////////////////////////////////////
+bool CConnection::GetStopped()
+{
+    return m_protocol->GetStopped();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -99,11 +99,7 @@ void CConnection::Stop()
 ///////////////////////////////////////////////////////////////////////////////
 void CConnection::ChangePhase(bool newround)
 {
-    ProtocolMap::iterator it;
-    for(it = m_protocols.begin(); it != m_protocols.end(); it++)
-    {
-        it->second->ChangePhase(newround);
-    }
+    m_protocol->ChangePhase(newround);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -116,34 +112,25 @@ void CConnection::ChangePhase(bool newround)
 ///   UUID, source hostname and sequence number (if it is being sequenced).
 ///   If the message is being sequenced  and the window is not already full,
 ///   the timeout timer is cancelled and reset.
-/// @param p_mesg A CMessage to write to the channel.
+/// @param msg The message to write to the channel, INVALIDATED by this call.
 ///////////////////////////////////////////////////////////////////////////////
-void CConnection::Send(CMessage & p_mesg)
+void CConnection::Send(const ModuleMessage& msg)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
-    // If the UUID of the reciepient (The value stored by GetUUID of this
-    // object) is the same as the this node's uuid (As stored by the
-    // Connection manager) place the message directly into the received
-    // Queue.
-    if(GetUUID() == CConnectionManager::Instance().GetUUID())
+    // If the UUID of the recipient (The value stored by GetUUID of this
+    // object) is the same as the this node's uuid, place the message directly
+    // into the received Queue.
+    if(m_protocol->GetUUID() == CGlobalConfiguration::Instance().GetUUID())
     {
-        p_mesg.SetSourceUUID(CConnectionManager::Instance().GetUUID());
-        p_mesg.SetSourceHostname(CConnectionManager::Instance().GetHost());
-        p_mesg.SetSendTimestampNow();
-        MessagePtr local(new CMessage);
-        *local = p_mesg;
-        CDispatcher::Instance().HandleRequest(local);
-        return;
+        boost::shared_ptr<ModuleMessage> copy = boost::make_shared<ModuleMessage>();
+        copy->CopyFrom(msg);
+        CDispatcher::Instance().HandleRequest(copy, m_protocol->GetUUID());
     }
-
-    ProtocolMap::iterator sit = m_protocols.find(p_mesg.GetProtocol());
-
-    if(sit == m_protocols.end())
+    else
     {
-        sit = m_protocols.find(m_defaultprotocol);
+        m_protocol->Send(msg);
     }
-    (*sit).second->Send(p_mesg);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -155,15 +142,10 @@ void CConnection::Send(CMessage & p_mesg)
 ///   well.
 /// @param msg The message to consider as acknnowledged
 ///////////////////////////////////////////////////////////////////////////////
-void CConnection::ReceiveACK(const CMessage &msg)
+void CConnection::ReceiveACK(const ProtocolMessage& msg)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    std::string protocol = msg.GetProtocol();
-    ProtocolMap::iterator sit = m_protocols.find(protocol);
-    if(sit != m_protocols.end())
-    {
-        (*sit).second->ReceiveACK(msg);
-    }
+    m_protocol->ReceiveACK(msg);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -175,32 +157,17 @@ void CConnection::ReceiveACK(const CMessage &msg)
 ///   well.
 /// @param msg The message to consider as acknnowledged
 ///////////////////////////////////////////////////////////////////////////////
-bool CConnection::Receive(const CMessage &msg)
+bool CConnection::Receive(const ProtocolMessage& msg)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    ProtocolMap::iterator sit = m_protocols.find(msg.GetProtocol());
-    if(sit != m_protocols.end())
+
+    if(m_protocol->Receive(msg))
     {
-        bool x = (*sit).second->Receive(msg);
-        if(x)
-        {
-            (*sit).second->SendACK(msg);
-            return true;
-        }
+        m_protocol->SendACK(msg);
+        return true;
     }
+
     return false;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-/// Returns the socket used by this node.
-///
-/// @return A reference to the socket used by this connection.
-///////////////////////////////////////////////////////////////////////////////
-boost::asio::ip::udp::socket& CConnection::GetSocket()
-{
-    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-
-    return m_socket;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -212,7 +179,7 @@ std::string CConnection::GetUUID() const
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
-    return m_uuid;
+    return m_protocol->GetUUID();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -225,7 +192,7 @@ void CConnection::SetReliability(int r)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
-    m_reliability = r;
+    return m_protocol->SetReliability(r);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -237,7 +204,7 @@ int CConnection::GetReliability() const
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
-    return m_reliability;
+    return m_protocol->GetReliability();
 }
 
     } // namespace broker

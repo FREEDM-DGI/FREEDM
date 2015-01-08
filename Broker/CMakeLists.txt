@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.6)
+cmake_minimum_required(VERSION 2.8)
 
 project(Broker)
 
@@ -24,9 +24,13 @@ find_package(Boost 1.47 REQUIRED
 include_directories(SYSTEM ${Boost_INCLUDE_DIRS})
 link_directories(${Boost_LIBRARY_DIRS})
 
+# Protocol Buffers
+find_package(Protobuf 2.4 REQUIRED)
+include_directories(SYSTEM ${PROTOBUF_INCLUDE_DIRS})
+
 # set C++ compiler flags
 if(WARNINGS)
-    set(WARNING_FLAGS "-Wall -Wextra")
+    set(WARNING_FLAGS "-Wall -Wextra -Wno-long-long")
 else()
     set(WARNING_FLAGS "-w")
 endif()
@@ -44,7 +48,7 @@ endif()
 include_directories("${PROJECT_SOURCE_DIR}/src")
 include_directories("${PROJECT_BINARY_DIR}/src")
 include_directories("${PROJECT_SOURCE_DIR}/src/device")
-include_directories("${PROJECT_BINARY_DIR}/src/device")
+include_directories("${PROTOBUF_INCLUDE_DIR}")
 
 # goto src/CMakeLists.txt
 add_subdirectory(src)
@@ -59,6 +63,7 @@ target_link_libraries(PosixBroker
                       ${Boost_PROGRAM_OPTIONS_LIBRARY}
                       ${Boost_SYSTEM_LIBRARY}
                       ${Boost_THREAD_LIBRARY}
+                      ${PROTOBUF_LIBRARIES}
                      )
 
 if(DOXYGEN)

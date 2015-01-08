@@ -31,6 +31,8 @@
 #include "lb/LoadBalance.hpp"
 #include "sc/StateCollection.hpp"
 #include "CTimings.hpp"
+#include "SRemoteHost.hpp"
+#include "FreedmExceptions.hpp"
 
 #include <cassert>
 #include <iostream>
@@ -42,11 +44,12 @@
 
 #include <boost/algorithm/string.hpp>
 #include <boost/asio.hpp>
-#include <boost/asio/ip/host_name.hpp> //for ip::host_name()
 #include <boost/assign/list_of.hpp>
 #include <boost/bind.hpp>
 #include <boost/foreach.hpp>
 #include <boost/lexical_cast.hpp>
+#include <boost/make_shared.hpp>
+#include <boost/pointer_cast.hpp>
 #include <boost/program_options.hpp>
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/xml_parser.hpp>
@@ -73,7 +76,7 @@ std::string GenerateUuid(std::string host, std::string port)
 }
 
 /// Converts a string into a valid port number.
-unsigned short GetPort(const std::string str)
+unsigned short GetPortFromString(const std::string str)
 {
     long port;
 
@@ -115,9 +118,10 @@ int main(int argc, char* argv[])
     po::variables_map vm;
     std::ifstream ifs;
     std::string cfgFile, loggerCfgFile, timingsFile, adapterCfgFile, topologyCfgFile;
-    std::string deviceCfgFile, listenIP, port, hostname, fport, id, invariantSetting;
+    std::string deviceCfgFile, listenIP, port, hostname, fport, id;
     unsigned int globalVerbosity;
-    bool malicious;
+    float migrationStep;
+    bool malicious, invariant;
 
     try
     {
@@ -162,12 +166,15 @@ int main(int argc, char* argv[])
                 po::value<std::string > ( &topologyCfgFile )->
                 default_value(""),
                 "name of the topology configuration file" )
-                ( "check-lb-invariants",
-                po::value<std::string > ( &invariantSetting )->default_value("0"),
-                "Disable invariant check by default" )
+                ( "migration-step",
+                po::value<float>(&migrationStep)->default_value(1),
+                 "Size of power migrations in load balance" )
                 ( "malicious-behavior",
                 po::value<bool> ( &malicious )->default_value(false),
-                "Disable accept messages when node is in demand" )
+                "Disable acept messages when node is in demand" )
+                ( "check-invariant",
+                po::value<bool> ( &invariant )->default_value(false),
+                "Check the invariant prior to power migrations" )
                 ( "verbose,v",
                 po::value<unsigned int>( &globalVerbosity )->
                 implicit_value(5)->default_value(5),
@@ -251,6 +258,11 @@ int main(int argc, char* argv[])
         // Load timings from files
         CTimings::SetTimings(timingsFile);
 
+        if(!IsValidPort(port))
+        {
+            throw EDgiConfigError("invalid listen port: " + port);
+        }
+
         /// Prepare the global Configuration
         CGlobalConfiguration::Instance().SetHostname(hostname);
         CGlobalConfiguration::Instance().SetUUID(id);
@@ -258,7 +270,7 @@ int main(int argc, char* argv[])
         CGlobalConfiguration::Instance().SetListenAddress(listenIP);
         CGlobalConfiguration::Instance().SetClockSkew(
                 boost::posix_time::milliseconds(0));
-        CGlobalConfiguration::Instance().SetInvariantCheckFlag(invariantSetting);
+        CGlobalConfiguration::Instance().SetMigrationStep(migrationStep);
         CGlobalConfiguration::Instance().SetMaliciousFlag(malicious);
 
         // Specify socket endpoint address, if provided
@@ -274,7 +286,7 @@ int main(int argc, char* argv[])
 
         if (vm.count("factory-port"))
         {
-            CGlobalConfiguration::Instance().SetFactoryPort(GetPort(fport));
+            CGlobalConfiguration::Instance().SetFactoryPort(GetPortFromString(fport));
         }
         else
         {
@@ -311,22 +323,23 @@ int main(int argc, char* argv[])
     }
 
     // Initialize modules
-    gm::GMAgent GM(id);
-    sc::SCAgent SC(id);
-    lb::LBAgent LB(id);
+    boost::shared_ptr<IDGIModule> GM = boost::make_shared<gm::GMAgent>();
+    boost::shared_ptr<IDGIModule> SC = boost::make_shared<sc::SCAgent>();
+    boost::shared_ptr<IDGIModule> LB = boost::make_shared<lb::LBAgent>();
 
     try
     {
         // Instantiate and register the group management module
         CBroker::Instance().RegisterModule("gm",boost::posix_time::milliseconds(CTimings::GM_PHASE_TIME));
-        CDispatcher::Instance().RegisterReadHandler("gm", "any", &GM);
+        CDispatcher::Instance().RegisterReadHandler(GM, "gm");
         // Instantiate and register the state collection module
-        CBroker::Instance().RegisterModule("lbq",boost::posix_time::milliseconds(CTimings::LB_SC_QUERY_TIME));
         CBroker::Instance().RegisterModule("sc",boost::posix_time::milliseconds(CTimings::SC_PHASE_TIME));
-        CDispatcher::Instance().RegisterReadHandler("sc", "any", &SC);
+        CDispatcher::Instance().RegisterReadHandler(SC, "sc");
+        // StateCollection wants to receive Accept messages addressed to lb.
+        CDispatcher::Instance().RegisterReadHandler(SC, "lb");
         // Instantiate and register the power management module
         CBroker::Instance().RegisterModule("lb",boost::posix_time::milliseconds(CTimings::LB_PHASE_TIME));
-        CDispatcher::Instance().RegisterReadHandler("lb", "lb", &LB);
+        CDispatcher::Instance().RegisterReadHandler(LB, "lb");
 
         // The peerlist should be passed into constructors as references or
         // pointers to each submodule to allow sharing peers. NOTE this requires
@@ -363,8 +376,14 @@ int main(int argc, char* argv[])
         CConnectionManager::Instance().PutHost(id, "localhost", port);
 
         Logger.Debug << "Starting thread of Modules" << std::endl;
-        CBroker::Instance().Schedule("gm", boost::bind(&gm::GMAgent::Run, &GM), false);
-        CBroker::Instance().Schedule("lbq", boost::bind(&lb::LBAgent::Run, &LB), false);
+        CBroker::Instance().Schedule(
+            "gm",
+            boost::bind(&gm::GMAgent::Run, boost::dynamic_pointer_cast<gm::GMAgent>(GM)),
+            false);
+        CBroker::Instance().Schedule(
+            "lb",
+            boost::bind(&lb::LBAgent::Run, boost::dynamic_pointer_cast<lb::LBAgent>(LB)),
+            false);
     }
     catch (std::exception & e)
     {

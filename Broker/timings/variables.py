@@ -31,7 +31,6 @@ VARIABLES = {
     'GM_PHASE_TIME': gm_phase_time,
     'GM_CHECK_TIMEOUT': gm_check_timeout,
     'GM_TIMEOUT_TIMEOUT': gm_timeout_timeout,
-    'GM_GLOBAL_TIMEOUT': gm_global_timeout,
     'GM_FID_TIMEOUT': gm_fid_timeout,
     'GM_PREMERGE_MAX_TIMEOUT': gm_premerge_max_timeout,
     'GM_PREMERGE_MIN_TIMEOUT': gm_premerge_min_timeout,

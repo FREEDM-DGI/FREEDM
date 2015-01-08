@@ -23,9 +23,9 @@
 #ifndef FREEDM_CLOCK_HPP
 #define FREEDM_CLOCK_HPP
 
-#include "CMessage.hpp"
-#include "IHandler.hpp"
+#include "IDGIModule.hpp"
 
+#include <list>
 #include <map>
 
 #include <boost/asio.hpp>
@@ -36,15 +36,12 @@ namespace freedm {
     namespace broker {
 
 class CBroker;
-class IPeerNode;
+class CPeerNode;
 
 class CClockSynchronizer
-    : public IReadHandler
-    , private boost::noncopyable
+    : public IDGIModule
 {
 public:
-    /// PeerNodePtr
-    typedef boost::shared_ptr<IPeerNode> PeerNodePtr;
     /// Initialize module
     explicit CClockSynchronizer(boost::asio::io_service& ios);
     /// Returns the synchronized time
@@ -53,6 +50,8 @@ public:
     void Run();
     /// Stops the stuff
     void Stop();
+    /// Handles received messages
+    void HandleIncomingMessage(boost::shared_ptr<const ModuleMessage> msg, CPeerNode peer);
 
 private:
     /// Does the i,j referencing
@@ -79,15 +78,18 @@ private:
     typedef std::map< MapIndex, unsigned int > LastResponseMap;
 
     /// Receiver
-    void HandleExchangeResponse(MessagePtr msg, PeerNodePtr peer);
+    void HandleExchangeResponse(const ExchangeResponseMessage& msg, CPeerNode peer);
     /// Receiver
-    void HandleExchange(MessagePtr msg, PeerNodePtr peer);
+    void HandleExchange(const ExchangeMessage& msg, CPeerNode peer);
     /// Broadcaster
     void Exchange(const boost::system::error_code& err );
+
     /// Generate the exchange message
-    CMessage ExchangeMessage(unsigned int k);
+    ModuleMessage CreateExchangeMessage(unsigned int k);
     /// Generate the exchange response message
-    CMessage ExchangeResponse(unsigned int k);
+    ModuleMessage CreateExchangeResponse(unsigned int k);
+    /// Wraps a clock synchronizer message in a ModuleMessage
+    static ModuleMessage PrepareForSending(const ClockSynchronizerMessage& message);
 
     /// Relative offsets
     OffsetMap m_offsets;
@@ -113,9 +115,6 @@ private:
 
     ///Time for the exchange
     boost::asio::deadline_timer m_exchangetimer;
-
-    /// The UUID
-    std::string m_uuid;
 
     /// Gets the weight with a decay
     double GetWeight(MapIndex i) const;

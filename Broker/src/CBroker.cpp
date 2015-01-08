@@ -33,13 +33,17 @@
 #include "CAdapterFactory.hpp"
 #include "CBroker.hpp"
 #include "CConnectionManager.hpp"
+#include "CDispatcher.hpp"
+#include "CListener.hpp"
 #include "CLogger.hpp"
+#include "CGlobalConfiguration.hpp"
 #include "CGlobalPeerList.hpp"
-#include "IPeerNode.hpp"
 
 #include <boost/asio/io_service.hpp>
 #include <boost/bind.hpp>
 #include <boost/foreach.hpp>
+#include <boost/lexical_cast.hpp>
+#include <boost/make_shared.hpp>
 
 #include <cassert>
 #include <map>
@@ -70,11 +74,13 @@ CBroker& CBroker::Instance()
 ///////////////////////////////////////////////////////////////////////////////
 CBroker::CBroker()
     : m_phasetimer(m_ioService)
-    , m_synchronizer(m_ioService)
+    , m_synchronizer()
     , m_signals(m_ioService, SIGINT, SIGTERM)
     , m_stopping(false)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+
+    m_synchronizer = boost::make_shared<CClockSynchronizer>(boost::ref(m_ioService));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -111,7 +117,7 @@ void CBroker::Run()
     boost::asio::ip::udp::resolver resolver(m_ioService);
     boost::asio::ip::udp::resolver::query query(
         CGlobalConfiguration::Instance().GetListenAddress(),
-        CGlobalConfiguration::Instance().GetListenPort()
+        boost::lexical_cast<std::string>(CGlobalConfiguration::Instance().GetListenPort())
     );
     boost::asio::ip::udp::endpoint endpoint = *(resolver.resolve(query));
 
@@ -126,11 +132,14 @@ void CBroker::Run()
 
     m_signals.async_wait(boost::bind(&CBroker::HandleSignal, this, _1, _2));
     device::CAdapterFactory::Instance(); // create it
+
+    CDispatcher::Instance().RegisterReadHandler(m_synchronizer, "clk");
+    m_synchronizer->Run();
+
     // The io_service::run() call will block until all asynchronous operations
     // have finished. While the server is running, there is always at least one
     // asynchronous operation outstanding: the asynchronous accept call waiting
     // for new incoming connections.
-    m_synchronizer.Run();
     m_ioService.run();
 }
 
@@ -216,7 +225,7 @@ void CBroker::HandleStop(unsigned int signum)
         m_signals.clear();
     }
 
-    m_synchronizer.Stop();
+    m_synchronizer->Stop();
     CConnectionManager::Instance().StopAll();
 
     // The server is stopped by canceling all outstanding asynchronous
@@ -250,16 +259,7 @@ void CBroker::RegisterModule(CBroker::ModuleIdent m, boost::posix_time::time_dur
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     boost::mutex::scoped_lock schlock(m_schmutex);
     boost::system::error_code err;
-    bool exists = false;
-    for(unsigned int i=0; i < m_modules.size(); i++)
-    {
-        if(m_modules[i].first == m)
-        {
-            exists = true;
-            break;
-        }
-    }
-    if(!exists)
+    if(!IsModuleRegistered(m))
     {
         m_modules.push_back(PhaseTuple(m,phase));
         if(m_modules.size() == 1)
@@ -269,6 +269,28 @@ void CBroker::RegisterModule(CBroker::ModuleIdent m, boost::posix_time::time_dur
             schlock.lock();
         }
     }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+/// Checks to see if a module is registered with the scheduler. Such a module
+/// will only receive messages during its scheduled phase.
+///
+/// @param m the identifier for the module.
+///
+/// @return true if the module is registered/scheduled
+///////////////////////////////////////////////////////////////////////////////
+bool CBroker::IsModuleRegistered(ModuleIdent m)
+{
+    bool exists = false;
+    for(unsigned int i=0; i < m_modules.size(); i++)
+    {
+        if(m_modules[i].first == m)
+        {
+            exists = true;
+            break;
+        }
+    }
+    return exists;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -455,7 +477,7 @@ void CBroker::ChangePhase(const boost::system::error_code & /*err*/)
     if(m_phase != oldphase)
     {
         CConnectionManager::Instance().ChangePhase((m_phase==0));
-        std::string oldident = m_modules[oldphase].first;
+        ModuleIdent oldident = m_modules[oldphase].first;
         Logger.Notice<<"Changed Phase: expiring next time timers for "<<oldident<<std::endl;
         // Look through the timers for the module and see if any of them are
         // set for next time:
@@ -473,14 +495,14 @@ void CBroker::ChangePhase(const boost::system::error_code & /*err*/)
         }
     }
     //If the worker isn't going, start him again when you change phases.
+    boost::posix_time::time_duration r = boost::posix_time::milliseconds(sched_duration);
+    m_phaseends = now + r;
     if(!m_busy)
     {
         schlock.unlock();
         Worker();
         schlock.lock();
     }
-    boost::posix_time::time_duration r = boost::posix_time::milliseconds(sched_duration);
-    m_phaseends = now + r;
     m_phasetimer.expires_from_now(r);
     m_phasetimer.async_wait(boost::bind(&CBroker::ChangePhase,this,
         boost::asio::placeholders::error));
@@ -555,7 +577,7 @@ void CBroker::Worker()
         m_busy = false;
         return;
     }
-    std::string active = m_modules[m_phase].first;
+    ModuleIdent active = m_modules[m_phase].first;
     if(m_ready[active].size() > 0)
     {
         Logger.Debug<<"Performing Job"<<std::endl;
@@ -583,7 +605,7 @@ void CBroker::Worker()
 //////////////////////////////////
 CClockSynchronizer& CBroker::GetClockSynchronizer()
 {
-    return m_synchronizer;
+    return *m_synchronizer;
 }
 
     } // namespace broker

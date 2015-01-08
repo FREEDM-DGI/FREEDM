@@ -25,20 +25,17 @@
 #ifndef CONNECTIONMANAGER_HPP
 #define CONNECTIONMANAGER_HPP
 
-#include "CGlobalConfiguration.hpp"
-#include "CListener.hpp"
-#include "IHandler.hpp"
 #include "SRemoteHost.hpp"
-
-#include <boost/bimap.hpp>
-#include <boost/enable_shared_from_this.hpp>
-#include <boost/noncopyable.hpp>
-#include <boost/shared_ptr.hpp>
-#include <boost/thread/mutex.hpp>
 
 #include <map>
 #include <set>
 #include <string>
+
+#include <boost/bimap.hpp>
+#include <boost/noncopyable.hpp>
+#include <boost/shared_ptr.hpp>
+#include <boost/thread/mutex.hpp>
+#include <boost/asio.hpp>
 
 namespace freedm {
 namespace broker {
@@ -80,17 +77,14 @@ public:
     /// Handle Rounds
     void ChangePhase(bool newround);
 
-    /// Get The UUID
-    std::string GetUUID() const { return m_uuid; }
-
-    /// Get The Host
-    SRemoteHost GetHost() const { return m_host; }
-
-    /// Get the host from the UUID.
-    SRemoteHost GetHostByUUID( std::string uuid ) const;
-
     /// Fetch a connection pointer via UUID
     ConnectionPtr GetConnectionByUUID( std::string uuid );
+
+    /// Creates a connection by binding it to an endpoint
+    ConnectionPtr CreateConnection(std::string uuid, boost::asio::ip::udp::endpoint endpoint);
+    
+    /// Returns true if this map is currently tracking a connection to this peer.
+    bool HasConnection(std::string uuid);
 
     /// An iterator to the beginning of the hostname map
     hostnamemap::iterator GetHostsBegin() { return m_hosts.begin(); };
@@ -116,12 +110,8 @@ private:
     CConnectionManager();
     /// Mapping from uuid to host.
     hostnamemap m_hosts;
-    /// Host/port of this node.
-    SRemoteHost m_host;
     /// Forward map (UUID->Connection)
     connectionmap m_connections;
-    /// Node UUID
-    std::string m_uuid;
     /// Mutex for protecting the handler maps above
     boost::mutex m_Mutex;
 };

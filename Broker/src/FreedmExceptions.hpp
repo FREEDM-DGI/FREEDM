@@ -38,6 +38,14 @@ struct EDgiConfigError
         : std::runtime_error(what) { }
 };
 
+struct EDgiNoSuchPeerError
+    : virtual std::runtime_error
+{
+    explicit EDgiNoSuchPeerError(const std::string& what)
+        : std::runtime_error(what) { }
+};
+
+
 }
 }
 

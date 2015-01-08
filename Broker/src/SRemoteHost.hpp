@@ -23,8 +23,30 @@
 
 #include <string>
 
+#include <boost/lexical_cast.hpp>
+
 namespace freedm {
 namespace broker {
+
+///////////////////////////////////////////////////////////////////////////////
+/// Determines whether the given string represents a valid port number.
+///
+/// @param port the string to checkt
+///
+/// @return true if port represents a valid port
+///////////////////////////////////////////////////////////////////////////////
+inline bool IsValidPort(std::string port)
+{
+    try
+    {
+        int port_num = boost::lexical_cast<int>(port);
+        return port_num > 0 && port_num < 65535;
+    }
+    catch(boost::bad_lexical_cast&)
+    {
+        return false;
+    }
+}
 
 /// A container which lists the hostname and and port of a peer.
 struct SRemoteHost

@@ -24,19 +24,21 @@
 #ifndef CCONNECTION_HPP
 #define CCONNECTION_HPP
 
+#include "CProtocolSR.hpp"
 #include "CDispatcher.hpp"
-#include "CMessage.hpp"
 #include "SRemoteHost.hpp"
 
-#include <deque>
-#include <iomanip>
-#include <set>
+#include <memory>
 
-#include <boost/array.hpp>
-#include <boost/asio.hpp>
-#include <boost/enable_shared_from_this.hpp>
 #include <boost/noncopyable.hpp>
-#include <boost/shared_ptr.hpp>
+
+namespace google {
+  namespace protobuf {
+
+class Message;
+
+  }
+}
 
 namespace freedm {
     namespace broker {
@@ -53,60 +55,48 @@ struct EConnectionError
 
 /// Represents a single outgoing connection to a client.
 class CConnection
-    : public boost::noncopyable
+    : private boost::noncopyable
 {
 
 public:
-    /// ConnectionPtr Typedef
     typedef boost::shared_ptr<CConnection> ConnectionPtr;
 
     /// Construct a CConnection to a peer
-    CConnection(std::string uuid);
+    CConnection(std::string uuid, boost::asio::ip::udp::endpoint endpoint);
+
+    /// Destructor
+    ~CConnection();
 
     /// Stop all asynchronous operations associated with the CConnection.
     void Stop();
 
-    /// Puts a CMessage into the channel.
-    void Send(CMessage & p_mesg);
+    /// Tests to see if the protocol is stopped
+    bool GetStopped();
+
+    /// Puts a message into the channel.
+    void Send(const ModuleMessage& msg);
 
     /// Handles Notification of an acknowledment being received
-    void ReceiveACK(const CMessage &msg);
+    void ReceiveACK(const ProtocolMessage& msg);
 
     /// Handler that calls the correct protocol for accept logic
-    bool Receive(const CMessage &msg);
+    bool Receive(const ProtocolMessage& msg);
 
     /// Change Phase Event
     void ChangePhase(bool newround);
-
-    /// Get a socket connected to a single peer DGI
-    boost::asio::ip::udp::socket& GetSocket();
 
     /// Get associated UUID
     std::string GetUUID() const;
 
     /// Set the connection reliability for DCUSTOMNETWORK
     void SetReliability(int r);
-
+    
     /// Get the connection reliability for DCUSTOMNETWORK
     int GetReliability() const;
-
 private:
-    typedef boost::shared_ptr<IProtocol> ProtocolPtr;
-    typedef std::map<std::string,ProtocolPtr> ProtocolMap;
-    /// Protocol Handler Map
-    ProtocolMap m_protocols;
 
-    /// Default protocol
-    std::string m_defaultprotocol;
-
-    /// Datagram socket connected to a single peer DGI
-    boost::asio::ip::udp::socket m_socket;
-
-    /// The UUID of the remote endpoint for the connection
-    std::string m_uuid;
-
-    /// The reliability of the connection (FOR -DCUSTOMNETWORK)
-    int m_reliability;
+    /// The custom network protocol to use for sending/receiving messages
+    boost::shared_ptr<IProtocol> m_protocol;
 };
 
 typedef boost::shared_ptr<CConnection> ConnectionPtr;

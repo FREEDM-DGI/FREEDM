@@ -55,6 +55,7 @@ CLocalLogger Logger(__FILE__);
 ///       marked as unsynced, It won't be sending kill statuses. Its first
 ///       message will be numbered as 0 for outgoing and the timer is not set.
 /// @param uuid The peer this connection is made to.
+/// @param endpoint The endpoint that will be the destination for sent messages
 ///////////////////////////////////////////////////////////////////////////////
 CProtocolSR::CProtocolSR(std::string uuid, boost::asio::ip::udp::endpoint endpoint)
     : IProtocol(uuid, endpoint),
@@ -208,6 +209,7 @@ void CProtocolSR::Resend(const boost::system::error_code& err)
 ///       been sent.
 ///       If the there is still an message in the window to send, the
 ///       resend function is called.
+/// @param msg The received ACK message
 ///////////////////////////////////////////////////////////////////////////////
 void CProtocolSR::ReceiveACK(const ProtocolMessage& msg)
 {
@@ -268,6 +270,7 @@ void CProtocolSR::ReceiveACK(const ProtocolMessage& msg)
 ///         be rejected.
 ///      8) The message should be accepted because one or more message expired
 ///         in the gap of sequence numbers.
+/// @param msg The received message
 /// @return True if the message is accepted, false otherwise.
 ///////////////////////////////////////////////////////////////////////////////
 bool CProtocolSR::Receive(const ProtocolMessage& msg)
@@ -432,9 +435,11 @@ void CProtocolSR::SendSYN()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// Writes the message to the connected peer. Also, timestamps the message, if
-/// a timestamp does not already exist.
-///
+/// CProtocolSR::Write
+/// @description Writes the message to the connected peer. Also, timestamps the
+/// message, if a timestamp does not already exist.
+/// @pre None
+/// @post Writes the message to the channel.
 /// @param msg the message write.
 ///////////////////////////////////////////////////////////////////////////////
 void CProtocolSR::Write(ProtocolMessage& msg)

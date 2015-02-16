@@ -54,8 +54,10 @@ IProtocol::IProtocol(std::string uuid, boost::asio::ip::udp::endpoint endpoint)
     //pass
 }
 ///////////////////////////////////////////////////////////////////////////////
-/// Sends a message over the connection associated with this IProtocol. This
-/// is a blocking send. An asynchronous send is not currently provided because
+/// IProtocol::Write 
+/// @description Sends a message over the connection associated with this 
+/// IProtocol. This is a blocking send. An asynchronous send is not currently 
+/// provided because:
 /// (a) this would require a second io_service, or a second thread in our
 /// io_service's thread pool, (b) because it would make the code more
 /// complicated: e.g. modules would be required to use an async callback (write
@@ -64,7 +66,9 @@ IProtocol::IProtocol(std::string uuid, boost::asio::ip::udp::endpoint endpoint)
 /// actually slows down the DGI or not, or if so, how much. A TODO item would be
 /// to look into this. Synchronous writes usually slow things down dramatically,
 /// but that may not be the case with the DGI, given our custom scheduling.
-///
+/// @pre None
+/// @post Writes the message using the listening socket to the Protocol's
+///		endpoint
 /// @param msg the message to send to this p
 ///////////////////////////////////////////////////////////////////////////////
 void IProtocol::Write(ProtocolMessage& msg)
@@ -116,8 +120,10 @@ void IProtocol::Write(ProtocolMessage& msg)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// Gets the UUID of the DGI on the other end of this connection.
-///
+/// IProtocol::GetUUID
+/// @description Gets the UUID of the DGI on the other end of this connection.
+/// @pre None
+/// @post None
 /// @return the peer's UUID
 ///////////////////////////////////////////////////////////////////////////////
 std::string IProtocol::GetUUID() const
@@ -128,9 +134,11 @@ std::string IProtocol::GetUUID() const
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// Set the connection reliability for DCUSTOMNETWORK. 0 all packets are
-/// artifically dropped. 100 means no packets are artifically dropped.
-///
+/// IProtocol::SetReliability
+/// @description Set the connection reliability for DCUSTOMNETWORK. 0 all
+/// packets areartifically dropped. 100 means no packets are artifically dropped.
+/// @pre None
+/// @post Sets the reliabilty of the protocol to r
 /// @param r between 0 and 100
 ///////////////////////////////////////////////////////////////////////////////
 void IProtocol::SetReliability(int r)
@@ -141,8 +149,10 @@ void IProtocol::SetReliability(int r)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// Get the connection reliability for DCUSTOMNETWORK
-///
+/// IProtocol::GetReliability
+/// @description Get the connection reliability for DCUSTOMNETWORK
+/// @pre None
+/// @post None
 /// @return percentage of packets that are allowed through
 ///////////////////////////////////////////////////////////////////////////////
 int IProtocol::GetReliability() const

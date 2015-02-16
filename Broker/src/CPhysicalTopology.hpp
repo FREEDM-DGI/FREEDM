@@ -51,10 +51,7 @@ public:
 
     /// Get the singleton instance of this class
     static CPhysicalTopology& Instance();
-
-    /// Clean up this module
-    ~CPhysicalTopology();
-
+	
     /// Find the reachable peers.
     VertexSet ReachablePeers(std::string source, FIDState fidstate);
 

@@ -43,7 +43,8 @@ static const std::string VNAME_PREFIX = "*VIRTUAL__";
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// Get the singleton instance of this class
+/// CPhysicalTopology::Instance
+/// @description Get the singleton instance of this class
 ///////////////////////////////////////////////////////////////////////////////
 CPhysicalTopology& CPhysicalTopology::Instance()
 {
@@ -52,15 +53,8 @@ CPhysicalTopology& CPhysicalTopology::Instance()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// Cleans up on exit
-///////////////////////////////////////////////////////////////////////////////
-CPhysicalTopology::~CPhysicalTopology()
-{
-    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-/// Private constructor for the singleton instance
+/// CPhysicalTopology::CPhysicalTopology
+/// @description Private constructor for the singleton instance
 /// @pre None
 /// @post LoadTopology has been called.
 ///////////////////////////////////////////////////////////////////////////////
@@ -72,7 +66,8 @@ CPhysicalTopology::CPhysicalTopology()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// Indicates whether or not a physical topology is available
+/// CPhysicalTopology::IsAvailable
+/// @description Indicates whether or not a physical topology is available
 /// @pre None
 /// @post None
 /// @return True if a physical topology has been successfully loaded.
@@ -83,10 +78,10 @@ bool CPhysicalTopology::IsAvailable()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// Find the reachable peers. Performs a BFS on the physical topology starting
-/// at a source vertex. Nodes with FID are checked for the status of their FID
-/// If the FID status is unavailable or the FID is open, the edge is considered
-/// Broken
+/// @description Find the reachable peers. Performs a BFS on the physical topology 
+/// starting at a source vertex. Nodes with FID are checked for the status of 
+/// their FID. If the FID status is unavailable or the FID is open, the edge is
+/// considered Broken
 /// @pre A physical topology has been loaded.
 /// @post No change to class state.
 /// @returns A set of UUIDs of hostnames that are still reachable.
@@ -174,11 +169,12 @@ CPhysicalTopology::VertexSet CPhysicalTopology::ReachablePeers(std::string sourc
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// Load the topology from a file
-/// @pre: The topology is correctly specified in a topology config file. The
+/// CPhysicalTopology::LoadTopology
+/// @description Load the topology from a file
+/// @pre The topology is correctly specified in a topology config file. The
 ///     CGlobalConfiguration class has an entry loaded with a working path to
 ///     the topology file.
-/// @post: The topology is loaded into the related maps: the adjacency list is
+/// @post The topology is loaded into the related maps: the adjacency list is
 ///     loaded into m_adjlist, and the map of which edges FIDs control is
 ///     loaded into m_fidcontrol.
 /// @returns None
@@ -327,7 +323,8 @@ void CPhysicalTopology::LoadTopology()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// Translates a virtual edge name to a real one.
+/// CPhysicalTopology::RealNameFromVirtual
+/// @description Translates a virtual edge name to a real one.
 /// @pre The m_strans member property has been populated (happens as part of
 ///     the topology loading process)
 /// @post Returns the real name of the node in the physical topology.

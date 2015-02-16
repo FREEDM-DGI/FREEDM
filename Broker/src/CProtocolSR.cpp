@@ -114,7 +114,7 @@ void CProtocolSR::Send(const ModuleMessage& msg)
     m_outseq = (m_outseq+1) % SEQUENCE_MODULO;
     pm.set_hash(ComputeMessageHash(pm.module_message()));
 
-    SetExpirationTimeFromNow(pm, boost::posix_time::millisec(CTimings::CSRC_DEFAULT_TIMEOUT));
+    SetExpirationTimeFromNow(pm, boost::posix_time::millisec(CTimings::Get("CSRC_DEFAULT_TIMEOUT")));
     Logger.Debug<<"Set Expire time: "<< pm.expire_time() << std::endl;
 
 	m_window.push_back(pm);
@@ -189,7 +189,7 @@ void CProtocolSR::Resend(const boost::system::error_code& err)
         }
         /// We use static pointer cast to convert the IPROTOCOL pointer to this
         /// derived type
-        m_timeout.expires_from_now(boost::posix_time::milliseconds(CTimings::CSRC_RESEND_TIME));
+        m_timeout.expires_from_now(boost::posix_time::milliseconds(CTimings::Get("CSRC_RESEND_TIME")));
         m_timeout.async_wait(boost::bind(&CProtocolSR::Resend,
             boost::static_pointer_cast<CProtocolSR>(shared_from_this()),
             boost::asio::placeholders::error));
@@ -425,7 +425,7 @@ void CProtocolSR::SendSYN()
     ProtocolMessage outmsg;
     outmsg.set_status(ProtocolMessage::CREATED);
     outmsg.set_sequence_num(seq);
-    SetExpirationTimeFromNow(outmsg, boost::posix_time::millisec(CTimings::CSRC_DEFAULT_TIMEOUT));
+    SetExpirationTimeFromNow(outmsg, boost::posix_time::millisec(CTimings::Get("CSRC_DEFAULT_TIMEOUT")));
     Write(outmsg);
     m_window.push_front(outmsg);
     m_outsync = true;
@@ -443,7 +443,7 @@ void CProtocolSR::Write(ProtocolMessage& msg)
 
     if(!msg.has_expire_time())
     {
-        SetExpirationTimeFromNow(msg, boost::posix_time::millisec(CTimings::CSRC_DEFAULT_TIMEOUT));
+        SetExpirationTimeFromNow(msg, boost::posix_time::millisec(CTimings::Get("CSRC_DEFAULT_TIMEOUT")));
     }
 
     IProtocol::Write(msg);

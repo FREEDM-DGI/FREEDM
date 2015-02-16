@@ -70,7 +70,7 @@ void CProtocolSU::Send(const ModuleMessage& msg)
     {
         Write(pm);
         m_timeout.cancel();
-        m_timeout.expires_from_now(boost::posix_time::milliseconds(CTimings::CSUC_RESEND_TIME));
+        m_timeout.expires_from_now(boost::posix_time::milliseconds(CTimings::Get("CSUC_RESEND_TIME")));
         m_timeout.async_wait(boost::bind(&CProtocolSU::Resend,
             boost::static_pointer_cast<CProtocolSU>(shared_from_this()),
             boost::asio::placeholders::error));
@@ -105,7 +105,7 @@ void CProtocolSU::Resend(const boost::system::error_code& err)
         if(m_window.size() > 0)
         {
             m_timeout.cancel();
-            m_timeout.expires_from_now(boost::posix_time::milliseconds(CTimings::CSUC_RESEND_TIME));
+            m_timeout.expires_from_now(boost::posix_time::milliseconds(CTimings::Get("CSUC_RESEND_TIME")));
             m_timeout.async_wait(boost::bind(&CProtocolSU::Resend,
                 boost::static_pointer_cast<CProtocolSU>(shared_from_this()),
                 boost::asio::placeholders::error));

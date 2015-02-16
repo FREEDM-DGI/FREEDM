@@ -624,7 +624,7 @@ void CAdapterFactory::StartSession()
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
     Logger.Notice << "A wild client appears!" << std::endl;
-    m_timeout.expires_from_now(boost::posix_time::seconds(CTimings::DEV_PNP_HEARTBEAT));
+    m_timeout.expires_from_now(boost::posix_time::seconds(CTimings::Get("DEV_PNP_HEARTBEAT")));
     m_timeout.async_wait(boost::bind(&CAdapterFactory::Timeout, this,
             boost::asio::placeholders::error));
 
@@ -686,7 +686,7 @@ void CAdapterFactory::Timeout(const boost::system::error_code & e)
             std::string msg;
             msg = "Error\r\nConnection closed due to timeout.\r\n\r\n";
             TimedWrite(*m_server->GetClient(), boost::asio::buffer(msg),
-                    CTimings::DEV_SOCKET_TIMEOUT);
+                    CTimings::Get("DEV_SOCKET_TIMEOUT"));
         }
         catch(std::exception & e)
         {
@@ -844,7 +844,7 @@ void CAdapterFactory::SessionProtocol()
     try
     {
         TimedWrite(*m_server->GetClient(), response,
-                CTimings::DEV_SOCKET_TIMEOUT);
+                CTimings::Get("DEV_SOCKET_TIMEOUT"));
     }
     catch(std::exception & e)
     {

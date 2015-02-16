@@ -90,8 +90,8 @@ CLocalLogger Logger(__FILE__);
 /// @limitations: None
 ///////////////////////////////////////////////////////////////////////////////
 LBAgent::LBAgent()
-    : ROUND_TIME(boost::posix_time::milliseconds(CTimings::LB_ROUND_TIME))
-    , REQUEST_TIMEOUT(boost::posix_time::milliseconds(CTimings::LB_REQUEST_TIMEOUT))
+    : ROUND_TIME(boost::posix_time::milliseconds(CTimings::Get("LB_ROUND_TIME")))
+    , REQUEST_TIMEOUT(boost::posix_time::milliseconds(CTimings::Get("LB_REQUEST_TIMEOUT")))
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 

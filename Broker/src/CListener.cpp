@@ -54,10 +54,11 @@ CLocalLogger Logger(__FILE__);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// @fn CListener::CListener
-/// @description Constructor
-/// @pre An initialized socket is ready to be converted to a connection.
-/// @post A new CConnection object is initialized.
+/// CListener::CListener
+/// @description Constructor. Creates the socket that will be used to listen
+///     for incoming messages.
+/// @pre None.
+/// @post A socket is created using the Broker's io service.
 ///////////////////////////////////////////////////////////////////////////////
 CListener::CListener()
     : m_socket(CBroker::Instance().GetIOService())
@@ -66,7 +67,8 @@ CListener::CListener()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// Access the singleton instance of the CListener
+/// CListener::Instance
+/// @description Access the singleton instance of the CListener
 ///////////////////////////////////////////////////////////////////////////////
 CListener& CListener::Instance()
 {
@@ -75,10 +77,11 @@ CListener& CListener::Instance()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// @fn CListener::Start
-/// @description: Begin listening for incoming messages
-/// @pre The object is initialized.
-/// @post The connection is asynchronously waiting for messages.
+/// CListener::Start
+/// @description Causes the listener to start listening for new messages
+/// @pre endpoint is a valid endpoint for the lister to listen on
+/// @post The listener is not listening for incoming messages on the socket
+///     bound to endpoint
 /// @param endpoint the endpoint for the listener to listen on
 ///////////////////////////////////////////////////////////////////////////////
 void CListener::Start(boost::asio::ip::udp::endpoint& endpoint)
@@ -90,7 +93,10 @@ void CListener::Start(boost::asio::ip::udp::endpoint& endpoint)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// Closes the listening socket.
+/// CListener::Stop
+/// @description Closes the listening socket.
+/// @pre None
+/// @post The socket used to listen for messages is closed.
 ///////////////////////////////////////////////////////////////////////////////
 void CListener::Stop()
 {
@@ -107,16 +113,16 @@ void CListener::Stop()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// @fn CListener::HandleRead
+/// CListener::HandleRead
 /// @description The callback which accepts messages from the remote sender.
 /// @param e The errorcode if any associated.
 /// @param bytes_transferred The size of the datagram being read.
 /// @pre The connection has had start called and some message has been placed
 ///   in the buffer by the receive call.
-/// @post The message has been delivered. This means that write connections
-///   have been notified of ACK and standard messages have been redirected to
-///   their appropriate places by the dispatcher. The incoming sequence number
-///   for the source UUID has been incremented appropriately.
+/// @post The message is scheduled for delivery by the dispatcher to one or
+///     more modules. The message has been processed by the CConnection that
+///     manages messages between this process and the sender. ScheduleListen()
+///     is waiting for another datagram to arrive.
 ///////////////////////////////////////////////////////////////////////////////
 void CListener::HandleRead(const boost::system::error_code& e,
                            std::size_t bytes_transferred)
@@ -182,9 +188,12 @@ void CListener::HandleRead(const boost::system::error_code& e,
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// Schedule an asynchronous listen for the next incoming message. Our
-/// invariant is that this function must be called after each HandleRead();
-/// otherwise, we'll never receive new messages.
+/// CListener::ScheduleListen
+/// @description Makes a call to the Broker's ioservice and requests that the
+///     HandleRead function is called when a datagram arrives on the
+///     Listener's socket.
+/// @pre The m_socket is bound to an endpoint
+/// @post HandleRead will be called when a datagram arrives at the socket
 ///////////////////////////////////////////////////////////////////////////////
 void CListener::ScheduleListen()
 {

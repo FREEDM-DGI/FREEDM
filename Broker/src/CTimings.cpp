@@ -61,6 +61,8 @@ void CTimings::SetTimings(const std::string timingsFile)
     po::options_description loggerOpts("Timing Parameters");
     po::variables_map vm;
     std::string desc;
+	
+	
 
     desc = "The timing value GM_AYC_RESPONSE_TIMEOUT";
     loggerOpts.add_options()

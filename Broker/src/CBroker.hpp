@@ -50,11 +50,10 @@ namespace freedm {
 class CConnectionManager;
 class CDispatcher;
 
-/// How long we should wait before aligning the modules again
+/// How often the scheduler should verify the schedule is being followed
 const unsigned int ALIGNMENT_DURATION = 250;
-const unsigned int BEACON_FREQUENCY = 2000;
 
-/// Central monolith of the Broker Architecture.
+/// Scheduler for the DGI modules
 class CBroker : private boost::noncopyable
 {
 public:
@@ -73,35 +72,32 @@ public:
     /// Get the singleton instance of this class
     static CBroker& Instance();
 
-    /// Terminate the timers since they are pointers.
+    /// De-allocates the timers when the CBroker is destroyed.
     ~CBroker();
 
-    /// Run the Server's io_service loop.
+    /// Starts the DGI Broker scheduler.
     void Run();
 
-    /// Return a reference to the IO Service
+    /// Return a reference to the boost::ioservice
     boost::asio::io_service& GetIOService();
 
-    /// Puts the stop request into the ioservice queue.
+    /// Requests that the Broker stops execution to exit the DGI.
     void Stop(unsigned int signum = 0);
 
-    /// Handle signals
+    /// Handle signals from the operating system (ie, Control-C)
     void HandleSignal(const boost::system::error_code& error, int parameter);
 
-    /// Stop the server.
+    /// Handles the stop signal from the operating System.
     void HandleStop(unsigned int signum = 0);
 
-    /// Schedule a task
+    /// Schedules a task that will run after a timer expires.
     int Schedule(TimerHandle h, boost::posix_time::time_duration wait, Scheduleable x);
 
-    /// Schedule a task
+    /// Schedule a task to be run as soon as the module is active.
     int Schedule(ModuleIdent m, BoundScheduleable x, bool start_worker=true);
 
-    /// Allocate a timer
+    /// Allocate a timer to a specified module.
     TimerHandle AllocateTimer(ModuleIdent module);
-
-    /// Mark that you should try and cancel some timer
-    void CancelTimer(ModuleIdent handle);
 
     /// Registers a module for the scheduler
     void RegisterModule(ModuleIdent m, boost::posix_time::time_duration phase);
@@ -109,7 +105,7 @@ public:
     /// Checks to see if a module is registered with the scheduler
     bool IsModuleRegistered(ModuleIdent m);
 
-    /// Returns how much time the current module has left in its round
+    /// Returns how much time the current module has left in its phase
     boost::posix_time::time_duration TimeRemaining();
 
     /// Returns the synchronizer
@@ -119,22 +115,19 @@ private:
     /// Private constructor for the singleton instance
     CBroker();
 
-    /// Handle completion of an asynchronous accept operation.
-    void HandleAccept(const boost::system::error_code& e);
-
     /// The io_service used to perform asynchronous operations.
     boost::asio::io_service m_ioService;
 
-    ///Schedule to Move Onto The Next Phase.
+    ///An task that will advance the Broker's active module to the next module.
     void ChangePhase(const boost::system::error_code &err);
 
-    ///Check to see if the scheduled task should actually be run.
+    ///Adds a task scheduled by a module to the task queue when the timer expires.
     void ScheduledTask(Scheduleable x, TimerHandle handle, const boost::system::error_code &err);
 
-    ///Verify the queue is empty
+    ///Executes tasks from the active module's task queue.
     void Worker();
 
-    ///Flag for if the executer is scheduled to run again.
+    ///True while the worker is actively running tasks.
     bool m_busy;
 
     ///The last time the phases were aligned
@@ -143,22 +136,22 @@ private:
     ///List of modules for the scheduler
     ModuleVector m_modules;
 
-    ///Whose turn is it for round robin.
+    ///The active module in the scheduler.
     PhaseMarker m_phase;
 
     ///Computed ptime for when the current phase ends
     boost::posix_time::ptime m_phaseends;
 
-    ///Time for the phases
+    ///Timer for the phases
     boost::asio::deadline_timer m_phasetimer;
 
     ///The current counter for the time handlers
     TimerHandle m_handlercounter;
 
-    ///How the timers are allocated.
+    ///Timer allocations for modules.
     TimerAlloc m_allocs;
 
-    ///A list of timers used for scheduling
+    ///A relation between the timer handles and the actual timer objects.
     TimersMap m_timers;
 
     ///Maps handle to bool: if a timer handle is set to expire for the next round.
@@ -173,13 +166,13 @@ private:
     ///Lock for the scheduler.
     boost::mutex m_schmutex;
 
-    ///The magical clock synchronizer
+    ///The clock synchronizer which aligns clocks between DGIs
     boost::shared_ptr<CClockSynchronizer> m_synchronizer;
 
-    ///The register for signal handling.
+    ///The registered signal handlers.
     boost::asio::signal_set m_signals;
 
-    ///Flag to prevent modules from scheduling
+    ///Flag to prevent modules from scheduling, set when the DGI is stopping
     bool m_stopping;
 
     ///Lock for m_stopping

@@ -46,6 +46,9 @@ public:
     static unsigned int LB_REQUEST_TIMEOUT;
 
     static void SetTimings(const std::string timingsFile);
+private:
+	void RegisterLoggerOption(po::options_description&, const std::string param);
+	void AssignTimingValue(unsigned int& var, const std::string param);
 };
 
 

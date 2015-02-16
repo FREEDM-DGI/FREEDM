@@ -43,7 +43,11 @@ CLocalLogger Logger(__FILE__);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// Access the singleton instance of the Dispatcher
+/// CDispatcher::Instance
+/// @description Access the singleton instance of the Dispatcher
+/// @pre None
+/// @post None
+/// @return A reference to the dispatcher.
 ///////////////////////////////////////////////////////////////////////////////
 CDispatcher& CDispatcher::Instance()
 {
@@ -52,14 +56,14 @@ CDispatcher& CDispatcher::Instance()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// @fn CDispatcher::HandleRequest
+/// CDispatcher::HandleRequest
 /// @description Given an input property tree determine which handlers should
-///   be given the message out of a pool of modules and deliever the message
-///   as appropriate.
+///   be given the message out of a pool of modules and schedule the delievery
+///   of the message to those modules.
 /// @pre Modules have registered their read handlers.
-/// @post Message delievered to a module
-/// @param msg The message to distribute to modules
-/// @param uuid The UUID of the DGI that sent the message
+/// @post Message is scheduled to be delivered to the module.
+/// @param msg The message to distribute to modules.
+/// @param uuid The UUID of the DGI that sent the message.
 ///////////////////////////////////////////////////////////////////////////////
 void CDispatcher::HandleRequest(boost::shared_ptr<const ModuleMessage> msg, std::string uuid)
 {
@@ -99,11 +103,12 @@ void CDispatcher::HandleRequest(boost::shared_ptr<const ModuleMessage> msg, std:
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// Forward a received message to a local DGI module.
-///
-/// @param h the module to send the message to
-/// @param msg the message to send
-/// @param uuid the UUID of the DGI that sent
+/// CDispatcher::ReadHandlerCallback
+/// @description Calls the receiving module's message handler for the received
+///		message. 
+/// @param h The module that will receive the message.
+/// @param msg The message to deliver to that module.
+/// @param uuid the UUID of the peer that sent the message.
 ///////////////////////////////////////////////////////////////////////////////
 void CDispatcher::ReadHandlerCallback(
     boost::shared_ptr<IDGIModule> h, boost::shared_ptr<const ModuleMessage> msg, std::string uuid)
@@ -127,13 +132,14 @@ void CDispatcher::ReadHandlerCallback(
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// Registers a module to receive messages addressed to id. Every registered
-/// module will additionally receive messages addressed to "all". Call this
-/// function multiple times if you want to promiscuously listen to messages
-/// intended for other modules.
-///
+/// CDispatcher::RegisterReadHandler
+/// @description Registers a module to receive messages addressed to a uuid.
+/// Every registeredmodule will additionally receive messages addressed to 
+///	"all". Modules can register as "all" to recieve all messages from all
+///	modules.
 /// @param handler the module that will receive the message
-/// @param id this module will receive messages addressed to id
+/// @param id this module will receive messages addressed to id. If id is "all"
+///		the module will receiver every message from every other module.
 ///////////////////////////////////////////////////////////////////////////////
 void CDispatcher::RegisterReadHandler(
     boost::shared_ptr<IDGIModule> handler, std::string id)

@@ -57,7 +57,6 @@ void VSAgent::CalculateInvariant()
 
     std::size_t size = sizeof(UUID) / sizeof(UUID[0]);
 
-    size = 2;
     try
     {
         std::vector<float> indicator;

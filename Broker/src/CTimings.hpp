@@ -45,6 +45,8 @@ public:
 
     static unsigned int LB_REQUEST_TIMEOUT;
 
+    static unsigned int VS_PHASE_TIME;
+
     static void SetTimings(const std::string timingsFile);
 };
 

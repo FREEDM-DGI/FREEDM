@@ -53,6 +53,7 @@ unsigned int CTimings::LB_ROUND_TIME;
 
 unsigned int CTimings::LB_REQUEST_TIMEOUT;
 
+unsigned int CTimings::VS_PHASE_TIME;
 
 void CTimings::SetTimings(const std::string timingsFile)
 {
@@ -161,6 +162,12 @@ void CTimings::SetTimings(const std::string timingsFile)
     desc = "The timing value LB_REQUEST_TIMEOUT";
     loggerOpts.add_options()
         ("LB_REQUEST_TIMEOUT",
+        po::value<unsigned int>( ),
+        desc.c_str() );
+
+    desc = "The timing value VS_PHASE_TIME";
+    loggerOpts.add_options()
+        ("VS_PHASE_TIME",
         po::value<unsigned int>( ),
         desc.c_str() );
 
@@ -349,6 +356,17 @@ void CTimings::SetTimings(const std::string timingsFile)
     {
         throw EDgiConfigError(
                 "LB_REQUEST_TIMEOUT is missing, please check your timings config");
+    }
+
+    try
+    {
+        VS_PHASE_TIME = vm["VS_PHASE_TIME"].as<unsigned int>();
+
+    }
+    catch (boost::bad_any_cast& e)
+    {
+        throw EDgiConfigError(
+                "VS_PHASE_TIME is missing, please check your timings config");
     }
 }
 

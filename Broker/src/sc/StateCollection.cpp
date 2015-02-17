@@ -281,7 +281,17 @@ void SCAgent::StateResponse()
                                   << dssm.type() << " : "
                                   << dssm.signal() << " : "
                                   << dssm.value() << std::endl;
-                    if (dssm.type() == "Sst")
+                    if(dssm.type() == "Bus")
+                    {
+                        if(dssm.count()>0)
+                        {
+                            BusValue * bv = csm->add_bus();
+                            bv->set_source(it->second.source());
+                            bv->set_signal(dssm.signal());
+                            bv->set_value(dssm.value());
+                        }
+                    }
+                    else if (dssm.type() == "Sst")
                     {
                         if(dssm.count()>0)
                         {

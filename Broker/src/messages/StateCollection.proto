@@ -55,6 +55,13 @@ message RequestMessage
     repeated DeviceSignalRequestMessage device_signal_request_message = 2;
 }
 
+message BusValue
+{
+    required string source = 1;
+    required string signal = 2;
+    required double value = 3;
+}
+
 message CollectedStateMessage
 {
     repeated double gateway = 1;
@@ -62,7 +69,8 @@ message CollectedStateMessage
     repeated double storage = 3;
     repeated double drain = 4;
     repeated double state = 5;
-    required int32 num_intransit_accepts = 6;
+    repeated BusValue bus = 6;
+    required int32 num_intransit_accepts = 7;
 }
 
 message StateCollectionMessage

@@ -31,4 +31,13 @@
         <id>Omega</id>
         <state>frequency</state>
     </deviceType>
+    <deviceType>
+        <id>Bus</id>
+        <state>S</state>
+        <state>V</state>
+    </deviceType>
+    <deviceType>
+        <id>Invariant</id>
+        <command>value</commanda>
+    </deviceType>
 </root>

@@ -1,4 +1,5 @@
-# Using the Device Type
+Using devices in DGI Modules
+============================
 All devices are accessed in DGI using the _CDeviceManager_. Refer to the wiki page on the device manager to see how to use it to collect a set of devices. In order to access the new device you have defined, use the string identifier in the `<id>` tag (`ExampleDevice`) in the device manager function calls. The following discussion will discuss the various ways in which a `CDevice` pointer can be used once it has been retrieved from the device manager.
 
 ## Reading a Device State

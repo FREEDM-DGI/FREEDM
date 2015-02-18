@@ -3,13 +3,14 @@
 Configuring adapter.xml
 =======================
 
-DEFINE THE STRUCTURE OF THE XML DOCUMENT WITHOUT A TUTORIAL HERE.
+.. todo::
+    DEFINE THE STRUCTURE OF THE XML DOCUMENT WITHOUT A TUTORIAL HERE.
 
-STATE THE PURPOSE OF EACH TAG IN THE DOCUMENT.
+    STATE THE PURPOSE OF EACH TAG IN THE DOCUMENT.
 
 
-Tutorial: Creating adapter.xml
------------------------------
+Tutorial: Creating adapter.xml for PSCAD/RSCAD
+----------------------------------------------
 
     #. Create a new file named `adapter.xml` in the `Broker/config/` directory.
     #. Open `Broker/config/freedm.cfg` and add the key `adapter-config=config/adapter.xml` on its own line.  Note that the path is relative to the `Broker/` directory and thus requires the `config/` prefix.
@@ -28,7 +29,7 @@ The file should now resemble::
     </root>
 
 Define the State Data
-----------------------
+^^^^^^^^^^^^^^^^^^^^^
 
 The word **state** refers to a value produced by the remote peer and consumed by the FREEDM-DGI.  In other words, a meter reading from some device that is sent as an input to the FREEDM-DGI.  All of the state values sent by an adapter must be specified in the XML specification file.
 
@@ -54,7 +55,7 @@ At this point the file should resemble::
     </root>
 
 Define the Command Data
------------------------
+^^^^^^^^^^^^^^^^^^^^^^^
 
 The word command refers to a value produced by the FREEDM-DGI and consumed by the device. The command specification is identical to the state specification except it uses the tag `<command>` instead of `<state>`.  Refer to the above section on state data for the detailed steps of the specification.
 
@@ -80,7 +81,8 @@ At this point the file should resemble::
     </root>
 
 Connecting To The Simulation
-----------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
     #. Add the tag `<info>` as a child of `<adapter>`.
     #. Add the tag `<host>` as a child of `<info>`.  The value of this tag should be the hostname of the simulation interface.  This hostname will be used to initialize a TCP socket connection with the interface when the adapter is constructed.
     #. Add the tag `<port>` as a child of `<info>`.  The value of this tag should be the port number used to communicate with the simulation interface.
@@ -111,7 +113,7 @@ At this point the file should resemble::
     </root>
 
 Troubleshooting
----------------
+^^^^^^^^^^^^^^^
 
 There are a large number of exceptions associated with the adapter specification due to the importance of correct configuration for runtime.  Most of these exceptions will occur immediately after the FREEDM-DGI is run.  If the FREEDM-DGI runs longer than several seconds, it can be assumed that the configuration was accepted and will produce no future errors.
 

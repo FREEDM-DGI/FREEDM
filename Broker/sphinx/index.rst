@@ -22,6 +22,7 @@ Obtaining Support
 If there is an issue with the installation or use of the FREEDM DGI software, please contact the DGI developers at freedm-dgi-grp at <spamfree> mst dot edu.
 
 Getting Started With DGI:
+-------------------------
 
 .. toctree::
    :maxdepth: 2
@@ -31,6 +32,22 @@ Getting Started With DGI:
    intro/building
    intro/configuration
 
+Interacting With Simulations and Physical Devices:
+--------------------------------------------------
+
+.. toctree::   
+    :maxdepth: 2
+
+    devices/index
+
+Creating Modules
+----------------
+
+.. toctree::
+    :maxdepth: 2
+    
+    module_creation/index
+    module_creation/start
 
 Indices and tables
 ==================

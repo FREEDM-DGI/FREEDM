@@ -77,7 +77,7 @@ My complete `VoltVar.proto` is below::
     
 The last thing to do is to register your VoltVar messages with the DGI.
 Doing so is simple: open ModuleMessage.proto and append your module container message (VoltVarMessage) to the existing list.
-You will need to use your shortname prefix to access your message::
+You will need to use your short name prefix to access your message::
 
     message ModuleMessage
     {
@@ -175,7 +175,7 @@ Assuming you have access to `m_peers` from that example, you can sent a message 
     }
 
 And that's it!
-PeerSet's have several methods that can help you select individual peers from the set, but in general, sending messages to the entire list, or to the leader is sufficent.
+PeerSet's have several methods that can help you select individual peers from the set, but in general, sending messages to the entire list, or to the leader is sufficient.
 
 Processing Messages
 -------------------

@@ -5,6 +5,7 @@ To create your module, first create a new directory for it in the `Broker/src` d
 
 $ cd Broker/src
 $ mkdir vv
+$ cd vv
 $ touch VoltVar.cpp
 $ touch VoltVar.hpp
 
@@ -15,7 +16,10 @@ Module .hpp
 
 The .hpp should contain your Module's class declaration. Modules inherit from IDGIModule:
 
-.. doxygenclass:: IDGIModule
+`IDGIModule is found in IDGIModule.hpp`
+
+.. doxygenclass:: IDGIModule.hpp
+    :project: FREEDM
     :members:
     
 Additionally, you will want to create a Run() method that will kick-off the actions your module peforms.
@@ -25,7 +29,6 @@ In our example where we are creating VoltVar.hpp, this will get us started::
     #ifndef VOLTVAR_HPP_
     #define VOLTVAR_HPP_
 
-    #include "CBroker.hpp"
     #include "IDGIModule.hpp"
     #include "CPeerNode.hpp"
     #include "PeerSets.hpp"

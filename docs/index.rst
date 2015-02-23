@@ -46,8 +46,10 @@ Creating Modules
 .. toctree::
     :maxdepth: 2
     
-    module_creation/index
     module_creation/start
+    module_creation/scheduling
+    module_creation/receiving_messages.rst
+    module_creation/message_passing.rst
 
 Indices and tables
 ==================

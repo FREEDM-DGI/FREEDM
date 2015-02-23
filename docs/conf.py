@@ -17,6 +17,8 @@ import os
 import subprocess
 
 subprocess.call('doxygen ./freedm.dxy', shell=True)
+subprocess.call('mkdir -p ./_build/html/doxygen/', shell=True)
+subprocess.call('cp -r ./doxygen/html/*  _build/html/doxygen/', shell=True)
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the

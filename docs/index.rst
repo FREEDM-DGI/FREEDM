@@ -48,8 +48,16 @@ Creating Modules
     
     module_creation/start
     module_creation/scheduling
-    module_creation/receiving_messages.rst
-    module_creation/message_passing.rst
+    module_creation/receiving_messages
+    module_creation/message_passing
+
+DGI Framework Reference
+-----------------------
+
+.. toctree::
+    :maxdepth: 2
+    
+    reference/broker
 
 Indices and tables
 ==================

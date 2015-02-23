@@ -125,7 +125,7 @@ boost::posix_time::ptime GetTimeFromPeerSet(TimedPeerSet& tps, const CPeerNode& 
 /// EraseInTimedPeerSet
 /// @description Removes the specified peer from a peer set.
 ///		Provides erase() for a TimedPeerSet.
-/// @param ps The peerset to erase from
+/// @param tps The peerset to erase from
 /// @param m The peer to erase.
 /// @pre None
 /// @post If m is in the TimedPeerSet, it is removed.

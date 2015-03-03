@@ -30,6 +30,7 @@ Getting Started With DGI:
    intro/features
    intro/requirements
    intro/building
+   intro/network
    intro/configuration
 
 Interacting With Simulations and Physical Devices:
@@ -39,6 +40,7 @@ Interacting With Simulations and Physical Devices:
     :maxdepth: 2
 
     devices/index
+    devices/physical_topology
 
 Creating Modules
 ----------------
@@ -51,6 +53,24 @@ Creating Modules
     module_creation/receiving_messages
     module_creation/message_passing
 
+Advanced Configuration
+----------------------
+
+.. toctree::
+    :maxdepth: 2
+    
+    advanced_config/multiple_dgi
+    advanced_config/hostname_troubleshooting
+    
+    
+DGI Modules Reference
+----------------------
+.. toctree::
+    :maxdepth: 2
+    
+    modules/state_collection
+    modules/group_management
+
 DGI Framework Reference
 -----------------------
 
@@ -58,6 +78,8 @@ DGI Framework Reference
     :maxdepth: 2
     
     reference/broker
+    reference/logger
+    
 
 Indices and tables
 ==================

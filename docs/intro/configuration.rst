@@ -10,16 +10,16 @@ You will need to copy some sample configuration files from Broker/config/samples
 
 The following files are mandatory:
 
-* Broker/config/freedm.cfg
-* Broker/config/logger.cfg
-* Broker/config/timings.cfg
+* ``Broker/config/freedm.cfg``
+* ``Broker/config/logger.cfg``
+* ``Broker/config/timings.cfg``
 
 Alternate locations for all configuration files can be specified in freedm.cfg, and an alternate location for freedm.cfg can be specified when running DGI: `./PosixBroker --config config/alternate-freedm.cfg`
 
 freedm.cfg
 ----------
 
-`freedm.cfg` is the main configuration file for the DGI. The most important settings here specify the hostnames and ports of the other DGI to attempt to form groups with, and the port to use for outgoing communications with other DGI. Be very careful to ensure that each hostname you specify here is resolvable on your network. We recommend simply using the same port for every DGI in the network; the sample configuration uses port 51870 for every DGI and you probably will not need to change this. Start by copying the sample `freedm.cfg` from the samples directory down into the main config directory. A freedm.cfg should look something like this::
+``freedm.cfg`` is the main configuration file for the DGI. The most important settings here specify the hostnames and ports of the other DGI to attempt to form groups with, and the port to use for outgoing communications with other DGI. Be very careful to ensure that each hostname you specify here is resolvable on your network. We recommend simply using the same port for every DGI in the network; the sample configuration uses port 51870 for every DGI and you probably will not need to change this. Start by copying the sample `freedm.cfg` from the samples directory down into the main config directory. A freedm.cfg should look something like this::
 
     # Add some hosts to the peer list
     add-host=raichu.freedm:1870
@@ -71,14 +71,14 @@ More information about the options for freedm.cfg can be found in :ref:`freedm-c
 logger.cfg
 ----------
 
-`logger.cfg` is useful for overriding the global verbosity level of the simulation (specified in freedm.cfg) for specific source files. This is primarily useful for developers at Missouri S&T and so you can leave this file unaltered.
+``logger.cfg`` is useful for overriding the global verbosity level of the simulation (specified in freedm.cfg) for specific source files. This is primarily useful for developers at Missouri S&T, or those creating their own modules. You can leave this file unaltered.
 
-More information about configuring the logger can be found in :ref:`logger-cfg-detail`.
+More information about configuring the logger can be found in :ref:`reference-logger`.
 
 timings.cfg
 -----------
 
-`timings.cfg` contains timings for the DGI; we recommend simply pointing to one of the provided timings samples in freedm.cfg; see :ref:`configuring-timings`. Each host in the simulation must use the same timings which must be appropriate for the slowest DGI in the system, so if a system has two Core-2 computers and a TS-7800, all should use the TS-7800 timings.
+``timings.cfg`` contains timings for the DGI; we recommend simply pointing to one of the provided timings samples in freedm.cfg; see :ref:`configuring-timings`. Each host in the simulation must use the same timings which must be appropriate for the slowest DGI in the system, so if a system has two Core-2 computers and a TS-7800, all should use the TS-7800 timings.
 
 INSERT A TABLE OF THE SAMPLES INCLUDED IN FREEDM 2.0.
 
@@ -90,11 +90,32 @@ devices have not been configured yet, they won't manage any devices or interact 
 
 When the DGI is running, it will log various messages to the screen. To verify that the DGI is working correctly, watch for the Group Management or Load Balance status messages that list the current group. It make take up to a minute for the first groups to form when the DGIs are started. This is what the status message looks like from Group Management::
 
-    PUT IN MESSAGE HERE
-    
-The message lists all the processes in the system. Ideally, your message should say that all the hosts defined in your `freedm.cfg` should be listed as "In Group". A similar message is also logged by the Load Balancing module::
+    [raichu.freedm] out:    - SYSTEM STATE
+    [raichu.freedm] out: Me: raichu.freedm:30000, Group: 1804289384 Leader:raichu.freedm:30000
+    [raichu.freedm] out: SYSTEM NODES
+    [raichu.freedm] out: Node: galvantula.freedm:30000 State: Up (In Group)
+    [raichu.freedm] out: Node: manectric.freedm:30000 State: Unknown
+    [raichu.freedm] out: Node: raichu.freedm:30000 State: Up (Me, Coordinator)
+    [raichu.freedm] out: Node: zapdos.freedm:30000 State: Up (In Group)
 
-    PUT IN MESSAGE HERE
+    
+The message lists all the processes in the system.
+Ideally, your message should say that all the hosts defined in your `freedm.cfg` should be listed as "In Group".
+A similar message is also logged by the Load Balancing module::
+
+    [galvantula.freedm] out:        ------- LOAD TABLE (Power Management) -------
+    [galvantula.freedm] out:        Net DRER (00):  0.00
+    [galvantula.freedm] out:        Net DESD (00):  0.00
+    [galvantula.freedm] out:        Net Load (00):  0.00
+    [galvantula.freedm] out:        ---------------------------------------------
+    [galvantula.freedm] out:        SST Gateway:    0.00
+    [galvantula.freedm] out:        Net Generation: 0.00
+    [galvantula.freedm] out:        Predicted K:    0.00
+    [galvantula.freedm] out:        ---------------------------------------------
+    [galvantula.freedm] out:        (NORMAL) galvantula.freedm:30000
+    [galvantula.freedm] out:        (NORMAL) raichu.freedm:30000
+    [galvantula.freedm] out:        (NORMAL) zapdos.freedm:30000
+    [galvantula.freedm] out:        ---------------------------------------------
 
 In this case, the list only includes processes that are correctly configured.
 

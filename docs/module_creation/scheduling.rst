@@ -162,4 +162,4 @@ Now when the **VVAgent**'s phase ends, ``m_timer`` will expire, and when it is t
 
 From Here, you can read more about the scheduler: :ref:`cbroker`
 
-Or you can go on to message passing: ____________
+Or you can go on to message passing: :ref:`receiving-messages`

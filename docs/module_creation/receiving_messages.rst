@@ -3,6 +3,8 @@
 Receiving Messages
 ==================
 
+`GMAgent::ProcessPeerList is available by including gm/GroupManagement.hpp`
+
 Messages arrive at your module as "ModuleMessages."
 When a message is received, your module's HandleIncomingMessage method is invoked.
 This method, which you must implement, should take the ModuleMessage, extract the contents you are interested in, and operate on those contents.
@@ -64,4 +66,4 @@ If needed, you can initialize m_leader in the constructor to GetUUID() as that i
 At this point you can run your module and see that it is receiving peer lists.
 It will only receive a peer list when the list of active DGIs change.
 
-Now that you've seen how receiving message works, you can move on creating and handling your own messages: _____________________
+Now that you've seen how receiving message works, you can move on creating and handling your own messages: :ref:`message-passing`

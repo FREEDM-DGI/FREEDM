@@ -44,7 +44,7 @@ private:
     /// Typedef for timing datastore.
     typedef std::map<std::string, unsigned int> TimingMap;
     /// Typedef for timing datastore iterator
-    typedef typename TimingMap::iterator TimingMapIterator;
+    typedef TimingMap::iterator TimingMapIterator;
     /// Registers all the expected timing parameters
     static void TimingParameters(po::options_description& opts);
     /// Adds individual parameter to the expected options

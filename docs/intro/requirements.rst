@@ -13,6 +13,7 @@ The DGI is tested on recent versions of popular GNU/Linux distributions and requ
 * CMake 2.6 or higher
 * Boost 1.47 or higher, including binaries
 * Python 2.7.x (and not higher)
+* Google Protocol Buffers 2.4.1 or higher (older versions may work)
 * NTP daemon (not required if only running the PSCAD interface)
 
 Boost
@@ -67,4 +68,4 @@ On machine B::
 	6 packets transmitted, 6 received, 0% packet loss, time 5007ms
 	rtt min/avg/max/mdev = 0.264/0.294/0.348/0.033 ms
 
-The are many methods to achieve this. The easiest method is documented in :ref:`hostname-static-config`.
+The are many methods to achieve this. The easiest method is documented in :ref:`hostname-static-config`

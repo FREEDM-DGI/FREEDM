@@ -1,4 +1,4 @@
-.. _message_passing:
+.. _message-passing:
 
 Message Passing
 ===============

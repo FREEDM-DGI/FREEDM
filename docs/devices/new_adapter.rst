@@ -1,149 +1,212 @@
-Plug and Play Adapter
----------------------
+Creating a New Adapter
+----------------------
 
-The PNP Adapter allows the DGI to communicate with plug and play devices. Unlike the other adapter types, PNP adapters are created automatically and do not need to be specified in an adapter configuration file. However, by default, the plug and play behavior of the DGI is disabled.
+If none of the adapter types provided by the DGI are sufficient for communication with a particular device, a new adapter can be implemented in the DGI without much code modification. However, this requires extreme expertise in both C++ and the BOOST libraries and is not recommended for most users. This tutorial will cover the basics on how to create a new adapter class.
 
-COMMUNICATION PROTOCOL
+REQUIRED FUNCTIONS
 
-The plug and play protocol uses TCP/IP with the DGI listening for client connections from physical devices on a configurable port number. All packets in the protocol are written in ASCII and converted to floating point numbers within the DGI. An overview of both sides of the protocol is shown in the following state machine.
+All adapters must inherit from the base adapter class IAdapter.
 
-.. state machine image
+.. link to IAdapter
 
-The protocol begins with both the DGI and the device controller in their respective start states. For the DGI, this state corresponds to some time after the DGI has created its TCP/IP socket that listens for connections from devices. For the device, the start state represents when the device is powered off or disconnected. First, the device powers on and its controller sends the DGI a Hello message. The contents of this message tell the DGI which devices are connected to the controller, and the DGI uses the Hello message to construct a new plug and play adapter. If the new adapter is created without error, the DGI responds with a Start message and maintains the client socket for the duration of the protocol. A separate socket will be maintained for each concurrent plug and play connection to the DGI.
+IAdapter has a required set of functions that all adapter classes must implement. These functions are:
 
-Once the plug and play adapter has been created, the DGI will remain in its handle read state until the device powers off, loses communication with the DGI, or causes an exception during the protocol. While in this state, the DGI expects the device to send it periodic DeviceStates messages which the it will respond to with a corresponding DeviceCommands message. Unlike the RTDS adapter protocol, the DGI expects the device to send it the states before it issues commands. The plug and play connection is maintained by the DGI as long as it receives periodic DeviceStates messages from the device.
+void Start();
 
-A device can gracefully disconnect from the DGI by sending a PoliteDisconnect message. However, if a device fails to send a DeviceStates message for a configurable timeout period, the DGI will close the socket connection and delete the plug and player adapter under the assumption the device has crashed or gone offline. As shown in the state machine, the DGI does not notify the device when it choses to terminate the connection. If a device comes back online after the connection has been terminated, it must restart the protocol from the Hello message.
+The start function is called after a new instance of the adapter has been created and the DGI is ready to use the new adapter to communicate with physical devices. This function is guarenteed to be called exactly once by the DGI, and the adapter is expected to do no work until after this function has been called.
 
-MESSAGES FROM THE DEVICE
+void Stop();
 
-Hello Message:
-Hello\r\n
-UniqueID\r\n
-DeviceType1 DeviceName1\r\n
-DeviceType2 DeviceName2\r\n
-...
-DeviceTypeN DeviceNameN\r\n
-\r\n
+The stop function is called when the DGI terminates to allow the adapter a chance to cleanly terminate its connection with its associated physical devices. This function will be called once during the DGI teardown procedure.
 
-The hello message tells the DGI the number and type of devices that are associated with the device controller. Each device controller must have a unique name stored in non-volatile memory that it reuses each time it connects to the DGI. This name replaces the UniqueID placeholder in the message format, and tells the DGI which controller has initiated the connection. It is imperative that this identifier be the same every time the same controller connects to the DGI to prevent the DGI from creating multiple plug and play adapters for a single device controller. In addition, the DeviceType fields must be replaced with the unique identifiers for devices registered in the device.xml file as discussed in the virtual device tutorial.
+SignalValue GetState(const std::string device, const std::string signal) const;
 
-.. devices.rst
+The GetState function is called each time a virtual device within the DGI attempts to access the current state of its real device communicating with the adapter. Each adapter is required to ensure that the GetState function returns the most recent value of a requested state each time it is called. However, there is no guarentee that this function will ever be called.
 
-DeviceStates Message:
-DeviceStates\r\n
-DeviceName1 State1 Value\r\n
-DeviceName1 State2 Value\r\n
-...
-DeviceNameN StateM Value\r\n
-\r\n
+void SetCommand(const std::string device, const std::string signal, const SignalValue value);
 
-The device state message gives the current values for all states of the devices listed in the hello message. If a device from the hello packet has a state, then its device name must appear in this message. In addition, this message cannot contain partial device states. If a device has three states listed in the device.xml configuration file, then all three states for that device must be included in this message. When the device states message is received. the DGI will convert each of the value fields into a floating point number. If a device from the hello packet is missing, or at least one state is missing, or at least one value is not numeric, then DGI will reject the message. The device controller can use the special null value of 10^8 if it cannot give the DGI a state to indicate the value should be ignored.
+The SetCommand function is called each time a virtual device within the DGI attempts to send a command to its real device communication with the adapter. Each adapter must ensure that the value sent with this function call eventually reaches the physical device unless a later SetCommand call changes the commanded value. There is no guarentee that this function will ever be called, and as such the initial default values for each command must be set by the adapter itself.
 
-PoliteDisconnect Message:
-PoliteDisconnect\r\n
-\r\n
+static IAdapter::Pointer Create(...);
 
-This message indicates that a device is about to turn off and wishes to terminate the connection. The device controller should wait for a response from the DGI before closing its TCP socket.
+The create function is not required in the sense it will not cause a compile error if omitted. However, a create function makes integration of new adapters with the DGI much easier and is thus strongly encouraged. The parameters of the create function will depend on which variables the adapter needs to be initialized, but all create functions should be static. This function will be called when a new instance of the adapter is first created.
 
-Error Message:
-Error\r\n
-Message\r\n
-\r\n
+HEADER FILE
 
-Both the DGI and device controller can send this message, and it indicates that some error has happened during execution of the protocol. This error might not be fatal, and often the DGI sends it to indicate that a received packet did not have the expected format and was dropped.
+The following is a sample header file that provides a template most adapters should utilize. Both the run function and the deadline timer are optional features that should be utilized if your adapter has to periodically reschedule itself to maintain communication with the physical device. The remaining functions are mostly required as stated above.
 
-MESSAGES FROM THE DGI
+#include "IAdapter.hpp"
 
-Start Message:
-Start\r\n
-\r\n
+#include <boost/enable_shared_from_this.hpp>
+#include <boost/shared_ptr.hpp>
+#include <boost/asio/deadline_timer.hpp>
+#include <boost/asio/io_service.hpp>
 
-The start message indicates that the DGI has created a plug and play adapter for the device controller and the main protocol can begin. Once this message has been sent, the DGI expects to receive periodic DeviceStates messages from the device or it will terminate the TCP connection without warning. The device controller should start sending DeviceStates as soon as the Start message is received.
+namespace freedm {
+namespace broker {
+namespace device {
 
-DeviceCommands Message:
-DeviceCommands\r\n
-DeviceName1 Command1 Value\r\n
-DeviceName1 Command2 Value\r\n
-...
-DeviceNameN CommandM    Value\r\n
-\r\n
+class CYourAdapter
+     : public IAdapter, public boost::enable_shared_from_this<CRtdsAdapter>
+{
+public:
+    /// Typedef for ease of use.
+    typedef boost::shared_ptr<CYourAdapter> Pointer;
 
-The device command packet is sent by the DGI in response to a state packet. All commands for all devices are included in this packet, even if the DGI does not have a command to issue or the command has not changed since the last packet. If the DGI does not have a command for a device, then the value for that command will be set to the special null value of 10^8 to indicate the value should be ignored. The value for the device name field will be identical to the names provided by the controller in the hello message, and the value for the command fields will be pulled from the device.xml configuration file.
+    /// Called once when adapter is first created (recommended).
+    static IAdapter::Pointer Create(boost::asio::io_service & service);
 
-PoliteDisconnectAccepted Message:
-PoliteDisconnect\r\n
-Accepted\r\n
-\r\n
+    /// Called once afted the adapter is initialized (required).
+    void Start();
 
-This message acknowledges a polite disconnect request from a device controller and indicates that the DGI will terminate the TCP connection to the device as soon as the message is delivered.
+    /// Called once before the DGI terminates (required).
+    void Stop();
+    
+    /// Called each time a DGI module tries to send a command (required).
+    void SetCommand(const std::string device, const std::string signal, const SignalValue value);
 
-PoliteDisconnectRejected Message:
-PoliteDisconnect\r\n
-Rejected\r\n
-\r\n
+    /// Called each time a DGI module tries to read a state (required).
+    SignalValue GetState(const std::string device, const std::string signal) const;
+    
+    /// Destructor.
+    ~CYourAdapter();
+private:
+    /// Constructor.
+    CYourAdapter(boost::asio::io_service & service);
 
-This message tells the device controller that the DGI has received a disconnect request, but it cannot yet terminate the TCP connection. In the current version of the DGI, this message is never sent as all disconnect requests are accepted.
+    /// Called periodically to maintain communication with devices (optional).
+    void Run(const boost::system::error_code & e);
 
-Error Message:
-Error\r\n
-Message\r\n
-\r\n
+    /// Used to schedule the Run function (optional).
+    boost::asio::deadline_timer m_timer;
+};
 
-Both the DGI and device controller can send this message, and it indicates that some error has happened during execution of the protocol. This error might not be fatal, and often the DGI sends it to indicate that a received packet did not have the expected format and was dropped.
+} //namespace device
+} //namespace broker
+} //namespace freedm
 
-PLUG AND PLAY CONFIGURATION
+IMPLEMENTATION FILE
 
-The plug and play protocol must be enabled through the main DGI configuration file.
+The following is a sample implementation file that shows how the various functions interact with each other. It is mostly intended to illustrate how to set up a reoccuring Run function to maintain communication with physical devices. If the Run function is not relevant to your adapter type, this example can likely be ignored.
 
-.. freedm.cfg
+#include "CYourAdapter.hpp"
+#include "CLogger.hpp"
 
-If a port number is provided for the TCP server that listens for device connections, then the plug and play protocol will be initialized after running DGI. Otherwise, the plug and play protocol will be disabled. The port number can be set using the command:
+namespace freedm {
+namespace broker {
+namespace device {
 
-factory-port=X
+IAdapter::Pointer CYourAdapter::Create(boost::asio::io_service & service)
+{
+  return CYourAdapter::Pointer(new CYourAdapter(service));
+}
 
-Once this port number has been specified, the plug and play protocol has been enabled. All hello messages sent from device controllers should be sent to this port to initiate the plug and play protocol.
+CYourAdapter::CYourAdapter(boost::asio::io_service & service)
+  : m_timer(service)
+{
+  // initialize your adapter here (change arguments as needed)
+}
 
-DEVICE CONTROLLER CODE
+void CYourAdapter::Start()
+{
+  // do post-initialization processing here
+  
+  // schedule Run 1000 milliseconds from now (change time as needed)
+  m_timer.expires_from_now(boost::posix_time::milliseconds(1000));
+  m_timer.async_wait(boost::bind(&CYourAdapter::Run, shared_from_this(), boost::asio::placeholders::error);
+}
 
-A sample implementation of the device controller side of the plug and play protocol is available on the FREEDM-DGI git repository.
+void CYourAdapter::Stop()
+{
+  // do pre-termination processing here
+}
 
-.. github link
+CYourAdapter::~CYourAdapter()
+{
+  // deconstruct your adapter here
+}
 
-This sample implementation requires both a configuration file that tells the controller how to communicate with the DGI, as well as a script that controls the behavior of the device controller over time. As the controller is not connected to real physical hardware, its behavior changes only in response to this script.
+void CYourAdapter::Run(const boost::system::error_code & e)
+{
+  if(!e)
+  {
+    // do periodic communication with your devices here
+    // this should be the main portion (if not all) of your code
+    
+    // reschedule Run 1000 milliseconds from now (change time as needed)
+    m_timer.expires_from_now(boost::posix_time::milliseconds(1000));
+    m_timer.async_wait(boost::bind(&CYourAdapter::Run, shared_from_this(), boost::asio::placeholders::error);
+  }
+  else if(e == boost::asio::error::operation_aborted)
+  {
+    // happens if DGI is terminating ; do nothing special
+  }
+  else
+  {
+    // error condition! something in the device framework is broken!
+  }
+}
 
-A sample configuration file can be found at
+void CYourAdapter::SetCommand(const std::string device, const std::string signal, const SignalValue value)
+{
+  // send or prepare to send a command to your devices here
+}
 
-.. controller.cfg
+SignalValue CYourAdapter::GetState(const std::string device, const std::string signal) const
+{
+  // read a state from your devices here
+}
 
-The important configurable options in this file are the name, host, and port entries. The name specifies the unique identifier for the device controller that will be included in the hello packet, and must be unique if multiple controllers are used at the same time. The host and port fields must be set to the location of the DGI plug and play server, which will be the hostname of the linux machine that runs the DGI and the port number specified for the factory-port option in the DGI configuration file. The remaining fields do not need to be changed from their default values.
+} //namespace device
+} //namespace broker
+} //namespace freedm
 
-A sample script file can be found at
+INTEGRATION WITH DGI
 
-.. dsp-script.txt
+Your new adapter class must be integrated with the DGI once it has been completed. This involves three separate steps.
 
-A script must be provided for the controller in order for it to function after connecting to the DGI. Without a script, the controller will send a PoliteDisconnect packet to the DGI as soon as it receives the Start message from the DGI. Each script contains a sequence of commands follower by a special work command. After all of the commands in the script are processed, the controller will disconnect from the DGI. Below is a description of the available commands.
+First, you must include your adapter class in the DGI compilation process. It is assumed that your adapter is located in the Broker/src/device folder with the filename CYourAdapter.cpp. Open the file Broker/src/device/CMakeLists.txt and locate the set command near the very top. Include CYourAdapter.cpp within the set command following the example of the other implementation files. With this change, when you issue the make command to compile the code, your adapter will be included in the compilation process.
 
-enable DeviceType DeviceName State1 InitialValue1 ... StateN InitialValueN
+Second, you must understand how new adapters are created in the DGI. All standard adapters (plug and play excluded) are created through the adapter configuration file, a sample of which can be found
 
-The enable command adds a new device to the controller which will be included in the next Hello message. Each state of the device must be specified and given an initial value, but a value can be set to 10^8 to force the DGI to ignore it. After this command is used in the script, the controller will disconnect from the DGI and restart the protocol with a fresh hello message.
+.. sample adapter file
 
-disable DeviceName
+When the DGI starts with an adapter configuration file specified, it parses the contents of this file to determine which adapters need to be created. In almost all case, instances of your adapter will also be specified in this file. Of particular note in this file is this line:
 
-The disable command deletes a device that was added using a prior enable command. This command also causes the controller to disconnect from the DGI and restart the protocol using a fresh hello message.
+<adapter name = "simulation" type = "rtds">
 
-change DeviceName State NewValue
+You must define a new type identifier for your adapter which will go in the type field when a user wants to create a new instance of your adapter type. You can also change the internal structure of the XML for your adapter specification, although both the <state> and <command> structures cannot be modified as they are universal to all adapter types. However, the <info> tag can be extended to include anything you might want a user to configure with respect to your adapter.
 
-The change command updates the value of a device state. DeviceName must have been added using a prior enable command, and the state must refer to one of the states that was initialized when the enable command was used. Like all device states, the value must be a floating point number or it will be rejected by the DGI. This command will change the values sent in the device states message.
+Third, you must modify the behemoth of a file that is CAdapterFactory.cpp. This file handles the creation and maintenance of all types of adapters, including the parsing of the adapter configuraton file mentioned above. The code can be located at
 
-dieHorribly Duration
+.. link to file
 
-The dieHorribly command causes the controller to be unresponsive to the DGI for a given amount of time (stop sending state messages). This can be used to simulate network traffic or slow processing speed, but does not simulate connection failure as controller socket is still maintained for the duration of the command.
+The most relevant functions for creation of a new adapter are the CAdapterFactory::CreateAdapter function and the CAdapterFactory::InitializeAdapter function. The CreateAdapter function is called each time a new <adapter> tag is parsed in the adapter configuration file. You should look for the following line:
 
-work Duration
+if( type == "rtds" )
+{
+  adapter = CRtdsAdapter::Create(m_ios, subtree);
+}
+    
+And create a conditional for when the identifier you associated with your adapter is parsed:
 
-The work command causes the protocol to continue in its active state for the specified duration. During this time, the controller will send the DGI device state messages and receive command messages. However, the internal state of the device will not change for the duration of the work command.
+else if( type == "YourAdapter" )
+{
+  adapter = CYourAdapter::Create(m_ios);
+}
 
-work forever
+If you do not pass the subtree variable, you will not have access to the XML specified under your adapter such as the <info> tag. The subtree variable is a BOOST property_tree, and parsing its contents is beyond the scope of this brief tutorial. If you need to parse the XML during the creation of your adapter, you should refer to the other adapter implementations and the BOOST property_tree documentation.
 
-Often the last command in a script, this will cause the controller to stay in the active state until the process is terminated by the user. No commands after this command will be read from the script, and the controller can never change its internal state once this command has been processed.
+.. link documentation page
+
+The InitializeAdapter function parses each of the devices associated with your adapter in the XML file. If your adapter needs to know what type of devices it stores to do internal error checking, you must extend this function. Again, the function is very complicated and cannot be explained in a brief tutorial, but a similar functionality has been inserted for the IBufferAdapter that can be used as a reference. Search for the following block of code:
+
+if( buffer && i == 0 )
+{
+  Logger.Debug << "Registering state info." << std::endl;
+  buffer->RegisterStateInfo(name, signal, index);
+}
+
+And use the IBufferAdapter as an example on how device information can be stored within your adapter.
+
+Creating a new adapter type is complicated and requires extensive knowledge of the device architecture. If you need to create a new adapter type, we strongly recommend you contact the DGI development team and keep in close contact with us. However, it should not be necessary to refer to any part of the CAdapterFactory code but the two functions mentioned here, and the existing adapter classes serve as good examples.

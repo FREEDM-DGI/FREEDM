@@ -3,31 +3,37 @@
 Creating a Virtual Device Type
 ==============================
 
-All physical device types (SST, DESD, FID, etc) must have a corresponding virtual device type defined in the DGI. This virtual device class tells the DGI modules how they can interact with the physical device. Virtual device types are defined in a single XML file located at config/devices.xml. This file must either be created, or moved from the samples folder, when the DGI is first installed on a new computer.
+All physical device types (SST, DESD, FID, etc) must have a corresponding virtual device type defined in the DGI. This virtual device class tells the DGI modules how they can interact with the physical device. Virtual device types are defined in a single XML file located at *config/devices.xml*. This file must either be created, or moved from the samples folder, when the DGI is first installed on a new computer.
+
+.. warning:: The DGI cannot communicate with devices whose type has not been defined in the device.xml configuration file.
 
 Example Device Definition
 -------------------------
 
 When a new device type is introduced to the system (such as a new generation of SST), a new virtual device must be defined in this XML configuration file. This tutorial will describe how to modify the device.xml file to introduce a new virtual device type to the DGI. A DESD device with the following properties will be used as an example:
 
-.. TABLE
-    TYPE    DESD
-    STATES  CURRENT, VOLTAGE, TEMPERATURE, STATE OF CHARGE
-    CMDS    CHARGE RATE (negative is discharge)
++-------------+--------------------------+----------------------------+
+| Device Type | States (Readable Values) | Commands (Writable Values) |
++=============+==========================+============================+
+| DESD        | Current                  | Charge Rate                |
+|             | Voltage                  |                            |
+|             | Temperature              |                            |
+|             | State of Charge          |                            |
++-------------+--------------------------+----------------------------+
 
 This sample device meters its internal current, voltage, temperature, and amount of charge. A DGI module can also issue a command to change the charge rate to make the battery charge or discharge. All physical devices should have specifications similar to this sample DESD device, as the DGI's interaction with devices is limited to reading states and issuing commands.
 
-First examine the structure of the sample device.xml file. 
+.. note:: The DGI does not support non-numeric values for devices. For instance, the DESD could not have a manufacturer state as the name of a manufacturer is non-numeric.
 
-.. devices.xml
+First examine the structure of the sample configuration file :doc:`../Broker/config/samples/device.xml`.
 
-There is a <root> tag which contains several <deviceType> subtags. This <root> tag is required for all device.xml files, and each device type must be defined under <root> in its own <deviceType> subtag. To define a new virtual device, the first step is to append an additional <deviceType> subtag under <root>. If no other devices are defined, then for our tutorial the content of the device.xml file should resemble:
+There is a **<root>** tag which contains several **<deviceType>** subtags. This **<root>** tag is required for all device.xml files, and each device type must be defined under **<root>** in its own **<deviceType>** subtag. To define a new virtual device, the first step is to append an additional **<deviceType>** subtag under **<root>**. If no other devices are defined, then for our tutorial the content of the *device.xml* file should resemble::
 
-<root>
-    <deviceType>
-        <!-- (comment) our virtual DESD will be defined here -->
-    </deviceType>
-</root>
+    <root>
+        <deviceType>
+            <!-- (comment) our virtual DESD will be defined here -->
+        </deviceType>
+    </root>
 
 All the properties of the physical device must be defined under its associated <deviceType> subtag. The only required property for a physical device is a unique identifier to differentiate it from other devices. In our case, we are defining a generic DESD device, and so the unique identifier will simply be the string DESD. When the DGI needs to access a set of physical devices, it will use this unique identifier in the code. The unique identifier is defined using an <id> tag as follows:
 

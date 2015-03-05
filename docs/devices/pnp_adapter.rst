@@ -1,3 +1,5 @@
+.. _pnp-adapter:
+
 Plug and Play Adapter
 ---------------------
 

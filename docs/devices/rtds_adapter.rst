@@ -1,3 +1,5 @@
+.. _rtds-adapter:
+
 RTDS Adapter
 ------------
 

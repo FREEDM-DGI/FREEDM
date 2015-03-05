@@ -1,3 +1,5 @@
+.. _configure-device-xml:
+
 Creating a Virtual Device Type
 ==============================
 

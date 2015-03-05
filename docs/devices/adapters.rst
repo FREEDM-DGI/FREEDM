@@ -1,3 +1,5 @@
+.. _configure-adapters:
+
 Connecting the DGI to Physical Devices
 ======================================
 

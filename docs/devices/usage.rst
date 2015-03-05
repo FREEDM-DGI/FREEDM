@@ -1,3 +1,5 @@
+.. _using-devices:
+
 Using Devices in DGI Modules
 ============================
 

@@ -1,4 +1,4 @@
-.. _pscad-configuration:
+.. _pscad-simulation:
 
 Configuring PSCAD
 =================

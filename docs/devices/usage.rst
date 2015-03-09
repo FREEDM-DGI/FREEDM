@@ -21,163 +21,169 @@ This execution pattern corresponds to the three main functions a DGI module can 
 Retrieve a Virtual Device
 -------------------------
 
-An object called the device manager is a singleton available to all DGI modules. It stores all of the virtual devices in the system, and provides several functions that enable modules to retrieve a subset of the physical devices. In order to retrieve a device, a module must use the interface provided by the device manager.
+An object called the device manager is a singleton available to all DGI modules. It stores all of the virtual devices in the system, and provides several functions that enable modules to retrieve a subset of the physical devices. In order to retrieve a device, a module must use the interface provided by the device manager. It is important to recognize that the device manager only stores local devices. Each DGI has a subset of the physical devices in the system, and can not access the devices that do not belong to it. Therefore, no DGI can access the entire system state using its own device manager. In order to read values from devices that belong to other DGI processes, refer to the documentation on state collection.
 
-It is important to recognize that the device manager only stores local devices. Each DGI has a subset of the physical devices in the system, and can not access the devices that do not belong to it. Therefore, no DGI can access the entire system state using its own device manager. In order to read values from devices that belong to other DGI processes, refer to the documentation on state collection.
+In order to use the device manager, its header file must be included in your module::
 
-.. documentation link
+    #include "CDeviceManager.hpp"
 
-In order to use the device manager, its header file must be included in your module:
+The device manager can then be retrieved, and stored if necessary, using its static Instance() function::
 
-#include "CDeviceManager.hpp"
-
-The device manager can then be retrieved, and stored if necessary, using its static Instance() function:
-
-device::CDeviceManager & manager = device::CDeviceManager::Instance();
+    device::CDeviceManager & manager = device::CDeviceManager::Instance();
 
 From the device manager instance, a device can be retrieved through using either its unique identifier or its device type. If a module needs to collect a set of devices of the same type, such as the set of generators in the system, it should use the device type. However, if a module only needs a specific device, such as the one SST associated with the DGI, it should use the device's unique identifier.
 
-RETRIEVE DEVICE USING ITS IDENTIFIER
+Retrieve a Device using its Identifier
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Suppose a module needs to access a device it knows exists with the unique identifier SST5. The following call will store a pointer to that device:
+Suppose a module needs to access a device it knows exists with the unique identifier SST5. The following call will store a pointer to that device::
 
-device::CDevice::Pointer dev;
-dev = device::CDeviceManager::Instance().GetDevice("SST5");
+    device::CDevice::Pointer dev;
+    dev = device::CDeviceManager::Instance().GetDevice("SST5");
 
-All device pointers must be stored in a device::CDevice::Pointer. The GetDevice(string) function of the device manager can be used to get a pointer to a device with a specific unique identifier, which in this case is SST5. This can be a dangerous function call as there is no guarentee that a device exists with that specific name. If the device manager does not store a device with the given identifier, then it does not throw an exception, but instead returns a null pointer. The pointer can be treated like a boolean truth value to determine whether the GetDevice(string) call was successful:
+All device pointers must be stored in a :cpp:type:`device::CDevice::Pointer`. The :cpp:function:`device::CDevice::Pointer device::CDeviceManager::GetDevice(std::string)` function of the device manager can be used to get a pointer to a device with a specific unique identifier, which in this case is SST5. This can be a dangerous function call as there is no guarentee that a device exists with that specific name. If the device manager does not store a device with the given identifier, then it does not throw an exception, but instead returns a null pointer. The pointer can be treated like a boolean truth value to determine whether the call was successful::
 
-if(!dev)
-  // the device was not found! do some recovery action!
-  
-RETRIEVE DEVICES USING THEIR TYPE
+    if(!dev)
+        // the device was not found! do some recovery action!
 
-Suppose a module needs to access all the devices associated with the type DRER. The following call will return a set of the matching devices:
+Retrieve Devices using their Type
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-std::set<device::CDevice::Pointer> devices;
-devices = device::CDeviceManager::Instance().GetDevicesOfType("DRER");
+Suppose a module needs to access all the devices associated with the type DRER. The following call will return a set of the matching devices::
 
-The GetDevicesOfType(string) function returns all the devices that associate with a specific type. This function will always return a set of CDevice pointers. If no devices of the specified type are stored in the device manager, then an empty set will be returned. The empty function can be used to determine whether the call was successful at returning any devices:
+    std::set<device::CDevice::Pointer> devices;
+    devices = device::CDeviceManager::Instance().GetDevicesOfType("DRER");
 
-if(devices.empty())
-  // no devices were found! do some recovery action!
+The :cpp:function:`std::set<device::CDevice::Pointer> device::CDeviceManager::GetDevicesOfType(std::string)` function returns all the devices that associate with a specific type. This function will always return a set of CDevice pointers. If no devices of the specified type are stored in the device manager, then an empty set will be returned. The empty function can be used to determine whether the call was successful at returning any devices::
 
-BOOST can be utilized to easily iterate over each device in the resulting set. This requires an additional header to be included in the implementation file:
+    if(devices.empty())
+        // no devices were found! do some recovery action!
 
-#include <boost/foreach.hpp>
-std::set<device::CDevice::Pointer> devices;
-devices = device::CDeviceManager::Instance().GetDevicesOfType("DRER");
-BOOST_FOREACH(device::CDevice::Pointer dev, devices)
-{
-  // dev now stores a pointer to a single DRER device!
-}
+BOOST can be utilized to easily iterate over each device in the resulting set. This requires an additional header to be included in the implementation file::
 
-RETRIEVE DEVICE WITH UNKNOWN NAME
+    #include <boost/foreach.hpp>
 
-There are some cases where a module might not know the name of a specific device, but does know that only a single instance of that device should exist. For example, a DGI should only have a single associated SST device, but a module might not make any assumptions on what the unique identifier for that device could be. In this case, the best solution is to use the GetDevicesOfType(string) function with additional error-checking:
+And the code to iterate over the result would resemble::
 
-device::CDevice::Pointer dev;
-std::set<device::CDevice::Pointer> devices;
-devices = device::CDeviceManager::Instance().GetDevicesOfType("SST");
-if(devices.size() != 1)
-  // unexpected number of devices (should have been 1)! recover!
-dev = *devices.begin();
+    std::set<device::CDevice::Pointer> devices;
+    devices = device::CDeviceManager::Instance().GetDevicesOfType("DRER");
+    BOOST_FOREACH(device::CDevice::Pointer dev, devices)
+    {
+        // dev now stores a pointer to a single DRER device!
+    }
+
+Retrieve a Device with an Unknown Identifier
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+There are some cases where a module might not know the name of a specific device, but does know that only a single instance of that device should exist. For example, a DGI should only have a single associated SST device, but a module might not make any assumptions on what the unique identifier for that device could be. In this case, the best solution is to use the :cpp:function:`std::set<device::CDevice::Pointer> device::CDeviceManager::GetDevicesOfType(std::string)` function with additional error-checking::
+
+    device::CDevice::Pointer dev;
+    std::set<device::CDevice::Pointer> devices;
+    devices = device::CDeviceManager::Instance().GetDevicesOfType("SST");
+    if(devices.size() != 1)
+        // unexpected number of devices (should have been 1)! recover!
+    dev = *devices.begin();
 
 This code retrieves all of the SST devices, of which there should only be one, and then stores the first SST device in the dev pointer. Be careful with this solution as the dereferencing of the devices set could be disastrous if the set is empty. 
 
-READ A DEVICE STATE
+Read a Device State
+-------------------
 
-Once a device has been retrieved and stored in a device::CDevice::Pointer object (assumed at this point to be named dev), the device pointer can be used to read a state. This is done through the GetState(string) function, which returns a floating point number that corresponds to the current value of the state known to the DGI:
+Once a device has been retrieved and stored in a :cpp:type:`device::CDevice::Pointer` object (assumed at this point to be named dev), the device pointer can be used to read a state. This is done through the :cpp:function:`float CDevice::GetState(std::string)` function, which returns a floating point number that corresponds to the current value of the state known to the DGI::
 
-float voltage = dev->GetState("voltage");
+    float voltage = dev->GetState("voltage");
 
-In this example, if the device did not have a voltage state, the GetState(string) function call would throw an exception. A catch block is required to prevent this exception from causing the DGI to terminate:
+In this example, if the device did not have a voltage state, the function call would throw an exception. A catch block is required to prevent this exception from causing the DGI to terminate::
 
-try
-{
-  float voltage = dev->GetState("voltage");
-}
-catch(std::exception & e)
-{
-  // device does not have a voltage state! recover!
-}
+    try
+    {
+        float voltage = dev->GetState("voltage");
+    }
+    catch(std::exception & e)
+    {
+        // device does not have a voltage state! recover!
+    }
 
-The list of states that are recognized be each device can be found in the device.xml configuration file. For each device type, the string identifiers that will not cause exceptions with the GetState(string) call are those specified with the <state> tag. To be safe, all uses of the GetState(string) function should be done inside of a try block with a corresponding catch statement.
+The list of states that are recognized be each device can be found in the *device.xml* configuration file. For each device type, the string identifiers that will not cause exceptions with the GetState call are those specified with the **<state>** tag. To be safe, all uses of the GetState function should be done inside of a try block with a corresponding catch statement.
 
-SET A DEVICE COMMAND
+Set a Device Command
+--------------------
 
-A command can be issued to a device pointer using the SetCommand(string, float) function. If the specified command cannot be found, then this function call will throw an exception. The correct usage of this command should resemble:
+A command can be issued to a device pointer using the :cpp:function:`void CDevice::SetCommand(std::string, float)` function. If the specified command cannot be found, then this function call will throw an exception. The correct usage of this command should resemble::
 
-try
-{
-  dev->SetCommand("rateOfCharge", -0.25);
-}
-catch(std::exception & e)
-{
-  // device does not have a rateOfCharge command! recover!
-}
+    try
+    {
+        dev->SetCommand("rateOfCharge", -0.25);
+    }   
+    catch(std::exception & e)
+    {
+        // device does not have a rateOfCharge command! recover!
+    }
 
-EXAMPLE USAGE
+Example Usage
+-------------
 
 The following example code will show how the device framework will be integrated into most modules. In this example, the net generation at a DGI instance is calculated and used to set the charge rate of a battery. As this is an example, the actual calculations involved in the code are nonsensical.
 
-#include "CDeviceManager.hpp"
-#include <boost/foreach.hpp>
-#include <iostream>
-#include <set>
+::
 
-void YourModule::PerformCalculation()
-{
-  device::CDevice::Pointer desd;
-  std::set<device::CDevice::Pointer> drerSet;
-  float netGeneration, rateOfCharge;
-  
-  // retrieve the set of DRER devices
-  drerSet = device::CDeviceManager::Instance().GetDevicesOfType("DRER");
-  if(drerSet.empty())
-  {
-    std::cout << "Error! No generators!" << std::endl;
-    return;
-  }
-  
-  // calculate the net DRER generation
-  netGeneration = 0;
-  try
-  {
-    BOOST_FOREACH(device::CDevice::Pointer drer, drerSet)
+    #include "CDeviceManager.hpp"
+    #include <boost/foreach.hpp>
+    #include <iostream>
+    #include <set>
+
+    void YourModule::PerformCalculation()
     {
-      netGeneration += drer->GetState("output");
+        std::set<device::CDevice::Pointer> drerSet;
+        device::CDevice::Pointer desd;
+        float netGeneration;
+        float rateOfCharge;
+    
+        // retrieve the set of DRER devices
+        drerSet = device::CDeviceManager::Instance().GetDevicesOfType("DRER");
+        if(drerSet.empty())
+        {
+            std::cout << "Error! No generators!" << std::endl;
+            return;
+        }
+    
+        // calculate the net DRER generation
+        netGeneration = 0;
+        try
+        {
+            BOOST_FOREACH(device::CDevice::Pointer drer, drerSet)
+            {
+                netGeneration += drer->GetState("generation");
+            }
+        }
+        catch(std::exception & e)
+        {
+            std::cout << "Error! Generators did not recognize OUTPUT state!" << std::endl;
+            return;
+        }
+  
+        // determine the appropriate battery charge rate (nonsensical)
+        rateOfCharge = 0;
+        if(netGeneration > 0)
+            rateOfCharge = netGeneration;
+  
+        // retrieve the DESD device
+        desd = device::CDeviceManager::Instance().GetDevice("MyDesd");
+        if(!desd)
+        {
+            std::cout << "Error! MyDesd device not found!" << std::endl;
+            return;
+        }
+  
+        // set the DESD command
+        try
+        {
+            desd->SetCommand("charge", rateOfCharge);
+        }
+        catch(std::exception & e)
+        {
+            std::cout << "Error! Could not set battery CHARGE command!" << std::endl;
+        }
     }
-  }
-  catch(std::exception & e)
-  {
-    std::cout << "Error! Generators did not recognize OUTPUT state!" << std::endl;
-    return;
-  }
-  
-  // determine the appropriate battery charge rate (nonsensical)
-  rateOfCharge = 0;
-  if(netGeneration > 0)
-    rateOfCharge = netGeneration;
-  
-  // retrieve the DESD device
-  desd = device::CDeviceManager::Instance().GetDevice("MyDesd");
-  if(!desd)
-  {
-    std::cout << "Error! MyDesd device not found!" << std::endl;
-    return;
-  }
-  
-  // set the DESD command
-  try
-  {
-    desd->SetCommand("charge", rateOfCharge);
-  }
-  catch(std::exception & e)
-  {
-    std::cout << "Error! Could not set battery CHARGE command!" << std::endl;
-  }
-}
 
-These functions should be sufficient for all modules that need to use physical devices. However, additional functions are provided by the device manager. A list of these functions can be obtained from the device manager header file in the DGI code.
-
-.. link to hpp file
+These functions should be sufficient for all modules that need to use physical devices. However, additional functions are provided by the device manager. A list of these functions can be obtained from the device manager header file in the DGI code located at ``Broker/src/device/CDeviceManager.hpp``.

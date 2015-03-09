@@ -25,7 +25,7 @@ The DGI can be configured to use one or more RTDS adapters through modification 
 
 +-------------+--------------------------+----------------------------+
 | Device Type | States (Readable Values) | Commands (Writable Values) |
-+=============|==========================+============================+
++=============+==========================+============================+
 | FID1        | status                   |                            |
 +-------------+--------------------------+----------------------------+
 | FID2        | status                   |                            |
@@ -115,7 +115,7 @@ For our example, the state configuration would be::
         </adapter>
     </root>
 
-A similar specification must be done for the format of the command packet using the tag **<command>**. All of the required properties of states are also required for commands, and the XML format for both is identical. As such, the commands in our example lead to the final configuration file format:
+A similar specification must be done for the format of the command packet using the tag **<command>**. All of the required properties of states are also required for commands, and the XML format for both is identical. As such, the commands in our example lead to the final configuration file format::
 
     <root>
         <adapter name = "ExampleAdapter" type = "rtds">
@@ -167,9 +167,9 @@ A similar specification must be done for the format of the command packet using 
 
 This completes the RTDS adapter specification for our example. With this specification file, the command packet will be 4-bytes and contain a single command that corresponds to the rate of chargre for DESD7. The state packet will be 24-bytes and contain 6 separate floating point numbers. The following figure shows the exact format of both packets.
 
-.. image:: rtds-adapter-example
+.. image:: rtds-adapter-example.png
 
-Both the **<state>** and **<command>** tags are required, even if there are no states or commands associated with a given adapter. For example, if this adapter did not contain the DESD device and instead contained the two FID devices, the sample configuration file would change to resemble:
+Both the **<state>** and **<command>** tags are required, even if there are no states or commands associated with a given adapter. For example, if this adapter did not contain the DESD device and instead contained the two FID devices, the sample configuration file would change to resemble::
 
     <root>
         <adapter name = "ExampleAdapter" type = "rtds">
@@ -200,13 +200,13 @@ If the contents of the state tag are omitted, the DGI will never attempt to read
 Configuration Errors
 ^^^^^^^^^^^^^^^^^^^^
 
-1. The name field for each adapter must be unique.
-2. Each **<type>** specified during the state and command packet configuration must refer to the **<id>** of a **<deviceType>** found in the *device.xml* configuration file.
-3. Each **<signal>** specified during the state or command packet configuration must refer to some **<state>** or **<command>** of its associated **<type>** in the *device.xml* configuration file.
-3. When a device of a specific **<type>** is specified, all of its **<state>** and **<command>** values from the *device.xml* configuration file must appear in the adapter configuration file. It is impossible to use a subset of the states or commands of a device when using an RTDS adapter.
-4. The complete state and command specification of each device must be contained within a single **<adapter>**. If a device spans multiple adapters, it will result in tremendously undefined behavior.
-5. Indices for state and command entries must be unique, consecutive, and start counting from an initial index of 1.
-6. All adapters must have a **<state>** and **<command>** subtag, even if the contents of the tags are empty.
+#. The name field for each adapter must be unique.
+#. Each **<type>** specified during the state and command packet configuration must refer to the **<id>** of a **<deviceType>** found in the *device.xml* configuration file.
+#. Each **<signal>** specified during the state or command packet configuration must refer to some **<state>** or **<command>** of its associated **<type>** in the *device.xml* configuration file.
+#. When a device of a specific **<type>** is specified, all of its **<state>** and **<command>** values from the *device.xml* configuration file must appear in the adapter configuration file. It is impossible to use a subset of the states or commands of a device when using an RTDS adapter.
+#. The complete state and command specification of each device must be contained within a single **<adapter>**. If a device spans multiple adapters, it will result in tremendously undefined behavior.
+#. Indices for state and command entries must be unique, consecutive, and start counting from an initial index of 1.
+#. All adapters must have a **<state>** and **<command>** subtag, even if the contents of the tags are empty.
 
 Running the Device Server
 -------------------------
@@ -214,5 +214,7 @@ Running the Device Server
 The steps discussed so far configure the DGI to connect to a device server utilizing a particular packet format. However, the device server must also be configured to expect the same packet format as the DGI. Because the RTDS adapter can be used for multiple power simulations, the configuration of the device server depends on the type of simulation being run. The details for configuration are thus delegated to the individual tutorials on how to run specific simulations.
 
 .. toctree::
+    :maxdepth: 2
+    
     pscad
     rtds

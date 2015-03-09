@@ -41,7 +41,7 @@ Suppose a module needs to access a device it knows exists with the unique identi
     device::CDevice::Pointer dev;
     dev = device::CDeviceManager::Instance().GetDevice("SST5");
 
-All device pointers must be stored in a :cpp:type:`device::CDevice::Pointer`. The :cpp:function:`device::CDevice::Pointer device::CDeviceManager::GetDevice(std::string)` function of the device manager can be used to get a pointer to a device with a specific unique identifier, which in this case is SST5. This can be a dangerous function call as there is no guarentee that a device exists with that specific name. If the device manager does not store a device with the given identifier, then it does not throw an exception, but instead returns a null pointer. The pointer can be treated like a boolean truth value to determine whether the call was successful::
+All device pointers must be stored in a :cpp:type:`device::CDevice::Pointer`. The ``device::CDevice::Pointer device::CDeviceManager::GetDevice(std::string)`` function of the device manager can be used to get a pointer to a device with a specific unique identifier, which in this case is SST5. This can be a dangerous function call as there is no guarentee that a device exists with that specific name. If the device manager does not store a device with the given identifier, then it does not throw an exception, but instead returns a null pointer. The pointer can be treated like a boolean truth value to determine whether the call was successful::
 
     if(!dev)
         // the device was not found! do some recovery action!
@@ -54,7 +54,7 @@ Suppose a module needs to access all the devices associated with the type DRER. 
     std::set<device::CDevice::Pointer> devices;
     devices = device::CDeviceManager::Instance().GetDevicesOfType("DRER");
 
-The :cpp:function:`std::set<device::CDevice::Pointer> device::CDeviceManager::GetDevicesOfType(std::string)` function returns all the devices that associate with a specific type. This function will always return a set of CDevice pointers. If no devices of the specified type are stored in the device manager, then an empty set will be returned. The empty function can be used to determine whether the call was successful at returning any devices::
+The ``std::set<device::CDevice::Pointer> device::CDeviceManager::GetDevicesOfType(std::string)`` function returns all the devices that associate with a specific type. This function will always return a set of CDevice pointers. If no devices of the specified type are stored in the device manager, then an empty set will be returned. The empty function can be used to determine whether the call was successful at returning any devices::
 
     if(devices.empty())
         // no devices were found! do some recovery action!
@@ -75,7 +75,7 @@ And the code to iterate over the result would resemble::
 Retrieve a Device with an Unknown Identifier
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-There are some cases where a module might not know the name of a specific device, but does know that only a single instance of that device should exist. For example, a DGI should only have a single associated SST device, but a module might not make any assumptions on what the unique identifier for that device could be. In this case, the best solution is to use the :cpp:function:`std::set<device::CDevice::Pointer> device::CDeviceManager::GetDevicesOfType(std::string)` function with additional error-checking::
+There are some cases where a module might not know the name of a specific device, but does know that only a single instance of that device should exist. For example, a DGI should only have a single associated SST device, but a module might not make any assumptions on what the unique identifier for that device could be. In this case, the best solution is to use the ``std::set<device::CDevice::Pointer> device::CDeviceManager::GetDevicesOfType(std::string)`` function with additional error-checking::
 
     device::CDevice::Pointer dev;
     std::set<device::CDevice::Pointer> devices;
@@ -89,7 +89,7 @@ This code retrieves all of the SST devices, of which there should only be one, a
 Read a Device State
 -------------------
 
-Once a device has been retrieved and stored in a :cpp:type:`device::CDevice::Pointer` object (assumed at this point to be named dev), the device pointer can be used to read a state. This is done through the :cpp:function:`float CDevice::GetState(std::string)` function, which returns a floating point number that corresponds to the current value of the state known to the DGI::
+Once a device has been retrieved and stored in a :cpp:type:`device::CDevice::Pointer` object (assumed at this point to be named dev), the device pointer can be used to read a state. This is done through the ``float CDevice::GetState(std::string)`` function, which returns a floating point number that corresponds to the current value of the state known to the DGI::
 
     float voltage = dev->GetState("voltage");
 
@@ -109,7 +109,7 @@ The list of states that are recognized be each device can be found in the *devic
 Set a Device Command
 --------------------
 
-A command can be issued to a device pointer using the :cpp:function:`void CDevice::SetCommand(std::string, float)` function. If the specified command cannot be found, then this function call will throw an exception. The correct usage of this command should resemble::
+A command can be issued to a device pointer using the ``void CDevice::SetCommand(std::string, float)`` function. If the specified command cannot be found, then this function call will throw an exception. The correct usage of this command should resemble::
 
     try
     {

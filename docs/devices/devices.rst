@@ -55,7 +55,7 @@ At this point the device has been defined and can be used within the DGI, as alt
         </deviceType>
     </root>
 
-Again, these string identifiers will be used by the DGI when it attempts to read the current internal state of our new DESD device. The last requirement to finish the definition of our virtual device is to list all of its commands. Commands are specified using a **<command>** tag, and each command must appear within its own tag in the same manner as the states:
+Again, these string identifiers will be used by the DGI when it attempts to read the current internal state of our new DESD device. The last requirement to finish the definition of our virtual device is to list all of its commands. Commands are specified using a **<command>** tag, and each command must appear within its own tag in the same manner as the states::
 
     <root>
         <deviceType>

@@ -76,14 +76,11 @@ CBroker& CBroker::Instance()
 ///////////////////////////////////////////////////////////////////////////////
 CBroker::CBroker()
     : m_phasetimer(m_ioService)
-    , m_synchronizer()
     , m_signals(m_ioService, SIGINT, SIGTERM)
     , m_stopping(false)
     , m_phasecounter(0)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-
-    m_synchronizer = boost::shared_ptr<CClockSynchronizer>(new CClockSynchronizer);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -134,9 +131,6 @@ void CBroker::Run()
 
     m_signals.async_wait(boost::bind(&CBroker::HandleSignal, this, _1, _2));
     device::CAdapterFactory::Instance(); // create it
-
-    CDispatcher::Instance().RegisterReadHandler(m_synchronizer, "clk");
-    m_synchronizer->Run();
 
     // The io_service::run() call will block until all asynchronous operations
     // have finished. While the server is running, there is always at least one
@@ -226,7 +220,6 @@ void CBroker::HandleStop(unsigned int signum)
         m_signals.clear();
     }
 
-    m_synchronizer->Stop();
     CConnectionManager::Instance().StopAll();
 
     // The server is stopped by canceling all outstanding asynchronous
@@ -612,19 +605,6 @@ void CBroker::Worker()
     }
     // Schedule the worker again:
     m_ioService.post(boost::bind(&CBroker::Worker, this));
-}
-
-///////////////////////////////////////////////////////////////////////////////
-/// @fn CBroker::GetClockSynchronizer
-/// @description Returns a reference to the ClockSynchronizer object.
-/// @pre None
-/// @post Any changes to the ClockSynchronizer will affect the object owned
-///		by the broker.
-/// @return A reference to the Broker's ClockSynchronizer object.  
-///////////////////////////////////////////////////////////////////////////////
-CClockSynchronizer& CBroker::GetClockSynchronizer()
-{
-    return *m_synchronizer;
 }
 
     } // namespace broker

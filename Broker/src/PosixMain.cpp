@@ -30,6 +30,7 @@
 #include "gm/GroupManagement.hpp"
 #include "lb/LoadBalance.hpp"
 #include "sc/StateCollection.hpp"
+#include "CClockSynchronizer.hpp"
 #include "CTimings.hpp"
 #include "SRemoteHost.hpp"
 #include "FreedmExceptions.hpp"
@@ -326,11 +327,13 @@ int main(int argc, char* argv[])
     boost::shared_ptr<IDGIModule> GM = boost::make_shared<gm::GMAgent>();
     boost::shared_ptr<IDGIModule> SC = boost::make_shared<sc::SCAgent>();
     boost::shared_ptr<IDGIModule> LB = boost::make_shared<lb::LBAgent>();
+    boost::shared_ptr<IDGIModule> CS = boost::make_shared<CClockSynchronizer>();
 
     try
     {
         // Allocate Time For Clock Synchronization
         CBroker::Instance().RegisterModule("cs",boost::posix_time::milliseconds(CTimings::Get("CS_PHASE_TIME")));
+        CDispatcher::Instance().RegisterReadHandler(CS, "cs");
     
         // Instantiate and register the group management module
         CBroker::Instance().RegisterModule("gm",boost::posix_time::milliseconds(CTimings::Get("GM_PHASE_TIME")));

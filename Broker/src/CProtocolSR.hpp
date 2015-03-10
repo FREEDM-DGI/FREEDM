@@ -57,6 +57,8 @@ class CProtocolSR
         void Stop() { m_timeout.cancel(); SetStopped(true);  };
         /// Handles writing the message to the underlying connection
         void Write(ProtocolMessage& msg);
+        void ChangePhase(bool newround);
+        
     private:
         /// Resend outstanding messages
         void Resend(const boost::system::error_code& err);

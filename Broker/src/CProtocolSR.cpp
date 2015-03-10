@@ -130,6 +130,25 @@ void CProtocolSR::Send(const ModuleMessage& msg)
     }
 }
 
+void CProtocolSR::ChangePhase(bool newround)
+{
+    while(m_window.size() > 0)
+    {
+        Logger.Trace<<__PRETTY_FUNCTION__<<" Flushing"<<std::endl;
+        m_sendkills = true;
+        Logger.Debug<<"Message Expired: "<<m_window.front().DebugString();
+        m_window.pop_front();
+        m_dropped++;
+    }
+    if(m_dropped > MAX_DROPPED_MSGS)
+    {
+        Logger.Warn<<"Connection to "<<GetUUID()<<" has lost "<<m_dropped<<" messages. Attempting to reconnect."<<std::endl;
+        Stop();
+        return;
+    }
+    Logger.Trace<<__PRETTY_FUNCTION__<<" Flushed Expired"<<std::endl;
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 /// CProtocolSR::CProtocolSR
 /// @description Handles refiring ACKs and Sent Messages.
@@ -155,23 +174,6 @@ void CProtocolSR::Resend(const boost::system::error_code& err)
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 	if(!err && !GetStopped())
     {
-        while(m_window.size() > 0 && MessageIsExpired(m_window.front()))
-        {
-            Logger.Trace<<__PRETTY_FUNCTION__<<" Flushing"<<std::endl;
-            //First message in the window should be the only one
-            //ever to have been written.
-            m_sendkills = true;
-            Logger.Debug<<"Message Expired: "<<m_window.front().DebugString();
-            m_window.pop_front();
-            m_dropped++;
-        }
-        if(m_dropped > MAX_DROPPED_MSGS)
-        {
-            Logger.Warn<<"Connection to "<<GetUUID()<<" has lost "<<m_dropped<<" messages. Attempting to reconnect."<<std::endl;
-            Stop();
-            return;
-        }
-        Logger.Trace<<__PRETTY_FUNCTION__<<" Flushed Expired"<<std::endl;
         if(m_window.size() > 0)
         {
             if(m_sendkills &&  m_sendkill > m_window.front().sequence_num())

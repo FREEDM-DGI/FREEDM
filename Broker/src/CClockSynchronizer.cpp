@@ -59,8 +59,7 @@ const int QUERY_INTERVAL = 10000;
 /// @post Read handlers are registered and the synchronizer is ready to begin
 /// @param ios the broker's ioservice
 ///////////////////////////////////////////////////////////////////////////////
-CClockSynchronizer::CClockSynchronizer(boost::asio::io_service& ios)
-    : m_exchangetimer(ios)
+CClockSynchronizer::CClockSynchronizer()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     MapIndex ii(GetUUID(),GetUUID());
@@ -71,6 +70,7 @@ CClockSynchronizer::CClockSynchronizer(boost::asio::io_service& ios)
     m_kcounter = 0;
     m_myoffset = boost::posix_time::milliseconds(0);
     m_myskew = 0.0;
+    m_timer = CBroker::Instance().AllocateTimer("cs");
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -85,9 +85,8 @@ CClockSynchronizer::CClockSynchronizer(boost::asio::io_service& ios)
 void CClockSynchronizer::Run()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    m_exchangetimer.expires_from_now(boost::posix_time::milliseconds(QUERY_INTERVAL));
-    m_exchangetimer.async_wait(boost::bind(&CClockSynchronizer::Exchange,this,
-        boost::asio::placeholders::error));
+    CBroker::Instance().Schedule(m_timer, boost::posix_time::not_a_date_time,
+        boost::bind(&CClockSynchronizer::Exchange, this, boost::asio::placeholders::error)); 
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -100,7 +99,6 @@ void CClockSynchronizer::Run()
 void CClockSynchronizer::Stop()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    m_exchangetimer.cancel();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -290,6 +288,13 @@ void CClockSynchronizer::HandleExchangeResponse(const ExchangeResponseMessage& m
     }
 }
 
+void CClockSynchronizer::QueryPeer(CPeerNode peer)
+{
+    peer.Send(CreateExchangeMessage(m_kcounter));
+    MapIndex ij(GetUUID(),peer.GetUUID());
+    m_queries[ij] = QueryRecord(m_kcounter, boost::posix_time::microsec_clock::universal_time());
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 /// CClockSynchronizer::Exchange
 /// @description Makes clock reading requests to the other processes in the
@@ -304,6 +309,9 @@ void CClockSynchronizer::Exchange(const boost::system::error_code& err)
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     if(err)
         return;
+    // Run this every so often
+    CBroker::Instance().Schedule(m_timer, boost::posix_time::not_a_date_time,
+        boost::bind(&CClockSynchronizer::Exchange, this, boost::asio::placeholders::error)); 
     // Loop through the peers and send them beacons
     std::deque< CPeerNode > tmplist;
     std::deque< CPeerNode > tmplist2;
@@ -322,15 +330,9 @@ void CClockSynchronizer::Exchange(const boost::system::error_code& err)
     // This should do a circular shift of the queries, which SHOULD help with traffic if I have postulated correctly.
     BOOST_FOREACH(CPeerNode peer, tmplist)
     {
-        peer.Send(CreateExchangeMessage(m_kcounter));
-        MapIndex ij(GetUUID(),peer.GetUUID());
-        m_queries[ij] = QueryRecord(m_kcounter, boost::posix_time::microsec_clock::universal_time());
+        CBroker::Instance().Schedule("cs", boost::bind(&CClockSynchronizer::QueryPeer, this, peer));
     }
     m_kcounter++;
-    // Run this every so often
-    m_exchangetimer.expires_from_now(boost::posix_time::milliseconds(QUERY_INTERVAL));
-    m_exchangetimer.async_wait(boost::bind(&CClockSynchronizer::Exchange,this,
-        boost::asio::placeholders::error));
     //make sure the self referential entries stay sane.
     MapIndex ii(GetUUID(),GetUUID());
     m_offsets[ii] = boost::posix_time::milliseconds(0);

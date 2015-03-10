@@ -123,6 +123,11 @@ void CProtocolSR::Send(const ModuleMessage& msg)
     {
         Write(pm);
     }
+    else
+    {
+        boost::system::error_code err;
+        Resend(err)
+    }
 }
 
 ///////////////////////////////////////////////////////////////////////////////

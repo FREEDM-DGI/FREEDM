@@ -451,7 +451,7 @@ void CBroker::ChangePhase(const boost::system::error_code & /*err*/)
     unsigned int tmp = m_modules[0].second.total_milliseconds();
     // Pre: Assume it should be the first phase.
     // Step: Consider how long the phase would be if it ran in its entirety. If
-    //  completing that phase would go beyod the amount of time in the
+    //  completing that phase would go beyond the amount of time in the
     //  round so far (considering all the time that would be used by other phases up
     //  to that point) then that phase is the current one.
     // Post: CPhase should be the current phase and tmp should be
@@ -466,16 +466,8 @@ void CBroker::ChangePhase(const boost::system::error_code & /*err*/)
     // what phase it should be and then schedule that phase?
     // As an aside, you could tune alignment duration down to 0 so that every
     // phase is specifically assigned to a time slice.
-    if(now-m_last_alignment > boost::posix_time::milliseconds(ALIGNMENT_DURATION))
-    {
-        Logger.Notice<<"Aligned phase to "<<cphase<<" (was "<<m_phase<<") for "
-                   <<remaining<<" ms"<<std::endl;
-
-
-        m_phase = cphase;
-        m_last_alignment = now;
-        sched_duration = remaining;
-    }
+    m_phase = cphase;
+    sched_duration = remaining;
     if(m_modules.size() > 0)
     {
         Logger.Notice<<"Phase: "<<m_modules[m_phase].first<<" for "<<sched_duration<<"ms "<<"offset "<<CGlobalConfiguration::Instance().GetClockSkew()<<std::endl;

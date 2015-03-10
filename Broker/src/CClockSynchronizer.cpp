@@ -356,6 +356,8 @@ void CClockSynchronizer::Exchange(const boost::system::error_code& err)
         m_myoffset = DoubleToTD(tmp1);
         Logger.Notice<<"Adjusting Skew to "<<m_myoffset<<std::endl;
         CGlobalConfiguration::Instance().SetClockSkew(m_myoffset);
+        boost::system::error_code err;
+        CBroker::Instance().ChangePhase(err);
         m_myskew = tmp3;
     }
     //Now we adjust the CRAP out of our offset and skew table.

@@ -415,7 +415,7 @@ int CBroker::Schedule(ModuleIdent m, BoundScheduleable x, bool start_worker)
 ///		was not already running, it is started to run tasks for the new active
 ///		module.
 ///////////////////////////////////////////////////////////////////////////////
-void CBroker::ChangePhase(const boost::system::error_code & /*err*/)
+void CBroker::ChangePhase(const boost::system::error_code & err)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     if(m_modules.size() == 0)
@@ -423,87 +423,90 @@ void CBroker::ChangePhase(const boost::system::error_code & /*err*/)
         m_phase=0;
         return;
     }
-    unsigned int oldphase = m_phase;
-    // Past this point assume there is at least one module.
-    boost::mutex::scoped_lock schlock(m_schmutex);
-    m_phase++;
-    m_phasecounter++;
-    // Get the time without millisec and with millisec then see how many millsec we
-    // are into this second.
-    // Generate a clock beacon
-    boost::posix_time::ptime now = boost::posix_time::microsec_clock::universal_time();
-    boost::posix_time::time_duration time = now.time_of_day();
-    time += CGlobalConfiguration::Instance().GetClockSkew();
+    if(!err)
+    {
+        unsigned int oldphase = m_phase;
+        // Past this point assume there is at least one module.
+        boost::mutex::scoped_lock schlock(m_schmutex);
+        m_phase++;
+        m_phasecounter++;
+        // Get the time without millisec and with millisec then see how many millsec we
+        // are into this second.
+        // Generate a clock beacon
+        boost::posix_time::ptime now = boost::posix_time::microsec_clock::universal_time();
+        boost::posix_time::time_duration time = now.time_of_day();
+        time += CGlobalConfiguration::Instance().GetClockSkew();
 
-    if(m_phase >= m_modules.size())
-    {
-        m_phase = 0;
-    }
-    unsigned int round = 0;
-    for(unsigned int i=0; i < m_modules.size(); i++)
-    {
-        round += m_modules[i].second.total_milliseconds();
-    }
-    assert(round > 0);
-    unsigned int millisecs = time.total_milliseconds();
-    unsigned int intoround = (millisecs % round);
-    unsigned int cphase = 0;
-    unsigned int tmp = m_modules[0].second.total_milliseconds();
-    // Pre: Assume it should be the first phase.
-    // Step: Consider how long the phase would be if it ran in its entirety. If
-    //  completing that phase would go beyond the amount of time in the
-    //  round so far (considering all the time that would be used by other phases up
-    //  to that point) then that phase is the current one.
-    // Post: CPhase should be the current phase and tmp should be
-    while(cphase < m_modules.size() && tmp < intoround)
-    {
-        cphase++;
-        tmp += m_modules[cphase].second.total_milliseconds();
-    }
-    unsigned int remaining = tmp-intoround;
-    unsigned int sched_duration = m_modules[m_phase].second.total_milliseconds();
-    // How we want to do this is that every so of tone we want to figure out
-    // what phase it should be and then schedule that phase?
-    // As an aside, you could tune alignment duration down to 0 so that every
-    // phase is specifically assigned to a time slice.
-    m_phase = cphase;
-    sched_duration = remaining;
-    if(m_modules.size() > 0)
-    {
-        Logger.Notice<<"Phase: "<<m_modules[m_phase].first<<" for "<<sched_duration<<"ms "<<"offset "<<CGlobalConfiguration::Instance().GetClockSkew()<<std::endl;
-    }
-    if(m_phase != oldphase)
-    {
-        CConnectionManager::Instance().ChangePhase((m_phase==0));
-        ModuleIdent oldident = m_modules[oldphase].first;
-        Logger.Notice<<"Changed Phase: expiring next time timers for "<<oldident<<std::endl;
-        // Look through the timers for the module and see if any of them are
-        // set for next time:
-        BOOST_FOREACH(CBroker::TimerAlloc::value_type t, m_allocs)
+        if(m_phase >= m_modules.size())
         {
-            Logger.Debug<<"Examine timer "<<t.first<<" for module "<<t.second<<" expire nexttime: "
-                        <<m_nexttime[t.first]<<std::endl;
-            if(t.second == oldident && m_nexttime[t.first] == true)
+            m_phase = 0;
+        }
+        unsigned int round = 0;
+        for(unsigned int i=0; i < m_modules.size(); i++)
+        {
+            round += m_modules[i].second.total_milliseconds();
+        }
+        assert(round > 0);
+        unsigned int millisecs = time.total_milliseconds();
+        unsigned int intoround = (millisecs % round);
+        unsigned int cphase = 0;
+        unsigned int tmp = m_modules[0].second.total_milliseconds();
+        // Pre: Assume it should be the first phase.
+        // Step: Consider how long the phase would be if it ran in its entirety. If
+        //  completing that phase would go beyond the amount of time in the
+        //  round so far (considering all the time that would be used by other phases up
+        //  to that point) then that phase is the current one.
+        // Post: CPhase should be the current phase and tmp should be
+        while(cphase < m_modules.size() && tmp < intoround)
+        {
+            cphase++;
+            tmp += m_modules[cphase].second.total_milliseconds();
+        }
+        unsigned int remaining = tmp-intoround;
+        unsigned int sched_duration = m_modules[m_phase].second.total_milliseconds();
+        // How we want to do this is that every so of tone we want to figure out
+        // what phase it should be and then schedule that phase?
+        // As an aside, you could tune alignment duration down to 0 so that every
+        // phase is specifically assigned to a time slice.
+        m_phase = cphase;
+        sched_duration = remaining;
+        if(m_modules.size() > 0)
+        {
+            Logger.Notice<<"Phase: "<<m_modules[m_phase].first<<" for "<<sched_duration<<"ms "<<"offset "<<CGlobalConfiguration::Instance().GetClockSkew()<<std::endl;
+        }
+        if(m_phase != oldphase)
+        {
+            CConnectionManager::Instance().ChangePhase((m_phase==0));
+            ModuleIdent oldident = m_modules[oldphase].first;
+            Logger.Notice<<"Changed Phase: expiring next time timers for "<<oldident<<std::endl;
+            // Look through the timers for the module and see if any of them are
+            // set for next time:
+            BOOST_FOREACH(CBroker::TimerAlloc::value_type t, m_allocs)
             {
-                Logger.Notice<<"Scheduling task for next time timer: "<<t.first<<std::endl;
-                m_timers[t.first]->cancel();
-                m_nexttime[t.first] = false;
-                m_ntexpired[t.first] = true;
+                Logger.Debug<<"Examine timer "<<t.first<<" for module "<<t.second<<" expire nexttime: "
+                            <<m_nexttime[t.first]<<std::endl;
+                if(t.second == oldident && m_nexttime[t.first] == true)
+                {
+                    Logger.Notice<<"Scheduling task for next time timer: "<<t.first<<std::endl;
+                    m_timers[t.first]->cancel();
+                    m_nexttime[t.first] = false;
+                    m_ntexpired[t.first] = true;
+                }
             }
         }
+        //If the worker isn't going, start him again when you change phases.
+        boost::posix_time::time_duration r = boost::posix_time::milliseconds(sched_duration);
+        m_phaseends = now + r;
+        if(!m_busy)
+        {
+            schlock.unlock();
+            Worker();
+            schlock.lock();
+        }
+        m_phasetimer.expires_from_now(r);
+        m_phasetimer.async_wait(boost::bind(&CBroker::ChangePhase,this,
+            boost::asio::placeholders::error));
     }
-    //If the worker isn't going, start him again when you change phases.
-    boost::posix_time::time_duration r = boost::posix_time::milliseconds(sched_duration);
-    m_phaseends = now + r;
-    if(!m_busy)
-    {
-        schlock.unlock();
-        Worker();
-        schlock.lock();
-    }
-    m_phasetimer.expires_from_now(r);
-    m_phasetimer.async_wait(boost::bind(&CBroker::ChangePhase,this,
-        boost::asio::placeholders::error));
 }
 
 ///////////////////////////////////////////////////////////////////////////////

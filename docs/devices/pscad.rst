@@ -109,7 +109,7 @@ There is a main **<root>** tag that contains the complete configuration of the s
 
 There is no hard limit on the number of adapters that can be specified. There is also no limit on how many instances of a specific adapter type can be specified. It is possible, for example, to create twelve different simulation adapters that communicate with twelve concurrent PSCAD power simulations. The variables from all simulations will be stored together in the simulation server and be accessible to all of the DGI.
 
-Each adapter also follows a strict format:
+Each adapter also follows a strict format::
 
     <state>
         <entry index="INDEX">
@@ -130,7 +130,7 @@ The **<state>** tag refers to a value that originates from PSCAD, while the **<c
 
 .. note:: If you run a simulation where one client does not send or receive data, it should send a fake dummy value that will not be used by the other end.
 
-Each entry for a state or command has the same format:
+Each entry for a state or command has the same format::
 
     <entry index="INDEX">
         <device>DEVICE</device>

@@ -45,7 +45,7 @@ namespace {
 
 /// This file's logger.
 CLocalLogger Logger(__FILE__);
-const int MAX_REGRESSION_ENTRIES = 200;
+const int MAX_REGRESSION_ENTRIES = 5;
 const double SYNCHRONIZER_LAMBDA = .99999;
 const int QUERY_INTERVAL = 10000;
 
@@ -200,19 +200,25 @@ void CClockSynchronizer::HandleExchangeResponse(const ExchangeResponseMessage& m
     // Pick a time to use as the base.
     boost::posix_time::time_duration sumx;
     boost::posix_time::time_duration sumlag;
+    boost::posix_time::time_duration v;
     bool even = false;
     BOOST_FOREACH(TimeTuple t, rlist)
     {
-        sumx += t.first-t.second;
+        v = t.first-t.second;
+        Logger.Debug<<"Time delta += "<<v<<endl;
+        sumx += v;
         if(even == false)
         {
-            sumlag += now-t.second;
+            v = now-t.second;
+            sumlag += v;
+            Logger.Debug<<"Lag delta += "<<v<<endl;
             even = true;
         }
         else
         {
             even = false;
         }
+        
     }
     double lag = (TDToDouble(sumlag))/rlist.size();
     Logger.Notice<<"Computed lag ("<<sender<<"): "<<lag<<std::endl;

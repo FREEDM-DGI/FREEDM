@@ -211,11 +211,12 @@ void CClockSynchronizer::HandleExchangeResponse(const ExchangeResponseMessage& m
         {
             v = now-t.second;
             sumlag += v;
-            Logger.Debug<<"Lag delta += "<<v<<endl;
             even = true;
         }
         else
         {
+            v = now-t.second;
+            sumlag -= v;
             even = false;
         }
         

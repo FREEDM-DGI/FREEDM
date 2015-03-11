@@ -47,14 +47,12 @@ CLocalLogger Logger(__FILE__);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// CConnection::CConnection
-/// @description Create a connection to one particular peer. Initializes
-///		the selected message protocol used to deliver messages.
+/// Create a connection to one particular peer
+///
 /// @param uuid the UUID of the peer to connect to
-/// @param endpoint The target to send the messages to for this connection.
 ///////////////////////////////////////////////////////////////////////////////
 CConnection::CConnection(std::string uuid, boost::asio::ip::udp::endpoint endpoint)
-  : m_protocol(boost::make_shared<CProtocolSR>(uuid,endpoint))   // FIXME hardcoded protocol
+  : m_protocol(boost::make_shared<CProtocolSU>(uuid,endpoint))   // FIXME hardcoded protocol
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 }
@@ -68,10 +66,11 @@ CConnection::~CConnection()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// CConnection::Stop
-/// @description Stops the protocol associated with this connection.
-/// @pre None.
-/// @post The message protocol's Stop method has been called.
+/// @fn CConnection::Stop
+/// @description Stops the socket and cancels the timeout timer.
+/// @pre Any initialized CConnection object.
+/// @post The underlying socket is closed and the message timeout timer is
+///        cancelled.
 ///////////////////////////////////////////////////////////////////////////////
 void CConnection::Stop()
 {
@@ -80,7 +79,7 @@ void CConnection::Stop()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// CConnection::GetStopped
+/// @fn CConnection::GetStopped
 /// @description Returns true if the underlying protocol has been stopped.
 /// @return True if the underlying protocol is stopped.
 ///////////////////////////////////////////////////////////////////////////////
@@ -90,11 +89,11 @@ bool CConnection::GetStopped()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// CConnection::ChangePhase
+/// @fn CConnection::ChangePhase
 /// @description An event that gets called when the broker changes the current
 ///   phase.
 /// @pre None
-/// @post The protocol's ChangePhase event is called.
+/// @post The sliding window protocol if it exists is stopped.
 /// @param newround If true, the phase change is also the start of an entirely
 ///     new round.
 ///////////////////////////////////////////////////////////////////////////////
@@ -104,13 +103,16 @@ void CConnection::ChangePhase(bool newround)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// CConnection::Send
-/// @description Passes a message to the protocol to deliver it to the intended
-///		recipient. If the intended recipient is this process, the delivery
-///		is done directly without the protocol.
-/// @pre None.
-/// @post The message is scheduled to be delivered.
-/// @param msg The message to write to the channel.
+/// @fn CConnection::Send
+/// @description Given a message and wether or not it should be sequenced,
+///   write that message to the channel.
+/// @pre The CConnection object is initialized.
+/// @post If the window is in not full, the message will have been written to
+///   to the channel. Before being sent the message has been signed with the
+///   UUID, source hostname and sequence number (if it is being sequenced).
+///   If the message is being sequenced  and the window is not already full,
+///   the timeout timer is cancelled and reset.
+/// @param msg The message to write to the channel, INVALIDATED by this call.
 ///////////////////////////////////////////////////////////////////////////////
 void CConnection::Send(const ModuleMessage& msg)
 {
@@ -132,11 +134,13 @@ void CConnection::Send(const ModuleMessage& msg)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// CConnection::ReceiveACK
-/// @description Handler for recieving acknowledgments from the peer.
+/// @fn CConnection::ReceiveACK
+/// @description Handler for recieving acknowledgments from a sender.
 /// @pre Initialized connection.
-/// @post Calls the protocol's ReceiveACK function
-/// @param msg The received acknowledge message.
+/// @post The message with sequence number has been acknowledged and all
+///   messages sent before that message have been considered acknowledged as
+///   well.
+/// @param msg The message to consider as acknnowledged
 ///////////////////////////////////////////////////////////////////////////////
 void CConnection::ReceiveACK(const ProtocolMessage& msg)
 {
@@ -145,11 +149,13 @@ void CConnection::ReceiveACK(const ProtocolMessage& msg)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// CConnection::Receive
-/// @description Handler for receiving a non-ACK message from the peer
+/// @fn CConnection::Receive
+/// @description Handler for determineing if a received message should be ACKd
 /// @pre Initialized connection.
-/// @post Calls the protocol's Receive method.
-/// @param msg The message received from the peer.
+/// @post The message with sequence number has been acknowledged and all
+///   messages sent before that message have been considered acknowledged as
+///   well.
+/// @param msg The message to consider as acknnowledged
 ///////////////////////////////////////////////////////////////////////////////
 bool CConnection::Receive(const ProtocolMessage& msg)
 {
@@ -165,10 +171,8 @@ bool CConnection::Receive(const ProtocolMessage& msg)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// CConnection::GetUUID
-/// @description Gets the UUID of the DGI on the other end of this connection.
-/// @pre None
-/// @post None
+/// Gets the UUID of the DGI on the other end of this connection.
+///
 /// @return the peer's UUID
 ///////////////////////////////////////////////////////////////////////////////
 std::string CConnection::GetUUID() const
@@ -179,14 +183,12 @@ std::string CConnection::GetUUID() const
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// CConnection::SetReliability
-/// @description Set the connection reliability for DCUSTOMNETWORK. 
-/// @param r between 0 and 100 -- 0 meaning all packets are
+/// Set the connection reliability for DCUSTOMNETWORK. 0 all packets are
 /// artifically dropped. 100 means no packets are artifically dropped.
-/// @pre The DGI has been compiled with DCUSTOMNETWORK
-/// @post The reliability of the connection is changed
+///
+/// @param r between 0 and 100
 ///////////////////////////////////////////////////////////////////////////////
-void CConnection::SetReliability(int r)
+void CConnection::SetReliability(float r)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
@@ -194,13 +196,11 @@ void CConnection::SetReliability(int r)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// CConnection::GetReliability
-/// @description Get the connection reliability for DCUSTOMNETWORK
-/// @pre None
-/// @post None
+/// Get the connection reliability for DCUSTOMNETWORK
+///
 /// @return percentage of packets that are allowed through
 ///////////////////////////////////////////////////////////////////////////////
-int CConnection::GetReliability() const
+float CConnection::GetReliability() const
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 

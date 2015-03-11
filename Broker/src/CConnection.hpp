@@ -76,26 +76,26 @@ public:
     /// Puts a message into the channel.
     void Send(const ModuleMessage& msg);
 
-    /// Handles acknowledgement messages from the peer.
+    /// Handles Notification of an acknowledment being received
     void ReceiveACK(const ProtocolMessage& msg);
 
-    /// Handles messages from the peer.
+    /// Handler that calls the correct protocol for accept logic
     bool Receive(const ProtocolMessage& msg);
 
-    /// Allows protocols to peform an action when a phase ends.
+    /// Change Phase Event
     void ChangePhase(bool newround);
 
-    /// Gets the UUID of the peer for this connection.
+    /// Get associated UUID
     std::string GetUUID() const;
 
     /// Set the connection reliability for DCUSTOMNETWORK
-    void SetReliability(int r);
+    void SetReliability(float r);
     
     /// Get the connection reliability for DCUSTOMNETWORK
-    int GetReliability() const;
+    float GetReliability() const;
 private:
 
-    /// The network protocol to use for sending/receiving messages
+    /// The custom network protocol to use for sending/receiving messages
     boost::shared_ptr<IProtocol> m_protocol;
 };
 

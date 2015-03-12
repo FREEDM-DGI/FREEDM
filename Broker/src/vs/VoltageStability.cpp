@@ -26,7 +26,8 @@ void VSAgent::CalculateInvariant()
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
     const std::string UUID[] = {
-        "mamba1:51870",
+//        "mamba1:51870",
+        "mamba5:51871",
         "mamba2:51870",
         "mamba3:51870",
         "mamba4:51870",

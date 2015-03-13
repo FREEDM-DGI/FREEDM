@@ -1278,6 +1278,7 @@ bool LBAgent::InvariantCheck()
         catch(std::exception & e)
         {
             Logger.Warn << "Failed to calculate invariant, missing values." << std::endl;
+            result = false;
         }
     }
     else

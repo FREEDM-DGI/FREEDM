@@ -52,6 +52,7 @@ message TooLateMessage
 message CollectedStateMessage
 {
     required float gross_power_flow = 1;
+    required bool invariant = 2;
 }
 
 message LoadBalancingMessage

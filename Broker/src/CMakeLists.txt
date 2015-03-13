@@ -26,7 +26,6 @@ set(BROKER_FILES
     gm/GroupManagement.cpp
     lb/LoadBalance.cpp
     sc/StateCollection.cpp
-    vs/VoltageStability.cpp
    )
 
 # generate the configuration file

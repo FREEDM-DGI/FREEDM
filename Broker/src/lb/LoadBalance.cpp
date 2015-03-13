@@ -587,7 +587,7 @@ void LBAgent::SendDraftRequest()
     {
         Logger.Notice << "Draft Request Cancelled: no DEMAND" << std::endl;
     }
-    else if(!InvariantCheck())
+    else if(!m_invariant)
     {
         Logger.Notice << "Draft Request Cancelled: invariant false" << std::endl;
     }
@@ -1026,6 +1026,12 @@ ModuleMessage LBAgent::MessageStateCollection()
     submsg->set_module("lb");
     subsubmsg->set_type("Sst");
     subsubmsg->set_signal("gateway");
+    subsubmsg = submsg->add_device_signal_request_message();
+    subsubmsg->set_type("Bus");
+    subsubmsg->set_signal("S");
+    subsubmsg = submsg->add_device_signal_request_message();
+    subsubmsg->set_type("Bus");
+    subsubmsg->set_signal("V");
 
     ModuleMessage m;
     m.mutable_state_collection_message()->CopyFrom(msg);
@@ -1079,6 +1085,26 @@ void LBAgent::HandleCollectedState(const sc::CollectedStateMessage & m)
     {
         net_power += v;
     }
+    m_Voltage.clear();
+    m_ComplexPower.clear();
+    BOOST_FOREACH(const sc::BusValue & bv, m.bus())
+    {
+        if(bv.signal() == "S")
+        {
+            m_ComplexPower[bv.source()] = bv.value();
+        }
+        else if(bv.signal() == "V")
+        {
+            m_Voltage[bv.source()] = bv.value();
+        }
+        else
+        {
+            Logger.Error << "Unknown Bus Signal: " << bv.signal() << std::endl;
+            throw std::runtime_error("Unknown Bus Signal");
+        }
+    }
+    m_invariant = InvariantCheck();
+
     // should this include intransit?
     Synchronize(net_power);
     SendToPeerSet(m_AllPeers, MessageCollectedState(net_power));
@@ -1098,6 +1124,7 @@ ModuleMessage LBAgent::MessageCollectedState(float state)
     LoadBalancingMessage msg;
     CollectedStateMessage * submsg = msg.mutable_collected_state_message();
     submsg->set_gross_power_flow(state);
+    submsg->set_invariant(m_invariant);
     return PrepareForSending(msg);
 }
 
@@ -1116,6 +1143,7 @@ ModuleMessage LBAgent::MessageCollectedState(float state)
 void LBAgent::HandleCollectedState(const CollectedStateMessage & m)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    m_invariant = m.invariant();
     Synchronize(m.gross_power_flow());
 }
 
@@ -1136,6 +1164,13 @@ void LBAgent::Synchronize(float k)
     m_PredictedGateway = m_Gateway;
     m_Synchronized = true;
 
+    std::set<device::CDevice::Pointer> container;
+    container = device::CDeviceManager::Instance().GetDevicesOfType("Invariant");
+    if(container.size() > 0)
+    {
+        (*container.begin())->SetCommand("value", m_invariant);
+    }
+
     Logger.Info << "Reset Gross Power Flow: " << k << std::endl;
     Logger.Info << "Reset Predicted Gateway: " << m_Gateway << std::endl;
 }
@@ -1151,37 +1186,97 @@ bool LBAgent::InvariantCheck()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
-    const float OMEGA_STEADY_STATE = 376.8;
-    const int SCALING_FACTOR = 1000;
+    const std::string UUID[] = {
+        "mamba5:51871",
+        "mamba2:51870",
+        "mamba3:51870",
+        "mamba4:51870",
+        "mamba5:51870",
+        "mamba6:51870",
+        "mamba6:51871"
+    };
 
+    const float YVector[] = {
+        0.6759,
+        1.3519,
+        1.3519,
+        1.3519,
+        1.3519,
+        1.3519,
+        0.6759
+    };
+
+    const float ZMatrix[] = {
+        0.9853,    0.5621,    0.3165,    0.1876,    0.1030,    0.0488,    0.0675,
+        0.5621,    0.4062,    0.2287,    0.1355,    0.0744,    0.0352,    0.0488,
+        0.3165,    0.2287,    0.4828,    0.2862,    0.1571,    0.0744,    0.1030,
+        0.1876,    0.1355,    0.2862,    0.5212,    0.2862,    0.1355,    0.1876,
+        0.1030,    0.0744,    0.1571,    0.2862,    0.4828,    0.2287,    0.3165,
+        0.0488,    0.0352,    0.0744,    0.1355,    0.2287,    0.4062,    0.5621,
+        0.0675,    0.0488,    0.1030,    0.1876,    0.3165,    0.5621,    0.9853
+    };
+
+    std::size_t size = sizeof(UUID) / sizeof(UUID[0]);
     bool result = true;
-    std::set<device::CDevice::Pointer> container;
-    container = device::CDeviceManager::Instance().GetDevicesOfType("Omega");
 
-    if(container.size() > 0 && CGlobalConfiguration::Instance().GetInvariantCheck())
+    if(CGlobalConfiguration::Instance().GetInvariantCheck())
     {
-        if(container.size() > 1)
+        try
         {
-            Logger.Warn << "Multiple attached frequency devices." << std::endl;
+            std::vector<float> indicator;
+            for(std::size_t j = 0; j < size; j++)
+            {   
+                Logger.Info << "Calculating Indicator " << j << std::endl;
+
+                float sum = 0;
+                for(std::size_t i = 0; i < size; i++)
+                {
+                    if(i == j)
+                    {
+                        continue;
+                    }
+                    float numerator = ZMatrix[j*size+i]*m_ComplexPower.at(UUID[i]);
+                    float denominator = ZMatrix[j*size+j]*m_Voltage.at(UUID[i]);
+                    float term = numerator / denominator * m_Voltage.at(UUID[j]);
+                    Logger.Info << "Term " << i << ": " << term
+                        << "\n\tNumerator:   " << numerator
+                        << "\n\tDenominator: " << denominator << std::endl;
+                    sum += term;
+                }
+                Logger.Info << "Sum for " << j << ": " << sum << std::endl;
+                float l = (m_ComplexPower.at(UUID[j]) + sum) /
+                    (m_Voltage.at(UUID[j])*m_Voltage.at(UUID[j])*YVector[j]);
+                Logger.Notice << "Indicator " << j << ": " << l << std::endl;
+                indicator.push_back(l);
+            }
+
+            float max_indicator = indicator[0];
+            BOOST_FOREACH(float l, indicator)
+            {
+                if(l > max_indicator)
+                {
+                    max_indicator = l;
+                }
+            }
+
+            float min_voltage = m_Voltage.begin()->second;
+            BOOST_FOREACH(float v, m_Voltage | boost::adaptors::map_values)
+            {
+                if(v < min_voltage)
+                {
+                    min_voltage = v;
+                }
+            }
+
+            result = max_indicator < min_voltage;
+            Logger.Status << "Invariant: " << max_indicator << "<" << min_voltage
+                << (result ? "\t(TRUE)" : "\t(FALSE)") << std::endl;
         }
-        float w  = (*container.begin())->GetState("frequency");
-        float P  = SCALING_FACTOR * m_PowerDifferential;
-        float dK = SCALING_FACTOR * (m_PowerDifferential + m_MigrationStep);
-        float freq_diff = w - OMEGA_STEADY_STATE;
-
-        Logger.Info << "Invariant Variables:"
-            << "\n\tw  = " << w
-            << "\n\tP  = " << P
-            << "\n\tdK = " << dK << std::endl;
-
-        result &= freq_diff*freq_diff*(0.1*w+0.008)+freq_diff*((5.001e-8)*P*P) > freq_diff*dK;
-
-        if(!result)
+        catch(std::exception & e)
         {
-            Logger.Info << "The physical invariant is false." << std::endl;
+            Logger.Warn << "Failed to calculate invariant, missing values." << std::endl;
         }
     }
-
     return result;
 }
 

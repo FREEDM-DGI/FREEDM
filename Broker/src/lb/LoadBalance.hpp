@@ -170,6 +170,10 @@ private:
     std::string m_Leader;
     /// Pending migrations.
     std::map<std::string, float> m_DraftAge;
+
+    std::map<std::string, float> m_ComplexPower;
+    std::map<std::string, float> m_Voltage;
+    bool m_invariant;
 };
 
 } // namespace lb

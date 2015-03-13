@@ -5,7 +5,6 @@ PROTOBUF_GENERATE_CPP(PROTO_SRCS
                       ClockSynchronizer.proto
                       LoadBalancing.proto
                       GroupManagement.proto
-                      StateCollection.proto
-                      VoltageStability.proto)
+                      StateCollection.proto)
 
 add_library(messages ${PROTO_SRCS} ${PROTO_HDRS})

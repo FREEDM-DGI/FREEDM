@@ -101,6 +101,7 @@ LBAgent::LBAgent()
     m_State = LBAgent::NORMAL;
     m_Leader = GetUUID();
 
+    m_invariant = false;
     m_PowerDifferential = 0;
     m_MigrationStep = CGlobalConfiguration::Instance().GetMigrationStep();
 }
@@ -456,7 +457,8 @@ void LBAgent::LoadTable()
     loadtable << "\t---------------------------------------------" << std::endl;
     loadtable << "\tSST Gateway:    " << m_Gateway << std::endl;
     loadtable << "\tNet Generation: " << m_NetGeneration << std::endl;
-    loadtable << "\tPredicted K:    " << m_PowerDifferential << std::endl;
+    loadtable << "\tInvariant:      " << (m_invariant ? "TRUE" : "FALSE") << std::endl;
+//    loadtable << "\tPredicted K:    " << m_PowerDifferential << std::endl;
     loadtable << "\t---------------------------------------------" << std::endl;
 
     if(m_State == LBAgent::DEMAND)
@@ -1144,6 +1146,7 @@ void LBAgent::HandleCollectedState(const CollectedStateMessage & m)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     m_invariant = m.invariant();
+    Logger.Status << "Received Invariant: " << (m_invariant ? "TRUE" : "FALSE") << std::endl;
     Synchronize(m.gross_power_flow());
 }
 
@@ -1276,6 +1279,10 @@ bool LBAgent::InvariantCheck()
         {
             Logger.Warn << "Failed to calculate invariant, missing values." << std::endl;
         }
+    }
+    else
+    {
+        Logger.Status << "Invariant Calculation Skipped" << std::endl;
     }
     return result;
 }

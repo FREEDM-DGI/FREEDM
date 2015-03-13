@@ -589,7 +589,7 @@ void LBAgent::SendDraftRequest()
     {
         Logger.Notice << "Draft Request Cancelled: no DEMAND" << std::endl;
     }
-    else if(!m_invariant)
+    else if(CGlobalConfiguration::Instance().GetInvariantCheck() && !m_invariant)
     {
         Logger.Notice << "Draft Request Cancelled: invariant false" << std::endl;
     }
@@ -1221,9 +1221,6 @@ bool LBAgent::InvariantCheck()
 
     std::size_t size = sizeof(UUID) / sizeof(UUID[0]);
     bool result = true;
-
-    if(CGlobalConfiguration::Instance().GetInvariantCheck())
-    {
         try
         {
             std::vector<float> indicator;
@@ -1280,11 +1277,6 @@ bool LBAgent::InvariantCheck()
             Logger.Warn << "Failed to calculate invariant, missing values." << std::endl;
             result = false;
         }
-    }
-    else
-    {
-        Logger.Status << "Invariant Calculation Skipped" << std::endl;
-    }
     return result;
 }
 

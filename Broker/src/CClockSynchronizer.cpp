@@ -115,7 +115,7 @@ void CClockSynchronizer::HandleIncomingMessage(
 
     if (!msg->has_clock_synchronizer_message())
     {
-        Logger.Warn << "Dropped message of unexpected type:\n" << msg->DebugString();
+        Logger.Debug << "Dropped message of unexpected type:\n" << msg->DebugString() <<std::endl;
         return;
     }
 
@@ -130,7 +130,7 @@ void CClockSynchronizer::HandleIncomingMessage(
     }
     else
     {
-        Logger.Warn << "Dropped clk message of unexpected type:\n" << msg->DebugString();
+        Logger.Warn << "Dropped clk message of unexpected type:\n" << msg->DebugString()<<std::endl;
     }
 }
 

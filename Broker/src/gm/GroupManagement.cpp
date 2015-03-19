@@ -159,12 +159,12 @@ void GMAgent::HandleIncomingMessage(boost::shared_ptr<const ModuleMessage> msg, 
         }
         else
         {
-            Logger.Warn << "Dropped gm message of unexpected type:\n" << msg->DebugString();
+            Logger.Warn << "Dropped gm message of unexpected type:\n" << msg->DebugString()<<std::endl;
         }
     }
     else
     {
-        Logger.Warn << "Dropped message of unexpected type:\n" << msg->DebugString();
+        Logger.Warn << "Dropped message of unexpected type:\n" << msg->DebugString()<<std::endl;
     }
 }
 

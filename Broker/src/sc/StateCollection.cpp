@@ -136,7 +136,7 @@ void SCAgent::HandleIncomingMessage(boost::shared_ptr<const ModuleMessage> msg, 
         else
         {
             Logger.Warn << "Dropped group management message of unexpected type:\n"
-                        << msg->DebugString();
+                        << msg->DebugString()<<std::endl;
         }
     }
     else if (msg->has_load_balancing_message())
@@ -164,14 +164,18 @@ void SCAgent::HandleIncomingMessage(boost::shared_ptr<const ModuleMessage> msg, 
         {
             HandleRequest(scm.request_message(), peer);
         }
+        else if (scm.has_collected_state_message())
+        {
+            // Pass
+        }
         else
         {
-            Logger.Warn << "Dropped sc message of unexpected type:\n" << msg->DebugString();
+            Logger.Warn << "Dropped sc message of unexpected type:\n" << msg->DebugString()<<std::endl;
         }
     }
     else
     {
-        Logger.Warn << "Dropped message of unexpected type:\n" << msg->DebugString();
+        Logger.Warn << "Dropped message of unexpected type:\n" << msg->DebugString()<<std::endl;
     }
 }
 

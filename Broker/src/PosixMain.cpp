@@ -385,10 +385,6 @@ int main(int argc, char* argv[])
 
         Logger.Debug << "Starting thread of Modules" << std::endl;
         CBroker::Instance().Schedule(
-            "cs",
-            boost::bind(&CClockSynchronizer::Run, boost::dynamic_pointer_cast<CClockSynchronizer>(CS)),
-            false);
-        CBroker::Instance().Schedule(
             "gm",
             boost::bind(&gm::GMAgent::Run, boost::dynamic_pointer_cast<gm::GMAgent>(GM)),
             false);

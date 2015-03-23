@@ -145,7 +145,7 @@ void LBAgent::HandleIncomingMessage(boost::shared_ptr<const ModuleMessage> m, CP
         }
         else
         {
-            Logger.Warn << "Dropped unexpected group management message:\n" << m->DebugString() <<std::endl;
+            Logger.Warn << "Dropped unexpected group management message:\n" << m->DebugString();
         }
     }
     else if(m->has_state_collection_message())
@@ -159,7 +159,7 @@ void LBAgent::HandleIncomingMessage(boost::shared_ptr<const ModuleMessage> m, CP
         }
         else
         {
-            Logger.Warn << "Dropped unexpected group management message:\n" << m->DebugString()<<std::endl;
+            Logger.Warn << "Dropped unexpected group management message:\n" << m->DebugString();
         }
     }
     else if(m->has_load_balancing_message())
@@ -196,12 +196,12 @@ void LBAgent::HandleIncomingMessage(boost::shared_ptr<const ModuleMessage> m, CP
         }
         else
         {
-            Logger.Warn << "Dropped unexpected load balance message:\n" << m->DebugString()<<std::endl;
+            Logger.Warn << "Dropped unexpected load balance message:\n" << m->DebugString();
         }
     }
     else
     {
-        Logger.Warn << "Dropped message of unexpected type:\n" << m->DebugString()<<std::endl;
+        Logger.Warn << "Dropped message of unexpected type:\n" << m->DebugString();
     }
 }
 

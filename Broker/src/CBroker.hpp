@@ -106,15 +106,15 @@ public:
     /// Returns how much time the current module has left in its phase
     boost::posix_time::time_duration TimeRemaining();
 
-    ///A task that will advance the Broker's active module to the next module.
-    void ChangePhase(const boost::system::error_code &err);
-    
 private:
     /// Private constructor for the singleton instance
     CBroker();
 
     /// The io_service used to perform asynchronous operations.
     boost::asio::io_service m_ioService;
+
+    ///An task that will advance the Broker's active module to the next module.
+    void ChangePhase(const boost::system::error_code &err);
 
     ///Adds a task scheduled by a module to the task queue when the timer expires.
     void ScheduledTask(Scheduleable x, TimerHandle handle, const boost::system::error_code &err);

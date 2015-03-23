@@ -83,7 +83,7 @@ CBroker::CBroker()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
-    m_synchronizer = boost::shared_ptr<CClockSynchronizer>(new CClockSynchronizer);
+    m_synchronizer = boost::shared_ptr<CClockSynchronizer>();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

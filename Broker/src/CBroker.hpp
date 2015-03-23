@@ -47,6 +47,7 @@ namespace freedm {
 
 class CConnectionManager;
 class CDispatcher;
+class CClockSynchronizer;
 
 /// How often the scheduler should verify the schedule is being followed
 const unsigned int ALIGNMENT_DURATION = 250;
@@ -106,6 +107,9 @@ public:
     /// Returns how much time the current module has left in its phase
     boost::posix_time::time_duration TimeRemaining();
 
+    /// Returns the synchronizer
+    CClockSynchronizer& GetClockSynchronizer();
+
 private:
     /// Private constructor for the singleton instance
     CBroker();
@@ -160,6 +164,9 @@ private:
 
     ///Lock for the scheduler.
     boost::mutex m_schmutex;
+
+    ///The clock synchronizer which aligns clocks between DGIs
+    boost::shared_ptr<CClockSynchronizer> m_synchronizer;
 
     ///The registered signal handlers.
     boost::asio::signal_set m_signals;

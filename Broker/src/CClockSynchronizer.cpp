@@ -205,6 +205,7 @@ void CClockSynchronizer::HandleExchangeResponse(const ExchangeResponseMessage& m
     BOOST_FOREACH(TimeTuple t, rlist)
     {
         v = t.first-t.second;
+        Logger.Debug<<"Time delta += "<<v<<endl;
         sumx += v;
         if(even == false)
         {

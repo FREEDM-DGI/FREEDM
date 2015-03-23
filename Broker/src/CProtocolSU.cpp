@@ -59,30 +59,28 @@ void CProtocolSU::Send(const ModuleMessage& msg)
     pm.set_sequence_num(m_outseq);
     m_outseq = (m_outseq+1) % SEQUENCE_MODULO;
 
-    //QueueItem q;
+    QueueItem q;
 
-    //q.ret = MAX_RETRIES;
-    //q.msg = pm;
+    q.ret = MAX_RETRIES;
+    q.msg = pm;
 
-    Write(pm);
-    /*
     m_window.push_back(q);
+
     if(m_window.size() < WINDOW_SIZE)
     {
+        Write(pm);
         m_timeout.cancel();
-        m_timeout.expires_from_now(boost::posix_time::milliseconds(CTimings::CSUC_RESEND_TIME));
+        m_timeout.expires_from_now(boost::posix_time::milliseconds(CTimings::Get("CSUC_RESEND_TIME")));
         m_timeout.async_wait(boost::bind(&CProtocolSU::Resend,
             boost::static_pointer_cast<CProtocolSU>(shared_from_this()),
             boost::asio::placeholders::error));
     }
-    */
 }
 
 void CProtocolSU::Resend(const boost::system::error_code& err)
 {
     if(!err)
     {
-        /*
         int ws = m_window.size();
         int writes = 0;
         for(int i=0; i < ws; i++)
@@ -107,18 +105,16 @@ void CProtocolSU::Resend(const boost::system::error_code& err)
         if(m_window.size() > 0)
         {
             m_timeout.cancel();
-            m_timeout.expires_from_now(boost::posix_time::milliseconds(CTimings::CSUC_RESEND_TIME));
+            m_timeout.expires_from_now(boost::posix_time::milliseconds(CTimings::Get("CSUC_RESEND_TIME")));
             m_timeout.async_wait(boost::bind(&CProtocolSU::Resend,
                 boost::static_pointer_cast<CProtocolSU>(shared_from_this()),
                 boost::asio::placeholders::error));
         }
-        */
     }
 }
 
-void CProtocolSU::ReceiveACK(const ProtocolMessage&)
+void CProtocolSU::ReceiveACK(const ProtocolMessage& msg)
 {
-    /*
     unsigned int seq = msg.sequence_num();
     while(m_window.size() > 0)
     {
@@ -139,14 +135,13 @@ void CProtocolSU::ReceiveACK(const ProtocolMessage&)
         boost::system::error_code x;
         Resend(x);
     }
-    */
 }
 
 bool CProtocolSU::Receive(const ProtocolMessage& msg)
 {
     //Consider the window you expect to see
     unsigned int bounda = m_inseq;
-    unsigned int boundb = (m_inseq+(SEQUENCE_MODULO-4))%SEQUENCE_MODULO;
+    unsigned int boundb = (m_inseq+WINDOW_SIZE*m_acceptmod)%SEQUENCE_MODULO;
     unsigned int seq = msg.sequence_num();
     if(bounda <= seq || (seq < boundb and boundb < bounda))
     {
@@ -154,18 +149,21 @@ bool CProtocolSU::Receive(const ProtocolMessage& msg)
         m_inseq = seq+1;
         return true;
     }
+    if(m_acceptmod <= SEQUENCE_MODULO/WINDOW_SIZE)
+    {
+        // Expand the accept window to try and prevent bad things from happening.
+        m_acceptmod *= 2;
+    }
     return false;
 }
 
-void CProtocolSU::SendACK(const ProtocolMessage&)
+void CProtocolSU::SendACK(const ProtocolMessage& msg)
 {
-    /*
     ProtocolMessage outmsg;
     // Presumably, if we are here, the connection is registered
     outmsg.set_status(ProtocolMessage::ACCEPTED);
     outmsg.set_sequence_num(msg.sequence_num());
     Write(outmsg);
-    */
 }
 
     }

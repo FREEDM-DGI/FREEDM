@@ -48,7 +48,7 @@ class CProtocolSU : public IProtocol
         /// Handles Writing an ack for the input message to the channel
         void SendACK(const ProtocolMessage& msg);
         /// Stops the timers
-        void Stop() {};
+        void Stop() { m_timeout.cancel(); GetSocket().close(); };
     private:
         /// Resend outstanding messages
         void Resend(const boost::system::error_code& err);
@@ -61,9 +61,9 @@ class CProtocolSU : public IProtocol
         /// The modifier for how wide of a window the protocol should accept
         unsigned int m_acceptmod;
         /// The number of retries
-        const static unsigned int MAX_RETRIES = 0;
+        const static unsigned int MAX_RETRIES = 100;
         /// The window size
-        const static unsigned int WINDOW_SIZE = 1;
+        const static unsigned int WINDOW_SIZE = 8;
         /// The sequence modulo
         const static unsigned int SEQUENCE_MODULO = 1024;
         /// Queue item

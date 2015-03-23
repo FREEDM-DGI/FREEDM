@@ -73,7 +73,6 @@ void CTimings::TimingParameters(po::options_description& opts)
     RegisterTimingValue(opts,"CSRC_RESEND_TIME");
     RegisterTimingValue(opts,"CSRC_DEFAULT_TIMEOUT");
     RegisterTimingValue(opts,"CSUC_RESEND_TIME");
-    RegisterTimingValue(opts,"CS_PHASE_TIME");
     /////////////////////////////////////////////
     // ADD YOUR TIMING PARAMETERS BELOW HERE
     /////////////////////////////////////////////

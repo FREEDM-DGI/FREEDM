@@ -329,9 +329,6 @@ int main(int argc, char* argv[])
 
     try
     {
-        // Allocate Time For Clock Synchronization
-        CBroker::Instance().RegisterModule("cs",boost::posix_time::milliseconds(CTimings::Get("CS_PHASE_TIME")));
-    
         // Instantiate and register the group management module
         CBroker::Instance().RegisterModule("gm",boost::posix_time::milliseconds(CTimings::Get("GM_PHASE_TIME")));
         CDispatcher::Instance().RegisterReadHandler(GM, "gm");
@@ -343,8 +340,6 @@ int main(int argc, char* argv[])
         // Instantiate and register the power management module
         CBroker::Instance().RegisterModule("lb",boost::posix_time::milliseconds(CTimings::Get("LB_PHASE_TIME")));
         CDispatcher::Instance().RegisterReadHandler(LB, "lb");
-        
-        
 
         // The peerlist should be passed into constructors as references or
         // pointers to each submodule to allow sharing peers. NOTE this requires

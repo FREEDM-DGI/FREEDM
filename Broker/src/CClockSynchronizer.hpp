@@ -24,7 +24,6 @@
 #define FREEDM_CLOCK_HPP
 
 #include "IDGIModule.hpp"
-#include "CBroker.hpp"
 
 #include <list>
 #include <map>
@@ -36,6 +35,7 @@
 namespace freedm {
     namespace broker {
 
+class CBroker;
 class CPeerNode;
 
 class CClockSynchronizer
@@ -43,7 +43,7 @@ class CClockSynchronizer
 {
 public:
     /// Initialize module
-    explicit CClockSynchronizer();
+    explicit CClockSynchronizer(boost::asio::io_service& ios);
     /// Returns the synchronized time
     boost::posix_time::ptime GetSynchronizedTime() const;
     /// Starts the synchronization algorithm.
@@ -83,8 +83,6 @@ private:
     void HandleExchange(const ExchangeMessage& msg, CPeerNode peer);
     /// Sends clock exchange requests to other processes
     void Exchange(const boost::system::error_code& err );
-    
-    void QueryPeer(CPeerNode peer);
 
     /// Generate the exchange message
     ModuleMessage CreateExchangeMessage(unsigned int k);
@@ -115,6 +113,9 @@ private:
     /// My skew
     double m_myskew;
 
+    ///Time for the exchange
+    boost::asio::deadline_timer m_exchangetimer;
+
     /// Gets the weight with a decay.
     double GetWeight(MapIndex i) const;
 
@@ -126,9 +127,6 @@ private:
 
     ///Turn a double into a time duration
     static boost::posix_time::time_duration DoubleToTD(double td);
-    
-    ///Scheduling Timer Handle
-    CBroker::TimerHandle m_timer;
 };
 
 

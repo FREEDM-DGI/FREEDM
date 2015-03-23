@@ -39,7 +39,6 @@
 #include "CLogger.hpp"
 #include "CGlobalConfiguration.hpp"
 #include "CGlobalPeerList.hpp"
-#include "CClockSynchronizer.hpp"
 
 #include <boost/asio/io_service.hpp>
 #include <boost/bind.hpp>
@@ -79,11 +78,10 @@ CBroker::CBroker()
     , m_synchronizer()
     , m_signals(m_ioService, SIGINT, SIGTERM)
     , m_stopping(false)
-    , m_phasecounter(0)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
-    m_synchronizer = boost::shared_ptr<CClockSynchronizer>();
+    m_synchronizer = boost::make_shared<CClockSynchronizer>(boost::ref(m_ioService));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -434,7 +432,6 @@ void CBroker::ChangePhase(const boost::system::error_code & /*err*/)
     // Past this point assume there is at least one module.
     boost::mutex::scoped_lock schlock(m_schmutex);
     m_phase++;
-    m_phasecounter++;
     // Get the time without millisec and with millisec then see how many millsec we
     // are into this second.
     // Generate a clock beacon

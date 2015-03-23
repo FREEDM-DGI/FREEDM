@@ -33,6 +33,8 @@
 #ifndef FREEDM_BROKER_HPP
 #define FREEDM_BROKER_HPP
 
+#include "CClockSynchronizer.hpp"
+
 #include <list>
 #include <string>
 
@@ -47,7 +49,6 @@ namespace freedm {
 
 class CConnectionManager;
 class CDispatcher;
-class CClockSynchronizer;
 
 /// How often the scheduler should verify the schedule is being followed
 const unsigned int ALIGNMENT_DURATION = 250;
@@ -176,9 +177,6 @@ private:
 
     ///Lock for m_stopping
     boost::mutex m_stoppingMutex;
-    
-    ///A monotonic counter for the phae
-    PhaseMarker m_phasecounter;
 };
 
     } // namespace broker

@@ -333,7 +333,7 @@ int main(int argc, char* argv[])
     {
         // Allocate Time For Clock Synchronization
         CBroker::Instance().RegisterModule("cs",boost::posix_time::milliseconds(CTimings::Get("CS_PHASE_TIME")));
-        CDispatcher::Instance().RegisterReadHandler(CS, "clk");
+        CDispatcher::Instance().RegisterReadHandler(CS, "cs");
     
         // Instantiate and register the group management module
         CBroker::Instance().RegisterModule("gm",boost::posix_time::milliseconds(CTimings::Get("GM_PHASE_TIME")));

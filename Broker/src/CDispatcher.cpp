@@ -80,7 +80,7 @@ void CDispatcher::HandleRequest(boost::shared_ptr<const ModuleMessage> msg, std:
         {
             // Scheduled modules receive messages only during that module's phase.
             // Unscheduled modules receive messages immediately.
-            if(CBroker::Instance().IsModuleRegistered(it->second))
+            if (CBroker::Instance().IsModuleRegistered(it->second))
             {
                 CBroker::Instance().Schedule(
                     it->second,

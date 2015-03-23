@@ -28,8 +28,6 @@
 #include "CDispatcher.hpp"
 #include "CLogger.hpp"
 #include "CProtocolSR.hpp"
-#include "CProtocolSU.hpp"
-#include "CProtocolSRSW.hpp"
 #include "messages/ModuleMessage.pb.h"
 #include "messages/ProtocolMessage.pb.h"
 
@@ -162,6 +160,18 @@ bool CConnection::Receive(const ProtocolMessage& msg)
     }
 
     return false;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+/// CConnection::OnReceive
+/// @description Handles performing some action after processing a received
+///     window.
+/// @pre None
+/// @post Call's the protocol's OnReceive method.
+///////////////////////////////////////////////////////////////////////////////
+void CConnection::OnReceive()
+{
+    m_protocol->OnReceive();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

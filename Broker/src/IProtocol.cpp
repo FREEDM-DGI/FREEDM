@@ -71,7 +71,7 @@ IProtocol::IProtocol(std::string uuid, boost::asio::ip::udp::endpoint endpoint)
 ///		endpoint
 /// @param msg the message to send to this p
 ///////////////////////////////////////////////////////////////////////////////
-void IProtocol::Write(ProtocolMessage& msg)
+void IProtocol::Write(ProtocolMessageWindow& msg)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 

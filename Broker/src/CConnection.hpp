@@ -82,6 +82,9 @@ public:
     /// Handles messages from the peer.
     bool Receive(const ProtocolMessage& msg);
 
+    /// Performs an action based on receiving a Protocol Message Window.
+    void OnReceive();
+    
     /// Allows protocols to peform an action when a phase ends.
     void ChangePhase(bool newround);
 

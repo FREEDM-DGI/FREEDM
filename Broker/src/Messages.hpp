@@ -34,6 +34,7 @@ namespace freedm {
 namespace broker {
 
 class ProtocolMessage;
+class ProtocolMessageWindow;
 
 /// Hash a message.
 google::protobuf::uint64 ComputeMessageHash(const ModuleMessage& msg);
@@ -45,7 +46,7 @@ bool MessageIsExpired(const ProtocolMessage& msg);
 void SetExpirationTimeFromNow(ProtocolMessage& msg, const boost::posix_time::time_duration& expires_in);
 
 /// Sets the message's timestamp to the current time.
-void StampMessageSendtime(ProtocolMessage& msg);
+void StampMessageSendtime(ProtocolMessageWindow& msg);
 
 } // namespace broker
 } // namespace freedm

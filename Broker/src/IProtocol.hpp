@@ -37,6 +37,7 @@ namespace freedm {
 
 class ModuleMessage;
 class ProtocolMessage;
+class ProtocolMessageWindow;
 
 /// A connection protocol
 class IProtocol
@@ -52,6 +53,8 @@ class IProtocol
         virtual void ReceiveACK(const ProtocolMessage& msg) = 0;
         /// Function that determines if a message should dispatched
         virtual bool Receive(const ProtocolMessage& msg) = 0;
+        /// Peforms an actions after finishing looking through a sliding window
+        virtual void OnReceive() = 0;
         /// Handles Writing an ack for the input message to the channel
         virtual void SendACK(const ProtocolMessage& msg) = 0;
         /// Handles Stopping the timers etc
@@ -76,7 +79,7 @@ class IProtocol
         /// Callback for when a write completes.
         virtual void WriteCallback(const boost::system::error_code&) { }
         /// Handles writing the message to the underlying connection
-        virtual void Write(ProtocolMessage& msg);
+        virtual void Write(ProtocolMessageWindow& msg);
     private:
         /// Datagram socket connected to a single peer DGI
         boost::asio::ip::udp::endpoint m_endpoint;

@@ -136,8 +136,8 @@ void CListener::HandleRead(const boost::system::error_code& e,
     }
 
     Logger.Debug<<"Loading protobuf"<<std::endl;
-    ProtocolMessage pm;
-    if(!pm.ParseFromArray(m_buffer.begin(), bytes_transferred))
+    ProtocolMessageWindow pmw;
+    if(!pmw.ParseFromArray(m_buffer.begin(), bytes_transferred))
     {
         Logger.Error<<"Failed to load protobuf"<<std::endl;
         ScheduleListen();
@@ -154,7 +154,7 @@ void CListener::HandleRead(const boost::system::error_code& e,
 #endif
 
     Logger.Debug<<"Fetching Connection"<<std::endl;
-    std::string uuid = pm.source_uuid();
+    std::string uuid = pmw.source_uuid();
     /// We can make the remote host from the endpoint:
     SRemoteHost host = { m_recv_from.address().to_string(), boost::lexical_cast<std::string>(m_recv_from.port()) };
 
@@ -166,24 +166,27 @@ void CListener::HandleRead(const boost::system::error_code& e,
     //ConnectionPtr conn = CConnectionManager::Instance().GetConnectionByUUID(uuid);
     Logger.Debug<<"Fetched Connection"<<std::endl;
 
-    if(pm.status() == ProtocolMessage::ACCEPTED)
+    BOOST_FOREACH(const ProtocolMessage &pm, pmw.messages())
     {
-        Logger.Debug<<"Processing Accept Message"<<std::endl;
-        Logger.Debug<<"Received ACK"<<pm.hash()<<":"<<pm.sequence_num()<<std::endl;
-        conn->ReceiveACK(pm);
+        if(pm.status() == ProtocolMessage::ACCEPTED)
+        {
+            Logger.Debug<<"Processing Accept Message"<<std::endl;
+            Logger.Debug<<"Received ACK"<<pm.hash()<<":"<<pm.sequence_num()<<std::endl;
+            conn->ReceiveACK(pm);
+        }
+        else if(conn->Receive(pm))
+        {
+            Logger.Debug<<"Accepted message "<<pm.hash()<<":"<<pm.sequence_num()<<std::endl;
+            CDispatcher::Instance().HandleRequest(
+                boost::make_shared<const ModuleMessage>(
+                    ModuleMessage(pm.module_message())), uuid);
+        }
+        else if(pm.status() != ProtocolMessage::CREATED)
+        {
+            Logger.Debug<<"Rejected message "<<pm.hash()<<":"<<pm.sequence_num()<<std::endl;
+        }
     }
-    else if(conn->Receive(pm))
-    {
-        Logger.Debug<<"Accepted message "<<pm.hash()<<":"<<pm.sequence_num()<<std::endl;
-        CDispatcher::Instance().HandleRequest(
-            boost::make_shared<const ModuleMessage>(
-                ModuleMessage(pm.module_message())), uuid);
-    }
-    else if(pm.status() != ProtocolMessage::CREATED)
-    {
-        Logger.Debug<<"Rejected message "<<pm.hash()<<":"<<pm.sequence_num()<<std::endl;
-    }
-
+    conn->OnReceive();
     ScheduleListen();
 }
 

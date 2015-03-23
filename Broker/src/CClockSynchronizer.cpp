@@ -27,7 +27,6 @@
 #include "CGlobalPeerList.hpp"
 #include "CLogger.hpp"
 #include "CPeerNode.hpp"
-#include "Messages.hpp"
 #include "messages/ModuleMessage.pb.h"
 
 #include <memory>

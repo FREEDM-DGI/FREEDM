@@ -12,8 +12,6 @@ set(BROKER_FILES
     CListener.cpp
     CLogger.cpp
     CProtocolSR.cpp
-    CProtocolSU.cpp
-    CProtocolSRSW.cpp
     CPeerNode.cpp
     PeerSets.cpp
     CTimings.cpp

@@ -98,7 +98,7 @@ void SetExpirationTimeFromNow(ProtocolMessage& msg, const boost::posix_time::tim
 /// @pre None
 /// @post Sets the send time for the message to the current UTC time.
 ///////////////////////////////////////////////////////////////////////////////
-void StampMessageSendtime(ProtocolMessage& msg)
+void StampMessageSendtime(ProtocolMessageWindow& msg)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 

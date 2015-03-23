@@ -49,6 +49,8 @@ class CProtocolSR
         void ReceiveACK(const ProtocolMessage& msg);
         /// deterimines if a  messageshould be given to the dispatcher
         bool Receive(const ProtocolMessage& msg);
+        /// Writes the window (with acks on message receipt)
+        void OnReceive();
         /// Handles Writing an ack for the input message to the channel
         void SendACK(const ProtocolMessage& msg);
         /// Sends a synchronizer
@@ -56,7 +58,9 @@ class CProtocolSR
         /// Stops the timers
         void Stop() { m_timeout.cancel(); SetStopped(true);  };
         /// Handles writing the message to the underlying connection
-        void Write(ProtocolMessage& msg);
+        void Write(ProtocolMessageWindow & msg);
+        /// Writes a whole window to the channel
+        void WriteWindow();
     private:
         /// Resend outstanding messages
         void Resend(const boost::system::error_code& err);
@@ -82,6 +86,7 @@ class CProtocolSR
         unsigned int m_sendkill;
         /// The window
         std::deque<ProtocolMessage> m_window;
+        std::deque<ProtocolMessage> m_ack_window;
         /// Sequence modulo
         static const unsigned int SEQUENCE_MODULO = 1024;
         /// Refire time in MS

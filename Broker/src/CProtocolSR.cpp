@@ -117,7 +117,6 @@ void CProtocolSR::Send(const ModuleMessage& msg)
 
     SetExpirationTimeFromNow(pm, boost::posix_time::millisec(CTimings::Get("CSRC_DEFAULT_TIMEOUT")));
     Logger.Debug<<"Set Expire time: "<< pm.expire_time() << std::endl;
-    Logger.Debug<<"Assigned Sequence Number: "<<msgseq<<std::endl;
 
 	m_window.push_back(pm);
     if(m_window.size() == 1)
@@ -126,7 +125,8 @@ void CProtocolSR::Send(const ModuleMessage& msg)
     }
     else
     {
-        Logger.Debug<<"Write Deferred, Channel Full"<<std::endl;
+        boost::system::error_code err;
+        Resend(err)
     }
 }
 
@@ -190,7 +190,7 @@ void CProtocolSR::Resend(const boost::system::error_code& err)
                 // (and whose ack has been received)
                 m_window.front().set_kill(m_sendkill);
             }
-            Logger.Debug<<"Rewriting message s/n: "<<m_window.front().sequence_num()<<std::endl;
+            Logger.Trace<<__PRETTY_FUNCTION__<<" Writing"<<std::endl;
             Write(m_window.front());
         }
         /// We use static pointer cast to convert the IPROTOCOL pointer to this

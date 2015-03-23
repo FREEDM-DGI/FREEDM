@@ -198,30 +198,71 @@ void CClockSynchronizer::HandleExchangeResponse(const ExchangeResponseMessage& m
     // Now we can compute a linear regression on the contents
     // First, compute the average time
     // Pick a time to use as the base.
+    boost::posix_time::ptime base = now;
+    /* A note -
+    The original paper had you calculate a skew and apply it to your clock,
+    which is bananas because you can't change the rate that a clock ticks,
+    you can compute a skewed clock reading, but it is going to be super
+    messy because it will probably mean you are multiplying a double against
+    all time that has ever occured (it will blow up, I think unless the
+    value is super close to 1). So, I've come up with a clever trick! We
+    are going to set the points we are computing a linear regression on
+    to be in the past and we are going to determine the x intercept starting
+    from now, which should be pretty close to what we want as an offset w/o
+    having to apply any skew. */
     boost::posix_time::time_duration sumx;
+    boost::posix_time::time_duration sumy;
     boost::posix_time::time_duration sumlag;
     bool even = false;
     BOOST_FOREACH(TimeTuple t, rlist)
     {
-        sumx += t.first-t.second;
+        sumx += t.first-base;
+        sumy += t.second-base;
         if(even == false)
         {
-            sumlag += now-t.second;
+            sumlag -= t.second-base;
             even = true;
         }
         else
         {
+            sumlag += t.second-base;
             even = false;
         }
     }
     double lag = (TDToDouble(sumlag))/rlist.size();
     Logger.Notice<<"Computed lag ("<<sender<<"): "<<lag<<std::endl;
     double dxbar = TDToDouble(sumx)/rlist.size();
-    boost::posix_time::time_duration xbar = DoubleToTD(dxbar-lag);
+    double dybar = TDToDouble(sumy)/rlist.size();
+    boost::posix_time::time_duration xbar = DoubleToTD(dxbar);
+    boost::posix_time::time_duration ybar = DoubleToTD(dybar);
     // Now that the averages are computed we can compute Cij and fij
-    m_offsets[ij] = xbar;
+    double fij;
+    double tmp1 = 0.0;
+    double tmp2 = 0.0;
+    double tmp3 = 0.0;
+    double tmp4 = 0.0;
+    BOOST_FOREACH(TimeTuple t, rlist)
+    {
+        tmp1 = TDToDouble((t.first-base)-xbar);
+        tmp2 = TDToDouble((t.second-base)-ybar);
+        tmp3 += tmp1 * tmp2;
+        tmp4 += tmp1 * tmp1;
+    }
+    //If there is no spread, then we only have one xcoordinate to use.
+    if(tmp4 != 0.0)
+        fij = (tmp3/tmp4);
+    else
+        fij = 1.0;
+    // And this part is Cij
+    double alpha = (dybar-fij*dxbar);
+    if(alpha <= 0)
+        alpha += lag;
+    else
+        alpha -= lag;
+    // Wowza!
+    m_offsets[ij] = -DoubleToTD(alpha);
     SetWeight(ij, 1);
-    m_skews[ij] = 0;
+    m_skews[ij] = fij-1;
     for (unsigned i = 0; i < static_cast<unsigned>(msg.table_entry_size()); ++i)
     {
         const ExchangeResponseMessage::TableEntry te = msg.table_entry(i);
@@ -229,7 +270,7 @@ void CClockSynchronizer::HandleExchangeResponse(const ExchangeResponseMessage& m
         if(neighbor == peer.GetUUID() || neighbor == GetUUID())
             continue;
         boost::posix_time::time_duration cjl = boost::posix_time::seconds(te.offset_secs())+boost::posix_time::microseconds(te.offset_fracs());
-        double wjl = te.weight()-.01; // Abritrarily remove some trust to account for lag.
+        double wjl = te.weight()-.1; // Abritrarily remove some trust to account for lag.
         double fjl = te.skew();
         MapIndex il(GetUUID(),neighbor);
         if(m_offsets.find(il) == m_offsets.end())
@@ -319,6 +360,14 @@ void CClockSynchronizer::Exchange(const boost::system::error_code& err)
         CBroker::Instance().ChangePhase(err);
         m_myskew = tmp3;
     }
+    //Now we adjust the CRAP out of our offset and skew table.
+    /*
+    for(oit = m_offsets.begin(); oit != m_offsets.end(); oit++)
+    {
+        oit->second -= DoubleToTD(tmp1);
+        m_skews[oit->first] -= tmp3;
+    }
+    */
     m_offsets[ii] = boost::posix_time::milliseconds(0);
     SetWeight(ii, 1.0);
     m_skews[ii] = 0.0;

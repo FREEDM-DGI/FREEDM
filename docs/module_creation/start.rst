@@ -109,7 +109,7 @@ Here are the implementations for the methods we've defined so far::
     } // namespace broker
     } // namespace freedm
 
-What's going on here? We've created an instance of **CLocalLogger** called ``Logger``. This allows us to log messages from this module. When creating your module you may find it handy to familiarize yourself with :ref:`logger-cfg`. 
+What's going on here? We've created an instance of **CLocalLogger** called ``Logger``. This allows us to log messages from this module. When creating your module you may find it handy to familiarize yourself with :ref:`reference-logger`. 
 
 Next, we need to register our module with the scheduler and message delivery system. In `Broker/src/PosixMain.cpp` locate the initialize modules section and add your new module::
 

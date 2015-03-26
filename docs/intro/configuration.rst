@@ -78,9 +78,20 @@ More information about configuring the logger can be found in :ref:`reference-lo
 timings.cfg
 -----------
 
-``timings.cfg`` contains timings for the DGI; we recommend simply pointing to one of the provided timings samples in freedm.cfg; see :ref:`configuring-timings`. Each host in the simulation must use the same timings which must be appropriate for the slowest DGI in the system, so if a system has two Core-2 computers and a TS-7800, all should use the TS-7800 timings.
+``timings.cfg`` contains timings for the DGI; we recommend simply pointing to one of the provided timings samples in freedm.cfg; see :ref:`configuring-timings`. Each host in the simulation must use the same timings which must be appropriate for the slowest DGI in the system, so if a system has two Core-2 computers and a TS-7800, all should use the slow timing set.
 
-INSERT A TABLE OF THE SAMPLES INCLUDED IN FREEDM 2.0.
+==================== =========== ============= ================
+file                 minimum CPU Number of DGI Cumulative time
+==================== =========== ============= ================
+timings-slow-5.cfg   TS7800      <=5           4950 ms
+timings-slow-10.cfg  TS7800      <=10          7750 ms
+timings-slow-30.cfg  TS7800      <=30          19150 ms
+timings-fast-5.cfg   P4 2.4Ghz   <=5           1240 ms
+timings-fast-10.cfg  P4 2.4Ghz   <=10          1990 ms
+timings-fast-30.cfg  P4 2.4Ghz   <=30          4770 ms
+==================== =========== ============= ================
+
+Where minimum CPU is the performance of the slowest DGI in the group. Cumulative time is the time the DGI will take to configure a group, collect the global state and perform 10 migrations, before checking the system configuration again.
 
 Test Your Configuration
 -----------------------

@@ -13,7 +13,7 @@ This tutorial covers the installation and use of the FREEDM `DGI 2.0.0`_. You sh
 
 .. _DGI 2.0.0: https://github.com/scj7t4/FREEDM/archive/2.0.0.tar.gz 
 
-This package includes only the DGI. A separate program from connecting the DGI to PSCAD is available at the `PSCAD Repository`_ on github. A typical simulation environment will include multiple DGI, typically three or five, which may run on the same Linux machine or on different machines. The simulation itself runs on Windows, either in PSCAD, in which case the DGI will communicate with the PSCAD Interface on a Linux machine, or in RSCAD with an RTDS, in which case the DGI will communicate with FPGAs. The DGI can also interact with physical devices that implement its :ref:`plug-n-play` protocol.
+This package includes only the DGI. A separate program from connecting the DGI to PSCAD is available at the `PSCAD Repository`_ on github. A typical simulation environment will include multiple DGI, typically three or five, which may run on the same Linux machine or on different machines. The simulation itself runs on Windows, either in PSCAD, in which case the DGI will communicate with the PSCAD Interface on a Linux machine, or in RSCAD with an RTDS, in which case the DGI will communicate with FPGAs. The DGI can also interact with physical devices that implement its :ref:`pnp-adapter` protocol.
 
 .. _PSCAD Repository: https://github.com/FREEDM-DGI/pscad-interface
 
@@ -38,9 +38,15 @@ Interacting With Simulations and Physical Devices:
 
 .. toctree::   
     :maxdepth: 2
-
+    
     devices/index
+    devices/rtds_adapter
+    devices/pscad
+    devices/rtds
     devices/physical_topology
+    devices/devices
+    devices/adapters
+    devices/usage
 
 Creating Modules
 ----------------
@@ -52,6 +58,7 @@ Creating Modules
     module_creation/scheduling
     module_creation/receiving_messages
     module_creation/message_passing
+    devices/usage
 
 Advanced Configuration
 ----------------------
@@ -61,6 +68,7 @@ Advanced Configuration
     
     advanced_config/multiple_dgi
     advanced_config/hostname_troubleshooting
+    advanced_config/timings
     
     
 DGI Modules Reference
@@ -70,6 +78,7 @@ DGI Modules Reference
     
     modules/state_collection
     modules/group_management
+    modules/load_balance
 
 DGI Framework Reference
 -----------------------
@@ -81,10 +90,7 @@ DGI Framework Reference
     reference/logger
     
 
-Indices and tables
+Other
 ==================
-
-* :ref:`genindex`
-* :ref:`modindex`
+* `Doxygen Documentation <./doxygen/index.html>`_
 * :ref:`search`
-

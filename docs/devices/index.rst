@@ -24,7 +24,7 @@ All devices used by the DGI must be defined in the *device.xml* configuration fi
 +-------------+--------------------------+----------------------------+
 
 
-The communication protocol the DGI uses to communicate with its physical devices depends on the type of physical adapter configured to run with the DGI. For most cases, configuration of the DGI physical adapters requires modification of another *adapter.xml* configuration file. A tutorial for setting up physical adapters, as well as modification of this file, can be found at :ref:`configure-adapters`. The adapter types supported by the DGI are included in the following table.
+The communication protocol the DGI uses to communicate with its physical devices depends on the type of physical adapter configured to run with the DGI. For most cases, configuration of the DGI physical adapters requires modification of another *adapter.xml* configuration file. The adapter types supported by the DGI are included in the following table.
 
 +--------------+------------------------+-------------------+---------------------+
 | Adapter Type | Communication Protocol | Communicates With | Documentation       |
@@ -36,13 +36,10 @@ The communication protocol the DGI uses to communicate with its physical devices
 | fake         | none                   | nothing           | undocumented        |
 +--------------+------------------------+-------------------+---------------------+
 
-Using devices in DGI modules is done through a class called the device manager. An overview of how modules can use devices, as well as details on the device manager, can be found at :ref:`using-devices`.
+Users that plan on using a PSCAD or RTDS simulation should go on to :ref:`rtds-adapter` to configure the DGI and their simulation.
 
-Additional documentation for running simulations that communicate with the DGI can be found at :ref:`pscad-simulation` and :ref:`rtds-simulation`.
+Users that plan to interact with a physical device should consider using the DGI's :ref:`pnp-adapter` to communicate with their device.
 
-.. toctree::
-    :maxdepth: 2
-    
-    devices
-    adapters
-    usage
+See :ref:`reference-adapters` for documentation about the adapter interfaces.
+
+Users creating modules devices can use the device manager to manipulate devices. An overview of how modules can use devices, as well as details on the device manager, can be found at :ref:`using-devices`.

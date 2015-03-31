@@ -1,5 +1,11 @@
 FREEDM DGI REPOSITORY
 
+FREEDM DOCUMENTATION FOR END USERS IS NOW ON READTHEDOCS:
+
+http://freedm.readthedocs.org/
+
+[![Documentation Status](https://readthedocs.org/projects/freedm/badge/?version=latest)](https://readthedocs.org/projects/freedm/?badge=latest)
+
 Disclaimer
 
 These source code files were created at as part of the FREEDM DGI Subthrust,
@@ -15,20 +21,3 @@ distributed with these codes.
 Suggested modifications or questions about this code can be directed to 
 Dr. Bruce McMillin, Department of Computer Science, Missouri University of
 Science and Technology, Rolla, MO 65409 <ff@mst.edu>
-
-Building This Project
-
-1. Begin by installing Boost. We recommend installing the version of Boost
-provided by your system's package manager. Old systems may require you to
-manually build a newer version, since we may make use of relatively new Boost
-features. We currently test FREEDM on Boost 1.50. See the Boost website for
-assistance if you think you will need to build this version yourself.
-
-2. Navigate to the `Broker` directory within the source you cloned from GitHub
-and invoke `cmake .` This will prepare the makefile.
-
-3. Call `make` and wait for the FREEDM project to build.
-
-4. Refer to the FREEDM Wiki at https://github.com/scj7t4/FREEDM/wiki for
-information on configuration parameters to CMake. cmake -LH lists configuration
-options with help descriptions, and cmake -D allows you to set an option.

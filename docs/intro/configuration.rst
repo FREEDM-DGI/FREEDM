@@ -78,7 +78,7 @@ More information about configuring the logger can be found in :ref:`reference-lo
 timings.cfg
 -----------
 
-``timings.cfg`` contains timings for the DGI; we recommend simply pointing to one of the provided timings samples in freedm.cfg; see :ref:`configuring-timings`. Each host in the simulation must use the same timings which must be appropriate for the slowest DGI in the system, so if a system has two Core-2 computers and a TS-7800, all should use the slow timing set.
+``timings.cfg`` contains timings for the DGI; we recommend simply pointing to one of the provided timings samples in freedm.cfg; see :ref:`configure-timings`. Each host in the simulation must use the same timings which must be appropriate for the slowest DGI in the system, so if a system has two Core-2 computers and a TS-7800, all should use the slow timing set.
 
 ==================== =========== ============= ================
 file                 minimum CPU Number of DGI Cumulative time

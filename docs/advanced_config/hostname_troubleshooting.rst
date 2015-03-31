@@ -4,12 +4,10 @@ Troubleshooting Hostnames
 "Are Your Hostnames Configured Correctly Error"
 ------------------------------------------------
 
-If you observe this error:
+If you observe this error::
 
-```
-2013-Mar-19 11:39:37.207802 : PosixMain.cpp : Error(2):
-	Exception caught in Broker: Could not resolve the endpoint victory-road:1870 (victory-road:1870) Are your hostnames configured correctly?
-```
+    2013-Mar-19 11:39:37.207802 : PosixMain.cpp : Error(2):
+        Exception caught in Broker: Could not resolve the endpoint victory-road:1870 (victory-road:1870) Are your hostnames configured correctly?
 
 By default, most systems cannot resolve their own hostnames, unless, of course, you get your hostname from DHCP, in which case it could (potentially) be resolvable via DNS. But local hostname resolution is mandatory for FREEDM (and many other programs) to work. You have two options:
 

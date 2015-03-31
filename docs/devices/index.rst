@@ -1,3 +1,5 @@
+.. _configuring-devices:
+
 DGI Device Framework
 ====================
 

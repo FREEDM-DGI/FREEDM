@@ -330,15 +330,15 @@ int main(int argc, char* argv[])
     try
     {
         // Instantiate and register the group management module
-        CBroker::Instance().RegisterModule("gm",boost::posix_time::milliseconds(CTimings::GM_PHASE_TIME));
+        CBroker::Instance().RegisterModule("gm",boost::posix_time::milliseconds(CTimings::Get("GM_PHASE_TIME")));
         CDispatcher::Instance().RegisterReadHandler(GM, "gm");
         // Instantiate and register the state collection module
-        CBroker::Instance().RegisterModule("sc",boost::posix_time::milliseconds(CTimings::SC_PHASE_TIME));
+        CBroker::Instance().RegisterModule("sc",boost::posix_time::milliseconds(CTimings::Get("SC_PHASE_TIME")));
         CDispatcher::Instance().RegisterReadHandler(SC, "sc");
         // StateCollection wants to receive Accept messages addressed to lb.
         CDispatcher::Instance().RegisterReadHandler(SC, "lb");
         // Instantiate and register the power management module
-        CBroker::Instance().RegisterModule("lb",boost::posix_time::milliseconds(CTimings::LB_PHASE_TIME));
+        CBroker::Instance().RegisterModule("lb",boost::posix_time::milliseconds(CTimings::Get("LB_PHASE_TIME")));
         CDispatcher::Instance().RegisterReadHandler(LB, "lb");
 
         // The peerlist should be passed into constructors as references or

@@ -43,10 +43,9 @@ CLocalLogger Logger(__FILE__);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// Hash a message.
-///
+/// ComputeMessageHash
+/// @description Hash a message.
 /// @param msg the message to hash
-///
 /// @return a hash of the message
 ///////////////////////////////////////////////////////////////////////////////
 google::protobuf::uint64 ComputeMessageHash(const ModuleMessage& msg)
@@ -58,10 +57,9 @@ google::protobuf::uint64 ComputeMessageHash(const ModuleMessage& msg)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// Determines whether the message has expired.
-///
+/// MessageIsExpired
+/// @description Determines whether the message has expired.
 /// @param msg the message to check
-///
 /// @return true if the message has expired; false otherwise (including if the
 ///         message has no expiration time set)
 ///////////////////////////////////////////////////////////////////////////////
@@ -77,10 +75,12 @@ bool MessageIsExpired(const ProtocolMessage& msg)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// Set the expiration time for this message.
-///
+/// SetExpirationTimeFromNow
+/// @description Set the expiration time for this message.
 /// @param msg the message to modify
 /// @param expires_in how long from now to set the expiration time
+/// @pre None
+/// @post Sets the expire time to the current UTC time + expires_in time.
 ///////////////////////////////////////////////////////////////////////////////
 void SetExpirationTimeFromNow(ProtocolMessage& msg, const boost::posix_time::time_duration& expires_in)
 {
@@ -92,11 +92,13 @@ void SetExpirationTimeFromNow(ProtocolMessage& msg, const boost::posix_time::tim
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// Sets the message's timestamp to the current time.
-///
+/// StampMessageSendtime
+/// @description Sets the message's timestamp to the current time.
 /// @param msg the message to stamp, transfer-none
+/// @pre None
+/// @post Sets the send time for the message to the current UTC time.
 ///////////////////////////////////////////////////////////////////////////////
-void StampMessageSendtime(ProtocolMessage& msg)
+void StampMessageSendtime(ProtocolMessageWindow& msg)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 

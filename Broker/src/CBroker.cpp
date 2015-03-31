@@ -2,6 +2,7 @@
 /// @file         CBroker.cpp
 ///
 /// @author       Derek Ditch <derek.ditch@mst.edu>
+///				  Stephen Jackson <scj7t4@mst.edu>
 ///
 /// @project      FREEDM DGI
 ///
@@ -102,10 +103,9 @@ CBroker::~CBroker()
 ///////////////////////////////////////////////////////////////////////////////
 /// @fn CBroker::Run()
 /// @description Starts the adapter factory. Runs the ioservice until it is out
-///              of work. (That should only happen if a signal is received.)
-///              Runs the clock synchronizer.
+///              of work. Runs the clock synchronizer.
 /// @pre  The ioservice has some schedule of jobs waiting to be performed (so
-///       it doesn't exit immediately). Likely should only be called once.
+///       it doesn't exit immediately).
 /// @post The ioservice has stopped.
 /// @ErrorHandling Could raise arbitrary exceptions from anywhere in the DGI.
 ///////////////////////////////////////////////////////////////////////////////
@@ -158,11 +158,11 @@ boost::asio::io_service& CBroker::GetIOService()
 /// @fn CBroker::Stop
 /// @description  Registers a stop command into the io_service's job queue.
 ///               when scheduled, the stop operation will terminate all running
-///               modules and cause the ioservice.run() command to exit.
+///               modules and cause the ioservice.run() call to exit.
 /// @pre The ioservice is running and processing tasks.
 /// @post The command to stop the ioservice has been placed in the service's
 ///        task queue.
-/// @param signum positive if called from a signal handler, or 0 otherwise
+/// @param signum A signal identifier if the call came from a signal, or 0 otherwise
 ///////////////////////////////////////////////////////////////////////////////
 void CBroker::Stop(unsigned int signum)
 {
@@ -182,8 +182,7 @@ void CBroker::Stop(unsigned int signum)
 
 ///////////////////////////////////////////////////////////////////////////////
 /// @fn CBroker::HandleSignal
-/// @description Handle signals that terminate the program. (These are the
-///              only signals that we catch.)
+/// @description Handle signals that terminate the program.
 /// @pre None
 /// @post The broker is scheduled to be stopped.
 ///////////////////////////////////////////////////////////////////////////////
@@ -246,11 +245,11 @@ void CBroker::HandleStop(unsigned int signum)
 ///////////////////////////////////////////////////////////////////////////////
 /// @fn CBroker::RegisterModule
 /// @description Places the module in to the list of schedulable phases. The
-///   scheduler cycles through these in order to do real-time round robin
+///   scheduler cycles through registered modules to do real-time round robin
 ///   scheduling.
 /// @pre None
 /// @post The module is registered with a phase duration specified by the
-///   parameter phase.
+///   phase parameter.
 /// @param m the identifier for the module.
 /// @param phase the duration of the phase.
 ///////////////////////////////////////////////////////////////////////////////
@@ -272,12 +271,12 @@ void CBroker::RegisterModule(CBroker::ModuleIdent m, boost::posix_time::time_dur
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// Checks to see if a module is registered with the scheduler. Such a module
-/// will only receive messages during its scheduled phase.
-///
+/// @fn CBroker::IsModuleRegistered
+/// @description Checks to see if a module is registered with the scheduler.
+/// @pre None
+/// @post None
 /// @param m the identifier for the module.
-///
-/// @return true if the module is registered/scheduled
+/// @return true if the module is registered with the broker.
 ///////////////////////////////////////////////////////////////////////////////
 bool CBroker::IsModuleRegistered(ModuleIdent m)
 {
@@ -296,10 +295,11 @@ bool CBroker::IsModuleRegistered(ModuleIdent m)
 ///////////////////////////////////////////////////////////////////////////////
 /// @fn CBroker::AllocateTimer
 /// @description Returns a handle to a timer to use for scheduling tasks.
-///     timer recycling helps prevent forest fires (and accidental branching
+/// 	Timer handles are used in Schedule() calls.
 /// @pre The module is registered
 /// @post A handle to a timer is returned.
 /// @param module the module the timer should be allocated to
+/// @return A CBroker::TimerHandle that can be used to schedule tasks.
 ///////////////////////////////////////////////////////////////////////////////
 CBroker::TimerHandle CBroker::AllocateTimer(CBroker::ModuleIdent module)
 {
@@ -319,17 +319,23 @@ CBroker::TimerHandle CBroker::AllocateTimer(CBroker::ModuleIdent module)
 
 ///////////////////////////////////////////////////////////////////////////////
 /// @fn CBroker::Schedule
-/// @description Given a binding to a function that should be run into the
-///   future, prepares it to be run... in the future. The attempt to schedule
-///   may be rejected if the Broker is stopping.
+/// @description Given a scheduleable task that should be run in the
+///   future. The task will be scheduled to run by the Broker after the timer
+///   expires and during the module that owns the timer's phase. The attempt to
+///	  schedule may be rejected if the Broker is stopping, indicated by the return
+///	  value.
 /// @param h The handle to the timer being set.
 /// @param wait the amount of the time to wait. If this value is "not_a_date_time"
 ///     The wait is converted to positive infinity and the time will expire as
-///     soon as the module no longer owns the context.
-/// @param x The partially bound function that will be scheduled.
+///     soon as it is not the module that owns the timer's phase.
+/// @param x A schedulable, a functor, that expects a single
+/// 	boost::system::error_code parameter and returns void, created via
+///		boost::bind()
 /// @pre The module is registered
-/// @post A function is scheduled to be called in the future. If a next time
-///     function is scheduled, its timer will expire as soon as its round ends.
+/// @post If the Broker is not stopping, the function is scheduled to be called
+/// 	in the future. If a next time function is scheduled, its timer will
+///     expire as soon as its round ends. If the Broker is stopping the task
+///		will not be scheduled.
 /// @return 0 on success, -1 if rejected
 ///////////////////////////////////////////////////////////////////////////////
 int CBroker::Schedule(CBroker::TimerHandle h,
@@ -365,19 +371,20 @@ int CBroker::Schedule(CBroker::TimerHandle h,
 
 ///////////////////////////////////////////////////////////////////////////////
 /// @fn CBroker::Schedule
-/// @description Given a module and a bound schedulable, enter that schedulable
-///     into that modules job queue. The attempt to schedule may be rejected if
-///     the Broker is stopping.
+/// @description Given a module and a task, put that task into that modules
+///		job queue. The attempt to schedule will be rejected if the Broker is 
+///		stopping.
 /// @pre The module is registered.
 /// @post The task is placed in the work queue for the module m. If the
 ///     start_worker parameter is set to true, the module's worker will be
 ///     activated if it isn't already.
 /// @param m The module the schedulable should be run as.
-/// @param x The method that will be run.
+/// @param x The method that will be run. A functor that expects no parameters
+///		and returns void. Created via boost::bind()
 /// @param start_worker tells the worker to begin processing again, if it is
-///     currently idle [The worker will be idle if the work queue is empty; this
-///     can be useful to defer an activity to the next round if the node is not busy
-/// @return 0 on success, -1 if rejected
+///     currently idle. The worker may be idle if the work queue is currently
+///		empty
+/// @return 0 on success, -1 if rejected because the Broker is stopping.
 ///////////////////////////////////////////////////////////////////////////////
 int CBroker::Schedule(ModuleIdent m, BoundScheduleable x, bool start_worker)
 {
@@ -405,10 +412,13 @@ int CBroker::Schedule(ModuleIdent m, BoundScheduleable x, bool start_worker)
 
 ///////////////////////////////////////////////////////////////////////////////
 /// @fn CBroker::ChangePhase
-/// @description This task will mark to the schedule that it is time to change
-///     phases. This will change which functions will be put into the queue
-/// @pre None
-/// @post The phase has been changed.
+/// @description Changes the current active module when time allotted to the
+///		module has passed.
+/// @pre This function was scheduled to be called when the time allotted to the
+///		current active modules has passed
+/// @post The phase has been changed to the new active module. If the worker
+///		was not already running, it is started to run tasks for the new active
+///		module.
 ///////////////////////////////////////////////////////////////////////////////
 void CBroker::ChangePhase(const boost::system::error_code & /*err*/)
 {
@@ -510,11 +520,13 @@ void CBroker::ChangePhase(const boost::system::error_code & /*err*/)
 
 ///////////////////////////////////////////////////////////////////////////////
 /// @fn CBroker::TimeRemaining
-/// @description Shows how much time is remaining in the current pgase
+/// @description Returns how much time is remaining in the active module's
+///		phase. The result can be negative if the module has exceeded its
+///		allotted execution time.
 /// @pre The Change Phase function has been called at least once. This should
 ///     have occured by the time the first module is ready to look at the
 ///     remaining time.
-/// @post no change
+/// @post None
 /// @return A time_duration describing the amount of time remaining in the
 ///     phase.
 ///////////////////////////////////////////////////////////////////////////////
@@ -525,9 +537,8 @@ boost::posix_time::time_duration CBroker::TimeRemaining()
 
 ///////////////////////////////////////////////////////////////////////////////
 /// @fn CBroker::ScheduledTask
-/// @description When a timer for a task expires, it enters this phase. The
-///     timer is removed from the timers list. Then Execute is called to keep
-///     the work queue going.
+/// @description When a timer for a task expires, this function is called to
+/// 	insert the readied task into owning module's ready task queue.
 /// @pre A task is scheduled for execution
 /// @post The task is entered into th ready queue.
 ///////////////////////////////////////////////////////////////////////////////
@@ -561,12 +572,12 @@ void CBroker::ScheduledTask(CBroker::Scheduleable x, CBroker::TimerHandle handle
 
 ///////////////////////////////////////////////////////////////////////////////
 /// @fn CBroker::Worker
-/// @description Reads the current phase and if the phase is correct, queues
-///     all the tasks for that phase to the ioservice. If m_busy is set, the
-///     worker is still working on clearing the queue. If it's set to false,
-///     the worker needs to be started when the scheduled task is called
+/// @description The worker determines the active module and execute the first
+///		task in that module's queue, before rescheduling itself.
 /// @pre None
-/// @post A task is scheduled to run.
+/// @post If there are tasks in the module's queue, the first task in the queue
+///		will be run, and the work will schedule itself to run again through the
+///		ioservice. If there are no tasks in the queue, the worker will stop.
 ///////////////////////////////////////////////////////////////////////////////
 void CBroker::Worker()
 {
@@ -600,9 +611,14 @@ void CBroker::Worker()
     m_ioService.post(boost::bind(&CBroker::Worker, this));
 }
 
-//////////////////////////////////
-/// Returns the clock synchronizer
-//////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+/// @fn CBroker::GetClockSynchronizer
+/// @description Returns a reference to the ClockSynchronizer object.
+/// @pre None
+/// @post Any changes to the ClockSynchronizer will affect the object owned
+///		by the broker.
+/// @return A reference to the Broker's ClockSynchronizer object.  
+///////////////////////////////////////////////////////////////////////////////
 CClockSynchronizer& CBroker::GetClockSynchronizer()
 {
     return *m_synchronizer;

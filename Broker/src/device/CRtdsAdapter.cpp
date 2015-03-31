@@ -127,7 +127,7 @@ void CRtdsAdapter::Start()
     IBufferAdapter::Start();
     Connect();
     m_runTimer.expires_from_now(
-            boost::posix_time::milliseconds(CTimings::DEV_RTDS_DELAY));
+            boost::posix_time::milliseconds(CTimings::Get("DEV_RTDS_DELAY")));
     m_runTimer.async_wait(boost::bind(&CRtdsAdapter::Run, shared_from_this(),
             boost::asio::placeholders::error));
 }
@@ -185,7 +185,7 @@ void CRtdsAdapter::Run(const boost::system::error_code & e)
             Logger.Debug << "Blocking for a socket write call." << std::endl;
             TimedWrite(m_socket, boost::asio::buffer(m_txBuffer,
                     m_txBuffer.size() * sizeof(SignalValue)),
-                    CTimings::DEV_SOCKET_TIMEOUT);
+                    CTimings::Get("DEV_SOCKET_TIMEOUT"));
         }
         catch(boost::system::system_error & e)
         {
@@ -209,7 +209,7 @@ void CRtdsAdapter::Run(const boost::system::error_code & e)
             Logger.Debug << "Blocking for a socket read call." << std::endl;
             TimedRead(m_socket, boost::asio::buffer(m_rxBuffer,
                     m_rxBuffer.size() * sizeof(SignalValue)),
-                    CTimings::DEV_SOCKET_TIMEOUT);
+                    CTimings::Get("DEV_SOCKET_TIMEOUT"));
         }
         catch (boost::system::system_error & e)
         {
@@ -240,7 +240,7 @@ void CRtdsAdapter::Run(const boost::system::error_code & e)
 
     // Start the timer; on timeout, this function is called again
     m_runTimer.expires_from_now(
-    boost::posix_time::milliseconds(CTimings::DEV_RTDS_DELAY));
+    boost::posix_time::milliseconds(CTimings::Get("DEV_RTDS_DELAY")));
     m_runTimer.async_wait(boost::bind(&CRtdsAdapter::Run, shared_from_this(),
             boost::asio::placeholders::error));
 }

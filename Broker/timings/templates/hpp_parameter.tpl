@@ -1,2 +1,0 @@
-    static unsigned int $parameter;
-

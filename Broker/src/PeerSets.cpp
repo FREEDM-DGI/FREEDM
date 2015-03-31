@@ -26,28 +26,70 @@
 namespace freedm {
 namespace broker {
 
+///////////////////////////////////////////////////////////////////////////////
+/// CountInPeerSet
+/// @description Counts the instances of a peer in a PeerSet. This function
+///		provides count().
+/// @param ps The peerset to search
+/// @param m The peer to search for.
+/// @pre None
+/// @post None
+/// @return The count of peers matching m (should be one or zero).
+///////////////////////////////////////////////////////////////////////////////
 int CountInPeerSet(PeerSet& ps, const CPeerNode& m)
 {
     return ps.count(m.GetUUID());
 }
-/// Provides find() for a PeerSet
+///////////////////////////////////////////////////////////////////////////////
+/// FindInPeerSet
+/// @description Returns an iterator to the peer in the PeerSet. This function
+///		provides find().
+/// @param ps The peerset to search
+/// @param m the peer to search for.
+/// @pre None
+/// @post None
+/// @return an iterator to the specified Peer
+///////////////////////////////////////////////////////////////////////////////
 PeerSetIterator FindInPeerSet(PeerSet& ps, const CPeerNode& m)
 {
     return ps.find(m.GetUUID()); 
 }
-
-/// Provides erase() for a PeerSet
+///////////////////////////////////////////////////////////////////////////////
+/// EraseInPeerSet
+/// @description Removes the specified peer from a peer set.
+///		Provides erase() for a PeerSet.
+/// @param ps The peerset to erase from
+/// @param m The peer to erase.
+/// @pre None
+/// @post If m is in the PeerSet, it is removed.
+///////////////////////////////////////////////////////////////////////////////
 void EraseInPeerSet(PeerSet& ps, const CPeerNode& m)
 {
     ps.erase(m.GetUUID());
 }
-/// Provides insert() for a PeerSet
+///////////////////////////////////////////////////////////////////////////////
+/// InsertInPeerSet
+/// @description Adds the specified peer to the PeerSet.
+///		Provides insert() for a PeerSet.
+/// @pre None
+/// @post If m is not in the PeerSet it is added.
+/// @param ps The peerset to search
+/// @param m the peer to add to the set
+///////////////////////////////////////////////////////////////////////////////
 void InsertInPeerSet(PeerSet& ps, const CPeerNode& m)
 {
     ps.insert(std::make_pair(m.GetUUID(),m));
 }
-
-/// Provides count() for a TimedPeerSet
+///////////////////////////////////////////////////////////////////////////////
+/// CountInPeerSet
+/// @description Counts the instances of a peer in a TimedPeerSet. This function
+///		provides count().
+/// @param tps The peerset to search
+/// @param m The peer to search for.
+/// @pre None
+/// @post None
+/// @return The count of peers matching m (should be one or zero).
+///////////////////////////////////////////////////////////////////////////////
 int CountInTimedPeerSet(TimedPeerSet& tps, const CPeerNode& m)
 {
     ssize_t count = 0;
@@ -60,8 +102,13 @@ int CountInTimedPeerSet(TimedPeerSet& tps, const CPeerNode& m)
     }
     return count;
 }
-
-/// Get the time a peer was placed into the TimedPeerSet; only sensible if the peer is in the set exactly once
+///////////////////////////////////////////////////////////////////////////////
+/// GetTimeFromPeerSet
+/// @description Get the time a peer was placed into the TimedPeerSet
+/// @pre None
+/// @post Throws an exception if the peer is not in the peerset.
+/// @param tps The timed peer set to search.
+/// @param m The peer to search for.
 boost::posix_time::ptime GetTimeFromPeerSet(TimedPeerSet& tps, const CPeerNode& m)
 {
     for (TimedPeerSetIterator it = tps.begin(); it != tps.end(); it++)
@@ -74,7 +121,15 @@ boost::posix_time::ptime GetTimeFromPeerSet(TimedPeerSet& tps, const CPeerNode& 
     throw std::runtime_error("Expected peer wasn't found in peer set");
 }
 
-/// Provides erase() for a TimedPeerSet
+///////////////////////////////////////////////////////////////////////////////
+/// EraseInTimedPeerSet
+/// @description Removes the specified peer from a peer set.
+///		Provides erase() for a TimedPeerSet.
+/// @param tps The peerset to erase from
+/// @param m The peer to erase.
+/// @pre None
+/// @post If m is in the TimedPeerSet, it is removed.
+///////////////////////////////////////////////////////////////////////////////
 void EraseInTimedPeerSet(TimedPeerSet& tps, const CPeerNode& m)
 {
     for (TimedPeerSetIterator it = tps.begin(); it != tps.end(); )
@@ -91,7 +146,16 @@ void EraseInTimedPeerSet(TimedPeerSet& tps, const CPeerNode& m)
     }
 }
 
-/// Provides insert() for a TimedPeerSet
+///////////////////////////////////////////////////////////////////////////////
+/// InsertInTimedPeerSet
+/// @description Adds the specified peer to the TimedPeerSet.
+///		Provides insert() for a TimedPeerSet.
+/// @pre None
+/// @post If m is not in the TimedPeerSet it is added.
+/// @param tps The TimedPeerSet to insert into
+/// @param m The peer to add to the set.
+/// @param time The time the peer was added to the TimedPeerSet
+///////////////////////////////////////////////////////////////////////////////
 void InsertInTimedPeerSet(TimedPeerSet& tps,
                              const CPeerNode& m,
                              boost::posix_time::ptime time)

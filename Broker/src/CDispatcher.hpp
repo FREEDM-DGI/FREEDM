@@ -56,10 +56,10 @@ public:
     /// Access the singleton instance of the CDispatcher
     static CDispatcher& Instance();
 
-    /// Called upon incoming message
+    /// Schedules a message delivery to the receiving modules.
     void HandleRequest(boost::shared_ptr<const ModuleMessage> msg, std::string uuid);
 
-    /// Registers a handler that will be called with HandleRequest
+    /// Registers a module's identifier with the dispatcher.
     void RegisterReadHandler(boost::shared_ptr<IDGIModule> p_handler, std::string id);
 
 private:

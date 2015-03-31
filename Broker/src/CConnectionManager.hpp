@@ -74,7 +74,7 @@ public:
     /// Stop all connections.
     void StopAll();
 
-    /// Handle Rounds
+    /// Handle changing rounds.
     void ChangePhase(bool newround);
 
     /// Fetch a connection pointer via UUID
@@ -86,7 +86,7 @@ public:
     /// Returns true if this map is currently tracking a connection to this peer.
     bool HasConnection(std::string uuid);
 
-    /// An iterator to the beginning of the hostname map
+    /// An iterator to the beginning of the hostname map.
     hostnamemap::iterator GetHostsBegin() { return m_hosts.begin(); };
 
     /// An iterator to the end of the hostname map.

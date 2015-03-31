@@ -46,11 +46,11 @@ public:
     explicit CClockSynchronizer(boost::asio::io_service& ios);
     /// Returns the synchronized time
     boost::posix_time::ptime GetSynchronizedTime() const;
-    /// Starts the stuff.
+    /// Starts the synchronization algorithm.
     void Run();
-    /// Stops the stuff
+    /// Stops the syncrhonization algorithm.
     void Stop();
-    /// Handles received messages
+    /// Processes incoming messages from other modules.
     void HandleIncomingMessage(boost::shared_ptr<const ModuleMessage> msg, CPeerNode peer);
 
 private:
@@ -77,11 +77,11 @@ private:
     /// Last responses type
     typedef std::map< MapIndex, unsigned int > LastResponseMap;
 
-    /// Receiver
+    /// Handler for clock exchange responses
     void HandleExchangeResponse(const ExchangeResponseMessage& msg, CPeerNode peer);
-    /// Receiver
+    /// Receiver for clock exchange requests
     void HandleExchange(const ExchangeMessage& msg, CPeerNode peer);
-    /// Broadcaster
+    /// Sends clock exchange requests to other processes
     void Exchange(const boost::system::error_code& err );
 
     /// Generate the exchange message
@@ -116,10 +116,10 @@ private:
     ///Time for the exchange
     boost::asio::deadline_timer m_exchangetimer;
 
-    /// Gets the weight with a decay
+    /// Gets the weight with a decay.
     double GetWeight(MapIndex i) const;
 
-    /// Sets the weight
+    /// Sets the weight for a process.
     void SetWeight(MapIndex i, double w);
 
     ///Turn a time duration into a double

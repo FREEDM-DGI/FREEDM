@@ -30,6 +30,7 @@
 #include "gm/GroupManagement.hpp"
 #include "lb/LoadBalance.hpp"
 #include "sc/StateCollection.hpp"
+#include "dda/DispatchAlgo.hpp"
 #include "CTimings.hpp"
 #include "SRemoteHost.hpp"
 #include "FreedmExceptions.hpp"
@@ -327,6 +328,9 @@ int main(int argc, char* argv[])
     boost::shared_ptr<IDGIModule> SC = boost::make_shared<sc::SCAgent>();
     boost::shared_ptr<IDGIModule> LB = boost::make_shared<lb::LBAgent>();
 
+    // Initialize DESD Dispatch Algorithm module
+    boost::shared_ptr<IDGIModule> DDA = boost::make_shared<dda::DDAAgent>();
+
     try
     {
         // Instantiate and register the group management module
@@ -340,6 +344,10 @@ int main(int argc, char* argv[])
         // Instantiate and register the power management module
         CBroker::Instance().RegisterModule("lb",boost::posix_time::milliseconds(CTimings::LB_PHASE_TIME));
         CDispatcher::Instance().RegisterReadHandler(LB, "lb");
+
+        // Register DESD Dispatch Algorithm module
+        CBroker::Instance().RegisterModule("dda", boost::posix_time::milliseconds(200000));
+        CDispatcher::Instance().RegisterReadHandler(DDA, "dda");
 
         // The peerlist should be passed into constructors as references or
         // pointers to each submodule to allow sharing peers. NOTE this requires
@@ -384,6 +392,12 @@ int main(int argc, char* argv[])
             "lb",
             boost::bind(&lb::LBAgent::Run, boost::dynamic_pointer_cast<lb::LBAgent>(LB)),
             false);
+
+	// DDA module start
+	CBroker::Instance().Schedule(
+	    "dda",
+	    boost::bind(&dda::DDAAgent::Run, boost::dynamic_pointer_cast<dda::DDAAgent>(DDA)),
+	    false);
     }
     catch (std::exception & e)
     {

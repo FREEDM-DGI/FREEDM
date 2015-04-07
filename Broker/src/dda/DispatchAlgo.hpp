@@ -23,11 +23,13 @@
 #ifndef DISPATCH_ALGORITHM_HPP
 #define DISPATCH_ALGORITHM_HPP
 
+#include "CBroker.hpp"
 #include "IDGIModule.hpp"
 #include "CPeerNode.hpp"
 #include "PeerSets.hpp"
 
 #include "messages/ModuleMessage.pb.h"
+#include <boost/date_time/posix_time/posix_time_types.hpp>
 
 #include <CDevice.hpp>
 
@@ -50,7 +52,8 @@ public:
     ~DDAAgent();
 
     /// Called to start the system
-    int Run();
+    //int Run(); //immediate scheduling
+    void Run();
 
     ///Update function for deltaP and lambda
     void deltaPLambdaUpdate();
@@ -68,13 +71,16 @@ private:
 
     void sendtoAdjList();
 
+    ///Time Handle for timer
+    CBroker::TimerHandle m_timer;
+
     /// Wraps a DesdStateMessage in a ModuleMessage
     ModuleMessage PrepareForSending(
         const DesdStateMessage& message, std::string recipient = "dda");
  
     void LoadTopology();
  
-    void DESDScheduledMethod();
+    void DESDScheduledMethod(const boost::system::error_code& err);
 
     //structure of physical layer
     AdjacencyListMap m_adjlist;

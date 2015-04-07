@@ -7,6 +7,9 @@
 #include "CGlobalConfiguration.hpp"
 #include "gm/GroupManagement.hpp"
 
+#include <boost/asio/error.hpp>
+#include <boost/date_time/posix_time/posix_time.hpp>
+
 namespace freedm{
 namespace broker{
 namespace dda{
@@ -46,6 +49,7 @@ DDAAgent::DDAAgent()
 	m_deltaP1[i] = 0.0;
 	m_deltaP2[i] = 0.0;    	
     }
+    m_timer = CBroker::Instance().AllocateTimer("dda");
 }
 
 DDAAgent::~DDAAgent()
@@ -141,9 +145,20 @@ void DDAAgent::LoadTopology()
 }
 
 
-void DDAAgent::DESDScheduledMethod()
+void DDAAgent::DESDScheduledMethod(const boost::system::error_code& err)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    
+    if(!err)
+    {	
+	Logger.Debug << "DDA has scheduled!" << std::endl;
+	CBroker::Instance().Schedule(m_timer, boost::posix_time::not_a_date_time,
+		boost::bind(&DDAAgent::DESDScheduledMethod, this, boost::asio::placeholders::error)); 
+    }
+    else
+    {
+	Logger.Error << err << std::endl;
+    }
 
     LoadTopology();
     Logger.Debug << "The epsil is " << epsil << std::endl;
@@ -194,17 +209,22 @@ void DDAAgent::DESDScheduledMethod()
    
 }
 
+/*
 int DDAAgent::Run()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-
     // Scheduling for immmediate execution
     CBroker::Instance().Schedule("dda",
 	boost::bind(&DDAAgent::DESDScheduledMethod, this));
     return 0;
-
 }
+*/
 
+void DDAAgent::Run()
+{
+    CBroker::Instance().Schedule("dda",
+	boost::bind(&DDAAgent::DESDScheduledMethod, this, boost::system::error_code()));
+}
 
 void DDAAgent::HandleIncomingMessage(boost::shared_ptr<const ModuleMessage> msg, CPeerNode peer)
 {
@@ -398,6 +418,7 @@ void DDAAgent::sendtoAdjList()
         if (m_strans.find(symbolid) != m_strans.end())
         {
             std::string id = m_strans.find(symbolid)->second;
+	    Logger.Debug << "The ID for adjacent node is " << id << std::endl;
             CPeerNode peer = CGlobalPeerList::instance().GetPeer(id);
             peer.Send(PrepareForSending(*msg));
         }

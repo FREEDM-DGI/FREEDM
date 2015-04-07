@@ -49,6 +49,7 @@ DDAAgent::DDAAgent()
 	m_deltaP1[i] = 0.0;
 	m_deltaP2[i] = 0.0;    	
     }
+    m_startDESDAlgo = false;
     m_timer = CBroker::Instance().AllocateTimer("dda");
 }
 
@@ -205,7 +206,7 @@ void DDAAgent::DESDScheduledMethod(const boost::system::error_code& err)
         }
     }
     Logger.Debug << "Initialization of Load1, Load2, PV and WindTurbine have done" << std::endl;
-    sendtoAdjList();
+    //sendtoAdjList();
    
 }
 
@@ -230,12 +231,34 @@ void DDAAgent::HandleIncomingMessage(boost::shared_ptr<const ModuleMessage> msg,
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
  
-    if (msg->has_desd_state_message())
+    if (msg->has_group_management_message())
+    {
+	gm::GroupManagementMessage gmm = msg->group_management_message();
+        if (gmm.has_peer_list_message())
+	{
+	    HandlePeerList(gmm.peer_list_message(), peer);
+	}
+	else
+	{
+	    Logger.Warn << "Dropped unexpected group management message:\n" << msg->DebugString();
+	}
+    }
+    else if (msg->has_desd_state_message())
     {
         HandleUpdate(msg->desd_state_message(), peer);
     }
 }
 
+void DDAAgent::HandlePeerList(const gm::PeerListMessage &m, CPeerNode peer)
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Debug << "Updated peer list received from: " << peer.GetUUID() << std::endl;
+    if (m_startDESDAlgo == false)
+    {
+	m_startDESDAlgo = true;
+	sendtoAdjList();
+    }
+}
 
 void DDAAgent::HandleUpdate(const DesdStateMessage& msg, CPeerNode peer)
 {
@@ -400,8 +423,6 @@ void DDAAgent::sendtoAdjList()
     //iteration, vsymbol, deltaP and lambda will be sent to adjacent list
     ModuleMessage mm;
     DesdStateMessage *msg = mm.mutable_desd_state_message();
-    Logger.Debug << "Are we here?" << std::endl;
-    //DesdStateMessage *msg;
     msg->set_iteration(m_iteration);
     msg->set_symbol(m_localsymbol);
     msg->set_deltapstep1(m_inideltaP[0]);
@@ -413,6 +434,7 @@ void DDAAgent::sendtoAdjList()
     Logger.Debug << "The message has been packed for sending to neighbors" << std::endl;
 
     //send message to adjecent list
+
     BOOST_FOREACH(std::string symbolid, m_localadj)
     {
         if (m_strans.find(symbolid) != m_strans.end())

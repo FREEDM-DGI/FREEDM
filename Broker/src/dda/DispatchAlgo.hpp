@@ -66,7 +66,7 @@ public:
 private:
     /// Handles received messages
     void HandleIncomingMessage(boost::shared_ptr<const ModuleMessage> msg, CPeerNode peer);
-
+    void HandlePeerList(const gm::PeerListMessage &m, CPeerNode peer);
     void HandleUpdate(const DesdStateMessage& msg, CPeerNode peer);
 
     void sendtoAdjList();
@@ -82,6 +82,7 @@ private:
  
     void DESDScheduledMethod(const boost::system::error_code& err);
 
+    bool m_startDESDAlgo; 
     //structure of physical layer
     AdjacencyListMap m_adjlist;
     std::map<std::string, std::string> m_strans;

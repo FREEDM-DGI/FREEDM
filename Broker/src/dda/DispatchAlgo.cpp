@@ -109,6 +109,7 @@ void DDAAgent::LoadTopology()
             } 
             if (uuid == GetUUID())
             {
+		Logger.Debug << "The local uuid is " << GetUUID() << std::endl;
                 m_localsymbol = vsymbol;
             }
             m_strans[vsymbol] = uuid;
@@ -175,8 +176,8 @@ void DDAAgent::DESDScheduledMethod(const boost::system::error_code& err)
     int sstCount = device::CDeviceManager::Instance().GetDevicesOfType("Sst").size();
     int desdCount = device::CDeviceManager::Instance().GetDevicesOfType("Desd").size();
     int loadCount = device::CDeviceManager::Instance().GetDevicesOfType("Load").size();
-    int pvCount = device::CDeviceManager::Instance().GetDevicesOfType("PV").size();
-    int wtCount = device::CDeviceManager::Instance().GetDevicesOfType("WindTurbine").size();
+    int pvCount = device::CDeviceManager::Instance().GetDevicesOfType("Pvpanel").size();
+    int wtCount = device::CDeviceManager::Instance().GetDevicesOfType("Wturbine").size();
 
     if (sstCount == 1 || loadCount == 1 || pvCount == 1 || wtCount == 1)
     {

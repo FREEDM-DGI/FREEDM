@@ -392,12 +392,6 @@ int main(int argc, char* argv[])
             "lb",
             boost::bind(&lb::LBAgent::Run, boost::dynamic_pointer_cast<lb::LBAgent>(LB)),
             false);
-
-	// DDA module start
-	CBroker::Instance().Schedule(
-	    "dda",
-	    boost::bind(&dda::DDAAgent::Run, boost::dynamic_pointer_cast<dda::DDAAgent>(DDA)),
-	    false);
     }
     catch (std::exception & e)
     {

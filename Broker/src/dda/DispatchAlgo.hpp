@@ -80,8 +80,6 @@ private:
  
     void LoadTopology();
  
-    void DESDScheduledMethod(const boost::system::error_code& err);
-
     bool m_startDESDAlgo; 
     //structure of physical layer
     AdjacencyListMap m_adjlist;
@@ -113,6 +111,9 @@ private:
     //neighbors' delatP and lambda
     double m_adjdeltaP[3];
     double m_adjlambda[3];
+
+    //all know peers
+    PeerSet m_AllPeers;
 };
 
 } // namespace dda

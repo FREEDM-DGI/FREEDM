@@ -147,20 +147,9 @@ void DDAAgent::LoadTopology()
 }
 
 
-void DDAAgent::DESDScheduledMethod(const boost::system::error_code& err)
+void DDAAgent::Run()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    
-    if(!err)
-    {	
-	Logger.Debug << "DDA has scheduled!" << std::endl;
-	CBroker::Instance().Schedule(m_timer, boost::posix_time::not_a_date_time,
-		boost::bind(&DDAAgent::DESDScheduledMethod, this, boost::asio::placeholders::error)); 
-    }
-    else
-    {
-	Logger.Error << err << std::endl;
-    }
 
     LoadTopology();
     Logger.Debug << "The epsil is " << epsil << std::endl;
@@ -207,26 +196,10 @@ void DDAAgent::DESDScheduledMethod(const boost::system::error_code& err)
         }
     }
     Logger.Debug << "Initialization of Load1, Load2, PV and WindTurbine have done" << std::endl;
-    //sendtoAdjList();
+    sendtoAdjList();
    
 }
 
-/*
-int DDAAgent::Run()
-{
-    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    // Scheduling for immmediate execution
-    CBroker::Instance().Schedule("dda",
-	boost::bind(&DDAAgent::DESDScheduledMethod, this));
-    return 0;
-}
-*/
-
-void DDAAgent::Run()
-{
-    CBroker::Instance().Schedule("dda",
-	boost::bind(&DDAAgent::DESDScheduledMethod, this, boost::system::error_code()));
-}
 
 void DDAAgent::HandleIncomingMessage(boost::shared_ptr<const ModuleMessage> msg, CPeerNode peer)
 {
@@ -254,10 +227,13 @@ void DDAAgent::HandlePeerList(const gm::PeerListMessage &m, CPeerNode peer)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     Logger.Debug << "Updated peer list received from: " << peer.GetUUID() << std::endl;
-    if (m_startDESDAlgo == false)
+    // Process the peer list
+    m_AllPeers = gm::GMAgent::ProcessPeerList(m);
+
+    if (m_startDESDAlgo == false && m_AllPeers.size() == 11)
     {
 	m_startDESDAlgo = true;
-	sendtoAdjList();
+	Run();
     }
 }
 

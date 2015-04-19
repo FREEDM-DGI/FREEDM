@@ -439,7 +439,7 @@ void DDAAgent::deltaPLambdaUpdate()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     //update delatP and lambda based on the iteration by locally or by adjacent list nodes
-    if (m_iteration%inner_iter == 0 )
+    if (m_iteration%inner_iter == 0 && m_iteration != 0)
     {
         for (int i = 0; i < 3; i++)
         {

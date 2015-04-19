@@ -240,10 +240,11 @@ void DDAAgent::HandlePeerList(const gm::PeerListMessage &m, CPeerNode peer)
 void DDAAgent::HandleUpdate(const DesdStateMessage& msg, CPeerNode peer)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-
-//  localratio = 1 - m_adjnum/epsil;
-//  adjratio = 1/epsil;
-
+    // Receiving required neighbor's message
+    Logger.Debug << "The message iteration is " << msg.iteration() 
+		 << ". The current iteration is  " << m_iteration << std::endl;
+    Logger.Debug << "The local node is " << m_localsymbol << ". The received msg is from "
+ 		 << msg.symbol() << std::endl;
     if (msg.iteration() == m_iteration )
     {
         if (m_localadj.find(msg.symbol()) != m_localadj.end())
@@ -325,11 +326,11 @@ void DDAAgent::HandleUpdate(const DesdStateMessage& msg, CPeerNode peer)
                     deltaPLambdaUpdate();
 		    m_adjnum = m_localadj.size();
 		    m_iteration++;
-		    if (m_iteration < 5000)
+		    if (m_iteration < 5000 && m_iteration%inner_iter == 0)
 		    {
 		        sendtoAdjList();
 		    }
-		    else
+		    else if (m_iteration >= 5000)
 		    {
 			Logger.Status << "The DESD node" << m_localsymbol << " has power settings: " << m_nextpower[0]
 				      << " " << m_nextpower[1] << " " << m_nextpower[2] << std::endl; 
@@ -361,11 +362,11 @@ void DDAAgent::HandleUpdate(const DesdStateMessage& msg, CPeerNode peer)
                     deltaPLambdaUpdate();
                     m_adjnum = m_localadj.size();
  		    m_iteration++;
-  		    if (m_iteration < 5000)
+  		    if (m_iteration < 5000 && m_iteration%inner_iter == 0)
 		    {	
 		        sendtoAdjList();
 		    }
-		    else
+		    else if (m_iteration >= 5000)
 		    {
 			Logger.Status << "The grid has power settings: " << m_nextpower[0] << " "
 				      << m_nextpower[1] << " " << m_nextpower[2] << std::endl;
@@ -378,7 +379,7 @@ void DDAAgent::HandleUpdate(const DesdStateMessage& msg, CPeerNode peer)
                     deltaPLambdaUpdate();
                     m_adjnum = m_localadj.size();
                     m_iteration++;
-		    if (m_iteration < 5000)
+		    if (m_iteration < 5000 && m_iteration%inner_iter == 0)
 		    {
                         sendtoAdjList();
 		    }

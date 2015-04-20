@@ -252,6 +252,7 @@ void DDAAgent::HandleUpdate(const DesdStateMessage& msg, CPeerNode peer)
             m_adjnum--;
             if (m_adjnum != 0)
             {
+		//still receiving neighbors' deltaP and lambda
                 m_adjdeltaP[0] += msg.deltapstep1();
                 m_adjdeltaP[1] += msg.deltapstep2();
                 m_adjdeltaP[2] += msg.deltapstep3();
@@ -264,6 +265,7 @@ void DDAAgent::HandleUpdate(const DesdStateMessage& msg, CPeerNode peer)
 		//DESD devices update
 		if(m_localsymbol == "4" || m_localsymbol == "7" || m_localsymbol == "10")
 		{
+		    Logger.Debug << "The DESD device is updating!" << std::endl;
 		    double aug1[3] = {0.0};
 		    double aug2[3] = {0.0};    
 
@@ -325,10 +327,17 @@ void DDAAgent::HandleUpdate(const DesdStateMessage& msg, CPeerNode peer)
 
                     deltaPLambdaUpdate();
 		    m_adjnum = m_localadj.size();
-		    m_iteration++;
+		    
 		    if (m_iteration < 5000 && m_iteration%inner_iter == 0)
 		    {
 		        sendtoAdjList();
+		    }
+		    else if (m_iteration < 5000)
+		    {
+			while(m_iteration%inner_iter != 0)
+		        {
+			    deltaPLambdaUpdate();
+			}
 		    }
 		    else if (m_iteration >= 5000)
 		    {
@@ -339,6 +348,7 @@ void DDAAgent::HandleUpdate(const DesdStateMessage& msg, CPeerNode peer)
 		//Grid updates
 		else if(m_localsymbol == "1")
 		{
+		    Logger.Debug << "The grid is updating!" << std::endl;
 		    double cost = 0.0;
 		    for (int i = 0; i<3; i++)
 		    {
@@ -361,10 +371,17 @@ void DDAAgent::HandleUpdate(const DesdStateMessage& msg, CPeerNode peer)
                     Logger.Status << "The cost is " << cost << std::endl;
                     deltaPLambdaUpdate();
                     m_adjnum = m_localadj.size();
- 		    m_iteration++;
+ 		    
   		    if (m_iteration < 5000 && m_iteration%inner_iter == 0)
 		    {	
 		        sendtoAdjList();
+		    }
+		    else if (m_iteration < 5000) 
+		    {	
+			while( m_iteration%inner_iter != 0)
+		    	{
+			    deltaPLambdaUpdate();
+			}
 		    }
 		    else if (m_iteration >= 5000)
 		    {
@@ -375,13 +392,21 @@ void DDAAgent::HandleUpdate(const DesdStateMessage& msg, CPeerNode peer)
 		}
 		//Other devices update
 		else
-		{
+	        {
+		    Logger.Status << "The other devices are updating!" << std::endl; 
                     deltaPLambdaUpdate();
                     m_adjnum = m_localadj.size();
-                    m_iteration++;
+                    
 		    if (m_iteration < 5000 && m_iteration%inner_iter == 0)
 		    {
                         sendtoAdjList();
+		    }
+		    else if (m_iteration < 5000)
+		    {
+			while( m_iteration%inner_iter != 0)
+   		        {
+			    deltaPLambdaUpdate();
+			}
 		    }
                 }
 		for(int i = 0; i<3; i++)
@@ -439,7 +464,7 @@ void DDAAgent::deltaPLambdaUpdate()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     //update delatP and lambda based on the iteration by locally or by adjacent list nodes
-    if (m_iteration%inner_iter == 0 && m_iteration != 0)
+    if (m_iteration%inner_iter == 0)
     {
         for (int i = 0; i < 3; i++)
         {
@@ -461,7 +486,7 @@ void DDAAgent::deltaPLambdaUpdate()
         m_inideltaP[i]=m_nextdeltaP[i];
         m_inilambda[i]=m_nextlambda[i];
     }
-
+    m_iteration++;
 }
 
 

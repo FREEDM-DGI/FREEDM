@@ -328,18 +328,18 @@ void DDAAgent::HandleUpdate(const DesdStateMessage& msg, CPeerNode peer)
                     deltaPLambdaUpdate();
 		    m_adjnum = m_localadj.size();
 		    
-		    if (m_iteration < 5000 && m_iteration%inner_iter == 0)
+		    while(m_iteration < 5000)
 		    {
-		        sendtoAdjList();
-		    }
-		    else if (m_iteration < 5000)
-		    {
+			if (m_iteration%inner_iter == 0)
+			{
+		            sendtoAdjList();
+		        }
 			while(m_iteration%inner_iter != 0)
 		        {
 			    deltaPLambdaUpdate();
 			}
 		    }
-		    else if (m_iteration >= 5000)
+		    if (m_iteration >= 5000)
 		    {
 			Logger.Status << "The DESD node" << m_localsymbol << " has power settings: " << m_nextpower[0]
 				      << " " << m_nextpower[1] << " " << m_nextpower[2] << std::endl; 
@@ -372,18 +372,18 @@ void DDAAgent::HandleUpdate(const DesdStateMessage& msg, CPeerNode peer)
                     deltaPLambdaUpdate();
                     m_adjnum = m_localadj.size();
  		    
-  		    if (m_iteration < 5000 && m_iteration%inner_iter == 0)
+  		    while(m_iteration < 5000)
 		    {	
-		        sendtoAdjList();
-		    }
-		    else if (m_iteration < 5000) 
-		    {	
+			if (m_iteration%inner_iter == 0)
+		        {
+			    sendtoAdjList();
+			}	
 			while( m_iteration%inner_iter != 0)
 		    	{
 			    deltaPLambdaUpdate();
 			}
 		    }
-		    else if (m_iteration >= 5000)
+		    if (m_iteration >= 5000)
 		    {
 			Logger.Status << "The grid has power settings: " << m_nextpower[0] << " "
 				      << m_nextpower[1] << " " << m_nextpower[2] << std::endl;
@@ -397,23 +397,18 @@ void DDAAgent::HandleUpdate(const DesdStateMessage& msg, CPeerNode peer)
                     deltaPLambdaUpdate();
                     m_adjnum = m_localadj.size();
                     
-		    if (m_iteration < 5000 && m_iteration%inner_iter == 0)
+		    while(m_iteration < 5000)
 		    {
-                        sendtoAdjList();
-		    }
-		    else if (m_iteration < 5000)
-		    {
+			if (m_iteration%inner_iter == 0)
+			{
+                            sendtoAdjList();
+		        }
 			while( m_iteration%inner_iter != 0)
    		        {
 			    deltaPLambdaUpdate();
 			}
 		    }
-                }
-		for(int i = 0; i<3; i++)
-		{
-		    m_adjdeltaP[i] = 0.0;
-		    m_adjlambda[i] = 0.0;
-		}
+                }//all devices have updated
             }
         }
     }
@@ -469,7 +464,7 @@ void DDAAgent::deltaPLambdaUpdate()
         for (int i = 0; i < 3; i++)
         {
              m_nextdeltaP[i] = m_localratio*m_inideltaP[i] + m_adjratio*m_adjdeltaP[i]+ m_inideltaP[i] - m_nextdeltaP[i];    
-	     m_nextlambda[i] = m_localratio*m_inilambda[i] + m_adjratio*m_adjdeltaP[i]+ eta*m_inideltaP[i];
+	     m_nextlambda[i] = m_localratio*m_inilambda[i] + m_adjratio*m_adjlambda[i]+ eta*m_inideltaP[i];
         }
     }
     else
@@ -487,6 +482,11 @@ void DDAAgent::deltaPLambdaUpdate()
         m_inilambda[i]=m_nextlambda[i];
     }
     m_iteration++;
+    for (int i = 0; i<3; i++)
+    {
+	m_adjdeltaP[i]=0.0;
+	m_adjlambda[i]=0.0;
+    }
 }
 
 

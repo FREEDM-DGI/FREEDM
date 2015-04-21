@@ -333,6 +333,7 @@ void DDAAgent::HandleUpdate(const DesdStateMessage& msg, CPeerNode peer)
 			if (m_iteration%inner_iter == 0)
 			{
 		            sendtoAdjList();
+			    break;
 		        }
 			while(m_iteration%inner_iter != 0)
 		        {
@@ -377,6 +378,7 @@ void DDAAgent::HandleUpdate(const DesdStateMessage& msg, CPeerNode peer)
 			if (m_iteration%inner_iter == 0)
 		        {
 			    sendtoAdjList();
+			    break;
 			}	
 			while( m_iteration%inner_iter != 0)
 		    	{
@@ -402,6 +404,7 @@ void DDAAgent::HandleUpdate(const DesdStateMessage& msg, CPeerNode peer)
 			if (m_iteration%inner_iter == 0)
 			{
                             sendtoAdjList();
+			    break;
 		        }
 			while( m_iteration%inner_iter != 0)
    		        {

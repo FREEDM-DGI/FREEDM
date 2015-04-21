@@ -336,6 +336,7 @@ int main(int argc, char* argv[])
         // Instantiate and register the group management module
         CBroker::Instance().RegisterModule("gm",boost::posix_time::milliseconds(CTimings::GM_PHASE_TIME));
         CDispatcher::Instance().RegisterReadHandler(GM, "gm");
+/*
         // Instantiate and register the state collection module
         CBroker::Instance().RegisterModule("sc",boost::posix_time::milliseconds(CTimings::SC_PHASE_TIME));
         CDispatcher::Instance().RegisterReadHandler(SC, "sc");
@@ -344,9 +345,9 @@ int main(int argc, char* argv[])
         // Instantiate and register the power management module
         CBroker::Instance().RegisterModule("lb",boost::posix_time::milliseconds(CTimings::LB_PHASE_TIME));
         CDispatcher::Instance().RegisterReadHandler(LB, "lb");
-
+*/
         // Register DESD Dispatch Algorithm module
-        CBroker::Instance().RegisterModule("dda", boost::posix_time::milliseconds(200000));
+        CBroker::Instance().RegisterModule("dda", boost::posix_time::milliseconds(6000));
         CDispatcher::Instance().RegisterReadHandler(DDA, "dda");
 
         // The peerlist should be passed into constructors as references or

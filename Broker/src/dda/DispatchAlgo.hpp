@@ -33,6 +33,7 @@
 
 #include <CDevice.hpp>
 
+#include <map>
 #include <vector>
 #include <string>
 
@@ -69,6 +70,7 @@ private:
     void HandlePeerList(const gm::PeerListMessage &m, CPeerNode peer);
     void HandleUpdate(const DesdStateMessage& msg, CPeerNode peer);
 
+    //send received message to adjacent nodes
     void sendtoAdjList();
 
     ///Time Handle for timer
@@ -78,6 +80,10 @@ private:
     ModuleMessage PrepareForSending(
         const DesdStateMessage& message, std::string recipient = "dda");
  
+    /// container to store the message from adjacent nodes
+    std::multimap<int, DesdStateMessage> m_adjmessage;
+    std::multimap<int, DesdStateMessage>::iterator it;
+
     void LoadTopology();
  
     bool m_startDESDAlgo; 

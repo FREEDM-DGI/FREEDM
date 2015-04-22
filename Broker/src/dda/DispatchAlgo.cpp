@@ -7,6 +7,7 @@
 #include "CGlobalConfiguration.hpp"
 #include "gm/GroupManagement.hpp"
 
+#include <map>
 #include <boost/asio/error.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
 
@@ -51,6 +52,7 @@ DDAAgent::DDAAgent()
     }
     m_startDESDAlgo = false;
     m_timer = CBroker::Instance().AllocateTimer("dda");
+    m_adjmessage.clear();
 }
 
 DDAAgent::~DDAAgent()
@@ -245,23 +247,26 @@ void DDAAgent::HandleUpdate(const DesdStateMessage& msg, CPeerNode peer)
 		 << ". The current iteration is  " << m_iteration << std::endl;
     Logger.Debug << "The local node is " << m_localsymbol << ". The received msg is from "
  		 << msg.symbol() << std::endl;
-    if (msg.iteration() == m_iteration )
+
+    //insert received message into a multimap with received iteration as the index
+    m_adjmessage.insert(std::make_pair(msg.iteration(), msg));
+
+    //for received each message
+    for (it = m_adjmessage.begin(); it != m_adjmessage.end(); it++)
     {
-        if (m_localadj.find(msg.symbol()) != m_localadj.end())
-        {
-            m_adjnum--;
-            if (m_adjnum != 0)
+	//if received all neighbors' message for current iteration
+        if ((*it).first == m_iteration && m_adjmessage.count(m_iteration) == m_adjnum )
+        {   
+	    std::multimap<int, DesdStateMessage>::iterator itt;
+            for(itt=m_adjmessage.equal_range(m_iteration).first; itt!=m_adjmessage.equal_range(m_iteration).second; ++itt)
             {
-		//still receiving neighbors' deltaP and lambda
-                m_adjdeltaP[0] += msg.deltapstep1();
-                m_adjdeltaP[1] += msg.deltapstep2();
-                m_adjdeltaP[2] += msg.deltapstep3();
-                m_adjlambda[0] += msg.lambdastep1();
-                m_adjlambda[1] += msg.lambdastep2();
-                m_adjlambda[2] += msg.lambdastep3();
-            }
-            else 
-            {
+		//add all received neighbors' deltaP and lambda
+                m_adjdeltaP[0] += (*itt).second.deltapstep1();
+                m_adjdeltaP[1] += (*itt).second.deltapstep2();
+                m_adjdeltaP[2] += (*itt).second.deltapstep3();
+                m_adjlambda[0] += (*itt).second.lambdastep1();
+                m_adjlambda[1] += (*itt).second.lambdastep2();
+                m_adjlambda[2] += (*itt).second.lambdastep3(); 
 		//DESD devices update
 		if(m_localsymbol == "4" || m_localsymbol == "7" || m_localsymbol == "10")
 		{
@@ -412,7 +417,10 @@ void DDAAgent::HandleUpdate(const DesdStateMessage& msg, CPeerNode peer)
 			}
 		    }
                 }//all devices have updated
-            }
+	    }//BOOST_FOREACH
+
+	    //erase msg for current iteration
+	    m_adjmessage.erase(m_iteration);
         }
     }
 }

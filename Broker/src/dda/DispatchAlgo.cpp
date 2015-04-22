@@ -246,7 +246,11 @@ void DDAAgent::HandleUpdate(const DesdStateMessage& msg, CPeerNode peer)
     Logger.Debug << "The message iteration is " << msg.iteration() 
 		 << ". The current iteration is  " << m_iteration << std::endl;
     Logger.Debug << "The local node is " << m_localsymbol << ". The received msg is from "
- 		 << msg.symbol() << std::endl;
+    		 << msg.symbol() << std::endl;
+    Logger.Debug << "The " << msg.symbol() << " has deltaP: " << msg.deltapstep1() << " "
+		 << msg.deltapstep2() << " " << msg.deltapstep3() << "." << std::endl;
+    Logger.Debug << "The " << msg.symbol() << " has lambda: " << msg.lambdastep1() << " "
+		 << msg.lambdastep2() << " " << msg.lambdastep3() << "." << std::endl;
 
     //insert received message into a multimap with received iteration as the index
     m_adjmessage.insert(std::make_pair(msg.iteration(), msg));

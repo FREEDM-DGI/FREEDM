@@ -347,7 +347,7 @@ int main(int argc, char* argv[])
         CDispatcher::Instance().RegisterReadHandler(LB, "lb");
 */
         // Register DESD Dispatch Algorithm module
-        CBroker::Instance().RegisterModule("dda", boost::posix_time::milliseconds(6000));
+        CBroker::Instance().RegisterModule("dda", boost::posix_time::milliseconds(90000));
         CDispatcher::Instance().RegisterReadHandler(DDA, "dda");
 
         // The peerlist should be passed into constructors as references or

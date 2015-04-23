@@ -409,14 +409,13 @@ void DDAAgent::HandleUpdate(const DesdStateMessage& msg, CPeerNode peer)
 		    Logger.Status << "The other devices are updating!" << std::endl; 
                     deltaPLambdaUpdate();
                     m_adjnum = m_localadj.size();
-                    
-		    if (m_iteration%inner_iter == 0)
-		    {
-                        sendtoAdjList();
-		    }
 		    while( m_iteration%inner_iter != 0)
    		    {
 	       	        deltaPLambdaUpdate();
+		    }
+		    if (m_iteration%inner_iter == 0)
+		    {
+                        sendtoAdjList();
 		    }
                 }//all devices have update
 

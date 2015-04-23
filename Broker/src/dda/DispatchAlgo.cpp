@@ -33,7 +33,7 @@ const double price_profile[3] = {5.27, 15.599, 15.599};
 
 const int delta_time = 15;
 
-const int max_iteration = 5000;
+const int max_iteration = 5;
 
 namespace {
     /// This file's logger.
@@ -287,6 +287,12 @@ void DDAAgent::HandleUpdate(const DesdStateMessage& msg, CPeerNode peer)
                 m_adjlambda[0] += (*itt).second.lambdastep1();
                 m_adjlambda[1] += (*itt).second.lambdastep2();
                 m_adjlambda[2] += (*itt).second.lambdastep3(); 
+            }        
+            Logger.Debug << "Adjacent aggregated deltaP is " << m_adjdeltaP[0] << " " << m_adjdeltaP[1]
+            		 << " " << m_adjdeltaP[2] << std::endl;
+            Logger.Debug << "Adjacent aggregated lambda is " << m_adjlambda[0] << " " << m_adjlambda[1]
+            		 << " " << m_adjlambda[2] << std::endl;
+            		 
 		//DESD devices update
 		if(m_localsymbol == "4" || m_localsymbol == "7" || m_localsymbol == "10")
 		{
@@ -412,8 +418,7 @@ void DDAAgent::HandleUpdate(const DesdStateMessage& msg, CPeerNode peer)
    		    {
 	       	        deltaPLambdaUpdate();
 		    }
-                }//all devices have updated
-	    }//BOOST_FOREACH
+                }//all devices have update
 
 	    //erase msg for current iteration
 	    m_adjmessage.erase(m_iteration);

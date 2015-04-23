@@ -33,6 +33,8 @@ const double price_profile[3] = {5.27, 15.599, 15.599};
 
 const int delta_time = 15;
 
+const int max_iteration = 5000;
+
 namespace {
     /// This file's logger.
     CLocalLogger Logger(__FILE__);
@@ -40,18 +42,29 @@ namespace {
 
 DDAAgent::DDAAgent()
 {
+    //initialization of variables
     m_iteration = 0;
     for(int i = 0; i<3; i++)
     { 
 	m_inideltaP[i] = 0.0;
 	m_inilambda[i] = 0.0;
+	m_nextdeltaP[i] = 0.0;
+	m_nextlambda[i] = 0.0;
+
+	m_inipower[i] = 0.0;
+	m_nextpower[i] = 0.0;
+
     	m_adjdeltaP[i] = 0.0;
 	m_adjlambda[i] = 0.0;
+
+	m_inimu[i] = 0.0;
+	m_nextmu[i] = 0.0;
+	m_inixi[i] = 0.0;
+	m_nextxi[i] = 0.0;
 	m_deltaP1[i] = 0.0;
 	m_deltaP2[i] = 0.0;    	
     }
     m_startDESDAlgo = false;
-    m_timer = CBroker::Instance().AllocateTimer("dda");
     m_adjmessage.clear();
 }
 
@@ -258,8 +271,8 @@ void DDAAgent::HandleUpdate(const DesdStateMessage& msg, CPeerNode peer)
     //for received each message
     for (it = m_adjmessage.begin(); it != m_adjmessage.end(); it++)
     {
-	//if received all neighbors' message for current iteration
-        if ((*it).first == m_iteration && m_adjmessage.count(m_iteration) == m_adjnum )
+	//if received all neighbors' message for current iteration and current iteration is less than max iteration
+        if ((*it).first == m_iteration && m_adjmessage.count(m_iteration) == m_adjnum && m_iteration < max_iteration)
         {   
 	    std::multimap<int, DesdStateMessage>::iterator itt;
             for(itt=m_adjmessage.equal_range(m_iteration).first; itt!=m_adjmessage.equal_range(m_iteration).second; ++itt)
@@ -337,23 +350,21 @@ void DDAAgent::HandleUpdate(const DesdStateMessage& msg, CPeerNode peer)
                     deltaPLambdaUpdate();
 		    m_adjnum = m_localadj.size();
 		    
-		    while(m_iteration < 5000)
+		    if (m_iteration%inner_iter == 0)
 		    {
-			if (m_iteration%inner_iter == 0)
-			{
-		            sendtoAdjList();
-			    break;
-		        }
-			while(m_iteration%inner_iter != 0)
-		        {
-			    deltaPLambdaUpdate();
-			}
+		        sendtoAdjList();
 		    }
-		    if (m_iteration >= 5000)
+		    while(m_iteration%inner_iter != 0)
+		    {
+			deltaPLambdaUpdate();
+		    }
+/*
+		    if (m_iteration >= max_iteration)
 		    {
 			Logger.Status << "The DESD node" << m_localsymbol << " has power settings: " << m_nextpower[0]
 				      << " " << m_nextpower[1] << " " << m_nextpower[2] << std::endl; 
 		    }
+*/
 		}
 		//Grid updates
 		else if(m_localsymbol == "1")
@@ -382,24 +393,22 @@ void DDAAgent::HandleUpdate(const DesdStateMessage& msg, CPeerNode peer)
                     deltaPLambdaUpdate();
                     m_adjnum = m_localadj.size();
  		    
-  		    while(m_iteration < 5000)
-		    {	
-			if (m_iteration%inner_iter == 0)
-		        {
-			    sendtoAdjList();
-			    break;
-			}	
-			while( m_iteration%inner_iter != 0)
-		    	{
-			    deltaPLambdaUpdate();
-			}
+		    if (m_iteration%inner_iter == 0)
+		    {
+			sendtoAdjList();
+	            }	
+		    while( m_iteration%inner_iter != 0)
+		    {
+			deltaPLambdaUpdate();
 		    }
-		    if (m_iteration >= 5000)
+/*
+		    if (m_iteration >= max_iteration)
 		    {
 			Logger.Status << "The grid has power settings: " << m_nextpower[0] << " "
 				      << m_nextpower[1] << " " << m_nextpower[2] << std::endl;
 			Logger.Status << "The final cost is " << cost << std::endl;
 		    }
+*/
 		}
 		//Other devices update
 		else
@@ -408,25 +417,25 @@ void DDAAgent::HandleUpdate(const DesdStateMessage& msg, CPeerNode peer)
                     deltaPLambdaUpdate();
                     m_adjnum = m_localadj.size();
                     
-		    while(m_iteration < 5000)
+		    if (m_iteration%inner_iter == 0)
 		    {
-			if (m_iteration%inner_iter == 0)
-			{
-                            sendtoAdjList();
-			    break;
-		        }
-			while( m_iteration%inner_iter != 0)
-   		        {
-			    deltaPLambdaUpdate();
-			}
+                        sendtoAdjList();
+		    }
+		    while( m_iteration%inner_iter != 0)
+   		    {
+	       	        deltaPLambdaUpdate();
 		    }
                 }//all devices have updated
 	    }//BOOST_FOREACH
 
 	    //erase msg for current iteration
 	    m_adjmessage.erase(m_iteration);
-        }
-    }
+        }//end if
+	else if (m_iteration >= max_iteration)
+	{
+	    
+	}
+    }//end for
 }
 
 

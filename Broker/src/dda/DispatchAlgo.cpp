@@ -33,7 +33,7 @@ const double price_profile[3] = {5.27, 15.599, 15.599};
 
 const int delta_time = 15;
 
-const int max_iteration = 5;
+const int max_iteration = 5000;
 
 namespace {
     /// This file's logger.
@@ -199,15 +199,15 @@ void DDAAgent::Run()
         }
         else if (pvCount == 1 && m_localsymbol == "6")
         {
-	    m_inideltaP[0]=3.8;
-	    m_inideltaP[1]=2.5;
-            m_inideltaP[2]=1.3;
+	    m_inideltaP[0]=-3.8;
+	    m_inideltaP[1]=-2.5;
+            m_inideltaP[2]=-1.3;
         }
         else if (wtCount == 1 && m_localsymbol == "9")
         {
-	    m_inideltaP[0]=1.8;
-	    m_inideltaP[1]=1.9;
-            m_inideltaP[2]=2.1;
+	    m_inideltaP[0]=-1.8;
+	    m_inideltaP[1]=-1.9;
+            m_inideltaP[2]=-2.1;
         }
     }
     Logger.Debug << "Initialization of Load1, Load2, PV and WindTurbine have done" << std::endl;

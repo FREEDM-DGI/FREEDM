@@ -350,21 +350,14 @@ void DDAAgent::HandleUpdate(const DesdStateMessage& msg, CPeerNode peer)
                     deltaPLambdaUpdate();
 		    m_adjnum = m_localadj.size();
 		    
-		    if (m_iteration%inner_iter == 0)
-		    {
-		        sendtoAdjList();
-		    }
 		    while(m_iteration%inner_iter != 0)
 		    {
 			deltaPLambdaUpdate();
 		    }
-/*
-		    if (m_iteration >= max_iteration)
+		    if (m_iteration%inner_iter == 0)
 		    {
-			Logger.Status << "The DESD node" << m_localsymbol << " has power settings: " << m_nextpower[0]
-				      << " " << m_nextpower[1] << " " << m_nextpower[2] << std::endl; 
+		        sendtoAdjList();
 		    }
-*/
 		}
 		//Grid updates
 		else if(m_localsymbol == "1")
@@ -393,22 +386,14 @@ void DDAAgent::HandleUpdate(const DesdStateMessage& msg, CPeerNode peer)
                     deltaPLambdaUpdate();
                     m_adjnum = m_localadj.size();
  		    
-		    if (m_iteration%inner_iter == 0)
-		    {
-			sendtoAdjList();
-	            }	
 		    while( m_iteration%inner_iter != 0)
 		    {
 			deltaPLambdaUpdate();
 		    }
-/*
-		    if (m_iteration >= max_iteration)
+		    if (m_iteration%inner_iter == 0)
 		    {
-			Logger.Status << "The grid has power settings: " << m_nextpower[0] << " "
-				      << m_nextpower[1] << " " << m_nextpower[2] << std::endl;
-			Logger.Status << "The final cost is " << cost << std::endl;
+		        sendtoAdjList();
 		    }
-*/
 		}
 		//Other devices update
 		else
@@ -433,7 +418,19 @@ void DDAAgent::HandleUpdate(const DesdStateMessage& msg, CPeerNode peer)
         }//end if
 	else if (m_iteration >= max_iteration)
 	{
-	    
+	    //DESD info
+	    if(m_localsymbol == "4" || m_localsymbol == "7" || m_localsymbol == "10")
+	    {
+	    	Logger.Status << "The DESD node" << m_localsymbol << " has power settings: " << m_nextpower[0]
+			      << " " << m_nextpower[1] << " " << m_nextpower[2] << std::endl; 
+	    }
+	    //Grid info
+	    else if (m_localsymbol == "1")
+	    {
+		Logger.Status << "The grid has power settings: " << m_nextpower[0] << " "
+			      << m_nextpower[1] << " " << m_nextpower[2] << std::endl;
+		Logger.Status << "The final cost is " << cost << std::endl;
+	    }
 	}
     }//end for
 }

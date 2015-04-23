@@ -265,6 +265,9 @@ void DDAAgent::HandleUpdate(const DesdStateMessage& msg, CPeerNode peer)
     Logger.Debug << "The " << msg.symbol() << " has lambda: " << msg.lambdastep1() << " "
 		 << msg.lambdastep2() << " " << msg.lambdastep3() << "." << std::endl;
 
+    //for calculate power cost
+    double cost = 0.0;
+
     //insert received message into a multimap with received iteration as the index
     m_adjmessage.insert(std::make_pair(msg.iteration(), msg));
 
@@ -363,7 +366,6 @@ void DDAAgent::HandleUpdate(const DesdStateMessage& msg, CPeerNode peer)
 		else if(m_localsymbol == "1")
 		{
 		    Logger.Debug << "The grid is updating!" << std::endl;
-		    double cost = 0.0;
 		    for (int i = 0; i<3; i++)
 		    {
 			m_nextpower[i] = m_inipower[i] - eta*(price_profile[i]-m_inilambda[i]-rho*m_inideltaP[i]);

@@ -390,18 +390,18 @@ void DDAAgent::HandleUpdate(const DesdStateMessage& msg, CPeerNode peer)
 		    Logger.Status << "The other devices are updating!" << std::endl; 
                     deltaPLambdaUpdate();
                 }//all devices 
-		while( m_iteration%inner_iter != 0)
-   		{
-	       	    deltaPLambdaUpdate();
-		}
-		if (m_iteration%inner_iter == 0)
-		{
-                    sendtoAdjList();
-		    break;
-		}
 	    //erase msg for current iteration
 	    m_adjmessage.erase(m_iteration);
-        }//end if
+            }//end if
+            while( m_iteration%inner_iter != 0)
+   	    {
+	       	deltaPLambdaUpdate();
+	    }
+	    if (m_iteration%inner_iter == 0)
+	    {
+                sendtoAdjList();
+		break;
+	     }
 	}//end while
 	if (m_iteration >= max_iteration)
 	{

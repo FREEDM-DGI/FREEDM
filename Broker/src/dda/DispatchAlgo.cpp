@@ -481,7 +481,7 @@ void DDAAgent::deltaPLambdaUpdate()
     {
         for (int i = 0; i < 3; i++)
         {
-             m_nextdeltaP[i] = m_localratio*m_inideltaP[i] + m_adjratio*m_adjdeltaP[i]+ m_inideltaP[i] - m_nextdeltaP[i];    
+             m_nextdeltaP[i] = m_localratio*m_inideltaP[i] + m_adjratio*m_adjdeltaP[i]+ m_inipower[i] - m_nextpower[i];    
 	     m_nextlambda[i] = m_localratio*m_inilambda[i] + m_adjratio*m_adjlambda[i]+ eta*m_inideltaP[i];
         }
     }
@@ -489,7 +489,7 @@ void DDAAgent::deltaPLambdaUpdate()
     {
         for (int i = 0; i<3; i++)
         {
-             m_nextdeltaP[i] = m_inideltaP[i] + m_inideltaP[i] - m_nextdeltaP[i];
+             m_nextdeltaP[i] = m_inideltaP[i] + m_inipower[i] - m_nextpower[i];
              m_nextlambda[i] = m_inilambda[i] + eta*m_inideltaP[i];
         }
     }

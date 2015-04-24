@@ -31,7 +31,7 @@ const double E_full[3] = {5, 10, 5};
 
 const double price_profile[3] = {5.27, 15.599, 15.599};
 
-const int delta_time = 15;
+const int delta_time = 0.25;
 
 const int max_iteration = 5000;
 

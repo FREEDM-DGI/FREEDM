@@ -70,11 +70,12 @@ private:
     void HandlePeerList(const gm::PeerListMessage &m, CPeerNode peer);
     void HandleUpdate(const DesdStateMessage& msg, CPeerNode peer);
 
-    //send received message to adjacent nodes
+    ///send received message to adjacent nodes
     void sendtoAdjList();
-
-    ///Time Handle for timer
-    CBroker::TimerHandle m_timer;
+    
+    /// Update function for DESD and Grid
+    void desdUpdate();
+    void gridUpdate();
 
     /// Wraps a DesdStateMessage in a ModuleMessage
     ModuleMessage PrepareForSending(
@@ -105,7 +106,8 @@ private:
     double m_nextlambda[3];
     double m_inipower[3];
     double m_nextpower[3];
-
+    double m_cost;
+    
     ///extra variables for DESD update
     double m_inimu[3];
     double m_nextmu[3];

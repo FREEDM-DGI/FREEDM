@@ -274,8 +274,10 @@ void DDAAgent::HandleUpdate(const DesdStateMessage& msg, CPeerNode peer)
     //for received each message
     for (it = m_adjmessage.begin(); it != m_adjmessage.end(); it++)
     {
+	while (m_iteration < max_iteration)
+	{
 	//if received all neighbors' message for current iteration and current iteration is less than max iteration
-        if ((*it).first == m_iteration && m_adjmessage.count(m_iteration) == m_adjnum && m_iteration < max_iteration)
+        if ((*it).first == m_iteration && m_adjmessage.count(m_iteration) == m_adjnum)
         {   
 	    std::multimap<int, DesdStateMessage>::iterator itt;
             for(itt=m_adjmessage.equal_range(m_iteration).first; itt!=m_adjmessage.equal_range(m_iteration).second; ++itt)
@@ -366,6 +368,7 @@ void DDAAgent::HandleUpdate(const DesdStateMessage& msg, CPeerNode peer)
 		    if (m_iteration%inner_iter == 0)
 		    {
 		        sendtoAdjList();
+			break;
 		    }
 		}
 		//Grid updates
@@ -401,6 +404,7 @@ void DDAAgent::HandleUpdate(const DesdStateMessage& msg, CPeerNode peer)
 		    if (m_iteration%inner_iter == 0)
 		    {
 		        sendtoAdjList();
+			break;
 		    }
 		}
 		//Other devices update
@@ -416,13 +420,15 @@ void DDAAgent::HandleUpdate(const DesdStateMessage& msg, CPeerNode peer)
 		    if (m_iteration%inner_iter == 0)
 		    {
                         sendtoAdjList();
+			break;
 		    }
                 }//all devices have update
 
 	    //erase msg for current iteration
 	    m_adjmessage.erase(m_iteration);
         }//end if
-	else if (m_iteration >= max_iteration)
+	}//end while
+	if (m_iteration >= max_iteration)
 	{
 	    //DESD info
 	    if(m_localsymbol == "4" || m_localsymbol == "7" || m_localsymbol == "10")

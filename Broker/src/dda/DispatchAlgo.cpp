@@ -44,6 +44,7 @@ DDAAgent::DDAAgent()
 {
     //initialization of variables
     m_iteration = 0;
+    m_cost = 0.0;
     for(int i = 0; i<3; i++)
     { 
 	m_inideltaP[i] = 0.0;
@@ -348,6 +349,7 @@ void DDAAgent::HandleUpdate(const DesdStateMessage& msg, CPeerNode peer)
 
 void DDAAgent::desdUpdate()
 {
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     double aug1[3] = {0.0};
     double aug2[3] = {0.0};    
 
@@ -409,8 +411,7 @@ void DDAAgent::desdUpdate()
 void DDAAgent::gridUpdate()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    //for calculate power cost
-    double cost = 0.0;
+    m_cost = 0.0;
     for (int i = 0; i<3; i++)
     {
 	m_nextpower[i] = m_inipower[i] - eta*(price_profile[i]-m_inilambda[i]-rho*m_inideltaP[i]);
@@ -422,14 +423,14 @@ void DDAAgent::gridUpdate()
 	{
 	    m_nextpower[i] = P_min_grid;
 	}
-	cost += price_profile[i]*m_inipower[i]*delta_time;
+	m_cost += price_profile[i]*m_inipower[i]*delta_time;
     }
     //copy m_nextpower to m_inipower for next iteration
     for(int i = 0; i<3; i++)
     {
 	m_inipower[i] = m_nextpower[i];
     }
-    Logger.Status << "The cost is " << cost << std::endl;
+    Logger.Status << "The cost is " << m_cost << std::endl;
 }
 
 void DDAAgent::sendtoAdjList()

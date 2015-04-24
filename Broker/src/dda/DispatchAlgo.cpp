@@ -276,24 +276,24 @@ void DDAAgent::HandleUpdate(const DesdStateMessage& msg, CPeerNode peer)
     {
 	while (m_iteration < max_iteration)
 	{
-	//if received all neighbors' message for current iteration and current iteration is less than max iteration
-        if ((*it).first == m_iteration && m_adjmessage.count(m_iteration) == m_adjnum)
-        {   
-	    std::multimap<int, DesdStateMessage>::iterator itt;
-            for(itt=m_adjmessage.equal_range(m_iteration).first; itt!=m_adjmessage.equal_range(m_iteration).second; ++itt)
-            {
-		//add all received neighbors' deltaP and lambda
-                m_adjdeltaP[0] += (*itt).second.deltapstep1();
-                m_adjdeltaP[1] += (*itt).second.deltapstep2();
-                m_adjdeltaP[2] += (*itt).second.deltapstep3();
-                m_adjlambda[0] += (*itt).second.lambdastep1();
-                m_adjlambda[1] += (*itt).second.lambdastep2();
-                m_adjlambda[2] += (*itt).second.lambdastep3(); 
-            }        
-            Logger.Debug << "Adjacent aggregated deltaP is " << m_adjdeltaP[0] << " " << m_adjdeltaP[1]
-            		 << " " << m_adjdeltaP[2] << std::endl;
-            Logger.Debug << "Adjacent aggregated lambda is " << m_adjlambda[0] << " " << m_adjlambda[1]
-            		 << " " << m_adjlambda[2] << std::endl;
+	    //if received all neighbors' message for current iteration and current iteration is less than max iteration
+            if ((*it).first == m_iteration && m_adjmessage.count(m_iteration) == m_adjnum)
+            {   
+	        std::multimap<int, DesdStateMessage>::iterator itt;
+                for(itt=m_adjmessage.equal_range(m_iteration).first; itt!=m_adjmessage.equal_range(m_iteration).second; ++itt)
+                {
+		    //add all received neighbors' deltaP and lambda
+                    m_adjdeltaP[0] += (*itt).second.deltapstep1();
+                    m_adjdeltaP[1] += (*itt).second.deltapstep2();
+                    m_adjdeltaP[2] += (*itt).second.deltapstep3();
+                    m_adjlambda[0] += (*itt).second.lambdastep1();
+                    m_adjlambda[1] += (*itt).second.lambdastep2();
+                    m_adjlambda[2] += (*itt).second.lambdastep3(); 
+                }        
+                Logger.Debug << "Adjacent aggregated deltaP is " << m_adjdeltaP[0] << " " << m_adjdeltaP[1]
+            		     << " " << m_adjdeltaP[2] << std::endl;
+                Logger.Debug << "Adjacent aggregated lambda is " << m_adjlambda[0] << " " << m_adjlambda[1]
+            		     << " " << m_adjlambda[2] << std::endl;
             		 
 		//DESD devices update
 		if(m_localsymbol == "4" || m_localsymbol == "7" || m_localsymbol == "10")
@@ -357,19 +357,7 @@ void DDAAgent::HandleUpdate(const DesdStateMessage& msg, CPeerNode peer)
 			m_inimu[i]=m_nextmu[i];
 			m_inixi[i]=m_nextxi[i];
 		    }
-
                     deltaPLambdaUpdate();
-		    m_adjnum = m_localadj.size();
-		    
-		    while(m_iteration%inner_iter != 0)
-		    {
-			deltaPLambdaUpdate();
-		    }
-		    if (m_iteration%inner_iter == 0)
-		    {
-		        sendtoAdjList();
-			break;
-		    }
 		}
 		//Grid updates
 		else if(m_localsymbol == "1")
@@ -395,35 +383,22 @@ void DDAAgent::HandleUpdate(const DesdStateMessage& msg, CPeerNode peer)
 		    }
                     Logger.Status << "The cost is " << cost << std::endl;
                     deltaPLambdaUpdate();
-                    m_adjnum = m_localadj.size();
- 		    
-		    while( m_iteration%inner_iter != 0)
-		    {
-			deltaPLambdaUpdate();
-		    }
-		    if (m_iteration%inner_iter == 0)
-		    {
-		        sendtoAdjList();
-			break;
-		    }
 		}
 		//Other devices update
 		else
 	        {
 		    Logger.Status << "The other devices are updating!" << std::endl; 
                     deltaPLambdaUpdate();
-                    m_adjnum = m_localadj.size();
-		    while( m_iteration%inner_iter != 0)
-   		    {
-	       	        deltaPLambdaUpdate();
-		    }
-		    if (m_iteration%inner_iter == 0)
-		    {
-                        sendtoAdjList();
-			break;
-		    }
-                }//all devices have update
-
+                }//all devices 
+		while( m_iteration%inner_iter != 0)
+   		{
+	       	    deltaPLambdaUpdate();
+		}
+		if (m_iteration%inner_iter == 0)
+		{
+                    sendtoAdjList();
+		    break;
+		}
 	    //erase msg for current iteration
 	    m_adjmessage.erase(m_iteration);
         }//end if

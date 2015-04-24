@@ -350,8 +350,8 @@ void DDAAgent::HandleUpdate(const DesdStateMessage& msg, CPeerNode peer)
 void DDAAgent::desdUpdate()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    double aug1[3] = {0.0};
-    double aug2[3] = {0.0};    
+    double aug1[3] = {0.0, 0.0, 0.0};
+    double aug2[3] = {0.0, 0.0, 0.0};    
 
     aug1[0] = (m_deltaP1[0]>0?m_deltaP1[0]:0)+(m_deltaP1[1]>0?m_deltaP1[1]:0)
 	      + (m_deltaP1[2]>0?m_deltaP1[2]:0);
@@ -367,8 +367,8 @@ void DDAAgent::desdUpdate()
     double sumxi = m_inixi[0] + m_inixi[1] + m_inixi[2];
     for (int i = 0; i<3; i++)
     {
-        m_nextpower[i] = m_inipower[i] - eta*(-m_inilambda[i]-summu*delta_time)
-			+ sumxi*delta_time - rho*m_inideltaP[i] - rho*aug1[i] + rho*aug2[i];
+        m_nextpower[i] = m_inipower[i] - eta*(-m_inilambda[i]-summu*delta_time
+			+ sumxi*delta_time - rho*m_inideltaP[i] - rho*aug1[i] + rho*aug2[i]);
   	summu-=m_inimu[i];
 	sumxi-=m_inixi[i];
 	if (m_nextpower[i]>P_max_desd)

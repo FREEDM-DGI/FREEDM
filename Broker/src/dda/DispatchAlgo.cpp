@@ -390,20 +390,22 @@ void DDAAgent::HandleUpdate(const DesdStateMessage& msg, CPeerNode peer)
                 }//all devices 
 	    //erase msg for current iteration
 	    m_adjmessage.erase(m_iteration);
-            }//end if
-        while (m_iteration < max_iteration)
-        {
-            while( m_iteration%inner_iter != 0)
-   	    {
-	       	deltaPLambdaUpdate();
-	    }
-	    if (m_iteration%inner_iter == 0)
-	    {
-                sendtoAdjList();
-		break;
-	     }
-        }
-	if (m_iteration >= max_iteration)
+	    
+	    while (m_iteration < max_iteration)
+            {
+                while( m_iteration%inner_iter != 0)
+   	        {
+	       	    deltaPLambdaUpdate();
+	        }
+	        if (m_iteration%inner_iter == 0)
+	        {
+                    sendtoAdjList();
+		    break;
+	         }
+            }
+        }//end if
+
+	else if (m_iteration >= max_iteration)
 	{
 	    //DESD info
 	    if(m_localsymbol == "4" || m_localsymbol == "7" || m_localsymbol == "10")

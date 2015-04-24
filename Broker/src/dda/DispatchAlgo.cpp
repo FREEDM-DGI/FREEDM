@@ -439,7 +439,7 @@ void DDAAgent::sendtoAdjList()
     msg->set_lambdastep1(m_inilambda[0]);
     msg->set_lambdastep2(m_inilambda[1]);
     msg->set_lambdastep3(m_inilambda[2]);
-    Logger.Debug << "The message has been packed for sending to neighbors" << std::endl;
+    Logger.Debug << "The message " << m_iteration << " has been packed for sending to neighbors" << std::endl;
 
     //send message to adjecent list
 
@@ -448,7 +448,7 @@ void DDAAgent::sendtoAdjList()
         if (m_strans.find(symbolid) != m_strans.end())
         {
             std::string id = m_strans.find(symbolid)->second;
-	    Logger.Debug << "The ID for adjacent node is " << id << std::endl;
+	    //Logger.Debug << "The ID for adjacent node is " << id << std::endl;
             CPeerNode peer = CGlobalPeerList::instance().GetPeer(id);
             peer.Send(PrepareForSending(*msg));
         }

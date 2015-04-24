@@ -265,129 +265,51 @@ void DDAAgent::HandleUpdate(const DesdStateMessage& msg, CPeerNode peer)
     Logger.Debug << "The " << msg.symbol() << " has lambda: " << msg.lambdastep1() << " "
 		 << msg.lambdastep2() << " " << msg.lambdastep3() << "." << std::endl;
 
-    //for calculate power cost
-    double cost = 0.0;
-
     //insert received message into a multimap with received iteration as the index
     m_adjmessage.insert(std::make_pair(msg.iteration(), msg));
 
     //for received each message
     for (it = m_adjmessage.begin(); it != m_adjmessage.end(); it++)
     {
-	    //if received all neighbors' message for current iteration and current iteration is less than max iteration
-            if ((*it).first == m_iteration && m_adjmessage.count(m_iteration) == m_adjnum && m_iteration < max_iteration)
-            {   
-	        std::multimap<int, DesdStateMessage>::iterator itt;
-                for(itt=m_adjmessage.equal_range(m_iteration).first; itt!=m_adjmessage.equal_range(m_iteration).second; ++itt)
-                {
-		    //add all received neighbors' deltaP and lambda
-                    m_adjdeltaP[0] += (*itt).second.deltapstep1();
-                    m_adjdeltaP[1] += (*itt).second.deltapstep2();
-                    m_adjdeltaP[2] += (*itt).second.deltapstep3();
-                    m_adjlambda[0] += (*itt).second.lambdastep1();
-                    m_adjlambda[1] += (*itt).second.lambdastep2();
-                    m_adjlambda[2] += (*itt).second.lambdastep3(); 
-                }        
-                Logger.Debug << "Adjacent aggregated deltaP is " << m_adjdeltaP[0] << " " << m_adjdeltaP[1]
-            		     << " " << m_adjdeltaP[2] << std::endl;
-                Logger.Debug << "Adjacent aggregated lambda is " << m_adjlambda[0] << " " << m_adjlambda[1]
-            		     << " " << m_adjlambda[2] << std::endl;
+	//if received all neighbors' message for current iteration and current iteration is less than max iteration
+        if ((*it).first == m_iteration && m_adjmessage.count(m_iteration) == m_adjnum && m_iteration < max_iteration)
+        {   
+	    std::multimap<int, DesdStateMessage>::iterator itt;
+            for(itt=m_adjmessage.equal_range(m_iteration).first; itt!=m_adjmessage.equal_range(m_iteration).second; ++itt)
+            {
+		//add all received neighbors' deltaP and lambda
+                m_adjdeltaP[0] += (*itt).second.deltapstep1();
+                m_adjdeltaP[1] += (*itt).second.deltapstep2();
+                m_adjdeltaP[2] += (*itt).second.deltapstep3();
+                m_adjlambda[0] += (*itt).second.lambdastep1();
+                m_adjlambda[1] += (*itt).second.lambdastep2();
+                m_adjlambda[2] += (*itt).second.lambdastep3(); 
+            }        
+            Logger.Debug << "Adjacent aggregated deltaP is " << m_adjdeltaP[0] << " " << m_adjdeltaP[1]
+            		 << " " << m_adjdeltaP[2] << std::endl;
+            Logger.Debug << "Adjacent aggregated lambda is " << m_adjlambda[0] << " " << m_adjlambda[1]
+            		 << " " << m_adjlambda[2] << std::endl;
             		 
-		//DESD devices update
-		if(m_localsymbol == "4" || m_localsymbol == "7" || m_localsymbol == "10")
-		{
-		    Logger.Debug << "The DESD device is updating!" << std::endl;
-		    double aug1[3] = {0.0};
-		    double aug2[3] = {0.0};    
-
-		    aug1[0] = (m_deltaP1[0]>0?m_deltaP1[0]:0)+(m_deltaP1[1]>0?m_deltaP1[1]:0)
-			      + (m_deltaP1[2]>0?m_deltaP1[2]:0);
-		    aug1[1] = (m_deltaP1[1]>0?m_deltaP1[1]:0)+(m_deltaP1[2]>0?m_deltaP1[2]:0);
-		    aug1[2] = m_deltaP1[2]>0?m_deltaP1[2]:0;
-
-		    aug2[0] = (m_deltaP2[0]>0?m_deltaP2[0]:0)+(m_deltaP2[1]>0?m_deltaP2[1]:0)
-			      + (m_deltaP2[2]>0?m_deltaP2[2]:0);
-		    aug2[1] = (m_deltaP2[1]>0?m_deltaP2[1]:0)+(m_deltaP2[2]>0?m_deltaP2[2]:0);
-		    aug2[2] = m_deltaP2[2]>0?m_deltaP2[2]:0;
-		    
-		    double summu = m_inimu[0] + m_inimu[1] + m_inimu[2];
- 		    double sumxi = m_inixi[0] + m_inixi[1] + m_inixi[2];
-		    for (int i = 0; i<3; i++)
-	  	    {
-                        m_nextpower[i] = m_inipower[i] - eta*(-m_inilambda[i]-summu*delta_time)
-					+ sumxi*delta_time - rho*m_inideltaP[i] - rho*aug1[i] + rho*aug2[i];
-  			summu-=m_inimu[i];
-			sumxi-=m_inixi[i];
-			if (m_nextpower[i]>P_max_desd)
-			{
-			    m_nextpower[i]=P_max_desd;
-			} 
-			else if (m_nextpower[i]<P_min_desd)
-			{
-			    m_nextpower[i] = P_min_desd;
-			}
-		    }
-		    //copy m_nextpower to m_inipower for next iteration
-		    for(int i = 0 ; i<3; i++)
-		    {
-			m_inipower[i] = m_nextpower[i];
-		    }
-	
-		    double sumpower = 0.0;
-		    for(int i = 0; i<3; i++)
-		    {
-			sumpower+=m_nextpower[i];
-			m_deltaP1[i] = E_init[i]-E_full[i]-sumpower*delta_time;
-			m_deltaP2[i] = sumpower*delta_time - E_init[i];
-		    }	
-
-		    for(int i = 0; i<3; i++)
-	            {
-			int temp = m_inimu[i]+eta*m_deltaP1[i];
-			m_nextmu[i] = temp>0?temp:0;
-			temp = m_inixi[i]+eta*m_deltaP2[i];
-			m_nextxi[i] = temp>0?temp:0;
-		    }
-
-		    //copy m_nextmu, m_nextxi to m_inimu, m_inixi for next iteration
-		    for(int i = 0; i<3; i++)
-		    {
-			m_inimu[i]=m_nextmu[i];
-			m_inixi[i]=m_nextxi[i];
-		    }
-                    deltaPLambdaUpdate();
-		}
-		//Grid updates
-		else if(m_localsymbol == "1")
-		{
-		    Logger.Debug << "The grid is updating!" << std::endl;
-		    for (int i = 0; i<3; i++)
-		    {
-			m_nextpower[i] = m_inipower[i] - eta*(price_profile[i]-m_inilambda[i]-rho*m_inideltaP[i]);
-			if (m_nextpower[i] > P_max_grid)
-			{
-			    m_nextpower[i] = P_max_grid;
-			}
-			else if(m_nextpower[i]<P_min_grid)
-			{
-			    m_nextpower[i] = P_min_grid;
-			}
-			cost += price_profile[i]*m_inipower[i]*delta_time;
-		    }
-		    //copy m_nextpower to m_inipower for next iteration
-		    for(int i = 0; i<3; i++)
-		    {
-			m_inipower[i] = m_nextpower[i];
-		    }
-                    Logger.Status << "The cost is " << cost << std::endl;
-                    deltaPLambdaUpdate();
-		}
-		//Other devices update
-		else
-	        {
-		    Logger.Status << "The other devices are updating!" << std::endl; 
-                    deltaPLambdaUpdate();
-                }//all devices 
+            //DESD devices update
+	    if(m_localsymbol == "4" || m_localsymbol == "7" || m_localsymbol == "10")
+	    {
+		Logger.Debug << "The DESD device is updating!" << std::endl;
+		desdUpdate();
+                deltaPLambdaUpdate();
+	    }
+	    //Grid updates
+            else if(m_localsymbol == "1")
+	    {
+		Logger.Debug << "The grid is updating!" << std::endl;
+		gridUpdate();
+                deltaPLambdaUpdate();
+	    }
+	    //Other devices update
+	    else
+	    {
+		Logger.Status << "The other devices are updating!" << std::endl; 
+                deltaPLambdaUpdate();
+             }//all devices 
 	    //erase msg for current iteration
 	    m_adjmessage.erase(m_iteration);
 	    
@@ -402,28 +324,113 @@ void DDAAgent::HandleUpdate(const DesdStateMessage& msg, CPeerNode peer)
                     sendtoAdjList();
 		    break;
 	         }
-            }
+            }//end while
         }//end if
-
-	else if (m_iteration >= max_iteration)
-	{
-	    //DESD info
-	    if(m_localsymbol == "4" || m_localsymbol == "7" || m_localsymbol == "10")
-	    {
-	    	Logger.Status << "The DESD node" << m_localsymbol << " has power settings: " << m_nextpower[0]
-			      << " " << m_nextpower[1] << " " << m_nextpower[2] << std::endl; 
-	    }
-	    //Grid info
-	    else if (m_localsymbol == "1")
-	    {
-		Logger.Status << "The grid has power settings: " << m_nextpower[0] << " "
-			      << m_nextpower[1] << " " << m_nextpower[2] << std::endl;
-		Logger.Status << "The final cost is " << cost << std::endl;
-	    }
-	}
     }//end for
+    
+    if (m_iteration >= max_iteration)
+    {
+	//DESD info
+	if(m_localsymbol == "4" || m_localsymbol == "7" || m_localsymbol == "10")
+	{
+	    Logger.Status << "The DESD node" << m_localsymbol << " has power settings: " << m_nextpower[0]
+			  << " " << m_nextpower[1] << " " << m_nextpower[2] << std::endl; 
+	}
+	//Grid info
+	else if (m_localsymbol == "1")
+	{
+	    Logger.Status << "The grid has power settings: " << m_nextpower[0] << " "
+			  << m_nextpower[1] << " " << m_nextpower[2] << std::endl;
+	    Logger.Status << "The final cost is " << m_cost << std::endl;
+	}
+    }
 }
 
+void DDAAgent::desdUpdate()
+{
+    double aug1[3] = {0.0};
+    double aug2[3] = {0.0};    
+
+    aug1[0] = (m_deltaP1[0]>0?m_deltaP1[0]:0)+(m_deltaP1[1]>0?m_deltaP1[1]:0)
+	      + (m_deltaP1[2]>0?m_deltaP1[2]:0);
+    aug1[1] = (m_deltaP1[1]>0?m_deltaP1[1]:0)+(m_deltaP1[2]>0?m_deltaP1[2]:0);
+    aug1[2] = m_deltaP1[2]>0?m_deltaP1[2]:0;
+
+    aug2[0] = (m_deltaP2[0]>0?m_deltaP2[0]:0)+(m_deltaP2[1]>0?m_deltaP2[1]:0)
+              + (m_deltaP2[2]>0?m_deltaP2[2]:0);
+    aug2[1] = (m_deltaP2[1]>0?m_deltaP2[1]:0)+(m_deltaP2[2]>0?m_deltaP2[2]:0);
+    aug2[2] = m_deltaP2[2]>0?m_deltaP2[2]:0;
+		    
+    double summu = m_inimu[0] + m_inimu[1] + m_inimu[2];
+    double sumxi = m_inixi[0] + m_inixi[1] + m_inixi[2];
+    for (int i = 0; i<3; i++)
+    {
+        m_nextpower[i] = m_inipower[i] - eta*(-m_inilambda[i]-summu*delta_time)
+			+ sumxi*delta_time - rho*m_inideltaP[i] - rho*aug1[i] + rho*aug2[i];
+  	summu-=m_inimu[i];
+	sumxi-=m_inixi[i];
+	if (m_nextpower[i]>P_max_desd)
+	{
+	    m_nextpower[i]=P_max_desd;
+	} 
+	else if (m_nextpower[i]<P_min_desd)
+	{
+	    m_nextpower[i] = P_min_desd;
+	}
+    }
+    //copy m_nextpower to m_inipower for next iteration
+    for(int i = 0 ; i<3; i++)
+    {
+	m_inipower[i] = m_nextpower[i];
+    }
+    double sumpower = 0.0;
+    for(int i = 0; i<3; i++)
+    {
+	sumpower+=m_nextpower[i];
+	m_deltaP1[i] = E_init[i]-E_full[i]-sumpower*delta_time;
+	m_deltaP2[i] = sumpower*delta_time - E_init[i];
+    }	
+
+    for(int i = 0; i<3; i++)
+    {
+	int temp = m_inimu[i]+eta*m_deltaP1[i];
+	m_nextmu[i] = temp>0?temp:0;
+	temp = m_inixi[i]+eta*m_deltaP2[i];
+	m_nextxi[i] = temp>0?temp:0;
+    }
+     //copy m_nextmu, m_nextxi to m_inimu, m_inixi for next iteration
+    for(int i = 0; i<3; i++)
+    {
+	m_inimu[i]=m_nextmu[i];
+	m_inixi[i]=m_nextxi[i];
+    }
+}
+
+void DDAAgent::gridUpdate()
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    //for calculate power cost
+    double cost = 0.0;
+    for (int i = 0; i<3; i++)
+    {
+	m_nextpower[i] = m_inipower[i] - eta*(price_profile[i]-m_inilambda[i]-rho*m_inideltaP[i]);
+	if (m_nextpower[i] > P_max_grid)
+	{
+	    m_nextpower[i] = P_max_grid;
+	}
+	else if(m_nextpower[i]<P_min_grid)
+	{
+	    m_nextpower[i] = P_min_grid;
+	}
+	cost += price_profile[i]*m_inipower[i]*delta_time;
+    }
+    //copy m_nextpower to m_inipower for next iteration
+    for(int i = 0; i<3; i++)
+    {
+	m_inipower[i] = m_nextpower[i];
+    }
+    Logger.Status << "The cost is " << cost << std::endl;
+}
 
 void DDAAgent::sendtoAdjList()
 {

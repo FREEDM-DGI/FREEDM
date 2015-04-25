@@ -33,7 +33,7 @@ const double price_profile[3] = {5.27, 15.599, 15.599};
 
 const int delta_time = 0.25;
 
-const int max_iteration = 50;
+const int max_iteration = 10;
 
 namespace {
     /// This file's logger.
@@ -461,9 +461,10 @@ void DDAAgent::sendtoAdjList()
     msg->set_lambdastep2(m_inilambda[1]);
     msg->set_lambdastep3(m_inilambda[2]);
     Logger.Debug << "The message " << m_iteration << " has been packed for sending to neighbors" << std::endl;
-
+    Logger.Debug << "The deltaP are " << m_inideltaP[0] << " " << m_inideltaP[1] << " " << m_inideltaP[2] << std::endl;
+    Logger.Debug << "The lambda are " << m_inilambda[0] << " " << m_inilambda[1] << " " << m_inilambda[2] << std::endl;
+    
     //send message to adjecent list
-
     BOOST_FOREACH(std::string symbolid, m_localadj)
     {
         if (m_strans.find(symbolid) != m_strans.end())

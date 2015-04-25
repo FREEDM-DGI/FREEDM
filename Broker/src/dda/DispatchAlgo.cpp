@@ -33,7 +33,7 @@ const double price_profile[3] = {5.27, 15.599, 15.599};
 
 const int delta_time = 0.25;
 
-const int max_iteration = 5000;
+const int max_iteration = 50;
 
 namespace {
     /// This file's logger.

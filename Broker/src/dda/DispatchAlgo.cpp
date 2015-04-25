@@ -389,8 +389,21 @@ void DDAAgent::desdUpdate()
     for(int i = 0; i<3; i++)
     {
 	sumpower+=m_nextpower[i];
-	m_deltaP1[i] = E_init[i]-E_full[i]-sumpower*delta_time;
-	m_deltaP2[i] = sumpower*delta_time - E_init[i];
+	if (m_localsymbol == "4" )
+	{
+	    m_deltaP1[i] = E_init[0]-E_full[0]-sumpower*delta_time;
+	    m_deltaP2[i] = sumpower*delta_time - E_init[0];
+	}
+	else if (m_localsymbol == "7")
+	{
+	    m_deltaP1[i] = E_init[1]-E_full[1]-sumpower*delta_time;
+	    m_deltaP2[i] = sumpower*delta_time - E_init[1];
+	}
+	else if (m_localsymbol == "10")
+	{
+	    m_deltaP1[i] = E_init[2]-E_full[2]-sumpower*delta_time;
+	    m_deltaP2[i] = sumpower*delta_time - E_init[2];
+	}	
     }	
 
     for(int i = 0; i<3; i++)

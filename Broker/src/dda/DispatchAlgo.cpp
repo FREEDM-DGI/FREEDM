@@ -257,6 +257,7 @@ void DDAAgent::HandleUpdate(const DesdStateMessage& msg, CPeerNode peer)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     // Receiving required neighbor's message
+/*
     Logger.Debug << "The message iteration is " << msg.iteration() 
 		 << ". The current iteration is  " << m_iteration << std::endl;
     Logger.Debug << "The local node is " << m_localsymbol << ". The received msg is from "
@@ -265,7 +266,7 @@ void DDAAgent::HandleUpdate(const DesdStateMessage& msg, CPeerNode peer)
 		 << msg.deltapstep2() << " " << msg.deltapstep3() << "." << std::endl;
     Logger.Debug << "The " << msg.symbol() << " has lambda: " << msg.lambdastep1() << " "
 		 << msg.lambdastep2() << " " << msg.lambdastep3() << "." << std::endl;
-
+*/
     //insert received message into a multimap with received iteration as the index
     m_adjmessage.insert(std::make_pair(msg.iteration(), msg));
 
@@ -285,12 +286,13 @@ void DDAAgent::HandleUpdate(const DesdStateMessage& msg, CPeerNode peer)
                 m_adjlambda[0] += (*itt).second.lambdastep1();
                 m_adjlambda[1] += (*itt).second.lambdastep2();
                 m_adjlambda[2] += (*itt).second.lambdastep3(); 
-            }        
+            }   
+/*
             Logger.Debug << "Adjacent aggregated deltaP is " << m_adjdeltaP[0] << " " << m_adjdeltaP[1]
             		 << " " << m_adjdeltaP[2] << std::endl;
             Logger.Debug << "Adjacent aggregated lambda is " << m_adjlambda[0] << " " << m_adjlambda[1]
             		 << " " << m_adjlambda[2] << std::endl;
-            		 
+ */           		 
             //DESD devices update
 	    if(m_localsymbol == "4" || m_localsymbol == "7" || m_localsymbol == "10")
 	    {
@@ -306,7 +308,7 @@ void DDAAgent::HandleUpdate(const DesdStateMessage& msg, CPeerNode peer)
 	    //Other devices update
 	    else
 	    {
-		Logger.Status << "The other devices are updating!" << std::endl; 
+		Logger.Debug << "The other devices are updating!" << std::endl; 
             }//all devices 
             deltaPLambdaUpdate();
 	    //erase msg for current iteration
@@ -368,10 +370,10 @@ void DDAAgent::desdUpdate()
               + (m_deltaP2[2]>0?m_deltaP2[2]:0);
     aug2[1] = (m_deltaP2[1]>0?m_deltaP2[1]:0)+(m_deltaP2[2]>0?m_deltaP2[2]:0);
     aug2[2] = m_deltaP2[2]>0?m_deltaP2[2]:0;
-	
+/*	
     Logger.Debug << "aug1 are " << aug1[0] << " " << aug1[1] << " " << aug1[2] << std::endl;
     Logger.Debug << "aug2 are " << aug2[0] << " " << aug2[1] << " " << aug2[2] << std::endl;    
-    
+*/    
     double summu = m_inimu[0] + m_inimu[1] + m_inimu[2];
     double sumxi = m_inixi[0] + m_inixi[1] + m_inixi[2];
     for (int i = 0; i<3; i++)
@@ -415,9 +417,11 @@ void DDAAgent::desdUpdate()
 	    m_deltaP1[i] = E_init[2]-E_full[2]-sumpower*delta_time;
 	    m_deltaP2[i] = sumpower*delta_time - E_init[2];
 	}	
-    }	
+    }
+/*
     Logger.Debug << "deltaP1 are " << m_deltaP1[0] << " " << m_deltaP1[1] << " " << m_deltaP1[2] << std::endl;
     Logger.Debug << "deltaP2 are " << m_deltaP2[0] << " " << m_deltaP2[1] << " " << m_deltaP2[2] << std::endl;
+*/
     for(int i = 0; i<3; i++)
     {
 	int temp = m_inimu[i]+eta*m_deltaP1[i];
@@ -425,8 +429,10 @@ void DDAAgent::desdUpdate()
 	temp = m_inixi[i]+eta*m_deltaP2[i];
 	m_nextxi[i] = temp>0?temp:0;
     }
+/*
     Logger.Debug << "mu are " << m_nextmu[0] << " " << m_nextmu[1] << " " << m_nextmu[2] << std::endl;
     Logger.Debug << "xi are " << m_nextxi[0] << " " << m_nextxi[1] << " " << m_nextxi[2] << std::endl;    
+*/
      //copy m_nextmu, m_nextxi to m_inimu, m_inixi for next iteration
     for(int i = 0; i<3; i++)
     {

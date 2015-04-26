@@ -318,7 +318,7 @@ void DDAAgent::HandleUpdate(const DesdStateMessage& msg, CPeerNode peer)
             {
                 while( m_iteration%inner_iter != 0)
    	        {
-   	            if (m_localsymbol == "4" || m_localsymbol == "7" || m_localsymbo == "10")
+   	            if (m_localsymbol == "4" || m_localsymbol == "7" || m_localsymbol == "10")
    	            {
    	            	desdUpdate();
    	            }

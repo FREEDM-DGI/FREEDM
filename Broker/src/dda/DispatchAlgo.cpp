@@ -388,11 +388,7 @@ void DDAAgent::desdUpdate()
     }
     Logger.Debug << "next power settings are " << m_nextpower[0] << " " << m_nextpower[1] << " " 
     		 << m_nextpower[2] << std::endl;
-    //copy m_nextpower to m_inipower for next iteration
-    for(int i = 0 ; i<3; i++)
-    {
-	m_inipower[i] = m_nextpower[i];
-    }
+
     double sumpower = 0.0;
     for(int i = 0; i<3; i++)
     {
@@ -456,11 +452,6 @@ void DDAAgent::gridUpdate()
 	    m_nextpower[i] = P_min_grid;
 	}
 	m_cost += price_profile[i]*m_inipower[i]*delta_time;
-    }
-    //copy m_nextpower to m_inipower for next iteration
-    for(int i = 0; i<3; i++)
-    {
-	m_inipower[i] = m_nextpower[i];
     }
     Logger.Status << "The cost is " << m_cost << std::endl;
 }
@@ -535,6 +526,11 @@ void DDAAgent::deltaPLambdaUpdate()
     {
         m_inideltaP[i]=m_nextdeltaP[i];
         m_inilambda[i]=m_nextlambda[i];
+    }
+    //copy m_nextpower to m_inipower for next iteration
+    for(int i = 0 ; i<3; i++)
+    {
+	m_inipower[i] = m_nextpower[i];
     }
     m_iteration++;
     for (int i = 0; i<3; i++)

@@ -296,21 +296,19 @@ void DDAAgent::HandleUpdate(const DesdStateMessage& msg, CPeerNode peer)
 	    {
 		Logger.Debug << "The DESD device is updating!" << std::endl;
 		desdUpdate();
-                deltaPLambdaUpdate();
 	    }
 	    //Grid updates
             else if(m_localsymbol == "1")
 	    {
 		Logger.Debug << "The grid is updating!" << std::endl;
 		gridUpdate();
-                deltaPLambdaUpdate();
 	    }
 	    //Other devices update
 	    else
 	    {
 		Logger.Status << "The other devices are updating!" << std::endl; 
-                deltaPLambdaUpdate();
-             }//all devices 
+            }//all devices 
+            deltaPLambdaUpdate();
 	    //erase msg for current iteration
 	    m_adjmessage.erase(m_iteration);
 	    
@@ -318,6 +316,14 @@ void DDAAgent::HandleUpdate(const DesdStateMessage& msg, CPeerNode peer)
             {
                 while( m_iteration%inner_iter != 0)
    	        {
+   	            if (m_localsymbol == "4" || m_localsymbol == "7" || m_localsymbo == "10")
+   	            {
+   	            	desdUpdate();
+   	            }
+   	            else if (m_localsymbol == "1")
+   	            {
+   	            	gridUpdate();
+   	            }
 	       	    deltaPLambdaUpdate();
 	        }
 	        if (m_iteration%inner_iter == 0)

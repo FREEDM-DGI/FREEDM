@@ -31,7 +31,7 @@ const double E_full[3] = {5, 10, 5};
 
 const double price_profile[3] = {5.27, 15.599, 15.599};
 
-const int delta_time = 0.25;
+const double delta_time = 0.25;
 
 const int max_iteration = 10;
 
@@ -397,18 +397,22 @@ void DDAAgent::desdUpdate()
     for(int i = 0; i<3; i++)
     {
 	sumpower+=m_nextpower[i];
-	if (m_localsymbol == "4" )
+	Logger.Debug << " sumpower is " << sumpower << std::endl; 
+ 	if (m_localsymbol == "4" )
 	{
+	    Logger.Debug << "E_init and E_full are " << E_init[0] << " and " << E_full[0] << std::endl;
 	    m_deltaP1[i] = E_init[0]-E_full[0]-sumpower*delta_time;
 	    m_deltaP2[i] = sumpower*delta_time - E_init[0];
 	}
 	else if (m_localsymbol == "7")
 	{
+	    Logger.Debug << "E_init and E_full are " << E_init[1] << " and " << E_full[1] << std::endl;
 	    m_deltaP1[i] = E_init[1]-E_full[1]-sumpower*delta_time;
 	    m_deltaP2[i] = sumpower*delta_time - E_init[1];
 	}
 	else if (m_localsymbol == "10")
 	{
+	    Logger.Debug << "E_init and E_full are " << E_init[2] << " and " << E_full[2] << std::endl;
 	    m_deltaP1[i] = E_init[2]-E_full[2]-sumpower*delta_time;
 	    m_deltaP2[i] = sumpower*delta_time - E_init[2];
 	}	

@@ -313,28 +313,25 @@ void DDAAgent::HandleUpdate(const DesdStateMessage& msg, CPeerNode peer)
             deltaPLambdaUpdate();
 	    //erase msg for current iteration
 	    m_adjmessage.erase(m_iteration);
+            while( m_iteration%inner_iter != 0)
+   	    {
+   	    	if (m_localsymbol == "4" || m_localsymbol == "7" || m_localsymbol == "10")
+   	    	{
+   	            desdUpdate();
+   	    	}
+   	    	else if (m_localsymbol == "1")
+   	    	{
+   	            gridUpdate();
+   	    	}
+	    	deltaPLambdaUpdate();
+	    }
+	    if (m_iteration%inner_iter == 0)
+	    {
+            	sendtoAdjList();
+	    }
         }//end if
     }//end for
-    while (m_iteration < max_iteration)
-    {
-        while( m_iteration%inner_iter != 0)
-   	{
-   	    if (m_localsymbol == "4" || m_localsymbol == "7" || m_localsymbol == "10")
-   	    {
-   	        desdUpdate();
-   	    }
-   	    else if (m_localsymbol == "1")
-   	    {
-   	        gridUpdate();
-   	    }
-	    deltaPLambdaUpdate();
-	}
-	if (m_iteration%inner_iter == 0)
-	{
-            sendtoAdjList();
-	    break;
-	}
-    }//end while
+    //print out results
     if (m_iteration >= max_iteration)
     {
 	//DESD info
@@ -525,6 +522,10 @@ void DDAAgent::deltaPLambdaUpdate()
              m_nextlambda[i] = m_inilambda[i] + eta*m_inideltaP[i];
         }
     }
+    
+    Logger.Debug << "The updated deltaP are " << m_nextdeltaP[0] << " " << m_nextdeltaP[1] << " "
+    	         << m_nextdeltaP[2] << ". The updated lambda are " << m_nextlambda[0] << " "
+    	         << m_nextlambda[1] << " " << m_nextlambda[2] << " " << std::endl;
     //assign updated delatP and lambda to initial one for the iteration
     for (int i = 0; i<3; i++)
     {

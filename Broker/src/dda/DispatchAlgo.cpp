@@ -423,7 +423,7 @@ void DDAAgent::desdUpdate()
 
     for(int i = 0; i<3; i++)
     {
-	int temp = m_inimu[i]+eta*m_deltaP1[i];
+	double temp = m_inimu[i]+eta*m_deltaP1[i];
 	m_nextmu[i] = temp>0?temp:0;
 	temp = m_inixi[i]+eta*m_deltaP2[i];
 	m_nextxi[i] = temp>0?temp:0;

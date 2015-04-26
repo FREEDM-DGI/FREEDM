@@ -362,7 +362,10 @@ void DDAAgent::desdUpdate()
               + (m_deltaP2[2]>0?m_deltaP2[2]:0);
     aug2[1] = (m_deltaP2[1]>0?m_deltaP2[1]:0)+(m_deltaP2[2]>0?m_deltaP2[2]:0);
     aug2[2] = m_deltaP2[2]>0?m_deltaP2[2]:0;
-		    
+	
+    Logger.Debug << "aug1 are " << aug1[0] << " " << aug1[1] << " " << aug1[2] << std::endl;
+    Logger.Debug << "aug2 are " << aug2[0] << " " << aug2[1] << " " << aug2[2] << std::endl;    
+    
     double summu = m_inimu[0] + m_inimu[1] + m_inimu[2];
     double sumxi = m_inixi[0] + m_inixi[1] + m_inixi[2];
     for (int i = 0; i<3; i++)
@@ -380,6 +383,8 @@ void DDAAgent::desdUpdate()
 	    m_nextpower[i] = P_min_desd;
 	}
     }
+    Logger.Debug << "next power settings are " << m_nextpower[0] << " " << m_nextpower[1] << " " 
+    		 << m_nextpower[2] << std::endl;
     //copy m_nextpower to m_inipower for next iteration
     for(int i = 0 ; i<3; i++)
     {
@@ -405,7 +410,8 @@ void DDAAgent::desdUpdate()
 	    m_deltaP2[i] = sumpower*delta_time - E_init[2];
 	}	
     }	
-
+    Logger.Debug << "deltaP1 are " << m_deltaP1[0] << " " << m_deltaP1[1] << " " << m_deltaP1[2] << std::endl;
+    Logger.Debug << "deltaP2 are " << m_deltaP2[0] << " " << m_deltaP2[1] << " " << m_deltaP2[2] << std::endl;
     for(int i = 0; i<3; i++)
     {
 	int temp = m_inimu[i]+eta*m_deltaP1[i];
@@ -413,6 +419,8 @@ void DDAAgent::desdUpdate()
 	temp = m_inixi[i]+eta*m_deltaP2[i];
 	m_nextxi[i] = temp>0?temp:0;
     }
+    Logger.Debug << "mu are " << m_nextmu[0] << " " << m_nextmu[1] << " " << m_nextmu[2] << std::endl;
+    Logger.Debug << "xi are " << m_nextxi[0] << " " << m_nextxi[1] << " " << m_nextxi[2] << std::endl;    
      //copy m_nextmu, m_nextxi to m_inimu, m_inixi for next iteration
     for(int i = 0; i<3; i++)
     {

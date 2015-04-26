@@ -313,30 +313,28 @@ void DDAAgent::HandleUpdate(const DesdStateMessage& msg, CPeerNode peer)
             deltaPLambdaUpdate();
 	    //erase msg for current iteration
 	    m_adjmessage.erase(m_iteration);
-	    
-	    while (m_iteration < max_iteration)
-            {
-                while( m_iteration%inner_iter != 0)
-   	        {
-   	            if (m_localsymbol == "4" || m_localsymbol == "7" || m_localsymbol == "10")
-   	            {
-   	            	desdUpdate();
-   	            }
-   	            else if (m_localsymbol == "1")
-   	            {
-   	            	gridUpdate();
-   	            }
-	       	    deltaPLambdaUpdate();
-	        }
-	        if (m_iteration%inner_iter == 0)
-	        {
-                    sendtoAdjList();
-		    break;
-	         }
-            }//end while
         }//end if
     }//end for
-    
+    while (m_iteration < max_iteration)
+    {
+        while( m_iteration%inner_iter != 0)
+   	{
+   	    if (m_localsymbol == "4" || m_localsymbol == "7" || m_localsymbol == "10")
+   	    {
+   	        desdUpdate();
+   	    }
+   	    else if (m_localsymbol == "1")
+   	    {
+   	        gridUpdate();
+   	    }
+	    deltaPLambdaUpdate();
+	}
+	if (m_iteration%inner_iter == 0)
+	{
+            sendtoAdjList();
+	    break;
+	}
+    }//end while
     if (m_iteration >= max_iteration)
     {
 	//DESD info
@@ -418,10 +416,10 @@ void DDAAgent::desdUpdate()
 	    m_deltaP2[i] = sumpower*delta_time - E_init[2];
 	}	
     }
-/*
+
     Logger.Debug << "deltaP1 are " << m_deltaP1[0] << " " << m_deltaP1[1] << " " << m_deltaP1[2] << std::endl;
     Logger.Debug << "deltaP2 are " << m_deltaP2[0] << " " << m_deltaP2[1] << " " << m_deltaP2[2] << std::endl;
-*/
+
     for(int i = 0; i<3; i++)
     {
 	int temp = m_inimu[i]+eta*m_deltaP1[i];
@@ -429,10 +427,10 @@ void DDAAgent::desdUpdate()
 	temp = m_inixi[i]+eta*m_deltaP2[i];
 	m_nextxi[i] = temp>0?temp:0;
     }
-/*
+
     Logger.Debug << "mu are " << m_nextmu[0] << " " << m_nextmu[1] << " " << m_nextmu[2] << std::endl;
     Logger.Debug << "xi are " << m_nextxi[0] << " " << m_nextxi[1] << " " << m_nextxi[2] << std::endl;    
-*/
+
      //copy m_nextmu, m_nextxi to m_inimu, m_inixi for next iteration
     for(int i = 0; i<3; i++)
     {

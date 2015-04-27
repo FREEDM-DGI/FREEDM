@@ -43,7 +43,7 @@ namespace {
 DDAAgent::DDAAgent()
 {
     //initialization of variables
-    m_iteration = 0;
+    m_iteration = 1;
     m_cost = 0.0;
     for(int i = 0; i<3; i++)
     { 
@@ -212,8 +212,23 @@ void DDAAgent::Run()
         }
     }
     Logger.Debug << "Initialization of Load1, Load2, PV and WindTurbine have done" << std::endl;
-    sendtoAdjList();
-   
+    //sendtoAdjList();
+    while( m_iteration%inner_iter != 0)
+    {
+        if (m_localsymbol == "4" || m_localsymbol == "7" || m_localsymbol == "10")
+   	{
+   	    desdUpdate();
+   	}
+   	else if (m_localsymbol == "1")
+   	{
+   	    gridUpdate();
+   	}
+	deltaPLambdaUpdate();
+    }
+    if (m_iteration%inner_iter == 0)
+    {
+    	sendtoAdjList();
+    }
 }
 
 

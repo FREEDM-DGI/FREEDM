@@ -33,7 +33,7 @@ const double price_profile[3] = {5.27, 15.599, 15.599};
 
 const double delta_time = 0.25;
 
-const int max_iteration = 10;
+const int max_iteration = 5000;
 
 namespace {
     /// This file's logger.
@@ -534,7 +534,8 @@ void DDAAgent::deltaPLambdaUpdate()
     }
     
     Logger.Debug << "The updated deltaP are " << m_nextdeltaP[0] << " " << m_nextdeltaP[1] << " "
-    	         << m_nextdeltaP[2] << ". The updated lambda are " << m_nextlambda[0] << " "
+    	         << m_nextdeltaP[2] << std::endl;
+    Logger.Status <<"The updated lambda for iteration " << m_iteration << " are " << m_nextlambda[0] << " "
     	         << m_nextlambda[1] << " " << m_nextlambda[2] << " " << std::endl;
     //assign updated delatP and lambda to initial one for the iteration
     for (int i = 0; i<3; i++)

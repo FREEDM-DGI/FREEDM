@@ -237,14 +237,14 @@ void CRtdsAdapter::Run(const boost::system::error_code & e)
             }
         }
 
-        BOOST_FOREACH(DeviceSignal devsig, m_stateInfo | boost::adaptors::map_keys)
-        {
-            std::size_t index = m_stateInfo[devsig];
-            std::string key = devsig.first + "." + devsig.second;
-            CDataManager::Instance().AddData(key, m_rxBuffer[index]);
-        }
-
         Logger.Debug << "Releasing the rxBuffer mutex." << std::endl;
+    }
+
+    BOOST_FOREACH(DeviceSignal devsig, m_stateInfo | boost::adaptors::map_keys)
+    {
+        std::size_t index = m_stateInfo[devsig];
+        std::string key = devsig.first + "." + devsig.second;
+        CDataManager::Instance().AddData(key, m_rxBuffer[index]);
     }
 
     // Start the timer; on timeout, this function is called again

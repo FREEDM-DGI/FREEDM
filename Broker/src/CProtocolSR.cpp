@@ -276,6 +276,7 @@ bool CProtocolSR::Receive(const ProtocolMessage& msg)
             {
                 Logger.Debug<<"Syncronizing Connection (BAD REQUEST)"<<std::endl;
                 m_outsynchash = msg.hash();
+                SendACK(msg);
                 SendSYN();
             }
             else
@@ -306,14 +307,17 @@ bool CProtocolSR::Receive(const ProtocolMessage& msg)
     {
         Logger.Debug<<"Connection Needs Resync"<<std::endl;
         //If the connection hasn't been synchronized, we want to
-        //tell them it is a bad request so they know they need to sync.
-        ProtocolMessage outmsg;
-        // Presumably, if we are here, the connection is registered
-        outmsg.set_status(ProtocolMessage::BAD_REQUEST);
-        outmsg.set_hash(msg.hash());
-        outmsg.set_sequence_num(m_inresyncs%SEQUENCE_MODULO);
-        m_window.push_front(outmsg);
-        return false;
+        if(m_window.front().status() != ProtocolMessage::CREATED && m_window.front().status() != ProtocolMessage::BAD_REQUEST)
+        {
+            //tell them it is a bad request so they know they need to sync.
+            ProtocolMessage outmsg;
+            // Presumably, if we are here, the connection is registered
+            outmsg.set_status(ProtocolMessage::BAD_REQUEST);
+            outmsg.set_hash(msg.hash());
+            outmsg.set_sequence_num(m_inresyncs%SEQUENCE_MODULO);
+            m_window.push_front(outmsg);
+            return false;
+        }
     }
     else if(msg.status() == ProtocolMessage::MESSAGE)
     {

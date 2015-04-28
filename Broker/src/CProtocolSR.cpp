@@ -143,17 +143,32 @@ void CProtocolSR::Resend(const boost::system::error_code& err)
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 	if(!err && !GetStopped())
     {
-        while(m_window.size() > 0 && m_window.front().status() != ProtocolMessage::CREATED && MessageIsExpired(m_window.front()))
+        std::deque<ProtocolMessage>::iterator it;
+        it = m_window.begin();
+        unsigned int todrop = 0;
+        if(it != m_window.end() && m_window.front().status() == ProtocolMessage::CREATED)
         {
-            Logger.Trace<<__PRETTY_FUNCTION__<<" Flushing"<<std::endl;
-            //First message in the window should be the only one
-            //ever to have been written.
-            m_sendkills = true;
-            Logger.Debug<<"Message Expired: "<<m_window.front().DebugString();
-            m_window.pop_front();
-            m_dropped++;
+            it++;
+            for(; it != m_window.end(); it++)
+            {
+                if(MessageIsExpired(*it))
+                    todrop++;
+            }   
         }
-        if(m_dropped > MAX_DROPPED_MSGS)
+        else
+        {
+            while(m_window.size() > 0 && m_window.front().status() != ProtocolMessage::CREATED && MessageIsExpired(m_window.front()))
+            {
+                Logger.Trace<<__PRETTY_FUNCTION__<<" Flushing"<<std::endl;
+                //First message in the window should be the only one
+                //ever to have been written.
+                m_sendkills = true;
+                Logger.Debug<<"Message Expired: "<<m_window.front().DebugString();
+                m_window.pop_front();
+                m_dropped++;
+            }
+        }
+        if(m_dropped > MAX_DROPPED_MSGS || todrop > MAX_DROPPED_MSGS)
         {
             Logger.Warn<<"Connection to "<<GetUUID()<<" has lost "<<m_dropped<<" messages. Attempting to reconnect."<<std::endl;
             Stop();

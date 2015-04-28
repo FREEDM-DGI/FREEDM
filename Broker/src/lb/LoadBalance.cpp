@@ -162,6 +162,19 @@ void LBAgent::HandleIncomingMessage(boost::shared_ptr<const ModuleMessage> m, CP
             Logger.Warn << "Dropped unexpected group management message:\n" << m->DebugString();
         }
     }
+    else if(m->has_physical_attestation_message())
+    {
+        pa::PhysicalAttestationMessage pam = m->physical_attestation_message();
+
+        if(pam.has_attestation_failure_message())
+        {
+            HandleAttestationFailure(pam.attestation_failure_message());
+        }
+        else
+        {
+            Logger.Warn << "Dropped unexpected physical attestation message:\n" << m->DebugString();
+        }
+    }
     else if(m->has_load_balancing_message())
     {
         LoadBalancingMessage lbm = m->load_balancing_message();
@@ -306,21 +319,30 @@ void LBAgent::LoadManage(const boost::system::error_code & error)
 
         std::set<device::CDevice::Pointer> logger;
         logger = device::CDeviceManager::Instance().GetDevicesOfType("Logger");
+        device::CDevice::Pointer clock = device::CDeviceManager::Instance().GetClock();
         if(logger.empty() || (*logger.begin())->GetState("dgiEnable") == 1)
         {
-            if(m_State == LBAgent::DEMAND)
+            if(!CGlobalConfiguration::Instance().GetAttestationFlag() || clock)
             {
-                SendToPeerSet(m_AllPeers, MessageStateChange("demand"));
-                Logger.Notice << "Sending state change, DEMAND" << std::endl;
-            }
+                if(m_State == LBAgent::DEMAND)
+                {
+                    SendToPeerSet(m_AllPeers, MessageStateChange("demand"));
+                    Logger.Notice << "Sending state change, DEMAND" << std::endl;
+                }
 
-            if(m_Synchronized)
-            {
-                SendDraftRequest();
+                if(m_Synchronized)
+                {
+                    SendDraftRequest();
+                }
+                else
+                {
+                    Logger.Notice << "Draft Request Cancelled: state too old" << std::endl;
+                }
             }
             else
             {
-                Logger.Notice << "Draft Request Cancelled: state too old" << std::endl;
+                Logger.Notice << "Skipped load manage: no clock for attestation" << std::endl;
+                SetPStar(m_Gateway);
             }
         }
         else
@@ -771,12 +793,13 @@ void LBAgent::DraftStandard(const boost::system::error_code & error)
 /// @pre None
 /// @post a new message is generated.
 ///////////////////////////////////////////////////////////////////////////////
-ModuleMessage LBAgent::MessageDraftSelect(float amount)
+ModuleMessage LBAgent::MessageDraftSelect(float amount, float time)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     LoadBalancingMessage msg;
     DraftSelectMessage * submsg = msg.mutable_draft_select_message();
     submsg->set_migrate_step(amount);
+    submsg->set_commit_time(time);
     return PrepareForSending(msg);
 }
 
@@ -792,7 +815,9 @@ void LBAgent::SendDraftSelect(CPeerNode peer, float step)
 
     try
     {
-        peer.Send(MessageDraftSelect(step));
+        device::CDevice::Pointer clock = device::CDeviceManager::Instance().GetClock();
+        float time = clock ? clock->GetState("time") : -1;
+        peer.Send(MessageDraftSelect(step, time));
         SetPStar(m_PredictedGateway + step);
         m_PowerDifferential += step;
     }
@@ -831,6 +856,9 @@ void LBAgent::HandleDraftSelect(const DraftSelectMessage & m, CPeerNode peer)
     else if(CGlobalConfiguration::Instance().GetMaliciousFlag())
     {
         Logger.Notice << "(MALICIOUS) Dropped draft select message." << std::endl;
+        device::CDevice::Pointer clock = device::CDeviceManager::Instance().GetClock();
+        float time = clock ? clock->GetState("time") : -1;
+        peer.Send(MessageDraftAccept(m.migrate_step(), time));
     }
     else
     {
@@ -840,7 +868,9 @@ void LBAgent::HandleDraftSelect(const DraftSelectMessage & m, CPeerNode peer)
         {
             if(m_NetGeneration <= m_PredictedGateway - amount)
             {
-                peer.Send(MessageDraftAccept(amount));
+                device::CDevice::Pointer clock = device::CDeviceManager::Instance().GetClock();
+                float time = clock ? clock->GetState("time") : -1;
+                peer.Send(MessageDraftAccept(amount, time));
                 SetPStar(m_PredictedGateway - amount);
             }
             else
@@ -861,12 +891,13 @@ void LBAgent::HandleDraftSelect(const DraftSelectMessage & m, CPeerNode peer)
 /// @pre None
 /// @post an Accept message is generated.
 /////////////////////////////////////////////////////////////////////////////// 
-ModuleMessage LBAgent::MessageDraftAccept(float amount)
+ModuleMessage LBAgent::MessageDraftAccept(float amount, float time)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     LoadBalancingMessage msg;
     DraftAcceptMessage * submsg = msg.mutable_draft_accept_message();
     submsg->set_migrate_step(amount);
+    submsg->set_commit_time(time);
     return PrepareForSending(msg);
 }
 
@@ -898,10 +929,14 @@ ModuleMessage LBAgent::MessageTooLate(float amount)
 /// @limitations Does not validate the source, integrity or contents of the
 ///     message.
 ///////////////////////////////////////////////////////////////////////////////
-void LBAgent::HandleDraftAccept(const DraftAcceptMessage & m, CPeerNode /* peer */)
+void LBAgent::HandleDraftAccept(const DraftAcceptMessage & m, CPeerNode peer)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     m_PowerDifferential -= m.migrate_step();
+    if(CGlobalConfiguration::Instance().GetAttestationFlag())
+    {
+        GetMe().Send(MessageAttestationRequest(peer.GetUUID(), m.commit_time(), m.migrate_step()));
+    }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1183,6 +1218,29 @@ bool LBAgent::InvariantCheck()
     }
 
     return result;
+}
+
+ModuleMessage LBAgent::MessageAttestationRequest(std::string target, float time, float change)
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+
+    pa::PhysicalAttestationMessage msg;
+    pa::AttestationRequestMessage * submsg = msg.mutable_attestation_request_message();
+    submsg->set_attestation_target(target);
+    submsg->set_request_time(time);
+    submsg->set_expected_value(change);
+
+    ModuleMessage mm;
+    mm.mutable_physical_attestation_message()->CopyFrom(msg);
+    mm.set_recipient_module("pa");
+    return mm;
+}
+
+void LBAgent::HandleAttestationFailure(const pa::AttestationFailureMessage & m)
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    SetPStar(m_PredictedGateway - m.adjustment());
+    // send message to target to cancel migration
 }
 
 } // namespace lb

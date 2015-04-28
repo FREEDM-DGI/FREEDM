@@ -30,6 +30,7 @@
 #include "gm/GroupManagement.hpp"
 #include "lb/LoadBalance.hpp"
 #include "sc/StateCollection.hpp"
+#include "pa/PhysicalAttestation.hpp"
 #include "CTimings.hpp"
 #include "SRemoteHost.hpp"
 #include "FreedmExceptions.hpp"
@@ -121,7 +122,7 @@ int main(int argc, char* argv[])
     std::string deviceCfgFile, listenIP, port, hostname, fport, id;
     unsigned int globalVerbosity;
     float migrationStep;
-    bool malicious, invariant;
+    bool malicious, invariant, attestation;
 
     try
     {
@@ -175,6 +176,9 @@ int main(int argc, char* argv[])
                 ( "check-invariant",
                 po::value<bool> ( &invariant )->default_value(false),
                 "Check the invariant prior to power migrations" )
+                ( "perform-attestation",
+                po::value<bool> ( &attestation )->default_value(true),
+                "Perform physical attestation for power migrations" )
                 ( "verbose,v",
                 po::value<unsigned int>( &globalVerbosity )->
                 implicit_value(5)->default_value(5),
@@ -272,6 +276,7 @@ int main(int argc, char* argv[])
                 boost::posix_time::milliseconds(0));
         CGlobalConfiguration::Instance().SetMigrationStep(migrationStep);
         CGlobalConfiguration::Instance().SetMaliciousFlag(malicious);
+        CGlobalConfiguration::Instance().SetAttestationFlag(attestation);
 
         // Specify socket endpoint address, if provided
         if( vm.count("devices-endpoint") )
@@ -326,6 +331,7 @@ int main(int argc, char* argv[])
     boost::shared_ptr<IDGIModule> GM = boost::make_shared<gm::GMAgent>();
     boost::shared_ptr<IDGIModule> SC = boost::make_shared<sc::SCAgent>();
     boost::shared_ptr<IDGIModule> LB = boost::make_shared<lb::LBAgent>();
+    boost::shared_ptr<IDGIModule> PA = boost::make_shared<pa::PAAgent>();
 
     try
     {
@@ -340,6 +346,8 @@ int main(int argc, char* argv[])
         // Instantiate and register the power management module
         CBroker::Instance().RegisterModule("lb",boost::posix_time::milliseconds(CTimings::Get("LB_PHASE_TIME")));
         CDispatcher::Instance().RegisterReadHandler(LB, "lb");
+        CBroker::Instance().RegisterModule("pa",boost::posix_time::milliseconds(CTimings::Get("PA_PHASE_TIME")));
+        CDispatcher::Instance().RegisterReadHandler(PA, "pa");
 
         // The peerlist should be passed into constructors as references or
         // pointers to each submodule to allow sharing peers. NOTE this requires
@@ -383,6 +391,10 @@ int main(int argc, char* argv[])
         CBroker::Instance().Schedule(
             "lb",
             boost::bind(&lb::LBAgent::Run, boost::dynamic_pointer_cast<lb::LBAgent>(LB)),
+            false);
+        CBroker::Instance().Schedule(
+            "pa",
+            boost::bind(&pa::PAAgent::Run, boost::dynamic_pointer_cast<pa::PAAgent>(PA)),
             false);
     }
     catch (std::exception & e)

@@ -34,6 +34,7 @@
 #include "CDevice.hpp"
 #include "Messages.hpp"
 #include "CPhysicalTopology.hpp"
+#include "CDataManager.hpp"
 #include "FreedmExceptions.hpp"
 
 #include <algorithm>
@@ -594,6 +595,7 @@ void GMAgent::Premerge( const boost::system::error_code &err )
             {
                 m_fidstate[ptr->GetID()] = ptr->GetState("state");
             }
+            CDataManager::Instance().AddFIDState(m_fidstate);
             // Print out a table to debug
             Logger.Info<<"FID Table:"<<std::endl;
             typedef std::pair< std::string , bool > FIDPair;
@@ -1164,6 +1166,7 @@ void GMAgent::HandleResponseAYC(const AreYouCoordinatorResponseMessage& msg, CPe
             bool state = fsm.state(); 
             m_fidstate[devid] = state;
         }
+        CDataManager::Instance().AddFIDState(m_fidstate);
     }
     EraseInTimedPeerSet(m_AYCResponse,peer);
     if(expected == true && answer == "yes")

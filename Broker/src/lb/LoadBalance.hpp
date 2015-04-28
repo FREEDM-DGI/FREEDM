@@ -57,15 +57,16 @@ private:
     /// Generates message demand nodes send in response to DraftRequest
     ModuleMessage MessageDraftAge(float age);
     /// Generates the message that the supply node uses to select a demand node.
-    ModuleMessage MessageDraftSelect(float amount);
+    ModuleMessage MessageDraftSelect(float amount, float time);
     /// Generates the message that the demand node uses to confirm the migration
-    ModuleMessage MessageDraftAccept(float amount);
+    ModuleMessage MessageDraftAccept(float amount, float time);
     /// Generates the message sent by the demand node to refuse migration.
     ModuleMessage MessageTooLate(float amount);
     /// Generates the message used to request a state collection.
     ModuleMessage MessageStateCollection();
     //// Generates the message used to announce the collected normal.
     ModuleMessage MessageCollectedState(float state);
+    ModuleMessage MessageAttestationRequest(std::string target, float time, float change);
     
     /// Boilerplate for preparing a message.
     ModuleMessage PrepareForSending(const LoadBalancingMessage & m, std::string recipient = "lb");
@@ -92,6 +93,7 @@ private:
     void HandleCollectedState(const sc::CollectedStateMessage & m);
     /// Handles the collected state coming from load balancing
     void HandleCollectedState(const CollectedStateMessage & m);
+    void HandleAttestationFailure(const pa::AttestationFailureMessage & m);
     
     /// Moves a peer to the specified peerset.
     void MoveToPeerSet(PeerSet & ps, CPeerNode peer);

@@ -310,6 +310,32 @@ SignalValue CDeviceManager::GetNetValue(std::string type, std::string signal)
     return result;
 }
 
+CDevice::Pointer CDeviceManager::GetClock()
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+
+    CDevice::Pointer result;
+    std::set<CDevice::Pointer> clock = GetDevicesOfType("Clock");
+    std::set<CDevice::Pointer> logger = GetDevicesOfType("Logger");
+
+    if(logger.empty() || (*logger.begin())->GetState("dgiEnable") == 1)
+    {
+        if(clock.empty())
+        {
+            Logger.Warn << "There are no attached clock devices" << std::endl;
+        }
+        else
+        {
+            result = *clock.begin();
+        }
+    }
+    else
+    {
+        Logger.Notice << "Clock unavailable because DGI has not been enabled" << std::endl;
+    }
+    return result;
+}
+
 } // namespace device
 } // namespace broker
 } // namespace freedm

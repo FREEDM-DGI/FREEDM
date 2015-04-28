@@ -37,11 +37,13 @@ message DraftAgeMessage
 message DraftSelectMessage
 {
     required float migrate_step = 1;
+    required float commit_time = 2;
 }
 
 message DraftAcceptMessage
 {
     required float migrate_step = 1;
+    required float commit_time = 2;
 }
 
 message TooLateMessage

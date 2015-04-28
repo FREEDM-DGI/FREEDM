@@ -37,6 +37,7 @@
 #include "CLogger.hpp"
 #include "CTimings.hpp"
 #include "SynchronousTimeout.hpp"
+#include "CDataManager.hpp"
 
 #include <sys/param.h>
 
@@ -51,6 +52,7 @@
 #include <boost/thread.hpp>
 #include <boost/foreach.hpp>
 #include <boost/static_assert.hpp>
+#include <boost/range/adaptor/map.hpp>
 #include <boost/property_tree/ptree.hpp>
 
 namespace freedm {
@@ -233,6 +235,13 @@ void CRtdsAdapter::Run(const boost::system::error_code & e)
             {
                 RevealDevices();
             }
+        }
+
+        BOOST_FOREACH(DeviceSignal devsig, m_stateInfo | boost::adaptors::map_keys)
+        {
+            std::size_t index = m_stateInfo[devsig];
+            std::string key = devsig.first + "." + devsig.second;
+            CDataManager::Instance().AddData(key, m_rxBuffer[index]);
         }
 
         Logger.Debug << "Releasing the rxBuffer mutex." << std::endl;

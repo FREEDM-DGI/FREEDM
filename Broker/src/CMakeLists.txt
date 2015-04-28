@@ -21,9 +21,11 @@ set(BROKER_FILES
     CClockSynchronizer.cpp
     CTimings.cpp
     CPhysicalTopology.cpp
+    CDataManager.cpp
     gm/GroupManagement.cpp
     lb/LoadBalance.cpp
     sc/StateCollection.cpp
+    pa/PhysicalAttestation.cpp
    )
 
 # generate the configuration file

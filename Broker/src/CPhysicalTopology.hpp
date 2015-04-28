@@ -53,10 +53,12 @@ public:
     static CPhysicalTopology& Instance();
 	
     /// Find the reachable peers.
-    VertexSet ReachablePeers(std::string source, FIDState fidstate);
+    VertexSet ReachablePeers(std::string source, FIDState fidstate, int depth = -1);
 
     /// Returns if the physical topology is available.
     bool IsAvailable();
+
+    VertexSet GetAdjacent(std::string v);
 
     /// Get the resistance between two vertex identifiers.
     float GetResistance(std::string u, std::string v);

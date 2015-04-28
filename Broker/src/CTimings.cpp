@@ -67,6 +67,9 @@ void CTimings::TimingParameters(po::options_description& opts)
     RegisterTimingValue(opts,"LB_ROUND_TIME");
     RegisterTimingValue(opts,"LB_REQUEST_TIMEOUT");
     RegisterTimingValue(opts,"SC_PHASE_TIME");
+    RegisterTimingValue(opts,"PA_PHASE_TIME");
+    RegisterTimingValue(opts,"PA_REQUEST_TIMEOUT");
+    RegisterTimingValue(opts,"PA_HARDWARE_DELAY");
     RegisterTimingValue(opts,"DEV_PNP_HEARTBEAT");
     RegisterTimingValue(opts,"DEV_RTDS_DELAY");
     RegisterTimingValue(opts,"DEV_SOCKET_TIMEOUT");

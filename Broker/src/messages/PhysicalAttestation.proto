@@ -1,0 +1,21 @@
+package freedm.broker.pa;
+
+message AttestationRequestMessage
+{
+    required string attestation_target = 1;
+    required float request_time = 2;
+    required float expected_value = 3;
+}
+
+message AttestationFailureMessage
+{
+    required float target = 1;
+    required float adjustment = 2;
+}
+
+message PhysicalAttestationMessage
+{
+    optional AttestationRequestMessage attestation_request_message = 1;
+    optional AttestationFailureMessage attestation_failure_message = 2;
+}
+

@@ -316,8 +316,8 @@ bool CProtocolSR::Receive(const ProtocolMessage& msg)
             outmsg.set_hash(msg.hash());
             outmsg.set_sequence_num(m_inresyncs%SEQUENCE_MODULO);
             m_window.push_front(outmsg);
-            return false;
         }
+        return false;
     }
     else if(msg.status() == ProtocolMessage::MESSAGE)
     {

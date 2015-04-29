@@ -134,7 +134,7 @@ void PAAgent::EvaluateFrameworks(const boost::system::error_code & error)
 
     if(!error)
     {
-        BOOST_FOREACH(Framework f, m_frameworks)
+        BOOST_FOREACH(Framework & f, m_frameworks)
         {
             BOOST_FOREACH(std::string uuid, f.migration_members)
             {

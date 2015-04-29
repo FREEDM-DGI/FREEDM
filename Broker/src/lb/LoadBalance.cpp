@@ -282,6 +282,9 @@ void LBAgent::FirstRound(const boost::system::error_code & error)
         ScheduleStateCollection();
         CBroker::Instance().Schedule("lb",
             boost::bind(&LBAgent::LoadManage, this, boost::system::error_code()));
+        ReadDevices();
+        m_PredictedGateway = m_Gateway;
+        Logger.Info << "Reset Predicted Gateway: " << m_Gateway << std::endl;
     }
     else if(error == boost::asio::error::operation_aborted)
     {
@@ -1168,11 +1171,9 @@ void LBAgent::Synchronize(float k)
     
     ReadDevices();
     m_PowerDifferential = k;
-    m_PredictedGateway = m_Gateway;
     m_Synchronized = true;
 
     Logger.Info << "Reset Gross Power Flow: " << k << std::endl;
-    Logger.Info << "Reset Predicted Gateway: " << m_Gateway << std::endl;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

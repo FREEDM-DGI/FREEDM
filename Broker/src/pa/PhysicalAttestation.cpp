@@ -422,7 +422,7 @@ ModuleMessage PAAgent::MessageAttestationFailure(std::string target, float corre
     AttestationFailureMessage * submsg = msg.mutable_attestation_failure_message();
     submsg->set_target(target);
     submsg->set_adjustment(correction);
-    return PrepareForSending(msg, "pa");
+    return PrepareForSending(msg, "lb");
 }
 
 ModuleMessage PAAgent::MessageStateResponse(float time)

@@ -26,6 +26,7 @@ CLocalLogger Logger(__FILE__);
 PAAgent::PAAgent()
     : REQUEST_TIMEOUT(boost::posix_time::milliseconds(CTimings::Get("PA_REQUEST_TIMEOUT")))
     , HARDWARE_DELAY_MS(CTimings::Get("PA_HARDWARE_DELAY"))
+    , ERROR_MARGIN(CGlobalConfiguration::Instance().GetAttestationTolerance())
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     m_RoundTimer = CBroker::Instance().AllocateTimer("pa");
@@ -195,8 +196,6 @@ void PAAgent::EvaluateFrameworks(const boost::system::error_code & error)
 void PAAgent::CalculateInvariant(const Framework & framework)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    // please make this better (and make same as below)
-    const float ERROR_MARGIN = 0.2;
     float before_power = SecurePowerFlow(framework.target, framework.migration_states);
     float after_power = SecurePowerFlow(framework.target, framework.completion_states);
     float actual_change = after_power - before_power;
@@ -210,8 +209,6 @@ void PAAgent::CalculateInvariant(const Framework & framework)
 float PAAgent::SecurePowerFlow(std::string target, const std::map<std::string, StateResponseMessage> & data)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    // please make this better
-    const float ERROR_MARGIN = 0.2;
     bool all_true = true, one_hop_false = true, target_invariant;
 
     std::set<std::string> one_hop_inv;

@@ -121,7 +121,7 @@ int main(int argc, char* argv[])
     std::string cfgFile, loggerCfgFile, timingsFile, adapterCfgFile, topologyCfgFile;
     std::string deviceCfgFile, listenIP, port, hostname, fport, id;
     unsigned int globalVerbosity;
-    float migrationStep;
+    float migrationStep, tolerance;
     bool malicious, invariant, attestation;
 
     try
@@ -179,6 +179,9 @@ int main(int argc, char* argv[])
                 ( "perform-attestation",
                 po::value<bool> ( &attestation )->default_value(true),
                 "Perform physical attestation for power migrations" )
+                ( "attestation-tolerance",
+                po::value<float> ( &tolerance ),
+                "Error term used in physical attestation")
                 ( "verbose,v",
                 po::value<unsigned int>( &globalVerbosity )->
                 implicit_value(5)->default_value(5),
@@ -277,6 +280,7 @@ int main(int argc, char* argv[])
         CGlobalConfiguration::Instance().SetMigrationStep(migrationStep);
         CGlobalConfiguration::Instance().SetMaliciousFlag(malicious);
         CGlobalConfiguration::Instance().SetAttestationFlag(attestation);
+        CGlobalConfiguration::Instance().SetAttestationTolerance(tolerance);
 
         // Specify socket endpoint address, if provided
         if( vm.count("devices-endpoint") )

@@ -37,6 +37,7 @@ public:
 private:
     const boost::posix_time::time_duration REQUEST_TIMEOUT;
     const unsigned int HARDWARE_DELAY_MS;
+    const float ERROR_MARGIN;
 
     ModuleMessage MessageStateRequest(float time);
     ModuleMessage MessageStateResponse(float time);

@@ -80,6 +80,8 @@ class CGlobalConfiguration : private boost::noncopyable
         void SetInvariantCheck(bool flag) { m_invariant = flag; }
         /// Set the physical attestation flag
         void SetAttestationFlag(bool flag) { m_attestation = flag; }
+        /// Set the allowed physical attestation error margin
+        void SetAttestationTolerance(float value) { m_attestationTolerance = value; }
         /// Get the hostname
         std::string GetHostname() const { return m_hostname; };
         /// Get the port
@@ -111,6 +113,8 @@ class CGlobalConfiguration : private boost::noncopyable
         bool GetInvariantCheck() const { return m_invariant; }
         /// Get the physical attestation flag
         bool GetAttestationFlag() const { return m_attestation; }
+        /// Get error margin allowed for physical attestation
+        float GetAttestationTolerance() const { return m_attestationTolerance; }
     private:
         std::string m_hostname; /// Node hostname
         std::string m_port; /// Port number
@@ -126,6 +130,7 @@ class CGlobalConfiguration : private boost::noncopyable
         bool m_malicious; // Flag to indicate whether load balance is malicious
         bool m_invariant; // Flag that indicates whether to check the invariant
         bool m_attestation; // Flag that indicates whether to perform physical attestation.
+        float m_attestationTolerance; // Amount of error allowed by physical attestation.
 };
 
 } // namespace broker

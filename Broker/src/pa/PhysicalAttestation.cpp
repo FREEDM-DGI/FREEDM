@@ -203,9 +203,7 @@ void PAAgent::CalculateInvariant(const Framework & framework)
 
     if(std::abs(actual_change - framework.expected_value) > ERROR_MARGIN)
     {
-        // is the sign here correct?
-        float correction = actual_change - framework.expected_value;
-        GetMe().Send(MessageAttestationFailure(framework.target, correction));
+        GetMe().Send(MessageAttestationFailure(framework.target, -framework.expected_value));
     }
 }
 

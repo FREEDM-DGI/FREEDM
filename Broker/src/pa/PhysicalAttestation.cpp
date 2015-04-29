@@ -168,13 +168,13 @@ void PAAgent::EvaluateFrameworks(const boost::system::error_code & error)
             if(it->invalid)
             {
                 GetMe().Send(MessageAttestationFailure(it->target, it->expected_value));
-                m_frameworks.erase(it);
+                m_frameworks.erase(it++);
             }
             else if(it->migration_states.size() == it->migration_members.size() &&
                 it->completion_states.size() == it->completion_members.size())
             {
                 CalculateInvariant(*it);
-                m_frameworks.erase(it);
+                m_frameworks.erase(it++);
             }
             else
             {

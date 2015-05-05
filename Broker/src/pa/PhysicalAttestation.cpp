@@ -81,6 +81,7 @@ void PAAgent::RequestStates(const boost::system::error_code & error)
                     if(f.migration_states.count(uuid) == 0)
                     {
                         // exception if peer node found
+                        Logger.Info << "Requested state from " << uuid << " for time " << f.migration_time << std::endl;
                         CGlobalPeerList::instance().GetPeer(uuid).Send(MessageStateRequest(f.migration_time));
                     }
                 }
@@ -95,6 +96,7 @@ void PAAgent::RequestStates(const boost::system::error_code & error)
                 }
                 catch(std::exception & e)
                 {
+                    Logger.Notice << "Failed to build attestation framework for " << f.target << " at " << f.completion_time << std::endl;
                     f.invalid = true;
                 }
             }
@@ -106,6 +108,7 @@ void PAAgent::RequestStates(const boost::system::error_code & error)
                     if(f.completion_states.count(uuid) == 0)
                     {
                         // exception if peer node found
+                        Logger.Info << "Requested state from " << uuid << " for time " << f.completion_time << std::endl;
                         CGlobalPeerList::instance().GetPeer(uuid).Send(MessageStateRequest(f.completion_time));
                     }
                 }
@@ -142,10 +145,12 @@ void PAAgent::EvaluateFrameworks(const boost::system::error_code & error)
                 std::string key = uuid + "." + boost::lexical_cast<std::string>(f.migration_time);
                 if(m_responses.count(key) > 0)
                 {
+                    Logger.Info << "Received state from " << uuid << " for time " << f.migration_time << std::endl;
                     f.migration_states[uuid] = m_responses[key];
                 }
                 else if(m_ExpiredStates.count(key) > 0 && f.migration_states.count(uuid) == 0)
                 {
+                    Logger.Notice << "Expired state for " << uuid << " for time " << f.migration_time << std::endl;
                     f.invalid = true;
                 }
             }
@@ -154,10 +159,12 @@ void PAAgent::EvaluateFrameworks(const boost::system::error_code & error)
                 std::string key = uuid + "." + boost::lexical_cast<std::string>(f.completion_time);
                 if(m_responses.count(key) > 0)
                 {
+                    Logger.Info << "Received state from " << uuid << " for time " << f.completion_time << std::endl;
                     f.completion_states[uuid] = m_responses[key];
                 }
                 else if(m_ExpiredStates.count(key) > 0 && f.completion_states.count(uuid) == 0)
                 {
+                    Logger.Notice << "Expired state for " << uuid << " for time " << f.completion_time << std::endl;
                     f.invalid = true;
                 }
             }
@@ -167,6 +174,7 @@ void PAAgent::EvaluateFrameworks(const boost::system::error_code & error)
         {
             if(it->invalid)
             {
+                Logger.Status << "Deleted invalid framework for " << it->target << " at " << it->migration_time << std::endl;
                 GetMe().Send(MessageAttestationFailure(it->target, it->expected_value));
                 m_frameworks.erase(it++);
             }
@@ -196,9 +204,11 @@ void PAAgent::EvaluateFrameworks(const boost::system::error_code & error)
 void PAAgent::CalculateInvariant(const Framework & framework)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Info << "Calculating invariant for " << framework.target << " at " << framework.migration_time << std::endl;
     float before_power = SecurePowerFlow(framework.target, framework.migration_states);
     float after_power = SecurePowerFlow(framework.target, framework.completion_states);
     float actual_change = after_power - before_power;
+    Logger.Debug << "\n\tPower Before Migration: " << before_power << "\n\tPower After Migration:  " << after_power << std::endl;
 
     if(std::abs(actual_change - framework.expected_value) > ERROR_MARGIN)
     {
@@ -361,10 +371,12 @@ void PAAgent::HandleAttestationRequest(const AttestationRequestMessage & m)
     framework.completion_time = m.request_time() + HARDWARE_DELAY_MS / 1000.0;
     try
     {
+        Logger.Info << "Building framework " << framework.target << " at " << framework.migration_time << std::endl;
         framework.migration_members = BuildFramework(framework.target, framework.migration_time);
     }
     catch(std::exception & e)
     {
+        Logger.Notice << "Failed to build attestation framework for " << framework.target << " at " << framework.completion_time << std::endl;
         framework.invalid = true;
     }
     m_frameworks.push_back(framework);
@@ -379,6 +391,11 @@ void PAAgent::HandleStateRequest(const StateRequestMessage & m, CPeerNode peer)
     }
     catch(std::exception & e)
     {
+        device::CDevice::Pointer clock = device::CDeviceManager::Instance().GetClock();
+        if(clock)
+            Logger.Notice << "Expired state for " << m.request_time() << ", current time " << clock->GetState("time") << std::endl;
+        else
+            Logger.Notice << "Expired state for " << m.request_time() << " (No Clock)" << std::endl;
         peer.Send(MessageExpiredState(m.request_time()));
     }
 }

@@ -6,6 +6,8 @@
 #include <boost/foreach.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/range/adaptor/map.hpp>
+#include <boost/algorithm/string/replace.hpp>
+#include <boost/property_tree/xml_parser.hpp>
 
 namespace freedm {
 namespace broker {
@@ -29,9 +31,9 @@ void CDataManager::AddData(std::string key, float value)
 
     if(clock)
     {
-        float time = clock->GetState("time");
-        std::string path = key + "." + boost::lexical_cast<std::string>(time);
-        m_data.add(path, value);
+        std::string stime = boost::lexical_cast<std::string>(clock->GetState("time"));
+        boost::replace_all(stime, ".", ",");
+        m_data.add(key + "." + stime, value);
 
         boost::property_tree::ptree & parent = m_data.get_child(key);
         while(parent.size() > MAX_DATA_ENTRIES)
@@ -39,6 +41,8 @@ void CDataManager::AddData(std::string key, float value)
             Logger.Notice << "Deleted historic data for " << key << " at time " << parent.front().first << std::endl;
             parent.pop_front();
         }
+        write_xml(Logger.Debug, m_data, boost::property_tree::xml_writer_make_settings(' ', 4));
+        Logger.Debug << std::endl;
     }
     else
     {
@@ -49,8 +53,9 @@ void CDataManager::AddData(std::string key, float value)
 float CDataManager::GetData(std::string key, float time)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    std::string path = key + "." + boost::lexical_cast<std::string>(time);
-    return m_data.get<float>(path);
+    std::string stime = boost::lexical_cast<std::string>(time);
+    boost::replace_all(stime, ".", ",");
+    return m_data.get<float>(key + "." + stime);
 }
 
 void CDataManager::AddFIDState(const std::map<std::string, bool> & fidstate)

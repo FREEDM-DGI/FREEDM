@@ -192,6 +192,7 @@ void CPhysicalTopology::LoadTopology()
     CPhysicalTopology::AdjacencyListMap altmp;
     CPhysicalTopology::FIDControlMap fctmp;
     CPhysicalTopology::VertexSet seennames;
+    std::map<VertexPair, float> rtmp, xtmp;
 
     std::string fp = CGlobalConfiguration::Instance().GetTopologyConfigPath();
     if(fp == "")
@@ -236,8 +237,8 @@ void CPhysicalTopology::LoadTopology()
             seennames.insert(v_symbol2);
 
             VertexPair line_id = LineID(v_symbol1, v_symbol2);
-            m_resistance[line_id] = resistance;
-            m_reactance[line_id] = reactance;
+            rtmp[line_id] = resistance;
+            xtmp[line_id] = reactance;
         }
         else if(token == VERTEX_TOKEN)
         {
@@ -314,6 +315,22 @@ void CPhysicalTopology::LoadTopology()
             n.insert(name2);
         }
         m_adjlist[name] = n;
+    }
+
+    typedef std::map<VertexPair, float> LineValueMap;
+    BOOST_FOREACH( const LineValueMap::value_type& mp, rtmp )
+    {
+        std::string u = mp.first.first;
+        std::string v = mp.first.second;
+        VertexPair line = LineID(RealNameFromVirtual(u), RealNameFromVirtual(v));
+        m_resistance[LineID(RealNameFromVirtual(u), RealNameFromVirtual(v))] = mp.second;
+    }
+
+    BOOST_FOREACH( const LineValueMap::value_type& mp, xtmp )
+    {
+        std::string u = mp.first.first;
+        std::string v = mp.first.second;
+        m_reactance[LineID(RealNameFromVirtual(u), RealNameFromVirtual(v))] = mp.second;
     }
 
     // Mark how edges are controlled.

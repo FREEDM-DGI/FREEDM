@@ -873,7 +873,7 @@ void LBAgent::HandleDraftSelect(const DraftSelectMessage & m, CPeerNode peer)
             {
                 device::CDevice::Pointer clock = device::CDeviceManager::Instance().GetClock();
                 float time = clock ? clock->GetState("time") : -1;
-                peer.Send(MessageDraftAccept(amount, time));
+                peer.Send(MessageDraftAccept(-amount, time));
                 SetPStar(m_PredictedGateway - amount);
             }
             else
@@ -935,7 +935,7 @@ ModuleMessage LBAgent::MessageTooLate(float amount)
 void LBAgent::HandleDraftAccept(const DraftAcceptMessage & m, CPeerNode peer)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    m_PowerDifferential -= m.migrate_step();
+    m_PowerDifferential += m.migrate_step();
     if(CGlobalConfiguration::Instance().GetAttestationFlag())
     {
         GetMe().Send(MessageAttestationRequest(peer.GetUUID(), m.commit_time(), m.migrate_step()));

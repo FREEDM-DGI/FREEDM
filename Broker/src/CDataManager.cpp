@@ -38,7 +38,7 @@ void CDataManager::AddData(std::string key, float value)
         boost::property_tree::ptree & parent = m_data.get_child(key);
         while(parent.size() > MAX_DATA_ENTRIES)
         {
-            Logger.Notice << "Deleted historic data for " << key << " at time " << parent.front().first << std::endl;
+            Logger.Info << "Deleted historic data for " << key << " at time " << parent.front().first << std::endl;
             parent.pop_front();
         }
         write_xml(Logger.Debug, m_data, boost::property_tree::xml_writer_make_settings(' ', 4));

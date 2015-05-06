@@ -1240,8 +1240,11 @@ ModuleMessage LBAgent::MessageAttestationRequest(std::string target, float time,
 void LBAgent::HandleAttestationFailure(const pa::AttestationFailureMessage & m)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    SetPStar(m_PredictedGateway - m.adjustment());
-    // send message to target to cancel migration
+    if(!CGlobalConfiguration::Instance().GetMaliciousFlag())
+    {
+        SetPStar(m_PredictedGateway - m.adjustment());
+        // send message to target to cancel migration
+    }
 }
 
 } // namespace lb

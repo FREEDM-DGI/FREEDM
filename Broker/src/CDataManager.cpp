@@ -71,7 +71,7 @@ void CDataManager::AddFIDState(const std::map<std::string, bool> & fidstate)
 
         while(m_fidstate.size() > MAX_DATA_ENTRIES)
         {
-            Logger.Notice << "Deleted historic data for fidstate at time " << m_fidstate.begin()->first << std::endl;
+            Logger.Info << "Deleted historic data for fidstate at time " << m_fidstate.begin()->first << std::endl;
             m_fidstate.erase(m_fidstate.begin());
         }
     }

@@ -206,11 +206,18 @@ void PAAgent::EvaluateFrameworks(const boost::system::error_code & error)
 void PAAgent::CalculateInvariant(const Framework & framework)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    Logger.Info << "Calculating invariant for " << framework.target << " at " << framework.migration_time << std::endl;
     float before_power = SecurePowerFlow(framework.target, framework.migration_states);
     float after_power = SecurePowerFlow(framework.target, framework.completion_states);
     float actual_change = after_power - before_power;
-    Logger.Debug << "\n\tPower Before Migration: " << before_power << "\n\tPower After Migration:  " << after_power << std::endl;
+
+    Logger.Info << "Physical Attestation Invariant Calculation\n"
+        << "\tTarget UUID:       " << framework.target << "\n"
+        << "\tExpected Change:   " << framework.expected_value << "\n"
+        << "\tCalculated Change: " << after_power - before_power << "\n"
+        << "\t-----------------------------------\n"
+        << "\tTarget Power Flow Calculations\n"
+        << "\tt=" << framework.migration_time << " with " << framework.migration_states.size() << " peers, P = " << before_power << "\n"
+        << "\tt=" << framework.completion_time << " with " << framework.completion_states.size() << " peers, P = " << after_power << std::endl;
 
     if(std::abs(actual_change - framework.expected_value) > ERROR_MARGIN)
     {
@@ -227,7 +234,10 @@ float PAAgent::SecurePowerFlow(std::string target, const std::map<std::string, S
     BOOST_FOREACH(std::string v, CPhysicalTopology::Instance().GetAdjacent(target))
     {
         if(data.count(v) > 0)
+        {
             one_hop_inv.insert(v);
+            Logger.Debug << "Added " << v << " as a 1-hop invariant" << std::endl;
+        }
     }
 
     std::set<std::string> two_hop_inv;
@@ -236,7 +246,10 @@ float PAAgent::SecurePowerFlow(std::string target, const std::map<std::string, S
         BOOST_FOREACH(std::string v, CPhysicalTopology::Instance().GetAdjacent(u))
         {
             if(v != target && data.count(v) > 0 && one_hop_inv.count(v) == 0)
+            {
                 two_hop_inv.insert(v);
+                Logger.Debug << "Added " << v << " as a 2-hop invariant" << std::endl;
+            }
         }
     }
 
@@ -244,6 +257,7 @@ float PAAgent::SecurePowerFlow(std::string target, const std::map<std::string, S
     {
         if(u != target && one_hop_inv.count(u) == 0 && two_hop_inv.count(u) == 0)
             continue;
+        Logger.Debug << "Calculating invariant located at " << u << std::endl;
         float total_power_flow = 0;
         BOOST_FOREACH(std::string v, CPhysicalTopology::Instance().GetAdjacent(u))
         {
@@ -251,28 +265,39 @@ float PAAgent::SecurePowerFlow(std::string target, const std::map<std::string, S
                 continue;
             total_power_flow += CalculateLineFlow(u, v, data);
         }
+        Logger.Debug << "Line Power Sum: " << total_power_flow << "\nBus Generation: " << data.at(u).real_power() << std::endl;
         total_power_flow -= data.at(u).real_power();
         bool invariant = std::abs(total_power_flow) < ERROR_MARGIN;
 
         if(u == target)
         {
             target_invariant = invariant;
+
+            if(!invariant)
+                Logger.Info << "Invarviant violation at target " << u << std::endl;
         }
         else if(one_hop_inv.count(u) > 0)
         {
             all_true &= invariant;
             one_hop_false &= !invariant;
+
+            if(!invariant)
+                Logger.Info << "Invariant violation at 1-hop invariant " << u << std::endl;
         }
         else
         {
             all_true &= invariant;
             one_hop_false &= invariant;
+
+            if(!invariant)
+                Logger.Info << "Invariant violation at 2-hop invariant " << u << std::endl;
         }
     }
 
     // does this make sense?
     if(one_hop_false || (!target_invariant && all_true))
     {
+        Logger.Notice << "Target " << target << " malicious, calculating correct power flow" << std::endl;
         return CalculateTargetPower(target, data);
     }
     else

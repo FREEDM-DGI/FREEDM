@@ -176,9 +176,9 @@ void PAAgent::EvaluateFrameworks(const boost::system::error_code & error)
             {
                 Logger.Status << "Deleted invalid framework for " << it->target << " at " << it->migration_time << std::endl;
                 GetMe().Send(MessageAttestationFailure(it->target, it->expected_value));
-                m_frameworks.erase(it++);
                 CPeerNode t = CGlobalPeerList::instance().GetPeer(it->target);
                 t.Send(MessageAttestationFailure(GetUUID(), -it->expected_value));
+                m_frameworks.erase(it++);
             }
             else if(it->migration_states.size() == it->migration_members.size() &&
                 it->completion_states.size() == it->completion_members.size())

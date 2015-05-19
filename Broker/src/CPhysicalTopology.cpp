@@ -185,10 +185,15 @@ void CPhysicalTopology::LoadTopology()
     const std::string EDGE_TOKEN = "edge";
     const std::string VERTEX_TOKEN = "sst";
     const std::string CONTROL_TOKEN = "fid";
+    const std::string PTDF_TOKEN = "ptdf";
     
     CPhysicalTopology::AdjacencyListMap altmp;
     CPhysicalTopology::FIDControlMap fctmp;
     CPhysicalTopology::VertexSet seennames;
+    std::map<VertexPair, std::size_t> line_number;
+    std::map<VertexPair, float> base_flow;
+    std::map<VertexPair, float> max_flow;
+    CPhysicalTopology::PTDFMap ptdftmp;
 
     std::string fp = CGlobalConfiguration::Instance().GetTopologyConfigPath();
     if(fp == "")
@@ -213,7 +218,10 @@ void CPhysicalTopology::LoadTopology()
         {
             std::string v_symbol1;
             std::string v_symbol2;
-            if(!(topf>>v_symbol1>>v_symbol2))
+            std::size_t line_no;
+            float base_power_flow;
+            float max_power_flow;
+            if(!(topf>>v_symbol1>>v_symbol2>>line_no>>base_power_flow>>max_power_flow))
             {
                 throw std::runtime_error("Failed Reading Edge Topology Entry (EOF?)");
             }
@@ -230,6 +238,11 @@ void CPhysicalTopology::LoadTopology()
 
             seennames.insert(v_symbol1);
             seennames.insert(v_symbol2);
+
+            VertexPair line_id = VertexPair(v_symbol1,v_symbol2);
+            line_number[line_id] = line_no;
+            base_flow[line_id] = base_power_flow;
+            max_flow[line_id] = max_power_flow;
         }
         else if(token == VERTEX_TOKEN)
         {
@@ -263,6 +276,28 @@ void CPhysicalTopology::LoadTopology()
             
             seennames.insert(v_symbol1);
             seennames.insert(v_symbol2);
+        }
+        else if(token == PTDF_TOKEN)
+        {
+            std::string v_symbol1;
+            std::string v_symbol2;
+            std::size_t line_count;
+            if(!(topf>>v_symbol1>>v_symbol2>>line_count))
+            {
+                throw std::runtime_error("Failed Reading PTDF Matrix");
+            }
+
+            float ptdf_value;
+            std::vector<float> ptdf_vector;
+            for(std::size_t i = 0; i < line_count; i++)
+            {
+                if(!(topf>>ptdf_value))
+                {
+                    throw std::runtime_error("Failed Reading PTDF Matrix");
+                }
+                ptdf_vector.push_back(ptdf_value);
+            }
+            ptdftmp[VertexPair(v_symbol1,v_symbol2)] = ptdf_vector;
         }
         else
         {
@@ -318,6 +353,40 @@ void CPhysicalTopology::LoadTopology()
         m_fidcontrol.insert(FIDControlMap::value_type(VertexPair(namea,nameb), fidname));        
         m_fidcontrol.insert(FIDControlMap::value_type(VertexPair(nameb,namea), fidname));        
     }
+
+    m_MaxPowerFlow.resize(line_number.size(), -1);
+    m_BasePowerFlow.resize(line_number.size(), 0);
+    typedef std::map<VertexPair, std::size_t> LineNumberMap;
+    BOOST_FOREACH( const LineNumberMap::value_type& mp, line_number)
+    {
+        Logger.Debug << "Parsing Next Line: " << mp.first.first << "," << mp.first.second << std::endl;
+        if(mp.second < 1 || mp.second > line_number.size())
+        {
+            throw std::runtime_error("Out of Bounds Line Number");
+        }
+        if(max_flow[mp.first] <= 0)
+        {
+            throw std::runtime_error("Invalid Max Power Flow");
+        }
+        if(m_MaxPowerFlow[mp.second-1] != -1)
+        {
+            throw std::runtime_error("Duplicate Line Number");
+        }
+        m_MaxPowerFlow[mp.second-1] = max_flow[mp.first];
+        m_BasePowerFlow[mp.second-1] = base_flow[mp.first];
+    }
+
+    BOOST_FOREACH( const PTDFMap::value_type& mp, ptdftmp )
+    {
+        Logger.Debug << "Parsing PTDF Values for " << mp.first.first << "," << mp.first.second << std::endl;
+        std::string namea = RealNameFromVirtual(mp.first.first);
+        std::string nameb = RealNameFromVirtual(mp.first.second);
+        if(mp.second.size() != line_number.size())
+        {
+            throw std::runtime_error("Invalid PTDF Specification");
+        }
+        m_PTDF[VertexPair(namea,nameb)] = mp.second;
+    }
     // Done, yay!
     m_available = true; // Mark that a topology loaded successfully.    
 }
@@ -340,6 +409,27 @@ std::string CPhysicalTopology::RealNameFromVirtual(std::string vname)
         return m_strans[vname];
     }
     return VNAME_PREFIX+vname;
+}
+
+std::vector<float> CPhysicalTopology::GetBasePowerFlows()
+{
+    return m_BasePowerFlow;
+}
+
+std::vector<float> CPhysicalTopology::GetMaxPowerFlows()
+{
+    return m_MaxPowerFlow;
+}
+
+std::vector<float> CPhysicalTopology::GetPTDF(std::string m, std::string n)
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    VertexPair transaction = VertexPair(m,n);
+    if(m_PTDF.count(transaction) == 0)
+    {
+        throw std::runtime_error("No such transaction: " + m + "," + n);
+    }
+    return m_PTDF[transaction];
 }
 
     } // namespace broker

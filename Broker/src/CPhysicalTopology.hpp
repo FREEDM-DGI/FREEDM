@@ -27,6 +27,7 @@
 #include <set>
 #include <map>
 #include <string>
+#include <vector>
 
 namespace freedm {
     namespace broker {
@@ -48,6 +49,7 @@ public:
     typedef std::map<std::string, VertexSet > AdjacencyListMap;
     typedef std::multimap<VertexPair,  std::string> FIDControlMap;
     typedef std::map<std::string, bool> FIDState;
+    typedef std::map<VertexPair, std::vector<float> > PTDFMap;
 
     /// Get the singleton instance of this class
     static CPhysicalTopology& Instance();
@@ -58,6 +60,9 @@ public:
     /// Returns if the physical topology is available.
     bool IsAvailable();
 
+    std::vector<float> GetBasePowerFlows();
+    std::vector<float> GetMaxPowerFlows();
+    std::vector<float> GetPTDF(std::string m, std::string n);
 private:
     /// Private constructor for the singleton instance
     CPhysicalTopology();
@@ -72,6 +77,9 @@ private:
     FIDControlMap m_fidcontrol; /// Which edges FIDs control.
     bool m_available; /// If a physical topology has been loaded
     std::map<std::string, std::string> m_strans; /// Fake to real translation table
+    std::vector<float> m_BasePowerFlow;
+    std::vector<float> m_MaxPowerFlow;
+    PTDFMap m_PTDF;
 };
 
     } // namespace broker

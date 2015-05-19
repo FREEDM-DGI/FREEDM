@@ -34,6 +34,7 @@
 #include <map>
 #include <set>
 #include <string>
+#include <vector>
 #include <boost/shared_ptr.hpp>
 #include <boost/date_time/posix_time/posix_time_types.hpp>
 
@@ -130,6 +131,13 @@ private:
     /// Check the invariant prior to starting a new migration.
     bool InvariantCheck();
 
+    bool InvariantCheck(std::string m, std::string n, float p);
+    std::vector<float> CalculatePowerFlow(std::string m, std::string n, float p);
+    void UpdatePowerFlows(std::string m, std::string n, float p);
+    void InitializePowerFlows();
+    ModuleMessage MessageMigrationReport(std::string uuid, float power);
+    void HandleMigrationReport(const MigrationReportMessage & m);
+
     /// The amount of time it takes to do an LB round
     const boost::posix_time::time_duration ROUND_TIME;
     /// The time it takes to get a draftrequest response
@@ -170,6 +178,8 @@ private:
     std::string m_Leader;
     /// Pending migrations.
     std::map<std::string, float> m_DraftAge;
+
+    std::vector<float> m_PowerFlow;
 };
 
 } // namespace lb

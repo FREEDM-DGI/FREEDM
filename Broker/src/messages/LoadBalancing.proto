@@ -54,6 +54,13 @@ message CollectedStateMessage
     required float gross_power_flow = 1;
 }
 
+message MigrationReportMessage
+{
+    required string supply_uuid = 1;
+    required string demand_uuid = 2;
+    required float transaction_size = 3;
+}
+
 message LoadBalancingMessage
 {
     optional StateChangeMessage state_change_message = 1;
@@ -63,5 +70,6 @@ message LoadBalancingMessage
     optional DraftAcceptMessage draft_accept_message = 5;
     optional TooLateMessage too_late_message = 6;
     optional CollectedStateMessage collected_state_message = 7;
+    optional MigrationReportMessage migration_report_message = 8;
 }
 

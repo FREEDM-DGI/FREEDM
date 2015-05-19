@@ -64,6 +64,7 @@
 #include "CGlobalPeerList.hpp"
 #include "gm/GroupManagement.hpp"
 #include "CGlobalConfiguration.hpp"
+#include "CPhysicalTopology.hpp"
 
 #include <sstream>
 
@@ -103,6 +104,7 @@ LBAgent::LBAgent()
 
     m_PowerDifferential = 0;
     m_MigrationStep = CGlobalConfiguration::Instance().GetMigrationStep();
+    InitializePowerFlows();
 }
 
 ////////////////////////////////////////////////////////////
@@ -193,6 +195,10 @@ void LBAgent::HandleIncomingMessage(boost::shared_ptr<const ModuleMessage> m, CP
         else if(lbm.has_collected_state_message())
         {
             HandleCollectedState(lbm.collected_state_message());
+        }
+        else if(lbm.has_migration_report_message())
+        {
+            HandleMigrationReport(lbm.migration_report_message());
         }
         else
         {
@@ -587,10 +593,6 @@ void LBAgent::SendDraftRequest()
     {
         Logger.Notice << "Draft Request Cancelled: no DEMAND" << std::endl;
     }
-    else if(!InvariantCheck())
-    {
-        Logger.Notice << "Draft Request Cancelled: invariant false" << std::endl;
-    }
     else
     {
         SendToPeerSet(m_InDemand, MessageDraftRequest());
@@ -792,9 +794,15 @@ void LBAgent::SendDraftSelect(CPeerNode peer, float step)
 
     try
     {
-        peer.Send(MessageDraftSelect(step));
-        SetPStar(m_PredictedGateway + step);
-        m_PowerDifferential += step;
+        // should try to send to the next highest demand on failure
+        if(InvariantCheck(GetUUID(), peer.GetUUID(), step))
+        {
+            peer.Send(MessageDraftSelect(step));
+            SetPStar(m_PredictedGateway + step);
+            m_PowerDifferential += step;
+            UpdatePowerFlows(GetUUID(), peer.GetUUID(), step);
+            SendToPeerSet(m_AllPeers, MessageMigrationReport(peer.GetUUID(), step));
+        }
     }
     catch(boost::system::system_error & e)
     {
@@ -1117,6 +1125,8 @@ void LBAgent::HandleCollectedState(const CollectedStateMessage & m)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     Synchronize(m.gross_power_flow());
+    // uncomment this when the function uses the collected state in its calculation
+    // InitializePowerFlows();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1183,6 +1193,100 @@ bool LBAgent::InvariantCheck()
     }
 
     return result;
+}
+
+bool LBAgent::InvariantCheck(std::string m, std::string n, float p)
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+
+    bool invariant = true;
+    if(CGlobalConfiguration::Instance().GetInvariantCheck())
+    {
+        try
+        {
+            Logger.Info << "Checking Invariant for Transaction"
+                << "\n\tSupply Node:  " << m
+                << "\n\tDemand Node:  " << n
+                << "\n\tPower Amount: " << p << std::endl;
+            std::vector<float> expected_flows = CalculatePowerFlow(m,n,p);
+            std::vector<float> max_flows = CPhysicalTopology::Instance().GetMaxPowerFlows();
+            for(std::size_t i = 0; i < expected_flows.size(); i++)
+            {
+                if(expected_flows[i] > max_flows[i])
+                {
+                    invariant = false;
+                    Logger.Notice << "Invariant Violation on line " << i
+                        << "\n\tSource Transaction : " << m << " and " << n
+                        << "\n\tExpected Power Flow: " << expected_flows[i]
+                        << "\n\tMaximum Power Flow : " << max_flows[i] << std::endl;
+                }
+            }
+        }
+        catch(std::exception & e)
+        {
+            Logger.Warn << "Invariant Failed due to missing PTDF Value: "
+                << "\n\tSupply Node: " << m
+                << "\n\tDemand Node: " << n << std::endl;
+            invariant = false;
+        }
+    }
+    return invariant;
+}
+
+std::vector<float> LBAgent::CalculatePowerFlow(std::string m, std::string n, float p)
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Debug << "Calculating Power Flows"
+        << "\n\tSource Transaction: " << m << " and " << n
+        << "\n\tTransaction Amount: " << p << std::endl;
+    std::vector<float> ptdf = CPhysicalTopology::Instance().GetPTDF(m,n);
+    std::vector<float> result = m_PowerFlow;
+    for(std::size_t i = 0; i < result.size(); i++)
+    {
+        result[i] += ptdf[i] * p;
+        Logger.Debug << "Calculated Line Power Flow"
+            << "\n\tLine Number: " << i
+            << "\n\tPTDF Value : " << ptdf[i]
+            << "\n\tOld Power Flow: " << m_PowerFlow[i]
+            << "\n\tNew Power Flow: " << result[i] << std::endl;
+    }
+    return result;
+}
+
+void LBAgent::UpdatePowerFlows(std::string m, std::string n, float p)
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    m_PowerFlow = CalculatePowerFlow(m,n,p);
+}
+
+void LBAgent::InitializePowerFlows()
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    m_PowerFlow = CPhysicalTopology::Instance().GetBasePowerFlows();
+    // load balance should keep track of each of its old power migrations
+    // state collection should get a consistent cut of these histories
+    // the power flow should then be adjusted to account for them
+}
+
+ModuleMessage LBAgent::MessageMigrationReport(std::string uuid, float power)
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    LoadBalancingMessage msg;
+    MigrationReportMessage * submsg = msg.mutable_migration_report_message();
+    submsg->set_supply_uuid(GetUUID());
+    submsg->set_demand_uuid(uuid);
+    submsg->set_transaction_size(power);
+    return PrepareForSending(msg);
+}
+
+void LBAgent::HandleMigrationReport(const MigrationReportMessage & m)
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    if(m.supply_uuid() != GetUUID())
+    {
+        Logger.Info << "Updating Power Flows due to Foreign Migration" << std::endl;
+        UpdatePowerFlows(m.supply_uuid(), m.demand_uuid(), m.transaction_size());
+    }
 }
 
 } // namespace lb

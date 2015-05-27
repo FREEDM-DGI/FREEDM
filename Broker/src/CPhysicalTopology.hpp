@@ -53,7 +53,7 @@ public:
     static CPhysicalTopology& Instance();
 	
     /// Find the reachable peers.
-    VertexSet ReachablePeers(std::string source, FIDState fidstate);
+    VertexSet ReachablePeers(std::string source, FIDState fidstate, bool global=false);
 
     /// Returns if the physical topology is available.
     bool IsAvailable();
@@ -72,6 +72,7 @@ private:
     FIDControlMap m_fidcontrol; /// Which edges FIDs control.
     bool m_available; /// If a physical topology has been loaded
     std::map<std::string, std::string> m_strans; /// Fake to real translation table
+    std::set<std::string> m_grid_ties; /// Marks vertexes as grid ties
 };
 
     } // namespace broker

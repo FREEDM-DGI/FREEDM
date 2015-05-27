@@ -24,6 +24,7 @@ set(BROKER_FILES
     gm/GroupManagement.cpp
     lb/LoadBalance.cpp
     sc/StateCollection.cpp
+    fg/FederatedGroups.cpp
    )
 
 # generate the configuration file

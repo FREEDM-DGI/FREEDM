@@ -48,7 +48,7 @@ class CPeerNode
         /// Gets the port of this peer.
         std::string GetPort() const;
         /// Sends a message to peer
-        void Send(const ModuleMessage& msg);
+        void Send(const ModuleMessage& msg) const;
     private:
         std::string m_uuid; /// This node's uuid.
 };

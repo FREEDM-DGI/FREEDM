@@ -112,7 +112,7 @@ std::string CPeerNode::GetPort() const
 /// @param msg the message to write to channel.
 /// @return True if the message was sent.
 /////////////////////////////////////////////////////////////
-void CPeerNode::Send(const ModuleMessage& msg)
+void CPeerNode::Send(const ModuleMessage& msg) const
 {
     if(m_uuid.size() == 0)
     {

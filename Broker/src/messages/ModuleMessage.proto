@@ -22,6 +22,7 @@ import "ClockSynchronizer.proto";
 import "GroupManagement.proto";
 import "LoadBalancing.proto";
 import "StateCollection.proto";
+import "FederatedGroups.proto";
 
 package freedm.broker;
 
@@ -31,5 +32,6 @@ message ModuleMessage
     optional gm.GroupManagementMessage group_management_message = 2;
     optional sc.StateCollectionMessage state_collection_message = 3;
     optional lb.LoadBalancingMessage load_balancing_message = 4;
-    optional ClockSynchronizerMessage clock_synchronizer_message = 5;
+    optional fg.FederatedGroupsMessage federated_groups_message = 5;
+    optional ClockSynchronizerMessage clock_synchronizer_message = 6;
 }

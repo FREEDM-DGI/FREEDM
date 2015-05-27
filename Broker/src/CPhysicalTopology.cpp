@@ -88,9 +88,11 @@ bool CPhysicalTopology::IsAvailable()
 /// @param source The initial vertex to perform BFS from.
 /// @param fidstate a map that is FID Name -> State. A closed FID is true, an
 ///     open FID is false. If an FID is open edges it controls are not used.
+/// @param global If this is true (false by default) the search can cross
+//      grid ties.
 ///////////////////////////////////////////////////////////////////////////////
 CPhysicalTopology::VertexSet CPhysicalTopology::ReachablePeers(std::string source,
-    CPhysicalTopology::FIDState fidstate)
+    CPhysicalTopology::FIDState fidstate, bool global)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     typedef std::pair<int, std::string> BFSExplorer;
@@ -99,6 +101,9 @@ CPhysicalTopology::VertexSet CPhysicalTopology::ReachablePeers(std::string sourc
     BFSPQueue openset;
     std::set<std::string> closedset;
     std::set<std::string> solutionset;
+
+    if(global)
+        closedset = m_grid_ties;
 
     // If the source isn't the adjacency list, let's throw an exception so
     // We can detect bad configurations, I assume that there's no instance
@@ -185,6 +190,7 @@ void CPhysicalTopology::LoadTopology()
     const std::string EDGE_TOKEN = "edge";
     const std::string VERTEX_TOKEN = "sst";
     const std::string CONTROL_TOKEN = "fid";
+    const std::string GRID_TIE_TOKEN = "gt";
     
     CPhysicalTopology::AdjacencyListMap altmp;
     CPhysicalTopology::FIDControlMap fctmp;
@@ -241,6 +247,16 @@ void CPhysicalTopology::LoadTopology()
             }
             m_strans[vsymbol] = uuid;
             Logger.Debug<<"Got Vertex: "<<vsymbol<<"->"<<uuid<<std::endl;
+        }
+        else if(token == GRID_TIE_TOKEN)
+        {
+            std::string vsymbol;
+            if(!(topf>>vsymbol))
+            {
+                throw std::runtime_error("Failed Reading Vertex Topology Entry (EOF?)");
+            }
+            m_grid_ties.insert(vsymbol);
+            Logger.Debug<<"Got Grid Tie: "<<vsymbol<<std::endl;
         }
         else if(token == CONTROL_TOKEN)
         {

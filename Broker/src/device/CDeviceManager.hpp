@@ -36,6 +36,10 @@
 
 namespace freedm {
 namespace broker {
+namespace fg {
+    class FGAgent;
+}
+
 namespace device {
 
 /// The interface between broker modules and the device architecture.
@@ -91,9 +95,12 @@ private:
     /// IAdapter can reveal devices.
     friend class IAdapter;
 
+    /// Federated Groups Needs to Do funny things
+    friend class freedm::broker::fg::FGAgent;
+
     /// Private constructor.
     CDeviceManager();
-
+    
     /// Add a pointer to the hidden device set.
     void AddDevice(CDevice::Pointer device);
 

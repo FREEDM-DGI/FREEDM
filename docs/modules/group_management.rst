@@ -1,3 +1,6 @@
+.. _group-management:
+
+
 Group Management Reference
 ==========================
 

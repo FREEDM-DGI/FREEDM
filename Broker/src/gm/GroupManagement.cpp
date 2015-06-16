@@ -442,11 +442,6 @@ void GMAgent::Recovery()
     m_GrpCounter++;
     m_GroupID = m_GrpCounter;
     m_GroupLeader = GetUUID();
-    BOOST_FOREACH(CPeerNode& peer, CGlobalPeerList::instance().PeerList() | boost::adaptors::map_values)
-    {
-        if( peer.GetUUID() == GetUUID())
-            continue;
-    }
     Logger.Notice << "Changed group: "<< m_GroupID<<" ("<< m_GroupLeader <<")"<<std::endl;
     // Empties the UpList
     m_UpNodes.clear();
@@ -524,9 +519,14 @@ void GMAgent::Check( const boost::system::error_code& err )
             m_AYCResponse.clear();
             ModuleMessage m_ = AreYouCoordinator();
             Logger.Info <<"SEND: Sending out AYC"<<std::endl;
+            std::map< std::string , bool > dummystate;
+            std::set<std::string> reachables = CPhysicalTopology::Instance().ReachablePeers(GetUUID(), dummystate, false, true);
             BOOST_FOREACH(CPeerNode& peer, CGlobalPeerList::instance().PeerList() | boost::adaptors::map_values)
             {
+                
                 if( peer.GetUUID() == GetUUID())
+                    continue;
+                if( reachables.count(peer.GetUUID()) == 0)
                     continue;
                 peer.Send(m_);
                 InsertInTimedPeerSet(m_AYCResponse, peer, boost::posix_time::microsec_clock::universal_time());

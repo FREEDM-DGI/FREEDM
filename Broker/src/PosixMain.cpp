@@ -30,6 +30,7 @@
 #include "gm/GroupManagement.hpp"
 #include "lb/LoadBalance.hpp"
 #include "sc/StateCollection.hpp"
+#include "fg/FederatedGroups.hpp"
 #include "CTimings.hpp"
 #include "SRemoteHost.hpp"
 #include "FreedmExceptions.hpp"
@@ -326,6 +327,7 @@ int main(int argc, char* argv[])
     boost::shared_ptr<IDGIModule> GM = boost::make_shared<gm::GMAgent>();
     boost::shared_ptr<IDGIModule> SC = boost::make_shared<sc::SCAgent>();
     boost::shared_ptr<IDGIModule> LB = boost::make_shared<lb::LBAgent>();
+    boost::shared_ptr<IDGIModule> FG = boost::make_shared<fg::FGAgent>();
 
     try
     {
@@ -340,6 +342,9 @@ int main(int argc, char* argv[])
         // Instantiate and register the power management module
         CBroker::Instance().RegisterModule("lb",boost::posix_time::milliseconds(CTimings::Get("LB_PHASE_TIME")));
         CDispatcher::Instance().RegisterReadHandler(LB, "lb");
+        // Instantiate and register the federated module
+        CBroker::Instance().RegisterModule("fg",boost::posix_time::milliseconds(CTimings::Get("GM_PHASE_TIME")));
+        CDispatcher::Instance().RegisterReadHandler(FG, "fg");
 
         // The peerlist should be passed into constructors as references or
         // pointers to each submodule to allow sharing peers. NOTE this requires

@@ -520,14 +520,21 @@ void GMAgent::Check( const boost::system::error_code& err )
             ModuleMessage m_ = AreYouCoordinator();
             Logger.Info <<"SEND: Sending out AYC"<<std::endl;
             std::map< std::string , bool > dummystate;
-            std::set<std::string> reachables = CPhysicalTopology::Instance().ReachablePeers(GetUUID(), dummystate, false, true);
+            std::set<std::string> reachables;
+            if(CPhysicalTopology::Instance().IsAvailable())
+            {
+                reachables = CPhysicalTopology::Instance().ReachablePeers(GetUUID(), dummystate, false, true);
+            }
             BOOST_FOREACH(CPeerNode& peer, CGlobalPeerList::instance().PeerList() | boost::adaptors::map_values)
             {
                 
                 if( peer.GetUUID() == GetUUID())
                     continue;
-                if( reachables.count(peer.GetUUID()) == 0)
-                    continue;
+                if(CPhysicalTopology::Instance().IsAvailable())
+                {
+                    if( reachables.count(peer.GetUUID()) == 0)
+                        continue;
+                }
                 peer.Send(m_);
                 InsertInTimedPeerSet(m_AYCResponse, peer, boost::posix_time::microsec_clock::universal_time());
             }

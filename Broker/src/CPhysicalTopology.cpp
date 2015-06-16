@@ -105,8 +105,12 @@ CPhysicalTopology::VertexSet CPhysicalTopology::ReachablePeers(std::string sourc
     std::set<std::string> closedset;
     std::set<std::string> solutionset;
 
-    if(global)
+    if(!global)
+    {
+        Logger.Debug<<"Exploration will be limited to the local area (limited by GTs)"<<std::endl;
         closedset = m_grid_ties;
+        Logger.Debug<<"Closed set has "<<closedset.size()<<" items"<<std::endl;
+    }
 
     // If the source isn't the adjacency list, let's throw an exception so
     // We can detect bad configurations, I assume that there's no instance
@@ -197,6 +201,7 @@ void CPhysicalTopology::LoadTopology()
     CPhysicalTopology::AdjacencyListMap altmp;
     CPhysicalTopology::FIDControlMap fctmp;
     CPhysicalTopology::VertexSet seennames;
+    CPhysicalTopology::VertexSet gt_tmp;
 
     std::string fp = CGlobalConfiguration::Instance().GetTopologyConfigPath();
     if(fp == "")
@@ -257,7 +262,7 @@ void CPhysicalTopology::LoadTopology()
             {
                 throw std::runtime_error("Failed Reading Vertex Topology Entry (EOF?)");
             }
-            m_grid_ties.insert(vsymbol);
+            gt_tmp.insert(vsymbol);
             Logger.Debug<<"Got Grid Tie: "<<vsymbol<<std::endl;
         }
         else if(token == CONTROL_TOKEN)
@@ -311,6 +316,11 @@ void CPhysicalTopology::LoadTopology()
         throw std::runtime_error("Physical Topology: UUID for virtual name missing.");
     }
     */
+
+    BOOST_FOREACH( std::string vname, gt_tmp)
+    {
+        m_grid_ties.insert(RealNameFromVirtual(vname));
+    }
 
     // Now we have to take the temporary ones and translate that into the real ones (Ugh!)
     BOOST_FOREACH( const AdjacencyListMap::value_type& mp, altmp )

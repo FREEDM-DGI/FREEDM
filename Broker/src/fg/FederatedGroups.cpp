@@ -281,6 +281,7 @@ void FGAgent::HandleIncomingMessage(boost::shared_ptr<const ModuleMessage> m, CP
 ///////////////////////////////////////////////////////////////////////////////
 void FGAgent::HandleStateMessage(const StateMessage &m, const CPeerNode& peer)
 {
+    Logger.Info << __PRETTY_FUNCTION__ << std::endl;
     // If you are not a coordinator, drop this message.
     if(!m_coordinator)
         return;
@@ -325,6 +326,7 @@ void FGAgent::HandleStateMessage(const StateMessage &m, const CPeerNode& peer)
 ///////////////////////////////////////////////////////////////////////////////
 void FGAgent::HandleResponseAYCMessage(const gm::AreYouCoordinatorResponseMessage & m, const CPeerNode& peer)
 {
+    Logger.Info << __PRETTY_FUNCTION__ << std::endl;
     std::string answer = m.payload();
     if(answer == "yes")
     {
@@ -361,6 +363,7 @@ void FGAgent::HandleResponseAYCMessage(const gm::AreYouCoordinatorResponseMessag
 ///////////////////////////////////////////////////////////////////////////////
 void FGAgent::HandlePeerListMessage(const gm::PeerListMessage&, const CPeerNode& peer)
 {
+    Logger.Info << __PRETTY_FUNCTION__ << std::endl;
     m_coordinators.clear();
     if(peer.GetUUID() == GetUUID())
     {
@@ -394,6 +397,7 @@ void FGAgent::HandlePeerListMessage(const gm::PeerListMessage&, const CPeerNode&
 ///////////////////////////////////////////////////////////////////////////////
 void FGAgent::HandleStateChangeMessage(const lb::StateChangeMessage &m, const CPeerNode&)
 {
+    Logger.Info << __PRETTY_FUNCTION__ << std::endl;
     std::string state = m.state();
     if(state == "demand")
         m_demandscore++;
@@ -414,6 +418,7 @@ void FGAgent::HandleStateChangeMessage(const lb::StateChangeMessage &m, const CP
 void FGAgent::HandleTakeMessage(const TakeMessage&, const CPeerNode & peer)
 {
 
+    Logger.Info << __PRETTY_FUNCTION__ << std::endl;
     std::set<device::CDevice::Pointer> vdev;
     vdev = device::CDeviceManager::Instance().GetDevicesOfType("Virtual");
     assert(vdev.size() > 0);
@@ -446,6 +451,7 @@ void FGAgent::HandleTakeMessage(const TakeMessage&, const CPeerNode & peer)
 ///////////////////////////////////////////////////////////////////////////////
 void FGAgent::HandleTakeResponseMessage(const TakeResponseMessage &m, const CPeerNode& )
 {
+    Logger.Info << __PRETTY_FUNCTION__ << std::endl;
     // If we get a yes message from the supply node, we can put our virtual device into the +1 state
     if(m.response() && m_vdev_sink)
     {

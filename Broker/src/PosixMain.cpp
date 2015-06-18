@@ -343,8 +343,8 @@ int main(int argc, char* argv[])
         CBroker::Instance().RegisterModule("lb",boost::posix_time::milliseconds(CTimings::Get("LB_PHASE_TIME")));
         CDispatcher::Instance().RegisterReadHandler(LB, "lb");
         // Instantiate and register the federated module
-        CBroker::Instance().RegisterModule("fg",boost::posix_time::milliseconds(CTimings::Get("GM_PHASE_TIME")));
-        CDispatcher::Instance().RegisterReadHandler(FG, "fg");
+        CBroker::Instance().RegisterModule("fg",boost::posix_time::milliseconds(CTimings::Get("LB_PHASE_TIME")));
+        CDispatcher::Instance().RegisterReadHandler(FG, "all");
 
         // The peerlist should be passed into constructors as references or
         // pointers to each submodule to allow sharing peers. NOTE this requires

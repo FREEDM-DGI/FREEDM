@@ -76,7 +76,7 @@ void CDispatcher::HandleRequest(boost::shared_ptr<const ModuleMessage> msg, std:
             = m_registrations.begin();
         it != m_registrations.end(); ++it)
     {
-        if (it->second == msg->recipient_module() || msg->recipient_module() == "all")
+        if (it->second == msg->recipient_module() || it->second == "all" || msg->recipient_module() == "all")
         {
             // Scheduled modules receive messages only during that module's phase.
             // Unscheduled modules receive messages immediately.

@@ -88,19 +88,22 @@ void FGAgent::Round(const boost::system::error_code & error)
         // Reschedule For the Next Round
         CBroker::Instance().Schedule(m_RoundTimer, boost::posix_time::not_a_date_time,
             boost::bind(&FGAgent::Round, this, boost::asio::placeholders::error));
-        
+         
         m_collection.set_coordinator(m_coordinator);
         
         if(m_coordinator)
         {
+            Logger.Info<<"Process is a coordinator"<<std::endl;
             std::set<device::CDevice::Pointer> vdev;
             vdev = device::CDeviceManager::Instance().GetDevicesOfType("Virtual");
             assert(vdev.size() > 0);
             
+            Logger.Info<<"Demand Score is "<<m_demandscore<<"...";
             // Determine what state to set my virtual device to.
             bool oldstate = m_vdev_sink;
             if(m_demandscore > 0)
             {
+                Logger.Info<<"DEMAND GROUP"<<std::endl;
                 // My group needs more juices!
                 // When this flag is set, and the distributed state indicates
                 // that there will be a device in supply,
@@ -109,6 +112,7 @@ void FGAgent::Round(const boost::system::error_code & error)
             }
             else
             {
+                Logger.Info<<"SUPPLY GROUP"<<std::endl;
                 // This process may be able to supply power to other groups in need.
                 m_vdev_sink = false;
             }
@@ -125,6 +129,7 @@ void FGAgent::Round(const boost::system::error_code & error)
                 //A take message
                 std::set<std::string> reachables = CPhysicalTopology::Instance().ReachablePeers(
                         GetUUID(), m_fidstate, true);
+                Logger.Info<<"Sending Take Message to: ";
                 // Fun times, now we need the intersection of Reachables, Suppliers, and Coordinators
                 BOOST_FOREACH(CPeerNode peer, m_coordinators | boost::adaptors::map_values)
                 {
@@ -134,7 +139,9 @@ void FGAgent::Round(const boost::system::error_code & error)
                         continue;
                     // Take from each first one:
                     peer.Send(Take());
+                    Logger.Info<<peer.GetUUID()<<", ";
                 }
+                Logger.Info<<std::endl;
             }
             else
             {
@@ -144,7 +151,17 @@ void FGAgent::Round(const boost::system::error_code & error)
                     // If the virtual device is inactive, this enters the -1 state to try and buy power from the
                     // grid. If the virtual device is positive it already has energy to sell.
                     if((*vdev.begin())->GetState("gateway") == 0.0)
+                    {
                         (*vdev.begin())->SetCommand("gateway", -CGlobalConfiguration::Instance().GetMigrationStep());
+                        Logger.Info<<"Setting Virtual Device to "
+                                   <<-CGlobalConfiguration::Instance().GetMigrationStep()<<std::endl;
+                    }
+                    else
+                    {
+
+                        Logger.Info<<"Virtual Device set to "
+                                   <<(*vdev.begin())->GetState("gateway")<<std::endl;
+                    }
                     // The virtual device only returns to -1 on a successful transaction.
                 }
                 // If a process announces they are selling power to the federated grid, they will
@@ -163,10 +180,13 @@ void FGAgent::Round(const boost::system::error_code & error)
             ModuleMessage tosend = PrepareForSending(fgm, std::string("fg"));
             // For every peer
             // Send them a message!
+            Logger.Info<<"Distributing state info to peers: ";
             BOOST_FOREACH(CPeerNode peer, m_coordinators | boost::adaptors::map_values)
             {
                 peer.Send(tosend);
+                Logger.Info<<peer.GetUUID()<<", ";
             }
+            Logger.Info<<std::endl;
             // Clean Up for the next round.
             // Clear out the old responses from the message
             m_collection.clear_ayc_responses();

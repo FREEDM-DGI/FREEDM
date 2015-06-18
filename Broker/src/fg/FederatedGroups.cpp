@@ -131,10 +131,15 @@ void FGAgent::Round(const boost::system::error_code & error)
                         GetUUID(), m_fidstate, true);
                 // Fun times, now we need the intersection of Reachables, Suppliers, and Coordinators
                 BOOST_FOREACH(CPeerNode peer, m_coordinators | boost::adaptors::map_values)
+                    Logger.Info<<"Coordinator: "<<peer.GetUUID()<<std::endl;
+
+                BOOST_FOREACH(CPeerNode peer, m_coordinators | boost::adaptors::map_values)
                 {
                     if(reachables.count(peer.GetUUID()) == 0)
                         continue;
                     if(CountInPeerSet(m_suppliers, peer) == 0)
+                        continue;
+                    if(peer == GetMe())
                         continue;
                     // Take from each first one:
                     peer.Send(Take());
@@ -179,7 +184,7 @@ void FGAgent::Round(const boost::system::error_code & error)
             ModuleMessage tosend = PrepareForSending(fgm, std::string("fg"));
             // For every peer
             // Send them a message!
-            BOOST_FOREACH(CPeerNode peer, m_coordinators | boost::adaptors::map_values)
+            BOOST_FOREACH(CPeerNode peer, CGlobalPeerList::instance().PeerList() | boost::adaptors::map_values)
             {
                 peer.Send(tosend);
                 Logger.Info<<"Distributing state info to peers: "<<peer.GetUUID()<<std::endl;

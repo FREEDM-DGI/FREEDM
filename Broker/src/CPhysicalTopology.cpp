@@ -89,10 +89,13 @@ bool CPhysicalTopology::IsAvailable()
 /// @param fidstate a map that is FID Name -> State. A closed FID is true, an
 ///     open FID is false. If an FID is open edges it controls are not used.
 /// @param global If this is true (false by default) the search can cross
-//      grid ties.
+///      grid ties.
+/// @param assume The default assumed state for FIDs. If this is true,
+///		FID's whose information is not provided are considered closed.
+///		Otherwise, they are considered open.
 ///////////////////////////////////////////////////////////////////////////////
 CPhysicalTopology::VertexSet CPhysicalTopology::ReachablePeers(std::string source,
-    CPhysicalTopology::FIDState fidstate, bool global)
+    CPhysicalTopology::FIDState fidstate, bool global, bool assume)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     typedef std::pair<int, std::string> BFSExplorer;
@@ -150,8 +153,7 @@ CPhysicalTopology::VertexSet CPhysicalTopology::ReachablePeers(std::string sourc
             {
                 std::string controlfid = it->second;
                 // An FID controls this edge
-                if(fidstate.count(controlfid) == 0
-                    || fidstate[controlfid] == false)
+                if((fidstate.count(controlfid) == 0 && assume == false) || fidstate[controlfid] == false)
                 {
                     // If we don't have the state of an FID, assume it is OPEN.
                     // If the fid is OPEN (false) then that edge is not

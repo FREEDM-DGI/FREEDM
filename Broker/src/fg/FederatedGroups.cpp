@@ -439,7 +439,7 @@ void FGAgent::HandleTakeMessage(const TakeMessage&, const CPeerNode & peer)
     // If we receive a take message, and we a not a sink, and our virtual device reads 0, we can
     // respond yes to this take message
     bool respond_yes = false;
-    if(!m_vdev_sink && (*vdev.begin())->GetState("iateway") >= 0.0)
+    if(!m_vdev_sink && (*vdev.begin())->GetState("gateway") >= 0.0)
     {
         // After we respond, we can put our virtual device back into the -1 state, to sell more power to the grid.
         (*vdev.begin())->SetCommand("gateway", (*vdev.begin())->GetState("gateway")-CGlobalConfiguration::Instance().GetMigrationStep());

@@ -787,6 +787,19 @@ void LBAgent::DraftStandard(const boost::system::error_code & error)
         {
             SendDraftSelect(selected_peer, m_MigrationStep);
         }
+        else if(m_DraftAge.size() == 0 && m_State == LBAgent::SUPPLY)
+        {
+            // This process has generation, but nobody in the group wants any
+            // If the virtual device wants so juice, let's sell it some.
+            Logger.Status<<"No peers are in demand state. Federating SUPPLY"<<std::endl;
+            float virt = device::CDeviceManager::Instance().GetNetValue("Virtual", "gateway");
+            if(virt < 0.0)
+            {
+                float amount = m_MigrationStep;
+                SetPStar(m_PredictedGateway - amount);
+                ConsumeVirtual(amount);
+            }
+        }
     }
     else if(error == boost::asio::error::operation_aborted)
     {

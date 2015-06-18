@@ -265,7 +265,7 @@ void LBAgent::FirstRound(const boost::system::error_code & error)
 
     if(!error)
     {
-        m_Synchronized = false;
+        m_Synchronized = true;
         ScheduleStateCollection();
         CBroker::Instance().Schedule("lb",
             boost::bind(&LBAgent::LoadManage, this, boost::system::error_code()));

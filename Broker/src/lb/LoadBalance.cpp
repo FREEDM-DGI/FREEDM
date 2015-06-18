@@ -396,8 +396,15 @@ void LBAgent::UpdateState()
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
     int sstCount = device::CDeviceManager::Instance().GetDevicesOfType("Sst").size();
+    float virt = device::CDeviceManager::Instance().GetNetValue("Virtual", "gateway");
     Logger.Debug << "Recognize " << sstCount << " attached SST devices." << std::endl;
 
+    if(sstCount > 0 && m_NetGeneration <= m_Gateway - m_MigrationStep)
+    {
+        // This will be in demand but not really.
+        SetPStar(m_Gateway + virt);
+        ConsumeVirtual(-virt);
+    }
     if(sstCount > 0 && m_NetGeneration >= m_Gateway + m_MigrationStep)
     {
         if(m_State != LBAgent::SUPPLY)
@@ -416,7 +423,25 @@ void LBAgent::UpdateState()
     }
     else
     {
-        if(m_State != LBAgent::NORMAL)
+        // This point, you can use the virtual device to determine your state
+        // real power has decided your state, and now the virtual power will
+        if(virt > 0)
+        {
+            if(m_State != LBAgent::SUPPLY)
+            {
+                m_State = LBAgent::SUPPLY;
+                Logger.Info << "Changed to SUPPLY state. (VIRTUAL)" << std::endl;
+            }
+        }
+        else if(virt < 0)
+        {
+            if(m_State != LBAgent::DEMAND)
+            {
+                m_State = LBAgent::DEMAND;
+                Logger.Info << "Changed to DEMAND state." << std::endl;
+            }
+        }       
+        else if(m_State != LBAgent::NORMAL)
         {
             m_State = LBAgent::NORMAL;
             Logger.Info << "Changed to NORMAL state." << std::endl;
@@ -440,9 +465,11 @@ void LBAgent::LoadTable()
     int drer_count = device::CDeviceManager::Instance().GetDevicesOfType("Drer").size();
     int desd_count = device::CDeviceManager::Instance().GetDevicesOfType("Desd").size();
     int load_count = device::CDeviceManager::Instance().GetDevicesOfType("Load").size();
+    int virtual_count = device::CDeviceManager::Instance().GetDevicesOfType("Virtual").size();
     float generation = device::CDeviceManager::Instance().GetNetValue("Drer", "generation");
     float storage = device::CDeviceManager::Instance().GetNetValue("Desd", "storage");
     float load = device::CDeviceManager::Instance().GetNetValue("Load", "drain");
+    float virt = device::CDeviceManager::Instance().GetNetValue("Virtual", "gateway");
 
     std::stringstream loadtable;
     loadtable << std::setprecision(2) << std::fixed;
@@ -453,6 +480,8 @@ void LBAgent::LoadTable()
         << "):  " << storage << std::endl;
     loadtable << "\tNet Load (" << std::setfill('0') << std::setw(2) << load_count
         << "):  " << load << std::endl;
+    loadtable << "\tNet Virtual (" << std::setfill('0') << std::setw(2) << virtual_count
+        << "):  " << virt << std::endl;
     loadtable << "\t---------------------------------------------" << std::endl;
     loadtable << "\tSST Gateway:    " << m_Gateway << std::endl;
     loadtable << "\tNet Generation: " << m_NetGeneration << std::endl;
@@ -790,10 +819,14 @@ void LBAgent::SendDraftSelect(CPeerNode peer, float step)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
+    float virt = device::CDeviceManager::Instance().GetNetValue("Virtual", "gateway");
     try
     {
         peer.Send(MessageDraftSelect(step));
-        SetPStar(m_PredictedGateway + step);
+        if(virt == 0.0)
+            SetPStar(m_PredictedGateway + step);
+        else
+            ConsumeVirtual(step);
         m_PowerDifferential += step;
     }
     catch(boost::system::system_error & e)
@@ -841,7 +874,11 @@ void LBAgent::HandleDraftSelect(const DraftSelectMessage & m, CPeerNode peer)
             if(m_NetGeneration <= m_PredictedGateway - amount)
             {
                 peer.Send(MessageDraftAccept(amount));
-                SetPStar(m_PredictedGateway - amount);
+                float virt = device::CDeviceManager::Instance().GetNetValue("Virtual", "gateway");
+                if(virt == 0.0)
+                    SetPStar(m_PredictedGateway - amount);
+                else
+                    ConsumeVirtual(-amount);
             }
             else
             {
@@ -920,7 +957,11 @@ void LBAgent::HandleDraftAccept(const DraftAcceptMessage & m, CPeerNode /* peer 
 void LBAgent::HandleTooLate(const TooLateMessage & m)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    SetPStar(m_PredictedGateway - m.migrate_step());
+    float virt = device::CDeviceManager::Instance().GetNetValue("Virtual", "gateway");
+    if(virt == 0.0)
+        SetPStar(m_PredictedGateway - m.migrate_step());
+    else
+        ConsumeVirtual(-m.migrate_step());
     m_PowerDifferential -= m.migrate_step();
 }
 
@@ -972,6 +1013,7 @@ void LBAgent::SetPStar(float pstar)
 
     std::set<device::CDevice::Pointer> sstContainer;
     sstContainer = device::CDeviceManager::Instance().GetDevicesOfType("Sst");
+    
 
     if(sstContainer.size() > 0)
     {
@@ -989,6 +1031,21 @@ void LBAgent::SetPStar(float pstar)
         Logger.Warn << "Failed to set P*: no attached SST device" << std::endl;
     }
 }
+
+///////////////////////////////////////////////////////////////////////////////
+/// ConsumeVirtual
+/// @description Migrates power by adjusting the virtual device attached to the
+///     DGI
+/// @pre None
+/// @post The state of the virtual device is adjusted by the specified amount
+/// @param amount the amount to adjust the virtual device
+///////////////////////////////////////////////////////////////////////////////
+void LBAgent::ConsumeVirtual(float amount)
+{
+    std::set<device::CDevice::Pointer> vdev;
+    vdev = device::CDeviceManager::Instance().GetDevicesOfType("Virtual");
+    (*vdev.begin())->SetCommand("Gateway", (*vdev.begin())->GetState("Gateway")+amount);
+} 
 
 ///////////////////////////////////////////////////////////////////////////////
 /// Wraps a LoadBalancingMessage in a ModuleMessage.

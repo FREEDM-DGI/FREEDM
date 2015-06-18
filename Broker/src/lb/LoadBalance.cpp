@@ -311,6 +311,7 @@ void LBAgent::LoadManage(const boost::system::error_code & error)
             if(m_State == LBAgent::DEMAND)
             {
                 SendToPeerSet(m_AllPeers, MessageStateChange("demand"));
+                GetMe().Send(MessageStateChange("demand"));
                 Logger.Notice << "Sending state change, DEMAND" << std::endl;
             }
 
@@ -556,7 +557,11 @@ void LBAgent::HandleStateChange(const StateChangeMessage & m, CPeerNode peer)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
-    if(CountInPeerSet(m_AllPeers, peer) == 0)
+    if(peer == GetMe())
+    {
+        Logger.Debug << "Ignoring state message from myself" << std::endl;
+    }
+    else if(CountInPeerSet(m_AllPeers, peer) == 0)
     {
         Logger.Warn << "State from unknown peer: " << peer.GetUUID() << std::endl;
     }

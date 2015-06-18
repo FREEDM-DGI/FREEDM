@@ -98,7 +98,7 @@ void FGAgent::Round(const boost::system::error_code & error)
             vdev = device::CDeviceManager::Instance().GetDevicesOfType("Virtual");
             assert(vdev.size() > 0);
             
-            Logger.Info<<"Demand Score is "<<m_demandscore<<"...";
+            Logger.Info<<"Demand Score is "<<m_demandscore<<"..."<<std::endl;
             // Determine what state to set my virtual device to.
             bool oldstate = m_vdev_sink;
             if(m_demandscore > 0)
@@ -129,7 +129,6 @@ void FGAgent::Round(const boost::system::error_code & error)
                 //A take message
                 std::set<std::string> reachables = CPhysicalTopology::Instance().ReachablePeers(
                         GetUUID(), m_fidstate, true);
-                Logger.Info<<"Sending Take Message to: ";
                 // Fun times, now we need the intersection of Reachables, Suppliers, and Coordinators
                 BOOST_FOREACH(CPeerNode peer, m_coordinators | boost::adaptors::map_values)
                 {
@@ -139,7 +138,7 @@ void FGAgent::Round(const boost::system::error_code & error)
                         continue;
                     // Take from each first one:
                     peer.Send(Take());
-                    Logger.Info<<peer.GetUUID()<<", ";
+                    Logger.Info<<"Sending Take Message to: "<<peer.GetUUID()<<std::ednl;
                 }
                 Logger.Info<<std::endl;
             }
@@ -180,11 +179,10 @@ void FGAgent::Round(const boost::system::error_code & error)
             ModuleMessage tosend = PrepareForSending(fgm, std::string("fg"));
             // For every peer
             // Send them a message!
-            Logger.Info<<"Distributing state info to peers: ";
             BOOST_FOREACH(CPeerNode peer, m_coordinators | boost::adaptors::map_values)
             {
                 peer.Send(tosend);
-                Logger.Info<<peer.GetUUID()<<", ";
+                Logger.Info<<"Distributing state info to peers: "<<peer.GetUUID()<<std::endl;
             }
             Logger.Info<<std::endl;
             // Clean Up for the next round.

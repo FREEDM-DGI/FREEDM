@@ -138,7 +138,7 @@ void FGAgent::Round(const boost::system::error_code & error)
                         continue;
                     // Take from each first one:
                     peer.Send(Take());
-                    Logger.Info<<"Sending Take Message to: "<<peer.GetUUID()<<std::ednl;
+                    Logger.Info<<"Sending Take Message to: "<<peer.GetUUID()<<std::endl;
                 }
                 Logger.Info<<std::endl;
             }

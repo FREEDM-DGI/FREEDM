@@ -403,7 +403,7 @@ void LBAgent::UpdateState()
     if(sstCount > 0 && m_NetGeneration <= m_Gateway - m_MigrationStep)
     {
         // This will be in demand but not really.
-        SetPStar(m_Gateway + virt);
+        SetPStar(m_Gateway-virt);
         ConsumeVirtual(-virt);
     }
     if(sstCount > 0 && m_NetGeneration >= m_Gateway + m_MigrationStep)
@@ -792,7 +792,7 @@ void LBAgent::DraftStandard(const boost::system::error_code & error)
             if(virt < 0.0)
             {
                 float amount = m_MigrationStep;
-                SetPStar(m_PredictedGateway - amount);
+                SetPStar(m_PredictedGateway+amount);
                 ConsumeVirtual(amount);
             }
         }

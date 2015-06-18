@@ -133,7 +133,7 @@ void FGAgent::Round(const boost::system::error_code & error)
                 BOOST_FOREACH(CPeerNode peer, m_coordinators | boost::adaptors::map_values)
                     Logger.Info<<"Coordinator: "<<peer.GetUUID()<<std::endl;
 
-                BOOST_FOREACH(CPeerNode peer, m_coordinators | boost::adaptors::map_values)
+                BOOST_FOREACH(CPeerNode peer, m_suppliers | boost::adaptors::map_values)
                 {
                     if(reachables.count(peer.GetUUID()) == 0)
                         continue;
@@ -145,7 +145,6 @@ void FGAgent::Round(const boost::system::error_code & error)
                     peer.Send(Take());
                     Logger.Info<<"Sending Take Message to: "<<peer.GetUUID()<<std::endl;
                 }
-                Logger.Info<<std::endl;
             }
             else
             {
@@ -291,9 +290,15 @@ void FGAgent::HandleStateMessage(const StateMessage &m, const CPeerNode& peer)
     // If they are not a coordinator, make a note
     if(!m.coordinator())
     {
+        Logger.Info<<"Removed Coordinator process: "<<peer.GetUUID()<<std::endl; 
         EraseInPeerSet(m_coordinators, peer);
         EraseInPeerSet(m_suppliers, peer);
         return;
+    }
+    else
+    {
+        Logger.Info<<"Added Coordinator process: "<<peer.GetUUID()<<std::endl; 
+        InsertInPeerSet(m_coordinators, peer);
     }
     // Add their info to the physical topology module
     // For each AYC response message in the set:
@@ -309,9 +314,15 @@ void FGAgent::HandleStateMessage(const StateMessage &m, const CPeerNode& peer)
         InsertInPeerSet(m_coordinators, CGlobalPeerList::instance().GetPeer(sub.leader_uuid()));
     }
     if(m.selling())
+    {
+        Logger.Info<<"Added SUPPLY process: "<<peer.GetUUID()<<std::endl; 
         InsertInPeerSet(m_suppliers, peer);
+    }
     else
+    {
+        Logger.Info<<"Removed SUPPLY process: "<<peer.GetUUID()<<std::endl; 
         EraseInPeerSet(m_suppliers, peer); 
+    }
 }
 
 ///////////////////////////////////////////////////////////////////////////////

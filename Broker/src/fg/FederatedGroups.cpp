@@ -30,8 +30,8 @@ FGAgent::FGAgent()
     m_vadapter = device::CFakeAdapter::Create();
     device::DeviceInfo devinfo;
     devinfo.s_type.insert("Virtual");
-    devinfo.s_state.insert("Gateway");
-    devinfo.s_command.insert("Gateway");
+    devinfo.s_state.insert("gateway");
+    devinfo.s_command.insert("gateway");
     device::CDevice::Pointer dev(new device::CDevice(devname, devinfo, m_vadapter));
     device::CDeviceManager::Instance().AddDevice(dev);
     m_vadapter->Start();
@@ -143,8 +143,8 @@ void FGAgent::Round(const boost::system::error_code & error)
                     // The group has changed state. Set the state of the virtual device based on the new state
                     // If the virtual device is inactive, this enters the -1 state to try and buy power from the
                     // grid. If the virtual device is positive it already has energy to sell.
-                    if((*vdev.begin())->GetState("Gateway") == 0.0)
-                        (*vdev.begin())->SetCommand("Gateway", -CGlobalConfiguration::Instance().GetMigrationStep());
+                    if((*vdev.begin())->GetState("gateway") == 0.0)
+                        (*vdev.begin())->SetCommand("gateway", -CGlobalConfiguration::Instance().GetMigrationStep());
                     // The virtual device only returns to -1 on a successful transaction.
                 }
                 // If a process announces they are selling power to the federated grid, they will
@@ -400,10 +400,10 @@ void FGAgent::HandleTakeMessage(const TakeMessage&, const CPeerNode & peer)
     // If we receive a take message, and we a not a sink, and our virtual device reads 0, we can
     // respond yes to this take message
     bool respond_yes = false;
-    if(!m_vdev_sink && (*vdev.begin())->GetState("Gateway") >= 0.0)
+    if(!m_vdev_sink && (*vdev.begin())->GetState("iateway") >= 0.0)
     {
         // After we respond, we can put our virtual device back into the -1 state, to sell more power to the grid.
-        (*vdev.begin())->SetCommand("Gateway", (*vdev.begin())->GetState("Gateway")-CGlobalConfiguration::Instance().GetMigrationStep());
+        (*vdev.begin())->SetCommand("gateway", (*vdev.begin())->GetState("gateway")-CGlobalConfiguration::Instance().GetMigrationStep());
         respond_yes = true;
     }
     ModuleMessage resp = TakeResponse(respond_yes);
@@ -432,7 +432,7 @@ void FGAgent::HandleTakeResponseMessage(const TakeResponseMessage &m, const CPee
         std::set<device::CDevice::Pointer> vdev;
         vdev = device::CDeviceManager::Instance().GetDevicesOfType("Virtual");
         assert(vdev.size() > 0);
-        (*vdev.begin())->SetCommand("Gateway", (*vdev.begin())->GetState("Gateway")+CGlobalConfiguration::Instance().GetMigrationStep());
+        (*vdev.begin())->SetCommand("gateway", (*vdev.begin())->GetState("gateway")+CGlobalConfiguration::Instance().GetMigrationStep());
     }
     // Otherwise, do nothing.
 }

@@ -1044,7 +1044,7 @@ void LBAgent::ConsumeVirtual(float amount)
 {
     std::set<device::CDevice::Pointer> vdev;
     vdev = device::CDeviceManager::Instance().GetDevicesOfType("Virtual");
-    (*vdev.begin())->SetCommand("Gateway", (*vdev.begin())->GetState("Gateway")+amount);
+    (*vdev.begin())->SetCommand("gateway", (*vdev.begin())->GetState("gateway")+amount);
 } 
 
 ///////////////////////////////////////////////////////////////////////////////

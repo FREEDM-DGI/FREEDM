@@ -617,10 +617,6 @@ void LBAgent::SendDraftRequest()
     {
         Logger.Notice << "Draft Request Cancelled: not in SUPPLY" << std::endl;
     }
-    else if(m_InDemand.empty())
-    {
-        Logger.Notice << "Draft Request Cancelled: no DEMAND" << std::endl;
-    }
     else if(!InvariantCheck())
     {
         Logger.Notice << "Draft Request Cancelled: invariant false" << std::endl;

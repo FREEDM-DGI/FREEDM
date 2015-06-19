@@ -406,7 +406,7 @@ void LBAgent::UpdateState()
         SetPStar(m_Gateway-virt);
         ConsumeVirtual(-virt);
     }
-    if(sstCount > 0 && (m_NetGeneration - m_Gateway) >= m_MigrationStep)
+    if(sstCount > 0 && m_NetGeneration >= m_Gateway -  m_MigrationStep)
     {
         if(m_State != LBAgent::SUPPLY)
         {
@@ -414,7 +414,7 @@ void LBAgent::UpdateState()
             Logger.Info << "Changed to SUPPLY state." << std::endl;
         }
     }
-    else if(sstCount > 0 && abs(m_NetGeneration - m_Gateway) >= m_MigrationStep)
+    else if(sstCount > 0 m_NetGeneration <= m_Gateway - m_MigrationStep)
     {
         if(m_State != LBAgent::DEMAND)
         {
@@ -426,7 +426,7 @@ void LBAgent::UpdateState()
     {
         // This point, you can use the virtual device to determine your state
         // real power has decided your state, and now the virtual power will
-        if(virt > 0)
+        if(virt > 0.0)
         {
             if(m_State != LBAgent::SUPPLY)
             {
@@ -434,12 +434,12 @@ void LBAgent::UpdateState()
                 Logger.Info << "Changed to SUPPLY state. (VIRTUAL)" << std::endl;
             }
         }
-        else if(virt < 0)
+        else if(virt < 0.0)
         {
             if(m_State != LBAgent::DEMAND)
             {
                 m_State = LBAgent::DEMAND;
-                Logger.Info << "Changed to DEMAND state." << std::endl;
+                Logger.Info << "Changed to DEMAND state. (VIRTUAL)" << std::endl;
             }
         }       
         else if(m_State != LBAgent::NORMAL)

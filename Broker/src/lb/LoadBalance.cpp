@@ -414,7 +414,7 @@ void LBAgent::UpdateState()
             Logger.Info << "Changed to SUPPLY state." << std::endl;
         }
     }
-    else if(sstCount > 0 m_NetGeneration <= m_Gateway - m_MigrationStep)
+    else if(sstCount > 0 && m_NetGeneration <= m_Gateway - m_MigrationStep)
     {
         if(m_State != LBAgent::DEMAND)
         {

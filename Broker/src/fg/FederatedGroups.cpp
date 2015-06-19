@@ -197,8 +197,21 @@ void FGAgent::Round(const boost::system::error_code & error)
         }
         else
         {
+            std::set<device::CDevice::Pointer> vdev;
+            vdev = device::CDeviceManager::Instance().GetDevicesOfType("Virtual");
+            (*vdev.begin())->SetCommand("gateway", 0.0);
             m_collection.clear_ayc_responses();
             m_collection.set_selling(false); 
+            FederatedGroupsMessage fgm;
+            *fgm.mutable_state_message() = m_collection;
+            ModuleMessage tosend = PrepareForSending(fgm, std::string("fg"));
+            // For every peer
+            // Send them a message!
+            BOOST_FOREACH(CPeerNode peer, CGlobalPeerList::instance().PeerList() | boost::adaptors::map_values)
+            {
+                peer.Send(tosend);
+                Logger.Info<<"Distributing non-coordinator state info to peers: "<<peer.GetUUID()<<std::endl;
+            }
         }
     }
 }

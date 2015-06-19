@@ -443,6 +443,8 @@ void FGAgent::HandleTakeMessage(const TakeMessage&, const CPeerNode & peer)
     {
         // After we respond, we can put our virtual device back into the -1 state, to sell more power to the grid.
         (*vdev.begin())->SetCommand("gateway", (*vdev.begin())->GetState("gateway")-CGlobalConfiguration::Instance().GetMigrationStep());
+        Logger.Info<<"GIVE SUPPLY : Lowered Virtual Device to "<<(*vdev.begin())->GetState("gateway")
+                   <<"for "<<peer.GetUUID()<<std::endl;
         respond_yes = true;
     }
     ModuleMessage resp = TakeResponse(respond_yes);
@@ -463,7 +465,7 @@ void FGAgent::HandleTakeMessage(const TakeMessage&, const CPeerNode & peer)
 /// @post Responds to a peer with a TakeConfirm message if they have taken
 ///     that quantum of power.
 ///////////////////////////////////////////////////////////////////////////////
-void FGAgent::HandleTakeResponseMessage(const TakeResponseMessage &m, const CPeerNode& )
+void FGAgent::HandleTakeResponseMessage(const TakeResponseMessage &m, const CPeerNode& peer )
 {
     Logger.Info << __PRETTY_FUNCTION__ << std::endl;
     // If we get a yes message from the supply node, we can put our virtual device into the +1 state
@@ -473,6 +475,12 @@ void FGAgent::HandleTakeResponseMessage(const TakeResponseMessage &m, const CPee
         vdev = device::CDeviceManager::Instance().GetDevicesOfType("Virtual");
         assert(vdev.size() > 0);
         (*vdev.begin())->SetCommand("gateway", (*vdev.begin())->GetState("gateway")+CGlobalConfiguration::Instance().GetMigrationStep());
+        Logger.Info<<"TAKE SUPPLY : Raised Virtual Device to "<<(*vdev.begin())->GetState("gateway")
+                   <<"from "<<peer.GetUUID()<<std::endl;
+    }
+    else if(!m.response())
+    {
+        Logger.Info<<"TAKE REJECTED : "<<peer.GetUUID()<<" rejected Take request."<<std::endl;
     }
     // Otherwise, do nothing.
 }

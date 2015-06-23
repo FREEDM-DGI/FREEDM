@@ -898,7 +898,7 @@ void LBAgent::HandleDraftSelect(const DraftSelectMessage & m, CPeerNode peer)
             {
                 peer.Send(MessageDraftAccept(amount));
                 float virt = device::CDeviceManager::Instance().GetNetValue("Virtual", "gateway");
-                if(virt == 0.0)
+                if(virt <= 0.0)
                 {
                     Logger.Info<<"Settting PStar : Consuming power for draft select."<<std::endl;
                     SetPStar(m_PredictedGateway - amount);

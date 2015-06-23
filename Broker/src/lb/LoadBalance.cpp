@@ -326,6 +326,7 @@ void LBAgent::LoadManage(const boost::system::error_code & error)
         }
         else
         {
+            Logger.Info<<"Settting PStar : recycling old value since DGI is disabled"<<std::endl;
             SetPStar(m_Gateway);
         }
     }
@@ -402,9 +403,13 @@ void LBAgent::UpdateState()
 
     if(sstCount > 0 && m_NetGeneration <= m_Gateway - m_MigrationStep)
     {
-        // This will be in demand but not really.
-        SetPStar(m_Gateway-virt);
-        ConsumeVirtual(-virt);
+        if(virt > 0)
+        {
+            // If this process is in a demand state, we should consume some virtual power.
+            Logger.Info<<"Settting PStar : Consuming virtual to fulfill local demand."<<std::endl;
+            SetPStar(m_Gateway-virt);
+            ConsumeVirtual(-virt);
+        }
     }
     if(sstCount > 0 && m_NetGeneration >= m_Gateway -  m_MigrationStep)
     {
@@ -792,6 +797,7 @@ void LBAgent::DraftStandard(const boost::system::error_code & error)
             if(virt < 0.0)
             {
                 float amount = m_MigrationStep;
+                Logger.Info<<"Settting PStar : Group uninterested, sell to grid."<<std::endl;
                 SetPStar(m_PredictedGateway+amount);
                 ConsumeVirtual(amount);
             }
@@ -838,7 +844,10 @@ void LBAgent::SendDraftSelect(CPeerNode peer, float step)
     {
         peer.Send(MessageDraftSelect(step));
         if(virt == 0.0)
+        {
+            Logger.Info<<"Settting PStar : Sending power for draft select.."<<std::endl;
             SetPStar(m_PredictedGateway + step);
+        }
         else
             ConsumeVirtual(step);
         m_PowerDifferential += step;
@@ -890,7 +899,10 @@ void LBAgent::HandleDraftSelect(const DraftSelectMessage & m, CPeerNode peer)
                 peer.Send(MessageDraftAccept(amount));
                 float virt = device::CDeviceManager::Instance().GetNetValue("Virtual", "gateway");
                 if(virt == 0.0)
+                {
+                    Logger.Info<<"Settting PStar : Consuming power for draft select."<<std::endl;
                     SetPStar(m_PredictedGateway - amount);
+                }
                 else
                     ConsumeVirtual(-amount);
             }
@@ -973,7 +985,10 @@ void LBAgent::HandleTooLate(const TooLateMessage & m)
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     float virt = device::CDeviceManager::Instance().GetNetValue("Virtual", "gateway");
     if(virt == 0.0)
+    {
+        Logger.Info<<"Settting PStar : Rolling back un-needed migration."<<std::endl;
         SetPStar(m_PredictedGateway - m.migrate_step());
+    }
     else
         ConsumeVirtual(-m.migrate_step());
     m_PowerDifferential -= m.migrate_step();

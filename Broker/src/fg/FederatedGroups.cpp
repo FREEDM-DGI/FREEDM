@@ -133,17 +133,24 @@ void FGAgent::Round(const boost::system::error_code & error)
                 BOOST_FOREACH(CPeerNode peer, m_coordinators | boost::adaptors::map_values)
                     Logger.Info<<"Coordinator: "<<peer.GetUUID()<<std::endl;
 
-                BOOST_FOREACH(CPeerNode peer, m_suppliers | boost::adaptors::map_values)
+                if((*vdev.begin())->GetState("gateway") == 0.0)
                 {
-                    if(reachables.count(peer.GetUUID()) == 0)
-                        continue;
-                    if(CountInPeerSet(m_suppliers, peer) == 0)
-                        continue;
-                    if(peer == GetMe())
-                        continue;
-                    // Take from each first one:
-                    peer.Send(Take());
-                    Logger.Info<<"Sending Take Message to: "<<peer.GetUUID()<<std::endl;
+                    ///CASE4
+                    ///CASE5
+                    ///CASE6
+                    ///CASE15
+                    BOOST_FOREACH(CPeerNode peer, m_suppliers | boost::adaptors::map_values)
+                    {
+                        if(reachables.count(peer.GetUUID()) == 0)
+                            continue;
+                        if(CountInPeerSet(m_suppliers, peer) == 0)
+                            continue;
+                        if(peer == GetMe())
+                            continue;
+                        // Take from each first one:
+                        peer.Send(Take());
+                        Logger.Info<<"Sending Take Message to: "<<peer.GetUUID()<<std::endl;
+                    }
                 }
             }
             else
@@ -151,25 +158,30 @@ void FGAgent::Round(const boost::system::error_code & error)
                 if(oldstate != m_vdev_sink)
                 {
                     // The group has changed state. Set the state of the virtual device based on the new state
-                    // If the virtual device is inactive, this enters the -1 state to try and buy power from the
-                    // grid. If the virtual device is positive it already has energy to sell.
-                    if((*vdev.begin())->GetState("gateway") == 0.0)
+                    // If the virtual device is inactive, this enters the -1 state to try and sell power to the
+                    // grid.
+                    if((*vdev.begin())->GetState("gateway") == 1.0)
                     {
-                        (*vdev.begin())->SetCommand("gateway", -CGlobalConfiguration::Instance().GetMigrationStep());
-                        Logger.Info<<"Setting Virtual Device to "
-                                   <<-CGlobalConfiguration::Instance().GetMigrationStep()<<std::endl;
+                        // There is already power to sell here.
+                        (*vdev.begin())->SetCommand("gateway", 0);
                     }
                     else
                     {
-
-                        Logger.Info<<"Virtual Device set to "
-                                   <<(*vdev.begin())->GetState("gateway")<<std::endl;
+                        // We'll need to acquire some power first.
+                        (*vdev.begin())->SetCommand("gateway", -CGlobalConfiguration::Instance().GetMigrationStep());
                     }
+                    Logger.Info<<"Setting Virtual Device to "
+                               <<(*vdev.begin())->GetState("gateway")<<std::endl;
                     // The virtual device only returns to -1 on a successful transaction.
                 }
                 // If a process announces they are selling power to the federated grid, they will
                 // Announce it in their next state message.
-                
+                if((*vdev.begin())->GetState("gateway") == 1.0)
+                {
+                    // Action is based on Cases 10 and 11
+                    Logger.Warn<<"Group is in SUPPLY state with +1.0 on Virtual Device. Selling back to grid."<<std::endl;
+                    (*vdev.begin())->SetCommand("gateway", 0);
+                } 
                 // If the device reading is ZERO it is selling power to the federated grid.
                 // On receiving the state message from another process it will attempt to sell them
                 // The power they are selling to the grid. Demand process will select a group.
@@ -452,10 +464,14 @@ void FGAgent::HandleTakeMessage(const TakeMessage&, const CPeerNode & peer)
     // If we receive a take message, and we a not a sink, and our virtual device reads 0, we can
     // respond yes to this take message
     bool respond_yes = false;
-    if(!m_vdev_sink && (*vdev.begin())->GetState("gateway") >= 0.0)
+    if(!m_vdev_sink && (*vdev.begin())->GetState("gateway") == 0.0)
     {
         // After we respond, we can put our virtual device back into the -1 state, to sell more power to the grid.
-        (*vdev.begin())->SetCommand("gateway", (*vdev.begin())->GetState("gateway")-CGlobalConfiguration::Instance().GetMigrationStep());
+        ///CASE13
+        ///CASE14
+        ///CASE22
+        ///CASE23
+        (*vdev.begin())->SetCommand("gateway", -CGlobalConfiguration::Instance().GetMigrationStep());
         Logger.Info<<"GIVE SUPPLY : Lowered Virtual Device to "<<(*vdev.begin())->GetState("gateway")
                    <<"for "<<peer.GetUUID()<<std::endl;
         respond_yes = true;
@@ -487,7 +503,12 @@ void FGAgent::HandleTakeResponseMessage(const TakeResponseMessage &m, const CPee
         std::set<device::CDevice::Pointer> vdev;
         vdev = device::CDeviceManager::Instance().GetDevicesOfType("Virtual");
         assert(vdev.size() > 0);
-        (*vdev.begin())->SetCommand("gateway", (*vdev.begin())->GetState("gateway")+CGlobalConfiguration::Instance().GetMigrationStep());
+        ///CASE4
+        ///CASE5
+        ///CASE6
+        ///CASE15
+        ///CASE24
+        (*vdev.begin())->SetCommand("gateway", CGlobalConfiguration::Instance().GetMigrationStep());
         Logger.Info<<"TAKE SUPPLY : Raised Virtual Device to "<<(*vdev.begin())->GetState("gateway")
                    <<"from "<<peer.GetUUID()<<std::endl;
     }

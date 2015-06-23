@@ -403,6 +403,9 @@ void LBAgent::UpdateState()
 
     if(sstCount > 0 && m_NetGeneration <= m_Gateway - m_MigrationStep)
     {
+        ///CASE1
+        ///CASE2
+        ///CASE3
         if(virt > 0)
         {
             // If this process is in a demand state, we should consume some virtual power.
@@ -433,6 +436,7 @@ void LBAgent::UpdateState()
         // real power has decided your state, and now the virtual power will
         if(virt > 0.0)
         {
+            ///CASE12
             if(m_State != LBAgent::SUPPLY)
             {
                 m_State = LBAgent::SUPPLY;
@@ -441,6 +445,7 @@ void LBAgent::UpdateState()
         }
         else if(virt < 0.0)
         {
+            ///CASE16
             if(m_State != LBAgent::DEMAND)
             {
                 m_State = LBAgent::DEMAND;
@@ -696,7 +701,17 @@ void LBAgent::SendDraftAge(CPeerNode peer)
     float age = 0;
     if(m_State == LBAgent::DEMAND)
     {
-        age = m_Gateway - m_NetGeneration;
+        float virt = device::CDeviceManager::Instance().GetNetValue("Virtual", "gateway");
+        if(virt == 0.0)
+        {
+            age = m_Gateway - m_NetGeneration;
+        }
+        else
+        {
+            ///CASE16
+            // This process is in demand to sell power to the grid
+            age = m_MigrationStep;
+        }
     }
     Logger.Info << "Calculated Draft Age: " << age << std::endl;
 
@@ -796,6 +811,8 @@ void LBAgent::DraftStandard(const boost::system::error_code & error)
             float virt = device::CDeviceManager::Instance().GetNetValue("Virtual", "gateway");
             if(virt < 0.0)
             {
+                ///CASE25
+                ///CASE26
                 float amount = m_MigrationStep;
                 Logger.Info<<"Settting PStar : Group uninterested, sell to grid."<<std::endl;
                 SetPStar(m_PredictedGateway+amount);
@@ -843,13 +860,20 @@ void LBAgent::SendDraftSelect(CPeerNode peer, float step)
     try
     {
         peer.Send(MessageDraftSelect(step));
-        if(virt == 0.0)
+        ///CASE13
+        ///CASE21 -- Virtual should only be used if the process isn't in REAL supply
+        if(virt > 0.0 && !(m_NetGeneration >= m_Gateway -  m_MigrationStep))
+        {
+            
+            ConsumeVirtual(-step); 
+            //Gateway doesn't change because power hasn't come from this process
+            //It is flowing from somewhere else.
+        }
+        else
         {
             Logger.Info<<"Settting PStar : Sending power for draft select.."<<std::endl;
             SetPStar(m_PredictedGateway + step);
         }
-        else
-            ConsumeVirtual(step);
         m_PowerDifferential += step;
     }
     catch(boost::system::system_error & e)
@@ -894,17 +918,20 @@ void LBAgent::HandleDraftSelect(const DraftSelectMessage & m, CPeerNode peer)
 
         try
         {
+            float virt = device::CDeviceManager::Instance().GetNetValue("Virtual", "gateway");
+            // If you haven't met your local demand.
             if(m_NetGeneration <= m_PredictedGateway - amount)
             {
                 peer.Send(MessageDraftAccept(amount));
-                float virt = device::CDeviceManager::Instance().GetNetValue("Virtual", "gateway");
-                if(virt <= 0.0)
-                {
-                    Logger.Info<<"Settting PStar : Consuming power for draft select."<<std::endl;
-                    SetPStar(m_PredictedGateway - amount);
-                }
-                else
-                    ConsumeVirtual(-amount);
+                Logger.Info<<"Settting PStar : Consuming power for draft select."<<std::endl;
+                SetPStar(m_PredictedGateway - amount);
+            }
+            else if(virt < 1.0) 
+            {
+                ///CASE16
+                // If you are in normal and want to transfer power from a peer to sell on the grid
+                peer.Send(MessageDraftAccept(amount));
+                ConsumeVirtual(amount);                   
             }
             else
             {
@@ -983,14 +1010,9 @@ void LBAgent::HandleDraftAccept(const DraftAcceptMessage & m, CPeerNode /* peer 
 void LBAgent::HandleTooLate(const TooLateMessage & m)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    float virt = device::CDeviceManager::Instance().GetNetValue("Virtual", "gateway");
-    if(virt == 0.0)
-    {
-        Logger.Info<<"Settting PStar : Rolling back un-needed migration."<<std::endl;
-        SetPStar(m_PredictedGateway - m.migrate_step());
-    }
-    else
-        ConsumeVirtual(-m.migrate_step());
+    // Even if the migration was virtual, we will roll it back on to the gateway to be resold from there. 
+    Logger.Info<<"Settting PStar : Rolling back un-needed migration."<<std::endl;
+    SetPStar(m_PredictedGateway - m.migrate_step());
     m_PowerDifferential -= m.migrate_step();
 }
 

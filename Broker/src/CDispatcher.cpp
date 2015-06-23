@@ -71,12 +71,12 @@ void CDispatcher::HandleRequest(boost::shared_ptr<const ModuleMessage> msg, std:
     Logger.Debug << "Processing message addressed to: " << msg->recipient_module() << std::endl;
 
     bool processed = false;
-
+    // Iterate over the DGI module -> module id map using it.
     for(std::multimap<boost::shared_ptr<IDGIModule>, const std::string>::const_iterator it
             = m_registrations.begin();
         it != m_registrations.end(); ++it)
     {
-        if (it->second == msg->recipient_module() || it->second == "all" || msg->recipient_module() == "all")
+        if (it->second == msg->recipient_module() || msg->recipient_module() == "all")
         {
             // Scheduled modules receive messages only during that module's phase.
             // Unscheduled modules receive messages immediately.
@@ -89,6 +89,11 @@ void CDispatcher::HandleRequest(boost::shared_ptr<const ModuleMessage> msg, std:
             }
             else
             {
+                if(it->second != "clk")
+                {
+                    Logger.Error<<"Message to module "<<msg->recipient_module()
+                                <<" is being handled immediately by "<<it->second<<std::endl;
+                }
                 ReadHandlerCallback(it->first, msg, uuid);
             }
             processed = true;

@@ -118,6 +118,18 @@ void FGAgent::Round(const boost::system::error_code & error)
             }
             if(m_vdev_sink)
             {
+                if(oldstate != m_vdev_sink)
+                {
+                    if((*vdev.begin())->GetState("gateway") == 0.0)
+                    {
+                        (*vdev.begin())->SetCommand("gateway", 1.0);
+                    }
+                }   
+                if((*vdev.begin())->GetState("gateway") < 0.0)
+                {
+                    (*vdev.begin())->SetCommand("gateway", 0);
+                }
+
                 //This group is in demand. If the device reading is ZERO it is waiting to make a
                 //purchase from the grid.
 

@@ -167,6 +167,10 @@ private:
 
     /// If the system is synchronized with the physical system.
     bool m_Synchronized;
+    /// Boolean for if the devices are in a state where they can Supply
+    bool m_DevCanSupply;
+    /// Boolean for if the device levels are within the tolerance of Normal
+    bool m_DevInNormal;
 
     /// The coordinator of  the group.
     std::string m_Leader;

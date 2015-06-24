@@ -103,6 +103,9 @@ LBAgent::LBAgent()
 
     m_PowerDifferential = 0;
     m_MigrationStep = CGlobalConfiguration::Instance().GetMigrationStep();
+
+    m_DevCanSupply = false;
+    m_DevInNormal = true;
 }
 
 ////////////////////////////////////////////////////////////
@@ -401,7 +404,17 @@ void LBAgent::UpdateState()
     float virt = device::CDeviceManager::Instance().GetNetValue("Virtual", "gateway");
     Logger.Debug << "Recognize " << sstCount << " attached SST devices." << std::endl;
 
-    if(sstCount > 0 && m_NetGeneration <= m_Gateway - m_MigrationStep)
+    bool netgen_gte_0 = m_NetGeneration >= 0;
+    bool gateway_gte_0 = m_Gateway >= 0;
+    bool netgen_gte_gateway = m_NetGeneration >= m_Gateway;
+
+    m_DevCanSupply = netgen_gte_gateway && ((netgen_gte_0 && gateway_gte_0) ||
+                     (netgen_gte_0 && !gateway_gte_0) ||
+                     (!netgen_gte_0 && !gateway_gte_0));
+
+    m_DevInNormal = abs(m_NetGeneration-m_Gateway) < m_MigrationStep;
+
+    if(sstCount > 0 && !m_DevCanSupply && !m_DevInNormal)
     {
         ///CASE1
         ///CASE2
@@ -414,7 +427,7 @@ void LBAgent::UpdateState()
             ConsumeVirtual(-virt);
         }
     }
-    if(sstCount > 0 && m_NetGeneration >= m_Gateway -  m_MigrationStep)
+    if(sstCount > 0 && m_DevCanSupply && !m_DevInNormal)
     {
         if(m_State != LBAgent::SUPPLY)
         {
@@ -422,7 +435,7 @@ void LBAgent::UpdateState()
             Logger.Info << "Changed to SUPPLY state." << std::endl;
         }
     }
-    else if(sstCount > 0 && m_NetGeneration <= m_Gateway - m_MigrationStep)
+    else if(sstCount > 0 && !m_DevCanSupply && !m_DevInNormal)
     {
         if(m_State != LBAgent::DEMAND)
         {
@@ -862,7 +875,7 @@ void LBAgent::SendDraftSelect(CPeerNode peer, float step)
         peer.Send(MessageDraftSelect(step));
         ///CASE13
         ///CASE21 -- Virtual should only be used if the process isn't in REAL supply
-        if(virt > 0.0 && !(m_NetGeneration >= m_Gateway -  m_MigrationStep))
+        if(virt > 0.0 && !m_DevCanSupply)
         {
             
             ConsumeVirtual(-step); 

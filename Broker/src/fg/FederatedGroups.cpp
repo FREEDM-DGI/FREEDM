@@ -450,7 +450,7 @@ void FGAgent::HandleStateChangeMessage(const lb::StateChangeMessage &m, const CP
 {
     Logger.Info << __PRETTY_FUNCTION__ << std::endl;
     std::string state = m.state();
-    if(state == "demand")
+    if(state == "demand" && m.is_virtual() == false)
         m_demandscore++;
 }
 

@@ -23,6 +23,7 @@ package freedm.broker.lb;
 message StateChangeMessage
 {
     required string state = 1;
+    required bool is_virtual = 2;
 }
 
 message DraftRequestMessage

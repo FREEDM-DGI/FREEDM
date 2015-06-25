@@ -51,7 +51,7 @@ private:
     enum State { SUPPLY, DEMAND, NORMAL };
     //     
     /// Generates the message announcing current node state
-    ModuleMessage MessageStateChange(std::string state);
+    ModuleMessage MessageStateChange(std::string state, bool isvirtual);
     /// Generates message supply nodes send to demand nodes
     ModuleMessage MessageDraftRequest();
     /// Generates message demand nodes send in response to DraftRequest
@@ -171,6 +171,8 @@ private:
     bool m_DevCanSupply;
     /// Boolean for if the device levels are within the tolerance of Normal
     bool m_DevInNormal;
+    /// Boolean to indicate if the supply/demand state is virtual (faked for the device)
+    bool m_StateIsVirtual;
 
     /// The coordinator of  the group.
     std::string m_Leader;

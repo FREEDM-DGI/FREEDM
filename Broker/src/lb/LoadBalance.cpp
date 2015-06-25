@@ -106,6 +106,7 @@ LBAgent::LBAgent()
 
     m_DevCanSupply = false;
     m_DevInNormal = true;
+    m_StateIsVirtual = false;
 }
 
 ////////////////////////////////////////////////////////////
@@ -313,8 +314,8 @@ void LBAgent::LoadManage(const boost::system::error_code & error)
         {
             if(m_State == LBAgent::DEMAND)
             {
-                SendToPeerSet(m_AllPeers, MessageStateChange("demand"));
-                GetMe().Send(MessageStateChange("demand"));
+                SendToPeerSet(m_AllPeers, MessageStateChange("demand",m_StateIsVirtual));
+                GetMe().Send(MessageStateChange("demand",m_StateIsVirtual));
                 Logger.Notice << "Sending state change, DEMAND" << std::endl;
             }
 
@@ -429,19 +430,21 @@ void LBAgent::UpdateState()
     }
     if(sstCount > 0 && m_DevCanSupply && !m_DevInNormal)
     {
-        if(m_State != LBAgent::SUPPLY)
+        if(m_State != LBAgent::SUPPLY || m_StateIsVirtual)
         {
             m_State = LBAgent::SUPPLY;
             Logger.Info << "Changed to SUPPLY state." << std::endl;
         }
+        m_StateIsVirtual = false;
     }
     else if(sstCount > 0 && !m_DevCanSupply && !m_DevInNormal)
     {
-        if(m_State != LBAgent::DEMAND)
+        if(m_State != LBAgent::DEMAND || m_StateIsVirtual)
         {
             m_State = LBAgent::DEMAND;
             Logger.Info << "Changed to DEMAND state." << std::endl;
         }
+        m_StateIsVirtual = false;
     }
     else
     {
@@ -449,26 +452,21 @@ void LBAgent::UpdateState()
         // real power has decided your state, and now the virtual power will
         if(virt > 0.0)
         {
-            ///CASE12
-            if(m_State != LBAgent::SUPPLY)
-            {
-                m_State = LBAgent::SUPPLY;
-                Logger.Info << "Changed to SUPPLY state. (VIRTUAL)" << std::endl;
-            }
+            m_State = LBAgent::SUPPLY;
+            Logger.Info << "Changed to SUPPLY state. (VIRTUAL)" << std::endl;
+            m_StateIsVirtual = true;
         }
         else if(virt < 0.0)
         {
-            ///CASE16
-            if(m_State != LBAgent::DEMAND)
-            {
-                m_State = LBAgent::DEMAND;
-                Logger.Info << "Changed to DEMAND state. (VIRTUAL)" << std::endl;
-            }
+            m_State = LBAgent::DEMAND;
+            Logger.Info << "Changed to DEMAND state. (VIRTUAL)" << std::endl;
+            m_StateIsVirtual = true;
         }       
-        else if(m_State != LBAgent::NORMAL)
+        else
         {
             m_State = LBAgent::NORMAL;
             Logger.Info << "Changed to NORMAL state." << std::endl;
+            m_StateIsVirtual = false;
         }
     }
 }
@@ -512,17 +510,20 @@ void LBAgent::LoadTable()
     loadtable << "\tPredicted K:    " << m_PowerDifferential << std::endl;
     loadtable << "\t---------------------------------------------" << std::endl;
 
+    loadtable << "\t";
+    if(m_StateIsVirtual)
+        loadtable <<"(VIRTUAL) ";
     if(m_State == LBAgent::DEMAND)
     {
-        loadtable << "\t(DEMAND) " << GetUUID() << std::endl;
+        loadtable << "(DEMAND) " << GetUUID() << std::endl;
     }
     else if(m_State == LBAgent::SUPPLY)
     {
-        loadtable << "\t(SUPPLY) " << GetUUID() << std::endl;
+        loadtable << "(SUPPLY) " << GetUUID() << std::endl;
     }
     else
     {
-        loadtable << "\t(NORMAL) " << GetUUID() << std::endl;
+        loadtable << "(NORMAL) " << GetUUID() << std::endl;
     }
     BOOST_FOREACH(CPeerNode peer, m_AllPeers | boost::adaptors::map_values)
     {
@@ -555,12 +556,13 @@ void LBAgent::LoadTable()
 /// @post Returns the new message.
 /// @param state is a string describing the new state of Load Balancing
 ///////////////////////////////////////////////////////////////////////////////
-ModuleMessage LBAgent::MessageStateChange(std::string state)
+ModuleMessage LBAgent::MessageStateChange(std::string state, bool isvirtual)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     LoadBalancingMessage msg;
     StateChangeMessage * submsg = msg.mutable_state_change_message();
     submsg->set_state(state);
+    submsg->set_is_virtual(isvirtual);
     return PrepareForSending(msg);
 }
 

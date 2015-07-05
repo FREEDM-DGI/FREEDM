@@ -824,9 +824,10 @@ void LBAgent::DraftStandard(const boost::system::error_code & error)
         {
             // This process has generation, but nobody in the group wants any
             // If the virtual device wants so juice, let's sell it some.
-            Logger.Status<<"No peers are in demand state. Federating SUPPLY"<<std::endl;
-            if(fg::FGAgent::GetOutgoing() < m_MigrationStep)
+            Logger.Status<<"No peers are in demand state. Might federate SUPPLY"<<std::endl;
+            if(fg::FGAgent::GetOutgoing() < m_MigrationStep && !fg::FGAgent::IsDemand())
             {
+                // Check to make sure your group is in demand so you don't violate the invariant.
                 ///CASE25
                 ///CASE26
                 float amount = m_MigrationStep;

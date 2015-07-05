@@ -30,8 +30,12 @@ FGAgent::FGAgent()
     m_vadapter = device::CFakeAdapter::Create();
     device::DeviceInfo devinfo;
     devinfo.s_type.insert("Virtual");
-    devinfo.s_state.insert("gateway");
-    devinfo.s_command.insert("gateway");
+    devinfo.s_state.insert("incoming");
+    devinfo.s_command.insert("incoming");
+    devinfo.s_state.insert("outgoing");
+    devinfo.s_command.insert("outgoing");
+    devinfo.s_state.insert("demand");
+    devinfo.s_command.insert("demand");
     device::CDevice::Pointer dev(new device::CDevice(devname, devinfo, m_vadapter));
     device::CDeviceManager::Instance().AddDevice(dev);
     m_vadapter->Start();
@@ -70,6 +74,83 @@ ModuleMessage FGAgent::TakeResponse(bool response)
     return PrepareForSending(fgm, "fg");
 }
 
+float FGAgent::GetIncoming()
+{
+    std::set<device::CDevice::Pointer> vdev;
+    vdev = device::CDeviceManager::Instance().GetDevicesOfType("Virtual");
+    assert(vdev.size() > 0);
+    return (*vdev.begin())->GetState("incoming");
+}
+
+float FGAgent::GetOutgoing()
+{
+    std::set<device::CDevice::Pointer> vdev;
+    vdev = device::CDeviceManager::Instance().GetDevicesOfType("Virtual");
+    assert(vdev.size() > 0);
+    return (*vdev.begin())->GetState("outgoing");
+}
+
+void FGAgent::SetIncoming(float v)
+{
+    std::set<device::CDevice::Pointer> vdev;
+    vdev = device::CDeviceManager::Instance().GetDevicesOfType("Virtual");
+    assert(vdev.size() > 0);
+    (*vdev.begin())->SetCommand("incoming", v);
+    InvariantCheck();
+}
+
+void FGAgent::SetOutgoing(float v)
+{
+    std::set<device::CDevice::Pointer> vdev;
+    vdev = device::CDeviceManager::Instance().GetDevicesOfType("Virtual");
+    assert(vdev.size() > 0);
+    (*vdev.begin())->SetCommand("outgoing", v);
+    InvariantCheck();
+}
+
+void FGAgent::ChangeOutgoing(float a)
+{
+    SetOutgoing(GetOutgoing()+a);
+}
+
+void FGAgent::ChangeIncoming(float a)
+{
+    SetIncoming(GetIncoming()+a);
+}
+
+void FGAgent::SetIsDemand(bool d)
+{
+    std::set<device::CDevice::Pointer> vdev;
+    vdev = device::CDeviceManager::Instance().GetDevicesOfType("Virtual");
+    assert(vdev.size() > 0);
+    (*vdev.begin())->SetCommand("demand", d?1.0:0.0);
+}
+
+bool FGAgent::IsDemand()
+{
+    std::set<device::CDevice::Pointer> vdev;
+    vdev = device::CDeviceManager::Instance().GetDevicesOfType("Virtual");
+    assert(vdev.size() > 0);
+    return (*vdev.begin())->GetState("demand")==1.0;
+}
+
+
+void FGAgent::InvariantCheck()
+{
+    float i = GetIncoming();
+    float o = GetOutgoing();
+    bool t1 = i >= 0.0;
+    bool t2 = o >= 0.0;
+    bool t3a = i == 0.0 && o >= 0.0;
+    bool t3b = i >= 0.0 && o == 0.0;
+    bool t3 = t3a || t3b;
+    if(!t1 || !t2 || !t3)
+    {
+        Logger.Error<<"Virtual device invariant failed: i="<<i<<" o="<<o<<std::endl;
+        throw std::runtime_error("Virtual device violated invariant");
+    }
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 /// FGAgent::Round
 /// @description Each round the process determines if it is in supply or demand
@@ -95,12 +176,10 @@ void FGAgent::Round(const boost::system::error_code & error)
         {
             Logger.Info<<"Process is a coordinator"<<std::endl;
             std::set<device::CDevice::Pointer> vdev;
-            vdev = device::CDeviceManager::Instance().GetDevicesOfType("Virtual");
-            assert(vdev.size() > 0);
+
             
             Logger.Info<<"Demand Score is "<<m_demandscore<<"..."<<std::endl;
             // Determine what state to set my virtual device to.
-            bool oldstate = m_vdev_sink;
             if(m_demandscore > 0)
             {
                 Logger.Info<<"DEMAND GROUP"<<std::endl;
@@ -116,26 +195,19 @@ void FGAgent::Round(const boost::system::error_code & error)
                 // This process may be able to supply power to other groups in need.
                 m_vdev_sink = false;
             }
+            SetIsDemand(m_vdev_sink);
             if(m_vdev_sink)
             {
-                if(oldstate != m_vdev_sink)
+                // If you had power you were trying to sell, use it for your group instead.
+                if(GetOutgoing() > 0)
                 {
-                    if((*vdev.begin())->GetState("gateway") == 0.0)
-                    {
-                        (*vdev.begin())->SetCommand("gateway", 1.0);
-                    }
-                }   
-                if((*vdev.begin())->GetState("gateway") < 0.0)
-                {
-                    (*vdev.begin())->SetCommand("gateway", 0);
+                    float t = GetOutgoing(); // Prevents violating an invariant
+                    SetOutgoing(0);
+                    SetIncoming(GetIncoming()+t);
                 }
 
                 //This group is in demand. If the device reading is ZERO it is waiting to make a
                 //purchase from the grid.
-
-                //This device will reset to the zero state (Not purchasing power) at this moment.
-                //The device will go into a purchasing state (+1) if it can take power from a
-                //Supply node. This is safe for the SUPPLY -> DEMAND transition.
                 
                 //From the set of physically reachable supply peers, pick one and send them
                 //A take message
@@ -145,7 +217,7 @@ void FGAgent::Round(const boost::system::error_code & error)
                 BOOST_FOREACH(CPeerNode peer, m_coordinators | boost::adaptors::map_values)
                     Logger.Info<<"Coordinator: "<<peer.GetUUID()<<std::endl;
 
-                if((*vdev.begin())->GetState("gateway") == 0.0)
+                if(GetIncoming() == 0.0)
                 {
                     ///CASE4
                     ///CASE5
@@ -167,38 +239,13 @@ void FGAgent::Round(const boost::system::error_code & error)
             }
             else
             {
-                if(oldstate != m_vdev_sink)
+                // If you got power but don't need it any more, sell it back.
+                if(GetIncoming() > 0)
                 {
-                    // The group has changed state. Set the state of the virtual device based on the new state
-                    // If the virtual device is inactive, this enters the -1 state to try and sell power to the
-                    // grid.
-                    if((*vdev.begin())->GetState("gateway") == 1.0)
-                    {
-                        // There is already power to sell here.
-                        (*vdev.begin())->SetCommand("gateway", 0);
-                    }
-                    else
-                    {
-                        // We'll need to acquire some power first.
-                        (*vdev.begin())->SetCommand("gateway", -CGlobalConfiguration::Instance().GetMigrationStep());
-                    }
-                    Logger.Info<<"Setting Virtual Device to "
-                               <<(*vdev.begin())->GetState("gateway")<<std::endl;
-                    // The virtual device only returns to -1 on a successful transaction.
+                    float t = GetIncoming(); // Prevents violating an invariant
+                    SetIncoming(0);
+                    SetOutgoing(GetOutgoing()+t);
                 }
-                // If a process announces they are selling power to the federated grid, they will
-                // Announce it in their next state message.
-                if((*vdev.begin())->GetState("gateway") == 1.0)
-                {
-                    // Action is based on Cases 10 and 11
-                    Logger.Warn<<"Group is in SUPPLY state with +1.0 on Virtual Device. Selling back to grid."<<std::endl;
-                    (*vdev.begin())->SetCommand("gateway", 0);
-                } 
-                // If the device reading is ZERO it is selling power to the federated grid.
-                // On receiving the state message from another process it will attempt to sell them
-                // The power they are selling to the grid. Demand process will select a group.
-                // That selected group will then change their virtual device back to the supply
-                // state (-1) and look for a quantum to sell to the Grid
             }
             // Distribute info
             m_collection.set_selling(!m_vdev_sink);
@@ -221,9 +268,6 @@ void FGAgent::Round(const boost::system::error_code & error)
         }
         else
         {
-            std::set<device::CDevice::Pointer> vdev;
-            vdev = device::CDeviceManager::Instance().GetDevicesOfType("Virtual");
-            (*vdev.begin())->SetCommand("gateway", 0.0);
             m_collection.clear_ayc_responses();
             m_collection.set_selling(false); 
             FederatedGroupsMessage fgm;
@@ -470,22 +514,19 @@ void FGAgent::HandleTakeMessage(const TakeMessage&, const CPeerNode & peer)
 {
 
     Logger.Info << __PRETTY_FUNCTION__ << std::endl;
-    std::set<device::CDevice::Pointer> vdev;
-    vdev = device::CDeviceManager::Instance().GetDevicesOfType("Virtual");
-    assert(vdev.size() > 0);
     // If we receive a take message, and we a not a sink, and our virtual device reads 0, we can
     // respond yes to this take message
     bool respond_yes = false;
-    if(!m_vdev_sink && (*vdev.begin())->GetState("gateway") == 0.0)
+    if(!m_vdev_sink && GetOutgoing() > 0.0)
     {
         // After we respond, we can put our virtual device back into the -1 state, to sell more power to the grid.
         ///CASE13
         ///CASE14
         ///CASE22
         ///CASE23
-        (*vdev.begin())->SetCommand("gateway", -CGlobalConfiguration::Instance().GetMigrationStep());
-        Logger.Info<<"GIVE SUPPLY : Lowered Virtual Device to "<<(*vdev.begin())->GetState("gateway")
-                   <<"for "<<peer.GetUUID()<<std::endl;
+        SetOutgoing(GetOutgoing()-CGlobalConfiguration::Instance().GetMigrationStep());
+        Logger.Info<<"Transfered power (Set Outgoing to "<<GetOutgoing()
+                   <<") for "<<peer.GetUUID()<<std::endl;
         respond_yes = true;
     }
     ModuleMessage resp = TakeResponse(respond_yes);
@@ -512,16 +553,13 @@ void FGAgent::HandleTakeResponseMessage(const TakeResponseMessage &m, const CPee
     // If we get a yes message from the supply node, we can put our virtual device into the +1 state
     if(m.response() && m_vdev_sink)
     {
-        std::set<device::CDevice::Pointer> vdev;
-        vdev = device::CDeviceManager::Instance().GetDevicesOfType("Virtual");
-        assert(vdev.size() > 0);
         ///CASE4
         ///CASE5
         ///CASE6
         ///CASE15
         ///CASE24
-        (*vdev.begin())->SetCommand("gateway", CGlobalConfiguration::Instance().GetMigrationStep());
-        Logger.Info<<"TAKE SUPPLY : Raised Virtual Device to "<<(*vdev.begin())->GetState("gateway")
+        SetIncoming(GetIncoming()+CGlobalConfiguration::Instance().GetMigrationStep());
+        Logger.Info<<"TAKE SUPPLY : Raised Virtual Device to "<<GetIncoming()
                    <<"from "<<peer.GetUUID()<<std::endl;
     }
     else if(!m.response())

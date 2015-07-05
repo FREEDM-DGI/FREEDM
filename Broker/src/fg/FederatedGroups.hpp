@@ -35,9 +35,22 @@ class FGAgent
     void HandleTakeMessage(const TakeMessage &m, const CPeerNode & peer);
     void HandleTakeResponseMessage(const TakeResponseMessage &m, const CPeerNode& peer);
     ModuleMessage PrepareForSending(const FederatedGroupsMessage& message, std::string recipient);
+    
+    static float GetIncoming();
+    static float GetOutgoing();
+    static void SetIncoming(float v);
+    static void SetOutgoing(float v);
+    static void ChangeOutgoing(float a);
+    static void ChangeIncoming(float a);
+    static bool IsDemand();
+    
     private:
     /// Handles the incoming messages from other modules
     void HandleIncomingMessage(boost::shared_ptr<const ModuleMessage> msg, CPeerNode peer);
+    /// Changes the Demand device value
+    void SetIsDemand(bool d);
+    /// Checks to make sure the virtual device is sane
+    static void InvariantCheck();
     /// If true, this process is a coordinator and should do federated things.
     bool m_coordinator;
     /// The set of coordinators. AYC messages add / remove from this set.

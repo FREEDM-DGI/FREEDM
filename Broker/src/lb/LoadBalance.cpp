@@ -63,6 +63,7 @@
 #include "CDeviceManager.hpp"
 #include "CGlobalPeerList.hpp"
 #include "gm/GroupManagement.hpp"
+#include "fg/FederatedGroups.hpp"
 #include "CGlobalConfiguration.hpp"
 
 #include <sstream>
@@ -402,7 +403,6 @@ void LBAgent::UpdateState()
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
     int sstCount = device::CDeviceManager::Instance().GetDevicesOfType("Sst").size();
-    float virt = device::CDeviceManager::Instance().GetNetValue("Virtual", "gateway");
     Logger.Debug << "Recognize " << sstCount << " attached SST devices." << std::endl;
 
     bool netgen_gte_0 = m_NetGeneration >= 0;
@@ -420,12 +420,12 @@ void LBAgent::UpdateState()
         ///CASE1
         ///CASE2
         ///CASE3
-        if(virt > 0)
+        if(fg::FGAgent::GetIncoming() >= m_MigrationStep)
         {
             // If this process is in a demand state, we should consume some virtual power.
             Logger.Info<<"Settting PStar : Consuming virtual to fulfill local demand."<<std::endl;
-            SetPStar(m_Gateway-virt);
-            ConsumeVirtual(-virt);
+            SetPStar(m_Gateway-m_MigrationStep);
+            fg::FGAgent::ChangeIncoming(-m_MigrationStep);
         }
     }
     if(sstCount > 0 && m_DevCanSupply && !m_DevInNormal)
@@ -450,13 +450,13 @@ void LBAgent::UpdateState()
     {
         // This point, you can use the virtual device to determine your state
         // real power has decided your state, and now the virtual power will
-        if(virt > 0.0)
+        if(fg::FGAgent::GetIncoming() > 0.0)
         {
             m_State = LBAgent::SUPPLY;
             Logger.Info << "Changed to SUPPLY state. (VIRTUAL)" << std::endl;
             m_StateIsVirtual = true;
         }
-        else if(virt < 0.0)
+        else if(fg::FGAgent::GetOutgoing() == 0.0 && !fg::FGAgent::IsDemand())
         {
             m_State = LBAgent::DEMAND;
             Logger.Info << "Changed to DEMAND state. (VIRTUAL)" << std::endl;
@@ -491,7 +491,8 @@ void LBAgent::LoadTable()
     float generation = device::CDeviceManager::Instance().GetNetValue("Drer", "generation");
     float storage = device::CDeviceManager::Instance().GetNetValue("Desd", "storage");
     float load = device::CDeviceManager::Instance().GetNetValue("Load", "drain");
-    float virt = device::CDeviceManager::Instance().GetNetValue("Virtual", "gateway");
+    float virti = device::CDeviceManager::Instance().GetNetValue("Virtual", "incoming");
+    float virto = device::CDeviceManager::Instance().GetNetValue("Virtual", "outgoing");
 
     std::stringstream loadtable;
     loadtable << std::setprecision(2) << std::fixed;
@@ -502,8 +503,10 @@ void LBAgent::LoadTable()
         << "):  " << storage << std::endl;
     loadtable << "\tNet Load (" << std::setfill('0') << std::setw(2) << load_count
         << "):  " << load << std::endl;
-    loadtable << "\tNet Virtual (" << std::setfill('0') << std::setw(2) << virtual_count
-        << "):  " << virt << std::endl;
+    loadtable << "\tNet Virtual In (" << std::setfill('0') << std::setw(2) << virtual_count
+        << "):  " << virti << std::endl;
+    loadtable << "\tNet Virtual Out (" << std::setfill('0') << std::setw(2) << virtual_count
+        << "):  " << virto << std::endl;
     loadtable << "\t---------------------------------------------" << std::endl;
     loadtable << "\tSST Gateway:    " << m_Gateway << std::endl;
     loadtable << "\tNet Generation: " << m_NetGeneration << std::endl;
@@ -716,16 +719,15 @@ void LBAgent::SendDraftAge(CPeerNode peer)
     float age = 0;
     if(m_State == LBAgent::DEMAND)
     {
-        float virt = device::CDeviceManager::Instance().GetNetValue("Virtual", "gateway");
-        if(virt == 0.0)
-        {
-            age = m_Gateway - m_NetGeneration;
-        }
-        else
+        if(m_StateIsVirtual)
         {
             ///CASE16
             // This process is in demand to sell power to the grid
             age = m_MigrationStep;
+        }
+        else
+        {
+            age = m_Gateway - m_NetGeneration;
         }
     }
     Logger.Info << "Calculated Draft Age: " << age << std::endl;
@@ -823,15 +825,14 @@ void LBAgent::DraftStandard(const boost::system::error_code & error)
             // This process has generation, but nobody in the group wants any
             // If the virtual device wants so juice, let's sell it some.
             Logger.Status<<"No peers are in demand state. Federating SUPPLY"<<std::endl;
-            float virt = device::CDeviceManager::Instance().GetNetValue("Virtual", "gateway");
-            if(virt < 0.0)
+            if(fg::FGAgent::GetOutgoing() < m_MigrationStep)
             {
                 ///CASE25
                 ///CASE26
                 float amount = m_MigrationStep;
                 Logger.Info<<"Settting PStar : Group uninterested, sell to grid."<<std::endl;
                 SetPStar(m_PredictedGateway+amount);
-                ConsumeVirtual(amount);
+                fg::FGAgent::ChangeOutgoing(amount);
             }
         }
     }
@@ -871,16 +872,14 @@ void LBAgent::SendDraftSelect(CPeerNode peer, float step)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
-    float virt = device::CDeviceManager::Instance().GetNetValue("Virtual", "gateway");
     try
     {
         peer.Send(MessageDraftSelect(step));
         ///CASE13
         ///CASE21 -- Virtual should only be used if the process isn't in REAL supply
-        if(virt > 0.0 && !m_DevCanSupply)
+        if(fg::FGAgent::GetIncoming() >= step && !m_DevCanSupply)
         {
-            
-            ConsumeVirtual(-step); 
+            fg::FGAgent::ChangeIncoming(-step);
             //Gateway doesn't change because power hasn't come from this process
             //It is flowing from somewhere else.
         }
@@ -933,7 +932,6 @@ void LBAgent::HandleDraftSelect(const DraftSelectMessage & m, CPeerNode peer)
 
         try
         {
-            float virt = device::CDeviceManager::Instance().GetNetValue("Virtual", "gateway");
             // If you haven't met your local demand.
             if(m_NetGeneration <= m_PredictedGateway - amount)
             {
@@ -941,12 +939,12 @@ void LBAgent::HandleDraftSelect(const DraftSelectMessage & m, CPeerNode peer)
                 Logger.Info<<"Settting PStar : Consuming power for draft select."<<std::endl;
                 SetPStar(m_PredictedGateway - amount);
             }
-            else if(virt < 1.0) 
+            else if(fg::FGAgent::GetOutgoing() < amount) 
             {
                 ///CASE16
                 // If you are in normal and want to transfer power from a peer to sell on the grid
                 peer.Send(MessageDraftAccept(amount));
-                ConsumeVirtual(amount);                   
+                fg::FGAgent::ChangeOutgoing(amount);            
             }
             else
             {
@@ -1097,21 +1095,6 @@ void LBAgent::SetPStar(float pstar)
         Logger.Warn << "Failed to set P*: no attached SST device" << std::endl;
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////
-/// ConsumeVirtual
-/// @description Migrates power by adjusting the virtual device attached to the
-///     DGI
-/// @pre None
-/// @post The state of the virtual device is adjusted by the specified amount
-/// @param amount the amount to adjust the virtual device
-///////////////////////////////////////////////////////////////////////////////
-void LBAgent::ConsumeVirtual(float amount)
-{
-    std::set<device::CDevice::Pointer> vdev;
-    vdev = device::CDeviceManager::Instance().GetDevicesOfType("Virtual");
-    (*vdev.begin())->SetCommand("gateway", (*vdev.begin())->GetState("gateway")+amount);
-} 
 
 ///////////////////////////////////////////////////////////////////////////////
 /// Wraps a LoadBalancingMessage in a ModuleMessage.

@@ -820,7 +820,7 @@ void LBAgent::DraftStandard(const boost::system::error_code & error)
         {
             SendDraftSelect(selected_peer, m_MigrationStep);
         }
-        else if(m_DraftAge.size() == 0 && m_State == LBAgent::SUPPLY)
+        else if(m_DraftAge.size() == 0 && m_State == LBAgent::SUPPLY && !m_StateIsVirtual)
         {
             // This process has generation, but nobody in the group wants any
             // If the virtual device wants so juice, let's sell it some.

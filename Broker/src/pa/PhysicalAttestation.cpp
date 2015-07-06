@@ -8,7 +8,10 @@
 #include "CPhysicalTopology.hpp"
 #include "CDataManager.hpp"
 
+#include <set>
 #include <cmath>
+#include <iterator>
+#include <algorithm>
 
 #include <boost/bind.hpp>
 #include <boost/foreach.hpp>
@@ -445,8 +448,58 @@ std::set<std::string> PAAgent::BuildFramework(std::string target, float time)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     std::set<std::string> members;
-    members = CPhysicalTopology::Instance().ReachablePeers(target, CDataManager::Instance().GetFIDState(time), 3);
-    // check if framework is valid (satisfies graphical properties) ; exception if not
+    members = CPhysicalTopology::Instance().ReachablePeers(target, CDataManager::Instance().GetFIDState(time), 4);
+    std::map< std::string, std::set<std::string> > adjacent_invariant;
+    std::set<std::string> reachable, adjacent, invariant, intersect;
+
+    // get the current graph structure (V)
+    reachable = CPhysicalTopology::Instance().ReachablePeers(target, CDataManager::Instance().GetFIDState(time));
+
+    // calculate all the framework invariants (I^S)
+    BOOST_FOREACH(std::string m, members)
+    {
+        adjacent = CPhysicalTopology::Instance().ReachablePeers(m, CDataManager::Instance().GetFIDState(time), 1);
+        if(std::includes(members.begin(), members.end(), adjacent.begin(), adjacent.end()))
+        {
+            invariant.insert(m);
+        }
+    }
+
+    // determine which invariants each vertex is adjacent with (mu(N(x)) for x in V)
+    BOOST_FOREACH(std::string x, reachable)
+    {
+        adjacent = CPhysicalTopology::Instance().ReachablePeers(x, CDataManager::Instance().GetFIDState(time), 1);
+        adjacent.erase(x);
+        std::set_intersection(adjacent.begin(), adjacent.end(), invariant.begin(), invariant.end(), std::inserter(intersect, intersect.begin()));
+        adjacent_invariant[x] = intersect;
+        intersect.clear();
+    }
+
+    // condition 2 and 3 (includes target)
+    BOOST_FOREACH(std::string x, CPhysicalTopology::Instance().ReachablePeers(target, CDataManager::Instance().GetFIDState(time), 1))
+    {
+        if(adjacent_invariant.at(x).size() < 2)
+        {
+            Logger.Info << x << " is not adjacent to at least two invariants." << std::endl;
+            throw std::runtime_error("Nondeducible Framework");
+        }
+    }
+
+    // condition 4
+    BOOST_FOREACH(std::string x, reachable)
+    {
+        std::set<std::string> x_invariant = adjacent_invariant.at(x);
+        std::set<std::string> t_invariant = adjacent_invariant.at(target);
+  
+        x_invariant.erase(target);
+        t_invariant.erase(x);
+  
+        if(x_invariant == t_invariant)
+        {
+            Logger.Info << x << " and " << target << " share the same invariants." << std::endl;
+            throw std::runtime_error("Nondeducible Framework");
+        }
+    }
     return members;
 }
 

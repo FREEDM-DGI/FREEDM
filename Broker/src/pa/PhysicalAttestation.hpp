@@ -60,8 +60,6 @@ private:
     float CalculateLineFlow(std::string u, std::string v, const std::map<std::string, StateResponseMessage> & data);
     float CalculateTargetPower(std::string target, const std::map<std::string, StateResponseMessage> & data);
 
-
-
     CBroker::TimerHandle m_RoundTimer;
     CBroker::TimerHandle m_WaitTimer;
     std::list<Framework> m_frameworks;

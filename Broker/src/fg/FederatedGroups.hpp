@@ -24,24 +24,45 @@ class FGAgent
     ~FGAgent();
     /// Runs the federated behavior
     int Run();
+    /// Message that a demand coordinator sends to get power
     ModuleMessage Take();
+    /// Message the supply coordinator sends to allow power to transfer
     ModuleMessage TakeResponse(bool response);
+    /// Message for other algorithms to indicate demand
+    static ModuleMessage Demand();
 
+    /// Determines the state of the group and distributes it
     void Round(const boost::system::error_code & error);
+    /// Handles a federated groups state message
     void HandleStateMessage(const StateMessage &m, const CPeerNode& peer);
+    /// Handles an AYC response message from Group Management
     void HandleResponseAYCMessage(const gm::AreYouCoordinatorResponseMessage & m, const CPeerNode& peer);
+    /// Handles a peer list message from Group Management
     void HandlePeerListMessage(const gm::PeerListMessage & m, const CPeerNode& peer);
+    /// Handles a state change message from Load Balancing
     void HandleStateChangeMessage(const lb::StateChangeMessage &m, const CPeerNode& peer);
+    /// Handles a take message from a demand group
     void HandleTakeMessage(const TakeMessage &m, const CPeerNode & peer);
+    /// Handles a take response message from a potential supply group
     void HandleTakeResponseMessage(const TakeResponseMessage &m, const CPeerNode& peer);
-    ModuleMessage PrepareForSending(const FederatedGroupsMessage& message, std::string recipient);
+    /// Handles a demand message from a power balancing algorithm
+    void HandleDemandMessage(const DemandMessage &, const CPeerNode &);
+    /// Prepares a federated groups message for sending
+    static ModuleMessage PrepareForSending(const FederatedGroupsMessage& message, std::string recipient);
     
+    /// Gets the ammount of incoming power from other groups
     static float GetIncoming();
+    /// Gets the amount of power being sent to other groups.
     static float GetOutgoing();
+    /// Sets the amount of incoming power coming in from other groups.
     static void SetIncoming(float v);
+    /// Sets the amount oof power going out to other groups
     static void SetOutgoing(float v);
+    /// Changes the outgoing power by the specified amount
     static void ChangeOutgoing(float a);
+    /// Changes the incoming power by the specified amount
     static void ChangeIncoming(float a);
+    /// Returns true if Federated Groups considers this group to be in demand
     static bool IsDemand();
     
     private:

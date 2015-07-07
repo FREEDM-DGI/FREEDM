@@ -3,10 +3,9 @@
 Physical Topology
 =================
 
-DGI can react to changes in the physical topology if the PhysicalTopology code is enabled. Currently, this code is only available in the physical topology side-branch. It should be a part of master (and a release) soon.
-
-Physical Topology is based on vertices (SSTs) and edges. Edges can have 0 or more FIDs. These FIDs determine the availability of the edge: all FIDs on the edge must be closed (Unless the edge does not have an FID). If there is no
-series of edges which connect two SSTs, they should not be in a group together.
+DGI can react to changes in the physical topology. Physical Topology is based on vertices (SSTs) and edges.
+Edges can have 0 or more FIDs. These FIDs determine the availability of the edge: all FIDs on the edge must be closed (Unless the edge does not have an FID).
+If there is no series of edges which connect two SSTs, they should not be in a group together.
 
 Physical Topology Configuration
 -------------------------------
@@ -23,12 +22,14 @@ Topology is configured in ``config/topology.cfg``. A topology config file looks 
     fid a b FID4
     fid b c FID2
     fid c a FID3
+	gt z
 
 Each line of the file is composed of a statement type, and then a series of keywords that are necessary to construct that object.
 
 * **edge** - A physical connection between two SSTs. An edge indicates there is a direct physical connection between two SSTs through a power line or similar object. An edge is followed by strings that represent the two verticies they connect. For convenience, the DGI controlling the vertex is set by the _sst_ statement. Only one edge for each vertex pair needs to be named, and all edges are bidirectional by default (that is, ``edge a b`` also gives you ``edge b a``)
 * **sst** - A vertex. This statement is followed by two strings: the first is the name of the vertex. This is the name used in the ``edge`` and ``fid`` statements. The second string is the UUID of the DGI that controls that vertex.
 * **fid** - A control for an edge. This statement is controlled by three strings: first two strings are the edge that this FID controls, which is named in the same was as the edge above, which two vertex names. The third string is the name of the device which controls this edge. A device can control multiple edges and multiple devices can control one edge.
+* **gt** - A grid tie. DGIs use Grid Ties to cut off grouping behavior. A DGI in a system with a Grid Tie will not cross the boundary of the grid tie when searching for peers to group with. A grid tie is placed at a vertex.
 
 The topology configuration file is specified by adding the ``topology-config` option to ``freedm.cfg``. For example, this line in a ``freedm.cfg`` enables physical topology::
 

@@ -22,6 +22,15 @@ CLocalLogger Logger(__FILE__);
 
 }
 
+///////////////////////////////////////////////////////////////////////////////
+/// FGAgent::FGAgent
+/// @description Creates the module and sets up the intial values. Creates a
+///     fake adapter that holds the virtual device.
+/// @pre None
+/// @post Creates a virtual device and a dummy adapter for that device. Makes
+///     the virtual device available through the device manager. Requests a
+///     timer handle from the Broker to use for scheduling.
+///////////////////////////////////////////////////////////////////////////////
 FGAgent::FGAgent()
     : m_coordinator(false), m_demandscore(0), m_vdev_sink(true)
 {
@@ -42,11 +51,25 @@ FGAgent::FGAgent()
     device::CDeviceManager::Instance().RevealDevice(devname);
 }
 
+///////////////////////////////////////////////////////////////////////////////
+/// FGAgent::~FGAgent
+/// @description Cleans up any resources held by the module
+/// @pre None
+/// @post The module is destroyed.
+///////////////////////////////////////////////////////////////////////////////
 FGAgent::~FGAgent()
 {
 
 }
 
+///////////////////////////////////////////////////////////////////////////////
+/// FGAgent::Run
+/// @description Kicks off the FG module and starts the first call to the
+///     Round() method.
+/// @pre None
+/// @post If the physical topology module is available, Round() is scheduled
+///     to run next time.
+///////////////////////////////////////////////////////////////////////////////
 int FGAgent::Run()
 {
     if(!CPhysicalTopology::Instance().IsAvailable())
@@ -59,6 +82,14 @@ int FGAgent::Run()
     return 0;
 }
 
+///////////////////////////////////////////////////////////////////////////////
+/// FGAgent::TakeResponse
+/// @description Generates the message sent to request power from a potential
+///     supply process.
+/// @pre None
+/// @post None
+/// @return The generated message.
+///////////////////////////////////////////////////////////////////////////////
 ModuleMessage FGAgent::Take()
 {
     FederatedGroupsMessage fgm;
@@ -66,6 +97,14 @@ ModuleMessage FGAgent::Take()
     return PrepareForSending(fgm, "fg");
 }
 
+///////////////////////////////////////////////////////////////////////////////
+/// FGAgent::TakeResponse
+/// @description Generates the message sent as a response to the take message.
+/// @param response True if the other process can take power from the sender.
+/// @pre None
+/// @post None
+/// @return The generated message.
+///////////////////////////////////////////////////////////////////////////////
 ModuleMessage FGAgent::TakeResponse(bool response)
 {
     FederatedGroupsMessage fgm;
@@ -74,6 +113,29 @@ ModuleMessage FGAgent::TakeResponse(bool response)
     return PrepareForSending(fgm, "fg");
 }
 
+///////////////////////////////////////////////////////////////////////////////
+/// FGAgent::DemandMessage
+/// @description Generates an alternative demand message that can be sent to
+///     the coordinator's FG module if your algorithm doesn't have another
+///     message to listen for.
+/// @pre None
+/// @post None
+/// @return the generated message.
+///////////////////////////////////////////////////////////////////////////////
+ModuleMessage FGAgent::Demand()
+{
+    FederatedGroupsMessage fgm;
+    fgm.mutable_demand_message();
+    return PrepareForSending(fgm, "fg");
+}
+
+///////////////////////////////////////////////////////////////////////////////
+/// FGAgent::GetIncoming
+/// @description Gets the value of the "incoming" virtual device value.
+/// @pre None
+/// @post None
+/// @return The "incoming" virtual device value.
+///////////////////////////////////////////////////////////////////////////////
 float FGAgent::GetIncoming()
 {
     std::set<device::CDevice::Pointer> vdev;
@@ -82,6 +144,13 @@ float FGAgent::GetIncoming()
     return (*vdev.begin())->GetState("incoming");
 }
 
+///////////////////////////////////////////////////////////////////////////////
+/// FGAgent::GetOutgoing
+/// @description Gets the value of the "outgoing" virtual device value.
+/// @pre None
+/// @post None
+/// @return The "outgoing" virtual device value.
+///////////////////////////////////////////////////////////////////////////////
 float FGAgent::GetOutgoing()
 {
     std::set<device::CDevice::Pointer> vdev;
@@ -90,6 +159,13 @@ float FGAgent::GetOutgoing()
     return (*vdev.begin())->GetState("outgoing");
 }
 
+///////////////////////////////////////////////////////////////////////////////
+/// FGAgent::SetIncoming
+/// @description Sets the "incoming" device setting on the virtual device.
+/// @param v The value to set the outgoing setting to.
+/// @pre None
+/// @post The value is set and then the device invariant is checked.
+///////////////////////////////////////////////////////////////////////////////
 void FGAgent::SetIncoming(float v)
 {
     std::set<device::CDevice::Pointer> vdev;
@@ -99,6 +175,13 @@ void FGAgent::SetIncoming(float v)
     InvariantCheck();
 }
 
+///////////////////////////////////////////////////////////////////////////////
+/// FGAgent::SetOutgoing
+/// @description Sets the "outgoing" device setting on the virtual device.
+/// @param v The value to set the outgoing setting to.
+/// @pre None
+/// @post The value is set and then the device invariant is checked.
+///////////////////////////////////////////////////////////////////////////////
 void FGAgent::SetOutgoing(float v)
 {
     std::set<device::CDevice::Pointer> vdev;
@@ -108,16 +191,39 @@ void FGAgent::SetOutgoing(float v)
     InvariantCheck();
 }
 
+///////////////////////////////////////////////////////////////////////////////
+/// FGAgent::ChangeOutgoing
+/// @description Adjusts the "outgoing" value by the specified amount
+/// @param a The amount to adjust the value
+/// @pre None
+/// @post Incoming has been increased by a.
+///////////////////////////////////////////////////////////////////////////////
 void FGAgent::ChangeOutgoing(float a)
 {
     SetOutgoing(GetOutgoing()+a);
 }
 
+///////////////////////////////////////////////////////////////////////////////
+/// FGAgent::ChangeIncoming
+/// @description Adjusts the "incoming" value by the specified amount
+/// @param a The amount to adjust the value
+/// @pre None
+/// @post Incoming has been increased by a.
+///////////////////////////////////////////////////////////////////////////////
 void FGAgent::ChangeIncoming(float a)
 {
     SetIncoming(GetIncoming()+a);
 }
 
+///////////////////////////////////////////////////////////////////////////////
+/// FGAgent::SetIsDemand
+/// @description Changes the state of the demand device value which can be
+///     used for the static IsDemand function.
+/// @param d True if the group is in demand.
+/// @pre None
+/// @post The device value "demand" is set to 1.0 if the group is in demand.
+///     Zero, otherwise.
+///////////////////////////////////////////////////////////////////////////////
 void FGAgent::SetIsDemand(bool d)
 {
     std::set<device::CDevice::Pointer> vdev;
@@ -126,6 +232,16 @@ void FGAgent::SetIsDemand(bool d)
     (*vdev.begin())->SetCommand("demand", d?1.0:0.0);
 }
 
+///////////////////////////////////////////////////////////////////////////////
+/// FGAgent::IsDemand
+/// @description Indicates if FG considers this group to be in demand. The
+///     demand state does not immediately update on change from the power
+///     algorithm, so this should be checked near the edge cases to ensure
+///     the invariant for the virtual device is not violated.
+/// @pre None
+/// @post None
+/// @return Returns true if the group is considered to be in a demand state.
+///////////////////////////////////////////////////////////////////////////////
 bool FGAgent::IsDemand()
 {
     std::set<device::CDevice::Pointer> vdev;
@@ -134,7 +250,14 @@ bool FGAgent::IsDemand()
     return (*vdev.begin())->GetState("demand")==1.0;
 }
 
-
+///////////////////////////////////////////////////////////////////////////////
+/// FGAgent::InvariantCheck
+/// @description Ensures the virtual device states in a reasonable state. The
+///     value for each setting should be >= 0. There should either be outgoing
+///     or incoming power, but not both.
+/// @pre None
+/// @post If the device fails the invariant, an exception is thrown.
+///////////////////////////////////////////////////////////////////////////////
 void FGAgent::InvariantCheck()
 {
     float i = GetIncoming();
@@ -158,7 +281,8 @@ void FGAgent::InvariantCheck()
 ///     topology info and to kick off power migrations.
 /// @pre None
 /// @post This task reschedules it self and sends out a state message to all
-///     other processes.
+///     other processes. The device virtual device invariant is maintained
+///     when the process switches from supply to demand mode.
 /// @param error The error code given by the scheduler when the scheduling timer
 ///     expires.
 ///////////////////////////////////////////////////////////////////////////////
@@ -284,6 +408,16 @@ void FGAgent::Round(const boost::system::error_code & error)
     }
 }
 
+///////////////////////////////////////////////////////////////////////////////
+/// FGAgent::HandleIncomingMessage
+/// @description Main message handler. Messages arrive at this process and are
+///     sorted into the appropriate handler function
+/// @param m The message arriving at the peer
+/// @param peer The peer that sent the message
+/// @pre None
+/// @post The message is handled by the appropriate handler or a warning
+///     message is produced.
+///////////////////////////////////////////////////////////////////////////////
 void FGAgent::HandleIncomingMessage(boost::shared_ptr<const ModuleMessage> m, CPeerNode peer)
 {
     if(m->has_group_management_message())
@@ -340,6 +474,11 @@ void FGAgent::HandleIncomingMessage(boost::shared_ptr<const ModuleMessage> m, CP
         {
             // Handle TakeResponse message
             HandleTakeResponseMessage(fgm.take_response_message(), peer);
+        }
+        else if(fgm.has_demand_message())
+        {
+            // Handle a demand message
+            HandleDemandMessage(fgm.demand_message(), peer);
         }
     }
     else
@@ -499,14 +638,33 @@ void FGAgent::HandleStateChangeMessage(const lb::StateChangeMessage &m, const CP
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+/// FGAgent::HandleDemandMessage
+/// @description Handles the generic demand message FG provides for other
+///     algorithms which may not have a distinct demand message. Instead,
+///     those algorithms can produce this demand message once per round
+///     and deliver it directly to this module.
+/// @param m The message to proccess
+/// @param peer the originator of the message
+/// @pre None
+/// @post m_demand score is increased by one.
+//////////////////////////////////////////////////////////////////////////////
+void FGAgent::HandleDemandMessage(const DemandMessage &, const CPeerNode &)
+{
+    Logger.Info << __PRETTY_FUNCTION__ << std::endl;
+    m_demandscore++;
+}
+
+///////////////////////////////////////////////////////////////////////////////
 /// FGAgent::HandleTakeMessage
 /// @description When a supply process recieves this message, they will evaluate
 ///     to see if this sender can actually take the requested power. If they
 ///     can this Process will send back an affirmative TakeResponse message.
 ///     otherwise the message will be negative and the other process will not
-///     take that power.
+///     take that power. If the response is positive, the outgoing power value
+///     decreases.
 /// @pre None
-/// @post Responds to peer with a TakeResponse message.
+/// @post Responds to peer with a TakeResponse message. The outgoing power
+///     value on the virtual device decreases.
 /// @param m The message received from the peer.
 /// @param peer The peer that sent the message.
 ///////////////////////////////////////////////////////////////////////////////
@@ -514,17 +672,18 @@ void FGAgent::HandleTakeMessage(const TakeMessage&, const CPeerNode & peer)
 {
 
     Logger.Info << __PRETTY_FUNCTION__ << std::endl;
-    // If we receive a take message, and we a not a sink, and our virtual device reads 0, we can
-    // respond yes to this take message
+    // If we receive a take message, and we a not a sink, and our virtual
+    // device's outgoing value is greater than 0, we canrespond yes to
+    // this take message
     bool respond_yes = false;
     if(!m_vdev_sink && GetOutgoing() > 0.0)
     {
-        // After we respond, we can put our virtual device back into the -1 state, to sell more power to the grid.
+        // After we respond, we can put our virtual device back into the 0 state, to sell more power to the grid.
         ///CASE13
         ///CASE14
         ///CASE22
         ///CASE23
-        SetOutgoing(GetOutgoing()-CGlobalConfiguration::Instance().GetMigrationStep());
+        ChangeOutgoing(-CGlobalConfiguration::Instance().GetMigrationStep());
         Logger.Info<<"Transfered power (Set Outgoing to "<<GetOutgoing()
                    <<") for "<<peer.GetUUID()<<std::endl;
         respond_yes = true;
@@ -539,13 +698,11 @@ void FGAgent::HandleTakeMessage(const TakeMessage&, const CPeerNode & peer)
 ///     power from one of the processes they think are in a supply state.
 ///     If this message is in the affirmative, and this process needs to
 ///     consume the power, this process will set it's
-///     virtual device to supply power by setting it to the +1 state.
-///     This power can then be consumed by the group. This process will then
-///     respond with a TakeConfirm message which releases the supplier to
-///     put out another quantum.
+///     virtual device to supply power by increasing the incoming power value.
+///     This power can then be consumed by the group.
 /// @pre None
-/// @post Responds to a peer with a TakeConfirm message if they have taken
-///     that quantum of power.
+/// @post If the response was positive, the "incoming" value on the virtual
+///     device is increased.
 ///////////////////////////////////////////////////////////////////////////////
 void FGAgent::HandleTakeResponseMessage(const TakeResponseMessage &m, const CPeerNode& peer )
 {
@@ -558,7 +715,7 @@ void FGAgent::HandleTakeResponseMessage(const TakeResponseMessage &m, const CPee
         ///CASE6
         ///CASE15
         ///CASE24
-        SetIncoming(GetIncoming()+CGlobalConfiguration::Instance().GetMigrationStep());
+        ChangeIncoming(CGlobalConfiguration::Instance().GetMigrationStep());
         Logger.Info<<"TAKE SUPPLY : Raised Virtual Device to "<<GetIncoming()
                    <<"from "<<peer.GetUUID()<<std::endl;
     }
@@ -577,7 +734,7 @@ void FGAgent::HandleTakeResponseMessage(const TakeResponseMessage &m, const CPee
 /// @param recipient the module (sc/lb/gm/clk etc.) the message should be
 ///   delivered to
 ///
-/// @return a ModuleMessage containing a copy of the GroupManagementMessage
+/// @return a ModuleMessage containing a copy of the FederatedGroupsMessage
 ///////////////////////////////////////////////////////////////////////////////
 ModuleMessage FGAgent::PrepareForSending(
     const FederatedGroupsMessage& message, std::string recipient)

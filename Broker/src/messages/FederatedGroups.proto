@@ -40,9 +40,16 @@ message TakeResponseMessage
     required bool response = 1;
 }
 
+message DemandMessage
+{
+
+}
+
 message FederatedGroupsMessage
 {
     optional StateMessage state_message = 1;
     optional TakeMessage take_message = 2;
     optional TakeResponseMessage take_response_message = 3;
+    optional DemandMessage demand_message = 4;
 }
+

@@ -80,7 +80,8 @@ DGI Modules Reference
     modules/state_collection
     modules/group_management
     modules/load_balance
-
+    modules/federated_groups
+	
 DGI Framework Reference
 -----------------------
 

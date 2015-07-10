@@ -558,6 +558,8 @@ void LBAgent::LoadTable()
 /// @pre None
 /// @post Returns the new message.
 /// @param state is a string describing the new state of Load Balancing
+/// @param isvirtual True if the state is based on the value of the virtual
+///     device
 ///////////////////////////////////////////////////////////////////////////////
 ModuleMessage LBAgent::MessageStateChange(std::string state, bool isvirtual)
 {

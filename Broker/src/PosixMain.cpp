@@ -41,6 +41,7 @@
 #include <string>
 #include <vector>
 #include <stdexcept>
+#include <algorithm>
 
 #include <boost/algorithm/string.hpp>
 #include <boost/asio.hpp>
@@ -358,7 +359,7 @@ int main(int argc, char* argv[])
                     throw std::runtime_error(
                             "Incorrectly formatted host in config file: " + s);
                 }
-
+                std::transform(s.begin(), s.end(), s.begin(), ::tolower);
                 std::string peerhost(s.begin(), s.begin() + idx),
                         peerport(s.begin() + ( idx + 1 ), s.end());
                 // Construct the UUID of the peer

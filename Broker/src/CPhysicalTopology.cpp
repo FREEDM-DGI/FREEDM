@@ -239,6 +239,7 @@ void CPhysicalTopology::LoadTopology()
             {
                 throw std::runtime_error("Failed Reading Vertex Topology Entry (EOF?)");
             }
+            std::transform(uuid.begin(), uuid.end(), uuid.begin(), ::tolower);
             m_strans[vsymbol] = uuid;
             Logger.Debug<<"Got Vertex: "<<vsymbol<<"->"<<uuid<<std::endl;
         }

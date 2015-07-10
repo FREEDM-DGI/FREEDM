@@ -1,3 +1,5 @@
+.. _federated-groups:
+
 Federated Groups Module
 =======================
 

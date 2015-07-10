@@ -12,18 +12,23 @@ Physical Topology Configuration
 
 Topology is configured in ``config/topology.cfg``. A topology config file looks like this::
 
-    edge a b
-    edge b c
-    edge c a
+    edge a y
+    edge b y
+    edge c z
+    edge y x
+    edge x z
     sst a raichu.freedm:1870
     sst b manectric.freedm:1870
     sst c galvantula.freedm:1870
-    fid a b FID1
-    fid a b FID4
-    fid b c FID2
-    fid c a FID3
-	gt z
+    fid a y FID1
+    fid b y FID2
+    fid c z FID3
+    gt x
 
+This topology file describes a physical topology that looks like this:
+
+.. image:: PhysicalTopologyExample.png
+	
 Each line of the file is composed of a statement type, and then a series of keywords that are necessary to construct that object.
 
 * **edge** - A physical connection between two SSTs. An edge indicates there is a direct physical connection between two SSTs through a power line or similar object. An edge is followed by strings that represent the two verticies they connect. For convenience, the DGI controlling the vertex is set by the _sst_ statement. Only one edge for each vertex pair needs to be named, and all edges are bidirectional by default (that is, ``edge a b`` also gives you ``edge b a``)

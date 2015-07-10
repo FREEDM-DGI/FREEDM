@@ -44,8 +44,13 @@ Limitations
 * The Load Balancing algorithm needs to be able to predict how the devices will react to its commands or the device will need to react instantaneously to its commands. If the device does not react sufficiently quickly enough, Load Balancing will repeatedly issue the same commands to the device and appear to not be working.
 * The Load Balancing algorithm will move all power values to within one migration step of perfectly balanced. Since the migration step is currently a static value, the algorithm cannot perfectly balance the system. Additionally, there are many computations that include a migration step in order to prevent the DGIs from oscillating when they are near the perfect balance.
 
+Federated Behavior
+------------------
+
+The LBAgent power management algorithm supports wide-area management by interacting with Federated Groups. See :ref:`federated-groups` for details on interactions between these modules.
+
 LBAgent Reference
-^^^^^^^^^^^^^^^^^^^^^^^^^^
+-----------------
 
 .. doxygenclass:: freedm::broker::lb::LBAgent
     :members:

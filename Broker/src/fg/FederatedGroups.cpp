@@ -75,6 +75,8 @@ int FGAgent::Run()
     if(!CPhysicalTopology::Instance().IsAvailable())
     {
         // This module requires Physical Topology to function.
+        Logger.Warn<<"Physical Topology is not available, Federated Groups will"
+                   <<"not run"<<std::endl;
         return 0;
     }
     CBroker::Instance().Schedule(m_RoundTimer, boost::posix_time::not_a_date_time,
@@ -302,11 +304,10 @@ void FGAgent::Round(const boost::system::error_code & error)
             std::set<device::CDevice::Pointer> vdev;
 
             
-            Logger.Info<<"Demand Score is "<<m_demandscore<<"..."<<std::endl;
+            Logger.Status<<"Demand Score is "<<m_demandscore<<"..."<<std::endl;
             // Determine what state to set my virtual device to.
             if(m_demandscore > 0)
             {
-                Logger.Info<<"DEMAND GROUP"<<std::endl;
                 // My group needs more juices!
                 // When this flag is set, and the distributed state indicates
                 // that there will be a device in supply,
@@ -315,7 +316,6 @@ void FGAgent::Round(const boost::system::error_code & error)
             }
             else
             {
-                Logger.Info<<"SUPPLY GROUP"<<std::endl;
                 // This process may be able to supply power to other groups in need.
                 m_vdev_sink = false;
             }
@@ -338,8 +338,9 @@ void FGAgent::Round(const boost::system::error_code & error)
                 std::set<std::string> reachables = CPhysicalTopology::Instance().ReachablePeers(
                         GetUUID(), m_fidstate, true);
                 // Fun times, now we need the intersection of Reachables, Suppliers, and Coordinators
+                Logger.Status<<"Coordinators are:"<<std::endl;
                 BOOST_FOREACH(CPeerNode peer, m_coordinators | boost::adaptors::map_values)
-                    Logger.Info<<"Coordinator: "<<peer.GetUUID()<<std::endl;
+                    Logger.Status<<"Coordinator: "<<peer.GetUUID()<<std::endl;
 
                 if(GetIncoming() == 0.0)
                 {
@@ -503,7 +504,7 @@ void FGAgent::HandleIncomingMessage(boost::shared_ptr<const ModuleMessage> m, CP
 ///////////////////////////////////////////////////////////////////////////////
 void FGAgent::HandleStateMessage(const StateMessage &m, const CPeerNode& peer)
 {
-    Logger.Info << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     // If you are not a coordinator, drop this message.
     if(!m_coordinator)
         return;
@@ -560,7 +561,7 @@ void FGAgent::HandleStateMessage(const StateMessage &m, const CPeerNode& peer)
 ///////////////////////////////////////////////////////////////////////////////
 void FGAgent::HandleResponseAYCMessage(const gm::AreYouCoordinatorResponseMessage & m, const CPeerNode& peer)
 {
-    Logger.Info << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     std::string answer = m.payload();
     if(answer == "yes")
     {
@@ -597,7 +598,7 @@ void FGAgent::HandleResponseAYCMessage(const gm::AreYouCoordinatorResponseMessag
 ///////////////////////////////////////////////////////////////////////////////
 void FGAgent::HandlePeerListMessage(const gm::PeerListMessage&, const CPeerNode& peer)
 {
-    Logger.Info << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     m_coordinators.clear();
     if(peer.GetUUID() == GetUUID())
     {
@@ -631,7 +632,7 @@ void FGAgent::HandlePeerListMessage(const gm::PeerListMessage&, const CPeerNode&
 ///////////////////////////////////////////////////////////////////////////////
 void FGAgent::HandleStateChangeMessage(const lb::StateChangeMessage &m, const CPeerNode&)
 {
-    Logger.Info << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     std::string state = m.state();
     if(state == "demand" && m.is_virtual() == false)
         m_demandscore++;
@@ -650,7 +651,7 @@ void FGAgent::HandleStateChangeMessage(const lb::StateChangeMessage &m, const CP
 //////////////////////////////////////////////////////////////////////////////
 void FGAgent::HandleDemandMessage(const DemandMessage &, const CPeerNode &)
 {
-    Logger.Info << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     m_demandscore++;
 }
 
@@ -671,7 +672,7 @@ void FGAgent::HandleDemandMessage(const DemandMessage &, const CPeerNode &)
 void FGAgent::HandleTakeMessage(const TakeMessage&, const CPeerNode & peer)
 {
 
-    Logger.Info << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     // If we receive a take message, and we a not a sink, and our virtual
     // device's outgoing value is greater than 0, we canrespond yes to
     // this take message
@@ -706,7 +707,7 @@ void FGAgent::HandleTakeMessage(const TakeMessage&, const CPeerNode & peer)
 ///////////////////////////////////////////////////////////////////////////////
 void FGAgent::HandleTakeResponseMessage(const TakeResponseMessage &m, const CPeerNode& peer )
 {
-    Logger.Info << __PRETTY_FUNCTION__ << std::endl;
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     // If we get a yes message from the supply node, we can put our virtual device into the +1 state
     if(m.response() && m_vdev_sink)
     {

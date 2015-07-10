@@ -306,6 +306,10 @@ CBroker::TimerHandle CBroker::AllocateTimer(CBroker::ModuleIdent module)
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
     boost::mutex::scoped_lock schlock(m_schmutex);
+
+    if(!IsModuleRegistered(module))
+        throw std::runtime_error("Attempted to allocate time for unregistered module");
+
     CBroker::TimerHandle myhandle;
     boost::asio::deadline_timer* t = new boost::asio::deadline_timer(m_ioService);
     myhandle = m_handlercounter;

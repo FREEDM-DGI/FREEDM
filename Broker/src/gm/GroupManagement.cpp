@@ -91,8 +91,6 @@ GMAgent::GMAgent()
     m_groupsjoined = 0;
     m_membership = 0;
     m_membershipchecks = 0;
-    m_timer = CBroker::Instance().AllocateTimer("gm");
-    m_fidtimer = CBroker::Instance().AllocateTimer("gm");
     m_GrpCounter = rand();
 }
 
@@ -1306,6 +1304,9 @@ int GMAgent::Run()
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
     std::map<std::string, SRemoteHost>::iterator mapIt_;
+    
+    m_timer = CBroker::Instance().AllocateTimer("gm");
+    m_fidtimer = CBroker::Instance().AllocateTimer("gm");
 
     for( mapIt_ = CConnectionManager::Instance().GetHostsBegin();
         mapIt_ != CConnectionManager::Instance().GetHostsEnd(); ++mapIt_ )

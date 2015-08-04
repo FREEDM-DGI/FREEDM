@@ -532,9 +532,9 @@ ModuleMessage PAAgent::MessageStateResponse(float time)
     submsg->set_voltage1(CDataManager::Instance().GetData("BUS.V1", time));
     submsg->set_voltage2(CDataManager::Instance().GetData("BUS.V2", time));
     submsg->set_voltage3(CDataManager::Instance().GetData("BUS.V3", time));
-    submsg->set_phase1(CDataManager::Instance().GetData("BUS.PH1", time));
-    submsg->set_phase2(CDataManager::Instance().GetData("BUS.PH2", time));
-    submsg->set_phase3(CDataManager::Instance().GetData("BUS.PH3", time));
+    submsg->set_phase1(CDataManager::Instance().GetData("BUS.delta", time));
+    submsg->set_phase2(CDataManager::Instance().GetData("BUS.delta", time));
+    submsg->set_phase3(CDataManager::Instance().GetData("BUS.delta", time));
     return PrepareForSending(msg, "pa");
 }
 

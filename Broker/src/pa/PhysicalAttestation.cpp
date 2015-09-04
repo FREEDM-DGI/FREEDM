@@ -488,6 +488,8 @@ std::set<std::string> PAAgent::BuildFramework(std::string target, float time)
     // condition 4
     BOOST_FOREACH(std::string x, reachable)
     {
+        if(x == target)
+            continue;
         std::set<std::string> x_invariant = adjacent_invariant.at(x);
         std::set<std::string> t_invariant = adjacent_invariant.at(target);
   

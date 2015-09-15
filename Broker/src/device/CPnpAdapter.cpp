@@ -131,7 +131,7 @@ void CPnpAdapter::Start()
     IBufferAdapter::Start();
 
     m_countdown->expires_from_now(boost::posix_time::milliseconds(
-            CTimings::DEV_PNP_HEARTBEAT));
+            CTimings::Get("DEV_PNP_HEARTBEAT")));
     m_countdown->async_wait(boost::bind(&CPnpAdapter::Timeout,
             shared_from_this(), boost::asio::placeholders::error));
 
@@ -151,7 +151,7 @@ void CPnpAdapter::Heartbeat()
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
     if( m_countdown->expires_from_now(boost::posix_time::milliseconds(
-            CTimings::DEV_PNP_HEARTBEAT)) != 0 )
+            CTimings::Get("DEV_PNP_HEARTBEAT"))) != 0 )
     {
         Logger.Debug << "Reset an adapter heartbeat timer." << std::endl;
         m_countdown->async_wait(boost::bind(&CPnpAdapter::Timeout,
@@ -213,7 +213,7 @@ void CPnpAdapter::Timeout(const boost::system::error_code & e)
             std::string msg;
             msg = "Error\r\nConnection closed due to timeout.\r\n\r\n";
             TimedWrite(*m_client, boost::asio::buffer(msg),
-                    CTimings::DEV_SOCKET_TIMEOUT);
+                    CTimings::Get("DEV_SOCKET_TIMEOUT"));
         }
         catch(std::exception & e)
         {

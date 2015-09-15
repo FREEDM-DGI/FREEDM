@@ -27,7 +27,6 @@
 #include "CGlobalPeerList.hpp"
 #include "CLogger.hpp"
 #include "CPeerNode.hpp"
-#include "Messages.hpp"
 #include "messages/ModuleMessage.pb.h"
 
 #include <memory>
@@ -75,10 +74,12 @@ CClockSynchronizer::CClockSynchronizer(boost::asio::io_service& ios)
 
 ///////////////////////////////////////////////////////////////////////////////
 /// CClockSynchronizer::Run()
-/// @description Starts the timer that handles most of the processing
+/// @description Schedule's the synchronizer's behavior and starts the
+///		synchronization algorithm.
 /// @limitations none
 /// @pre None
-/// @post The timer is set and the first round will run at QUERY_INTERVAL
+/// @post The exchange timer is set and the first round will run in
+/// 	QUERY_INTERVAL milliseconds
 ///////////////////////////////////////////////////////////////////////////////
 void CClockSynchronizer::Run()
 {
@@ -90,7 +91,7 @@ void CClockSynchronizer::Run()
 
 ///////////////////////////////////////////////////////////////////////////////
 /// CClockSynchronizer::Stop()
-/// @description Stops the timer that handles most of the processing
+/// @description Stops the clock synchronizer.
 /// @limitations none
 /// @pre None
 /// @post The timer is canceled.
@@ -102,9 +103,9 @@ void CClockSynchronizer::Stop()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// "Downcasts" incoming messages into a specific message type, and passes the
-/// message to an appropriate handler.
-///
+///	CClockSyncronizer::HandleIncoming Message
+/// @description: Takes an incoming message, determines its type and passes it
+///		to the appropriate message handler.
 /// @param msg the incoming message
 /// @param peer the node that sent this message (could be this DGI)
 ///////////////////////////////////////////////////////////////////////////////
@@ -136,10 +137,10 @@ void CClockSynchronizer::HandleIncomingMessage(
 
 ///////////////////////////////////////////////////////////////////////////////
 /// CClockSynchronizer::HandleExchange
-/// @description Responds to a challenge issued by a remote node.
+/// @description Responds to a clock reading request issued by a remote node.
 /// @limitations none
 /// @pre None
-/// @post No change
+/// @post An exchange response is sent to the original sender.
 /// @param msg The message from the remote node
 /// @param peer The peer sending the message.
 ///////////////////////////////////////////////////////////////////////////////
@@ -153,7 +154,7 @@ void CClockSynchronizer::HandleExchange(const ExchangeMessage& msg, CPeerNode pe
 
 ///////////////////////////////////////////////////////////////////////////////
 /// CClockSynchronizer::HandleExchangeResponse
-/// @description Handles the challenge response from the remote node
+/// @description Handles the clock reading response from the remote node
 /// @limitations none
 /// @pre None
 /// @post Internal tables and state are updated, based on a linear regression
@@ -290,7 +291,8 @@ void CClockSynchronizer::HandleExchangeResponse(const ExchangeResponseMessage& m
 
 ///////////////////////////////////////////////////////////////////////////////
 /// CClockSynchronizer::Exchange
-/// @description Issues a series of challenges to the remote nodes.
+/// @description Makes clock reading requests to the other processes in the
+/// 	system.
 /// @limitations none
 /// @pre None
 /// @post The query table is updated and the clock offset / skew is adjusted
@@ -368,12 +370,14 @@ void CClockSynchronizer::Exchange(const boost::system::error_code& err)
 
 ///////////////////////////////////////////////////////////////////////////////
 /// CClockSynchronizer::ExchangeMessage
-/// @description Generates the challenge message
+/// @description Generates the challenge message, which requests a clock
+///		reading from another process.
 /// @limitations none
 /// @pre None
 /// @post None
-/// @param k The sequence number to be delivered so that old messages are not
-///     used.
+/// @param k A sequence number to use for this request, which is a monotonically
+///		increasing value for each receiver 
+/// @return A prepared exchange message.
 ///////////////////////////////////////////////////////////////////////////////
 ModuleMessage CClockSynchronizer::CreateExchangeMessage(unsigned int k)
 {
@@ -387,12 +391,14 @@ ModuleMessage CClockSynchronizer::CreateExchangeMessage(unsigned int k)
 
 ///////////////////////////////////////////////////////////////////////////////
 /// CClockSynchronizer::ExchangeResponse
-/// @description Generates the response message
+/// @description Generates the response message. Embeds the current clock
+///		reading and the offset table for this process in a message.
 /// @limitations none
 /// @pre None
 /// @post None
-/// @param k The sequence number to be delivered so that old messages are not
-///     used.
+/// @param k A sequence number to use for this request, which is a monotonically
+///		increasing value for each receiver 
+/// @return A prepared response message.
 ///////////////////////////////////////////////////////////////////////////////
 ModuleMessage CClockSynchronizer::CreateExchangeResponse(unsigned int k)
 {
@@ -420,7 +426,7 @@ ModuleMessage CClockSynchronizer::CreateExchangeResponse(unsigned int k)
 /// @limitations none
 /// @pre None
 /// @post None
-/// @return The adjusted time.
+/// @return The current time as decided by the synchronization algorithm
 ///////////////////////////////////////////////////////////////////////////////
 boost::posix_time::ptime CClockSynchronizer::GetSynchronizedTime() const
 {
@@ -435,7 +441,7 @@ boost::posix_time::ptime CClockSynchronizer::GetSynchronizedTime() const
 /// @limitations none
 /// @pre None
 /// @post None
-/// @return The weight
+/// @return The weight of a processes clock measurement.
 ///////////////////////////////////////////////////////////////////////////////
 double CClockSynchronizer::GetWeight(MapIndex i) const
 {
@@ -467,9 +473,11 @@ void CClockSynchronizer::SetWeight(MapIndex i, double w)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// @fn CClockSynchronizer::TDToDouble
+/// CClockSynchronizer::TDToDouble
 /// @description give a time duration td, convert it to a double which represents
 ///     the number of seconds the time duration represents
+/// @pre None
+/// @post None
 /// @param td the time duration to convert
 /// @return a double of the time duration, in seconds.
 ///////////////////////////////////////////////////////////////////////////////
@@ -481,9 +489,11 @@ double CClockSynchronizer::TDToDouble(boost::posix_time::time_duration td)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// @fn CClockSynchronizer::DoubleToTD
+/// CClockSynchronizer::DoubleToTD
 /// @description given a double td, convert it to a boost time_duration of
 ///     roughly the same value (some losses for the accuracy of posix_time
+/// @pre None
+/// @post None
 /// @param td the time duration (in seconds) to convert
 /// @return a time duration that is roughly the same as td.
 ///////////////////////////////////////////////////////////////////////////////
@@ -498,11 +508,12 @@ boost::posix_time::time_duration CClockSynchronizer::DoubleToTD(double td)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// Wraps a ClockSynchronizerMessage in a ModuleMessage.
-///
+/// CClockSynchronizer::PrepareForSending
+/// @description Wraps a ClockSynchronizerMessage in a ModuleMessage.
 /// @param message the message to prepare. If any required field is unset,
-///     the DGI will abort.
-///
+///     an exception will be thrown.
+/// @pre None
+/// @post None
 /// @return a ModuleMessage containing a copy of the ClockSynchronizerMessage
 ///////////////////////////////////////////////////////////////////////////////
 ModuleMessage CClockSynchronizer::PrepareForSending(const ClockSynchronizerMessage& message)

@@ -34,8 +34,8 @@ namespace broker {
 ////////////////////////////////////////////////////////
 /// CGlobalPeerList::GetPeer
 /// @description Fetch a peer based on uuid, throws an exception if they aren't found
-/// @param uuid The UUID of the peer you are attempting to access
-/// @return A shared pointer to the node.
+/// @param uuid The UUID of the peer you are attempting to get
+/// @return A CPeerNode object for the specified peer.
 /// @ErrorHandling Runtime exception if no peer matches that description.
 ////////////////////////////////////////////////////////
 CPeerNode CGlobalPeerList::GetPeer(const std::string& uuid)
@@ -49,9 +49,9 @@ CPeerNode CGlobalPeerList::GetPeer(const std::string& uuid)
 }
 ////////////////////////////////////////////////////////
 /// CGlobalPeerList::Count
-/// @description Count the number of peers with a specified uuid (should be 1 or 0)
-/// @param uuid The UUID of the peer you are attempting to access
-/// @return A count of all nodes with that uuid in the table.
+/// @description Count the number of peers with a specified uuid 
+/// @param uuid The UUID of a peer.
+/// @return A count of all nodes with that uuid in the table. (should be 1 or 0)
 ////////////////////////////////////////////////////////
 int CGlobalPeerList::Count(const std::string& uuid)
 {
@@ -70,7 +70,7 @@ CGlobalPeerList::PeerSetIterator CGlobalPeerList::Find(const std::string& uuid)
 //////////////////////////////////////////////////////
 /// CGlobalPeerList::begin
 /// @description Return an iterator to the beginning of the container's table.
-/// @return An iterator
+/// @return An iterator to the beginning of the peer list.
 //////////////////////////////////////////////////////
 CGlobalPeerList::PeerSetIterator CGlobalPeerList::begin()
 {
@@ -79,7 +79,7 @@ CGlobalPeerList::PeerSetIterator CGlobalPeerList::begin()
 //////////////////////////////////////////////////////
 /// CGlobalPeerList::end
 /// @description Return an iterator to the end of the container's table.
-/// @return An iterator
+/// @return An iterator to the end of the peer list.
 //////////////////////////////////////////////////////
 CGlobalPeerList::PeerSetIterator CGlobalPeerList::end()
 {
@@ -88,7 +88,9 @@ CGlobalPeerList::PeerSetIterator CGlobalPeerList::end()
 //////////////////////////////////////////////////////
 /// CGlobalPeerList::Insert
 /// @description Pushes a peer node into the set
-/// @param p A peernode pointer to put into the container.
+///	@pre None
+/// @post p has been added to the global peer list.
+/// @param p A CPeerNode to put into the container.
 //////////////////////////////////////////////////////
 void CGlobalPeerList::Insert(CPeerNode p)
 {
@@ -96,8 +98,12 @@ void CGlobalPeerList::Insert(CPeerNode p)
 }
 //////////////////////////////////////////////////////
 /// CGlobalPeerList::Create
-/// @description Constructs a new peernode pointer, intserts it, and returns it
-/// @param uuid The UUID this pointer addresses.
+/// @description Adds a peer to the global peerlist by it's uuid
+/// @pre None
+///	@post If the peer is not already in the peerlist, it is inserted in
+///		the global peerlist.
+/// @param uuid The UUID of a peer.
+/// @return A CPeerNode for the given uuid.
 //////////////////////////////////////////////////////
 CPeerNode CGlobalPeerList::Create(std::string uuid)
 {
@@ -111,8 +117,8 @@ CPeerNode CGlobalPeerList::Create(std::string uuid)
 }
 /////////////////////////////////////////////////////
 /// CGlobalPeerList::PeerList
-/// @description Returns a copy of the peerlist for iterating an stuff
-/// @return A copy of the internal peer list
+/// @description Gets a copy of the global peer list.
+/// @return A copy of the global peer list
 /////////////////////////////////////////////////////
 CGlobalPeerList::PeerSet& CGlobalPeerList::PeerList()
 {

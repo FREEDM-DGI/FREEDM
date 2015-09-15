@@ -29,10 +29,10 @@ namespace freedm {
 namespace broker {
 
 ///////////////////////////////////////////////////////////////////////////////
-/// Determines whether the given string represents a valid port number.
-///
+/// IsValidPort
+/// @description Determines whether the given string represents a 
+/// 	valid port number.
 /// @param port the string to checkt
-///
 /// @return true if port represents a valid port
 ///////////////////////////////////////////////////////////////////////////////
 inline bool IsValidPort(std::string port)

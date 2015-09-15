@@ -29,15 +29,21 @@ message ProtocolMessage
         CREATED = 1;
         ACCEPTED = 2;
         BAD_REQUEST = 3;
+        MESSAGE = 4;
     }
 
-    required string source_uuid = 1;
-    required string send_time = 2;
     required uint32 sequence_num = 3;
     optional string expire_time = 4;
-    optional Status status = 5;
+    required Status status = 5;
     optional int32 kill = 6;
     optional fixed64 hash = 7;
 
     optional ModuleMessage module_message = 8;
+}
+
+message ProtocolMessageWindow
+{
+    required string source_uuid = 1;
+    required string send_time = 2;
+    repeated ProtocolMessage messages = 3;
 }

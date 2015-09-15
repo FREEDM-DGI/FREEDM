@@ -51,7 +51,7 @@ CLocalLogger Logger(__FILE__);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// @fn CConnectionManager::CConnectionManager
+/// CConnectionManager::CConnectionManager
 /// @description: Initializes the connection manager object
 /// @pre None
 /// @post Connection manager is ready for use
@@ -62,7 +62,11 @@ CConnectionManager::CConnectionManager()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// Access the singleton instance of the connection manager
+/// CConnectionManager::Instance
+/// @description Access the singleton instance of the connection manager
+/// @pre None
+/// @post None
+///	@return A reference to the Connection Manager.
 ///////////////////////////////////////////////////////////////////////////////
 CConnectionManager& CConnectionManager::Instance()
 {
@@ -71,10 +75,10 @@ CConnectionManager& CConnectionManager::Instance()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// @fn CConnectionManager::PutConnection
-/// @description Inserts a connection into the connection map.
+/// CConnectionManager::PutConnection
+/// @description Registers a connection with the connection manager.
 /// @param uuid The uuid of the node the connection is to.
-/// @param c The connection pointer that goes to the node in question.
+/// @param c The connection object that manages the channel to uuid
 /// @pre The connection is initialized.
 /// @post The connection has been inserted into the connection map.
 ///////////////////////////////////////////////////////////////////////////////
@@ -88,13 +92,13 @@ void CConnectionManager::PutConnection(std::string uuid, ConnectionPtr c)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// @fn CConnectionManager::PutHost
-/// @description Registers a hostname with the uuid to hostname map.
+/// CConnectionManager::PutHost
+/// @description Registers a peer with the connection manager.
 /// @pre None
 /// @post The hostname is registered with the uuid to hostname map.
-/// @param u the uuid to enter into the map.
-/// @param host The hostname to enter into the map.
-/// @param port The port the remote host listens on.
+/// @param u The peer's UUID
+/// @param host The peer's hostname.
+/// @param port The port the peer listens on.
 ///////////////////////////////////////////////////////////////////////////////
 void CConnectionManager::PutHost(std::string u, std::string host, std::string port)
 {
@@ -111,12 +115,12 @@ void CConnectionManager::PutHost(std::string u, std::string host, std::string po
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// @fn CConnectionManager::PutHost
-/// @description Registers a hostname with the uuid to hostname map.
+/// CConnectionManager::PutHost
+/// @description Registers a peer with the connection manager
 /// @pre None
 /// @post The hostname is registered with the uuid to hostname map.
 /// @param u the uuid to enter into the map.
-/// @param host The hostname to enter into the map.
+/// @param host The hostname and port to enter into the map.
 ///////////////////////////////////////////////////////////////////////////////
 void CConnectionManager::PutHost(std::string u, SRemoteHost host)
 {
@@ -130,10 +134,10 @@ void CConnectionManager::PutHost(std::string u, SRemoteHost host)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// @fn CConnectionManager::Stop
-/// @description Stops a connection and removes it from the connections maps.
+/// CConnectionManager::Stop
+/// @description Stops a connection.
 /// @pre The connection is in the connections map.
-/// @post The connection is closed and removed from the map.
+/// @post The connection is closed and removed from the connections map.
 /// @param c the connection pointer to stop.
 ///////////////////////////////////////////////////////////////////////////////
 void CConnectionManager::Stop(ConnectionPtr c)
@@ -147,9 +151,9 @@ void CConnectionManager::Stop(ConnectionPtr c)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// @fn CConnectionManager::StopAll
-/// @description Repeatedly pops a connection and stops it until the forward
-///               connection map is empty, then clears the reverse map.
+/// CConnectionManager::StopAll
+/// @description Stops all the connections registered with the connection
+///		manager.
 /// @pre None
 /// @post The forward and reverse connection maps are empty, and all
 ///        connections that were contained within them are stopped.
@@ -167,16 +171,16 @@ void CConnectionManager::StopAll()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// @fn CConnectionManager::GetConnectionByUUID
-/// @description Constructs or retrieves from cache a connection to a specific
+/// CConnectionManager::GetConnectionByUUID
+/// @description Constructs or retrieves a connection to a specific
 ///              UUID.
-/// @param uuid The uuid to construct a connection to
+/// @param uuid The uuid of the peer you wish to connect to.
 /// @pre None
 /// @post If a connection has been constructed it will be put in the
-///        connections table and has been started. If the connection is not
+///        connections table and be started. If the connection is not
 ///        constructed there is no change to the connection table.
-/// @return A pointer to the connection, or NULL if construction failed for
-///         some reason.
+///		   Throws an exception of the connection couldn't be constructed.
+/// @return A pointer to the connection
 ///////////////////////////////////////////////////////////////////////////////
 ConnectionPtr CConnectionManager::GetConnectionByUUID(std::string uuid)
 {
@@ -218,8 +222,13 @@ ConnectionPtr CConnectionManager::GetConnectionByUUID(std::string uuid)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// @fn CConnectionManager::HasConnection
-/// Checks to see if a connection exists in the connections map.
+/// CConnectionManager::HasConnection
+/// @description Checks to see if the connection manager has a connection to
+///		the specified peer.
+/// @pre None
+/// @post If the connection is no longer valid, the connection manager will
+///		stop it.
+///	@param uuid The uuid of the peer.
 /// @return Returns true if the connection exists and has not stopped.
 //////////////////////////////////////////////////////////////////////////////
 bool CConnectionManager::HasConnection(std::string uuid)
@@ -245,12 +254,14 @@ bool CConnectionManager::HasConnection(std::string uuid)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// @fn CConnectionManager::CreateConnection
-/// Creates the CConnection object and binds it to an endpoint & uuid.
+/// CConnectionManager::CreateConnection
+/// @description Creates the CConnection object and binds it to an 
+///		endpoint & uuid.
 /// @param uuid The uuid of the remote endpoint
-/// @param endpoint The remote port to bind to
+/// @param endpoint The network destination for the messages sent to this peer.
 /// @pre endpoint is a valid endpoint
-/// @post A new CConnection is created and bound to and endpoint.
+/// @post A new CConnection is created and bound to and endpoint. The resulting
+///		CConnection is inserted into the connection manager's map.
 ///////////////////////////////////////////////////////////////////////////////
 ConnectionPtr CConnectionManager::CreateConnection(std::string uuid, boost::asio::ip::udp::endpoint endpoint)
 {
@@ -269,10 +280,10 @@ ConnectionPtr CConnectionManager::CreateConnection(std::string uuid, boost::asio
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// @fn CConnectionManager::ChangePhase
+/// CConnectionManager::ChangePhase
 /// @description called when the broker changes phases in the realtime scheduler
 /// @pre None
-/// @post Connection's Change phase events are called.
+/// @post Each Connection's Change phase events is called.
 /// @param newround True if the phase change corresponds to a new round.
 ///////////////////////////////////////////////////////////////////////////////
 void CConnectionManager::ChangePhase(bool newround)
@@ -284,11 +295,10 @@ void CConnectionManager::ChangePhase(bool newround)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// @fn CConnectionManager::LoadNetworkConfig
+/// CConnectionManager::LoadNetworkConfig
 /// @description Accesses the network.xml file and parses it, setting the
-///   network reliability for all specified interfaces. Only enabled with the
-///   -DCUSTOMNETWORK compile option
-/// @pre None
+///   network reliability for all specified interfaces.
+/// @pre  Only enabled with the -DCUSTOMNETWORK compile option
 /// @post All connections in the file are modified to behave as specified.
 ///////////////////////////////////////////////////////////////////////////////
 void CConnectionManager::LoadNetworkConfig()

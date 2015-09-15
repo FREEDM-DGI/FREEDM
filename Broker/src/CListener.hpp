@@ -45,7 +45,7 @@ public:
     /// Access the singleton instance of the CListener
     static CListener& Instance();
 
-    /// Start the first asynchronous operation for the CConnection.
+    /// Bind the listener to the specified endpoint and listen for datagrams.
     void Start(boost::asio::ip::udp::endpoint& endpoint);
 
     /// Stop any current async read and close the socket

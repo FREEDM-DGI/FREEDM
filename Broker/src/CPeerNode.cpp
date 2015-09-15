@@ -45,7 +45,7 @@ CLocalLogger Logger(__FILE__);
 }
 
 /////////////////////////////////////////////////////////////
-/// @fn CPeerNode::CPeerNode
+/// CPeerNode::CPeerNode
 /// @description Prepares a peer node. Provides node status
 ///   and sending functions to the agent in a very clean manner.
 /// @param uuid The uuid of the node
@@ -62,9 +62,10 @@ CPeerNode::CPeerNode()
 
 
 ////////////////////////////////////////////////////////////
-/// @fn CPeerNode::GetUUID
+/// CPeerNode::GetUUID
 /// @description Returns the uuid of this peer node as a
 ///              string.
+///	@return The uuid of the peer.
 /////////////////////////////////////////////////////////////
 std::string CPeerNode::GetUUID() const
 {
@@ -72,9 +73,10 @@ std::string CPeerNode::GetUUID() const
 }
 
 /////////////////////////////////////////////////////////////
-/// @fn CPeerNode::GetHostname
+/// CPeerNode::GetHostname
 /// @description Returns the hostname of this peer node as a
 ///              string
+/// @return The hostname of the peer
 /////////////////////////////////////////////////////////////
 std::string CPeerNode::GetHostname() const
 {
@@ -87,6 +89,7 @@ std::string CPeerNode::GetHostname() const
 ////////////////////////////////////////////////////////////
 /// CPeerNode::GetPort
 /// @description Returns the port number this node communicates on
+/// @return The port of the peer as string.
 ////////////////////////////////////////////////////////////
 std::string CPeerNode::GetPort() const
 {
@@ -97,7 +100,7 @@ std::string CPeerNode::GetPort() const
 }
 
 /////////////////////////////////////////////////////////////
-/// @fn CPeerNode::Send
+/// CPeerNode::Send
 /// @description This method will attempt to construct a
 ///   connection to the peer this object represents and send
 ///   a message. Before, when this was done with TCP, it was

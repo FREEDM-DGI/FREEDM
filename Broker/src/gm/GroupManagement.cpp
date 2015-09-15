@@ -79,9 +79,9 @@ GMAgent::GMAgent()
     : CHECK_TIMEOUT(boost::posix_time::not_a_date_time),
       TIMEOUT_TIMEOUT(boost::posix_time::not_a_date_time),
       FID_TIMEOUT(boost::posix_time::not_a_date_time),
-      AYC_RESPONSE_TIMEOUT(boost::posix_time::milliseconds(CTimings::GM_AYC_RESPONSE_TIMEOUT)),
-      AYT_RESPONSE_TIMEOUT(boost::posix_time::milliseconds(CTimings::GM_AYT_RESPONSE_TIMEOUT)),
-      INVITE_RESPONSE_TIMEOUT(boost::posix_time::milliseconds(CTimings::GM_INVITE_RESPONSE_TIMEOUT))
+      AYC_RESPONSE_TIMEOUT(boost::posix_time::milliseconds(CTimings::Get("GM_AYC_RESPONSE_TIMEOUT"))),
+      AYT_RESPONSE_TIMEOUT(boost::posix_time::milliseconds(CTimings::Get("GM_AYT_RESPONSE_TIMEOUT"))),
+      INVITE_RESPONSE_TIMEOUT(boost::posix_time::milliseconds(CTimings::Get("GM_INVITE_RESPONSE_TIMEOUT")))
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     AddPeer(GetMe());
@@ -664,9 +664,9 @@ void GMAgent::Premerge( const boost::system::error_code &err )
                 }
             }
             float wait_val_;
-            int maxWait = CTimings::GM_PREMERGE_MAX_TIMEOUT; /* The longest a node would have to wait to Merge */
-            int minWait = CTimings::GM_PREMERGE_MIN_TIMEOUT;
-            int granularity = CTimings::GM_PREMERGE_GRANULARITY; /* How finely it can slip in */
+            int maxWait = CTimings::Get("GM_PREMERGE_MAX_TIMEOUT"); /* The longest a node would have to wait to Merge */
+            int minWait = CTimings::Get("GM_PREMERGE_MIN_TIMEOUT");
+            int granularity = CTimings::Get("GM_PREMERGE_GRANULARITY"); /* How finely it can slip in */
             int delta = ((maxWait-minWait)*1.0)/(granularity*1.0);
             if( myPriority < maxPeer_ )
                 wait_val_ = (((maxPeer_ - myPriority)%(granularity+1))*1.0)*delta+minWait;

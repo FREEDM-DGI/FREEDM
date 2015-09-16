@@ -144,7 +144,7 @@ void CConnection::Send(const ModuleMessage& msg)
         SetExpirationTimeFromNow(pm, boost::posix_time::millisec(
             CTimings::Get("CSRC_DEFAULT_TIMEOUT")));
         
-        Logger.Debug<<"Msg("<<msgseq<<" To:"<<GetUUID()<<" Exp: "
+        Logger.Debug<<"SEND Msg("<<msgseq<<") To:"<<GetUUID()<<" Exp: "
                     <<pm.expire_time()<<std::endl;
 
         m_window.push_back(pm);
@@ -201,7 +201,7 @@ void CConnection::Resend(const boost::system::error_code& err)
                 //First message in the window should be the only one
                 //ever to have been written.
                 m_sendkills = true;
-                Logger.Debug<<"Msg To: "<<GetUUID()<<" Expired: "
+                Logger.Debug<<"EXPIRED Msg To: "<<GetUUID()<<" Expired: "
                             <<m_window.front().DebugString();
                 m_window.pop_front();
                 m_dropped++;
@@ -209,8 +209,8 @@ void CConnection::Resend(const boost::system::error_code& err)
         }
         if(m_dropped > MAX_DROPPED_MSGS || todrop > MAX_DROPPED_MSGS)
         {
-            Logger.Warn<<"Connection to "<<GetUUID()<<" has lost "<<m_dropped
-                       <<" messages. Attempting to reconnect."<<std::endl;
+            Logger.Warn<<"LOST MESSAGES: Connection to "<<GetUUID()<<" has lost "
+                       <<m_dropped<<" messages. Attempting to reconnect."<<std::endl;
             Stop();
             return;
         }
@@ -263,7 +263,7 @@ void CConnection::ReceiveACK(const ProtocolMessage& msg)
         // Assuming hash collisions are small, we will check the hash
         // of the front message. On hit, we can accept the acknowledge.
         unsigned int fseq = m_window.front().sequence_num();
-        Logger.Debug<<"Recv from "<<GetUUID()<<" ACK("<<seq<<") Expected ACK("<<fseq<<")"
+        Logger.Debug<<"RECV ACK("<<seq<<") from "<<GetUUID()<<"  Expected ACK("<<fseq<<")"
                     <<std::endl;
         google::protobuf::uint64 expectedHash = m_window.front().hash();
         if(fseq == seq && expectedHash == msg.hash())
@@ -294,13 +294,15 @@ bool CConnection::Receive(const ProtocolMessage& msg)
 			// See if we are getting a bad request we've already synced for.
             if(msg.hash() != m_outsynchash)
             {
-                Logger.Debug<<"Syncronizing Connection (BAD REQUEST)"<<std::endl;
+                Logger.Debug<<"NEW SYNC: Syncronizing Connection with "<<GetUUID()
+                            <<" (BAD REQUEST)"<<std::endl;
                 m_outsynchash = msg.hash();
                 SendSYN();
             }
             else
             {
-                Logger.Debug<<"Already synced for this time"<<std::endl;
+                Logger.Debug<<"IGNORED BAD REQUEST: Already synced with "<<GetUUID()
+                            <<" for this time"<<std::endl;
             }
         }
         return false;
@@ -311,10 +313,10 @@ bool CConnection::Receive(const ProtocolMessage& msg)
         //Check to see if we've already seen this SYN:
         if(sendtime == m_insynctime)
         {
-		    Logger.Debug<<"Duplicate Sync"<<std::endl;
+		    Logger.Debug<<"RECV: Duplicate Sync from "<<GetUUID()<<std::endl;
             return false;
         }
-        Logger.Debug<<"Got Sync"<<std::endl;
+        Logger.Debug<<"RECV: Sync with "<<GetUUID()<<std::endl;
         m_inseq = (msg.sequence_num()+1)%SEQUENCE_MODULO;
         m_insynctime = sendtime;
         m_inresyncs++;
@@ -324,7 +326,7 @@ bool CConnection::Receive(const ProtocolMessage& msg)
     }
     else if(m_insync == false)
     {
-        Logger.Debug<<"Connection Needs Resync"<<std::endl;
+        Logger.Debug<<"OUT OF SYNC: Connection with "<<GetUUID()<<" Needs Resync"<<std::endl;
         //If the connection hasn't been synchronized, we want to
         //tell them it is a bad request so they know they need to sync.
         ProtocolMessage outmsg;
@@ -361,7 +363,7 @@ bool CConnection::Receive(const ProtocolMessage& msg)
         //Consider the window you expect to see
         // If the killed message is the one immediately preceeding this
         // message in terms of sequence number we should accept it
-        Logger.Debug<<"Msg("<<msg.sequence_num()<<") From "<<GetUUID()<<" Expected "<<m_inseq
+        Logger.Debug<<"RECV Msg("<<msg.sequence_num()<<") From "<<GetUUID()<<" Expected "<<m_inseq
                     <<" Using kill: "<<usekill<<" with "<<kill<<std::endl;
         if(msg.sequence_num() == m_inseq)
         {
@@ -402,7 +404,7 @@ void CConnection::SendACK(const ProtocolMessage& msg)
     // Presumably, if we are here, the connection is registered
     outmsg.set_status(ProtocolMessage::ACCEPTED);
     outmsg.set_sequence_num(seq);
-    Logger.Debug<<"ACK("<<seq<<") To:"<<GetUUID()<<" Exp: "<<msg.expire_time()<<std::endl;
+    Logger.Debug<<"SEND ACK("<<seq<<") To:"<<GetUUID()<<" Exp: "<<msg.expire_time()<<std::endl;
     outmsg.set_expire_time(msg.expire_time());
     outmsg.set_hash(msg.hash());
     m_ack_window.push_back(outmsg);

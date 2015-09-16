@@ -263,7 +263,8 @@ void CConnection::ReceiveACK(const ProtocolMessage& msg)
         // Assuming hash collisions are small, we will check the hash
         // of the front message. On hit, we can accept the acknowledge.
         unsigned int fseq = m_window.front().sequence_num();
-        Logger.Debug<<"Received ACK "<<seq<<" expecting ACK "<<fseq<<std::endl;
+        Logger.Debug<<"Recv from "<<GetUUID()<<" ACK("<<seq<<") Expected ACK("<<fseq<<")"
+                    <<std::endl;
         google::protobuf::uint64 expectedHash = m_window.front().hash();
         if(fseq == seq && expectedHash == msg.hash())
         {
@@ -401,7 +402,7 @@ void CConnection::SendACK(const ProtocolMessage& msg)
     // Presumably, if we are here, the connection is registered
     outmsg.set_status(ProtocolMessage::ACCEPTED);
     outmsg.set_sequence_num(seq);
-    Logger.Debug<<"Generating ACK. Source exp time "<<msg.expire_time()<<std::endl;
+    Logger.Debug<<"ACK("<<seq<<") To:"<<GetUUID()<<" Exp: "<<msg.expire_time()<<std::endl;
     outmsg.set_expire_time(msg.expire_time());
     outmsg.set_hash(msg.hash());
     m_ack_window.push_back(outmsg);

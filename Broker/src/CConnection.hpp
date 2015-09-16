@@ -24,12 +24,15 @@
 #ifndef CCONNECTION_HPP
 #define CCONNECTION_HPP
 
-#include "CProtocolSR.hpp"
 #include "CDispatcher.hpp"
 #include "SRemoteHost.hpp"
+#include "IProtocol.hpp"
 
 #include <memory>
+#include <deque>
 
+#include <boost/asio/deadline_timer.hpp>
+#include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/noncopyable.hpp>
 
 namespace google {
@@ -43,7 +46,6 @@ class Message;
 namespace freedm {
     namespace broker {
 
-class IProtocol;
 
 /// Used for errors communicating with peers.
 struct EConnectionError
@@ -55,7 +57,7 @@ struct EConnectionError
 
 /// Represents a single outgoing connection to a client.
 class CConnection
-    : private boost::noncopyable
+    : public IProtocol
 {
 
 public:
@@ -67,11 +69,8 @@ public:
     /// Destructor
     ~CConnection();
 
-    /// Stop all asynchronous operations associated with the CConnection.
-    void Stop();
-
-    /// Tests to see if the protocol is stopped
-    bool GetStopped();
+    /// Handles Stopping the timers etc
+    virtual void Stop();
 
     /// Puts a message into the channel.
     void Send(const ModuleMessage& msg);
@@ -84,22 +83,53 @@ public:
 
     /// Performs an action based on receiving a Protocol Message Window.
     void OnReceive();
+   
+    /// Handles Writing an ack for the input message to the channel
+    void SendACK(const ProtocolMessage& msg);
     
-    /// Allows protocols to peform an action when a phase ends.
-    void ChangePhase(bool newround);
-
-    /// Gets the UUID of the peer for this connection.
-    std::string GetUUID() const;
-
-    /// Set the connection reliability for DCUSTOMNETWORK
-    void SetReliability(int r);
-    
-    /// Get the connection reliability for DCUSTOMNETWORK
-    int GetReliability() const;
+    /// Sends a synchronizer
+    void SendSYN();
+ 
+    /// Handles writing the message to the underlying connection
+    void Write(ProtocolMessageWindow & msg);
+    /// Writes a whole window to the channel
+    void WriteWindow();
 private:
-
-    /// The network protocol to use for sending/receiving messages
-    boost::shared_ptr<IProtocol> m_protocol;
+    /// Resend outstanding messages
+    void Resend(const boost::system::error_code& err);
+    /// Timeout for resends
+    boost::asio::deadline_timer m_timeout;
+    /// The expected next in sequence number
+    unsigned int m_inseq;
+    /// The next number to assign to an outgoing message
+    unsigned int m_outseq;
+    /// Marks if this has been synced.
+    bool m_insync;
+    /// Counts the number of times this one has been resynced
+    unsigned int m_inresyncs;
+    /// Time the last accepted sync was
+    boost::posix_time::ptime m_insynctime;
+    /// Marks if we've sent the outsync for this connection
+    bool m_outsync;
+    /// Keeps track of the last resync that we've seen
+    google::protobuf::uint64 m_outsynchash;
+    /// Marks if we should send the kill hash.
+    bool m_sendkills;
+    /// The hash to... MURDER.
+    unsigned int m_sendkill;
+    /// The window
+    std::deque<ProtocolMessage> m_window;
+    std::deque<ProtocolMessage> m_ack_window;
+    /// Sequence modulo
+    static const unsigned int SEQUENCE_MODULO = 1024;
+    /// Refire time in MS
+    static const unsigned int REFIRE_TIME = 10;
+    /// The number of messages that have to be dropped before the connection is dead
+    static const unsigned int MAX_DROPPED_MSGS = 3;
+    /// The number that have been dropped.
+    unsigned int m_dropped;
+    /// Indicates if the timer is active.
+    bool m_timer_active;
 };
 
 typedef boost::shared_ptr<CConnection> ConnectionPtr;

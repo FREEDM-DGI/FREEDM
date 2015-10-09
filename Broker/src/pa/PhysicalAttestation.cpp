@@ -448,7 +448,7 @@ std::set<std::string> PAAgent::BuildFramework(std::string target, float time)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     std::set<std::string> members;
-    members = CPhysicalTopology::Instance().ReachablePeers(target, CDataManager::Instance().GetFIDState(time), 4);
+    members = CPhysicalTopology::Instance().ReachablePeers(target, CDataManager::Instance().GetFIDState(time), 3);
     std::map< std::string, std::set<std::string> > adjacent_invariant;
     std::set<std::string> reachable, adjacent, invariant, intersect;
 

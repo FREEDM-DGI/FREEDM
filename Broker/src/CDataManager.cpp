@@ -33,7 +33,7 @@ void CDataManager::AddData(std::string key, float time, float value)
         std::map<float, float>::iterator it = m_data[key].begin();
         std::advance(it, m_data[key].size() - MAX_DATA_ENTRIES);
         m_data[key].erase(m_data[key].begin(), it);
-        Logger.Info << "Deleted historic data for " << key << " before " << m_data[key].begin()->first() << std::endl;
+        Logger.Info << "Deleted historic data for " << key << " before " << m_data[key].begin()->first << std::endl;
     }
 }
 

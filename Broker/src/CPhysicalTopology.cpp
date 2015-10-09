@@ -119,11 +119,11 @@ CPhysicalTopology::VertexSet CPhysicalTopology::ReachablePeers(std::string sourc
         int hops = tmp.first;
         closedset.insert(consider);
 
-        if(consider.find(VNAME_PREFIX) == std::string::npos)
-            solutionset.insert(consider);
-
         if(depth >= 0 && hops > depth)
             continue;
+
+        if(consider.find(VNAME_PREFIX) == std::string::npos)
+            solutionset.insert(consider);
         
         Logger.Debug<<"Considering "<<consider<<" ("<<hops<<" hops) ("
                     <<m_adjlist[consider].size()<<" Neighbors)"<<std::endl;

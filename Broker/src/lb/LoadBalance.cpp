@@ -1242,7 +1242,7 @@ void LBAgent::HandleAttestationFailure(const pa::AttestationFailureMessage & m)
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     if(!CGlobalConfiguration::Instance().GetMaliciousFlag())
     {
-        SetPStar(m_PredictedGateway + m.adjustment());
+        SetPStar(m_PredictedGateway - m.adjustment());
         // send message to target to cancel migration
     }
 }

@@ -27,6 +27,12 @@ void CDataManager::AddData(std::string key, float time, float value)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
+    // clock should not go backwards (happens if simulation restarts)
+    if(!m_data[key].empty() && m_data[key].end()->first > time)
+    {
+        m_data[key].clear();
+    }
+
     m_data[key].insert(std::pair<float, float>(time, value));
     if(m_data[key].size() > MAX_DATA_ENTRIES)
     {

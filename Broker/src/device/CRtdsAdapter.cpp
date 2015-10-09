@@ -38,6 +38,7 @@
 #include "CTimings.hpp"
 #include "SynchronousTimeout.hpp"
 #include "CDataManager.hpp"
+#include "CDeviceManager.hpp"
 
 #include <sys/param.h>
 
@@ -240,11 +241,16 @@ void CRtdsAdapter::Run(const boost::system::error_code & e)
         Logger.Debug << "Releasing the rxBuffer mutex." << std::endl;
     }
 
-    BOOST_FOREACH(DeviceSignal devsig, m_stateInfo | boost::adaptors::map_keys)
+    device::CDevice::Pointer clock = device::CDeviceManager::Instance().GetClock();
+    if(clock)
     {
-        std::size_t index = m_stateInfo[devsig];
-        std::string key = devsig.first + "." + devsig.second;
-        CDataManager::Instance().AddData(key, m_rxBuffer[index]);
+        float time = clock->GetState("time");
+        BOOST_FOREACH(DeviceSignal devsig, m_stateInfo | boost::adaptors::map_keys)
+        {
+            std::size_t index = m_stateInfo[devsig];
+            std::string key = devsig.first + "." + devsig.second;
+            CDataManager::Instance().AddData(key, time, m_rxBuffer[index]);
+        }
     }
 
     // Start the timer; on timeout, this function is called again

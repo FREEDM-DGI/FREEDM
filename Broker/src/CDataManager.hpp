@@ -15,13 +15,13 @@ class CDataManager
 {
 public:
     static CDataManager & Instance();
-    void AddData(std::string key, float value);
+    void AddData(std::string key, float time, float value);
     float GetData(std::string key, float time);
     void AddFIDState(const std::map<std::string, bool> & fidstate);
     std::map<std::string, bool> GetFIDState(float time);
 private:
     static const std::size_t MAX_DATA_ENTRIES = 100;
-    boost::property_tree::ptree m_data;
+    std::map<std::string, std::map<float, float> > m_data;
     std::map<float, std::map<std::string, bool> > m_fidstate;
 };
 

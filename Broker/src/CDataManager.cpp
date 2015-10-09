@@ -50,7 +50,10 @@ float CDataManager::GetData(std::string key, float time)
             Logger.Error << "No historic data for " << key << " before requested time " << time << std::endl;
             throw std::runtime_error("Missing Historic Data");
         }
-        it--;
+        if(it->first > time)
+        {
+            it--;
+        }
     }
     return it->second;
 }

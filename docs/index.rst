@@ -66,6 +66,7 @@ Advanced Configuration
 .. toctree::
     :maxdepth: 2
     
+    advanced_config/freedm
     advanced_config/multiple_dgi
     advanced_config/hostname_troubleshooting
     advanced_config/timings

@@ -23,7 +23,7 @@ There are three methods for adjusting the logging level:
 * Call PosixBroker with --verbose=n to override the global verbosity specified in freedm.cfg
 * Override the global verbosity for a particular source file in logger.cfg
 
-As greater verbosity levels are desired, a sacrifice in performance must be made (by increasing the timings as explained in :ref:`configuring-timings`.
+As greater verbosity levels are desired, a sacrifice in performance must be made (by increasing the timings as explained in :ref:`configure-timings`.
 
 Sometimes you will want more data from a particular source file or module. In this case you should utilize logger.cfg. For example, you may want to run Group Management at greater verbosity in order to pick up AYT and AYC response delays, which are printed at level 6 (Info).
 

@@ -51,7 +51,7 @@ adapter-config
 Specifies the configuration file for the PSCAD/RSCAD interface.
 If this file is not specified the PSCAD/RSCAD interface will not be available.
 
-See :ref:`configure-adapters`
+See :ref:`reference-adapters`
 
 Example: ``adapter-config=./config/adapter.xml``
 

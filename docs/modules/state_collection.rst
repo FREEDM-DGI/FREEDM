@@ -1,3 +1,5 @@
+.. _state-collection:
+
 State Collection
 ================
 
@@ -131,7 +133,127 @@ Here is an example **HandleCollectedState** method::
 Adding New Signal Types
 ^^^^^^^^^^^^^^^^^^^^^^^
 
-FILL ME IN.
+To add a new signal or device to state collection, first add a new entry to the CollectedState message in ``src/messages/StateCollection.proto``. For example, to add a new frequency signal to a new or existing device one line related to signal type frequency should be added as follows::
+
+    message CollectedStateMessage
+    {
+        repeated double gateway = 1;
+        repeated double generation = 2;
+        repeated double storage = 3;
+        repeated double drain = 4;
+        repeated double state = 5;
+        repeated double frequency = 6; // New line for the new signal.
+        required int32 num_intransit_accepts = 7;
+    }
+
+Make sure you adjust the assigned numbers for the fields accordingly.
+
+Next, in the ``StateResponse()`` method of ``sc/StateCollection.cpp`` add the new device or signal. In this example, we have added both a new device (Omega) and a new signal to that device (frequency)::
+
+    if (dssm.type() == "Sst")
+    {
+        if(dssm.count()>0)
+        {
+            csm->add_gateway(dssm.value());
+        }
+        else
+        {
+            csm->clear_gateway();
+        }
+    }
+    else if (dssm.type() == "Drer")
+    {
+        if(dssm.count()>0)
+        {
+            csm->add_generation(dssm.value());
+        }
+        else
+        {
+            csm->clear_generation();
+        }
+    }
+    else if (dssm.type() == "Desd")
+    {
+        if(dssm.count()>0)
+        {
+           csm->add_storage(dssm.value());
+        }
+        else
+        {
+           csm->clear_storage();
+        }
+    }
+    else if (dssm.type() == "Omega")
+    {
+        if(dssm.count()>0)
+        {
+            csm->add_frequency(dssm.value());
+        }
+        else
+        {
+            csm->clear_frequency();
+        }
+    }
+
+When LB requests the state of the OMEGA device with SST, DESD, DRER, requested message will need to add following code related with the OMEGA device in LoadBalance.cpp file::
+
+    sc::StateCollectionMessage msg;
+    sc::RequestMessage * state_request = msg.mutable_request_message();
+    state_request->set_module("lb");
+
+    sc::DeviceSignalRequestMessage * device_state;
+    device_state = state_request->add_device_signal_request_message();
+    device_state->set_type("Sst");
+    device_state->set_signal("gateway");
+
+    device_state = state_request->add_device_signal_request_message();
+    device_state->set_type("Desd");
+    device_state->set_signal("storage");
+
+    device_state = state_request->add_device_signal_request_message();
+    device_state->set_type("Drer");
+    device_state->set_signal("generation");
+
+    // New device and signal
+    device_state = state_request->add_device_signal_request_message();
+    device_state->set_type("Omega");
+    device_state->set_signal("frequency");
+
+When LB handles received states back in LoadBalance.cpp file, the following code related with OMEGA with signal type frequency should be added::
+
+    HandleCollectedState(const sc::CollectedStateMessage &m)
+    {
+        ...
+        //for SST device
+        BOOST_FOREACH(float v, m.gateway())
+        {
+            //print out each gateway value from collected message
+            Logger.Info << "Gateway value is " << v << std::endl;
+        }
+
+        //for DRER device
+        BOOST_FOREACH(float v, m.generation())
+        {
+            //print out each generation value from collected message
+            Logger.Info << "Generation value is " << v << std::endl;
+        }
+
+        //for DESD device
+        BOOST_FOREACH(float v, m.storage())
+        {
+            //print out each storage value from collected message
+            Logger.Info << "Storage value is " << v << std::endl;
+        }
+
+        // New device and signal
+        //for OMEGA device
+        BOOST_FOREACH(float v, m.frequency())
+        {
+            //print out each frequency value from collected message
+            Logger.Info << "Frequency value is " << v << std::endl;
+        }
+    }
+
 
 Implementation Details
 ----------------------

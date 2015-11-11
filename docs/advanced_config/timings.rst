@@ -1,3 +1,5 @@
+.. _configure-timings:
+
 Configuring Timings
 ===================
 

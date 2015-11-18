@@ -183,7 +183,7 @@ Processing Messages
 To handle the messages you create, you'll need to add them to your module's HandleIncomingMessage method as well as create handlers for each type of message you'll receive.
 Let's do that::
 
-    void HandleIncomingMessage(boost::shared_ptr<const ModuleMessage> msg, CPeerNode peer)
+    void VVAgent::HandleIncomingMessage(boost::shared_ptr<const ModuleMessage> msg, CPeerNode peer)
     {
         if(m->has_volt_var_message())
         {

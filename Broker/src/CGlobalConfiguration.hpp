@@ -78,6 +78,10 @@ class CGlobalConfiguration : private boost::noncopyable
         void SetMaliciousFlag(bool flag) { m_malicious = flag; }
         /// Set the invariant check flag
         void SetInvariantCheck(bool flag) { m_invariant = flag; }
+        /// Set the MQTT client identifier
+        void SetMQTTId(std::string id) { m_mqtt_id = id; }
+        /// Set the MQTT broker address
+        void SetMQTTAddress(std::string address) { m_mqtt_address = address; }
         /// Get the hostname
         std::string GetHostname() const { return m_hostname; };
         /// Get the port
@@ -107,6 +111,10 @@ class CGlobalConfiguration : private boost::noncopyable
         bool GetMaliciousFlag() const { return m_malicious; }
         /// Get the invariant check flag
         bool GetInvariantCheck() const { return m_invariant; }
+        /// Get the MQTT client identifier
+        std::string GetMQTTId() const { return m_mqtt_id; }
+        /// Get the MQTT broker address
+        std::string GetMQTTAddress() const { return m_mqtt_address; }
     private:
         std::string m_hostname; /// Node hostname
         std::string m_port; /// Port number
@@ -121,6 +129,8 @@ class CGlobalConfiguration : private boost::noncopyable
         float m_migrationStep; /// Size of a load balance migration
         bool m_malicious; // Flag to indicate whether load balance is malicious
         bool m_invariant; // Flag that indicates whether to check the invariant
+        std::string m_mqtt_id; // Identifier of the MQTT client.
+        std::string m_mqtt_address; // Address of the MQTT broker.
 };
 
 } // namespace broker

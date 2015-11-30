@@ -40,6 +40,7 @@
 #include "IBufferAdapter.hpp"
 #include "CRtdsAdapter.hpp"
 #include "CPnpAdapter.hpp"
+#include "CMqttAdapter.hpp"
 #include "CDeviceManager.hpp"
 #include "CGlobalConfiguration.hpp"
 #include "CFakeAdapter.hpp"
@@ -109,6 +110,21 @@ CAdapterFactory::CAdapterFactory()
     else
     {
         Logger.Status << "Plug and play devices disabled." << std::endl;
+    }
+
+    std::string mqttId = CGlobalConfiguration::Instance().GetMQTTId();
+    std::string mqttAddress = CGlobalConfiguration::Instance().GetMQTTAddress();
+
+    if( mqttId != "" )
+    {
+        Logger.Status << "MQTT client enabled." << std::endl;
+        IAdapter::Pointer mqttClient = CMqttAdapter::Create(mqttId, mqttAddress);
+        m_adapters[mqttId] = mqttClient;
+        mqttClient->Start();
+    }
+    else
+    {
+        Logger.Status << "MQTT client disabled." << std::endl;
     }
 
     std::string adapterCfgFile =

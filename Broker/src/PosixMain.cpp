@@ -118,7 +118,7 @@ int main(int argc, char* argv[])
     po::variables_map vm;
     std::ifstream ifs;
     std::string cfgFile, loggerCfgFile, timingsFile, adapterCfgFile, topologyCfgFile;
-    std::string deviceCfgFile, listenIP, port, hostname, fport, id;
+    std::string deviceCfgFile, listenIP, port, hostname, fport, id, mqttID, mqttAddress;
     unsigned int globalVerbosity;
     float migrationStep;
     bool malicious, invariant;
@@ -149,6 +149,11 @@ int main(int argc, char* argv[])
                 "TCP port to listen for peers on" )
                 ( "factory-port", po::value<std::string>(&fport),
                 "port for plug and play session protocol" )
+                ( "mqtt-id", po::value<std::string>(&mqttID),
+                "id of the DGI MQTT client (optional)" )
+                ( "mqtt-address",
+                po::value<std::string>(&mqttAddress)->default_value("tcp://localhost:1883"),
+                "IP and port number for the MQTT broker" )
                 ( "device-config",
                 po::value<std::string>(&deviceCfgFile)->default_value(""),
                 "filename of the XML device class specification" )
@@ -272,6 +277,8 @@ int main(int argc, char* argv[])
                 boost::posix_time::milliseconds(0));
         CGlobalConfiguration::Instance().SetMigrationStep(migrationStep);
         CGlobalConfiguration::Instance().SetMaliciousFlag(malicious);
+        CGlobalConfiguration::Instance().SetMQTTId(mqttID);
+        CGlobalConfiguration::Instance().SetMQTTAddress(mqttAddress);
 
         // Specify socket endpoint address, if provided
         if( vm.count("devices-endpoint") )

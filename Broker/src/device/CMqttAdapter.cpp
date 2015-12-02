@@ -148,9 +148,9 @@ void CMqttAdapter::DeliveryComplete(void * id, MQTTClient_deliveryToken token)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     std::string strId((char *)id);
-    std::list<MQTTData>::iterator it;
+    std::list<CMqttMessage::Pointer>::iterator it;
     Pointer client = boost::dynamic_pointer_cast<CMqttAdapter>(CAdapterFactory::Instance().m_adapters.at(strId));
-    for(it = client->m_MessageQueue.begin(); it != client->m_MessageQueue.end() && it->s_token != token; it++);
+    for(it = client->m_MessageQueue.begin(); it != client->m_MessageQueue.end() && (*it)->GetToken() != token; it++);
     if(it == client->m_MessageQueue.end())
     {
         Logger.Error << "MQTT client " << strId << " does not recognize the token " << token << std::endl;
@@ -170,13 +170,19 @@ void CMqttAdapter::HandleMessage(std::string topic, std::string message)
     if(topic.compare(0,4,"join") == 0)
     {
         std::string deviceName = topic.substr(5);
+        std::string subscription = deviceName + "/#";
         Logger.Status << "Received a join message for device: " << deviceName << std::endl;
-        Publish(deviceName + "/ACK", 0); 
+        Logger.Warn << subscription.c_str() << std::endl;
+//        if(MQTTClient_subscribe(m_Client, subscription.c_str(), 1) != MQTTCLIENT_SUCCESS)
+//            throw std::runtime_error("Unable to Subscribe");
+        Publish(deviceName + "/ACK", "14.26534");
     }
     else if(topic.compare(0,5,"leave") == 0)
     {
         std::string deviceName = topic.substr(6);
+        std::string subscription = deviceName + "/#";
         Logger.Status << "Received a leave message for device: " << deviceName << std::endl;
+//        MQTTClient_unsubscribe(m_Client, subscription.c_str());
     }
     else
     {
@@ -184,32 +190,19 @@ void CMqttAdapter::HandleMessage(std::string topic, std::string message)
     }
 }
 
-void CMqttAdapter::Publish(std::string topic, float value)
+void CMqttAdapter::Publish(std::string topic, std::string content)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
-    MQTTData data;
-    data.s_payload = value;
-    data.s_message.struct_id[0] = 'M';
-    data.s_message.struct_id[1] = 'Q';
-    data.s_message.struct_id[2] = 'T';
-    data.s_message.struct_id[3] = 'M';
-    data.s_message.struct_version = 0;
-    data.s_message.payloadlen = 4;
-    data.s_message.payload = &data.s_payload;
-    data.s_message.qos = 1;
-    data.s_message.retained = 0;
-    data.s_message.dup = 0;
-
-    m_MessageQueue.push_back(data);
-    MQTTData & ptr = m_MessageQueue.back();
+    CMqttMessage::Pointer msg = CMqttMessage::Create(content);
+    m_MessageQueue.push_back(msg);
     
-    if(MQTTClient_publishMessage(m_Client, topic.c_str(), &ptr.s_message, &ptr.s_token) != MQTTCLIENT_SUCCESS)
+    if(MQTTClient_publishMessage(m_Client, topic.c_str(), &msg->GetMessage(), &msg->GetToken()) != MQTTCLIENT_SUCCESS)
     {
-        Logger.Error << "Message on topic " << topic << " with value " << value << " rejected." << std::endl;
+        Logger.Error << "Message on topic " << topic << " with value " << content << " rejected." << std::endl;
         throw std::runtime_error("Message Rejected for Publication");
     }
-    Logger.Info << topic << " " << value << " sent for delivery with token " << ptr.s_token << std::endl;
+    Logger.Info << topic << " " << content << " sent for delivery with token " << msg->GetToken() << std::endl;
 }
 
 }//namespace broker

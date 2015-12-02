@@ -24,6 +24,7 @@
 #define C_MQTT_ADAPTER_HPP
 
 #include "IAdapter.hpp"
+#include "CMqttMessage.hpp"
 
 #include <map>
 #include <list>
@@ -78,17 +79,6 @@ public:
     ~CMqttAdapter();
 
 private:
-    /// Store data relevant to published messages between function calls.
-    struct MQTTData
-    {
-        /// The command sent to the device.
-        float s_payload;
-        /// The message sent over MQTT.
-        MQTTClient_message s_message;
-        /// The token associated with the message.
-        MQTTClient_deliveryToken s_token;
-    };
-
     /// Constructor.
     CMqttAdapter(std::string id, std::string address);
 
@@ -105,7 +95,7 @@ private:
     void HandleMessage(std::string topic, std::string message);
     
     /// Publish a message on a topic to the MQTT broker.
-    void Publish(std::string topic, float value);
+    void Publish(std::string topic, std::string content);
 
     /// Map from a device signal name to its stored value.
     typedef std::map<std::string, SignalValue> TSignalToValue;
@@ -117,7 +107,7 @@ private:
     mutable TDeviceToData m_DeviceData;
 
     /// Storage for MQTT messages
-    std::list<MQTTData> m_MessageQueue;
+    std::list<CMqttMessage::Pointer> m_MessageQueue;
 
     /// Protect the device data map.
     boost::mutex m_DeviceDataLock;

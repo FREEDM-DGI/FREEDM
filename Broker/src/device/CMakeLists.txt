@@ -5,6 +5,7 @@ set(DEVICE_FILES
     CFakeAdapter.cpp
     CRtdsAdapter.cpp
     CMqttAdapter.cpp
+    CMqttMessage.cpp
     IBufferAdapter.cpp
     IAdapter.cpp
     CTcpServer.cpp

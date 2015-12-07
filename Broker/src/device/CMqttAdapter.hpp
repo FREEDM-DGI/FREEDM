@@ -97,6 +97,9 @@ private:
     /// Publish a message on a topic to the MQTT broker.
     void Publish(std::string topic, std::string content);
 
+    /// Create a CDevice object from a JSON specification.
+    void CreateDevice(std::string deviceName, std::string json);
+
     /// Map from a device signal name to its stored value.
     typedef std::map<std::string, SignalValue> TSignalToValue;
 

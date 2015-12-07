@@ -34,10 +34,14 @@
 #include "CAdapterFactory.hpp"
 #include "CLogger.hpp"
 
+#include <sstream>
 #include <stdexcept>
 
 #include <boost/foreach.hpp>
 #include <boost/pointer_cast.hpp>
+#include <boost/property_tree/ptree.hpp>
+#include <boost/property_tree/xml_parser.hpp>
+#include <boost/property_tree/json_parser.hpp>
 
 namespace freedm {
 namespace broker {
@@ -51,8 +55,6 @@ CLocalLogger Logger(__FILE__);
 CMqttAdapter::CMqttAdapter(std::string id, std::string address)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-
-    // TODO - put a known prefix in front of the specified ID so devices know it is a DGI
 
     if(id.size() > 23)
         throw std::runtime_error("MQTT Client ID contains more than 23 characters");
@@ -91,9 +93,11 @@ void CMqttAdapter::Start()
         Logger.Error << "MQTT Client Connection Failed with Return Code = " << returnCode << std::endl;
         throw std::runtime_error("Failed to connect to the MQTT Broker");
     }
-    // TODO - check the return values
-    MQTTClient_subscribe(m_Client, "join/#", 1);
-    MQTTClient_subscribe(m_Client, "leave/#", 1);
+    if(MQTTClient_subscribe(m_Client, "join/#", 2) != MQTTCLIENT_SUCCESS)
+        throw std::runtime_error("MQTT failed to subscribe to join/#");
+    if(MQTTClient_subscribe(m_Client, "leave/#", 2) != MQTTCLIENT_SUCCESS)
+        throw std::runtime_error("MQTT failed to subscribe to leave/#");
+    MQTTClient_subscribe(m_Client, "SST/#", 2);
 }
 
 void CMqttAdapter::Stop()
@@ -170,19 +174,52 @@ void CMqttAdapter::HandleMessage(std::string topic, std::string message)
     if(topic.compare(0,4,"join") == 0)
     {
         std::string deviceName = topic.substr(5);
-        std::string subscription = deviceName + "/#";
         Logger.Status << "Received a join message for device: " << deviceName << std::endl;
-//        Logger.Warn << subscription.c_str() << std::endl;
-//        if(MQTTClient_subscribe(m_Client, subscription.c_str(), 1) != MQTTCLIENT_SUCCESS)
-//            throw std::runtime_error("Unable to Subscribe");
-        Publish(deviceName + "/ACK", "14.26534");
+        if(m_DeviceData.count(deviceName) == 0)
+        {
+/*
+            std::string subscription = deviceName + "/#";
+            if(MQTTClient_subscribe(m_Client, "SST/1/#", 2) != MQTTCLIENT_SUCCESS)
+            {
+                Logger.Error << "Failed to subscribe to the topic " << subscription << std::endl;
+                throw std::runtime_error("MQTT Subscription Failure");
+            }
+*/
+            Publish(deviceName + "/ACK", "DGI");
+            m_DeviceData[deviceName];
+        }
+        else
+        {
+            Logger.Status << "Dropped duplicate join message for device " << deviceName << std::endl;
+        }
     }
     else if(topic.compare(0,5,"leave") == 0)
     {
         std::string deviceName = topic.substr(6);
-        std::string subscription = deviceName + "/#";
         Logger.Status << "Received a leave message for device: " << deviceName << std::endl;
-//        MQTTClient_unsubscribe(m_Client, subscription.c_str());
+        if(m_DeviceData.count(deviceName) > 0 )
+        {
+/*
+            std::string subscription = deviceName + "/#";
+            if(MQTTClient_unsubscribe(m_Client, subscription.c_str()) != MQTTCLIENT_SUCCESS)
+            {
+                Logger.Error << "Failed to unsubscribe to the topic " << subscription << std::endl;
+                throw std::runtime_error("MQTT Subscription Failure");
+            }
+*/
+            // remove from device manager
+            m_DeviceData.erase(deviceName);
+        }
+        else
+        {
+            Logger.Status << "Dropped leave message for unknown device " << deviceName << std::endl;
+        }
+    }
+    else if(topic.compare(topic.size()-4,4,"JSON") == 0)
+    {
+        std::string deviceName = topic.substr(0, topic.size()-5);
+        Logger.Status << "Received JSON for device " << deviceName << ":\n" << message << std::endl;
+        CreateDevice(deviceName, message);
     }
     else
     {
@@ -196,6 +233,22 @@ void CMqttAdapter::Publish(std::string topic, std::string content)
     CMqttMessage::Pointer msg = CMqttMessage::Create(topic, content);
     m_MessageQueue.push_back(msg);
     msg->Publish(m_Client);
+}
+
+void CMqttAdapter::CreateDevice(std::string deviceName, std::string json)
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    boost::property_tree::ptree propertyTree;
+    std::istringstream inputStream(json);
+    read_json(inputStream, propertyTree);
+
+    boost::property_tree::xml_writer_settings<char> settings('\t', 1);
+    write_xml(std::cout, propertyTree, settings);
+
+    BOOST_FOREACH(boost::property_tree::ptree::value_type & var, propertyTree)
+    {
+        Logger.Status << var.first << std::endl;
+    }
 }
 
 }//namespace broker

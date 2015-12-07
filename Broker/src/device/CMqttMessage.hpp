@@ -37,17 +37,19 @@ class CMqttMessage
 public:
     typedef boost::shared_ptr<CMqttMessage> Pointer;
 
-    static Pointer Create(std::string content);
+    static Pointer Create(std::string topic, std::string content, int qos = 1);
 
-    MQTTClient_message & GetMessage() { return m_Message; }
+    const MQTTClient_deliveryToken & GetToken() const;
 
-    MQTTClient_deliveryToken & GetToken() { return m_Token; }
+    void Publish(MQTTClient client);
 
     ~CMqttMessage();
 private:
-    CMqttMessage(std::string content);
+    CMqttMessage(std::string topic, std::string content, int qos);
 
     char * m_Payload;
+
+    std::string m_Topic;
 
     MQTTClient_message m_Message;
 

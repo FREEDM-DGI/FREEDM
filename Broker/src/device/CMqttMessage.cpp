@@ -38,9 +38,11 @@ namespace {
 CLocalLogger Logger(__FILE__);
 } // unnamed namespace
 
-CMqttMessage::CMqttMessage(std::string content)
+CMqttMessage::CMqttMessage(std::string topic, std::string content, int qos)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+
+    m_Topic = topic;
 
     std::size_t size = content.size() + 1;
     m_Payload = new char[size];
@@ -53,7 +55,7 @@ CMqttMessage::CMqttMessage(std::string content)
     m_Message.struct_version = 0;
     m_Message.payloadlen = size;
     m_Message.payload = m_Payload;
-    m_Message.qos = 1;
+    m_Message.qos = qos;
     m_Message.retained = 0;
     m_Message.dup = 0;
 }
@@ -68,10 +70,28 @@ CMqttMessage::~CMqttMessage()
     }
 }
 
-CMqttMessage::Pointer CMqttMessage::Create(std::string content)
+CMqttMessage::Pointer CMqttMessage::Create(std::string topic, std::string content, int qos)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    return Pointer(new CMqttMessage(content));
+    return Pointer(new CMqttMessage(topic, content, qos));
+}
+
+const MQTTClient_deliveryToken & CMqttMessage::GetToken() const
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    return m_Token;
+}
+
+void CMqttMessage::Publish(MQTTClient client)
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    
+    if(MQTTClient_publishMessage(client, m_Topic.c_str(), &m_Message, &m_Token) != MQTTCLIENT_SUCCESS)
+    {
+        Logger.Error << "Message on topic " << m_Topic << " with value " << m_Payload << " rejected." << std::endl;
+        throw std::runtime_error("Message Rejected for Publication");
+    }
+    Logger.Info << m_Topic << " " << m_Payload << " sent for delivery with token " << m_Token << std::endl;
 }
 
 }//namespace broker

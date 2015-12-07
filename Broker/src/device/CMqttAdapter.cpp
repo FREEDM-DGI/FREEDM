@@ -172,7 +172,7 @@ void CMqttAdapter::HandleMessage(std::string topic, std::string message)
         std::string deviceName = topic.substr(5);
         std::string subscription = deviceName + "/#";
         Logger.Status << "Received a join message for device: " << deviceName << std::endl;
-        Logger.Warn << subscription.c_str() << std::endl;
+//        Logger.Warn << subscription.c_str() << std::endl;
 //        if(MQTTClient_subscribe(m_Client, subscription.c_str(), 1) != MQTTCLIENT_SUCCESS)
 //            throw std::runtime_error("Unable to Subscribe");
         Publish(deviceName + "/ACK", "14.26534");
@@ -193,16 +193,9 @@ void CMqttAdapter::HandleMessage(std::string topic, std::string message)
 void CMqttAdapter::Publish(std::string topic, std::string content)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-
-    CMqttMessage::Pointer msg = CMqttMessage::Create(content);
+    CMqttMessage::Pointer msg = CMqttMessage::Create(topic, content);
     m_MessageQueue.push_back(msg);
-    
-    if(MQTTClient_publishMessage(m_Client, topic.c_str(), &msg->GetMessage(), &msg->GetToken()) != MQTTCLIENT_SUCCESS)
-    {
-        Logger.Error << "Message on topic " << topic << " with value " << content << " rejected." << std::endl;
-        throw std::runtime_error("Message Rejected for Publication");
-    }
-    Logger.Info << topic << " " << content << " sent for delivery with token " << msg->GetToken() << std::endl;
+    msg->Publish(m_Client);
 }
 
 }//namespace broker

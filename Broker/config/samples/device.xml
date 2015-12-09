@@ -8,7 +8,6 @@
     <deviceType>
         <id>Desd</id>
         <state>storage</state>
-        <command>storage</command>
     </deviceType>
     <deviceType>
         <id>Drer</id>
@@ -26,6 +25,7 @@
         <id>Logger</id>
         <state>dgiEnable</state>
         <command>groupStatus</command>
+        <command>netGeneration</command>
     </deviceType>
     <deviceType>
         <id>Omega</id>

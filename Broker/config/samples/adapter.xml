@@ -7,41 +7,221 @@
         </info>
         <state>
             <entry index = "1">
-                <type>Sst</type>
-                <device>SST1</device>
-                <signal>gateway</signal>
-            </entry>
-            <entry index = "2">
                 <type>Drer</type>
-                <device>DRER1</device>
+                <device>DRER</device>
                 <signal>generation</signal>
             </entry>
+            <entry index = "2">
+                <type>Sst</type>
+                <device>SST</device>
+                <signal>gateway</signal>
+            </entry>
             <entry index = "3">
-                <type>Load</type>
-                <device>LOAD1</device>
-                <signal>drain</signal>
+                <type>Logger</type>
+                <device>LOG</device>
+                <signal>dgiEnable</signal>
             </entry>
             <entry index = "4">
-                <type>Fid</type>
-                <device>FID7</device>
-                <signal>state</signal>
-            </entry>
-            <entry index = "5">
                 <type>Fid</type>
                 <device>FID1</device>
                 <signal>state</signal>
             </entry>
+            <entry index = "5">
+                <type>Fid</type>
+                <device>FID2</device>
+                <signal>state</signal>
+            </entry>
             <entry index = "6">
-                <type>Omega</type>
-                <device>FREQ</device>
-                <signal>frequency</signal>
+                <type>Desd</type>
+                <device>DESD1</device>
+                <signal>storage</signal>
+            </entry>
+            <entry index = "7">
+                <type>Desd</type>
+                <device>DESD2</device>
+                <signal>storage</signal>
+            </entry>
+            <entry index = "8">
+                <type>Desd</type>
+                <device>DESD3</device>
+                <signal>storage</signal>
+            </entry>
+            <entry index = "9">
+                <type>Desd</type>
+                <device>DESD4</device>
+                <signal>storage</signal>
+            </entry>
+            <entry index = "10">
+                <type>Desd</type>
+                <device>DESD5</device>
+                <signal>storage</signal>
+            </entry>
+            <entry index = "11">
+                <type>Desd</type>
+                <device>DESD6</device>
+                <signal>storage</signal>
+            </entry>
+            <entry index = "12">
+                <type>Desd</type>
+                <device>DESD7</device>
+                <signal>storage</signal>
+            </entry>
+            <entry index = "13">
+                <type>Desd</type>
+                <device>DESD8</device>
+                <signal>storage</signal>
+            </entry>
+            <entry index = "14">
+                <type>Desd</type>
+                <device>DESD9</device>
+                <signal>storage</signal>
+            </entry>
+            <entry index = "15">
+                <type>Desd</type>
+                <device>DESD10</device>
+                <signal>storage</signal>
+            </entry>
+            <entry index = "16">
+                <type>Desd</type>
+                <device>DESD11</device>
+                <signal>storage</signal>
+            </entry>
+            <entry index = "17">
+                <type>Desd</type>
+                <device>DESD12</device>
+                <signal>storage</signal>
+            </entry>
+            <entry index = "18">
+                <type>Desd</type>
+                <device>DESD13</device>
+                <signal>storage</signal>
+            </entry>
+            <entry index = "19">
+                <type>Desd</type>
+                <device>DESD14</device>
+                <signal>storage</signal>
+            </entry>
+            <entry index = "20">
+                <type>Desd</type>
+                <device>DESD15</device>
+                <signal>storage</signal>
+            </entry>
+            <entry index = "21">
+                <type>Desd</type>
+                <device>DESD16</device>
+                <signal>storage</signal>
+            </entry>
+            <entry index = "22">
+                <type>Desd</type>
+                <device>DESD17</device>
+                <signal>storage</signal>
+            </entry>
+            <entry index = "23">
+                <type>Desd</type>
+                <device>DESD18</device>
+                <signal>storage</signal>
+            </entry>
+            <entry index = "24">
+                <type>Desd</type>
+                <device>DESD19</device>
+                <signal>storage</signal>
+            </entry>
+            <entry index = "25">
+                <type>Desd</type>
+                <device>DESD20</device>
+                <signal>storage</signal>
+            </entry>
+            <entry index = "26">
+                <type>Desd</type>
+                <device>DESD21</device>
+                <signal>storage</signal>
+            </entry>
+            <entry index = "27">
+                <type>Desd</type>
+                <device>DESD22</device>
+                <signal>storage</signal>
+            </entry>
+            <entry index = "28">
+                <type>Desd</type>
+                <device>DESD23</device>
+                <signal>storage</signal>
+            </entry>
+            <entry index = "29">
+                <type>Desd</type>
+                <device>DESD24</device>
+                <signal>storage</signal>
+            </entry>
+            <entry index = "30">
+                <type>Desd</type>
+                <device>DESD25</device>
+                <signal>storage</signal>
+            </entry>
+            <entry index = "31">
+                <type>Desd</type>
+                <device>DESD26</device>
+                <signal>storage</signal>
+            </entry>
+            <entry index = "32">
+                <type>Desd</type>
+                <device>DESD27</device>
+                <signal>storage</signal>
+            </entry>
+            <entry index = "33">
+                <type>Desd</type>
+                <device>DESD28</device>
+                <signal>storage</signal>
+            </entry>
+            <entry index = "34">
+                <type>Desd</type>
+                <device>DESD29</device>
+                <signal>storage</signal>
+            </entry>
+            <entry index = "35">
+                <type>Desd</type>
+                <device>DESD30</device>
+                <signal>storage</signal>
+            </entry>
+            <entry index = "36">
+                <type>Desd</type>
+                <device>DESD31</device>
+                <signal>storage</signal>
+            </entry>
+            <entry index = "37">
+                <type>Desd</type>
+                <device>DESD32</device>
+                <signal>storage</signal>
+            </entry>
+            <entry index = "38">
+                <type>Desd</type>
+                <device>DESD33</device>
+                <signal>storage</signal>
+            </entry>
+            <entry index = "39">
+                <type>Desd</type>
+                <device>DESD34</device>
+                <signal>storage</signal>
+            </entry>
+            <entry index = "40">
+                <type>Desd</type>
+                <device>DESD35</device>
+                <signal>storage</signal>
             </entry>
         </state>
         <command>
             <entry index = "1">
                 <type>Sst</type>
-                <device>SST1</device>
+                <device>SST</device>
                 <signal>gateway</signal>
+            </entry>
+            <entry index = "2">
+                <type>Logger</type>
+                <device>LOG</device>
+                <signal>groupStatus</signal>
+            </entry>
+            <entry index = "3">
+                <type>Logger</type>
+                <device>LOG</device>
+                <signal>netGeneration</signal>
             </entry>
         </command>
     </adapter>

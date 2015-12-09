@@ -381,6 +381,13 @@ void LBAgent::ReadDevices()
 
     m_Gateway = device::CDeviceManager::Instance().GetNetValue("Sst", "gateway");
     m_NetGeneration = generation + storage - load;
+
+    std::set<device::CDevice::Pointer> logger;
+    logger = device::CDeviceManager::Instance().GetDevicesOfType("Logger");
+    if(!logger.empty())
+    {
+        (*logger.begin())->SetCommand("netGeneration", m_NetGeneration);
+    }
 }
 
 ///////////////////////////////////////////////////////////////////////////////

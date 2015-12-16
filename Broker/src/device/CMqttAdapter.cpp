@@ -33,6 +33,7 @@
 #include "CMqttAdapter.hpp"
 #include "CAdapterFactory.hpp"
 #include "CDeviceManager.hpp"
+#include "CGlobalConfiguration.hpp"
 #include "CLogger.hpp"
 
 #include <sstream>
@@ -95,11 +96,24 @@ void CMqttAdapter::Start()
         Logger.Error << "MQTT Client Connection Failed with Return Code = " << returnCode << std::endl;
         throw std::runtime_error("Failed to connect to the MQTT Broker");
     }
+    // TODO - subscribe function for strings
     if(MQTTClient_subscribe(m_Client, "join/#", 2) != MQTTCLIENT_SUCCESS)
         throw std::runtime_error("MQTT failed to subscribe to join/#");
     if(MQTTClient_subscribe(m_Client, "leave/#", 2) != MQTTCLIENT_SUCCESS)
         throw std::runtime_error("MQTT failed to subscribe to leave/#");
-    MQTTClient_subscribe(m_Client, "SST/#", 2);
+    BOOST_FOREACH(std::string subscription, CGlobalConfiguration::Instance().GetMQTTSubscriptions())
+    {
+        std::string topic;
+        topic = subscription + "/+/JSON";
+        MQTTClient_subscribe(m_Client, topic.c_str(), 2);
+        Logger.Notice << "Subscribed to MQTT topic " << topic << std::endl;
+        topic = subscription + "/+/AOUT";
+        MQTTClient_subscribe(m_Client, topic.c_str(), 2);
+        Logger.Notice << "Subscribed to MQTT topic " << topic << std::endl;
+        topic = subscription + "/+/DOUT";
+        MQTTClient_subscribe(m_Client, topic.c_str(), 2);
+        Logger.Notice << "Subscribed to MQTT topic " << topic << std::endl;
+    }
 }
 
 void CMqttAdapter::Stop()
@@ -210,7 +224,7 @@ void CMqttAdapter::HandleMessage(std::string topic, std::string message)
         {
 /*
             std::string subscription = deviceName + "/#";
-            if(MQTTClient_subscribe(m_Client, "SST/1/#", 2) != MQTTCLIENT_SUCCESS)
+            if(MQTTClient_subscribe(m_Client, subscription.c_str(), 2) != MQTTCLIENT_SUCCESS)
             {
                 Logger.Error << "Failed to subscribe to the topic " << subscription << std::endl;
                 throw std::runtime_error("MQTT Subscription Failure");

@@ -154,6 +154,9 @@ int main(int argc, char* argv[])
                 ( "mqtt-address",
                 po::value<std::string>(&mqttAddress)->default_value("tcp://localhost:1883"),
                 "IP and port number for the MQTT broker" )
+                ( "mqtt-subscribe",
+                po::value<std::vector<std::string> >( )->composing(),
+                "MQTT subscription topic" )
                 ( "device-config",
                 po::value<std::string>(&deviceCfgFile)->default_value(""),
                 "filename of the XML device class specification" )
@@ -279,6 +282,12 @@ int main(int argc, char* argv[])
         CGlobalConfiguration::Instance().SetMaliciousFlag(malicious);
         CGlobalConfiguration::Instance().SetMQTTId(mqttID);
         CGlobalConfiguration::Instance().SetMQTTAddress(mqttAddress);
+
+        if (vm.count("mqtt-subscribe"))
+        {
+            std::vector<std::string> subscriptions = vm["mqtt-subscribe"].as<std::vector<std::string> >( );
+            CGlobalConfiguration::Instance().SetMQTTSubscriptions(subscriptions);
+        }
 
         // Specify socket endpoint address, if provided
         if( vm.count("devices-endpoint") )

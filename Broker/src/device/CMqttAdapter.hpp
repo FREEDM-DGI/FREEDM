@@ -110,14 +110,13 @@ private:
     typedef std::map<std::string, TSignalToValue> TDeviceToData;
 
     /// Map of device data expected over MQTT.
-    // this needs to be replaced with a struct
-    mutable TDeviceToData m_DeviceData;
+    TDeviceToData m_DeviceData;
 
     /// Storage for MQTT messages
     std::list<CMqttMessage::Pointer> m_MessageQueue;
 
     /// Protect the device data map.
-    boost::mutex m_DeviceDataLock;
+    mutable boost::mutex m_DeviceDataLock;
 
     /// MQTT client object.
     MQTTClient m_Client;

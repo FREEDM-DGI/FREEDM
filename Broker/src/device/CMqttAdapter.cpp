@@ -40,6 +40,7 @@
 
 #include <boost/foreach.hpp>
 #include <boost/optional.hpp>
+#include <boost/lexical_cast.hpp>
 #include <boost/pointer_cast.hpp>
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/json_parser.hpp>
@@ -110,12 +111,38 @@ void CMqttAdapter::Stop()
 SignalValue CMqttAdapter::GetState(const std::string device, const std::string key) const
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    return 0;
+    boost::lock_guard<boost::mutex> lock(m_DeviceDataLock);
+    if(m_DeviceData.count(device) != 1)
+    {
+        Logger.Error << "Device " << device << " does not exist as an MQTT device" << std::endl;
+        throw std::runtime_error("Invalid Device Name");
+    }
+    if(m_DeviceData.at(device).count(key) != 1)
+    {
+        Logger.Error << "Device " << device << " does not have the signal " << key << std::endl;
+        throw std::runtime_error("Invalid Device Signal");
+    }
+    SignalValue value = m_DeviceData.at(device).at(key);
+    Logger.Debug << device << " " << key << ": " << value << std::endl;
+    return value;
 }
 
 void CMqttAdapter::SetCommand(const std::string device, const std::string key, const SignalValue value)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    boost::lock_guard<boost::mutex> lock(m_DeviceDataLock);
+    if(m_DeviceData.count(device) != 1)
+    {
+        Logger.Error << "Device " << device << " does not exist as an MQTT device" << std::endl;
+        throw std::runtime_error("Invalid Device Name");
+    }
+    if(m_DeviceData[device].count(key) != 1)
+    {
+        Logger.Error << "Device " << device << " does not have the signal " << key << std::endl;
+        throw std::runtime_error("Invalid Device Signal");
+    }
+    m_DeviceData[device][key] = value;
+    Publish(device + "/" + key, boost::lexical_cast<std::string>(value));
 }
 
 void CMqttAdapter::ConnectionLost(void * id, char * reason)
@@ -172,10 +199,13 @@ void CMqttAdapter::HandleMessage(std::string topic, std::string message)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
+    std::size_t index;
+
     if(topic.compare(0,4,"join") == 0)
     {
         std::string deviceName = topic.substr(5);
         Logger.Status << "Received a join message for device: " << deviceName << std::endl;
+        boost::lock_guard<boost::mutex> lock(m_DeviceDataLock);
         if(m_DeviceData.count(deviceName) == 0)
         {
 /*
@@ -198,6 +228,7 @@ void CMqttAdapter::HandleMessage(std::string topic, std::string message)
     {
         std::string deviceName = topic.substr(6);
         Logger.Status << "Received a leave message for device: " << deviceName << std::endl;
+        boost::lock_guard<boost::mutex> lock(m_DeviceDataLock);
         if(m_DeviceData.count(deviceName) > 0 )
         {
 /*
@@ -222,9 +253,25 @@ void CMqttAdapter::HandleMessage(std::string topic, std::string message)
         Logger.Status << "Received JSON for device " << deviceName << ":\n" << message << std::endl;
         CreateDevice(deviceName, message);
     }
+    else if((index = topic.find("/AOUT/")) != std::string::npos || (index = topic.find("/DOUT/")) != std::string::npos)
+    {
+        std::string device = topic.substr(0, index);
+        std::string signal = topic.substr(index+1);
+        float value = boost::lexical_cast<float>(message);
+
+        try
+        {
+            boost::lock_guard<boost::mutex> lock(m_DeviceDataLock);
+            m_DeviceData.at(device).at(signal) = value;
+        }
+        catch(std::exception & e)
+        {
+            Logger.Warn << "Device Signal (" << device << "," << signal << ") does not exist" << std::endl;
+        }
+    }
     else
     {
-        Logger.Status << topic << "\n" << message << std::endl;
+        Logger.Warn << "Dropped MQTT Message:\n" << topic << "\n" << message << std::endl;
     }
 }
 
@@ -269,6 +316,7 @@ void CMqttAdapter::AddSignals(std::string device, boost::property_tree::ptree::v
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
+    boost::lock_guard<boost::mutex> lock(m_DeviceDataLock);
     Logger.Info << "Parsing the " << ptree.first << " field of the JSON for device " << device << std::endl;
     BOOST_FOREACH(boost::property_tree::ptree::value_type & signal, ptree.second)
     {

@@ -88,6 +88,9 @@ private:
     /// CAdapterFactory can add/remove devices.
     friend class CAdapterFactory;
 
+    /// CMqttAdapter can add/remove PnP devices.
+    friend class CMqttAdapter;
+
     /// IAdapter can reveal devices.
     friend class IAdapter;
 

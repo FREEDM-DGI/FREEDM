@@ -32,15 +32,16 @@
 
 #include "CMqttAdapter.hpp"
 #include "CAdapterFactory.hpp"
+#include "CDeviceManager.hpp"
 #include "CLogger.hpp"
 
 #include <sstream>
 #include <stdexcept>
 
 #include <boost/foreach.hpp>
+#include <boost/optional.hpp>
 #include <boost/pointer_cast.hpp>
 #include <boost/property_tree/ptree.hpp>
-#include <boost/property_tree/xml_parser.hpp>
 #include <boost/property_tree/json_parser.hpp>
 
 namespace freedm {
@@ -207,7 +208,7 @@ void CMqttAdapter::HandleMessage(std::string topic, std::string message)
                 throw std::runtime_error("MQTT Subscription Failure");
             }
 */
-            // remove from device manager
+            CDeviceManager::Instance().RemoveDevice(deviceName);
             m_DeviceData.erase(deviceName);
         }
         else
@@ -238,16 +239,82 @@ void CMqttAdapter::Publish(std::string topic, std::string content)
 void CMqttAdapter::CreateDevice(std::string deviceName, std::string json)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+
     boost::property_tree::ptree propertyTree;
     std::istringstream inputStream(json);
     read_json(inputStream, propertyTree);
 
-    boost::property_tree::xml_writer_settings<char> settings('\t', 1);
-    write_xml(std::cout, propertyTree, settings);
-
-    BOOST_FOREACH(boost::property_tree::ptree::value_type & var, propertyTree)
+    DeviceInfo devinfo;
+    BOOST_FOREACH(boost::property_tree::ptree::value_type & property, propertyTree)
     {
-        Logger.Status << var.first << std::endl;
+        if(property.first == "DEV_CHAR" || property.first == "AOUT" || property.first == "DOUT")
+        {
+            AddSignals(deviceName, property, devinfo.s_state, devinfo.s_type);
+        }
+        else if(property.first == "AIN" || property.first == "DIN")
+        {
+            AddSignals(deviceName, property, devinfo.s_command, devinfo.s_type);
+        }
+        else
+        {
+            Logger.Info << "Skipped property " << property.first << std::endl;
+        }
+    }
+    CDevice::Pointer device = CDevice::Pointer(new CDevice(deviceName, devinfo, shared_from_this()));
+    CDeviceManager::Instance().AddDevice(device);
+    CDeviceManager::Instance().RevealDevice(deviceName);
+}
+
+void CMqttAdapter::AddSignals(std::string device, boost::property_tree::ptree::value_type & ptree, std::set<std::string> & sigset, std::set<std::string> & type)
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+
+    Logger.Info << "Parsing the " << ptree.first << " field of the JSON for device " << device << std::endl;
+    BOOST_FOREACH(boost::property_tree::ptree::value_type & signal, ptree.second)
+    {
+        std::string name;
+        float value;
+        boost::optional<float> min, max;
+
+        try
+        {
+            name = signal.second.get<std::string>("name");
+            if(name == "Dev_Name")
+            {
+                std::string strval = signal.second.get<std::string>("value");
+                type.insert(strval);
+                Logger.Info << "Classified device " << device << " as type " << strval << std::endl;
+                continue;
+            }
+            name = ptree.first + "/" + name;
+            value = signal.second.get<float>("value");
+            min = signal.second.get_optional<float>("minimum");
+            max = signal.second.get_optional<float>("maximum");
+
+            sigset.insert(name);
+            m_DeviceData[device][name] = value;
+            Logger.Info << "Stored " << name << " = " << value << std::endl;
+            if(min)
+            {
+                m_DeviceData[device][name + "_minimum"] = min.get();
+                Logger.Info << "Set its minimum value to " << min.get() << std::endl;
+            }
+            if(max)
+            {
+                m_DeviceData[device][name + "_maximum"] = max.get();
+                Logger.Info << "Set its maximum value to " << max.get() << std::endl;
+            }
+        }
+        catch(boost::property_tree::ptree_bad_data & e)
+        {
+            // this happens when value cannot be set as the float conversion fails
+            Logger.Warn << "Dropped field " << name << " due to non-numeric type" << std::endl;
+        }
+        catch(std::exception & e)
+        {
+            Logger.Error << "Unexpected format for field " << ptree.first << std::endl;
+            throw std::runtime_error("Bad Device JSON");
+        }
     }
 }
 

@@ -33,6 +33,7 @@
 #include <MQTTClient.h>
 #include <boost/thread.hpp>
 #include <boost/shared_ptr.hpp>
+#include <boost/property_tree/ptree.hpp>
 #include <boost/enable_shared_from_this.hpp>
 
 namespace freedm {
@@ -100,6 +101,8 @@ private:
     /// Create a CDevice object from a JSON specification.
     void CreateDevice(std::string deviceName, std::string json);
 
+    void AddSignals(std::string device, boost::property_tree::ptree::value_type & ptree, std::set<std::string> & sigset, std::set<std::string> & type);
+
     /// Map from a device signal name to its stored value.
     typedef std::map<std::string, SignalValue> TSignalToValue;
 
@@ -107,6 +110,7 @@ private:
     typedef std::map<std::string, TSignalToValue> TDeviceToData;
 
     /// Map of device data expected over MQTT.
+    // this needs to be replaced with a struct
     mutable TDeviceToData m_DeviceData;
 
     /// Storage for MQTT messages

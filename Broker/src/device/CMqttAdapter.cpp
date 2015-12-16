@@ -344,11 +344,13 @@ void CMqttAdapter::AddSignals(std::string device, boost::property_tree::ptree::v
             Logger.Info << "Stored " << name << " = " << value << std::endl;
             if(min)
             {
+                sigset.insert(name + "_minimum");
                 m_DeviceData[device][name + "_minimum"] = min.get();
                 Logger.Info << "Set its minimum value to " << min.get() << std::endl;
             }
             if(max)
             {
+                sigset.insert(name + "_maximum");
                 m_DeviceData[device][name + "_maximum"] = max.get();
                 Logger.Info << "Set its maximum value to " << max.get() << std::endl;
             }

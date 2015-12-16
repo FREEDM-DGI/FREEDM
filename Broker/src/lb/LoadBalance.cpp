@@ -304,8 +304,9 @@ void LBAgent::LoadManage(const boost::system::error_code & error)
         UpdateState();
         LoadTable();
 
-        std::set<device::CDevice::Pointer> logger;
+        std::set<device::CDevice::Pointer> logger, sst;
         logger = device::CDeviceManager::Instance().GetDevicesOfType("Logger");
+        sst = device::CDeviceManager::Instance().GetDevicesOfType("SST");
         if(logger.empty() || (*logger.begin())->GetState("dgiEnable") == 1)
         {
             if(m_State == LBAgent::DEMAND)
@@ -326,6 +327,34 @@ void LBAgent::LoadManage(const boost::system::error_code & error)
         else
         {
             SetPStar(m_Gateway);
+        }
+        if(!sst.empty())
+        {
+            device::CDevice::Pointer dev = *sst.begin();
+            std::string output, cmd;
+
+            output = "Detected MQTT Device " + dev->GetID() + "\n";
+            BOOST_FOREACH(std::string state, dev->GetStateSet())
+            {
+                output += "\t" + state + " = " + boost::lexical_cast<std::string>(dev->GetState(state)) + "\n";
+            }
+            BOOST_FOREACH(std::string command, dev->GetCommandSet())
+            {
+                if(cmd.empty() && command.find("_minimum") == command.find("_maximum"))
+                {
+                    cmd = command;
+                }
+                output += "\t" + command + "\n";
+            }
+            Logger.Status << output << std::endl;
+            if(!cmd.empty())
+            {
+                dev->SetCommand(cmd, 1234.5);
+            }
+        }
+        else
+        {
+            Logger.Status << "No MQTT Devices" << std::endl;
         }
     }
     else if(error == boost::asio::error::operation_aborted)

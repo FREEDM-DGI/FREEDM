@@ -272,6 +272,7 @@ int main(int argc, char* argv[])
                 boost::posix_time::milliseconds(0));
         CGlobalConfiguration::Instance().SetMigrationStep(migrationStep);
         CGlobalConfiguration::Instance().SetMaliciousFlag(malicious);
+        CGlobalConfiguration::Instance().SetInvariantCheck(invariant);
 
         // Specify socket endpoint address, if provided
         if( vm.count("devices-endpoint") )

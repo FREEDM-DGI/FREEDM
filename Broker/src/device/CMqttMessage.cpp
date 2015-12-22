@@ -44,7 +44,7 @@ CMqttMessage::CMqttMessage(std::string topic, std::string content, int qos)
 
     m_Topic = topic;
 
-    std::size_t size = content.size() + 1;
+    std::size_t size = content.size();
     m_Payload = new char[size];
     memcpy(m_Payload, content.c_str(), size);
 

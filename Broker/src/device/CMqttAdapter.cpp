@@ -156,9 +156,9 @@ void CMqttAdapter::SetCommand(const std::string device, const std::string key, c
         throw std::runtime_error("Invalid Device Signal");
     }
     m_DeviceData[device].s_SignalToValue[key] = value;
-    Logger.Debug << "Converting the signal " << key << " to its numeric index." << std::endl;
-    unsigned int key_i = m_DeviceData[device].s_SignalToIndex.at(key);
-    Publish(device + "/" + boost::lexical_cast<std::string>(key_i), boost::lexical_cast<std::string>(value));
+    std::string strIndex = m_DeviceData[device].s_IndexReference.at(key);
+    Publish(device + "/" + strIndex, boost::lexical_cast<std::string>(value));
+    Logger.Info << "Sent Command " << device << "/" << strIndex << " = " << value << std::endl;
 }
 
 void CMqttAdapter::ConnectionLost(void * id, char * reason)
@@ -272,13 +272,13 @@ void CMqttAdapter::HandleMessage(std::string topic, std::string message)
     else if((index = topic.find("/AOUT/")) != std::string::npos || (index = topic.find("/DOUT/")) != std::string::npos)
     {
         std::string device = topic.substr(0, index);
-        unsigned int signal_i = boost::lexical_cast<unsigned int>(topic.substr(index+1));
+        std::string signal = topic.substr(index+1);
         float value = boost::lexical_cast<float>(message);
 
         try
         {
             boost::lock_guard<boost::mutex> lock(m_DeviceDataLock);
-            std::string signal = m_DeviceData.at(device).s_IndexToSignal.at(signal_i);
+            signal = m_DeviceData.at(device).s_IndexReference.at(signal);
             m_DeviceData.at(device).s_SignalToValue.at(signal) = value;
         }
         catch(std::exception & e)
@@ -337,9 +337,8 @@ void CMqttAdapter::AddSignals(std::string device, boost::property_tree::ptree::v
     Logger.Info << "Parsing the " << ptree.first << " field of the JSON for device " << device << std::endl;
     BOOST_FOREACH(boost::property_tree::ptree::value_type & signal, ptree.second)
     {
-        std::string name;
+        std::string name, index;
         float value;
-        unsigned int index;
         boost::optional<float> min, max;
 
         try
@@ -353,15 +352,15 @@ void CMqttAdapter::AddSignals(std::string device, boost::property_tree::ptree::v
                 continue;
             }
             name = ptree.first + "/" + name;
+            index = ptree.first + "/" + signal.second.get<std::string>("index");
             value = signal.second.get<float>("value");
-            index = signal.second.get<unsigned int>("index");
             min = signal.second.get_optional<float>("minimum");
             max = signal.second.get_optional<float>("maximum");
 
             sigset.insert(name);
             m_DeviceData[device].s_SignalToValue[name] = value;
-            m_DeviceData[device].s_IndexToSignal[index] = name;
-            m_DeviceData[device].s_SignalToIndex[name] = index;
+            m_DeviceData[device].s_IndexReference[name] = index;
+            m_DeviceData[device].s_IndexReference[index] = name;
             Logger.Info << "Stored (" << index << "," << name << ") = " << value << std::endl;
             if(min)
             {

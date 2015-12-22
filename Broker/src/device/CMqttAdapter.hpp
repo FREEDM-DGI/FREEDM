@@ -83,8 +83,7 @@ private:
     struct DeviceData
     {
         std::map<std::string, SignalValue> s_SignalToValue;
-        std::map<unsigned int, std::string> s_IndexToSignal;
-        std::map<std::string, unsigned int> s_SignalToIndex;
+        std::map<std::string, std::string> s_IndexReference;
     };
 
     /// Constructor.

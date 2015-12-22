@@ -304,9 +304,9 @@ void LBAgent::LoadManage(const boost::system::error_code & error)
         UpdateState();
         LoadTable();
 
-        std::set<device::CDevice::Pointer> logger, sst;
+        std::set<device::CDevice::Pointer> logger, desd;
         logger = device::CDeviceManager::Instance().GetDevicesOfType("Logger");
-        sst = device::CDeviceManager::Instance().GetDevicesOfType("SST");
+        desd = device::CDeviceManager::Instance().GetDevicesOfType("DESD");
         if(logger.empty() || (*logger.begin())->GetState("dgiEnable") == 1)
         {
             if(m_State == LBAgent::DEMAND)
@@ -328,9 +328,9 @@ void LBAgent::LoadManage(const boost::system::error_code & error)
         {
             SetPStar(m_Gateway);
         }
-        if(!sst.empty())
+        if(!desd.empty())
         {
-            device::CDevice::Pointer dev = *sst.begin();
+            device::CDevice::Pointer dev = *desd.begin();
             std::string output, cmd;
 
             output = "Detected MQTT Device " + dev->GetID() + "\n";

@@ -156,7 +156,8 @@ void CMqttAdapter::SetCommand(const std::string device, const std::string key, c
         throw std::runtime_error("Invalid Device Signal");
     }
     m_DeviceData[device].s_SignalToValue[key] = value;
-    unsigned int key_i = m_DeviceData[device].s_IndexReference.right.at(key);
+    Logger.Debug << "Converting the signal " << key << " to its numeric index." << std::endl;
+    unsigned int key_i = m_DeviceData[device].s_SignalToIndex.at(key);
     Publish(device + "/" + boost::lexical_cast<std::string>(key_i), boost::lexical_cast<std::string>(value));
 }
 
@@ -277,7 +278,7 @@ void CMqttAdapter::HandleMessage(std::string topic, std::string message)
         try
         {
             boost::lock_guard<boost::mutex> lock(m_DeviceDataLock);
-            std::string signal = m_DeviceData.at(device).s_IndexReference.left.at(signal_i);
+            std::string signal = m_DeviceData.at(device).s_IndexToSignal.at(signal_i);
             m_DeviceData.at(device).s_SignalToValue.at(signal) = value;
         }
         catch(std::exception & e)
@@ -358,9 +359,10 @@ void CMqttAdapter::AddSignals(std::string device, boost::property_tree::ptree::v
             max = signal.second.get_optional<float>("maximum");
 
             sigset.insert(name);
-            m_DeviceData[device].s_IndexReference.insert(boost::bimap<unsigned int, std::string>::value_type(index, name));
             m_DeviceData[device].s_SignalToValue[name] = value;
-            Logger.Info << "Stored " << name << " = " << value << std::endl;
+            m_DeviceData[device].s_IndexToSignal[index] = name;
+            m_DeviceData[device].s_SignalToIndex[name] = index;
+            Logger.Info << "Stored (" << index << "," << name << ") = " << value << std::endl;
             if(min)
             {
                 sigset.insert(name + "_minimum");

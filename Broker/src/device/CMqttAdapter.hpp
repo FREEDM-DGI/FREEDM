@@ -31,7 +31,6 @@
 #include <string>
 
 #include <MQTTClient.h>
-#include <boost/bimap.hpp>
 #include <boost/thread.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/property_tree/ptree.hpp>
@@ -83,8 +82,9 @@ public:
 private:
     struct DeviceData
     {
-        boost::bimap<unsigned int, std::string> s_IndexReference;
         std::map<std::string, SignalValue> s_SignalToValue;
+        std::map<unsigned int, std::string> s_IndexToSignal;
+        std::map<std::string, unsigned int> s_SignalToIndex;
     };
 
     /// Constructor.

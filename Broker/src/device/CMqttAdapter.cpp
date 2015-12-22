@@ -232,7 +232,7 @@ void CMqttAdapter::HandleMessage(std::string topic, std::string message)
                 throw std::runtime_error("MQTT Subscription Failure");
             }
 */
-            Publish(deviceName + "/ACK", "DGI");
+            Publish(deviceName + "/ACK", "ACK");
             m_DeviceData[deviceName];
         }
         else
@@ -263,7 +263,7 @@ void CMqttAdapter::HandleMessage(std::string topic, std::string message)
             Logger.Status << "Dropped leave message for unknown device " << deviceName << std::endl;
         }
     }
-    else if(topic.compare(topic.size()-4,4,"JSON") == 0)
+    else if(topic.compare(topic.size()-4,4,"JSON-DGI") == 0)
     {
         std::string deviceName = topic.substr(0, topic.size()-5);
         Logger.Status << "Received JSON for device " << deviceName << ":\n" << message << std::endl;

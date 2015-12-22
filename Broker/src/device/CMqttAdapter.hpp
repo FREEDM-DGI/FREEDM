@@ -31,6 +31,7 @@
 #include <string>
 
 #include <MQTTClient.h>
+#include <boost/bimap.hpp>
 #include <boost/thread.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/property_tree/ptree.hpp>
@@ -80,6 +81,12 @@ public:
     ~CMqttAdapter();
 
 private:
+    struct DeviceData
+    {
+        boost::bimap<unsigned int, std::string> s_IndexReference;
+        std::map<std::string, SignalValue> s_SignalToValue;
+    };
+
     /// Constructor.
     CMqttAdapter(std::string id, std::string address);
 
@@ -103,11 +110,8 @@ private:
 
     void AddSignals(std::string device, boost::property_tree::ptree::value_type & ptree, std::set<std::string> & sigset, std::set<std::string> & type);
 
-    /// Map from a device signal name to its stored value.
-    typedef std::map<std::string, SignalValue> TSignalToValue;
-
     /// Map from a device name to its stored signal values.
-    typedef std::map<std::string, TSignalToValue> TDeviceToData;
+    typedef std::map<std::string, DeviceData> TDeviceToData;
 
     /// Map of device data expected over MQTT.
     TDeviceToData m_DeviceData;

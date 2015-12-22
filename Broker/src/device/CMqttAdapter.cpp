@@ -131,12 +131,12 @@ SignalValue CMqttAdapter::GetState(const std::string device, const std::string k
         Logger.Error << "Device " << device << " does not exist as an MQTT device" << std::endl;
         throw std::runtime_error("Invalid Device Name");
     }
-    if(m_DeviceData.at(device).count(key) != 1)
+    if(m_DeviceData.at(device).s_SignalToValue.count(key) != 1)
     {
         Logger.Error << "Device " << device << " does not have the signal " << key << std::endl;
         throw std::runtime_error("Invalid Device Signal");
     }
-    SignalValue value = m_DeviceData.at(device).at(key);
+    SignalValue value = m_DeviceData.at(device).s_SignalToValue.at(key);
     Logger.Debug << device << " " << key << ": " << value << std::endl;
     return value;
 }
@@ -150,13 +150,14 @@ void CMqttAdapter::SetCommand(const std::string device, const std::string key, c
         Logger.Error << "Device " << device << " does not exist as an MQTT device" << std::endl;
         throw std::runtime_error("Invalid Device Name");
     }
-    if(m_DeviceData[device].count(key) != 1)
+    if(m_DeviceData[device].s_SignalToValue.count(key) != 1)
     {
         Logger.Error << "Device " << device << " does not have the signal " << key << std::endl;
         throw std::runtime_error("Invalid Device Signal");
     }
-    m_DeviceData[device][key] = value;
-    Publish(device + "/" + key, boost::lexical_cast<std::string>(value));
+    m_DeviceData[device].s_SignalToValue[key] = value;
+    unsigned int key_i = m_DeviceData[device].s_IndexReference.right.at(key);
+    Publish(device + "/" + boost::lexical_cast<std::string>(key_i), boost::lexical_cast<std::string>(value));
 }
 
 void CMqttAdapter::ConnectionLost(void * id, char * reason)
@@ -270,13 +271,14 @@ void CMqttAdapter::HandleMessage(std::string topic, std::string message)
     else if((index = topic.find("/AOUT/")) != std::string::npos || (index = topic.find("/DOUT/")) != std::string::npos)
     {
         std::string device = topic.substr(0, index);
-        std::string signal = topic.substr(index+1);
+        unsigned int signal_i = boost::lexical_cast<unsigned int>(topic.substr(index+1));
         float value = boost::lexical_cast<float>(message);
 
         try
         {
             boost::lock_guard<boost::mutex> lock(m_DeviceDataLock);
-            m_DeviceData.at(device).at(signal) = value;
+            std::string signal = m_DeviceData.at(device).s_IndexReference.left.at(signal_i);
+            m_DeviceData.at(device).s_SignalToValue.at(signal) = value;
         }
         catch(std::exception & e)
         {
@@ -336,6 +338,7 @@ void CMqttAdapter::AddSignals(std::string device, boost::property_tree::ptree::v
     {
         std::string name;
         float value;
+        unsigned int index;
         boost::optional<float> min, max;
 
         try
@@ -350,22 +353,24 @@ void CMqttAdapter::AddSignals(std::string device, boost::property_tree::ptree::v
             }
             name = ptree.first + "/" + name;
             value = signal.second.get<float>("value");
+            index = signal.second.get<unsigned int>("index");
             min = signal.second.get_optional<float>("minimum");
             max = signal.second.get_optional<float>("maximum");
 
             sigset.insert(name);
-            m_DeviceData[device][name] = value;
+            m_DeviceData[device].s_IndexReference.insert(boost::bimap<unsigned int, std::string>::value_type(index, name));
+            m_DeviceData[device].s_SignalToValue[name] = value;
             Logger.Info << "Stored " << name << " = " << value << std::endl;
             if(min)
             {
                 sigset.insert(name + "_minimum");
-                m_DeviceData[device][name + "_minimum"] = min.get();
+                m_DeviceData[device].s_SignalToValue[name + "_minimum"] = min.get();
                 Logger.Info << "Set its minimum value to " << min.get() << std::endl;
             }
             if(max)
             {
                 sigset.insert(name + "_maximum");
-                m_DeviceData[device][name + "_maximum"] = max.get();
+                m_DeviceData[device].s_SignalToValue[name + "_maximum"] = max.get();
                 Logger.Info << "Set its maximum value to " << max.get() << std::endl;
             }
         }

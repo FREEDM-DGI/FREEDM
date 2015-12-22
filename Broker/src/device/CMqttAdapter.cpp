@@ -104,7 +104,7 @@ void CMqttAdapter::Start()
     BOOST_FOREACH(std::string subscription, CGlobalConfiguration::Instance().GetMQTTSubscriptions())
     {
         std::string topic;
-        topic = subscription + "/+/JSON";
+        topic = subscription + "/+/JSON-DGI";
         MQTTClient_subscribe(m_Client, topic.c_str(), 2);
         Logger.Notice << "Subscribed to MQTT topic " << topic << std::endl;
         topic = subscription + "/+/AOUT";
@@ -263,9 +263,9 @@ void CMqttAdapter::HandleMessage(std::string topic, std::string message)
             Logger.Status << "Dropped leave message for unknown device " << deviceName << std::endl;
         }
     }
-    else if(topic.compare(topic.size()-4,4,"JSON-DGI") == 0)
+    else if(topic.compare(topic.size()-8,8,"JSON-DGI") == 0)
     {
-        std::string deviceName = topic.substr(0, topic.size()-5);
+        std::string deviceName = topic.substr(0, topic.size()-9);
         Logger.Status << "Received JSON for device " << deviceName << ":\n" << message << std::endl;
         CreateDevice(deviceName, message);
     }

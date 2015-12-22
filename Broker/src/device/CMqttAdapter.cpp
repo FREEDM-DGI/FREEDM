@@ -266,8 +266,15 @@ void CMqttAdapter::HandleMessage(std::string topic, std::string message)
     else if(topic.compare(topic.size()-8,8,"JSON-DGI") == 0)
     {
         std::string deviceName = topic.substr(0, topic.size()-9);
-        Logger.Status << "Received JSON for device " << deviceName << ":\n" << message << std::endl;
-        CreateDevice(deviceName, message);
+        if(CDeviceManager::Instance().DeviceExists(deviceName))
+        {
+            Logger.Status << "Dropped JSON for duplicate device " << deviceName << std::endl;
+        }
+        else
+        {
+            Logger.Status << "Received JSON for device " << deviceName << ":\n" << message << std::endl;
+            CreateDevice(deviceName, message);
+        }
     }
     else if((index = topic.find("/AOUT/")) != std::string::npos || (index = topic.find("/DOUT/")) != std::string::npos)
     {

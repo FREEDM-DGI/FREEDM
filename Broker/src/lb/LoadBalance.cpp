@@ -349,7 +349,7 @@ void LBAgent::LoadManage(const boost::system::error_code & error)
             Logger.Status << output << std::endl;
             if(!cmd.empty())
             {
-                dev->SetCommand(cmd, 1234.5);
+                dev->SetCommand(cmd, 123.45);
             }
         }
         else

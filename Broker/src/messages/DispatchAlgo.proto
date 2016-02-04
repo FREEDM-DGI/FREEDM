@@ -4,11 +4,7 @@ message DesdStateMessage
 {
     required int32 iteration = 1;
     required string symbol = 2;
-    required double deltapstep1 = 3;
-    required double deltapstep2 = 4;
-    required double deltapstep3 = 5;
-    required double lambdastep1 = 6;
-    required double lambdastep2 = 7;
-    required double lambdastep3 = 8;
+    repeated double delta_p_hat = 3;
+    repeated double lambda = 4;
 }
 

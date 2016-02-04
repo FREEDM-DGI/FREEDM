@@ -38,94 +38,124 @@
 #include <string>
 
 namespace freedm {
-namespace broker {
-namespace dda {
+    namespace broker {
+        namespace dda {
+            
+            
+            class DDAAgent
+            : public IDGIModule
+            {
+            public:
+                /// Constructor
+                DDAAgent();
+                
+                /// Destructor
+                ~DDAAgent();
+                
+                /// Called to start the system
+                //int Run(); //immediate scheduling
+                void Run();
+                
+                ///Update function for deltaP and lambda
+                void consensus_Update();
+                
+                
+                ///Adjacent node list
+                typedef std::set<std::string> VertexSet;
+                typedef std::map<std::string, VertexSet> AdjacencyListMap;
+                
+            private:
+                /// Handles received messages
+                void HandleIncomingMessage(boost::shared_ptr<const ModuleMessage> msg, CPeerNode peer);
+                void HandlePeerList(const gm::PeerListMessage &m, CPeerNode peer);
+                void HandleUpdate(const DesdStateMessage& msg, CPeerNode peer);
+                
+                ///send received message to adjacent nodes
+                void sendtoAdjList();
 
+                /// Update functions for DESD and Grid
+                void desdUpdate();
+                void gridUpdate();
+                
+                /// Wraps a DesdStateMessage in a ModuleMessage
+                ModuleMessage PrepareForSending(
+                                                const DesdStateMessage& message, std::string recipient = "dda");
+                
+                /// container to store the message from adjacent nodes
+                std::multimap<int, DesdStateMessage> m_adjmessage;
+                std::multimap<int, DesdStateMessage>::iterator it;
+                
+                void LoadTopology();
+                
+                bool m_startDESDAlgo;
+                //structure of physical layer
+                AdjacencyListMap m_adjlist;
+                std::map<std::string, std::string> m_strans;
+                std::string m_localsymbol;
+                VertexSet m_localadj;
+                double epsil;
+                int m_adjnum;
+                double m_localratio;
+                double m_adjratio;
 
-class DDAAgent
-  : public IDGIModule
-{
-public:
-    /// Constructor
-    DDAAgent();
+                ///deltaP and lambda upate
+                int m_iteration;
 
-    /// Destructor
-    ~DDAAgent();
+                /// Grid variables
+                std::vector<double> m_init_power_grid_plus_vector;
+                std::vector<double> m_init_power_grid_minus_vector;
+                std::vector<double> m_next_power_grid_plus_vector;
+                std::vector<double> m_next_power_grid_minus_vector;
+                std::vector<double> m_power_grid_vector;
+                double m_cost; // electricity bill     
 
-    /// Called to start the system
-    //int Run(); //immediate scheduling
-    void Run();
+                std::vector<double> m_dL_dPower_grid_plus_vector;
+                std::vector<double> m_dL_dPower_grid_minus_vector;
 
-    ///Update function for deltaP and lambda
-    void deltaPLambdaUpdate();
+                /// DESD variables
+                double desd_efficiency;
+                double P_max_desd;
+                double P_min_desd;
+                double E_full;
+                double E_min;
+                double E_init;
+                std::vector<double> m_init_power_desd_plus_vector;
+                std::vector<double> m_init_power_desd_minus_vector;
+                std::vector<double> m_next_power_desd_plus_vector;
+                std::vector<double> m_next_power_desd_minus_vector;   
+                std::vector<double> m_power_desd_vector;               
+                std::vector<double> m_init_mu1_vector;
+                std::vector<double> m_next_mu1_vector;
+                std::vector<double> m_init_mu2_vector;
+                std::vector<double> m_next_mu2_vector;
+                std::vector<double> m_deltaP1_vector;
+                std::vector<double> m_deltaP2_vector;  
 
+                std::vector<double> m_dL_dPower_desd_plus_vector;
+                std::vector<double> m_dL_dPower_desd_minus_vector;
+                std::vector<double> m_dL_dmu1_vector;
+                std::vector<double> m_dL_dmu2_vector;
 
-    ///Adjacent node list    
-    typedef std::set<std::string> VertexSet;
-    typedef std::map<std::string, VertexSet> AdjacencyListMap;
- 
-private:
-    /// Handles received messages
-    void HandleIncomingMessage(boost::shared_ptr<const ModuleMessage> msg, CPeerNode peer);
-    void HandlePeerList(const gm::PeerListMessage &m, CPeerNode peer);
-    void HandleUpdate(const DesdStateMessage& msg, CPeerNode peer);
+                /// Variables used by both Grid and DESD
+                std::vector<double> m_demand_vector;
+                std::vector<double> m_renewable_vector;
+                std::vector<double> m_init_deltaP_vector;
+                std::vector<double> m_next_deltaP_vector;
+                std::vector<double> m_init_deltaP_hat_vector;
+                std::vector<double> m_next_deltaP_hat_vector;
+                std::vector<double> m_init_lambda_vector;
+                std::vector<double> m_next_lambda_vector;
 
-    ///send received message to adjacent nodes
-    void sendtoAdjList();
-    
-    /// Update function for DESD and Grid
-    void desdUpdate();
-    void gridUpdate();
+                //neighbors' delatP and lambda
+                std::vector<double> m_adj_deltaP_hat_vector;
+                std::vector<double> m_adj_lambda_vector;
 
-    /// Wraps a DesdStateMessage in a ModuleMessage
-    ModuleMessage PrepareForSending(
-        const DesdStateMessage& message, std::string recipient = "dda");
- 
-    /// container to store the message from adjacent nodes
-    std::multimap<int, DesdStateMessage> m_adjmessage;
-    std::multimap<int, DesdStateMessage>::iterator it;
-
-    void LoadTopology();
- 
-    bool m_startDESDAlgo; 
-    //structure of physical layer
-    AdjacencyListMap m_adjlist;
-    std::map<std::string, std::string> m_strans;
-    std::string m_localsymbol;
-    VertexSet m_localadj;
-    double epsil; 
-    int m_adjnum;  
-    double m_localratio;
-    double m_adjratio;
- 
-    ///deltaP and lambda upate
-    int m_iteration;
-    double m_inideltaP[3];
-    double m_inilambda[3];
-    double m_nextdeltaP[3];
-    double m_nextlambda[3];
-    double m_inipower[3];
-    double m_nextpower[3];
-    double m_cost;
-    
-    ///extra variables for DESD update
-    double m_inimu[3];
-    double m_nextmu[3];
-    double m_inixi[3];
-    double m_nextxi[3];
-    double m_deltaP1[3];
-    double m_deltaP2[3];
-    
-    //neighbors' delatP and lambda
-    double m_adjdeltaP[3];
-    double m_adjlambda[3];
-
-    //all know peers
-    PeerSet m_AllPeers;
-};
-
-} // namespace dda
-} // namespace broker
+                //all know peers
+                PeerSet m_AllPeers;
+            };
+            
+        } // namespace dda
+    } // namespace broker
 } // namespace freedm
 
 #endif // DISPATCH_ALGORITHM_HPP

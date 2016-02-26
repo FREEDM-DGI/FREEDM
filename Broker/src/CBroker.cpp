@@ -304,17 +304,26 @@ bool CBroker::IsModuleRegistered(ModuleIdent m)
 CBroker::TimerHandle CBroker::AllocateTimer(CBroker::ModuleIdent module)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+	
+	boost::mutex::scoped_lock schlock(m_schmutex);
+	
+	if (IsModuleRegistered(module))
+	{
+		CBroker::TimerHandle myhandle;
+		boost::asio::deadline_timer* t = new boost::asio::deadline_timer(m_ioService);
+		myhandle = m_handlercounter;
+		m_handlercounter++;
+		m_allocs.insert(CBroker::TimerAlloc::value_type(myhandle, module));
+		m_timers.insert(CBroker::TimersMap::value_type(myhandle, t));
+		m_nexttime.insert(CBroker::NextTimeMap::value_type(myhandle, false));
+		m_ntexpired.insert(CBroker::NextTimeMap::value_type(myhandle, false));
+		return myhandle;
+	}
+	else
+	{
+		throw std::runtime_error("attempted to allocate time to unregistered module");
+	}
 
-    boost::mutex::scoped_lock schlock(m_schmutex);
-    CBroker::TimerHandle myhandle;
-    boost::asio::deadline_timer* t = new boost::asio::deadline_timer(m_ioService);
-    myhandle = m_handlercounter;
-    m_handlercounter++;
-    m_allocs.insert(CBroker::TimerAlloc::value_type(myhandle,module));
-    m_timers.insert(CBroker::TimersMap::value_type(myhandle,t));
-    m_nexttime.insert(CBroker::NextTimeMap::value_type(myhandle,false));
-    m_ntexpired.insert(CBroker::NextTimeMap::value_type(myhandle,false));
-    return myhandle;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

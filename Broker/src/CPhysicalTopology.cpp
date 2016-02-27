@@ -6,7 +6,7 @@
 /// @project      FREEDM DGI
 ///
 /// @description  Implements a physical topology layer for the DGI
-///
+///               
 /// These source code files were created at Missouri University of Science and
 /// Technology, and are intended for use in teaching or research. They may be
 /// freely copied, modified, and redistributed as long as modified versions are
@@ -27,7 +27,6 @@
 
 #include <queue>
 #include <fstream>
-#include <boost/algorithm/string.hpp>
 
 namespace freedm {
     namespace broker {
@@ -79,8 +78,8 @@ bool CPhysicalTopology::IsAvailable()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// @description Find the reachable peers. Performs a BFS on the physical topology
-/// starting at a source vertex. Nodes with FID are checked for the status of
+/// @description Find the reachable peers. Performs a BFS on the physical topology 
+/// starting at a source vertex. Nodes with FID are checked for the status of 
 /// their FID. If the FID status is unavailable or the FID is open, the edge is
 /// considered Broken
 /// @pre A physical topology has been loaded.
@@ -122,7 +121,7 @@ CPhysicalTopology::VertexSet CPhysicalTopology::ReachablePeers(std::string sourc
 
         if(consider.find(VNAME_PREFIX) == std::string::npos)
             solutionset.insert(consider);
-
+        
         Logger.Debug<<"Considering "<<consider<<" ("<<hops<<" hops) ("
                     <<m_adjlist[consider].size()<<" Neighbors)"<<std::endl;
 
@@ -165,7 +164,7 @@ CPhysicalTopology::VertexSet CPhysicalTopology::ReachablePeers(std::string sourc
                 openset.push(BFSExplorer(hops+1, neighbor));
             }
         }
-    }
+    } 
     return solutionset;
 }
 
@@ -186,7 +185,7 @@ void CPhysicalTopology::LoadTopology()
     const std::string EDGE_TOKEN = "edge";
     const std::string VERTEX_TOKEN = "sst";
     const std::string CONTROL_TOKEN = "fid";
-
+    
     CPhysicalTopology::AdjacencyListMap altmp;
     CPhysicalTopology::FIDControlMap fctmp;
     CPhysicalTopology::VertexSet seennames;
@@ -200,7 +199,7 @@ void CPhysicalTopology::LoadTopology()
     std::ifstream topf(fp.c_str());
 
     std::string token;
-
+    
     if(!topf.is_open())
     {
         //raise exception, couldn't open topology.
@@ -224,7 +223,7 @@ void CPhysicalTopology::LoadTopology()
                 altmp[v_symbol1] = VertexSet();
             if(!altmp.count(v_symbol2))
                 altmp[v_symbol2] = VertexSet();
-
+            
             //Bi directional!
             altmp[v_symbol1].insert(v_symbol2);
             altmp[v_symbol2].insert(v_symbol1);
@@ -240,7 +239,6 @@ void CPhysicalTopology::LoadTopology()
             {
                 throw std::runtime_error("Failed Reading Vertex Topology Entry (EOF?)");
             }
-            boost::algorithm::to_lower(uuid);
             m_strans[vsymbol] = uuid;
             Logger.Debug<<"Got Vertex: "<<vsymbol<<"->"<<uuid<<std::endl;
         }
@@ -262,7 +260,7 @@ void CPhysicalTopology::LoadTopology()
 
             fctmp.insert(FIDControlMap::value_type(vx1,fidname));
             fctmp.insert(FIDControlMap::value_type(vx2,fidname));
-
+            
             seennames.insert(v_symbol1);
             seennames.insert(v_symbol2);
         }
@@ -317,11 +315,11 @@ void CPhysicalTopology::LoadTopology()
         std::string nameb = RealNameFromVirtual(mp.first.second);
         std::string fidname = mp.second;
         // Bidirectional
-        m_fidcontrol.insert(FIDControlMap::value_type(VertexPair(namea,nameb), fidname));
-        m_fidcontrol.insert(FIDControlMap::value_type(VertexPair(nameb,namea), fidname));
+        m_fidcontrol.insert(FIDControlMap::value_type(VertexPair(namea,nameb), fidname));        
+        m_fidcontrol.insert(FIDControlMap::value_type(VertexPair(nameb,namea), fidname));        
     }
     // Done, yay!
-    m_available = true; // Mark that a topology loaded successfully.
+    m_available = true; // Mark that a topology loaded successfully.    
 }
 
 ///////////////////////////////////////////////////////////////////////////////

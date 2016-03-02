@@ -321,7 +321,7 @@ CBroker::TimerHandle CBroker::AllocateTimer(CBroker::ModuleIdent module)
 	}
 	else
 	{
-		throw std::runtime_error("attempted to allocate time to unregistered module");
+		throw std::runtime_error("attempted to allocate time to unregistered module" + module);
 	}
 
 }

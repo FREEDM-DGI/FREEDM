@@ -95,9 +95,6 @@ LBAgent::LBAgent()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
-    m_RoundTimer = CBroker::Instance().AllocateTimer("lb");
-    m_WaitTimer = CBroker::Instance().AllocateTimer("lb");
-
     m_State = LBAgent::NORMAL;
     m_Leader = GetUUID();
 
@@ -115,6 +112,11 @@ LBAgent::LBAgent()
 int LBAgent::Run()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+
+    m_RoundTimer = CBroker::Instance().AllocateTimer("lb");
+    m_WaitTimer = CBroker::Instance().AllocateTimer("lb");
+
+
     CBroker::Instance().Schedule(m_RoundTimer, boost::posix_time::not_a_date_time,
         boost::bind(&LBAgent::FirstRound, this, boost::asio::placeholders::error));
     Logger.Info << "LoadManage scheduled for the next phase." << std::endl;

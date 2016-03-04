@@ -91,8 +91,6 @@ GMAgent::GMAgent()
     m_groupsjoined = 0;
     m_membership = 0;
     m_membershipchecks = 0;
-    m_timer = CBroker::Instance().AllocateTimer("gm");
-    m_fidtimer = CBroker::Instance().AllocateTimer("gm");
     m_GrpCounter = rand();
 }
 
@@ -1304,6 +1302,9 @@ CPeerNode GMAgent::GetPeer(const std::string& uuid)
 int GMAgent::Run()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+
+    m_timer = CBroker::Instance().AllocateTimer("gm");
+    m_fidtimer = CBroker::Instance().AllocateTimer("gm");
 
     std::map<std::string, SRemoteHost>::iterator mapIt_;
 

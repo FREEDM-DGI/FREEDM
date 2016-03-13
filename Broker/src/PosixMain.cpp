@@ -288,6 +288,7 @@ int main(int argc, char* argv[])
             std::vector<std::string> subscriptions = vm["mqtt-subscribe"].as<std::vector<std::string> >( );
             CGlobalConfiguration::Instance().SetMQTTSubscriptions(subscriptions);
         }
+        CGlobalConfiguration::Instance().SetInvariantCheck(invariant);
 
         // Specify socket endpoint address, if provided
         if( vm.count("devices-endpoint") )

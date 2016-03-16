@@ -74,6 +74,8 @@
 #include <boost/range/adaptor/map.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
 
+#include <armadillo>
+
 namespace freedm {
 namespace broker {
 namespace lb {
@@ -103,6 +105,14 @@ LBAgent::LBAgent()
 
     m_PowerDifferential = 0;
     m_MigrationStep = CGlobalConfiguration::Instance().GetMigrationStep();
+
+	/* ARMADILLO TEST */
+	using namespace arma;
+	mat A = randu<mat>(4,5);
+  	mat B = randu<mat>(4,5);
+  
+	std::cout << "ARMADILLO LINK CONFIRMATION" << std::endl;
+  	std::cout << A*B.t() << std::endl;
 }
 
 ////////////////////////////////////////////////////////////

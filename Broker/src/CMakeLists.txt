@@ -24,6 +24,10 @@ set(BROKER_FILES
     gm/GroupManagement.cpp
     lb/LoadBalance.cpp
     sc/StateCollection.cpp
+    
+    
+    vvc/VoltVarCtrl.cpp
+    
    )
 
 # generate the configuration file

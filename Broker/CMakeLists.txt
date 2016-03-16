@@ -21,6 +21,10 @@ option(WARNINGS "warnings displayed during project compile" ON)
 find_package(Boost 1.47 REQUIRED
              COMPONENTS date_time program_options system thread
             )
+find_package(Armadillo REQUIRED)
+#find_package(BLAS REQUIRED)
+#find_package(LAPACK REQUIRED)
+
 include_directories(SYSTEM ${Boost_INCLUDE_DIRS})
 link_directories(${Boost_LIBRARY_DIRS})
 
@@ -37,7 +41,7 @@ endif()
 
 # Use -DCMAKE_BUILD_TYPE to control optimization and debugging
 set(CMAKE_CXX_FLAGS
-    "-pedantic -pthread -std=c++98 ${WARNING_FLAGS} ${CMAKE_CXX_FLAGS}")
+    "-pedantic -pthread -std=c++98 -O2 ${WARNING_FLAGS} ${CMAKE_CXX_FLAGS}")
 
 if(TRACK_HANDLERS)
     add_definitions(-DBOOST_ASIO_ENABLE_HANDLER_TRACKING)
@@ -64,4 +68,5 @@ target_link_libraries(PosixBroker
                       ${Boost_SYSTEM_LIBRARY}
                       ${Boost_THREAD_LIBRARY}
                       ${PROTOBUF_LIBRARIES}
-                     )
+                      ${ARMADILLO_LIBRARIES} 
+					)

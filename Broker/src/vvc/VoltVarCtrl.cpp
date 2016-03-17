@@ -336,11 +336,11 @@ void VVCAgent::vvc_slave()
   using namespace arma;
   mat XX;XX.load("xx.mat"); 
   //std::cout << "gradient recieved:" << "\n" << XX << std::endl;
-  double sstA_cmd = mean(mean(XX.rows(1,3)));
-  double sstB_cmd = mean(mean(XX.rows(8,10)));
-  double sstC_cmd = mean(mean(XX.rows(15,17)));
+  double sstA_cmd = mean(mean(XX.rows(4,6)));
+  double sstB_cmd = mean(mean(XX.rows(11,13)));
+  double sstC_cmd = mean(mean(XX.rows(18,20)));
 
-  std::cout << "SSTs under Slave #1: SST2 SST3 SST4 \n" << endl;
+  std::cout << "SSTs under Slave #1: SST5 SST6 SST7 \n" << endl;
   std::set<device::CDevice::Pointer> devices;
   
   std::cout << "Phase A Command (in kVar) " << sstA_cmd << std::endl;

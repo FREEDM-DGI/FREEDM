@@ -27,6 +27,7 @@
 #include "IDGIModule.hpp"
 #include "CPeerNode.hpp"
 #include "PeerSets.hpp"
+#include "CDeviceManager.hpp"
 
 #include "messages/ModuleMessage.pb.h"
 #include <boost/date_time/posix_time/posix_time_types.hpp>
@@ -152,6 +153,11 @@ namespace freedm {
 
                 //all know peers
                 PeerSet m_AllPeers;
+
+                // 
+                device::CDevice::Pointer desd;
+                
+
             };
             
         } // namespace dda

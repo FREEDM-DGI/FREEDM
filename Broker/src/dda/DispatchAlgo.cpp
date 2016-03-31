@@ -17,45 +17,105 @@ namespace freedm{
     namespace broker{
         namespace dda{
             
+            int command_set_flag = 0;
+            
             const int max_iteration = 5000;
             const int m_stages = 24;
 
-            const double P_max_grid = 20; // Maximum power from grid
+            const double P_max_grid = 100; // Maximum power from grid
             const double P_min_grid = 0.0; // Minimum power from grid
 
-            const double P_max_desd_profile[3] = {1.5, 2.0, 1.5}; // Maximum power desd
-            const double P_min_desd_profile[3] = {0.0, 0.0, 0.0}; // Minimum power desd
+            const double P_max_desd_profile[7] = {3.3, 3.3, 3.3, 3.3, 3.3, 3.3, 3.3}; // Maximum power desd
+            const double P_min_desd_profile[7] = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0}; // Minimum power desd
 
-            const double E_full_profile[3] = {1.5, 2.0, 1.3}; // Full energy of DESD (kWh)
-            const double E_init_profile[3] = {1.5*0.1, 2.0*0.1, 1.3*0.1}; // Initial energy of desd (kWh)
-            const double E_min_profile[3] = {1.5*0.1, 2.0*0.1, 1.3*0.1}; // Minimum energy of desd (kWh)
-            const double desd_efficiency_profile[3] = {0.85, 0.85, 0.85}; // DESD charging/discharging efficiency
+            const double E_full_profile[7] = {7.0, 7.0, 7.0, 7.0, 7.0, 7.0, 7.0}; // Full energy of DESD (kWh)
+            const double E_init_profile[7] = {7.0*0.25, 7.0*0.25, 7.0*0.25, 7.0*0.25, 7.0*0.25, 7.0*0.25, 7.0*0.25}; // Initial energy of desd (kWh)
+            const double E_min_profile[7] = {7.0*0.25, 7.0*0.25, 7.0*0.25, 7.0*0.25, 7.0*0.25, 7.0*0.25, 7.0*0.25}; // Minimum energy of desd (kWh)
+            const double desd_efficiency_profile[7] = {0.92, 0.92, 0.92, 0.92, 0.92, 0.92, 0.92}; // DESD charging/discharging efficiency
 
             // Algorithm tuning parameters
             const double rho = 0.2;
             const double xi1 = 0.15; // Pg
-            const double xi2 = 0.035; // Pb
-            const double xi3 = 0.025; // mu
-            const double xi4 = 0.043; // lambda
+            const double xi2 = 0.03; // Pb
+            const double xi3 = 0.02; // mu
+            const double xi4 = 0.04; // lambda
 
             // Profiles
-            const double price_profile[m_stages] = {6.4903,6.4903,6.4903,6.4903,6.4903,
-                6.4903,6.4903,6.4903,6.4903,6.4903,6.4903,6.4903,13.8271,13.8271,
-                13.8271,13.8271,13.8271,13.8271,6.4903,6.4903,6.4903,6.4903,6.4903,6.4903};
+            const double price_profile[m_stages] = {6.759,6.759,6.759,6.759,6.759,6.759,6.759,6.759,
+                6.759,6.759,6.759,11.784,11.784,23.503,23.503,23.503,23.503,23.503,6.759,6.759,
+                6.759,6.759,6.759,6.759};
 
-            const double price_sell[m_stages] = {3.24515,3.24515,3.24515,3.24515,3.24515,
-                3.24515,3.24515,3.24515,3.24515,3.24515,3.24515,3.24515,6.91355,6.91355,
-                6.91355,6.91355,6.91355,6.91355,3.24515,3.24515,3.24515,3.24515,3.24515,3.24515};
+            const double price_sell[m_stages] = {3.3795,3.3795,3.3795,3.3795,3.3795,3.3795,3.3795,3.3795,
+                3.3795,3.3795,3.3795,5.892,5.892,11.7515,11.7515,11.7515,11.7515,11.7515,3.3795,3.3795,
+                3.3795,3.3795,3.3795,3.3795};
 
-            const double demand_profile[m_stages] = {1.45,0.69,0.62,0.66,0.29,0.97,0.68,1.26,1.60,2.05,1.13,1.58,
-                2.73,1.97,1.1,2.26,1.46,5.24,4.69,3.15,2.19,2.47,1.22,1.95};
+            const double demand_profile_1[m_stages] = {1.530816667,0.828966667,1.169983333,1.147766667,0.810333333,
+                0.769266667,1.182866667,0.760266667,1.191583333,1.43685,1.2816,1.3788,
+                1.48235,1.5729,2.7663,2.76455,2.275516667,2.083166667,3.1353,
+                2.263,1.924716667,1.283483333,0.818366667,1.30835};
 
-            const double solar_profile[m_stages] = {0,0,0,0,0,0,0.0213,0.089,0.275,0.589,0.912,1.034,1.204,1.2,
-                1.364,1.169,1.160,0.898,0.559,0.270,0.018,0,0,0};
+            const double demand_profile_2[m_stages] = {2.617366667,2.056583333,1.409083333,1.434333333,1.330166667,
+                1.200866667,1.078533333,0.9619,0.639,0.624266667,0.575616667,0.768666667,0.752266667,0.980183333,
+                1.388033333,2.0601,2.4461,2.421016667,1.856166667,2.71705,1.888433333,2.990433333,2.8438,2.166566667}; 
 
-            const double wind_profile[m_stages] = {0.677,0.688,1.232,1.278,1.388,1.278,0.953,0.578,0.351,0.474,
-                0.604,0.986,1.453,1.607,0.876,0.832,1.453,1.686,1.402,0.918,
-                0.686,0.722,0.598,1.295};
+            const double demand_profile_3[m_stages] = {0.948283333,0.903133333,0.797433333,0.8043,0.725016667,1.645283333,
+                0.649433333,0.305166667,0.606466667,0.4038,2.287733333,3.876466667,1.645016667,0.7164,1.096983333,
+                1.042616667,0.38695,0.27605,0.225483333,0.20875,0.430533333,2.219916667,1.504266667,1.0725};
+
+            const double demand_profile_4[m_stages] = {1.007733333,0.736666667,0.529966667,0.728383333,0.445866667,
+                0.725516667,0.536833333,0.76695,0.51975,0.812566667,0.771766667,0.849616667,
+                1.221516667,1.441233333,1.648883333,1.911416667,1.8061,2.469033333,2.736866667,
+                2.56305,3.3565,2.397,1.83075,1.544383333};     
+
+            const double demand_profile_5[m_stages] = {3.548366667,2.669433333,2.593733333,1.687416667,1.6308,1.152283333,
+                1.03805,0.761116667,0.349283333,0.310833333,0.341216667,0.325316667,0.314116667,0.33145,0.3339,0.916433333,
+                1.83295,1.850983333,2.918233333,4.397733333,2.411766667,2.671083333,2.68075,3.6486};     
+
+            const double demand_profile_6[m_stages] = {1.13155,2.312133333,0.65565,0.541783333,0.642633333,0.529333333,
+                0.640733333,0.915116667,0.7708,0.992166667,1.278683333,1.9484,2.271133333,0.846116667,2.64065,3.005916667,
+                2.881616667,2.6585,2.321533333,0.638616667,2.55175,1.442966667,0.707966667,0.575033333};     
+
+            const double demand_profile_7[m_stages] = {2.705366667,2.5252,2.0968,2.4972,2.034783333,
+                1.934433333,2.17515,2.384683333,1.094516667,1.087466667,0.787583333,3.372533333,
+                1.548716667,2.0732,1.657116667,1.433116667,1.50905,1.393366667,0.980483333,
+                2.45035,4.373533333,4.7795,3.7463,3.327316667};  
+/////
+            const double renewable_profile_1[m_stages] = {-0.011383333,-0.012083333,-0.011933333,-0.011866667,
+                -0.012,-0.012,-0.014616667,0.1492,0.452783333,0.9659,
+                1.894116667,1.687066667,3.156133333,3.519133333,3.567433333,3.304983333,1.713916667,
+                0.770183333,1.0031,0.11845,-0.01513333,-0.01145,-0.011566667,-0.011583333};
+
+            const double renewable_profile_2[m_stages] = {-0.0048,-0.0044,-0.003933333,-0.003916667,-0.003933333,
+                -0.003766667,-0.006483333,0.14935,0.4332,0.951233333,1.837116667,1.7191,3.166966667,3.60645,
+                3.717816667,3.466266667,1.85255,0.844566667,1.3082,0.146133333,-0.005616667,-0.0048,-0.004766667,-0.004416667};     
+
+            const double renewable_profile_3[m_stages] = {-0.008083333,-0.008083333,-0.007733333,-0.008116667,
+                -0.008066667,-0.007,-0.008883333,0.103283333,0.296383333,0.734666667,1.376516667,
+                1.4882,2.52485,2.955466667,3.1799,2.91105,1.628033333,0.747683333,1.167516667,
+                0.133783333,-0.00235,-0.006033333,-0.007583333,-0.007916667};      
+
+            const double renewable_profile_4[m_stages] = {-0.0078,-0.00785,-0.007883333,-0.007783333,
+                -0.007883333,-0.007766667,-0.020366667,0.0629,0.377666667,0.798133333,1.6673,
+                1.5432,2.889366667,3.167233333,3.296333333,3.023,1.541183333,0.588466667,0.7121,
+                0.000816667,-0.022016667,-0.007383333,-0.007866667,-0.008};     
+
+            const double renewable_profile_5[m_stages] = {-0.002033333,-0.0023,-0.0023,-0.0026,
+                -0.002616667,-0.00275,-0.000316667,0.2276,0.67335,1.1186,2.240666667,
+                1.9002,3.702966667,3.785983333,3.730516667,3.4218,1.7685,0.786316667,
+                0.964966667,0.144,0.001466667,-0.001766667,-0.001783333,-0.0017};   
+
+
+            const double renewable_profile_6[m_stages] = {-0.011233333,-0.011883333,-0.011,-0.011416667,
+                -0.0119,-0.011866667,-0.0013,0.476116667,1.335666667,2.30945,3.540016667,
+                3.52025,4.415816667,4.657366667,2.765233333,0.99508333,0.589383333,1.07855,
+                0.480883333,0.158583333,0.002983333,-0.011,-0.011,-0.011};  
+
+            const double renewable_profile_7[m_stages] = {-0.002066667,-0.002,-0.002,-0.002,
+                -0.002,-0.002,0.001966667,0.01235,0.034266667,0.0685,
+                0.190833333,0.25705,0.447366667,0.112466667,0.153766667,0.259966667,0.162133333,
+                0.1078,0.112433333,0.021416667,-0.00185,-0.002,-0.002,
+                -0.002};                                                        
+
 
             namespace {
                 /// This file's logger.
@@ -246,9 +306,9 @@ namespace freedm{
                     {
 
                         for (int i = 0; i < m_stages; i++) {
-                            m_init_deltaP_vector[i] = demand_profile[i] - solar_profile[i];
-                            m_demand_vector[i] = demand_profile[i];
-                            m_renewable_vector[i] = solar_profile[i];
+                            m_init_deltaP_vector[i] = demand_profile_1[i] - renewable_profile_1[i];
+                            m_demand_vector[i] = demand_profile_1[i];
+                            m_renewable_vector[i] = renewable_profile_1[i];
                             m_init_deltaP_hat_vector[i] = m_init_deltaP_vector[i];
                         }
 
@@ -264,9 +324,9 @@ namespace freedm{
                     else if (m_localsymbol == "3") // SST3
                     {
                         for (int i = 0; i < m_stages; i++) {
-                            m_init_deltaP_vector[i] = demand_profile[i] - solar_profile[i];
-                            m_demand_vector[i] = demand_profile[i];
-                            m_renewable_vector[i] = solar_profile[i];                            
+                            m_init_deltaP_vector[i] = demand_profile_2[i] - renewable_profile_2[i];
+                            m_demand_vector[i] = demand_profile_2[i];
+                            m_renewable_vector[i] = renewable_profile_2[i];                            
                             m_init_deltaP_hat_vector[i] = m_init_deltaP_vector[i];
                         }
 
@@ -283,9 +343,9 @@ namespace freedm{
                     {
 
                         for (int i = 0; i < m_stages; i++) {
-                            m_init_deltaP_vector[i] = demand_profile[i]/3 - wind_profile[i];
-                            m_demand_vector[i] = demand_profile[i]/3;
-                            m_renewable_vector[i] = wind_profile[i];                            
+                            m_init_deltaP_vector[i] = demand_profile_3[i] - renewable_profile_3[i];
+                            m_demand_vector[i] = demand_profile_3[i];
+                            m_renewable_vector[i] = renewable_profile_3[i];                            
                             m_init_deltaP_hat_vector[i] = m_init_deltaP_vector[i];
                         }
 
@@ -295,8 +355,75 @@ namespace freedm{
                         E_full = E_full_profile[2];
                         E_min = E_min_profile[2];
                         E_init = E_init_profile[2];
-
                     }
+                    else if (m_localsymbol == "5") // SST5
+                    {
+
+                        for (int i = 0; i < m_stages; i++) {
+                            m_init_deltaP_vector[i] = demand_profile_4[i] - renewable_profile_4[i];
+                            m_demand_vector[i] = demand_profile_4[i];
+                            m_renewable_vector[i] = renewable_profile_4[i];                            
+                            m_init_deltaP_hat_vector[i] = m_init_deltaP_vector[i];
+                        }
+
+                        desd_efficiency = desd_efficiency_profile[3];
+                        P_max_desd = P_max_desd_profile[3];
+                        P_min_desd = P_min_desd_profile[3];
+                        E_full = E_full_profile[3];
+                        E_min = E_min_profile[3];
+                        E_init = E_init_profile[3];
+                    }
+                    else if (m_localsymbol == "6") // SST6
+                    {
+
+                        for (int i = 0; i < m_stages; i++) {
+                            m_init_deltaP_vector[i] = demand_profile_5[i] - renewable_profile_5[i];
+                            m_demand_vector[i] = demand_profile_5[i];
+                            m_renewable_vector[i] = renewable_profile_5[i];                            
+                            m_init_deltaP_hat_vector[i] = m_init_deltaP_vector[i];
+                        }
+
+                        desd_efficiency = desd_efficiency_profile[4];
+                        P_max_desd = P_max_desd_profile[4];
+                        P_min_desd = P_min_desd_profile[4];
+                        E_full = E_full_profile[4];
+                        E_min = E_min_profile[4];
+                        E_init = E_init_profile[4];
+                    }
+                    else if (m_localsymbol == "7") // SST7
+                    {
+
+                        for (int i = 0; i < m_stages; i++) {
+                            m_init_deltaP_vector[i] = demand_profile_6[i] - renewable_profile_6[i];
+                            m_demand_vector[i] = demand_profile_6[i];
+                            m_renewable_vector[i] = renewable_profile_6[i];                            
+                            m_init_deltaP_hat_vector[i] = m_init_deltaP_vector[i];
+                        }
+
+                        desd_efficiency = desd_efficiency_profile[5];
+                        P_max_desd = P_max_desd_profile[5];
+                        P_min_desd = P_min_desd_profile[5];
+                        E_full = E_full_profile[5];
+                        E_min = E_min_profile[5];
+                        E_init = E_init_profile[5];
+                    }
+                    else if (m_localsymbol == "8") // SST8
+                    {
+
+                        for (int i = 0; i < m_stages; i++) {
+                            m_init_deltaP_vector[i] = demand_profile_7[i] - renewable_profile_7[i];
+                            m_demand_vector[i] = demand_profile_7[i];
+                            m_renewable_vector[i] = renewable_profile_7[i];                            
+                            m_init_deltaP_hat_vector[i] = m_init_deltaP_vector[i];
+                        }
+
+                        desd_efficiency = desd_efficiency_profile[6];
+                        P_max_desd = P_max_desd_profile[6];
+                        P_min_desd = P_min_desd_profile[6];
+                        E_full = E_full_profile[6];
+                        E_min = E_min_profile[6];
+                        E_init = E_init_profile[6];
+                    }                                                                 
                 }
 
                 Logger.Debug << "Initialization done." << std::endl;
@@ -335,7 +462,7 @@ namespace freedm{
                 // Process the peer list
                 m_AllPeers = gm::GMAgent::ProcessPeerList(m);
                 
-                if (m_startDESDAlgo == false && m_AllPeers.size() == 4)
+                if (m_startDESDAlgo == false && m_AllPeers.size() == 8)
                 {
                     m_startDESDAlgo = true;
                     Run();
@@ -394,7 +521,7 @@ namespace freedm{
 
                         }
 
-                        if (m_localsymbol == "2" || m_localsymbol == "3" || m_localsymbol == "4") {
+                        if (m_localsymbol == "2" || m_localsymbol == "3" || m_localsymbol == "4" || m_localsymbol == "5" || m_localsymbol == "6" || m_localsymbol == "7" || m_localsymbol == "8") {
                             desdUpdate();
                         }
                         else if (m_localsymbol == "1") {
@@ -414,7 +541,7 @@ namespace freedm{
                 {
                     Logger.Notice << "Maximum iteration reached." << std::endl;
 
-                    if (m_localsymbol == "2" || m_localsymbol == "3" || m_localsymbol == "4") {
+                    if (m_localsymbol == "2" || m_localsymbol == "3" || m_localsymbol == "4" || m_localsymbol == "5" || m_localsymbol == "6" || m_localsymbol == "7" || m_localsymbol == "8") {
 
                         Logger.Notice << "The P DESD plus: " << std::endl;
                         for (int i = 0; i < m_next_power_desd_plus_vector.size(); i++) {
@@ -448,7 +575,30 @@ namespace freedm{
                                     m_next_power_desd_minus_vector[i];
                                 Logger.Notice << m_power_desd_vector[i] << std::endl;
                             }
-                        }      
+                        } 
+
+                        // Retrieve the DESD device
+                        desd =  device::CDeviceManager::Instance().GetDevice("DESD");
+                        if(!desd)
+                        {
+                            std::cout << "Error! DESD device not found!" << std::endl;
+                            return;
+                        }
+
+                         try
+                        {
+                            if (command_set_flag == 0)
+                            {
+                                desd->SetCommand("chargeRate", m_power_desd_vector[0]);
+                                command_set_flag = 1;
+                            }
+                                
+                        }
+                        catch(std::exception & e)
+                        {
+                            std::cout << "Error! Could not set battery CHARGE command!" << std::endl;
+                        }
+
 
                     }
                     else if (m_localsymbol == "1") {
@@ -495,6 +645,8 @@ namespace freedm{
             
             void DDAAgent::desdUpdate() {
                 Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+
+                Logger.Notice << "Start Updating..." << std::endl;
 
                 // for debug
                 Logger.Debug << "The current iteration is  " << m_iteration << std::endl;
@@ -738,11 +890,15 @@ namespace freedm{
 
                 m_init_mu1_vector = m_next_mu1_vector;
                 m_init_mu2_vector = m_next_mu2_vector;
+
+                Logger.Notice << "End Updating..." << std::endl;
                 
             }
 
             void DDAAgent::gridUpdate() {
                 Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+
+                Logger.Notice << "Start Updating..." << std::endl;
 
                 m_cost = 0.0;
 
@@ -848,7 +1004,9 @@ namespace freedm{
                     m_cost = m_cost - price_sell[i] * m_next_power_grid_minus_vector[i];
                 }  
 
-                Logger.Notice << "The Electricity Bill is: " << m_cost << std::endl;                           
+                Logger.Notice << "The Electricity Bill is: " << m_cost << std::endl;        
+
+                Logger.Notice << "End Updating..." << std::endl;                   
 
             }
             
@@ -874,7 +1032,7 @@ namespace freedm{
                 }
 
 
-                Logger.Debug << "The message " << m_iteration << " has been packed for sending to neighbors" << std::endl;
+                Logger.Notice << "The message " << m_iteration << " has been packed for sending to neighbors" << std::endl;
                 
                 //send message to adjecent list
                 BOOST_FOREACH(std::string symbolid, m_localadj)
@@ -888,7 +1046,7 @@ namespace freedm{
                     }
                 }
 
-                sleep(0.5);
+  //              sleep(0.5);
             }
             
             ModuleMessage DDAAgent::PrepareForSending(const DesdStateMessage& message, std::string recipient)

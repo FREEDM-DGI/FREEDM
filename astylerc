@@ -1,0 +1,69 @@
+# ----------ASTYLERC-------------------------------------------------------
+#
+# Author: Thoshitha Gamage
+# Date  : December 9, 2011
+#
+# ---------------README--------------------------------------------------- 
+# 1. Install astyle for your version of linux using the default package manager
+#    ubuntu example: sudo apt-get install astyle
+#
+# 2. Copy this file to your home directory and make it a hidden file
+#    cp astylerc ~/.astylerc
+#
+# 3. Stylize your code using astyle
+#    astyle <code-to-format>
+#
+# 4. Read more about Astyle options at http://astyle.sourceforge.net/astyle.html
+#
+# 5. Yell at me if you can't get this done. You know my email
+# -------------------------------------------------------------------------
+
+# Indent classes
+indent-classes
+
+# Indent switch blocks
+#indent-switches
+
+# Indent brackets
+#indent-brackets
+
+# Convert tabs into spaces
+convert-tabs
+
+# Fill empty lines with the white space
+fill-empty-lines
+
+# Brackets break/attach
+brackets=break
+
+# Don't break long lines
+keep-one-line-statements
+
+# Don't break one line blocks
+keep-one-line-blocks
+
+# Set space indent
+indent=spaces=4
+
+# Suffix for original file
+suffix=none
+
+# Process directories recursively
+#recursive
+
+# Indent C++ comments
+#indent-col1-comments
+
+# Pad empty lines around header blocks ("if", "for", "while")
+break-blocks
+
+# Minimum conditional indent for long headers
+#min-conditional-indent=4
+
+# Delete empty lines within a function 
+delete-empty-lines
+
+# Preserve Date
+preserve-date
+
+#lineend=linux

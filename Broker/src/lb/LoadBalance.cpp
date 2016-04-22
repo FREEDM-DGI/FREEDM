@@ -37,6 +37,7 @@
 ///                 LBAgent::HandleTooLate
 ///                 LBAgent::HandlePeerList
 ///                 LBAgent::SetPStar
+///                 LBAgent::SetDESD
 ///                 LBAgent::PrepareForSending
 ///                 LBAgent::Synchronize
 ///                 LBAgent::CheckInvariant
@@ -328,34 +329,7 @@ void LBAgent::LoadManage(const boost::system::error_code & error)
         {
             SetPStar(m_Gateway);
         }
-        if(!desd.empty())
-        {
-            device::CDevice::Pointer dev = *desd.begin();
-            std::string output, cmd;
 
-            output = "Detected MQTT Device " + dev->GetID() + "\n";
-            BOOST_FOREACH(std::string state, dev->GetStateSet())
-            {
-                output += "\t" + state + " = " + boost::lexical_cast<std::string>(dev->GetState(state)) + "\n";
-            }
-            BOOST_FOREACH(std::string command, dev->GetCommandSet())
-            {
-                if(cmd.empty() && command.find("_minimum") == command.find("_maximum"))
-                {
-                    cmd = command;
-                }
-                output += "\t" + command + "\n";
-            }
-            Logger.Status << output << std::endl;
-            if(!cmd.empty())
-            {
-                dev->SetCommand(cmd, 123.45);
-            }
-        }
-        else
-        {
-            Logger.Status << "No MQTT Devices" << std::endl;
-        }
     }
     else if(error == boost::asio::error::operation_aborted)
     {
@@ -999,10 +973,16 @@ void LBAgent::SetPStar(float pstar)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
-    std::set<device::CDevice::Pointer> sstContainer;
-    sstContainer = device::CDeviceManager::Instance().GetDevicesOfType("Sst");
+    //std::set<device::CDevice::Pointer> sstContainer;
+    //sstContainer = device::CDeviceManager::Instance().GetDevicesOfType("Sst");
 
-    if(sstContainer.size() > 0)
+    float generation = device::CDeviceManager::Instance().GetNetValue("Drer", "generation");
+    float storage = device::CDeviceManager::Instance().GetNetValue("Desd", "storage");
+    float load = device::CDeviceManager::Instance().GetNetValue("Load", "drain");
+
+    SetDESD(pstar - generation + load);
+
+    /*if(sstContainer.size() > 0)
     {
         if(sstContainer.size() > 1)
         {
@@ -1016,6 +996,56 @@ void LBAgent::SetPStar(float pstar)
     else
     {
         Logger.Warn << "Failed to set P*: no attached SST device" << std::endl;
+    }*/
+}
+
+////////////////////////////////////////////////////////////
+/// SetDESD
+/// @description Migrates power by adjusting the gateway settings of the
+///     attched DESDs
+/// @pre: Current load state of this node is 'Supply' or 'Demand'
+/// @post: Set command(s) to DESD
+/// @param DESD the new desd setting to use.
+/////////////////////////////////////////////////////////
+void LBAgent::SetDESD(float desdv)
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+
+    std::set<device::CDevice::Pointer> desd;
+    desd = device::CDeviceManager::Instance().GetDevicesOfType("Desd");
+
+
+    if(!desd.empty())
+    {
+        device::CDevice::Pointer dev = *desd.begin();
+        std::string output, cmd;
+
+        output = "Detected MQTT Device " + dev->GetID() + "\n";
+        BOOST_FOREACH(std::string state, dev->GetStateSet())
+        {
+            output += "\t" + state + " = " + boost::lexical_cast<std::string>(dev->GetState(state)) + "\n";
+        }
+        BOOST_FOREACH(std::string command, dev->GetCommandSet())
+        {
+            if(cmd.empty() && command.find("_minimum") == command.find("_maximum"))
+            {
+                cmd = command;
+            }
+            output += "\t" + command + "\n";
+        }
+        Logger.Status << output << std::endl;
+
+        //HARD CODED BIT
+
+        if(!cmd.empty())
+        {
+            dev->SetCommand(cmd, desdv);
+            Logger.Notice << "DESD* = " << desdv << std::endl;
+        }
+    }
+    else
+    {
+        Logger.Warn << "Failed to set DESD: no attached DESD device" << std::endl;
     }
 }
 

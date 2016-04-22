@@ -119,10 +119,17 @@ void CBroker::Run()
         CGlobalConfiguration::Instance().GetListenAddress(),
         boost::lexical_cast<std::string>(CGlobalConfiguration::Instance().GetListenPort())
     );
+    boost::asio::ip::udp::resolver::query query_ecn(
+        CGlobalConfiguration::Instance().GetListenAddress(),
+        boost::lexical_cast<std::string>(CGlobalConfiguration::Instance().GetECNPort())
+    );
+	
     boost::asio::ip::udp::endpoint endpoint = *(resolver.resolve(query));
+    boost::asio::ip::udp::endpoint endpoint_ecn = *(resolver.resolve(query_ecn));
 
     // Listen for connections and create an event to spawn a new connection
     CListener::Instance().Start(endpoint);
+    // Handle ECN from 
 
     // Try to align on the first phase change
     boost::posix_time::ptime now = boost::posix_time::microsec_clock::universal_time();

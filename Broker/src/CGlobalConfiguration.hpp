@@ -107,9 +107,14 @@ class CGlobalConfiguration : private boost::noncopyable
         bool GetMaliciousFlag() const { return m_malicious; }
         /// Get the invariant check flag
         bool GetInvariantCheck() const { return m_invariant; }
+        /// Get the port used to listen for ECN messages
+        std::string GetECNPort() const { return m_ecn_port; }
+        /// Set the port used to listen for ECN messages
+        void SetECNPort(std::string ecn_port) { m_ecn_port = ecn_port; }
     private:
         std::string m_hostname; /// Node hostname
         std::string m_port; /// Port number
+        std::string m_ecn_port; /// ECN port
         std::string m_uuid; /// The node uuid
         std::string m_address; /// The listening address.
         boost::posix_time::time_duration m_clockskew; /// The skew of the clock

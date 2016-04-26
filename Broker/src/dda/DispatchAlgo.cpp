@@ -10,7 +10,9 @@
 
 #include <map>
 #include <boost/asio/error.hpp>
+#include <boost/bind.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
+#include <boost/date_time/posix_time/posix_time_types.hpp>
 #include <google/protobuf/repeated_field.h>
 
 namespace freedm{
@@ -18,8 +20,12 @@ namespace freedm{
         namespace dda{
             
             int command_set_flag = 0;
+            static int convergence_flag = 0;
+            static int schedule_count = 0;
+
+            CBroker::TimerHandle m_timer;
             
-            const int max_iteration = 5000;
+            const unsigned int max_iteration = 5000;
             const int m_stages = 24;
 
             const double P_max_grid = 100; // Maximum power from grid
@@ -128,6 +134,7 @@ namespace freedm{
                 m_iteration = 1;
                 m_cost = 0.0;
 
+
                 for (int i = 0; i < m_stages; i++) {
                     // Grid
                     m_init_power_grid_plus_vector.push_back(0.0);
@@ -182,6 +189,9 @@ namespace freedm{
 
                 m_startDESDAlgo = false;
                 m_adjmessage.clear();
+
+                m_timer = CBroker::Instance().AllocateTimer("dda");
+
             }
             
             DDAAgent::~DDAAgent()
@@ -256,7 +266,7 @@ namespace freedm{
                 topf.close();
                 
                 Logger.Notice << "The local symbol is " << m_localsymbol << std::endl;
-                int maxSize = 0;
+                unsigned int maxSize = 0;
                 BOOST_FOREACH( const AdjacencyListMap::value_type& mp, m_adjlist)
                 {
                     Logger.Debug << "The vertex is " << mp.first << std::endl;
@@ -540,11 +550,12 @@ namespace freedm{
                 if (m_iteration >= max_iteration)
                 {
                     Logger.Notice << "Maximum iteration reached." << std::endl;
+                    convergence_flag = 1;
 
                     if (m_localsymbol == "2" || m_localsymbol == "3" || m_localsymbol == "4" || m_localsymbol == "5" || m_localsymbol == "6" || m_localsymbol == "7" || m_localsymbol == "8") {
 
                         Logger.Notice << "The P DESD plus: " << std::endl;
-                        for (int i = 0; i < m_next_power_desd_plus_vector.size(); i++) {
+                        for (unsigned int i = 0; i < m_next_power_desd_plus_vector.size(); i++) {
                             if (i < m_next_power_desd_plus_vector.size()-1) {
                                 Logger.Notice << m_next_power_desd_plus_vector[i];
                                 Logger.Notice << " ";
@@ -554,7 +565,7 @@ namespace freedm{
                         }
 
                         Logger.Notice << "The P DESD minus: " << std::endl;
-                        for (int i = 0; i < m_next_power_desd_minus_vector.size(); i++) {
+                        for (unsigned int i = 0; i < m_next_power_desd_minus_vector.size(); i++) {
                             if (i < m_next_power_desd_minus_vector.size()-1) {
                                 Logger.Notice << m_next_power_desd_minus_vector[i];
                                 Logger.Notice << " ";
@@ -564,7 +575,7 @@ namespace freedm{
                         }       
 
                         Logger.Notice << "The P DESD: " << std::endl;
-                        for (int i = 0; i < m_power_desd_vector.size(); i++) {
+                        for (unsigned int i = 0; i < m_power_desd_vector.size(); i++) {
                             if (i < m_power_desd_vector.size()-1) {
                                 m_power_desd_vector[i] = m_next_power_desd_plus_vector[i] - 
                                     m_next_power_desd_minus_vector[i];
@@ -577,33 +588,10 @@ namespace freedm{
                             }
                         } 
 
-                        // Retrieve the DESD device
-                        desd =  device::CDeviceManager::Instance().GetDevice("DESD");
-                        if(!desd)
-                        {
-                            std::cout << "Error! DESD device not found!" << std::endl;
-                            return;
-                        }
-
-                         try
-                        {
-                            if (command_set_flag == 0)
-                            {
-                                desd->SetCommand("chargeRate", m_power_desd_vector[0]);
-                                command_set_flag = 1;
-                            }
-                                
-                        }
-                        catch(std::exception & e)
-                        {
-                            std::cout << "Error! Could not set battery CHARGE command!" << std::endl;
-                        }
-
-
                     }
                     else if (m_localsymbol == "1") {
                         Logger.Notice << "The P grid plus: " << std::endl;
-                        for (int i = 0; i < m_next_power_grid_plus_vector.size(); i++) {
+                        for (unsigned int i = 0; i < m_next_power_grid_plus_vector.size(); i++) {
                             if (i < m_next_power_grid_plus_vector.size()-1) {
                                 Logger.Notice << m_next_power_grid_plus_vector[i];
                                 Logger.Notice << " ";
@@ -614,7 +602,7 @@ namespace freedm{
                         }
 
                         Logger.Notice << "The P grid minus: " << std::endl;
-                        for (int i = 0; i < m_next_power_grid_minus_vector.size(); i++) {
+                        for (unsigned int i = 0; i < m_next_power_grid_minus_vector.size(); i++) {
                             if (i < m_next_power_grid_minus_vector.size()-1) {
                                 Logger.Notice << m_next_power_grid_minus_vector[i];
                                 Logger.Notice << " ";
@@ -625,7 +613,7 @@ namespace freedm{
                         }
 
                         Logger.Notice << "The P Grid: " << std::endl;
-                        for (int i = 0; i < m_power_grid_vector.size(); i++) {
+                        for (unsigned int i = 0; i < m_power_grid_vector.size(); i++) {
                             if (i < m_power_grid_vector.size()-1) {
                                 m_power_grid_vector[i] = m_next_power_grid_plus_vector[i] - 
                                     m_next_power_grid_minus_vector[i];
@@ -652,7 +640,7 @@ namespace freedm{
                 Logger.Debug << "The current iteration is  " << m_iteration << std::endl;
 
                 Logger.Debug << "The Init mu1: " << std::endl;
-                for (int i = 0; i < m_init_mu1_vector.size(); i++) {
+                for (unsigned int i = 0; i < m_init_mu1_vector.size(); i++) {
                     if (i < m_init_mu1_vector.size()-1) {
                         Logger.Debug << m_init_mu1_vector[i];
                         Logger.Debug << " ";
@@ -662,7 +650,7 @@ namespace freedm{
                 }
 
                 Logger.Debug << "The Init mu2: " << std::endl;
-                for (int i = 0; i < m_init_mu2_vector.size(); i++) {
+                for (unsigned int i = 0; i < m_init_mu2_vector.size(); i++) {
                     if (i < m_init_mu2_vector.size()-1) {
                         Logger.Debug << m_init_mu2_vector[i];
                         Logger.Debug << " ";
@@ -672,7 +660,7 @@ namespace freedm{
                 }
 
                 Logger.Debug << "The Init delta P: " << std::endl;
-                for (int i = 0; i < m_init_deltaP_vector.size(); i++) {
+                for (unsigned int i = 0; i < m_init_deltaP_vector.size(); i++) {
                     if (i < m_init_deltaP_vector.size()-1) {
                         Logger.Debug << m_init_deltaP_vector[i];
                         Logger.Debug << " ";
@@ -682,7 +670,7 @@ namespace freedm{
                 }
 
                 Logger.Debug << "The Init delta P1: " << std::endl;
-                for (int i = 0; i < m_deltaP1_vector.size(); i++) {
+                for (unsigned int i = 0; i < m_deltaP1_vector.size(); i++) {
                     if (i < m_deltaP1_vector.size()-1) {
                         Logger.Debug << m_deltaP1_vector[i];
                         Logger.Debug << " ";
@@ -692,7 +680,7 @@ namespace freedm{
                 }
 
                 Logger.Debug << "The Init delta P2: " << std::endl;
-                for (int i = 0; i < m_deltaP2_vector.size(); i++) {
+                for (unsigned int i = 0; i < m_deltaP2_vector.size(); i++) {
                     if (i < m_deltaP2_vector.size()-1) {
                         Logger.Debug << m_deltaP2_vector[i];
                         Logger.Debug << " ";
@@ -702,7 +690,7 @@ namespace freedm{
                 }
 
                 Logger.Debug << "The Init P plus: " << std::endl;
-                for (int i = 0; i < m_init_power_desd_plus_vector.size(); i++) {
+                for (unsigned int i = 0; i < m_init_power_desd_plus_vector.size(); i++) {
                     if (i < m_init_power_desd_plus_vector.size()-1) {
                         Logger.Debug << m_init_power_desd_plus_vector[i];
                         Logger.Debug << " ";
@@ -712,7 +700,7 @@ namespace freedm{
                 }
 
                 Logger.Debug << "The Init P minus: " << std::endl;
-                for (int i = 0; i < m_init_power_desd_minus_vector.size(); i++) {
+                for (unsigned int i = 0; i < m_init_power_desd_minus_vector.size(); i++) {
                     if (i < m_init_power_desd_minus_vector.size()-1) {
                         Logger.Debug << m_init_power_desd_minus_vector[i];
                         Logger.Debug << " ";
@@ -817,7 +805,7 @@ namespace freedm{
 
 
                 Logger.Debug << "The Next mu1: " << std::endl;
-                for (int i = 0; i < m_next_mu1_vector.size(); i++) {
+                for (unsigned int i = 0; i < m_next_mu1_vector.size(); i++) {
                     if (i < m_next_mu1_vector.size()-1) {
                         Logger.Debug << m_next_mu1_vector[i];
                         Logger.Debug << " ";
@@ -828,7 +816,7 @@ namespace freedm{
 
 
                 Logger.Debug << "The Next mu2: " << std::endl;
-                for (int i = 0; i < m_next_mu2_vector.size(); i++) {
+                for (unsigned int i = 0; i < m_next_mu2_vector.size(); i++) {
                     if (i < m_next_mu2_vector.size()-1) {
                         Logger.Debug << m_next_mu2_vector[i];
                         Logger.Debug << " ";
@@ -838,7 +826,7 @@ namespace freedm{
                 }
 
                 Logger.Debug << "The Next delta P: " << std::endl;
-                for (int i = 0; i < m_next_deltaP_vector.size(); i++) {
+                for (unsigned int i = 0; i < m_next_deltaP_vector.size(); i++) {
                     if (i < m_next_deltaP_vector.size()-1) {
                         Logger.Debug << m_next_deltaP_vector[i];
                         Logger.Debug << " ";
@@ -848,7 +836,7 @@ namespace freedm{
                 }
 
                 Logger.Debug << "The Next delta P1: " << std::endl;
-                for (int i = 0; i < m_deltaP1_vector.size(); i++) {
+                for (unsigned int i = 0; i < m_deltaP1_vector.size(); i++) {
                     if (i < m_deltaP1_vector.size()-1) {
                         Logger.Debug << m_deltaP1_vector[i];
                         Logger.Debug << " ";
@@ -858,7 +846,7 @@ namespace freedm{
                 }
 
                 Logger.Debug << "The Next delta P2: " << std::endl;
-                for (int i = 0; i < m_deltaP2_vector.size(); i++) {
+                for (unsigned int i = 0; i < m_deltaP2_vector.size(); i++) {
                     if (i < m_deltaP2_vector.size()-1) {
                         Logger.Debug << m_deltaP2_vector[i];
                         Logger.Debug << " ";
@@ -868,7 +856,7 @@ namespace freedm{
                 }
 
                 Logger.Debug << "The Next P plus: " << std::endl;
-                for (int i = 0; i < m_next_power_desd_plus_vector.size(); i++) {
+                for (unsigned int i = 0; i < m_next_power_desd_plus_vector.size(); i++) {
                     if (i < m_next_power_desd_plus_vector.size()-1) {
                         Logger.Debug << m_next_power_desd_plus_vector[i];
                         Logger.Debug << " ";
@@ -878,7 +866,7 @@ namespace freedm{
                 }
 
                 Logger.Debug << "The Next P minus: " << std::endl;
-                for (int i = 0; i < m_next_power_desd_minus_vector.size(); i++) {
+                for (unsigned int i = 0; i < m_next_power_desd_minus_vector.size(); i++) {
                     if (i < m_next_power_desd_minus_vector.size()-1) {
                         Logger.Debug << m_next_power_desd_minus_vector[i];
                         Logger.Debug << " ";
@@ -906,7 +894,7 @@ namespace freedm{
                 Logger.Debug << "The current iteration is  " << m_iteration << std::endl;
 
                 Logger.Debug << "The Init delta P: " << std::endl;
-                for (int i = 0; i < m_init_deltaP_vector.size(); i++) {
+                for (unsigned int i = 0; i < m_init_deltaP_vector.size(); i++) {
                     if (i < m_init_deltaP_vector.size()-1) {
                         Logger.Debug << m_init_deltaP_vector[i];
                         Logger.Debug << " ";
@@ -917,7 +905,7 @@ namespace freedm{
 
 
                 Logger.Debug << "The Init P plus: " << std::endl;
-                for (int i = 0; i < m_init_power_grid_plus_vector.size(); i++) {
+                for (unsigned int i = 0; i < m_init_power_grid_plus_vector.size(); i++) {
                     if (i < m_init_power_grid_plus_vector.size()-1) {
                         Logger.Debug << m_init_power_grid_plus_vector[i];
                         Logger.Debug << " ";
@@ -927,7 +915,7 @@ namespace freedm{
                 }
 
                 Logger.Debug << "The Init P minus: " << std::endl;
-                for (int i = 0; i < m_init_power_grid_minus_vector.size(); i++) {
+                for (unsigned int i = 0; i < m_init_power_grid_minus_vector.size(); i++) {
                     if (i < m_init_power_grid_minus_vector.size()-1) {
                         Logger.Debug << m_init_power_grid_minus_vector[i];
                         Logger.Debug << " ";
@@ -971,7 +959,7 @@ namespace freedm{
                 Logger.Debug << "The current iteration is  " << m_iteration << std::endl;
 
                 Logger.Debug << "The Next delta P: " << std::endl;
-                for (int i = 0; i < m_next_deltaP_vector.size(); i++) {
+                for (unsigned int i = 0; i < m_next_deltaP_vector.size(); i++) {
                     if (i < m_next_deltaP_vector.size()-1) {
                         Logger.Debug << m_next_deltaP_vector[i];
                         Logger.Debug << " ";
@@ -981,7 +969,7 @@ namespace freedm{
                 }
 
                 Logger.Debug << "The Next P plus: " << std::endl;
-                for (int i = 0; i < m_next_power_grid_plus_vector.size(); i++) {
+                for (unsigned int i = 0; i < m_next_power_grid_plus_vector.size(); i++) {
                     if (i < m_next_power_grid_plus_vector.size()-1) {
                         Logger.Debug << m_next_power_grid_plus_vector[i];
                         Logger.Debug << " ";
@@ -993,7 +981,7 @@ namespace freedm{
                 }
 
                 Logger.Debug << "The Next P minus: " << std::endl;
-                for (int i = 0; i < m_next_power_grid_minus_vector.size(); i++) {
+                for (unsigned int i = 0; i < m_next_power_grid_minus_vector.size(); i++) {
                     if (i < m_next_power_grid_minus_vector.size()-1) {
                         Logger.Debug << m_next_power_grid_minus_vector[i];
                         Logger.Debug << " ";
@@ -1067,7 +1055,7 @@ namespace freedm{
                 Logger.Debug << "The current iteration is  " << m_iteration << std::endl;
 
                 Logger.Debug << "The Init delta P hat: " << std::endl;
-                for (int i = 0; i < m_init_deltaP_hat_vector.size(); i++) {
+                for (unsigned int i = 0; i < m_init_deltaP_hat_vector.size(); i++) {
                     if (i < m_init_deltaP_hat_vector.size()-1) {
                         Logger.Debug << m_init_deltaP_hat_vector[i];
                         Logger.Debug << " ";
@@ -1077,7 +1065,7 @@ namespace freedm{
                 }
 
                 Logger.Debug << "The Init lambda: " << std::endl;
-                for (int i = 0; i < m_init_lambda_vector.size(); i++) {
+                for (unsigned int i = 0; i < m_init_lambda_vector.size(); i++) {
                     if (i < m_init_lambda_vector.size()-1) {
                         Logger.Debug << m_init_lambda_vector[i];
                         Logger.Debug << " ";
@@ -1097,7 +1085,7 @@ namespace freedm{
 
                 /// For debug
                 Logger.Debug << "The Next delta P hat: " << std::endl;
-                for (int i = 0; i < m_next_deltaP_hat_vector.size(); i++) {
+                for (unsigned int i = 0; i < m_next_deltaP_hat_vector.size(); i++) {
                     if (i < m_next_deltaP_hat_vector.size()-1) {
                         Logger.Debug << m_next_deltaP_hat_vector[i];
                         Logger.Debug << " ";
@@ -1108,7 +1096,7 @@ namespace freedm{
 
 
                 Logger.Debug << "The Next lambda: " << std::endl;
-                for (int i = 0; i < m_next_lambda_vector.size(); i++) {
+                for (unsigned int i = 0; i < m_next_lambda_vector.size(); i++) {
                     if (i < m_next_lambda_vector.size()-1) {
                         Logger.Debug << m_next_lambda_vector[i];
                         Logger.Debug << " ";
@@ -1135,6 +1123,71 @@ namespace freedm{
 
                 }
             }
+
+        void DDAAgent::send_command()
+        {
+            CBroker::Instance().Schedule("dda",boost::bind(&DDAAgent::MyScheduledMethod, this, boost::system::error_code()));            
+        }
+
+        void DDAAgent::MyScheduledMethod(const boost::system::error_code& err)
+        {
+            int time_step = 0;
+
+            if (!err)
+            {
+
+                if (convergence_flag == 1)
+                {
+                    schedule_count++;
+                    time_step = schedule_count/4;
+                    if (time_step > 23)
+                    {
+                        time_step = 23;
+                    }
+
+                    if (m_localsymbol == "2" || m_localsymbol == "3" || m_localsymbol == "4" || m_localsymbol == "5" || m_localsymbol == "6" || m_localsymbol == "7" || m_localsymbol == "8")
+                    {
+                        // Retrieve the DESD device
+                        desd =  device::CDeviceManager::Instance().GetDevice("DESD");
+                        if(!desd)
+                        {
+                            std::cout << "Error! DESD device not found!" << std::endl;
+                            return;
+                        }
+
+                         try
+                        {
+                            desd->SetCommand("chargeRate", m_power_desd_vector[time_step]);
+                            Logger.Notice << "DESD Command Set..........." << m_power_desd_vector[time_step] << std::endl;
+                                
+                        }
+                        catch(std::exception & e)
+                        {
+                            std::cout << "Error! Could not set battery CHARGE command!" << std::endl;
+                        }
+                    }
+                    else
+                    {
+                        Logger.Notice << "Grid Command Set..........." << m_power_grid_vector[time_step] << std::endl;
+                    }
+                    
+                }
+                else
+                {
+                    Logger.Notice << "Convergence Flag =========== 0" << std::endl;
+                }
+                
+
+                CBroker::Instance().Schedule(m_timer, boost::posix_time::milliseconds(15000),
+                    boost::bind(&DDAAgent::MyScheduledMethod, this, boost::asio::placeholders::error));        
+            }
+            else
+            {
+                Logger.Error << err << std::endl;
+            }
+        }
+
+
             
         } // namespace dda
     } // namespace broker

@@ -30,6 +30,7 @@
 #include "CDeviceManager.hpp"
 
 #include "messages/ModuleMessage.pb.h"
+#include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/date_time/posix_time/posix_time_types.hpp>
 
 #include <CDevice.hpp>
@@ -59,12 +60,20 @@ namespace freedm {
                 
                 ///Update function for deltaP and lambda
                 void consensus_Update();
+
+                ///schedule for sending command to DESD
+                void send_command();
                 
                 
                 ///Adjacent node list
                 typedef std::set<std::string> VertexSet;
                 typedef std::map<std::string, VertexSet> AdjacencyListMap;
+
+//                int convergence_flag;
                 
+//                std::vector<double> m_power_desd_vector;   
+//                std::vector<double> m_power_grid_vector;
+
             private:
                 /// Handles received messages
                 void HandleIncomingMessage(boost::shared_ptr<const ModuleMessage> msg, CPeerNode peer);
@@ -81,6 +90,8 @@ namespace freedm {
                 /// Wraps a DesdStateMessage in a ModuleMessage
                 ModuleMessage PrepareForSending(
                                                 const DesdStateMessage& message, std::string recipient = "dda");
+
+                void MyScheduledMethod(const boost::system::error_code& err);
                 
                 /// container to store the message from adjacent nodes
                 std::multimap<int, DesdStateMessage> m_adjmessage;
@@ -95,20 +106,20 @@ namespace freedm {
                 std::string m_localsymbol;
                 VertexSet m_localadj;
                 double epsil;
-                int m_adjnum;
+                unsigned int m_adjnum;
                 double m_localratio;
                 double m_adjratio;
 
                 ///deltaP and lambda upate
-                int m_iteration;
+                unsigned int m_iteration;
 
                 /// Grid variables
                 std::vector<double> m_init_power_grid_plus_vector;
                 std::vector<double> m_init_power_grid_minus_vector;
                 std::vector<double> m_next_power_grid_plus_vector;
                 std::vector<double> m_next_power_grid_minus_vector;
-                std::vector<double> m_power_grid_vector;
                 double m_cost; // electricity bill     
+                std::vector<double> m_power_grid_vector;
 
                 std::vector<double> m_dL_dPower_grid_plus_vector;
                 std::vector<double> m_dL_dPower_grid_minus_vector;
@@ -124,7 +135,7 @@ namespace freedm {
                 std::vector<double> m_init_power_desd_minus_vector;
                 std::vector<double> m_next_power_desd_plus_vector;
                 std::vector<double> m_next_power_desd_minus_vector;   
-                std::vector<double> m_power_desd_vector;               
+                std::vector<double> m_power_desd_vector;
                 std::vector<double> m_init_mu1_vector;
                 std::vector<double> m_next_mu1_vector;
                 std::vector<double> m_init_mu2_vector;

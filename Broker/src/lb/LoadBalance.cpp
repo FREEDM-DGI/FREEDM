@@ -327,8 +327,10 @@ void LBAgent::LoadManage(const boost::system::error_code & error)
         }
         else
         {
-            SetPStar(m_Gateway);
+
         }
+
+        SetPStar(m_Gateway);
 
     }
     else if(error == boost::asio::error::operation_aborted)

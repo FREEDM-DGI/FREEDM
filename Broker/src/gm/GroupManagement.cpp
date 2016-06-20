@@ -162,6 +162,18 @@ void GMAgent::HandleIncomingMessage(boost::shared_ptr<const ModuleMessage> msg, 
             Logger.Warn << "Dropped gm message of unexpected type:\n" << msg->DebugString();
         }
     }
+    else if(msg->has_ecn_handling_message()
+    {
+        ECNHandlingMessage ehm = msg->ecn_handling_message();
+        if(ehm.has_ecn_message())
+        {
+            HandleEcnMessage(ehm.ecn_messsage(), peer);
+        }
+        else
+        {
+            Logger.Warn<<"Dropped ECN message of unexpected type:\n"<< msg->DebugString();
+        }
+    }
     else
     {
         Logger.Warn << "Dropped message of unexpected type:\n" << msg->DebugString();
@@ -301,17 +313,48 @@ ModuleMessage GMAgent::PeerList(std::string requester)
 {
     GroupManagementMessage gmm;
     PeerListMessage* plm = gmm.mutable_peer_list_message();
+    int primary_count = 1;
+    int secondary_count = 0;
+
+    CPeerNode secondary_coord;
+
     BOOST_FOREACH(CPeerNode peer, m_UpNodes | boost::adaptors::map_values)
     {
+        int fallback_group = random() % 2;
+        if(primary_count >= m_UpNodes.size()/2 && fallback_group == 0)
+            fallback_group = 1;
+        else if(secondary_count >= m_UpNodes.size()/2 && fallback_group == 1)
+            fallback_group = 0;
+
+        if(fallback_group == 1 && secondary_count == 0)
+        {
+            secondary_coord = peer;
+            secondary_count++;
+            continue;
+        }
+
+        if(fallback_group == 0)
+            primary_count++;
+        else
+            secondary_count++;
+
         ConnectedPeerMessage* cpm = plm->add_connected_peer_message();
         cpm->set_uuid(peer.GetUUID());
         cpm->set_host(peer.GetHostname());
         cpm->set_port(peer.GetPort());
+        cpm->set_fallback_group(fallback_group);
     }
-    ConnectedPeerMessage* cpm = plm->add_connected_peer_message();
+    ConnectedPeerMessage* cpm = plm->coordinator();
     cpm->set_uuid(GetUUID());
     cpm->set_host(GetMe().GetHostname());
     cpm->set_port(GetMe().GetPort());
+    cpm->set_fallback_group(0);
+    cpm = plm->fallback_coordinator();
+    cpm->set_uuid(secondary_coord.GetUUID());
+    cpm->set_host(secondary_coord.GetHostname());
+    cpm->set_port(secondary_coord.GetPort());
+    cpm->set_fallback_group(1);
+    
     return PrepareForSending(gmm, requester);
 }
 
@@ -524,7 +567,16 @@ void GMAgent::Check( const boost::system::error_code& err )
             m_AYCResponse.clear();
             ModuleMessage m_ = AreYouCoordinator();
             Logger.Info <<"SEND: Sending out AYC"<<std::endl;
-            BOOST_FOREACH(CPeerNode& peer, CGlobalPeerList::instance().PeerList() | boost::adaptors::map_values)
+            PeerList to_query;
+            if(m_soft_ecn_mode)
+            {
+                to_query = m_UpNodes;
+            }
+            else
+            {
+                to_query = CGlobalPeerList::instance().PeerList();
+            }
+            BOOST_FOREACH(CPeerNode& peer, m_UpNodes | boost::adaptors::map_values)
             {
                 if( peer.GetUUID() == GetUUID())
                     continue;
@@ -885,6 +937,42 @@ void GMAgent::Timeout( const boost::system::error_code& err )
     }
 }
 
+//////////////////////////////////////////////////////////////////////////////
+/// GMAgent::ProcessConnectedPeer
+/// @description Processes a connected peer and returns the CPeerNode object
+///     for that peer.
+/// @param cpm The Message with information about the peer
+/// @pre None
+/// @post If this process didn't know about this peer, its information
+///     will be added to the connection manager
+//////////////////////////////////////////////////////////////////////////////
+CPeerNode GMAgent::ProcessConnectedPeer(const ConnectedPeerMessage &cpm)
+{
+    //Logger.Debug<<"Peer Item"<<std::endl;
+    std::string nuuid = cpm.uuid();
+    std::string nhost = cpm.host();
+    std::string nport = cpm.port();
+    if(!IsValidPort(nport))
+    {
+        throw std::runtime_error(
+            "GMAgent::ProcessPeerList: invalid port: " + msg.DebugString());
+    }
+    //Logger.Debug<<"Got Peer ("<<nuuid<<","<<nhost<<","<<nport<<")"<<std::endl;
+    CPeerNode p;
+    try
+    {
+        p = CGlobalPeerList::instance().GetPeer(nuuid);
+    }
+    catch(EDgiNoSuchPeerError &e)
+    {
+        Logger.Warn<<"Adding previously unknown peer: "<<nuuid<<std::endl;
+        //If you don't already know about the peer, make sure it is in the connection manager
+        CConnectionManager::Instance().PutHost(nuuid, nhost, nport);
+        p = CGlobalPeerList::instance().Create(nuuid);
+    }
+    return p;
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 /// GMAgent::ProcessPeerList
 /// @description Provides a utility function for correctly handling incoming
@@ -892,36 +980,29 @@ void GMAgent::Timeout( const boost::system::error_code& err )
 /// @param msg The message to parse
 /// @return A PeerSet with all nodes in the group.
 ///////////////////////////////////////////////////////////////////////////////
-PeerSet GMAgent::ProcessPeerList(const PeerListMessage& msg)
+PeerSet GMAgent::ProcessPeerList(const PeerListMessage& msg, int fallback)
 {
     // Note: The group leader inserts himself into the peer list.
     PeerSet tmp;
     //Logger.Debug<<"Looping Peer List"<<std::endl;
     BOOST_FOREACH(const ConnectedPeerMessage &cpm, msg.connected_peer_message())
     {
-        //Logger.Debug<<"Peer Item"<<std::endl;
-        std::string nuuid = cpm.uuid();
-        std::string nhost = cpm.host();
-        std::string nport = cpm.port();
-        if(!IsValidPort(nport))
+        if(fallback == -1 || cpmg.fallback_group() == fallback)
         {
-            throw std::runtime_error(
-                "GMAgent::ProcessPeerList: invalid port: " + msg.DebugString());
+            CPeerNode p = ProcessConnectedPeer(cpm);
+            InsertInPeerSet(tmp,p);
         }
-        //Logger.Debug<<"Got Peer ("<<nuuid<<","<<nhost<<","<<nport<<")"<<std::endl;
-        CPeerNode p;
-        try
-        {
-            p = CGlobalPeerList::instance().GetPeer(nuuid);
-        }
-        catch(EDgiNoSuchPeerError &e)
-        {    
-            Logger.Warn<<"Adding previously unknown peer: "<<nuuid<<std::endl;
-            //If you don't already know about the peer, make sure it is in the connection manager
-            CConnectionManager::Instance().PutHost(nuuid, nhost, nport);
-            p = CGlobalPeerList::instance().Create(nuuid);
-        }
-        InsertInPeerSet(tmp,p);
+    }
+    CPeerNode coord;
+    if(fallback == -1 || fallback == 0)
+    {
+        coord = ProcessConnectedPeer(msg.coordinator);
+        InsertInPeerSet(coord, p);
+    }
+    if(fallback == -1 || fallback == 1)
+    {
+        coord = ProcessConnectedPeer(msg.fallback_coordinator());
+        InsertInPeerSet(coord, p);
     }
     return tmp;
 }
@@ -952,6 +1033,21 @@ void GMAgent::HandlePeerList(const PeerListMessage& msg, CPeerNode peer)
         Logger.Info << "RECV: PeerList (Ready) message from " <<peer.GetUUID() << std::endl;
         m_UpNodes.clear();
         m_UpNodes = ProcessPeerList(msg);
+        // Determine which falllback group this process is in
+        PeerSet fallback0 = ProcessPeerList(msg, 0);
+        PeerSet fallback1 = ProcessPeerList(msg, 1);
+        // Store that configuration
+        if(CountInPeerSet(fallback0, GetMe()))
+        {
+            // Process is in fallback0
+            m_fallback_config = fallback0;
+            m_fallback_coord = ProcessConnectedPeer(msg.coordinator());
+        }
+        else
+        {
+            m_fallback_config = fallback1:
+            m_fallback_coord = ProcessConnectedPeer(msg.fallback_coordinator());
+        }
         m_membership += m_UpNodes.size();
         m_membershipchecks++;
         m_UpNodes.erase(GetUUID());
@@ -959,6 +1055,7 @@ void GMAgent::HandlePeerList(const PeerListMessage& msg, CPeerNode peer)
     }
     else if(peer.GetUUID() == m_GroupLeader && GetStatus() == GMAgent::NORMAL)
     {
+        // If the coordinator in the message is the sender
         m_UpNodes.clear();
         m_UpNodes = ProcessPeerList(msg);
         m_membership = m_UpNodes.size()+1;
@@ -1253,6 +1350,53 @@ void GMAgent::HandlePeerListQuery(const PeerListQueryMessage& msg, CPeerNode pee
 {
     peer.Send(PeerList(msg.requester()));
 }
+
+///////////////////////////////////////////////////////////////////////////////
+/// GMAgent::HandleECNMessage
+/// @description Processes ECN messages delivered to this module.
+///     If the message is of the "HARD" type, then the message indicates to
+///     the DGI that a group division should be performed to reduce the
+///     number of messages sent by the DGI and its algorithm.
+///     If the message is of the "SOFT" type, then the message indicates that
+///     the DGI should change its operating mode to reduce the amount of
+///     traffic it sends. DGI will update its next PeerList message to
+///     indicate that the other Processes in the group should change modes
+///     It will also set a timer to clear the flag indicating processes should
+///     change modes.
+/// @pre None
+/// @post The DGI changes modes based on the type of message received.
+/// @param msg the details of the received ECN message
+/// @para peer Always the current process.
+/// @return none
+/// @peers The ECN message originates from the router.
+///////////////////////////////////////////////////////////////////////////////
+void GMAgent::HandleECNMessage(const EcnMessage& msg, CPeerNode peer)
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    /// Set a timer for the soft ECN state to be cleared.
+    if(type == ECN_TYPE_HARD)
+    {
+        // Switch the DGI to the fallback configuration
+        SetStatus(GMAgent::NORMAL);
+        Logger.Notice << "+ State change: NORMAL: " << __LINE__ << std::endl;
+        // We are no longer the Coordinator, we must run Timeout()
+        Logger.Info << "TIMER: Canceling TimeoutTimer : " << __LINE__ << std::endl;
+        // We used to set a timeout timer here but cancelling the
+        // timer should accomplish the same thing.
+        CBroker::Instance().Schedule(m_timer, TIMEOUT_TIMEOUT,
+            boost::bind(&GMAgent::Timeout, this, boost::asio::placeholders::error));
+        Logger.Info << "Installing fallback configuration"<< std::endl;
+        m_UpNodes = m_fallback_config;
+        m_GroupLeader = m_fallback_coord;
+        m_UpNodes.erase(GetUUID());
+        Logger.Notice<<"Updated Peer Set."<<std::endl;
+    }
+    // Setting the DGI into soft mode, should keep the processes seperate
+    // because in soft mode, DGI disables discovery of other coordinators.
+    m_soft_ecn_mode = true;
+}
+
+
 
 ///////////////////////////////////////////////////////////////////////////////
 /// GMAgent::AddPeer

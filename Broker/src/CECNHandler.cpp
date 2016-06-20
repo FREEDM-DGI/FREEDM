@@ -74,7 +74,13 @@ void CECNHandler::Start(boost::asio::ip::udp::endpoint& endpoint)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     m_socket.open(endpoint.protocol());
+    m_socket.set_option(boost::asio::ip::udp::socket::reuse_address(true));
     m_socket.bind(endpoint);
+
+    boost::asio::ip::address multicast_group =
+        boost::asio::ip::address::from_string("224.0.0.1");
+
+    m_socket.set_option(boost::asio::ip::multicast::join_group(multicast_group);
     ScheduleListen();
 }
 
@@ -106,51 +112,51 @@ void CECNHandler::Stop()
 /// @pre The connection has had start called and some message has been placed
 ///   in the buffer by the receive call.
 /// @post The ECN message is processed and converted to a DGI style message
-///	  and passed to the DGI processes. 
+///   and passed to the DGI processes. 
 ///////////////////////////////////////////////////////////////////////////////
 void CECNHandler::HandleRead(const boost::system::error_code& e,
                            std::size_t bytes_transferred)
 {
-	Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-	const size_t MESSAGE_SIZE = 23;
-	if(bytes_transferred == MESSAGE_SIZE)
-	{
-		std::string magic(m_buffer.begin(), m_buffer.begin()+8);
-		if(magic == "ECNDGI00")
-		{
-			bool type = m_buffer[8];
-			int source_addr[4] = {m_buffer[9], m_buffer[10], m_buffer[11], m_buffer[12]}
-			int dest_addr[4] = {m_buffer[13], m_buffer[14], m_buffer[15], m_buffer[16]}
-			unsigned short source_port = m_buffer[17];
-			source_port = (source_port << 8) + m_buffer[18];
-			int queue_size = m_buffer[19];
-			queue_size = (queue_size << 8) + m_buffer[20];
-			queue_size = (queue_size << 8) + m_buffer[21];
-			queue_size = (queue_size << 8) + m_buffer[22];
-			// Convert to protocol buffer
-			ModuleMessage notification;
-			EcnHandlingMessage* ecnhm = notification.mutable_ecn_handling_message();
-			EcnMessage ecnm* = ecnhm.mutable_ecn_message();
-			ecnm->set_type(type);
-			std::stringstream ss;
-			ss<<source_addr[0]<<"."<<source_addr[1]<<"."<<source_addr[2]<<"."<<source_addr[3];
-			ecnm->set_origin_ip(ss.str());
-			ss.clear();
-			ss<<dest_addr[0]<<"."<<dest_addr[1]<<"."<<dest_addr[2]<<"."<<dest_addr[3];
-			ecnm->set_destination_ip(ss.str());
-			ss.clear();
-			ss<<source_port;
-			ecnm->set_destination_port(ss.str());
-			ecnm->set_avg_queue_size(queue_size);
-			// Send this message into the message queue.
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    const size_t MESSAGE_SIZE = 23;
+    if(bytes_transferred == MESSAGE_SIZE)
+    {
+        std::string magic(m_buffer.begin(), m_buffer.begin()+8);
+        if(magic == "ECNDGI00")
+        {
+            bool type = m_buffer[8];
+            int source_addr[4] = {m_buffer[9], m_buffer[10], m_buffer[11], m_buffer[12]}
+            int dest_addr[4] = {m_buffer[13], m_buffer[14], m_buffer[15], m_buffer[16]}
+            unsigned short source_port = m_buffer[17];
+            source_port = (source_port << 8) + m_buffer[18];
+            int queue_size = m_buffer[19];
+            queue_size = (queue_size << 8) + m_buffer[20];
+            queue_size = (queue_size << 8) + m_buffer[21];
+            queue_size = (queue_size << 8) + m_buffer[22];
+            // Convert to protocol buffer
+            ModuleMessage notification;
+            EcnHandlingMessage* ecnhm = notification.mutable_ecn_handling_message();
+            EcnMessage ecnm* = ecnhm.mutable_ecn_message();
+            ecnm->set_type(type);
+            std::stringstream ss;
+            ss<<source_addr[0]<<"."<<source_addr[1]<<"."<<source_addr[2]<<"."<<source_addr[3];
+            ecnm->set_origin_ip(ss.str());
+            ss.clear();
+            ss<<dest_addr[0]<<"."<<dest_addr[1]<<"."<<dest_addr[2]<<"."<<dest_addr[3];
+            ecnm->set_destination_ip(ss.str());
+            ss.clear();
+            ss<<source_port;
+            ecnm->set_destination_port(ss.str());
+            ecnm->set_avg_queue_size(queue_size);
+            // Send this message into the message queue.
             CDispatcher::Instance().HandleRequest(
                 boost::make_shared<const ModuleMessage>(notification),
-				CGlobalConfiguration::Instance().GetUUID());
+                CGlobalConfiguration::Instance().GetUUID());
 
-			// Done.
-		}		
+            // Done.
+        }
     }
-	ScheduleListen();
+    ScheduleListen();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

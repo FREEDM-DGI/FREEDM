@@ -26,6 +26,9 @@
 
 #include "CGlobalConfiguration.hpp"
 
+namespace freedm {
+namespace broker {
+
 class CECNHandler
 {
 public:
@@ -39,6 +42,9 @@ public:
 
     /// Gets the listener socket
     boost::asio::ip::udp::socket& GetSocket() { return m_socket; };
+
+    // Schedules listening for the next message
+    void ScheduleListen();
 
 private:
     /// Private constructor for the singleton instance
@@ -56,3 +62,6 @@ private:
     /// Endpoint for incoming message
     boost::asio::ip::udp::endpoint m_recv_from;
 };
+
+}
+}

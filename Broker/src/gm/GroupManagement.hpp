@@ -55,7 +55,9 @@ class GMAgent
     /// Called to start the system
     int	Run();
     /// Handles Processing a PeerList
-    static PeerSet ProcessPeerList(const PeerListMessage& msg);
+    static PeerSet ProcessPeerList(const PeerListMessage& msg, int fallback=-1);
+    /// Converts a connected peer field to a CPeerNode
+    static CPeerNode ProcessConnectedPeer(const ConnectedPeerMessage &cpm);
 
   private:
     /// Resets the algorithm to the default startup state.
@@ -82,6 +84,9 @@ class GMAgent
     void HandleResponseAYT(const AreYouThereResponseMessage& msg,CPeerNode peere);
     /// Handles recieving peerlist requests
     void HandlePeerListQuery(const PeerListQueryMessage& msg, CPeerNode peer);
+    /// Handles incoming ECN message
+    void HandleEcnMessage(const ecn::EcnMessage& msg, CPeerNode peer);
+
 
     //Routines
     /// Checks for other up leaders
@@ -197,6 +202,10 @@ class GMAgent
     int m_status;
     /// A store for the state of attached FIDs.
     std::map< std::string , bool > m_fidstate;
+
+    int m_soft_ecn_mode;
+    PeerSet m_fallback_config;
+    std::string m_fallback_coord;
 };
 
 } // namespace gm

@@ -92,6 +92,8 @@ private:
     void HandleCollectedState(const sc::CollectedStateMessage & m);
     /// Handles the collected state coming from load balancing
     void HandleCollectedState(const CollectedStateMessage & m);
+    /// Handles incoming ECN notifications
+    void HandleEcnMessage(const ecn::EcnMessage& msg, CPeerNode);
     
     /// Moves a peer to the specified peerset.
     void MoveToPeerSet(PeerSet & ps, CPeerNode peer);
@@ -102,7 +104,10 @@ private:
     void FirstRound(const boost::system::error_code & error);
     /// The code that runs after the draft request replies have arrived.
     void DraftStandard(const boost::system::error_code & error);
-    
+   
+
+    /// Gives the current migration time scale
+    int MigrationRateFactor();
     /// Schedules the LoadManage that runs next round.
     void ScheduleNextRound();
     /// Updates the state from the devices.
@@ -170,6 +175,8 @@ private:
     std::string m_Leader;
     /// Pending migrations.
     std::map<std::string, float> m_DraftAge;
+    /// ecn state
+    int m_soft_ecn_mode;
 };
 
 } // namespace lb

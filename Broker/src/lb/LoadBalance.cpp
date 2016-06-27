@@ -103,6 +103,8 @@ LBAgent::LBAgent()
 
     m_PowerDifferential = 0;
     m_MigrationStep = CGlobalConfiguration::Instance().GetMigrationStep();
+
+    m_soft_ecn_mode = 0;
 }
 
 ////////////////////////////////////////////////////////////
@@ -197,6 +199,19 @@ void LBAgent::HandleIncomingMessage(boost::shared_ptr<const ModuleMessage> m, CP
         else
         {
             Logger.Warn << "Dropped unexpected load balance message:\n" << m->DebugString();
+        }
+    }
+    else if(m->has_ecn_handling_message())
+    {
+        ecn::EcnHandlingMessage ehm = m->ecn_handling_message();
+        if(ehm.has_ecn_message())
+        {
+            const ecn::EcnMessage& t = ehm.ecn_message();
+            HandleEcnMessage(t, peer);
+        }
+        else
+        {
+            Logger.Warn<<"Dropped ECN message of unexpected type:\n"<< m->DebugString();
         }
     }
     else
@@ -340,6 +355,18 @@ void LBAgent::LoadManage(const boost::system::error_code & error)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+/// MigrationRateFactor
+/// @description Changes the rate migrations are performed based on ECN
+/// @pre None
+/// @post None
+/// @returns The rate at which migrations should be performed (bigger = slower)
+///////////////////////////////////////////////////////////////////////////////
+int LBAgent::MigrationRateFactor()
+{
+    return m_soft_ecn_mode > 0 ? 2 : 1;
+}
+
+///////////////////////////////////////////////////////////////////////////////
 /// ScheduleNextRound
 /// @description Computes how much time is remaining and if there isn't enough
 ///     requests the loadbalance that will run next round.
@@ -350,18 +377,19 @@ void LBAgent::LoadManage(const boost::system::error_code & error)
 void LBAgent::ScheduleNextRound()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-
-    if(CBroker::Instance().TimeRemaining() > ROUND_TIME + ROUND_TIME)
+    if(CBroker::Instance().TimeRemaining() > (ROUND_TIME + ROUND_TIME) * MigrationRateFactor())
     {
-        CBroker::Instance().Schedule(m_RoundTimer, ROUND_TIME,
+        CBroker::Instance().Schedule(m_RoundTimer, ROUND_TIME * MigrationRateFactor(),
             boost::bind(&LBAgent::LoadManage, this, boost::asio::placeholders::error));
-        Logger.Info << "LoadManage scheduled in " << ROUND_TIME << " ms." << std::endl;
+        Logger.Info << "LoadManage scheduled in " << ROUND_TIME * MigrationRateFactor() << " ms." << std::endl;
     }
     else
     {
         CBroker::Instance().Schedule(m_RoundTimer, boost::posix_time::not_a_date_time,
             boost::bind(&LBAgent::FirstRound, this, boost::asio::placeholders::error));
         Logger.Info << "LoadManage scheduled for the next phase." << std::endl;
+        if(m_soft_ecn_mode > 0)
+            m_soft_ecn_mode--;
     }
 }
 
@@ -457,6 +485,7 @@ void LBAgent::LoadTable()
     loadtable << "\tSST Gateway:    " << m_Gateway << std::endl;
     loadtable << "\tNet Generation: " << m_NetGeneration << std::endl;
     loadtable << "\tPredicted K:    " << m_PowerDifferential << std::endl;
+    loadtable << "\tECN State: "<<m_soft_ecn_mode<<std::endl;
     loadtable << "\t---------------------------------------------" << std::endl;
 
     if(m_State == LBAgent::DEMAND)
@@ -1183,6 +1212,25 @@ bool LBAgent::InvariantCheck()
     }
 
     return result;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+/// LBAgent::HandleEcnMessage
+/// @description Processes ECN messages delivered to this module.
+///     If a soft message is received by this module it should reduce its
+///     load balancing schedule accordingly
+/// @pre None
+/// @post The DGI changes modes based on the type of message received.
+/// @param msg the details of the received ECN message
+/// @para peer Always the current process.
+/// @return none
+/// @peers The ECN message originates from the router.
+///////////////////////////////////////////////////////////////////////////////
+void LBAgent::HandleEcnMessage(const ecn::EcnMessage&, CPeerNode)
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+    /// Set a timer for the soft ECN state to be cleared.
+    m_soft_ecn_mode = 2;
 }
 
 } // namespace lb

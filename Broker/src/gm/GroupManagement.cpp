@@ -543,6 +543,8 @@ void GMAgent::Check( const boost::system::error_code& err )
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     if( !err )
     {
+        if(m_soft_ecn_mode > 0)
+            m_soft_ecn_mode--;
         SystemState();
         // Only run if this is the group leader and in normal state
         if((GMAgent::NORMAL == GetStatus()) && (IsCoordinator()))
@@ -571,8 +573,9 @@ void GMAgent::Check( const boost::system::error_code& err )
             // The AlivePeers set is no longer good, we should clear it and make them
             // Send us new messages
             // Wait for responses
+            int factor = m_soft_ecn_mode > 0? 2 : 1;
             Logger.Info << "TIMER: Setting GlobalTimer (Premerge): " << __LINE__ << std::endl;
-            CBroker::Instance().Schedule(m_timer, AYC_RESPONSE_TIMEOUT,
+            CBroker::Instance().Schedule(m_timer, AYC_RESPONSE_TIMEOUT * factor,
                 boost::bind(&GMAgent::Premerge, this, boost::asio::placeholders::error));
         } // End if
     }
@@ -684,7 +687,7 @@ void GMAgent::Premerge( const boost::system::error_code &err )
         // Clear the expected responses
         m_fidstate.clear();
         m_AYCResponse.clear();
-        if( 0 < m_Coordinators.size() )
+        if( 0 < m_Coordinators.size() && m_soft_ecn_mode == 0 )
         {
             m_groupselection++;
             //This uses appleby's MurmurHash2 to make a unsigned int of the uuid
@@ -891,6 +894,8 @@ void GMAgent::Timeout( const boost::system::error_code& err )
     CPeerNode peer;
     if( !err )
     {
+        if(m_soft_ecn_mode > 0)
+            m_soft_ecn_mode--;
         SystemState();
         /* If we are the group leader, we don't need to run this */
         ModuleMessage m_ = AreYouThere();
@@ -905,8 +910,9 @@ void GMAgent::Timeout( const boost::system::error_code& err )
                 Logger.Info << "Expecting response from "<<peer.GetUUID()<<std::endl;
                 InsertInTimedPeerSet(m_AYTResponse, peer, boost::posix_time::microsec_clock::universal_time());
             }
+            int factor = m_soft_ecn_mode > 0 ? 2 : 1;
             Logger.Info << "TIMER: Setting TimeoutTimer (Recovery):" << __LINE__ << std::endl;
-            CBroker::Instance().Schedule(m_timer, AYT_RESPONSE_TIMEOUT,
+            CBroker::Instance().Schedule(m_timer, AYT_RESPONSE_TIMEOUT * factor,
                 boost::bind(&GMAgent::Recovery, this, boost::asio::placeholders::error));
         }
     }

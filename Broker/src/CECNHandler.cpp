@@ -161,7 +161,7 @@ void CECNHandler::HandleRead(const boost::system::error_code& e,
                 ecnm->set_avg_queue_size(queue_size);
                 ecnm->set_originated_from_dgi(false);
 
-                notification.set_recipient_module("gm");
+                notification.set_recipient_module("all");
                 // Send this message into the message queue.
                 CDispatcher::Instance().HandleRequest(
                     boost::make_shared<const ModuleMessage>(notification),

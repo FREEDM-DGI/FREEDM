@@ -342,10 +342,10 @@ int main(int argc, char* argv[])
         CBroker::Instance().RegisterModule("gm",boost::posix_time::milliseconds(CTimings::Get("GM_PHASE_TIME")));
         CDispatcher::Instance().RegisterReadHandler(GM, "gm");
         // Instantiate and register the state collection module
-        CBroker::Instance().RegisterModule("sc",boost::posix_time::milliseconds(CTimings::Get("SC_PHASE_TIME")));
-        CDispatcher::Instance().RegisterReadHandler(SC, "sc");
+        //CBroker::Instance().RegisterModule("sc",boost::posix_time::milliseconds(CTimings::Get("SC_PHASE_TIME")));
+        //CDispatcher::Instance().RegisterReadHandler(SC, "sc");
         // StateCollection wants to receive Accept messages addressed to lb.
-        CDispatcher::Instance().RegisterReadHandler(SC, "lb");
+        //CDispatcher::Instance().RegisterReadHandler(SC, "lb");
         // Instantiate and register the power management module
         CBroker::Instance().RegisterModule("lb",boost::posix_time::milliseconds(CTimings::Get("LB_PHASE_TIME")));
         CDispatcher::Instance().RegisterReadHandler(LB, "lb");

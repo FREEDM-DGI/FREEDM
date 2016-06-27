@@ -118,7 +118,7 @@ int main(int argc, char* argv[])
     po::variables_map vm;
     std::ifstream ifs;
     std::string cfgFile, loggerCfgFile, timingsFile, adapterCfgFile, topologyCfgFile;
-    std::string deviceCfgFile, listenIP, port, hostname, fport, id;
+    std::string deviceCfgFile, listenIP, port, port_ecn, hostname, fport, id;
     unsigned int globalVerbosity;
     float migrationStep;
     bool malicious, invariant;
@@ -145,8 +145,11 @@ int main(int argc, char* argv[])
                 po::value<std::string > ( &listenIP )->default_value("0.0.0.0"),
                 "IP interface to listen for peers on" )
                 ( "port,p",
-                po::value<std::string > ( &port )->default_value("1870"),
-                "TCP port to listen for peers on" )
+                 po::value<std::string > ( &port )->default_value("1870"),
+                "UDP port to listen for peers on" )
+                ( "port-ecn,P",
+                 po::value<std::string > ( &port_ecn )->default_value("2870"),
+                "UDP Multicast port to listen for ECN on" )
                 ( "factory-port", po::value<std::string>(&fport),
                 "port for plug and play session protocol" )
                 ( "device-config",
@@ -262,11 +265,16 @@ int main(int argc, char* argv[])
         {
             throw EDgiConfigError("invalid listen port: " + port);
         }
+        if(!IsValidPort(port_ecn))
+        {
+            throw EDgiConfigError("invalid listen port: " + port_ecn);
+        }
 
         /// Prepare the global Configuration
         CGlobalConfiguration::Instance().SetHostname(hostname);
         CGlobalConfiguration::Instance().SetUUID(id);
         CGlobalConfiguration::Instance().SetListenPort(port);
+        CGlobalConfiguration::Instance().SetECNPort(port_ecn);
         CGlobalConfiguration::Instance().SetListenAddress(listenIP);
         CGlobalConfiguration::Instance().SetClockSkew(
                 boost::posix_time::milliseconds(0));

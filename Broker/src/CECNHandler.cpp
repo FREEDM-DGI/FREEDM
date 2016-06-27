@@ -128,11 +128,13 @@ void CECNHandler::HandleRead(const boost::system::error_code& e,
     if(!e)
     {
         const size_t MESSAGE_SIZE = 23;
+        Logger.Debug<<"ECN Handler recieved "<<bytes_transferred<<" bytes"<<std::endl;
         if(bytes_transferred == MESSAGE_SIZE)
         {
             std::string magic(m_buffer.begin(), m_buffer.begin()+8);
             if(magic == "ECNDGI00")
             {
+                Logger.Debug<<"Found magic bytes for ECN message"<<std::endl;
                 bool type = m_buffer[8];
                 int source_addr[4] = {m_buffer[9], m_buffer[10], m_buffer[11], m_buffer[12]};
                 int dest_addr[4] = {m_buffer[13], m_buffer[14], m_buffer[15], m_buffer[16]};
@@ -150,19 +152,26 @@ void CECNHandler::HandleRead(const boost::system::error_code& e,
                 std::stringstream ss;
                 ss<<source_addr[0]<<"."<<source_addr[1]<<"."<<source_addr[2]<<"."<<source_addr[3];
                 ecnm->set_origin_ip(ss.str());
-                ss.clear();
+                ss.str("");
                 ss<<dest_addr[0]<<"."<<dest_addr[1]<<"."<<dest_addr[2]<<"."<<dest_addr[3];
                 ecnm->set_destination_ip(ss.str());
-                ss.clear();
+                ss.str("");
                 ss<<source_port;
                 ecnm->set_destination_port(ss.str());
                 ecnm->set_avg_queue_size(queue_size);
+                ecnm->set_originated_from_dgi(false);
+
+                notification.set_recipient_module("gm");
                 // Send this message into the message queue.
                 CDispatcher::Instance().HandleRequest(
                     boost::make_shared<const ModuleMessage>(notification),
                     CGlobalConfiguration::Instance().GetUUID());
-
+                Logger.Debug<<"Got :\n"<<ecnm->DebugString()<<std::endl;
                 // Done.
+            }
+            else
+            {
+                Logger.Debug<<"Message didn't contain magic bytes"<<std::endl;
             }
         }
         ScheduleListen();

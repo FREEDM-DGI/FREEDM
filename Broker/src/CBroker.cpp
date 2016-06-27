@@ -39,6 +39,7 @@
 #include "CLogger.hpp"
 #include "CGlobalConfiguration.hpp"
 #include "CGlobalPeerList.hpp"
+#include "CECNHandler.hpp"
 
 #include <boost/asio/io_service.hpp>
 #include <boost/bind.hpp>
@@ -129,6 +130,7 @@ void CBroker::Run()
 
     // Listen for connections and create an event to spawn a new connection
     CListener::Instance().Start(endpoint);
+    CECNHandler::Instance().Start(endpoint_ecn);
     // Handle ECN from 
 
     // Try to align on the first phase change

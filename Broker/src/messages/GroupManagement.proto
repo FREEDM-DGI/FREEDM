@@ -78,14 +78,12 @@ message ConnectedPeerMessage
     required string uuid = 1;
     required string host = 2;
     required string port = 3;
-    required uint32 fallback_group = 4;
 }
 
 message PeerListMessage
 {
     repeated ConnectedPeerMessage connected_peer_message = 1;
     required ConnectedPeerMessage coordinator = 2;
-    required ConnectedPeerMessage fallback_coordinator = 3;
 }
 
 message GroupManagementMessage

@@ -309,56 +309,37 @@ ModuleMessage GMAgent::AreYouThere()
 /// @description Packs the group list (Up_Nodes) in GroupManagementMessage
 /// @pre This node is a leader.
 /// @post No Change.
+/// @param requester The module to send the final message to
+/// @param ps The set of peers to put in th peerlist
+/// @param coord The leader of the 
 /// @return A GroupManagementMessage with the contents of group membership
 ///////////////////////////////////////////////////////////////////////////////
 ModuleMessage GMAgent::PeerList(std::string requester)
 {
+    CPeerNode coord = CGlobalPeerList::instance().GetPeer(Coordinator());
+    return PeerList(m_UpNodes, coord, requester);
+}
+ModuleMessage GMAgent::PeerList(const PeerSet& ps,
+                                const CPeerNode& coord, std::string requester)
+{
+    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     GroupManagementMessage gmm;
     PeerListMessage* plm = gmm.mutable_peer_list_message();
-    unsigned int primary_count = 1;
-    unsigned int secondary_count = 0;
-
-    CPeerNode secondary_coord;
-
-    BOOST_FOREACH(CPeerNode peer, m_UpNodes | boost::adaptors::map_values)
+    BOOST_FOREACH(CPeerNode peer, ps | boost::adaptors::map_values)
     {
-        unsigned int fallback_group = random() % 2;
-        if(primary_count >= m_UpNodes.size()/2 && fallback_group == 0)
-            fallback_group = 1;
-        else if(secondary_count >= m_UpNodes.size()/2 && fallback_group == 1)
-            fallback_group = 0;
-
-        if(fallback_group == 1 && secondary_count == 0)
-        {
-            secondary_coord = peer;
-            secondary_count++;
-            continue;
-        }
-
-        if(fallback_group == 0)
-            primary_count++;
-        else
-            secondary_count++;
-
+        // Add to the primary group and mark which fallback group.
         ConnectedPeerMessage* cpm = plm->add_connected_peer_message();
         cpm->set_uuid(peer.GetUUID());
         cpm->set_host(peer.GetHostname());
         cpm->set_port(peer.GetPort());
-        cpm->set_fallback_group(fallback_group);
     }
     ConnectedPeerMessage* cpm = plm->mutable_coordinator();
-    cpm->set_uuid(GetUUID());
-    cpm->set_host(GetMe().GetHostname());
-    cpm->set_port(GetMe().GetPort());
-    cpm->set_fallback_group(0);
-    cpm = plm->mutable_fallback_coordinator();
-    cpm->set_uuid(secondary_coord.GetUUID());
-    cpm->set_host(secondary_coord.GetHostname());
-    cpm->set_port(secondary_coord.GetPort());
-    cpm->set_fallback_group(1);
-    
+    cpm->set_uuid(coord.GetUUID());
+    cpm->set_host(coord.GetHostname());
+    cpm->set_port(coord.GetPort());
     return PrepareForSending(gmm, requester);
 }
+
 
 ///////////////////////////////////////////////////////////////////////////////
 /// GMAgent::PeerListQuery
@@ -447,6 +428,7 @@ void GMAgent::SystemState()
             GetNetValue("Fid", "state");
     nodestatus<<std::endl<<"Current Skew: "<<CGlobalConfiguration::Instance().GetClockSkew();
     nodestatus<<std::endl<<"Time left in phase: "<<CBroker::Instance().TimeRemaining()<<std::endl;
+    nodestatus<<std::endl<<"Soft ECN Counter: "<<m_soft_ecn_mode<<std::endl;
     Logger.Status<<nodestatus.str()<<std::endl;
 }
 
@@ -464,6 +446,7 @@ void GMAgent::PushPeerList()
     ModuleMessage m_ = PeerList();
     BOOST_FOREACH( CPeerNode peer, m_UpNodes | boost::adaptors::map_values)
     {
+        Logger.Debug<<"Push to "<<peer.GetUUID()<<std::endl;
         peer.Send(m_);
     }
     GetMe().Send(m_);
@@ -570,7 +553,7 @@ void GMAgent::Check( const boost::system::error_code& err )
             ModuleMessage m_ = AreYouCoordinator();
             Logger.Info <<"SEND: Sending out AYC"<<std::endl;
             PeerSet to_query;
-            if(m_soft_ecn_mode >= 0)
+            if(m_soft_ecn_mode > 0)
             {
                 to_query = m_UpNodes;
             }
@@ -578,7 +561,7 @@ void GMAgent::Check( const boost::system::error_code& err )
             {
                 to_query = CGlobalPeerList::instance().PeerList();
             }
-            BOOST_FOREACH(CPeerNode& peer, m_UpNodes | boost::adaptors::map_values)
+            BOOST_FOREACH(CPeerNode& peer, to_query | boost::adaptors::map_values)
             {
                 if( peer.GetUUID() == GetUUID())
                     continue;
@@ -982,30 +965,19 @@ CPeerNode GMAgent::ProcessConnectedPeer(const ConnectedPeerMessage &cpm)
 /// @param msg The message to parse
 /// @return A PeerSet with all nodes in the group.
 ///////////////////////////////////////////////////////////////////////////////
-PeerSet GMAgent::ProcessPeerList(const PeerListMessage& msg, int fallback)
+PeerSet GMAgent::ProcessPeerList(const PeerListMessage& msg)
 {
     // Note: The group leader inserts himself into the peer list.
     PeerSet tmp;
     //Logger.Debug<<"Looping Peer List"<<std::endl;
     BOOST_FOREACH(const ConnectedPeerMessage &cpm, msg.connected_peer_message())
     {
-        if(fallback == -1 || (int) cpm.fallback_group() == fallback)
-        {
-            CPeerNode p = ProcessConnectedPeer(cpm);
-            InsertInPeerSet(tmp,p);
-        }
+        CPeerNode p = ProcessConnectedPeer(cpm);
+        InsertInPeerSet(tmp,p);
     }
     CPeerNode coord;
-    if(fallback == -1 || fallback == 0)
-    {
-        coord = ProcessConnectedPeer(msg.coordinator());
-        InsertInPeerSet(tmp, coord);
-    }
-    if(fallback == -1 || fallback == 1)
-    {
-        coord = ProcessConnectedPeer(msg.fallback_coordinator());
-        InsertInPeerSet(tmp, coord);
-    }
+    coord = ProcessConnectedPeer(msg.coordinator());
+    InsertInPeerSet(tmp, coord);
     return tmp;
 }
 
@@ -1036,20 +1008,6 @@ void GMAgent::HandlePeerList(const PeerListMessage& msg, CPeerNode peer)
         m_UpNodes.clear();
         m_UpNodes = ProcessPeerList(msg);
         // Determine which falllback group this process is in
-        PeerSet fallback0 = ProcessPeerList(msg, 0);
-        PeerSet fallback1 = ProcessPeerList(msg, 1);
-        // Store that configuration
-        if(CountInPeerSet(fallback0, GetMe()))
-        {
-            // Process is in fallback0
-            m_fallback_config = fallback0;
-            m_fallback_coord = ProcessConnectedPeer(msg.coordinator()).GetUUID();
-        }
-        else
-        {
-            m_fallback_config = fallback1;
-            m_fallback_coord = ProcessConnectedPeer(msg.fallback_coordinator()).GetUUID();
-        }
         m_membership += m_UpNodes.size();
         m_membershipchecks++;
         m_UpNodes.erase(GetUUID());
@@ -1060,6 +1018,10 @@ void GMAgent::HandlePeerList(const PeerListMessage& msg, CPeerNode peer)
         // If the coordinator in the message is the sender
         m_UpNodes.clear();
         m_UpNodes = ProcessPeerList(msg);
+        // Group ID doesn't change
+        CPeerNode coord;
+        coord = ProcessConnectedPeer(msg.coordinator());
+        m_GroupLeader = coord.GetUUID();
         m_membership = m_UpNodes.size()+1;
         m_membershipchecks++;
         m_UpNodes.erase(GetUUID());
@@ -1377,22 +1339,70 @@ void GMAgent::HandleEcnMessage(const ecn::EcnMessage& msg, CPeerNode)
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     /// Set a timer for the soft ECN state to be cleared.
     const int ECN_TYPE_HARD = 1;
-    if(msg.type() == ECN_TYPE_HARD)
+    if(msg.type() == ECN_TYPE_HARD && GetStatus() == GMAgent::NORMAL
+        && IsCoordinator())
     {
-        // Switch the DGI to the fallback configuration
-        SetStatus(GMAgent::NORMAL);
-        Logger.Notice << "+ State change: NORMAL: " << __LINE__ << std::endl;
-        // We are no longer the Coordinator, we must run Timeout()
-        Logger.Info << "TIMER: Canceling TimeoutTimer : " << __LINE__ << std::endl;
-        // We used to set a timeout timer here but cancelling the
-        // timer should accomplish the same thing.
-        CBroker::Instance().Schedule(m_timer, TIMEOUT_TIMEOUT,
-            boost::bind(&GMAgent::Timeout, this, boost::asio::placeholders::error));
-        Logger.Info << "Installing fallback configuration"<< std::endl;
-        m_UpNodes = m_fallback_config;
-        m_GroupLeader = m_fallback_coord;
-        m_UpNodes.erase(GetUUID());
-        Logger.Notice<<"Updated Peer Set."<<std::endl;
+        // Desgn fallback groups and distribute new peer lists. 
+        unsigned int primary_count = 1;
+        unsigned int secondary_count = 0;
+
+        CPeerNode secondary_coord = GetPeer(GetUUID());
+        PeerSet primary;
+        PeerSet secondary;
+
+        BOOST_FOREACH(CPeerNode peer, m_UpNodes | boost::adaptors::map_values)
+        {
+            if(peer.GetUUID() == GetUUID())
+                continue;
+            // Randomly assign to a fallback group
+            unsigned int fallback_group = random() % 2;
+            // If the group is full, swap to the other
+            if(primary_count >= m_UpNodes.size()/2 && fallback_group == 0)
+                fallback_group = 1;
+            else if(secondary_count >= m_UpNodes.size()/2 && fallback_group == 1)
+                fallback_group = 0;
+
+            // If this is the first member of the secondary group, its the coordinator
+            if(fallback_group == 1 && secondary_count == 0)
+            {
+                secondary_coord = peer;
+                secondary_count++;
+                continue;
+            }
+
+            // Increase the count of members
+            if(fallback_group == 0)
+            {
+                InsertInPeerSet(primary, peer);
+                primary_count++;
+            }
+            else
+            {
+                InsertInPeerSet(secondary, peer);
+                secondary_count++;
+            }
+        }
+        ModuleMessage mm_p = PeerList(primary, GetMe());
+        ModuleMessage mm_s = PeerList(secondary, secondary_coord);
+        if(secondary_coord.GetUUID() != GetUUID())
+        {
+            BOOST_FOREACH(CPeerNode peer, m_UpNodes | boost::adaptors::map_values)
+            {
+                if(peer.GetUUID() == GetUUID())
+                    continue;
+                if(CountInPeerSet(primary, peer))
+                {
+                    // They are in the primary group
+                    peer.Send(mm_p);
+                }
+                else
+                {
+                    // They are in the seconday group
+                    peer.Send(mm_s);
+                }
+            }
+            GetMe().Send(mm_p);
+        }
     }
     // Setting the DGI into soft mode, should keep the processes seperate
     // because in soft mode, DGI disables discovery of other coordinators.

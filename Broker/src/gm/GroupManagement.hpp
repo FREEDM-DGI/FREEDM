@@ -55,7 +55,7 @@ class GMAgent
     /// Called to start the system
     int	Run();
     /// Handles Processing a PeerList
-    static PeerSet ProcessPeerList(const PeerListMessage& msg, int fallback=-1);
+    static PeerSet ProcessPeerList(const PeerListMessage& msg);
     /// Converts a connected peer field to a CPeerNode
     static CPeerNode ProcessConnectedPeer(const ConnectedPeerMessage &cpm);
 
@@ -117,6 +117,8 @@ class GMAgent
     ModuleMessage AreYouThere();
     /// Generates a peer list
     ModuleMessage PeerList(std::string requester="all");
+    ModuleMessage PeerList(const PeerSet& ps,
+                                const CPeerNode& coord, std::string requester="all");
     /// Generates a CMessage that can be used to query for the group
     static ModuleMessage PeerListQuery(std::string requester);
 

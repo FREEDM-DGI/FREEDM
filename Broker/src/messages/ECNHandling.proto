@@ -26,6 +26,7 @@ message EcnMessage {
 	required string destination_ip = 3;
 	required string destination_port = 4;
 	required uint32 avg_queue_size = 5;
+    required bool originated_from_dgi = 6;
 }
 
 message EcnHandlingMessage

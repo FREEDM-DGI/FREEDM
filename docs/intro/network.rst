@@ -54,3 +54,34 @@ Here is an example of a well done ``/etc/hosts`` file::
 Restart the machine to make sure the changes are applied correctly.
 
 Once the network has been configured, you can go on to :ref:`configuring-dgi`
+
+Explict Congestion Notification Support
+---------------------------------------
+
+The DGI includes experimental support for an explicit congestion notification protocol. This protocol is intended to allow network devices to identify current or impending congestion and then notify connected DGI of that congestion. These notifications allow the DGI to adjust its behavior to protect the physical network and to provide congestion relief to the communication network.
+
+Congestion notifications are transmitted to the DGI via UDP multicast. The DGI listens on multicast group 224.0.0.1. The DGI uses the port 51871 by default, although the port can be changed via a command line argument when starting the DGI. DGI accepts packets of the following form as ECN:
+
++-----------+-----------------------------------------------------------------+
+| Bytes     | Contents                                                        |
++===========+=================================================================+
+| 0x00-0x07 | should contain "ECNDGI00"                                       |
++-----------+-----------------------------------------------------------------+
+| 0x08-0x08 | should contain 0 if the packet that caused the ECN would be a   |
+|           | soft drop, 1 for a hard drop.                                   |
++-----------+-----------------------------------------------------------------+
+| 0x09-0x12 | should contain the four byte ip address of the device that      |
+|           | originated the packet                                           |
++-----------+-----------------------------------------------------------------+
+| 0x13-0x16 | should contain the four byte ip address of the destination for  |
+|           | the packet                                                      |
++-----------+-----------------------------------------------------------------+
+| 0x17-0x18 | should contain the destination port expressed as two bytes.     |
++-----------+-----------------------------------------------------------------+
+| 0x19-0x22 | should contain the current average queue size for the queueing  |
+|           | algorithm.                                                      |
++-----------+-----------------------------------------------------------------+
+
+Numerical values and IP addresses are expected to be network byte order.
+
+Individual modules are responsible for their reaction to congestion notifications. Currently, only the Group Management and Load Balancing modules react to congestion notification messages. See the documentation of those modules for the individual reactions to those messages.

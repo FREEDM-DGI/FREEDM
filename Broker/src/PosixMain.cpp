@@ -145,10 +145,10 @@ int main(int argc, char* argv[])
                 po::value<std::string > ( &listenIP )->default_value("0.0.0.0"),
                 "IP interface to listen for peers on" )
                 ( "port,p",
-                 po::value<std::string > ( &port )->default_value("1870"),
+                 po::value<std::string > ( &port )->default_value("51870"),
                 "UDP port to listen for peers on" )
                 ( "port-ecn,P",
-                 po::value<std::string > ( &port_ecn )->default_value("2870"),
+                 po::value<std::string > ( &port_ecn )->default_value("51871"),
                 "UDP Multicast port to listen for ECN on" )
                 ( "factory-port", po::value<std::string>(&fport),
                 "port for plug and play session protocol" )

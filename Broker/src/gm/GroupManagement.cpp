@@ -1049,6 +1049,7 @@ void GMAgent::HandlePeerList(const PeerListMessage& msg, CPeerNode peer)
             CBroker::Instance().Schedule(m_timer, CHECK_TIMEOUT,
                 boost::bind(&GMAgent::Check, this, boost::asio::placeholders::error));
         }
+        m_AYTResponse.clear();
     }
 }
 
@@ -1362,6 +1363,11 @@ void GMAgent::HandleEcnMessage(const ecn::EcnMessage& msg, CPeerNode)
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
     /// Set a timer for the soft ECN state to be cleared.
     const int ECN_TYPE_HARD = 1;
+    if(msg.type() == ECN_TYPE_HARD)
+    {
+        m_AYCResponse.clear();
+        m_AYTResponse.clear();
+    }
     if(msg.type() == ECN_TYPE_HARD && GetStatus() == GMAgent::NORMAL
         && IsCoordinator())
     {
@@ -1434,8 +1440,6 @@ void GMAgent::HandleEcnMessage(const ecn::EcnMessage& msg, CPeerNode)
     Logger.Warn<<"Got ECN message, Elections disabled."<<std::endl;
     // Setting the DGI into soft mode, should keep the processes seperate
     // because in soft mode, DGI disables discovery of other coordinators.
-    m_AYCResponse.clear();
-    m_AYTResponse.clear();
     m_soft_ecn_mode = 2;
 }
 

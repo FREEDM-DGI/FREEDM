@@ -39,6 +39,14 @@ Migration Size
 --------------
 The migration step size is set in the FREEDM configuration file and defaults to 2.
 
+
+Congestion Notifications
+------------------------
+
+The load balancing module supports congestion notifications. On receipt of a soft congestion notification, the load balancing module will reduce the number migrations it performs each round.Currently, the reduction factor for number of migrations is 2 (that is, half as many migrations are performed). The amount of time allotted for message delivery is extended as part of the reduction factor (half as many migrations means twice as long delivery time allowance).
+
+The load balancing module currently does not react to hard ECN messages, although the message will enable the soft behavior.
+
 Limitations
 ------------
 * The Load Balancing algorithm needs to be able to predict how the devices will react to its commands or the device will need to react instantaneously to its commands. If the device does not react sufficiently quickly enough, Load Balancing will repeatedly issue the same commands to the device and appear to not be working.

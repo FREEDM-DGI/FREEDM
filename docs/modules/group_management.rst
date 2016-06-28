@@ -53,6 +53,19 @@ Bits of non-members will be set to 0. The SGI will always set the bit relating t
 
 In order to use this feature, you need to define a `Logger` device with a "groupStatus" field. The DGI will write its group state to the first `Logger` device on the system.
 
+Congestion Notifications
+------------------------
+
+The group management module supports congestion notifications. The group management module responds to two different type of congestion notifications: hard and soft. A soft notification is generated when a network device suspects network congestions are in a state where the DGI may not meet its real-time communication deadlines.
+
+When the DGI receives a soft notification, the group management module will switch into a slower "maintenance" mode. In this mode, elections are disabled for any DGI that receives the notification. Additionally, the time window for the delivery for the AYC/AYT messages and their responses are extended to compensate for the expected congestion.
+
+When a hard notification is received by a leader, the leader will perform a group division. The leader generates two new groups from its current group and distributes the new group information the processes in its group.
+
+The DGI currently implements a random group split: the leader process will randomly assign processes to one of two groups, attempting to create two equally sized groups. This has been shown to reduce queue usage for large groups. An area for possible improvement it to target group division around the placement of resources and network congestion.
+
+Hard notifications also enable the behavior of soft notifications.
+
 Implementation Details
 ----------------------
 

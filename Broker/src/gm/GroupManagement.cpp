@@ -507,8 +507,18 @@ void GMAgent::Recovery( const boost::system::error_code& err )
     Logger.Info << "RECOVERY CALL" << std::endl;
     if(!err)
     {
-        m_groupsbroken++;
-        Recovery();
+        if(m_AYTResponse.size() > 0)
+        {
+            m_groupsbroken++;
+            Recovery();
+        }
+        else
+        {
+            Logger.Info << "TIMER: Setting TimeoutTimer (Timeout):" << __LINE__ << std::endl;
+            // We are not the Coordinator, we must run Timeout()
+            CBroker::Instance().Schedule(m_timer, TIMEOUT_TIMEOUT,
+                boost::bind(&GMAgent::Timeout, this, boost::asio::placeholders::error));
+        }
     }
     else if(boost::asio::error::operation_aborted == err )
     {
@@ -1021,6 +1031,7 @@ void GMAgent::HandlePeerList(const PeerListMessage& msg, CPeerNode peer)
     }
     else if(peer.GetUUID() == m_GroupLeader && GetStatus() == GMAgent::NORMAL)
     {
+        Logger.Notice<<"Got PEER list from leader."<<std::endl;
         // If the coordinator in the message is the sender
         m_UpNodes.clear();
         m_UpNodes = ProcessPeerList(msg);
@@ -1032,6 +1043,12 @@ void GMAgent::HandlePeerList(const PeerListMessage& msg, CPeerNode peer)
         m_membershipchecks++;
         m_UpNodes.erase(GetUUID());
         Logger.Notice<<"Updated peer set (UPDATE)"<<std::endl;
+        if(coord.GetUUID() == GetUUID())
+        {
+            Logger.Info << "TIMER: Setting CheckTimer (Check): " << __LINE__ << std::endl;
+            CBroker::Instance().Schedule(m_timer, CHECK_TIMEOUT,
+                boost::bind(&GMAgent::Check, this, boost::asio::placeholders::error));
+        }
     }
 }
 
@@ -1294,7 +1311,7 @@ void GMAgent::HandleResponseAYT(const AreYouThereResponseMessage& msg, CPeerNode
         CBroker::Instance().Schedule(m_timer, TIMEOUT_TIMEOUT,
             boost::bind(&GMAgent::Timeout, this, boost::asio::placeholders::error));
     }
-    else if(answer == "no")
+    else if(expected == true && answer == "no")
     {
         if(peer.GetUUID() == Coordinator())
         {
@@ -1348,9 +1365,11 @@ void GMAgent::HandleEcnMessage(const ecn::EcnMessage& msg, CPeerNode)
     if(msg.type() == ECN_TYPE_HARD && GetStatus() == GMAgent::NORMAL
         && IsCoordinator())
     {
+        Logger.Warn<<"Got HARD ECN message. Performing group division"<<std::endl;
         // Desgn fallback groups and distribute new peer lists. 
         unsigned int primary_count = 1;
         unsigned int secondary_count = 0;
+        unsigned int slots = (m_UpNodes.size() + 1)/2;
 
         CPeerNode secondary_coord = GetPeer(GetUUID());
         PeerSet primary;
@@ -1363,9 +1382,9 @@ void GMAgent::HandleEcnMessage(const ecn::EcnMessage& msg, CPeerNode)
             // Randomly assign to a fallback group
             unsigned int fallback_group = random() % 2;
             // If the group is full, swap to the other
-            if(primary_count >= m_UpNodes.size()/2 && fallback_group == 0)
+            if(primary_count >= slots && fallback_group == 0)
                 fallback_group = 1;
-            else if(secondary_count >= m_UpNodes.size()/2 && fallback_group == 1)
+            else if(secondary_count >= slots && fallback_group == 1)
                 fallback_group = 0;
 
             // If this is the first member of the secondary group, its the coordinator
@@ -1398,11 +1417,13 @@ void GMAgent::HandleEcnMessage(const ecn::EcnMessage& msg, CPeerNode)
                     continue;
                 if(CountInPeerSet(primary, peer))
                 {
+                    Logger.Info<<"Hard; "<<peer.GetUUID()<<" - primary"<<std::endl;
                     // They are in the primary group
                     peer.Send(mm_p);
                 }
                 else
                 {
+                    Logger.Info<<"Hard; "<<peer.GetUUID()<<" - secondary"<<std::endl;
                     // They are in the seconday group
                     peer.Send(mm_s);
                 }
@@ -1410,8 +1431,11 @@ void GMAgent::HandleEcnMessage(const ecn::EcnMessage& msg, CPeerNode)
             GetMe().Send(mm_p);
         }
     }
+    Logger.Warn<<"Got ECN message, Elections disabled."<<std::endl;
     // Setting the DGI into soft mode, should keep the processes seperate
     // because in soft mode, DGI disables discovery of other coordinators.
+    m_AYCResponse.clear();
+    m_AYTResponse.clear();
     m_soft_ecn_mode = 2;
 }
 

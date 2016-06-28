@@ -138,13 +138,10 @@ void CECNHandler::HandleRead(const boost::system::error_code& e,
                 bool type = m_buffer[8];
                 int source_addr[4] = {m_buffer[9], m_buffer[10], m_buffer[11], m_buffer[12]};
                 int dest_addr[4] = {m_buffer[13], m_buffer[14], m_buffer[15], m_buffer[16]};
-                unsigned short source_port = m_buffer[17];
-                source_port = (source_port << 8) + m_buffer[18];
-                int queue_size = m_buffer[19];
-                queue_size = (queue_size << 8) + m_buffer[20];
-                queue_size = (queue_size << 8) + m_buffer[21];
-                queue_size = (queue_size << 8) + m_buffer[22];
-                // Convert to protocol buffer
+                unsigned short *tmp = (unsigned short *)((&m_buffer[0])+17);
+                unsigned short source_port = ntohs(*tmp);
+                int *tmp2 = (int *)((&m_buffer[0])+19);
+                int queue_size = ntohl(*tmp2);
                 ModuleMessage notification;
                 ecn::EcnHandlingMessage* ecnhm = notification.mutable_ecn_handling_message();
                 ecn::EcnMessage* ecnm = ecnhm->mutable_ecn_message();

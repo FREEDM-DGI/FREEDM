@@ -59,6 +59,7 @@ CMqttAdapter::CMqttAdapter(std::string id, std::string address)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
+
     if(id.size() > 23)
         throw std::runtime_error("MQTT Client ID contains more than 23 characters");
     std::size_t length = id.copy(m_ID, 23);
@@ -77,6 +78,10 @@ CMqttAdapter::~CMqttAdapter()
     MQTTClient_destroy(&m_Client);
 }
 
+int geoffrey()
+{
+    return 8;
+}
 IAdapter::Pointer CMqttAdapter::Create(std::string id, std::string address)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
@@ -399,3 +404,4 @@ void CMqttAdapter::AddSignals(std::string device, boost::property_tree::ptree::v
 }//namespace freedm
 }//namespace device
 
+    

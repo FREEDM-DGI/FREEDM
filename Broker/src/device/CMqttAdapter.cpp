@@ -78,10 +78,7 @@ CMqttAdapter::~CMqttAdapter()
     MQTTClient_destroy(&m_Client);
 }
 
-int geoffrey()
-{
-    return 8;
-}
+
 IAdapter::Pointer CMqttAdapter::Create(std::string id, std::string address)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;

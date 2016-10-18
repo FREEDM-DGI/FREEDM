@@ -2,14 +2,17 @@
 <root>
 	<deviceType>
 		<id>Sst_a</id>
+		<state>gateway</state>
 		<command>gateway</command>
 	</deviceType>
 	<deviceType>
 		<id>Sst_b</id>
+		<state>gateway</state>
 		<command>gateway</command>
 	</deviceType>
 	<deviceType>
 		<id>Sst_c</id>
+		<state>gateway</state>
 		<command>gateway</command>
 	</deviceType>
 	<deviceType>

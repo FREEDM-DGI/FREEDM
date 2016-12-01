@@ -1488,19 +1488,23 @@ if (Ploss_nsize>Ploss_osize)
   step_size;
  
   // send messages to slaves
-  BOOST_FOREACH(CPeerNode peer, m_peers | boost::adaptors::map_values)
-        {
+	if (Ploss_osize < Ploss_orig)
+  	BOOST_FOREACH(CPeerNode peer, m_peers | boost::adaptors::map_values)
+        	{
       	    
-	    ModuleMessage mm = VoltageDelta(2, 3.0, "NCSU");
-            peer.Send(mm);
+	    	ModuleMessage mm = VoltageDelta(2, 3.0, "NCSU");
+            	peer.Send(mm);
 	    
 	   
-	    mat S2;
-	    S2 << Dl(1,7) << Dl(2,7) << Dl(3,7) << Dl(4,7) << Dl(6,7) << Dl(7,7) << Dl(8,7) << Dl(1,9) << Dl(2,9) << Dl(3,9) << Dl(4,9) << Dl(6,9) << Dl(7,9) << Dl(8,9) << Dl(1,11)<< Dl(2,11)<< Dl(3,11)<< Dl(4,11)<< Dl(6,11)<< Dl(7,11)<< Dl(8,11)<< endr;
-	    S2 = S2.t();
-	    ModuleMessage mg = Gradient(S2);
-	    peer.Send(mg);
+	    	mat S2;
+	    	S2 << Dl(1,7) << Dl(2,7) << Dl(3,7) << Dl(4,7) << Dl(6,7) << Dl(7,7) << Dl(8,7) << Dl(1,9) << Dl(2,9) << Dl(3,9) << Dl(4,9) << Dl(6,9) << Dl(7,9) << Dl(8,9) << Dl(1,11)<< Dl(2,11)<< Dl(3,11)<< Dl(4,11)<< Dl(6,11)<< Dl(7,11)<< Dl(8,11)<< endr;
+	    	S2 = S2.t();
+	    	ModuleMessage mg = Gradient(S2);
+	    	peer.Send(mg);
 	    
+		}
+	else
+	{
 	}
   
   break;

@@ -122,7 +122,7 @@ int main(int argc, char* argv[])
     unsigned int globalVerbosity;
     float migrationStep;
     bool malicious, invariant;
-
+    cfgFile = "/home/ceasr/Desktop/smartGrid/FREEDM/Broker/config/freedm.cfg";
     try
     {
         // These options are only allowed on the command line.
@@ -149,7 +149,7 @@ int main(int argc, char* argv[])
                 "TCP port to listen for peers on" )
                 ( "factory-port", po::value<std::string>(&fport),
                 "port for plug and play session protocol" )
-                ( "mqtt-id", po::value<std::string>(&mqttID),
+                ( "mqtt-id", po::value<std::string>(&mqttID)->default_value("DGIClient"),
                 "id of the DGI MQTT client (optional)" )
                 ( "mqtt-address",
                 po::value<std::string>(&mqttAddress)->default_value("tcp://localhost:1883"),
@@ -219,7 +219,7 @@ int main(int argc, char* argv[])
             if (!vm.count("help") && !vm.count("version") &&
                 !vm.count("uuid") && !vm.count("list-loggers"))
             {
-                Logger.Info << "Config file " << cfgFile
+                Logger.Status << "Config file " << cfgFile
                             << " successfully loaded." << std::endl;
             }
         }
@@ -285,7 +285,7 @@ int main(int argc, char* argv[])
 
         if (vm.count("mqtt-subscribe"))
         {
-            std::vector<std::string> subscriptions = vm["mqtt-subscribe"].as<std::vector<std::string> >( );
+            std::vector<std::string> subscriptions = vm["mqtt-subscribe"].as<std::vector<std::string> >();
             CGlobalConfiguration::Instance().SetMQTTSubscriptions(subscriptions);
         }
         CGlobalConfiguration::Instance().SetInvariantCheck(invariant);
@@ -314,10 +314,12 @@ int main(int argc, char* argv[])
         {
             CGlobalConfiguration::Instance().SetAdapterConfigPath(
                 adapterCfgFile);
+            Logger.Status << "set adapter config" << std::endl;
         }
         else
         {
             CGlobalConfiguration::Instance().SetAdapterConfigPath("");
+            Logger.Status << "adatper config not set" << std::endl;
         }
 
 
@@ -335,7 +337,7 @@ int main(int argc, char* argv[])
     }
     catch (std::exception & e)
     {
-        Logger.Fatal << "Exception caught in main during start up: " << e.what() << std::endl;
+        Logger.Status << "Exception caught in main during start up: " << e.what() << std::endl;
         return 1;
     }
 

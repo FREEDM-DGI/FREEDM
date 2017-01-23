@@ -99,7 +99,7 @@ Test Your Configuration
 At this point, you should be able to run the DGI. The DGI's should form a group, however, because
 devices have not been configured yet, they won't manage any devices or interact with simulations.
 
-When the DGI is running, it will log various messages to the screen. To verify that the DGI is working correctly, watch for the Group Management or Load Balance status messages that list the current group. It make take up to a minute for the first groups to form when the DGIs are started. This is what the status message looks like from Group Management::
+When the DGI is running, it will log various messages to the screen. To verify that the DGI is working correctly, watch for the Group Management or Load Balance status messages that list the current group. It may take up to a minute for the first groups to form when the DGIs are started. This is what the status message looks like from Group Management::
 
     [raichu.freedm] out:    - SYSTEM STATE
     [raichu.freedm] out: Me: raichu.freedm:30000, Group: 1804289384 Leader:raichu.freedm:30000

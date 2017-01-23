@@ -85,13 +85,14 @@ const MQTTClient_deliveryToken & CMqttMessage::GetToken() const
 void CMqttMessage::Publish(MQTTClient client)
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-    
+
     if(MQTTClient_publishMessage(client, m_Topic.c_str(), &m_Message, &m_Token) != MQTTCLIENT_SUCCESS)
     {
         Logger.Error << "Message on topic " << m_Topic << " with value " << m_Payload << " rejected." << std::endl;
         throw std::runtime_error("Message Rejected for Publication");
     }
     Logger.Info << m_Topic << " " << m_Payload << " sent for delivery with token " << m_Token << std::endl;
+
 }
 
 }//namespace broker

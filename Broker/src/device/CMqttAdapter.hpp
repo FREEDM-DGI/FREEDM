@@ -104,6 +104,12 @@ private:
     /// Publish a message on a topic to the MQTT broker.
     void Publish(std::string topic, std::string content);
 
+    /// does a full Subscribe //ceasar
+    void SubscribeAll(std::string deviceName);
+
+    /// does a full UnSubscribe //ceasar
+    void UnsubscribeAll(std::string deviceName);
+
     /// Create a CDevice object from a JSON specification.
     void CreateDevice(std::string deviceName, std::string json);
 
@@ -123,6 +129,8 @@ private:
 
     /// MQTT client object.
     MQTTClient m_Client;
+    MQTTClient_message pubmsg;
+    MQTTClient_deliveryToken token;
 
     /// MQTT client identifier.
     char m_ID[24];

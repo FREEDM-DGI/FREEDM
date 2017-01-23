@@ -281,7 +281,7 @@ void SCAgent::StateResponse()
                                   << dssm.type() << " : "
                                   << dssm.signal() << " : "
                                   << dssm.value() << std::endl;
-                    if (dssm.type() == "Sst")
+                    if (dssm.type() == "SST")
                     {
                         if(dssm.count()>0)
                         {
@@ -303,7 +303,7 @@ void SCAgent::StateResponse()
                             csm->clear_generation();
                         }
                     }
-                    else if (dssm.type() == "Desd")
+                    else if (dssm.type() == "DESD")
                     {
                         if(dssm.count()>0)
                         {

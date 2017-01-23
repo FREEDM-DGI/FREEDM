@@ -4,7 +4,7 @@ Message Passing
 ===============
 
 The message passing allows messages to be exchanged between DGI.
-Messages are creating using Google's Protocol Buffers and are sent with a few simple commands inside your DGI module.
+Messages are created using Google's Protocol Buffers and are sent with a few simple commands inside your DGI module.
 Messages are defined in .proto files which are kept in the `Broker/src/messages` directory.
 Each module has it's own .proto file.
 

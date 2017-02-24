@@ -118,11 +118,11 @@ int main(int argc, char* argv[])
     po::variables_map vm;
     std::ifstream ifs;
     std::string cfgFile, loggerCfgFile, timingsFile, adapterCfgFile, topologyCfgFile;
-    std::string deviceCfgFile, listenIP, port, hostname, fport, id;
+    std::string deviceCfgFile, listenIP, port, hostname, fport, id, mqttID, mqttAddress;
     unsigned int globalVerbosity;
     float migrationStep;
     bool malicious, invariant;
-
+    cfgFile = "/home/ceasr/Desktop/smartGrid/FREEDM/Broker/config/freedm.cfg";
     try
     {
         // These options are only allowed on the command line.
@@ -149,6 +149,14 @@ int main(int argc, char* argv[])
                 "TCP port to listen for peers on" )
                 ( "factory-port", po::value<std::string>(&fport),
                 "port for plug and play session protocol" )
+                ( "mqtt-id", po::value<std::string>(&mqttID)->default_value("DGIClient"),
+                "id of the DGI MQTT client (optional)" )
+                ( "mqtt-address",
+                po::value<std::string>(&mqttAddress)->default_value("tcp://localhost:1883"),
+                "IP and port number for the MQTT broker" )
+                ( "mqtt-subscribe",
+                po::value<std::vector<std::string> >( )->composing(),
+                "MQTT subscription topic" )
                 ( "device-config",
                 po::value<std::string>(&deviceCfgFile)->default_value(""),
                 "filename of the XML device class specification" )
@@ -211,7 +219,7 @@ int main(int argc, char* argv[])
             if (!vm.count("help") && !vm.count("version") &&
                 !vm.count("uuid") && !vm.count("list-loggers"))
             {
-                Logger.Info << "Config file " << cfgFile
+                Logger.Status << "Config file " << cfgFile
                             << " successfully loaded." << std::endl;
             }
         }
@@ -272,6 +280,14 @@ int main(int argc, char* argv[])
                 boost::posix_time::milliseconds(0));
         CGlobalConfiguration::Instance().SetMigrationStep(migrationStep);
         CGlobalConfiguration::Instance().SetMaliciousFlag(malicious);
+        CGlobalConfiguration::Instance().SetMQTTId(mqttID);
+        CGlobalConfiguration::Instance().SetMQTTAddress(mqttAddress);
+
+        if (vm.count("mqtt-subscribe"))
+        {
+            std::vector<std::string> subscriptions = vm["mqtt-subscribe"].as<std::vector<std::string> >();
+            CGlobalConfiguration::Instance().SetMQTTSubscriptions(subscriptions);
+        }
         CGlobalConfiguration::Instance().SetInvariantCheck(invariant);
 
         // Specify socket endpoint address, if provided
@@ -298,10 +314,12 @@ int main(int argc, char* argv[])
         {
             CGlobalConfiguration::Instance().SetAdapterConfigPath(
                 adapterCfgFile);
+            Logger.Status << "set adapter config" << std::endl;
         }
         else
         {
             CGlobalConfiguration::Instance().SetAdapterConfigPath("");
+            Logger.Status << "adatper config not set" << std::endl;
         }
 
 
@@ -319,7 +337,7 @@ int main(int argc, char* argv[])
     }
     catch (std::exception & e)
     {
-        Logger.Fatal << "Exception caught in main during start up: " << e.what() << std::endl;
+        Logger.Status << "Exception caught in main during start up: " << e.what() << std::endl;
         return 1;
     }
 

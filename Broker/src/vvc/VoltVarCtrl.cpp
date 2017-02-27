@@ -1488,6 +1488,8 @@ if (Ploss_nsize>Ploss_osize)
   step_size;
  
   // send messages to slaves
+if (Ploss_osize < Ploss_orig)// grad message will NOT be sent to slaves if loss is not reduced
+{
   BOOST_FOREACH(CPeerNode peer, m_peers | boost::adaptors::map_values)
         {
       	    
@@ -1502,6 +1504,10 @@ if (Ploss_nsize>Ploss_osize)
 	    peer.Send(mg);
 	    
 	}
+}
+else
+{
+}
   
   break;
 }
@@ -1703,6 +1709,8 @@ if (Ploss_nsize>Ploss_osize)
   step_size;
   
   // send messages to slaves
+if (Ploss_osize < Ploss_orig)// grad message will NOT be sent to slaves if loss is not reduced
+{
   BOOST_FOREACH(CPeerNode peer, m_peers | boost::adaptors::map_values)
         {
       	    
@@ -1716,6 +1724,10 @@ if (Ploss_nsize>Ploss_osize)
 	    ModuleMessage mg = Gradient(S2);
 	    peer.Send(mg);
 	}
+}
+else
+{
+}
 	
   break;
 }

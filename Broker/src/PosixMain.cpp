@@ -122,7 +122,7 @@ int main(int argc, char* argv[])
     unsigned int globalVerbosity;
     float migrationStep;
     bool malicious, invariant;
-    cfgFile = "/home/ceasr/Desktop/smartGrid/FREEDM/Broker/config/freedm.cfg";
+
     try
     {
         // These options are only allowed on the command line.

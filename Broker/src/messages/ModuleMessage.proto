@@ -22,6 +22,7 @@ import "ClockSynchronizer.proto";
 import "GroupManagement.proto";
 import "LoadBalancing.proto";
 import "StateCollection.proto";
+import "VoltVarCtrl.proto";
 
 package freedm.broker;
 

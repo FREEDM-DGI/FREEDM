@@ -17,20 +17,14 @@ option(DOXYGEN "run Doxygen after project compile" ON)
 option(TRACK_HANDLERS "enable Boost.Asio handler tracking" OFF)
 option(WARNINGS "warnings displayed during project compile" ON)
 
-# Find MQTT
-find_path(MQTT_INCLUDE_DIR MQTTClient.h)
-find_library(MQTT_LIBRARY NAMES paho-mqtt3c)
-
-set(MQTT_LIBRARIES ${MQTT_LIBRARY})
-set(MQTT_INCLUDE_DIRS ${MQTT_INCLUDE_DIR})
-
-include(FindPackageHandleStandardArgs)
-find_package_handle_standard_args(MQTT DEFAULT_MSG MQTT_LIBRARY MQTT_INCLUDE_DIR)
-
 # Boost
 find_package(Boost 1.47 REQUIRED
              COMPONENTS date_time program_options system thread
             )
+find_package(Armadillo REQUIRED)
+#find_package(BLAS REQUIRED)
+#find_package(LAPACK REQUIRED)
+
 include_directories(SYSTEM ${Boost_INCLUDE_DIRS})
 link_directories(${Boost_LIBRARY_DIRS})
 
@@ -47,7 +41,7 @@ endif()
 
 # Use -DCMAKE_BUILD_TYPE to control optimization and debugging
 set(CMAKE_CXX_FLAGS
-    "-pedantic -pthread -std=c++98 ${WARNING_FLAGS} ${CMAKE_CXX_FLAGS}")
+    "-pedantic -pthread -std=c++98 -O2 ${WARNING_FLAGS} ${CMAKE_CXX_FLAGS}")
 
 if(TRACK_HANDLERS)
     add_definitions(-DBOOST_ASIO_ENABLE_HANDLER_TRACKING)
@@ -59,7 +53,6 @@ include_directories("${PROJECT_SOURCE_DIR}/src")
 include_directories("${PROJECT_BINARY_DIR}/src")
 include_directories("${PROJECT_SOURCE_DIR}/src/device")
 include_directories("${PROTOBUF_INCLUDE_DIR}")
-include_directories(${MQTT_INCLUDE_DIRS})
 
 # goto src/CMakeLists.txt
 add_subdirectory(src)
@@ -75,5 +68,5 @@ target_link_libraries(PosixBroker
                       ${Boost_SYSTEM_LIBRARY}
                       ${Boost_THREAD_LIBRARY}
                       ${PROTOBUF_LIBRARIES}
-                      ${MQTT_LIBRARIES}
-                     )
+                      ${ARMADILLO_LIBRARIES} 
+					)

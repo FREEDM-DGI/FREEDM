@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="us-ascii" ?>
+<root>
+	<adapter name = "simulation" type = "rtds">
+		<info>
+			<host>localhost</host>
+			<port>5001</port>
+		</info>
+		<state>
+			<entry index = "1">
+				<type>Sst</type>
+				<device>SST1</device>
+				<signal>gateway</signal>
+			</entry>
+			<entry index = "2">
+				<type>Sst</type>
+				<device>SST2</device>
+				<signal>gateway</signal>
+			</entry>
+			<entry index = "3">
+				<type>Sst</type>
+				<device>SST3</device>
+				<signal>gateway</signal>
+			</entry>
+			<entry index = "4">
+				<type>Sst</type>
+				<device>SST4</device>
+				<signal>gateway</signal>
+			</entry>
+			<entry index = "5">
+				<type>Sst</type>
+				<device>SST5</device>
+				<signal>gateway</signal>
+			</entry>
+			<entry index = "6">
+				<type>Fid</type>
+				<device>FID1</device>
+				<signal>state</signal>
+			</entry>
+			<entry index = "7">
+				<type>Fid</type>
+				<device>FID2</device>
+				<signal>state</signal>
+			</entry>
+			<entry index = "8">
+				<type>Fid</type>
+				<device>FID3</device>
+				<signal>state</signal>
+			</entry>
+			<entry index = "9">
+				<type>Fid</type>
+				<device>FID4</device>
+				<signal>state</signal>
+			</entry>
+			<entry index = "10">
+				<type>Fid</type>
+				<device>FID5</device>
+				<signal>state</signal>
+			</entry>
+			<entry index = "11">
+				<type>Fid</type>
+				<device>FID6</device>
+				<signal>state</signal>
+			</entry>
+			<entry index = "12">
+				<type>Fid</type>
+				<device>FID7</device>
+				<signal>state</signal>
+			</entry>
+			<entry index = "13">
+				<type>Fid</type>
+				<device>FID8</device>
+				<signal>state</signal>
+			</entry>
+			<entry index = "14">
+				<type>Fid</type>
+				<device>FID9</device>
+				<signal>state</signal>
+			</entry>
+			<entry index = "15">
+				<type>Fid</type>
+				<device>FID10</device>
+				<signal>state</signal>
+			</entry>
+		</state>
+		<command>
+			<entry index = "1">
+				<type>Sst</type>
+				<device>SST1</device>
+				<signal>gateway</signal>
+			</entry>
+			<entry index = "2">
+				<type>Sst</type>
+				<device>SST2</device>
+				<signal>gateway</signal>
+			</entry>
+			<entry index = "3">
+				<type>Sst</type>
+				<device>SST3</device>
+				<signal>gateway</signal>
+			</entry>
+			<entry index = "4">
+				<type>Sst</type>
+				<device>SST4</device>
+				<signal>gateway</signal>
+			</entry>
+			<entry index = "5">
+				<type>Sst</type>
+				<device>SST5</device>
+				<signal>gateway</signal>
+			</entry>
+		</command>
+	</adapter>
+</root>

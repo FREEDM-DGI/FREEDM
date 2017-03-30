@@ -133,7 +133,7 @@ void CDeviceManager::RevealDevice(std::string devid)
     m_devices[devid] = m_hidden_devices[devid];
     m_hidden_devices.erase(devid);
 
-    Logger.Status<< "Revealed the hidden device " << devid << std::endl;
+    Logger.Info << "Revealed the hidden device " << devid << std::endl;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

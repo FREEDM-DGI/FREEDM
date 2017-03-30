@@ -110,7 +110,6 @@ CRtdsAdapter::CRtdsAdapter(boost::asio::io_service & io_service,
     , m_port(ptree.get<std::string>("port"))
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -124,6 +123,7 @@ CRtdsAdapter::CRtdsAdapter(boost::asio::io_service & io_service,
 void CRtdsAdapter::Start()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+
     IBufferAdapter::Start();
     Connect();
     m_runTimer.expires_from_now(
@@ -178,6 +178,7 @@ void CRtdsAdapter::Run(const boost::system::error_code & e)
     {
         boost::unique_lock<boost::shared_mutex> writeLock(m_txMutex);
         Logger.Debug << "Obtained the txBuffer mutex." << std::endl;
+
         EndianSwapIfNeeded(m_txBuffer);
         try
         {
@@ -185,7 +186,6 @@ void CRtdsAdapter::Run(const boost::system::error_code & e)
             TimedWrite(m_socket, boost::asio::buffer(m_txBuffer,
                     m_txBuffer.size() * sizeof(SignalValue)),
                     CTimings::Get("DEV_SOCKET_TIMEOUT"));
-
         }
         catch(boost::system::system_error & e)
         {
@@ -231,7 +231,6 @@ void CRtdsAdapter::Run(const boost::system::error_code & e)
             }
             if( m_buffer_initialized )
             {
-                Logger.Status << "Clientdata : " <<m_rxBuffer[0]<< std::endl;
                 RevealDevices();
             }
         }

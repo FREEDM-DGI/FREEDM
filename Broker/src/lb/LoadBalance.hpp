@@ -123,8 +123,6 @@ private:
     void SendTooLate(CPeerNode peer, float step);
     /// Sets PStar to the specified level
     void SetPStar(float pstar);
-    /// Sets DESD value to the specified level
-    void SetDESD(float desd);
     /// Sends the request to perform state collection.
     void ScheduleStateCollection();
     /// Synchronizes the Fast-Style Loadbalance with the physical system.

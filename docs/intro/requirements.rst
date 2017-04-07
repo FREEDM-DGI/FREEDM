@@ -15,6 +15,7 @@ The DGI is tested on recent versions of popular GNU/Linux distributions and requ
 * Python 2.7.x (and not higher)
 * Google Protocol Buffers 2.4.1 or higher (older versions may work)
 * NTP daemon (not required if only running the PSCAD interface)
+* MQTT Client C and C++ Libraries. 3.0.1 or 3.1.1 recommended. (Required to run MQTT on the DGI)
 
 Boost
 -----
@@ -40,6 +41,21 @@ NTP
 ---
 
 All DGI nodes must run an NTP daemon (such as chrony or ntpd) to synchronize their clocks. The DGI runs its own fine-grained clock synchronizer designed to correct very small clock skews. However if two nodes' system clocks are off by a big amount, like one a minute or more, then there is no chance that the DGI's clock synchronizer will work and you will be unable to form groups.
+
+MQTT
+----
+MQTT Client Libraries can be found both on the paho mqtt website.
+If your running UBUNTU or LINUX, installing the Libraries from software-manager or the software-center is recommended.
+Otherwise here are the links to the paho mqtt client libraries with installation instructions::
+
+C : https://eclipse.org/paho/clients/c/ 
+
+C++ : https://eclipse.org/paho/clients/cpp/
+	
+NOTE : make sure to have the libpaho-mqtt3a.so files in /usr/local/lib.
+
+For more info try the FREEDM MQTT github wiki page : https://github.com/FREEDM-DGI/FREEDM/wiki/MQTT
+CIAO!
 
 PSCAD Simulation Requirements
 -----------------------------

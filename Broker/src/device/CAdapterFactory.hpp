@@ -116,8 +116,6 @@ private:
 
     /// Constructs the structure of devices.
     CDeviceBuilder m_builder;
-
-    friend class CMqttAdapter;
 };
 
 } // namespace device

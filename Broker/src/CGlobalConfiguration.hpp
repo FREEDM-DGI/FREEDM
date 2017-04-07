@@ -34,7 +34,6 @@
 
 #include <climits>
 #include <string>
-#include <vector>
 
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/asio/io_service.hpp>
@@ -79,12 +78,6 @@ class CGlobalConfiguration : private boost::noncopyable
         void SetMaliciousFlag(bool flag) { m_malicious = flag; }
         /// Set the invariant check flag
         void SetInvariantCheck(bool flag) { m_invariant = flag; }
-        /// Set the MQTT client identifier
-        void SetMQTTId(std::string id) { m_mqtt_id = id; }
-        /// Set the MQTT broker address
-        void SetMQTTAddress(std::string address) { m_mqtt_address = address; }
-        /// Set the MQTT subscriptions
-        void SetMQTTSubscriptions(std::vector<std::string> subs) { m_mqtt_subscriptions = subs; }
         /// Get the hostname
         std::string GetHostname() const { return m_hostname; };
         /// Get the port
@@ -114,12 +107,6 @@ class CGlobalConfiguration : private boost::noncopyable
         bool GetMaliciousFlag() const { return m_malicious; }
         /// Get the invariant check flag
         bool GetInvariantCheck() const { return m_invariant; }
-        /// Get the MQTT client identifier
-        std::string GetMQTTId() const { return m_mqtt_id; }
-        /// Get the MQTT broker address
-        std::string GetMQTTAddress() const { return m_mqtt_address; }
-        /// Get the MQTT subscriptions
-        std::vector<std::string> GetMQTTSubscriptions() const { return m_mqtt_subscriptions; }
     private:
         std::string m_hostname; /// Node hostname
         std::string m_port; /// Port number
@@ -134,9 +121,6 @@ class CGlobalConfiguration : private boost::noncopyable
         float m_migrationStep; /// Size of a load balance migration
         bool m_malicious; // Flag to indicate whether load balance is malicious
         bool m_invariant; // Flag that indicates whether to check the invariant
-        std::string m_mqtt_id; /// Identifier of the MQTT client.
-        std::string m_mqtt_address; /// Address of the MQTT broker.
-        std::vector<std::string> m_mqtt_subscriptions; /// Subscription topics for MQTT.
 };
 
 } // namespace broker

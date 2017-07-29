@@ -59,21 +59,13 @@
 #include "LoadBalance.hpp"
 
 #include "CLogger.hpp"
-#include "Messages.hpp"
 #include "CTimings.hpp"
 #include "CDeviceManager.hpp"
 #include "CGlobalPeerList.hpp"
 #include "gm/GroupManagement.hpp"
 #include "CGlobalConfiguration.hpp"
 
-#include <sstream>
-
-#include <boost/foreach.hpp>
-#include <boost/bind.hpp>
-#include <boost/asio/error.hpp>
-#include <boost/system/error_code.hpp>
 #include <boost/range/adaptor/map.hpp>
-#include <boost/date_time/posix_time/posix_time.hpp>
 
 namespace freedm {
 namespace broker {
@@ -449,7 +441,11 @@ void LBAgent::LoadTable()
     float generation = device::CDeviceManager::Instance().GetNetValue("DRER", "AOUT/Grid_Freq");//generation ceasar
     float storage = device::CDeviceManager::Instance().GetNetValue("DESD", "AOUT/Grid_Freq");//storage ceasar
     float load = device::CDeviceManager::Instance().GetNetValue("Load", "drain");
-
+    if (desd_count > 0) { //pub ceasar
+        device::CDevice::Pointer dev1 = device::CDeviceManager::Instance().GetDevice("DESD");
+        dev1->SetCommand("AIN/Active_Pwr", 8888);
+        Logger.Status << "Set command on " << dev1->GetID() << std::endl;
+    }
     std::stringstream loadtable;
     loadtable << std::setprecision(2) << std::fixed;
     loadtable << "------- LOAD TABLE (Power Management) -------" << std::endl;

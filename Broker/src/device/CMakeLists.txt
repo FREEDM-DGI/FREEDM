@@ -6,6 +6,7 @@ set(DEVICE_FILES
     CRtdsAdapter.cpp
     CMqttAdapter.cpp
     CMqttMessage.cpp
+        COpenDssAdapter.cpp
     IBufferAdapter.cpp
     IAdapter.cpp
     CTcpServer.cpp

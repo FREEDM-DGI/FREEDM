@@ -36,15 +36,7 @@
 #include "CGlobalConfiguration.hpp"
 #include "CLogger.hpp"
 
-#include <sstream>
-#include <stdexcept>
-#include <fstream>
-
-#include <boost/foreach.hpp>
-#include <boost/optional.hpp>
-#include <boost/lexical_cast.hpp>
 #include <boost/pointer_cast.hpp>
-#include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/json_parser.hpp>
 
 #define ADDRESS   "tcp://localhost:1883"
@@ -193,8 +185,8 @@ namespace freedm {
                 }
                 m_DeviceData[device].s_SignalToValue[key] = value;
                 std::string strIndex = m_DeviceData[device].s_IndexReference.at(key);
-                Publish(device + "/" + strIndex, boost::lexical_cast<std::string>(value));
-                Logger.Info << "Sent Command " << device << "/" << strIndex << " = " << value << std::endl;
+                Publish(device + "/1/" + strIndex, boost::lexical_cast<std::string>(value));
+                Logger.Info << "Sent Command " << device << "/1/" << strIndex << " = " << value << std::endl;
             }
 
             void CMqttAdapter::ConnectionLost(void * id, char * reason)

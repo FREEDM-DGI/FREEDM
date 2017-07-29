@@ -34,11 +34,6 @@
 #include "CDevice.hpp"
 #include "CLogger.hpp"
 
-#include <ostream>
-#include <stdexcept>
-
-#include <boost/foreach.hpp>
-
 namespace freedm {
 namespace broker {
 namespace device {
@@ -252,6 +247,7 @@ void CDevice::SetCommand(std::string signal, SignalValue value)
     }
 
     m_adapter->SetCommand(m_devid, signal, value);
+    Logger.Status << "Fired" << std::endl;
 }
 
 } // namespace device

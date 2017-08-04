@@ -285,7 +285,10 @@ void SCAgent::StateResponse()
                                   << dssm.type() << " : "
                                   << dssm.signal() << " : "
                                   << dssm.value() << std::endl;
-                    if (dssm.type() == "Sst")
+
+                    if (dssm.type() == "SST")
+                    // Below line was present in VVC, keeping the above from Ceasar's MQTT        
+                    // if (dssm.type() == "Sst")
                     {
                         if(dssm.count()>0)
                         {
@@ -307,7 +310,10 @@ void SCAgent::StateResponse()
                             csm->clear_generation();
                         }
                     }
-                    else if (dssm.type() == "Desd")
+
+                    else if (dssm.type() == "DESD")
+                    // Below line was present in VVC, keeping the above from Ceasar's MQTT
+                    // else if (dssm.type() == "Desd")
                     {
                         if(dssm.count()>0)
                         {
@@ -411,7 +417,7 @@ void SCAgent::TakeSnapshot(const std::vector<std::string>& devicelist)
         Logger.Status << "Device:   "<< type << "  Signal:  "<< signal << " Value:  " << PowerValue << std::endl;
         count = device::CDeviceManager::Instance().GetDevicesOfType(type).size();
 
-	//save device state
+    //save device state
         DeviceSignalStateMessage* dssm = m_curstate.add_device_signal_state_message();
         dssm->set_type(type);
         dssm->set_signal(signal);
@@ -680,11 +686,11 @@ void SCAgent::HandleMarker(const MarkerMessage& msg, CPeerNode peer)
 
     //parse the device information from msg to a vector
     BOOST_FOREACH(std::string device, msg.device())
-	{
+    {
         //save power level for each node into a vector
         m_device.push_back(device);
-	    Logger.Notice << "Needed device: " << device << std::endl;
-	}
+        Logger.Notice << "Needed device: " << device << std::endl;
+    }
 
     if (m_curversion.first == "default")
         //peer receives first marker

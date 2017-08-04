@@ -57,7 +57,7 @@ In our example where we are creating `VoltVar.hpp`, this will get us started::
         /// Module destructor
         ~VVAgent();
         /// Called to start the system
-        int	Run();
+        int Run();
       private:
         /// Handles received messages
         void HandleIncomingMessage(boost::shared_ptr<const ModuleMessage> msg, CPeerNode peer);
@@ -100,7 +100,7 @@ Here are the implementations for the methods we've defined so far::
     {
         Logger.Warn<<"Volt Var Control Sure Is Neat!"<<std::endl;
     }
-    void HandleIncomingMessage(boost::shared_ptr<const ModuleMessage> msg, CPeerNode peer)
+    void VVAgent::HandleIncomingMessage(boost::shared_ptr<const ModuleMessage> msg, CPeerNode peer)
     {
         Logger.Warn<<"Dropped message of unexpected type:\n" << msg->DebugString();
     }

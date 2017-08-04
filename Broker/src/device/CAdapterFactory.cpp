@@ -40,6 +40,7 @@
 #include "IBufferAdapter.hpp"
 #include "CRtdsAdapter.hpp"
 #include "CPnpAdapter.hpp"
+#include "CMqttAdapter.hpp"
 #include "CDeviceManager.hpp"
 #include "CGlobalConfiguration.hpp"
 #include "CFakeAdapter.hpp"
@@ -109,6 +110,25 @@ CAdapterFactory::CAdapterFactory()
     else
     {
         Logger.Status << "Plug and play devices disabled." << std::endl;
+    }
+
+    std::string mqttId = CGlobalConfiguration::Instance().GetMQTTId();
+    std::string mqttAddress = CGlobalConfiguration::Instance().GetMQTTAddress();
+
+    if(mqttAddress != "")
+    {
+        Logger.Status << "MQTT client entered" << std::endl;
+        IAdapter::Pointer mqttClient = CMqttAdapter::Create(mqttId, mqttAddress);
+
+        m_adapters[mqttId] = mqttClient;
+
+        mqttClient->Start();
+        Logger.Status << "MQTT client enabled 4." << std::endl;
+
+    }
+    else
+    {
+        Logger.Status << "MQTT client disabled." << std::endl;
     }
 
     std::string adapterCfgFile =
@@ -260,13 +280,14 @@ void CAdapterFactory::CreateAdapter(const boost::property_tree::ptree & p)
     boost::property_tree::ptree subtree;
     IAdapter::Pointer adapter;
     std::string name, type;
-
+    Logger.Status <<"create called"<<std::endl;
     // extract the properties
     try
     {
         name    = p.get<std::string>("<xmlattr>.name");
         type    = p.get<std::string>("<xmlattr>.type");
         subtree = p.get_child("info");
+        Logger.Status << "Building " << type << " adapter " << name << std::endl;
     }
     catch( std::exception & e )
     {
@@ -290,6 +311,7 @@ void CAdapterFactory::CreateAdapter(const boost::property_tree::ptree & p)
     // FIXME - use plugins or something, this sucks
     if( type == "rtds" )
     {
+        Logger.Status << "entered rtds 1" << std::endl;
         adapter = CRtdsAdapter::Create(m_ios, subtree);
     }
     else if( type == "pnp" )
@@ -415,6 +437,7 @@ void CAdapterFactory::InitializeAdapter(IAdapter::Pointer adapter,
 
         BOOST_FOREACH(boost::property_tree::ptree::value_type & child, subtree)
         {
+            Logger.Status << "entered adapter factory for rtds" << std::endl;
             try
             {
                 type    = child.second.get<std::string>("type");

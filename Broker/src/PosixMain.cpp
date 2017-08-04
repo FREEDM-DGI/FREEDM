@@ -119,7 +119,7 @@ int main(int argc, char* argv[])
     po::variables_map vm;
     std::ifstream ifs;
     std::string cfgFile, loggerCfgFile, timingsFile, adapterCfgFile, topologyCfgFile;
-    std::string deviceCfgFile, listenIP, port, hostname, fport, id;
+    std::string deviceCfgFile, listenIP, port, hostname, fport, id, mqttID, mqttAddress;
     unsigned int globalVerbosity;
     float migrationStep;
     bool malicious, invariant;
@@ -150,6 +150,14 @@ int main(int argc, char* argv[])
                 "TCP port to listen for peers on" )
                 ( "factory-port", po::value<std::string>(&fport),
                 "port for plug and play session protocol" )
+                ( "mqtt-id", po::value<std::string>(&mqttID)->default_value("DGIClient"),
+                "id of the DGI MQTT client (optional)" )
+                ( "mqtt-address",
+                po::value<std::string>(&mqttAddress)->default_value("tcp://localhost:1883"),
+                "IP and port number for the MQTT broker" )
+                ( "mqtt-subscribe",
+                po::value<std::vector<std::string> >( )->composing(),
+                "MQTT subscription topic" )
                 ( "device-config",
                 po::value<std::string>(&deviceCfgFile)->default_value(""),
                 "filename of the XML device class specification" )
@@ -212,7 +220,8 @@ int main(int argc, char* argv[])
             if (!vm.count("help") && !vm.count("version") &&
                 !vm.count("uuid") && !vm.count("list-loggers"))
             {
-                Logger.Info << "Config file " << cfgFile
+
+                Logger.Status << "Config file " << cfgFile
                             << " successfully loaded." << std::endl;
             }
         }
@@ -273,6 +282,15 @@ int main(int argc, char* argv[])
                 boost::posix_time::milliseconds(0));
         CGlobalConfiguration::Instance().SetMigrationStep(migrationStep);
         CGlobalConfiguration::Instance().SetMaliciousFlag(malicious);
+        CGlobalConfiguration::Instance().SetMQTTId(mqttID);
+        CGlobalConfiguration::Instance().SetMQTTAddress(mqttAddress);
+
+        if (vm.count("mqtt-subscribe"))
+        {
+            std::vector<std::string> subscriptions = vm["mqtt-subscribe"].as<std::vector<std::string> >();
+            CGlobalConfiguration::Instance().SetMQTTSubscriptions(subscriptions);
+        }
+        CGlobalConfiguration::Instance().SetInvariantCheck(invariant);
 
         // Specify socket endpoint address, if provided
         if( vm.count("devices-endpoint") )
@@ -298,10 +316,12 @@ int main(int argc, char* argv[])
         {
             CGlobalConfiguration::Instance().SetAdapterConfigPath(
                 adapterCfgFile);
+            Logger.Status << "set adapter config" << std::endl;
         }
         else
         {
             CGlobalConfiguration::Instance().SetAdapterConfigPath("");
+            Logger.Status << "adatper config not set" << std::endl;
         }
 
 
@@ -319,14 +339,15 @@ int main(int argc, char* argv[])
     }
     catch (std::exception & e)
     {
-        Logger.Fatal << "Exception caught in main during start up: " << e.what() << std::endl;
+        Logger.Status << "Exception caught in main during start up: " << e.what() << std::endl;
         return 1;
     }
 
     // Initialize modules
     boost::shared_ptr<IDGIModule> GM = boost::make_shared<gm::GMAgent>();
     boost::shared_ptr<IDGIModule> SC = boost::make_shared<sc::SCAgent>();
-    boost::shared_ptr<IDGIModule> VVC = boost::make_shared<vvc::VVCAgent>();
+    boost::shared_ptr<IDGIModule> LB = boost::make_shared<lb::LBAgent>();
+    // boost::shared_ptr<IDGIModule> VVC = boost::make_shared<vvc::VVCAgent>();
 
     try
     {
@@ -336,11 +357,21 @@ int main(int argc, char* argv[])
         // Instantiate and register the state collection module
         CBroker::Instance().RegisterModule("sc",boost::posix_time::milliseconds(CTimings::Get("SC_PHASE_TIME")));
         CDispatcher::Instance().RegisterReadHandler(SC, "sc");
-        // StateCollection wants to receive Accept messages addressed to vvc.
-        CDispatcher::Instance().RegisterReadHandler(SC, "vvc");
+        // StateCollection wants to receive Accept messages addressed to lb.
+        CDispatcher::Instance().RegisterReadHandler(SC, "lb");
         // Instantiate and register the power management module
-        CBroker::Instance().RegisterModule("vvc",boost::posix_time::milliseconds(CTimings::Get("LB_PHASE_TIME")));
-        CDispatcher::Instance().RegisterReadHandler(VVC, "vvc");
+        CBroker::Instance().RegisterModule("lb",boost::posix_time::milliseconds(CTimings::Get("LB_PHASE_TIME")));
+        CDispatcher::Instance().RegisterReadHandler(LB, "lb");
+        // StateCollection wants to receive Accept messages addressed to vvc.
+        // CDispatcher::Instance().RegisterReadHandler(SC, "vvc");
+        // // Instantiate and register the power management module
+        // CBroker::Instance().RegisterModule("vvc",boost::posix_time::milliseconds(CTimings::Get("VVC_PHASE_TIME")));
+        // CDispatcher::Instance().RegisterReadHandler(VVC, "vvc");
+
+        // The peerlist should be passed into constructors as references or
+        // pointers to each submodule to allow sharing peers. NOTE this requires
+        // thread-safe access, as well. Shouldn't be too hard since it will
+        // mostly be read-only
 
         // The peerlist should be passed into constructors as references or
         // pointers to each submodule to allow sharing peers. NOTE this requires
@@ -373,7 +404,7 @@ int main(int argc, char* argv[])
             Logger.Info << "Not adding any hosts on startup." << std::endl;
         }
 
-        // Add the local connection to the hostname list
+       // Add the local connection to the hostname list
         CConnectionManager::Instance().PutHost(id, "localhost", port);
 
         Logger.Debug << "Starting thread of Modules" << std::endl;
@@ -382,9 +413,17 @@ int main(int argc, char* argv[])
             boost::bind(&gm::GMAgent::Run, boost::dynamic_pointer_cast<gm::GMAgent>(GM)),
             false);
         CBroker::Instance().Schedule(
+                "lb",
+                boost::bind(&lb::LBAgent::Run, boost::dynamic_pointer_cast<lb::LBAgent>(LB)),
+                false);
+        CBroker::Instance().Schedule(
             "vvc",
             boost::bind(&vvc::VVCAgent::Run, boost::dynamic_pointer_cast<vvc::VVCAgent>(VVC)),
             false);
+        // CBroker::Instance().Schedule(
+        //     "vvc",
+        //     boost::bind(&vvc::VVCAgent::Run, boost::dynamic_pointer_cast<vvc::VVCAgent>(VVC)),
+        //     false);
     }
     catch (std::exception & e)
     {

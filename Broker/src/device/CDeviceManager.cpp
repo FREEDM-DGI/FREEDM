@@ -133,7 +133,9 @@ void CDeviceManager::RevealDevice(std::string devid)
     m_devices[devid] = m_hidden_devices[devid];
     m_hidden_devices.erase(devid);
 
-    Logger.Info << "Revealed the hidden device " << devid << std::endl;
+    Logger.Status<< "Revealed the hidden device " << devid << std::endl;
+
+//From VVC    Logger.Info << "Revealed the hidden device " << devid << std::endl;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

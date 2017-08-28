@@ -317,7 +317,7 @@ void LBAgent::LoadManage(const boost::system::error_code & error)
         UpdateState();
         LoadTable();
 
-        std::set<device::CDevice::Pointer> logger;
+        std::set<device::CDevice::Pointer> logger, desd;
         logger = device::CDeviceManager::Instance().GetDevicesOfType("Logger");
         desd = device::CDeviceManager::Instance().GetDevicesOfType("DESD");
 

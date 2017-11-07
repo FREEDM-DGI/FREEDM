@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="us-ascii" ?>
+<root>
+    <deviceType>
+        <id>Sst</id>
+        <state>gateway</state>
+        <command>gateway</command>
+    </deviceType>
+</root>

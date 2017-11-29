@@ -1,0 +1,10 @@
+package freedm.broker.dda;
+
+message DesdStateMessage
+{
+    required int32 iteration = 1;
+    required string symbol = 2;
+    repeated double delta_p_hat = 3;
+    repeated double lambda = 4;
+}
+

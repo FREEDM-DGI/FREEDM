@@ -5,10 +5,11 @@
 /// @author       Thomas Roth <tprfh7@mst.edu>
 /// @author       Mark Stanovich <stanovic@cs.fsu.edu>
 /// @author       Michael Catanzaro <michael.catanzaro@mst.edu>
+/// @author       Manish jaisinghani <mjkhf@mst.edu>
 ///
 /// @project      FREEDM DGI
 ///
-/// @description  DGI implementation of the FPGA communication protocol.
+/// @description  Opendss simulation adapter.
 ///
 /// @functions    EndianSwap
 ///               EndianSwapIfNeeded
@@ -68,15 +69,13 @@ namespace freedm {
             } // unnamed namespace
 
 ///////////////////////////////////////////////////////////////////////////////
-/// Creates an RTDS client on the given io_service.
+/// Creates an Opendss client on the given io_service.
 ///
 /// @Shared_Memory Uses the passed io_service
 ///
 /// @pre None.
 /// @post COpenDssAdapter object is returned for use.
 ///
-/// @param service The io_service to be used to communicate with the FPGA.
-/// @param ptree The property tree specifying this adapter's device signals.
 ///
 /// @return Shared pointer to the new COpenDssAdapter object.
 ///
@@ -90,15 +89,13 @@ namespace freedm {
             }
 
 ////////////////////////////////////////////////////////////////////////////////
-/// Constructs an RTDS client.
+/// Constructs an Opendss client.
 ///
 /// @Shared_Memory Uses the passed io_service.
 ///
 /// @pre None.
 /// @post COpenDssAdapter created.
 ///
-/// @param io_service The io_service to be used to communicate with the FPGA.
-/// @param ptree The property tree specifying this adapter's device signals.
 ///
 /// @limitations None
 ////////////////////////////////////////////////////////////////////////////////
@@ -135,15 +132,7 @@ namespace freedm {
 ////////////////////////////////////////////////////////////////////////////////
 /// This is the main communication engine.
 ///
-/// @IO
-///     At every timestep, a message is sent to the FPGA via TCP socket
-///     connection, then a message is retrieved from FPGA via the same
-///     connection.  On the FPGA side, it's the reverse order -- receive and
-///     then send.  Both DGI and FPGA receive functions will block until a
-///     message arrives, creating a synchronous, lock-step communication between
-///     DGI and the FPGA. We keep the timestep (a static member of COpenDssAdapter)
-///     very small so that how frequently send and receive get executed is
-///     dependent on how fast the FPGA runs.
+/// @IO Opendss csv data
 ///
 /// @Error_Handling
 ///     Throws std::runtime_error if reading from or writing to socket fails.
@@ -177,7 +166,7 @@ namespace freedm {
                     Logger.Status<<"Error reading socket!?"<<std::endl;
                 }
                 Logger.Status << "opendss data: " << buffer << std::endl;
-                std::string command = "Bus : 1,Node1 : 2,Basekv : 88.88,Magnitude1 : 8088.8,Angle1 : 88.8, pu1 : 1.088";
+                std::string command = "Bus : 1,Node1 : 2,Basekv : 88.88,Magnitude1 : 8088.8,Angle1 : 88.8, pu1 : 1.088"; // generic command should be changed
                 sendCommand(sd,command);    //test sendop
                 Logger.Status<<"command sent to openDss device"<<std::endl;
             }

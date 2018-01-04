@@ -39,7 +39,7 @@ namespace freedm {
     namespace broker {
         namespace device {
 
-/// Provides an interface for communicating with a RTDS simulation model
+/// Provides an interface for communicating with a opendss simulation model
 ////////////////////////////////////////////////////////////////////////////////
 /// This class handles communications to and from the opendss simulation model via
 /// a device server. It serves as client to the server, retrieving values

@@ -45,4 +45,24 @@
             </entry>
         </command>
     </adapter>
+    <adapter name = "simulation" type = "opendss">
+        <info>
+            <host>localhost</host>
+            <port>1888</port>
+        </info>
+        <state>
+            <entry index = "1">
+                <type>Sst</type>
+                <device>SST</device>
+                <signal>gateway</signal>
+            </entry>
+        </state>
+        <command>
+            <entry index = "1">
+                <type>Sst</type>
+                <device>SST</device>
+                <signal>gateway</signal>
+            </entry>
+        </command>
+    </adapter>
 </root>

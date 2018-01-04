@@ -5,10 +5,10 @@
 /// @author       Thomas Roth <tprfh7@mst.edu>
 /// @author       Mark Stanovich <stanovic@cs.fsu.edu>
 /// @author       Michael Catanzaro <michael.catanzaro@mst.edu>
-///
+/// @author       Manish Jaisinghani <mjkhf@mst.edu>
 /// @project      FREEDM DGI
 ///
-/// @description  DGI implementation of the FPGA communication protocol.
+/// @description  Opendss simulation adapter.
 ///
 /// These source code files were created at Missouri University of Science and
 /// Technology, and are intended for use in teaching or research. They may be
@@ -41,17 +41,13 @@ namespace freedm {
 
 /// Provides an interface for communicating with a RTDS simulation model
 ////////////////////////////////////////////////////////////////////////////////
-/// This class handles communications to and from the RTDS simulation model via
-/// an FPGA device. It serves as client to the FPGA's server, retrieving values
-/// from and transmitting commands to the RTDS.
+/// This class handles communications to and from the opendss simulation model via
+/// a device server. It serves as client to the server, retrieving values
+/// from and transmitting commands to the opendss application.
 ///
-/// @peers The FPGA device used by FREEDM research at Florida State University
-///     directly communicates with COpenDssAdapter. For more details about the code
-///     on the FPGA, please contact Dr. Mischa Steurer <steurer@caps.fsu.edu>
 ///
 /// @limitations
-///     We assume any multiplexing/demultiplexing (if needed) of readings from
-///     multiple microgrids simulated by the RTDS model is done FPGA-side.
+///    Subject to improvement.
 ////////////////////////////////////////////////////////////////////////////////
             class COpenDssAdapter
                     : public IBufferAdapter
@@ -104,10 +100,13 @@ namespace freedm {
 
                 /// The port number of the remote host.
                 std::string m_port;
+                
                 /// buffer size in bytes of the simulation packet
                 static const unsigned int BUFFER_SIZE = 1024;
+                
                 /// socket desciptor and int n for error handling
                 unsigned int sd,n;
+                
                 //carries data received or data to be sent
                 char buffer[BUFFER_SIZE];
             };

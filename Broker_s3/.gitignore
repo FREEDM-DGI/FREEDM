@@ -1,0 +1,17 @@
+CMakeCache.txt
+CMakeFiles
+cmake_install.cmake
+Makefile
+\#*
+*~
+*/CMakeCache.txt
+*/CMakeFiles
+*/cmake_install.cmake
+*/Makefile
+*/#*
+*/*~
+PosixBroker
+*.[oa]
+build/
+install/
+doxygen/

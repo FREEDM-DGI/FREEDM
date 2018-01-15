@@ -55,5 +55,3 @@ Phases proceed in a round robin fashion. However, there are some observations to
 * **E** There is a "No-man's" land where the group management task is completing work outside of its phase, but the scheduler is ready to switch phases to state collection. Because phases are aligned in order to form groups, state collection is penalized for by the overflow.
 * **F** The scheduler has changed phases, but the broker does work on a received message before calling state collection's readied method. Note that the message is put into the ready queue for its intended process, so the message processing time is only spent by the Broker and communication stack
 * **G** Finally, the state collection module begins.
-
-

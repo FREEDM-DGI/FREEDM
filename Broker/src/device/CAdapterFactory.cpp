@@ -41,6 +41,7 @@
 #include "CRtdsAdapter.hpp"
 #include "CPnpAdapter.hpp"
 #include "CMqttAdapter.hpp"
+
 #include "CDeviceManager.hpp"
 #include "CGlobalConfiguration.hpp"
 #include "CFakeAdapter.hpp"

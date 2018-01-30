@@ -31,6 +31,11 @@ find_package_handle_standard_args(MQTT DEFAULT_MSG MQTT_LIBRARY MQTT_INCLUDE_DIR
 find_package(Boost 1.47 REQUIRED
              COMPONENTS date_time program_options system thread
             )
+
+find_package(Armadillo REQUIRED)
+#find_package(BLAS REQUIRED)
+#find_package(LAPACK REQUIRED)
+
 include_directories(SYSTEM ${Boost_INCLUDE_DIRS})
 link_directories(${Boost_LIBRARY_DIRS})
 
@@ -76,4 +81,5 @@ target_link_libraries(PosixBroker
                       ${Boost_THREAD_LIBRARY}
                       ${PROTOBUF_LIBRARIES}
                       ${MQTT_LIBRARIES}
-                     )
+                      ${ARMADILLO_LIBRARIES} 
+					)

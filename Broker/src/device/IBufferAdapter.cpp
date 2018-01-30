@@ -194,6 +194,7 @@ SignalValue IBufferAdapter::GetState(const std::string device,
 
     SignalValue value = m_rxBuffer.at(m_stateInfo.find(devsig)->second);
 
+    Logger.Debug << device << " " << signal << ": " << value << std::endl;
 
     return value;
 }

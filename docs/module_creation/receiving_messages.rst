@@ -13,6 +13,7 @@ Since our VoltVar example doesn't do anything yet, let's just set up the module 
 This message is sent by the GroupManagement module occasionally to announce when other DGIs are started or stopped.
 Let's expand our HandleIncomingMessage function to handle the PeerList message::
 
+
     void VVAgent::HandleIncomingMessage(boost::shared_ptr<const ModuleMessage> msg, CPeerNode peer)
     {
         if(m->has_group_management_message())

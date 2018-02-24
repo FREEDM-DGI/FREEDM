@@ -41,6 +41,7 @@
 #include "COpenDssAdapter.hpp"
 #include "CPnpAdapter.hpp"
 #include "CMqttAdapter.hpp"
+#include "CRtdsAdapter.hpp"
 
 #include "CDeviceManager.hpp"
 #include "CGlobalConfiguration.hpp"
@@ -261,7 +262,7 @@ namespace freedm {
                 // create the adapter
                 // FIXME - use plugins or something, this sucks
                 if (type == "rtds") {
-                    //adapter = CRtdsAdapter::Create(m_ios, subtree);
+                    adapter = CRtdsAdapter::Create(m_ios, subtree);
                 } else if (type == "pnp") {
                     adapter = CPnpAdapter::Create(m_ios, subtree, m_server->GetClient());
                 } else if (type == "fake") {

@@ -110,6 +110,7 @@ namespace freedm {
                 float m_localratio;
                 float m_adjratio;
                 float m_schedule;
+                float rho;
 
                 ///deltaP and lambda upate
                 unsigned int m_iteration;
@@ -132,6 +133,11 @@ namespace freedm {
                 float E_full;
                 float E_min;
                 float E_init;
+
+                float demand_profile;
+                float renewable_profile;
+                float SOC;       
+
                 std::vector<float> m_init_power_desd_plus_vector;
                 std::vector<float> m_init_power_desd_minus_vector;
                 std::vector<float> m_next_power_desd_plus_vector;
@@ -169,7 +175,8 @@ namespace freedm {
 
                 // 
                 device::CDevice::Pointer desd;
-                
+                device::CDevice::Pointer drer;
+                device::CDevice::Pointer load;              
 
             };
             

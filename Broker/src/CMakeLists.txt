@@ -24,6 +24,7 @@ set(BROKER_FILES
     gm/GroupManagement.cpp
     lb/LoadBalance.cpp
     sc/StateCollection.cpp
+    dda/DispatchAlgo.cpp
    )
 
 # generate the configuration file

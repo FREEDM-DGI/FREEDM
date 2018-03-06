@@ -25,48 +25,21 @@ namespace freedm{
 
             CBroker::TimerHandle m_timer;
             
-            const unsigned int max_iteration = 200;
+            const unsigned int max_iteration = 300;
             const int m_stages = 1;
 
-            const float P_max_grid = 100; // Maximum power from grid
-            const float P_min_grid = -100; // Minimum power from grid
+            const float P_max_grid = 50; // Maximum power from grid
+            const float P_min_grid = -50; // Minimum power from grid
 
-            const float P_max_desd_profile[7] = {3.3, 3.3, 3.3, 3.3, 3.3, 3.3, 3.3}; // Maximum power desd
-            const float P_min_desd_profile[7] = {-3.3, -3.3, -3.3, -3.3, -3.3, -3.3, -3.3}; // Minimum power desd
+            const float P_max_desd_profile[7] = {1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5}; // Maximum power desd
+            const float P_min_desd_profile[7] = {-1.5, -1.5, -1.5, -1.5, -1.5, -1.5, -1.5}; // Minimum power desd
 
-            // Algorithm tuning parameters
-            const float rho = 1;
+            const float Capacity_desd_profile[7] = {5, 5, 5, 5, 5, 5, 5}; // Capacity
+            const float Capacity_max = 90;
+            const float Capacity_min = 15;
 
             // Profiles
-            const float cost[node] = {10,4,4,4,4,4,4,4};
-
-            const float demand_profile_1[m_stages] = {1.530816667};
-
-            const float demand_profile_2[m_stages] = {2.617366667}; 
-
-            const float demand_profile_3[m_stages] = {0.948283333};
-
-            const float demand_profile_4[m_stages] = {1.007733333};     
-
-            const float demand_profile_5[m_stages] = {3.548366667};     
-
-            const float demand_profile_6[m_stages] = {1.13155};     
-
-            const float demand_profile_7[m_stages] = {2.705366667};  
-/////
-            const float renewable_profile_1[m_stages] = {-0.011383333};
-
-            const float renewable_profile_2[m_stages] = {-0.0048};     
-
-            const float renewable_profile_3[m_stages] = {-0.008083333};      
-
-            const float renewable_profile_4[m_stages] = {-0.0078};     
-
-            const float renewable_profile_5[m_stages] = {-0.002033333};   
-
-            const float renewable_profile_6[m_stages] = {-0.011233333};  
-
-            const float renewable_profile_7[m_stages] = {-0.002066667};   
+            const float cost[node] = {100,5,5,5,5,5,5,5}; 
 
             const float schedule_profile[node] = {0, 0, 0, 0, 0, 0, 0, 0};                                                     
 
@@ -80,7 +53,9 @@ namespace freedm{
             {
                 //initialization of variables
                 m_iteration = 1;
-                m_cost = 0.0;
+                m_cost = 0.0;            
+                // Algorithm tuning parameters
+                rho = 1;
 
 
                 for (int i = 0; i < m_stages; i++) {
@@ -237,19 +212,27 @@ namespace freedm{
                         P_max_desd = P_max_grid;
                         P_min_desd = P_min_grid;
 
+
                     }
                     else if (m_localsymbol == "2") // SST2
                     {
+                        drer = device::CDeviceManager::Instance().GetDevice("DRER1");
+                        load = device::CDeviceManager::Instance().GetDevice("Load1");
+                        desd = device::CDeviceManager::Instance().GetDevice("Desd1");
 
-                        for (int i = 0; i < m_stages; i++) {
-                            m_init_deltaP_vector[i] = demand_profile_1[i] - renewable_profile_1[i];
-                            m_demand_vector[i] = demand_profile_1[i];
-                            m_renewable_vector[i] = renewable_profile_1[i];
-                            m_init_deltaP_hat_vector[i] = m_init_deltaP_vector[i];
-                        }
+                        demand_profile = load->GetState("drain");
+                        renewable_profile = drer->GetState("generation");
+                        SOC = desd -> GetState("SOC");
 
-                        P_max_desd = P_max_desd_profile[0];
-                        P_min_desd = P_min_desd_profile[0];
+
+                        m_init_deltaP_vector[0] = demand_profile - renewable_profile;
+                        m_demand_vector[0] = demand_profile;
+                        m_renewable_vector[0] = renewable_profile;
+                        m_init_deltaP_hat_vector[0] = m_init_deltaP_vector[0];
+
+                        P_max_desd = std::min(P_max_desd_profile[0], (SOC-Capacity_min)/100 * Capacity_desd_profile[0] *12);
+                        P_min_desd = std::max(P_min_desd_profile[0], (SOC-Capacity_max)/100 * Capacity_desd_profile[0] *12);
+
                         m_cost = cost[1];
                         m_schedule = schedule_profile[1];
 
@@ -257,15 +240,24 @@ namespace freedm{
                     }
                     else if (m_localsymbol == "3") // SST3
                     {
-                        for (int i = 0; i < m_stages; i++) {
-                            m_init_deltaP_vector[i] = demand_profile_2[i] - renewable_profile_2[i];
-                            m_demand_vector[i] = demand_profile_2[i];
-                            m_renewable_vector[i] = renewable_profile_2[i];                            
-                            m_init_deltaP_hat_vector[i] = m_init_deltaP_vector[i];
-                        }
 
-                        P_max_desd = P_max_desd_profile[1];
-                        P_min_desd = P_min_desd_profile[1];
+                        drer = device::CDeviceManager::Instance().GetDevice("DRER2");
+                        load = device::CDeviceManager::Instance().GetDevice("Load2");
+                        desd = device::CDeviceManager::Instance().GetDevice("Desd2");
+
+                        demand_profile = load->GetState("drain");
+                        renewable_profile = drer->GetState("generation");
+                        SOC = desd -> GetState("SOC");
+
+
+                        m_init_deltaP_vector[0] = demand_profile - renewable_profile;
+                        m_demand_vector[0] = demand_profile;
+                        m_renewable_vector[0] = renewable_profile;
+                        m_init_deltaP_hat_vector[0] = m_init_deltaP_vector[0];
+
+                        P_max_desd = std::min(P_max_desd_profile[1], (SOC-Capacity_min)/100 * Capacity_desd_profile[1] *12);
+                        P_min_desd = std::max(P_min_desd_profile[1], (SOC-Capacity_max)/100 * Capacity_desd_profile[1] *12);
+
                         m_cost = cost[2];
                         m_schedule = schedule_profile[2];
 
@@ -274,75 +266,115 @@ namespace freedm{
                     else if (m_localsymbol == "4") // SST4
                     {
 
-                        for (int i = 0; i < m_stages; i++) {
-                            m_init_deltaP_vector[i] = demand_profile_3[i] - renewable_profile_3[i];
-                            m_demand_vector[i] = demand_profile_3[i];
-                            m_renewable_vector[i] = renewable_profile_3[i];                            
-                            m_init_deltaP_hat_vector[i] = m_init_deltaP_vector[i];
-                        }
+                        drer = device::CDeviceManager::Instance().GetDevice("DRER3");
+                        load = device::CDeviceManager::Instance().GetDevice("Load3");
+                        desd = device::CDeviceManager::Instance().GetDevice("Desd3");
 
-                        P_max_desd = P_max_desd_profile[2];
-                        P_min_desd = P_min_desd_profile[2];
+                        demand_profile = load->GetState("drain");
+                        renewable_profile = drer->GetState("generation");
+                        SOC = desd -> GetState("SOC");
+
+
+                        m_init_deltaP_vector[0] = demand_profile - renewable_profile;
+                        m_demand_vector[0] = demand_profile;
+                        m_renewable_vector[0] = renewable_profile;
+                        m_init_deltaP_hat_vector[0] = m_init_deltaP_vector[0];
+
+                        P_max_desd = std::min(P_max_desd_profile[2], (SOC-Capacity_min)/100 * Capacity_desd_profile[2] *12);
+                        P_min_desd = std::max(P_min_desd_profile[2], (SOC-Capacity_max)/100 * Capacity_desd_profile[2] *12);
+
                         m_cost = cost[3];
                         m_schedule = schedule_profile[3];
                     }
                     else if (m_localsymbol == "5") // SST5
                     {
 
-                        for (int i = 0; i < m_stages; i++) {
-                            m_init_deltaP_vector[i] = demand_profile_4[i] - renewable_profile_4[i];
-                            m_demand_vector[i] = demand_profile_4[i];
-                            m_renewable_vector[i] = renewable_profile_4[i];                            
-                            m_init_deltaP_hat_vector[i] = m_init_deltaP_vector[i];
-                        }
+                        drer = device::CDeviceManager::Instance().GetDevice("DRER4");
+                        load = device::CDeviceManager::Instance().GetDevice("Load4");
+                        desd = device::CDeviceManager::Instance().GetDevice("Desd4");
 
-                        P_max_desd = P_max_desd_profile[3];
-                        P_min_desd = P_min_desd_profile[3];
+                        demand_profile = load->GetState("drain");
+                        renewable_profile = drer->GetState("generation");
+                        SOC = desd -> GetState("SOC");
+
+
+                        m_init_deltaP_vector[0] = demand_profile - renewable_profile;
+                        m_demand_vector[0] = demand_profile;
+                        m_renewable_vector[0] = renewable_profile;
+                        m_init_deltaP_hat_vector[0] = m_init_deltaP_vector[0];
+
+                        P_max_desd = std::min(P_max_desd_profile[3], (SOC-Capacity_min)/100 * Capacity_desd_profile[3] *12);
+                        P_min_desd = std::max(P_min_desd_profile[3], (SOC-Capacity_max)/100 * Capacity_desd_profile[3] *12);
+
                         m_cost = cost[4];
                         m_schedule = schedule_profile[4];
                     }
                     else if (m_localsymbol == "6") // SST6
                     {
 
-                        for (int i = 0; i < m_stages; i++) {
-                            m_init_deltaP_vector[i] = demand_profile_5[i] - renewable_profile_5[i];
-                            m_demand_vector[i] = demand_profile_5[i];
-                            m_renewable_vector[i] = renewable_profile_5[i];                            
-                            m_init_deltaP_hat_vector[i] = m_init_deltaP_vector[i];
-                        }
+                        drer = device::CDeviceManager::Instance().GetDevice("DRER5");
+                        load = device::CDeviceManager::Instance().GetDevice("Load5");
+                        desd = device::CDeviceManager::Instance().GetDevice("Desd5");
 
-                        P_max_desd = P_max_desd_profile[4];
-                        P_min_desd = P_min_desd_profile[4];
+                        demand_profile = load->GetState("drain");
+                        renewable_profile = drer->GetState("generation");
+                        SOC = desd -> GetState("SOC");
+
+
+                        m_init_deltaP_vector[0] = demand_profile - renewable_profile;
+                        m_demand_vector[0] = demand_profile;
+                        m_renewable_vector[0] = renewable_profile;
+                        m_init_deltaP_hat_vector[0] = m_init_deltaP_vector[0];
+
+                        P_max_desd = std::min(P_max_desd_profile[4], (SOC-Capacity_min)/100 * Capacity_desd_profile[4] *12);
+                        P_min_desd = std::max(P_min_desd_profile[4], (SOC-Capacity_max)/100 * Capacity_desd_profile[4] *12);
+
                         m_cost = cost[5];
                         m_schedule = schedule_profile[5];
                     }
                     else if (m_localsymbol == "7") // SST7
                     {
 
-                        for (int i = 0; i < m_stages; i++) {
-                            m_init_deltaP_vector[i] = demand_profile_6[i] - renewable_profile_6[i];
-                            m_demand_vector[i] = demand_profile_6[i];
-                            m_renewable_vector[i] = renewable_profile_6[i];                            
-                            m_init_deltaP_hat_vector[i] = m_init_deltaP_vector[i];
-                        }
+                        drer = device::CDeviceManager::Instance().GetDevice("DRER6");
+                        load = device::CDeviceManager::Instance().GetDevice("Load6");
+                        desd = device::CDeviceManager::Instance().GetDevice("Desd6");
 
-                        P_max_desd = P_max_desd_profile[5];
-                        P_min_desd = P_min_desd_profile[5];
+                        demand_profile = load->GetState("drain");
+                        renewable_profile = drer->GetState("generation");
+                        SOC = desd -> GetState("SOC");
+
+
+                        m_init_deltaP_vector[0] = demand_profile - renewable_profile;
+                        m_demand_vector[0] = demand_profile;
+                        m_renewable_vector[0] = renewable_profile;
+                        m_init_deltaP_hat_vector[0] = m_init_deltaP_vector[0];
+
+                        P_max_desd = std::min(P_max_desd_profile[5], (SOC-Capacity_min)/100 * Capacity_desd_profile[5] *12);
+                        P_min_desd = std::max(P_min_desd_profile[5], (SOC-Capacity_max)/100 * Capacity_desd_profile[5] *12);
+
                         m_cost = cost[6];
                         m_schedule = schedule_profile[6];
                     }
                     else if (m_localsymbol == "8") // SST8
                     {
 
-                        for (int i = 0; i < m_stages; i++) {
-                            m_init_deltaP_vector[i] = demand_profile_7[i] - renewable_profile_7[i];
-                            m_demand_vector[i] = demand_profile_7[i];
-                            m_renewable_vector[i] = renewable_profile_7[i];                            
-                            m_init_deltaP_hat_vector[i] = m_init_deltaP_vector[i];
-                        }
+                        drer = device::CDeviceManager::Instance().GetDevice("DRER7");
+                        load = device::CDeviceManager::Instance().GetDevice("Load7");
+                        desd = device::CDeviceManager::Instance().GetDevice("Desd7");
 
-                        P_max_desd = P_max_desd_profile[6];
-                        P_min_desd = P_min_desd_profile[6];
+                        demand_profile = load->GetState("drain");
+                        renewable_profile = drer->GetState("generation");
+                        SOC = desd -> GetState("SOC");
+
+
+                        m_init_deltaP_vector[0] = demand_profile - renewable_profile;
+                        m_demand_vector[0] = demand_profile;
+                        m_renewable_vector[0] = renewable_profile;
+                        m_init_deltaP_hat_vector[0] = m_init_deltaP_vector[0];
+
+                        P_max_desd = std::min(P_max_desd_profile[6], (SOC-Capacity_min)/100 * Capacity_desd_profile[6] *12);
+                        P_min_desd = std::max(P_min_desd_profile[6], (SOC-Capacity_max)/100 * Capacity_desd_profile[6] *12);
+
                         m_cost = cost[7];
                         m_schedule = schedule_profile[7];
                     }                                                                 
@@ -466,7 +498,13 @@ namespace freedm{
                         } else {
                             Logger.Notice << m_power_vector[i] << std::endl;
                         }
-                    }          
+                    }  
+
+                    if (m_localsymbol == "2" || m_localsymbol == "3" || m_localsymbol == "4" || m_localsymbol == "5" || m_localsymbol == "6" || 
+                        m_localsymbol == "7" || m_localsymbol == "8")
+                    {
+                        desd->SetCommand("storage", m_power_vector[0]);
+                    }     
 
                 }
             }
@@ -573,6 +611,10 @@ namespace freedm{
                     m_next_deltaP_hat_vector[i] = m_localratio * m_init_deltaP_hat_vector[i] +
                         m_adjratio * m_adj_deltaP_hat_vector[i] - m_init_deltaP_vector[i] + m_next_deltaP_vector[i];
 
+                }
+
+                if (m_iteration >=100 && abs(m_next_deltaP_hat_vector[0]) >= 0.01) {
+                    rho = 50;
                 }
 
                 Logger.Notice << "The Next delta P hat: " << std::endl;

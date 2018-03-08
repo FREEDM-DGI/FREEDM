@@ -174,10 +174,7 @@ namespace freedm {
                 PeerSet m_AllPeers;
 
                 // 
-                device::CDevice::Pointer desd;
-                device::CDevice::Pointer drer;
-                device::CDevice::Pointer load;              
-
+                std::set<device::CDevice::Pointer> desd;
             };
             
         } // namespace dda

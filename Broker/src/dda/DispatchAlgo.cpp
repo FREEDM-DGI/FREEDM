@@ -216,13 +216,28 @@ namespace freedm{
                     }
                     else if (m_localsymbol == "2") // SST2
                     {
-                        drer = device::CDeviceManager::Instance().GetDevice("DRER1");
-                        load = device::CDeviceManager::Instance().GetDevice("Load1");
-                        desd = device::CDeviceManager::Instance().GetDevice("Desd1");
+/*                      drer = device::CDeviceManager::Instance().GetDevicesOfType("Drer");
+                        if (drer.size() > 1)
+                        {
+                            Logger.Notice << "Multiple attached DRER devices." << std::endl;
+                        }
+                        load = device::CDeviceManager::Instance().GetDevicesOfType("Load");
+                        if (load.size() > 1)
+                        {
+                            Logger.Notice << "Multiple attached LOAD devices." << std::endl;
+                        }                        
+                        desd = device::CDeviceManager::Instance().GetDevicesOfType("Desd");
+                        if (desd.size() > 1)
+                        {
+                            Logger.Notice << "Multiple attached DESD devices." << std::endl;
+                        }
+                        demand_profile = (*load.begin())->GetState("drain");
+                        renewable_profile = (*drer.begin())->GetState("generation");
+                        SOC = (*desd.begin()) -> GetState("SOC");*/
 
-                        demand_profile = load->GetState("drain");
-                        renewable_profile = drer->GetState("generation");
-                        SOC = desd -> GetState("SOC");
+                        demand_profile = device::CDeviceManager::Instance().GetNetValue("Load", "drain");
+                        renewable_profile = device::CDeviceManager::Instance().GetNetValue("Drer", "generation");
+                        SOC = device::CDeviceManager::Instance().GetNetValue("Desd", "SOC");
 
 
                         m_init_deltaP_vector[0] = demand_profile - renewable_profile;
@@ -241,13 +256,9 @@ namespace freedm{
                     else if (m_localsymbol == "3") // SST3
                     {
 
-                        drer = device::CDeviceManager::Instance().GetDevice("DRER2");
-                        load = device::CDeviceManager::Instance().GetDevice("Load2");
-                        desd = device::CDeviceManager::Instance().GetDevice("Desd2");
-
-                        demand_profile = load->GetState("drain");
-                        renewable_profile = drer->GetState("generation");
-                        SOC = desd -> GetState("SOC");
+                        demand_profile = device::CDeviceManager::Instance().GetNetValue("Load", "drain");
+                        renewable_profile = device::CDeviceManager::Instance().GetNetValue("Drer", "generation");
+                        SOC = device::CDeviceManager::Instance().GetNetValue("Desd", "SOC");
 
 
                         m_init_deltaP_vector[0] = demand_profile - renewable_profile;
@@ -266,13 +277,9 @@ namespace freedm{
                     else if (m_localsymbol == "4") // SST4
                     {
 
-                        drer = device::CDeviceManager::Instance().GetDevice("DRER3");
-                        load = device::CDeviceManager::Instance().GetDevice("Load3");
-                        desd = device::CDeviceManager::Instance().GetDevice("Desd3");
-
-                        demand_profile = load->GetState("drain");
-                        renewable_profile = drer->GetState("generation");
-                        SOC = desd -> GetState("SOC");
+                        demand_profile = device::CDeviceManager::Instance().GetNetValue("Load", "drain");
+                        renewable_profile = device::CDeviceManager::Instance().GetNetValue("Drer", "generation");
+                        SOC = device::CDeviceManager::Instance().GetNetValue("Desd", "SOC");
 
 
                         m_init_deltaP_vector[0] = demand_profile - renewable_profile;
@@ -289,13 +296,9 @@ namespace freedm{
                     else if (m_localsymbol == "5") // SST5
                     {
 
-                        drer = device::CDeviceManager::Instance().GetDevice("DRER4");
-                        load = device::CDeviceManager::Instance().GetDevice("Load4");
-                        desd = device::CDeviceManager::Instance().GetDevice("Desd4");
-
-                        demand_profile = load->GetState("drain");
-                        renewable_profile = drer->GetState("generation");
-                        SOC = desd -> GetState("SOC");
+                        demand_profile = device::CDeviceManager::Instance().GetNetValue("Load", "drain");
+                        renewable_profile = device::CDeviceManager::Instance().GetNetValue("Drer", "generation");
+                        SOC = device::CDeviceManager::Instance().GetNetValue("Desd", "SOC");
 
 
                         m_init_deltaP_vector[0] = demand_profile - renewable_profile;
@@ -312,13 +315,9 @@ namespace freedm{
                     else if (m_localsymbol == "6") // SST6
                     {
 
-                        drer = device::CDeviceManager::Instance().GetDevice("DRER5");
-                        load = device::CDeviceManager::Instance().GetDevice("Load5");
-                        desd = device::CDeviceManager::Instance().GetDevice("Desd5");
-
-                        demand_profile = load->GetState("drain");
-                        renewable_profile = drer->GetState("generation");
-                        SOC = desd -> GetState("SOC");
+                        demand_profile = device::CDeviceManager::Instance().GetNetValue("Load", "drain");
+                        renewable_profile = device::CDeviceManager::Instance().GetNetValue("Drer", "generation");
+                        SOC = device::CDeviceManager::Instance().GetNetValue("Desd", "SOC");
 
 
                         m_init_deltaP_vector[0] = demand_profile - renewable_profile;
@@ -335,13 +334,9 @@ namespace freedm{
                     else if (m_localsymbol == "7") // SST7
                     {
 
-                        drer = device::CDeviceManager::Instance().GetDevice("DRER6");
-                        load = device::CDeviceManager::Instance().GetDevice("Load6");
-                        desd = device::CDeviceManager::Instance().GetDevice("Desd6");
-
-                        demand_profile = load->GetState("drain");
-                        renewable_profile = drer->GetState("generation");
-                        SOC = desd -> GetState("SOC");
+                        demand_profile = device::CDeviceManager::Instance().GetNetValue("Load", "drain");
+                        renewable_profile = device::CDeviceManager::Instance().GetNetValue("Drer", "generation");
+                        SOC = device::CDeviceManager::Instance().GetNetValue("Desd", "SOC");
 
 
                         m_init_deltaP_vector[0] = demand_profile - renewable_profile;
@@ -358,13 +353,9 @@ namespace freedm{
                     else if (m_localsymbol == "8") // SST8
                     {
 
-                        drer = device::CDeviceManager::Instance().GetDevice("DRER7");
-                        load = device::CDeviceManager::Instance().GetDevice("Load7");
-                        desd = device::CDeviceManager::Instance().GetDevice("Desd7");
-
-                        demand_profile = load->GetState("drain");
-                        renewable_profile = drer->GetState("generation");
-                        SOC = desd -> GetState("SOC");
+                        demand_profile = device::CDeviceManager::Instance().GetNetValue("Load", "drain");
+                        renewable_profile = device::CDeviceManager::Instance().GetNetValue("Drer", "generation");
+                        SOC = device::CDeviceManager::Instance().GetNetValue("Desd", "SOC");
 
 
                         m_init_deltaP_vector[0] = demand_profile - renewable_profile;
@@ -503,7 +494,9 @@ namespace freedm{
                     if (m_localsymbol == "2" || m_localsymbol == "3" || m_localsymbol == "4" || m_localsymbol == "5" || m_localsymbol == "6" || 
                         m_localsymbol == "7" || m_localsymbol == "8")
                     {
-                        desd->SetCommand("storage", m_power_vector[0]);
+                        desd = device::CDeviceManager::Instance().GetDevicesOfType("Desd");
+                        device::CDevice::Pointer dev = *desd.begin();
+                        dev->SetCommand("storage", m_power_vector[0]);
                     }     
 
                 }

@@ -28,15 +28,15 @@ namespace freedm{
             const unsigned int max_iteration = 300;
             const int m_stages = 1;
 
-            const float P_max_grid = 50; // Maximum power from grid
-            const float P_min_grid = -50; // Minimum power from grid
+            const float P_max_grid = 1000; // Maximum power from grid
+            const float P_min_grid = -1000; // Minimum power from grid
 
-            const float P_max_desd_profile[7] = {1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5}; // Maximum power desd
-            const float P_min_desd_profile[7] = {-1.5, -1.5, -1.5, -1.5, -1.5, -1.5, -1.5}; // Minimum power desd
+            const float P_max_desd_profile[7] = {50, 50, 50, 50, 50, 50, 50}; // Maximum power desd
+            const float P_min_desd_profile[7] = {-50, -50, -50, -50, -50, -50, -50}; // Minimum power desd
 
-            const float Capacity_desd_profile[7] = {5, 5, 5, 5, 5, 5, 5}; // Capacity
+            const float Capacity_desd_profile[7] = {200, 200, 200, 200, 200, 200, 200}; // Capacity
             const float Capacity_max = 90;
-            const float Capacity_min = 15;
+            const float Capacity_min = 10;
 
             // Profiles
             const float cost[node] = {100,5,5,5,5,5,5,5}; 
@@ -606,8 +606,8 @@ namespace freedm{
 
                 }
 
-                if (m_iteration >=100 && abs(m_next_deltaP_hat_vector[0]) >= 0.01) {
-                    rho = 50;
+                if (m_iteration >=50 && abs(m_next_deltaP_hat_vector[0]) >= 10) {
+                    rho = 80;
                 }
 
                 Logger.Notice << "The Next delta P hat: " << std::endl;

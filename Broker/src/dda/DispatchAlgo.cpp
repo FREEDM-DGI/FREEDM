@@ -7,6 +7,7 @@
 #include "CGlobalConfiguration.hpp"
 #include "gm/GroupManagement.hpp"
 #include <vector>
+#include <cmath>
 
 #include <map>
 #include <boost/asio/error.hpp>

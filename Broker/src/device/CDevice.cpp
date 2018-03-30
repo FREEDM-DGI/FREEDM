@@ -182,7 +182,7 @@ SignalValue CDevice::GetState(std::string signal) const
     if( !HasState(signal) )
     {
         //error not warning ....should record error if state not right
-        Logger.Warn << "Bad Device State: " << signal << "\n" << m_devid //ceasar should be error
+        Logger.Warn << "Bad Device State: " << signal << "\n" << m_devid
                 << "\n" << m_devinfo << std::endl;
        // throw std::runtime_error("Bad Device State: " + signal);
         return 0;

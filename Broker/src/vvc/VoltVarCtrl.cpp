@@ -10,7 +10,7 @@
 #include "CGlobalPeerList.hpp"
 #include "gm/GroupManagement.hpp"
 #include "CGlobalConfiguration.hpp"
-
+#include "device/COpenDssAdapter.hpp"
 #include <sstream>
 
 #include <boost/foreach.hpp>
@@ -331,6 +331,10 @@ sysdata sysinfo = load_system_data();
 int Ldl = sysinfo.Dl.n_rows;
 int Wdl = sysinfo.Dl.n_cols;
 cout << "Dl dimension:"<< Ldl <<"*"<< Wdl << endl;//Matrix Dl in Matlab
+cout << "OpenDSS data: "<< device::COpenDssAdapter::GetData() << endl;
+std::string command = "Bus : 1,Node1 : 2,Basekv : 88.88,Magnitude1 : 8088.8,Angle1 : 88.8, pu1 : 1.088"; // generic command should be changed
+device::COpenDssAdapter::sendCommand(command);    //test sendop
+
 mat Dl = sysinfo.Dl;
 cx_mat Z = sysinfo.Z;
 

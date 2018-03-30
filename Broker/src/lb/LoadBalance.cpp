@@ -383,12 +383,13 @@ void LBAgent::ReadDevices()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
-    float generation = device::CDeviceManager::Instance().GetNetValue("DRER", "AOUT/Grid_Freq");// generation ceasar
-    float storage = device::CDeviceManager::Instance().GetNetValue("DESD", "AOUT/Grid_Freq");//should be storage
+    float generation = device::CDeviceManager::Instance().GetNetValue("DRER", "AOUT/Grid_Freq");//these are placeholders, it should be generation
+    float storage = device::CDeviceManager::Instance().GetNetValue("DESD", "AOUT/Grid_Freq");   //these are placeholders, it should be storage
     float load = device::CDeviceManager::Instance().GetNetValue("Load", "drain");
 
-    m_Gateway = device::CDeviceManager::Instance().GetNetValue("SST", "AOUT/Reactive_Pwr");// should be gateway
+    m_Gateway = device::CDeviceManager::Instance().GetNetValue("SST", "AOUT/Reactive_Pwr");     //these are placeholders, it should be gateway
     m_NetGeneration = generation + storage - load;
+
    // Logger.Status << "NET dedsd VALUES: " << storage << " SST values" <<m_Gateway<< std::endl;
 
     // Keeping the above changes in merge and disabling below
@@ -457,8 +458,8 @@ void LBAgent::LoadTable()
     int drer_count = device::CDeviceManager::Instance().GetDevicesOfType("DRER").size();
     int desd_count = device::CDeviceManager::Instance().GetDevicesOfType("DESD").size();
     int load_count = device::CDeviceManager::Instance().GetDevicesOfType("Load").size();
-    float generation = device::CDeviceManager::Instance().GetNetValue("DRER", "AOUT/Grid_Freq");//generation ceasar
-    float storage = device::CDeviceManager::Instance().GetNetValue("DESD", "AOUT/Grid_Freq");//storage ceasar
+    float generation = device::CDeviceManager::Instance().GetNetValue("DRER", "AOUT/Grid_Freq");////these are placeholders, it should be generation
+    float storage = device::CDeviceManager::Instance().GetNetValue("DESD", "AOUT/Grid_Freq");////these are placeholders, it should be storage
 
     // keeping the above 5 lines as part of resolving merge conflict
     // int drer_count = device::CDeviceManager::Instance().GetDevicesOfType("Drer").size();
@@ -468,7 +469,7 @@ void LBAgent::LoadTable()
     // float storage = device::CDeviceManager::Instance().GetNetValue("Desd", "storage");
 
     float load = device::CDeviceManager::Instance().GetNetValue("Load", "drain");
-    if (desd_count > 0) { //pub ceasar
+    if (desd_count > 0) { //pub
         device::CDevice::Pointer dev1 = device::CDeviceManager::Instance().GetDevice("DESD");
         dev1->SetCommand("AIN/Active_Pwr", 8888);
         Logger.Status << "Set command on " << dev1->GetID() << std::endl;
@@ -1004,7 +1005,7 @@ void LBAgent::SetPStar(float pstar)
     //sstContainer = device::CDeviceManager::Instance().GetDevicesOfType("Sst");
 
     float generation = device::CDeviceManager::Instance().GetNetValue("DRER", "generation");
-    float storage = device::CDeviceManager::Instance().GetNetValue("DESD", "storage");
+   // float storage = device::CDeviceManager::Instance().GetNetValue("DESD", "storage");
     float load = device::CDeviceManager::Instance().GetNetValue("Load", "drain");
 
     SetDESD(pstar - generation + load);

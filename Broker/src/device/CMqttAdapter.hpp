@@ -104,10 +104,10 @@ private:
     /// Publish a message on a topic to the MQTT broker.
     void Publish(std::string topic, std::string content);
 
-    /// does a full Subscribe //ceasar
+    /// does a full Subscribe
     void SubscribeAll(std::string deviceName);
 
-    /// does a full UnSubscribe //ceasar
+    /// does a full UnSubscribe
     void UnsubscribeAll(std::string deviceName);
 
     /// Create a CDevice object from a JSON specification.

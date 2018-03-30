@@ -54,6 +54,8 @@
 #include <boost/static_assert.hpp>
 #include <boost/property_tree/ptree.hpp>
 
+
+
 namespace freedm {
     namespace broker {
         namespace device {
@@ -144,6 +146,9 @@ namespace freedm {
 ///
 /// @limitations This function uses synchronous communication.
 ////////////////////////////////////////////////////////////////////////////////
+            std::string COpenDssAdapter::openDss_data = "";
+            unsigned int COpenDssAdapter::sd = -1,COpenDssAdapter::n = -1;
+            char COpenDssAdapter::buffer[COpenDssAdapter::BUFFER_SIZE] = "";
             void COpenDssAdapter::Run(const boost::system::error_code & e)
             {
                 Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
@@ -162,13 +167,25 @@ namespace freedm {
                     }
                 }
                 bzero(buffer,BUFFER_SIZE-1);
+                sd = m_socket.native();
                 if(!(read(sd,buffer, BUFFER_SIZE-1))){
                     Logger.Status<<"Error reading socket!?"<<std::endl;
                 }
+
+                openDss_data = buffer;
                 Logger.Status << "opendss data: " << buffer << std::endl;
-                std::string command = "Bus : 1,Node1 : 2,Basekv : 88.88,Magnitude1 : 8088.8,Angle1 : 88.8, pu1 : 1.088"; // generic command should be changed
-                sendCommand(sd,command);    //test sendop
+
+                //std::string command = "Bus : 1,Node1 : 2,Basekv : 88.88,Magnitude1 : 8088.8,Angle1 : 88.8, pu1 : 1.088"; // generic command should be changed
+                //sendCommand(command);    //test sendop
+
                 Logger.Status<<"command sent to openDss device"<<std::endl;
+            }
+///////////////////////////////////////////////////////////////////////////////
+/// gets openDss data
+/// @limitations None.
+///////////////////////////////////////////////////////////////////////////////
+            std::string COpenDssAdapter::GetData(){
+                return openDss_data;
             }
 
 ////////////////////////////////////////////////////////////////////////////
@@ -205,7 +222,7 @@ namespace freedm {
 ///
 /// @limitations Still under construction.
 ////////////////////////////////////////////////////////////////////////////
-            void COpenDssAdapter::sendCommand(int sd,std::string command)
+            void COpenDssAdapter::sendCommand(std::string command)
             {
 
                 strcpy(buffer,command.c_str());
@@ -214,6 +231,7 @@ namespace freedm {
                 if(!n) {
                     Logger.Error<<"Error writing to socket"<<std::endl;
                 }
+                Logger.Status<<"command sent to openDss device: "<< buffer <<std::endl;
             }
 ////////////////////////////////////////////////////////////////////////////
 /// Closes the socket before destroying an object instance.

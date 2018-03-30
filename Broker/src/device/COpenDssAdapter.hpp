@@ -69,8 +69,9 @@ namespace freedm {
 
                 /// Destructor.
                 ~COpenDssAdapter();
+
                 /// send commands
-                void sendCommand(int sd,std::string command);
+                static void sendCommand(std::string command);
 
             private:
                 /// Constructor.
@@ -103,12 +104,18 @@ namespace freedm {
                 
                 /// buffer size in bytes of the simulation packet
                 static const unsigned int BUFFER_SIZE = 1024;
-                
+            public:
                 /// socket desciptor and int n for error handling
-                unsigned int sd,n;
+                static unsigned int sd,n;
                 
                 //carries data received or data to be sent
-                char buffer[BUFFER_SIZE];
+                static char buffer[BUFFER_SIZE];
+
+                /// variable to hold  opendss data
+                static std::string openDss_data;
+
+            public:
+                static std::string GetData();
             };
 
         } //namespace device

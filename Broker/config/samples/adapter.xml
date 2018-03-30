@@ -3,7 +3,7 @@
     <adapter name = "simulation" type = "rtds">
         <info>
             <host>localhost</host>
-            <port>5001</port>
+            <port>5004</port>
         </info>
         <state>
             <entry index = "1">
@@ -23,12 +23,12 @@
             </entry>
             <entry index = "4">
                 <type>Fid</type>
-                <device>FID7</device>
+                <device>FID1</device>
                 <signal>state</signal>
             </entry>
             <entry index = "5">
                 <type>Fid</type>
-                <device>FID1</device>
+                <device>FID2</device>
                 <signal>state</signal>
             </entry>
             <entry index = "6">
@@ -48,7 +48,7 @@
     <adapter name = "simulation1" type = "opendss">
         <info>
             <host>localhost</host>
-            <port>5002</port>
+            <port>5001</port>
         </info>
         <state>
             <entry index = "1">
@@ -68,12 +68,12 @@
             </entry>
             <entry index = "4">
                 <type>Fid</type>
-                <device>FID17</device>
+                <device>FID3</device>
                 <signal>state</signal>
             </entry>
             <entry index = "5">
                 <type>Fid</type>
-                <device>FID11</device>
+                <device>FID4</device>
                 <signal>state</signal>
             </entry>
             <entry index = "6">
@@ -90,4 +90,4 @@
             </entry>
         </command>
     </adapter>
-</root>
+    </root>

@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 .. _configuring-dgi:
 
 Configuring The DGI

@@ -153,3 +153,4 @@ This configuration file would create four virtual device types, with each device
 
 For further information on how the DGI supports inheritance in virtual devices, refer to the code at ``Broker/src/device/CDeviceBuilder.cpp`` to see how the *device.xml* file is parsed.
 
+

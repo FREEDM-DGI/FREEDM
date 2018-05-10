@@ -36,15 +36,7 @@
 #include "CGlobalConfiguration.hpp"
 #include "CLogger.hpp"
 
-#include <sstream>
-#include <stdexcept>
-#include <fstream>
-
-#include <boost/foreach.hpp>
-#include <boost/optional.hpp>
-#include <boost/lexical_cast.hpp>
 #include <boost/pointer_cast.hpp>
-#include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/json_parser.hpp>
 
 #define ADDRESS   "tcp://localhost:1883"
@@ -54,7 +46,6 @@
 #define QOS      2
 #define TIMEOUT   10000L
 
-//char *payload = "ACK"; //ceasar
 char dem[]={'/'};
 using namespace std;
 
@@ -123,6 +114,7 @@ namespace freedm {
 
                 if(MQTTClient_subscribe(m_Client, "leave/#", 2) != MQTTCLIENT_SUCCESS)
                     throw std::runtime_error("MQTT failed to subscribe to leave/#");
+
                 BOOST_FOREACH(std::string subscription, CGlobalConfiguration::Instance().GetMQTTSubscriptions())
                             {
                                 std::string topic;
@@ -139,13 +131,12 @@ namespace freedm {
                                 MQTTClient_subscribe(m_Client, topic.c_str(), 0);
                                 Logger.Notice << "Subscribed to MQTT topic " << topic << std::endl;
 
-                                // Publish(subscription+"/1/ACK", "ACK");//ceasar delivery token is not sent
+                                // Publish(subscription+"/1/ACK", "ACK");
 
                                 //  MQTTClient_deliveryToken token;
                                 //topic = subscription+"/1/ACK";
                                 // MQTTClient_publish(m_Client,topic.c_str(),strlen("ACK"),payload,0,0,&token);
                             }
-                //ceasar
 
                 Publish("join/DGIClient/1", "Connect");
 
@@ -154,7 +145,7 @@ namespace freedm {
             void CMqttAdapter::Stop()
             {
                 Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-                Publish("leave/DGIClient/1", "disconnect"); //ceasar
+                Publish("leave/DGIClient/1", "disconnect");
                 MQTTClient_disconnect(m_Client, 2000);
             }
 
@@ -193,8 +184,8 @@ namespace freedm {
                 }
                 m_DeviceData[device].s_SignalToValue[key] = value;
                 std::string strIndex = m_DeviceData[device].s_IndexReference.at(key);
-                Publish(device + "/" + strIndex, boost::lexical_cast<std::string>(value));
-                Logger.Info << "Sent Command " << device << "/" << strIndex << " = " << value << std::endl;
+                Publish(device + "/1/" + strIndex, boost::lexical_cast<std::string>(value));
+                Logger.Info << "Sent Command " << device << "/1/" << strIndex << " = " << value << std::endl;
             }
 
             void CMqttAdapter::ConnectionLost(void * id, char * reason)
@@ -247,7 +238,8 @@ namespace freedm {
                     client->m_MessageQueue.erase(it);
                 }
             }
-            vector<string> split(string str, char delimiter) { //ceasar  for message processing
+
+            vector<string> split(string str, char delimiter) {
                 vector<string> internal;
                 stringstream ss(str);
                 string tok;
@@ -258,6 +250,7 @@ namespace freedm {
 
                 return internal;
             }
+
             void CMqttAdapter::HandleMessage(std::string topic, std::string message)
             {
                 Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
@@ -274,7 +267,7 @@ namespace freedm {
                     {
 
                         std::string subscription = deviceName + "/#";
-                        //ceasar
+
                         /* if(MQTTClient_subscribe(m_Client, subscription.c_str(), 2) != MQTTCLIENT_SUCCESS)
             {
                 Logger.Error << "Failed to subscribe to the topic " << subscription << std::endl;
@@ -296,11 +289,11 @@ namespace freedm {
 
                     Logger.Status << "Received a leave message for device: " << deviceName << std::endl;
                     boost::lock_guard<boost::mutex> lock(m_DeviceDataLock);
-                    if(m_DeviceData.count(deviceName) > 0 )//remove block comments ceasar
+                    if(m_DeviceData.count(deviceName) > 0 )//remove block comments
                     {
 
                         std::string subscription = deviceName + "/#";
-                        // UnsubscribeAll(deviceName);//ceasar
+                        // UnsubscribeAll(deviceName);
                         /*if(MQTTClient_unsubscribe(m_Client, subscription.c_str()) != MQTTCLIENT_SUCCESS)
             {
                 Logger.Error << "Failed to unsubscribe to the topic " << subscription << std::endl;
@@ -362,7 +355,8 @@ namespace freedm {
                 m_MessageQueue.push_back(msg);
                 msg->Publish(m_Client);
             }
-            void CMqttAdapter::SubscribeAll(std::string deviceName) { //ceasar
+
+            void CMqttAdapter::SubscribeAll(std::string deviceName) {
                 //  BOOST_FOREACH(std::string subscription, CGlobalConfiguration::Instance().GetMQTTSubscriptions())
                 // {
                 std::string topic;
@@ -381,8 +375,9 @@ namespace freedm {
 
 
             }
+
             void CMqttAdapter::UnsubscribeAll(std::string deviceName)
-            { //ceasar
+            {
                 //BOOST_FOREACH(std::string subscription, CGlobalConfiguration::Instance().GetMQTTSubscriptions())
                 //  {
                 std::string topic;
@@ -397,11 +392,9 @@ namespace freedm {
                 Logger.Notice << "UnSubscribed to MQTT topic " << topic << std::endl;
                 // topic = deviceName+"/1/ACK";
                 // MQTTClient_subscribe(m_Client, topic.c_str(), 0);
-
-
-
                 //  }
             }
+
             void CMqttAdapter::CreateDevice(std::string deviceName, std::string json)
             {
                 Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
@@ -438,7 +431,6 @@ namespace freedm {
                 Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
                 boost::lock_guard<boost::mutex> lock(m_DeviceDataLock);
-                //Logger.Status<<"GOT SIGNALS";
                 Logger.Info << "Parsing the " << ptree.first << " field of the JSON for device " << device << std::endl;
                 BOOST_FOREACH(boost::property_tree::ptree::value_type & signal, ptree.second)
                             {

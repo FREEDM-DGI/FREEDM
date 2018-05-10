@@ -59,21 +59,15 @@
 #include "LoadBalance.hpp"
 
 #include "CLogger.hpp"
-#include "Messages.hpp"
 #include "CTimings.hpp"
 #include "CDeviceManager.hpp"
 #include "CGlobalPeerList.hpp"
 #include "gm/GroupManagement.hpp"
 #include "CGlobalConfiguration.hpp"
 
-#include <sstream>
-
-#include <boost/foreach.hpp>
-#include <boost/bind.hpp>
-#include <boost/asio/error.hpp>
-#include <boost/system/error_code.hpp>
 #include <boost/range/adaptor/map.hpp>
-#include <boost/date_time/posix_time/posix_time.hpp>
+
+#include <armadillo>
 
 namespace freedm {
 namespace broker {
@@ -104,6 +98,14 @@ LBAgent::LBAgent()
 
     m_PowerDifferential = 0;
     m_MigrationStep = CGlobalConfiguration::Instance().GetMigrationStep();
+
+	/* ARMADILLO TEST */
+	using namespace arma;
+	mat A = randu<mat>(4,5);
+  	mat B = randu<mat>(4,5);
+  
+	std::cout << "ARMADILLO LINK CONFIRMATION" << std::endl;
+  	std::cout << A*B.t() << std::endl;
 }
 
 ////////////////////////////////////////////////////////////
@@ -308,6 +310,7 @@ void LBAgent::LoadManage(const boost::system::error_code & error)
         std::set<device::CDevice::Pointer> logger, desd;
         logger = device::CDeviceManager::Instance().GetDevicesOfType("Logger");
         desd = device::CDeviceManager::Instance().GetDevicesOfType("DESD");
+
         if(logger.empty() || (*logger.begin())->GetState("dgiEnable") == 1)
         {
             if(m_State == LBAgent::DEMAND)
@@ -380,13 +383,22 @@ void LBAgent::ReadDevices()
 {
     Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
 
-    float generation = device::CDeviceManager::Instance().GetNetValue("DRER", "AOUT/Grid_Freq");// generation ceasar
-    float storage = device::CDeviceManager::Instance().GetNetValue("DESD", "AOUT/Grid_Freq");//should be storage
+    float generation = device::CDeviceManager::Instance().GetNetValue("DRER", "AOUT/Grid_Freq");//these are placeholders, it should be generation
+    float storage = device::CDeviceManager::Instance().GetNetValue("DESD", "AOUT/Grid_Freq");   //these are placeholders, it should be storage
     float load = device::CDeviceManager::Instance().GetNetValue("Load", "drain");
 
-    m_Gateway = device::CDeviceManager::Instance().GetNetValue("SST", "AOUT/Reactive_Pwr");// should be gateway
+    m_Gateway = device::CDeviceManager::Instance().GetNetValue("SST", "AOUT/Reactive_Pwr");     //these are placeholders, it should be gateway
     m_NetGeneration = generation + storage - load;
+
    // Logger.Status << "NET dedsd VALUES: " << storage << " SST values" <<m_Gateway<< std::endl;
+
+    // Keeping the above changes in merge and disabling below
+    // float generation = device::CDeviceManager::Instance().GetNetValue("Drer", "generation");
+    // float storage = device::CDeviceManager::Instance().GetNetValue("Desd", "storage");
+    // float load = device::CDeviceManager::Instance().GetNetValue("Load", "drain");
+
+    // m_Gateway = device::CDeviceManager::Instance().GetNetValue("Sst", "gateway");
+    // m_NetGeneration = generation + storage - load;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -446,10 +458,22 @@ void LBAgent::LoadTable()
     int drer_count = device::CDeviceManager::Instance().GetDevicesOfType("DRER").size();
     int desd_count = device::CDeviceManager::Instance().GetDevicesOfType("DESD").size();
     int load_count = device::CDeviceManager::Instance().GetDevicesOfType("Load").size();
-    float generation = device::CDeviceManager::Instance().GetNetValue("DRER", "AOUT/Grid_Freq");//generation ceasar
-    float storage = device::CDeviceManager::Instance().GetNetValue("DESD", "AOUT/Grid_Freq");//storage ceasar
-    float load = device::CDeviceManager::Instance().GetNetValue("Load", "drain");
+    float generation = device::CDeviceManager::Instance().GetNetValue("DRER", "AOUT/Grid_Freq");////these are placeholders, it should be generation
+    float storage = device::CDeviceManager::Instance().GetNetValue("DESD", "AOUT/Grid_Freq");////these are placeholders, it should be storage
 
+    // keeping the above 5 lines as part of resolving merge conflict
+    // int drer_count = device::CDeviceManager::Instance().GetDevicesOfType("Drer").size();
+    // int desd_count = device::CDeviceManager::Instance().GetDevicesOfType("Desd").size();
+    // int load_count = device::CDeviceManager::Instance().GetDevicesOfType("Load").size();
+    // float generation = device::CDeviceManager::Instance().GetNetValue("Drer", "generation");
+    // float storage = device::CDeviceManager::Instance().GetNetValue("Desd", "storage");
+
+    float load = device::CDeviceManager::Instance().GetNetValue("Load", "drain");
+    if (desd_count > 0) { //pub
+        device::CDevice::Pointer dev1 = device::CDeviceManager::Instance().GetDevice("DESD");
+        dev1->SetCommand("AIN/Active_Pwr", 8888);
+        Logger.Status << "Set command on " << dev1->GetID() << std::endl;
+    }
     std::stringstream loadtable;
     loadtable << std::setprecision(2) << std::fixed;
     loadtable << "------- LOAD TABLE (Power Management) -------" << std::endl;
@@ -465,6 +489,7 @@ void LBAgent::LoadTable()
     loadtable << "\tPredicted K:    " << m_PowerDifferential << std::endl;
     loadtable << "\t---------------------------------------------" << std::endl;
     Logger.Status << "NET dedsd VALUES: " << storage << " SST values" <<m_Gateway<< std::endl;
+
     if(m_State == LBAgent::DEMAND)
     {
         loadtable << "\t(DEMAND) " << GetUUID() << std::endl;
@@ -980,7 +1005,7 @@ void LBAgent::SetPStar(float pstar)
     //sstContainer = device::CDeviceManager::Instance().GetDevicesOfType("Sst");
 
     float generation = device::CDeviceManager::Instance().GetNetValue("DRER", "generation");
-    float storage = device::CDeviceManager::Instance().GetNetValue("DESD", "storage");
+   // float storage = device::CDeviceManager::Instance().GetNetValue("DESD", "storage");
     float load = device::CDeviceManager::Instance().GetNetValue("Load", "drain");
 
     SetDESD(pstar - generation + load);
@@ -1250,5 +1275,4 @@ bool LBAgent::InvariantCheck()
 } // namespace lb
 } // namespace broker
 } // namespace freedm
-
 

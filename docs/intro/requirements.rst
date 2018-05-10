@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 .. _system-requirements:
 
 System Requirements

@@ -3,7 +3,7 @@
     <adapter name = "simulation" type = "rtds">
         <info>
             <host>localhost</host>
-            <port>5001</port>
+            <port>5004</port>
         </info>
         <state>
             <entry index = "1">
@@ -23,12 +23,12 @@
             </entry>
             <entry index = "4">
                 <type>Fid</type>
-                <device>FID7</device>
+                <device>FID1</device>
                 <signal>state</signal>
             </entry>
             <entry index = "5">
                 <type>Fid</type>
-                <device>FID1</device>
+                <device>FID2</device>
                 <signal>state</signal>
             </entry>
             <entry index = "6">
@@ -45,4 +45,49 @@
             </entry>
         </command>
     </adapter>
-</root>
+    <adapter name = "simulation1" type = "opendss">
+        <info>
+            <host>localhost</host>
+            <port>5001</port>
+        </info>
+        <state>
+            <entry index = "1">
+                <type>Sst</type>
+                <device>SST2</device>
+                <signal>gateway</signal>
+            </entry>
+            <entry index = "2">
+                <type>Drer</type>
+                <device>DRER2</device>
+                <signal>generation</signal>
+            </entry>
+            <entry index = "3">
+                <type>Load</type>
+                <device>LOAD2</device>
+                <signal>drain</signal>
+            </entry>
+            <entry index = "4">
+                <type>Fid</type>
+                <device>FID3</device>
+                <signal>state</signal>
+            </entry>
+            <entry index = "5">
+                <type>Fid</type>
+                <device>FID4</device>
+                <signal>state</signal>
+            </entry>
+            <entry index = "6">
+                <type>Omega</type>
+                <device>FREQ1</device>
+                <signal>frequency</signal>
+            </entry>
+        </state>
+        <command>
+            <entry index = "1">
+                <type>Sst</type>
+                <device>SST2</device>
+                <signal>gateway</signal>
+            </entry>
+        </command>
+    </adapter>
+    </root>

@@ -92,6 +92,11 @@ namespace freedm {
                                                 const DesdStateMessage& message, std::string recipient = "dda");
 
                 void MyScheduledMethod(const boost::system::error_code& err);
+
+                void ScheduleNextRound();
+                void LoadManage(const boost::system::error_code & error);
+                void FirstRound(const boost::system::error_code & error);
+
                 
                 /// container to store the message from adjacent nodes
                 std::multimap<int, DesdStateMessage> m_adjmessage;

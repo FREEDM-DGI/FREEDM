@@ -18,7 +18,7 @@
 namespace freedm{
     namespace broker{
         namespace dda{
-
+            
             static int convergence_flag = 0;
             static int schedule_count = 0;
             const int node = 8;
@@ -41,11 +41,10 @@ namespace freedm{
             // Profiles
             const float cost[node] = {100,5,5,5,5,5,5,5}; 
 
-            const float schedule_profile[node] = {0, 0, 0, 0, 0, 0, 0, 0};                                                  
+            const float schedule_profile[node] = {0, 0, 0, 0, 0, 0, 0, 0};                                                     
 
 
-            namespace 
-            {
+            namespace {
                 /// This file's logger.
                 CLocalLogger Logger(__FILE__);
             }
@@ -59,8 +58,7 @@ namespace freedm{
                 rho = 1;
 
 
-                for (int i = 0; i < m_stages; i++) 
-                {
+                for (int i = 0; i < m_stages; i++) {
 
                     desd_efficiency = 0.0;
                     P_max_desd = 0.0;
@@ -70,7 +68,7 @@ namespace freedm{
                     E_init = 0.0;     
 
                     m_power_vector.push_back(0.0);
-
+ 
                     // Both
                     m_demand_vector.push_back(0.0);
                     m_renewable_vector.push_back(0.0);
@@ -87,6 +85,7 @@ namespace freedm{
                 }
 
                 m_startDESDAlgo = false;
+                m_startconsensus = false;
                 m_adjmessage.clear();
 
                 m_timer = CBroker::Instance().AllocateTimer("dda");
@@ -189,17 +188,23 @@ namespace freedm{
             
             void DDAAgent::Run()
             {
+                Logger.Notice << "--------------START DDA PHASE------------" << std::endl;
                 CBroker::Instance().Schedule(m_timer, boost::posix_time::not_a_date_time,
                     boost::bind(&DDAAgent::FirstRound, this, boost::asio::placeholders::error));
             }
 
             void DDAAgent::FirstRound(const boost::system::error_code & error)
             {
-                if(!error){
+                Logger.Notice << "--------------START DDA FIRSTROUND------------" << std::endl;
+                if(!error)
+                {
+                    Initialization();
+                    
                     CBroker::Instance().Schedule("dda",
-                        boost::bind(&DDAAgent::LoadManage, this, boost::system::error_code()));
+                        boost::bind(&DDAAgent::DDAManage, this, boost::system::error_code()));
                 }
-                else if(error == boost::asio::error::operation_aborted){
+                else if (error == boost::asio::error::operation_aborted)
+                {
                     Logger.Notice << "Load Manage Aborted" << std::endl;
                 }
                 else
@@ -207,45 +212,83 @@ namespace freedm{
                     Logger.Error << error << std::endl;
                     throw boost::system::system_error(error);
                 }
+            } 
 
+            void DDAAgent::Initialization()
+            {
+                m_iteration = 1;
+                m_cost = 0.0;            
+                // Algorithm tuning parameters
+
+
+                for (int i = 0; i < m_stages; i++) {
+
+                    desd_efficiency = 0.0;
+                    P_max_desd = 0.0;
+                    P_min_desd = 0.0;
+                    E_full = 0.0;
+                    E_min = 0.0;
+                    E_init = 0.0;     
+
+                    m_power_vector[i]=0;
+ 
+                    // Both
+                    m_demand_vector[i] = 0;
+                    m_renewable_vector[i] = 0;
+                    m_init_deltaP_vector[i] = 0;
+                    m_next_deltaP_vector[i] = 0;
+                    m_init_deltaP_hat_vector[i] = 0;
+                    m_next_deltaP_hat_vector[i] = 0;
+                    m_init_lambda_vector[i] = 0;
+                    m_next_lambda_vector[i] = 0;
+
+                    m_adj_deltaP_hat_vector[i] = 0;
+                    m_adj_lambda_vector[i] = 0;
+
+                }
+
+                m_adjmessage.clear();
+                m_startconsensus = false;
             }
 
-            void DDAAgent::LoadManage(const boost::system::error_code & error)
+            void DDAAgent::DDAManage(const boost::system::error_code & error)
             {
-
-                ScheduleNextRound();
-
-
-
                 Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-                LoadTopology();
-                Logger.Notice << "The epsil is " << epsil << std::endl;
-
-                VertexSet adjset = m_adjlist.find(m_localsymbol)->second;
-                Logger.Notice << "The size of neighbors is " << adjset.size() << std::endl;
-
-                m_adjratio = epsil;
-                m_localratio = 1.0- adjset.size()*epsil;
-                Logger.Notice << "The ratio for local and neighbors are " << m_localratio << " and " << m_adjratio << std::endl;
-
-                //Figure out the attached devices in the local DGI
-                int sstCount = device::CDeviceManager::Instance().GetDevicesOfType("Sst").size();
-
-                Logger.Debug << "The SST count is " << sstCount << std::endl;
-
-                if (sstCount == 1)
+                if(!error)
                 {
-                    if (m_localsymbol == "1") // Grid (SST1)
+                    ScheduleNextRound();
+                    Logger.Notice << "--------------START DDAManage------------" << std::endl;
+
+                    Logger.Notice << "--------------M_ITERATION------------" << m_iteration << std::endl;
+
+                    LoadTopology();
+                    Logger.Notice << "The epsil is " << epsil << std::endl;
+                    
+                    VertexSet adjset = m_adjlist.find(m_localsymbol)->second;
+                    Logger.Notice << "The size of neighbors is " << adjset.size() << std::endl;
+                    
+                    m_adjratio = epsil;
+                    m_localratio = 1.0- adjset.size()*epsil;
+                    Logger.Notice << "The ratio for local and neighbors are " << m_localratio << " and " << m_adjratio << std::endl;
+                    
+                    //Figure out the attached devices in the local DGI
+                    int sstCount = device::CDeviceManager::Instance().GetDevicesOfType("Sst").size();
+
+                    Logger.Debug << "The SST count is " << sstCount << std::endl;
+
+                    if (sstCount == 1)
                     {
-                        m_cost = cost[0];
-                        m_schedule = schedule_profile[0];
-                        P_max_desd = P_max_grid;
-                        P_min_desd = P_min_grid;
+                        if (m_localsymbol == "1") // Grid (SST1)
+                        {
+                            m_cost = cost[0];
+                            m_schedule = schedule_profile[0];
+                            P_max_desd = P_max_grid;
+                            P_min_desd = P_min_grid;
 
 
-                    }
-                    else if (m_localsymbol == "2") // SST2
-                    {
+                        }
+                        else if (m_localsymbol == "2") // SST2
+                        {
 
                             demand_profile = device::CDeviceManager::Instance().GetNetValue("Load", "drain");
                             renewable_profile = device::CDeviceManager::Instance().GetNetValue("Drer", "generation");
@@ -264,9 +307,9 @@ namespace freedm{
                             m_schedule = schedule_profile[1];
 
 
-                    }
-                    else if (m_localsymbol == "3") // SST3
-                    {
+                        }
+                        else if (m_localsymbol == "3") // SST3
+                        {
 
                             demand_profile = device::CDeviceManager::Instance().GetNetValue("Load", "drain");
                             renewable_profile = device::CDeviceManager::Instance().GetNetValue("Drer", "generation");
@@ -285,9 +328,9 @@ namespace freedm{
                             m_schedule = schedule_profile[2];
 
 
-                    }
-                    else if (m_localsymbol == "4") // SST4
-                    {
+                        }
+                        else if (m_localsymbol == "4") // SST4
+                        {
 
                             demand_profile = device::CDeviceManager::Instance().GetNetValue("Load", "drain");
                             renewable_profile = device::CDeviceManager::Instance().GetNetValue("Drer", "generation");
@@ -304,9 +347,9 @@ namespace freedm{
 
                             m_cost = cost[3];
                             m_schedule = schedule_profile[3];
-                    }
-                    else if (m_localsymbol == "5") // SST5
-                    {
+                        }
+                        else if (m_localsymbol == "5") // SST5
+                        {
 
                             demand_profile = device::CDeviceManager::Instance().GetNetValue("Load", "drain");
                             renewable_profile = device::CDeviceManager::Instance().GetNetValue("Drer", "generation");
@@ -323,9 +366,9 @@ namespace freedm{
 
                             m_cost = cost[4];
                             m_schedule = schedule_profile[4];
-                    }
-                    else if (m_localsymbol == "6") // SST6
-                    {
+                        }
+                        else if (m_localsymbol == "6") // SST6
+                        {
 
                             demand_profile = device::CDeviceManager::Instance().GetNetValue("Load", "drain");
                             renewable_profile = device::CDeviceManager::Instance().GetNetValue("Drer", "generation");
@@ -380,118 +423,143 @@ namespace freedm{
 
                             m_cost = cost[7];
                             m_schedule = schedule_profile[7];
-                        }                                                                 
-                    }
+                        } 
+                    } 
+                }
+                else if (error == boost::asio::error::operation_aborted)
+                {
+                    Logger.Notice << "DDA Manage Aborted" << std::endl;
+                }
+                else
+                {
+                    Logger.Error << error << std::endl;
+                    throw boost::system::system_error(error);
+                }
 
-
-                    Logger.Debug << "Initialization done." << std::endl;
-
+                if (m_startDESDAlgo == true)
+                {
+                    Logger.Notice << "-----------------START TO SEND INFORMAITION TO PEERS------------------" << std::endl;
+                    
                     sendtoAdjList();
-
+                    m_startconsensus = true;
+                }
+                else
+                {
+                    Logger.Notice << "--------------NOT ENOUGH PEERS, NOT SEND INFORMATION----------------" << std::endl;
                 }
 
-                void DDAAgent::ScheduleNextRound()
+            } 
+
+            void DDAAgent::ScheduleNextRound()
+            {
+                Logger.Notice << "--------------START ScheduleNextRound------------" << std::endl;
+                CBroker::Instance().Schedule(m_timer, boost::posix_time::not_a_date_time,
+                    boost::bind(&DDAAgent::FirstRound, this, boost::asio::placeholders::error));
+            }
+
+
+            
+            void DDAAgent::HandleIncomingMessage(boost::shared_ptr<const ModuleMessage> msg, CPeerNode peer)
+            {
+                Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+                
+                if (msg->has_group_management_message())
                 {
-                    CBroker::Instance().Schedule(m_timer, boost::posix_time::not_a_date_time,
-                        boost::bind(&DDAAgent::FirstRound, this, boost::asio::placeholders::error));
-                }
-
-
-                void DDAAgent::HandleIncomingMessage(boost::shared_ptr<const ModuleMessage> msg, CPeerNode peer)
-                {
-                    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-
-                    if (msg->has_group_management_message())
+                    gm::GroupManagementMessage gmm = msg->group_management_message();
+                    if (gmm.has_peer_list_message())
                     {
-                        gm::GroupManagementMessage gmm = msg->group_management_message();
-                        if (gmm.has_peer_list_message())
-                        {
-                            HandlePeerList(gmm.peer_list_message(), peer);
-                        }
-                        else
-                        {
-                            Logger.Warn << "Dropped unexpected group management message:\n" << msg->DebugString();
-                        }
+                        HandlePeerList(gmm.peer_list_message(), peer);
                     }
-                    else if (msg->has_desd_state_message())
+                    else
                     {
-                        HandleUpdate(msg->desd_state_message(),peer);
+                        Logger.Warn << "Dropped unexpected group management message:\n" << msg->DebugString();
                     }
                 }
-
-
-
-                void DDAAgent::HandlePeerList(const gm::PeerListMessage &m, CPeerNode peer)
+                else if (msg->has_desd_state_message())
                 {
-                    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-                    Logger.Debug << "Updated peer list received from: " << peer.GetUUID() << std::endl;
+                    HandleUpdate(msg->desd_state_message(),peer);
+                }
+            }
+            
+            void DDAAgent::HandlePeerList(const gm::PeerListMessage &m, CPeerNode peer)
+            {
+                Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+                Logger.Debug << "Updated peer list received from: " << peer.GetUUID() << std::endl;
                 // Process the peer list
-                    m_AllPeers = gm::GMAgent::ProcessPeerList(m);
-
-                    if (m_startDESDAlgo == false && m_AllPeers.size() == 8)
-                    {
-                        m_startDESDAlgo = true;
-                        Run();
-                    }
-                }
-
-                void DDAAgent::HandleUpdate(const DesdStateMessage& msg, CPeerNode peer)
+                m_AllPeers = gm::GMAgent::ProcessPeerList(m);
+                
+                if (m_AllPeers.size() == 8)
                 {
-                    Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+                    
+                    Logger.Notice << "------------ENOUGH PEERS----------" << std::endl;
+                    m_startDESDAlgo = true;
+                    
+                }
+                else
+                {
+                    Logger.Notice << "------------NOT ENOUGH PEERS----------" << std::endl;
+                    m_startDESDAlgo = false;
+                }
+            }
+            
+            void DDAAgent::HandleUpdate(const DesdStateMessage& msg, CPeerNode peer)
+            {
+                Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
                 // Receiving required neighbor's message
 
-                    Logger.Notice << "The message iteration is " << msg.iteration()
-                    << ". The current iteration is  " << m_iteration << std::endl;
+                Logger.Notice << "The message iteration is " << msg.iteration()
+                << ". The current iteration is  " << m_iteration << std::endl;
 
-                    Logger.Notice << "The local node is " << m_localsymbol << ". The received msg is from "
-                    << msg.symbol() << std::endl;
+                Logger.Notice << "The local node is " << m_localsymbol << ". The received msg is from "
+                << msg.symbol() << std::endl;
 
-                    Logger.Notice << "The " << msg.symbol() << " has delta_P_hat_vector: " << std::endl;
-                    for (int i = 0; i < msg.delta_p_hat().size(); i++) {
-                        if (i < msg.delta_p_hat().size()-1) {
-                            Logger.Notice << msg.delta_p_hat(i);
-                            Logger.Notice << " ";
-                        } else {
-                            Logger.Notice << msg.delta_p_hat(i) << std::endl;
-                        }
+                Logger.Notice << "The " << msg.symbol() << " has delta_P_hat_vector: " << std::endl;
+                for (int i = 0; i < msg.delta_p_hat().size(); i++) {
+                    if (i < msg.delta_p_hat().size()-1) {
+                        Logger.Notice << msg.delta_p_hat(i);
+                        Logger.Notice << " ";
+                    } else {
+                        Logger.Notice << msg.delta_p_hat(i) << std::endl;
                     }
+                }
 
-                    Logger.Notice << "The " << msg.symbol() << " has lambda_vector: " << std::endl;
-                    for (int i = 0; i < msg.lambda().size(); i++) {
-                        if (i < msg.lambda().size()-1) {
-                            Logger.Notice << msg.lambda(i);
-                            Logger.Notice << " ";
-                        } else {
-                            Logger.Notice << msg.lambda(i) << std::endl;
-                        }
+                Logger.Notice << "The " << msg.symbol() << " has lambda_vector: " << std::endl;
+                for (int i = 0; i < msg.lambda().size(); i++) {
+                    if (i < msg.lambda().size()-1) {
+                        Logger.Notice << msg.lambda(i);
+                        Logger.Notice << " ";
+                    } else {
+                        Logger.Notice << msg.lambda(i) << std::endl;
                     }
+                }
 
                 //insert received message into a multimap with received iteration as the index
-                    m_adjmessage.insert(std::make_pair(msg.iteration(), msg));
-
+                m_adjmessage.insert(std::make_pair(msg.iteration(), msg));
+                
                 //for received each message
-                    for (it = m_adjmessage.begin(); it != m_adjmessage.end(); it++)
-                    {
+                for (it = m_adjmessage.begin(); it != m_adjmessage.end(); it++)
+                {
                     //if received all neighbors' message for current iteration and current iteration is less than max iteration
-                        if ((*it).first == m_iteration && m_adjmessage.count(m_iteration) == m_adjnum && m_iteration < max_iteration)
+                    if ((*it).first == m_iteration && m_adjmessage.count(m_iteration) == m_adjnum && m_iteration < max_iteration
+                        && m_startconsensus == true)
+                    {
+                        std::multimap<int, DesdStateMessage>::iterator itt;
+                        for(itt=m_adjmessage.equal_range(m_iteration).first; itt!=m_adjmessage.equal_range(m_iteration).second; ++itt)
                         {
-                            std::multimap<int, DesdStateMessage>::iterator itt;
-                            for(itt=m_adjmessage.equal_range(m_iteration).first; itt!=m_adjmessage.equal_range(m_iteration).second; ++itt)
-                            {
                             //add all received neighbors' deltaP and lambda
 
-                                for (int i = 0; i < m_stages; i++) {
-                                    m_adj_deltaP_hat_vector[i] += (*itt).second.delta_p_hat(i);
-                                    m_adj_lambda_vector[i] += (*itt).second.lambda(i);
-                                }
+                            for (int i = 0; i < m_stages; i++) {
+                                m_adj_deltaP_hat_vector[i] += (*itt).second.delta_p_hat(i);
+                                m_adj_lambda_vector[i] += (*itt).second.lambda(i);
+                            }
 
-                            }      
+                        }      
 
-                            consensus_Update();
+                        consensus_Update();
 
                         // m_adjmessage.erase(m_iteration);
 
-                            sendtoAdjList();
+                        sendtoAdjList();
 
                     }//end if
                 }//end for
@@ -518,10 +586,13 @@ namespace freedm{
                         desd = device::CDeviceManager::Instance().GetDevicesOfType("Desd");
                         device::CDevice::Pointer dev = *desd.begin();
                         dev->SetCommand("storage", m_power_vector[0]);
-                    } 
+                    }     
+
+                    Logger.Notice << "-----------------DDA STOPS------------." << std::endl;    
+
                 }
             }
-
+                        
             void DDAAgent::sendtoAdjList()
             {
                 Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
@@ -535,161 +606,157 @@ namespace freedm{
                 for (it_delta_P_hat = m_init_deltaP_hat_vector.begin();
                     it_delta_P_hat != m_init_deltaP_hat_vector.end(); it_delta_P_hat++) {
                     msg -> add_delta_p_hat(*it_delta_P_hat);
-            }
-
-            std::vector<float>::iterator it_lambda;
-            for (it_lambda = m_init_lambda_vector.begin();
-                it_lambda != m_init_lambda_vector.end(); it_lambda++) 
-            {
-                msg -> add_lambda(*it_lambda);
-            }
-
-
-            Logger.Notice << "The message " << m_iteration << " has been packed for sending to neighbors" << std::endl;
-
-                //send message to adjecent list
-            BOOST_FOREACH(std::string symbolid, m_localadj)
-            {
-                if (m_strans.find(symbolid) != m_strans.end())
-                {
-                    std::string id = m_strans.find(symbolid)->second;
-                        //Logger.Debug << "The ID for adjacent node is " << id << std::endl;
-                    CPeerNode peer = CGlobalPeerList::instance().GetPeer(id);
-                    peer.Send(PrepareForSending(*msg));
                 }
+
+                std::vector<float>::iterator it_lambda;
+                for (it_lambda = m_init_lambda_vector.begin();
+                    it_lambda != m_init_lambda_vector.end(); it_lambda++) {
+                    msg -> add_lambda(*it_lambda);
+                }
+
+
+                Logger.Notice << "The message " << m_iteration << " has been packed for sending to neighbors" << std::endl;
+                
+                //send message to adjecent list
+                BOOST_FOREACH(std::string symbolid, m_localadj)
+                {
+                    if (m_strans.find(symbolid) != m_strans.end())
+                    {
+                        std::string id = m_strans.find(symbolid)->second;
+                        //Logger.Debug << "The ID for adjacent node is " << id << std::endl;
+                        CPeerNode peer = CGlobalPeerList::instance().GetPeer(id);
+                        peer.Send(PrepareForSending(*msg));
+                    }
+                }
+
             }
+            
+            ModuleMessage DDAAgent::PrepareForSending(const DesdStateMessage& message, std::string recipient)
+            {
+                Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+                ModuleMessage mm;
+                mm.mutable_desd_state_message()->CopyFrom(message);
+                mm.set_recipient_module(recipient);
+                return mm;
+            }       
 
-        }
-
-        ModuleMessage DDAAgent::PrepareForSending(const DesdStateMessage& message, std::string recipient)
-        {
-            Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
-            ModuleMessage mm;
-            mm.mutable_desd_state_message()->CopyFrom(message);
-            mm.set_recipient_module(recipient);
-            return mm;
-        }       
-
-        void DDAAgent::consensus_Update()
-        {
-            Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
+            void DDAAgent::consensus_Update()
+            {
+                Logger.Trace << __PRETTY_FUNCTION__ << std::endl;
                 //update delatP and lambda based on the iteration by locally or by adjacent list nodes
 
                 /// For debug
-            Logger.Notice << "The current iteration is  " << m_iteration << std::endl;
+                Logger.Notice << "The current iteration is  " << m_iteration << std::endl;
 
-            Logger.Notice << "The Init delta P hat: " << std::endl;
-            for (unsigned int i = 0; i < m_init_deltaP_hat_vector.size(); i++) {
-                if (i < m_init_deltaP_hat_vector.size()-1) {
-                    Logger.Notice << m_init_deltaP_hat_vector[i];
-                    Logger.Notice << " ";
-                } else {
-                    Logger.Notice << m_init_deltaP_hat_vector[i] << std::endl;
-                }
-            }
-
-            Logger.Notice << "The Init delta P: " << std::endl;
-            for (unsigned int i = 0; i < m_init_deltaP_vector.size(); i++) {
-                if (i < m_init_deltaP_vector.size()-1) {
-                    Logger.Notice << m_init_deltaP_vector[i];
-                    Logger.Notice << " ";
-                } else {
-                    Logger.Notice << m_init_deltaP_vector[i] << std::endl;
-                }
-            }
-
-            Logger.Notice << "The Init lambda: " << std::endl;
-            for (unsigned int i = 0; i < m_init_lambda_vector.size(); i++) {
-                if (i < m_init_lambda_vector.size()-1) {
-                    Logger.Notice << m_init_lambda_vector[i];
-                    Logger.Notice << " ";
-                } else {
-                    Logger.Notice << m_init_lambda_vector[i] << std::endl;
-                }
-            }
-
-            for (int i = 0; i < m_stages; i++) {
-                m_next_lambda_vector[i] = m_localratio * m_init_lambda_vector[i] + m_adjratio * m_adj_lambda_vector[i] +
-                rho * m_init_deltaP_hat_vector[i];
-
-                m_power_vector[i] = m_schedule + m_next_lambda_vector[i]/(2*m_cost);
-
-                if (m_power_vector[i] > P_max_desd) {
-                    m_power_vector[i] = P_max_desd;
-                } else if (m_power_vector[i] < P_min_desd) {
-                    m_power_vector[i] = P_min_desd;
+                Logger.Notice << "The Init delta P hat: " << std::endl;
+                for (unsigned int i = 0; i < m_init_deltaP_hat_vector.size(); i++) {
+                    if (i < m_init_deltaP_hat_vector.size()-1) {
+                        Logger.Notice << m_init_deltaP_hat_vector[i];
+                        Logger.Notice << " ";
+                    } else {
+                        Logger.Notice << m_init_deltaP_hat_vector[i] << std::endl;
+                    }
                 }
 
-                m_next_deltaP_vector[i] = m_demand_vector[i] - m_power_vector[i] - m_renewable_vector[i];   
-
-                m_next_deltaP_hat_vector[i] = m_localratio * m_init_deltaP_hat_vector[i] +
-                m_adjratio * m_adj_deltaP_hat_vector[i] - m_init_deltaP_vector[i] + m_next_deltaP_vector[i];
-
-            }
-
-            if (m_iteration >=50 && abs(m_next_deltaP_hat_vector[0]) >= 10) {
-                rho = 80;
-            }
-
-            Logger.Notice << "The Next delta P hat: " << std::endl;
-            for (unsigned int i = 0; i < m_next_deltaP_hat_vector.size(); i++) {
-                if (i < m_next_deltaP_hat_vector.size()-1) {
-                    Logger.Notice << m_next_deltaP_hat_vector[i];
-                    Logger.Notice << " ";
-                } else {
-                    Logger.Notice << m_next_deltaP_hat_vector[i] << std::endl;
+                Logger.Notice << "The Init delta P: " << std::endl;
+                for (unsigned int i = 0; i < m_init_deltaP_vector.size(); i++) {
+                    if (i < m_init_deltaP_vector.size()-1) {
+                        Logger.Notice << m_init_deltaP_vector[i];
+                        Logger.Notice << " ";
+                    } else {
+                        Logger.Notice << m_init_deltaP_vector[i] << std::endl;
+                    }
                 }
-            }
 
-            Logger.Notice << "The Next delta P: " << std::endl;
-            for (unsigned int i = 0; i < m_next_deltaP_vector.size(); i++) {
-                if (i < m_next_deltaP_vector.size()-1) {
-                    Logger.Notice << m_next_deltaP_vector[i];
-                    Logger.Notice << " ";
-                } else {
-                    Logger.Notice << m_next_deltaP_vector[i] << std::endl;
+                Logger.Notice << "The Init lambda: " << std::endl;
+                for (unsigned int i = 0; i < m_init_lambda_vector.size(); i++) {
+                    if (i < m_init_lambda_vector.size()-1) {
+                        Logger.Notice << m_init_lambda_vector[i];
+                        Logger.Notice << " ";
+                    } else {
+                        Logger.Notice << m_init_lambda_vector[i] << std::endl;
+                    }
                 }
-            }
 
-            Logger.Notice << "The Next lambda: " << std::endl;
-            for (unsigned int i = 0; i < m_next_lambda_vector.size(); i++) {
-                if (i < m_next_lambda_vector.size()-1) {
-                    Logger.Notice << m_next_lambda_vector[i];
-                    Logger.Notice << " ";
-                } else {
-                    Logger.Notice << m_next_lambda_vector[i] << std::endl;
+                for (int i = 0; i < m_stages; i++) {
+                    m_next_lambda_vector[i] = m_localratio * m_init_lambda_vector[i] + m_adjratio * m_adj_lambda_vector[i] +
+                        rho * m_init_deltaP_hat_vector[i];
+
+                    m_power_vector[i] = m_schedule + m_next_lambda_vector[i]/(2*m_cost);
+
+                    if (m_power_vector[i] > P_max_desd) {
+                        m_power_vector[i] = P_max_desd;
+                    } else if (m_power_vector[i] < P_min_desd) {
+                        m_power_vector[i] = P_min_desd;
+                    }
+
+                    m_next_deltaP_vector[i] = m_demand_vector[i] - m_power_vector[i] - m_renewable_vector[i];   
+
+                    m_next_deltaP_hat_vector[i] = m_localratio * m_init_deltaP_hat_vector[i] +
+                        m_adjratio * m_adj_deltaP_hat_vector[i] - m_init_deltaP_vector[i] + m_next_deltaP_vector[i];
+
                 }
-            }
 
-            Logger.Notice << "The Power generation is: " << std::endl;
-            for (unsigned int i = 0; i < m_power_vector.size(); i++) {
-                if (i < m_power_vector.size()-1) {
-                    Logger.Notice << m_power_vector[i];
-                    Logger.Notice << " ";
-                } else {
-                    Logger.Notice << m_power_vector[i] << std::endl;
+                if (m_iteration >=50 && abs(m_next_deltaP_hat_vector[0]) >= 10) {
+                    rho = 80;
                 }
+
+                Logger.Notice << "The Next delta P hat: " << std::endl;
+                for (unsigned int i = 0; i < m_next_deltaP_hat_vector.size(); i++) {
+                    if (i < m_next_deltaP_hat_vector.size()-1) {
+                        Logger.Notice << m_next_deltaP_hat_vector[i];
+                        Logger.Notice << " ";
+                    } else {
+                        Logger.Notice << m_next_deltaP_hat_vector[i] << std::endl;
+                    }
+                }
+
+                Logger.Notice << "The Next delta P: " << std::endl;
+                for (unsigned int i = 0; i < m_next_deltaP_vector.size(); i++) {
+                    if (i < m_next_deltaP_vector.size()-1) {
+                        Logger.Notice << m_next_deltaP_vector[i];
+                        Logger.Notice << " ";
+                    } else {
+                        Logger.Notice << m_next_deltaP_vector[i] << std::endl;
+                    }
+                }
+
+                Logger.Notice << "The Next lambda: " << std::endl;
+                for (unsigned int i = 0; i < m_next_lambda_vector.size(); i++) {
+                    if (i < m_next_lambda_vector.size()-1) {
+                        Logger.Notice << m_next_lambda_vector[i];
+                        Logger.Notice << " ";
+                    } else {
+                        Logger.Notice << m_next_lambda_vector[i] << std::endl;
+                    }
+                }
+
+                Logger.Notice << "The Power generation is: " << std::endl;
+                for (unsigned int i = 0; i < m_power_vector.size(); i++) {
+                    if (i < m_power_vector.size()-1) {
+                        Logger.Notice << m_power_vector[i];
+                        Logger.Notice << " ";
+                    } else {
+                        Logger.Notice << m_power_vector[i] << std::endl;
+                    }
+                }
+
+                m_init_lambda_vector = m_next_lambda_vector;
+                m_init_deltaP_hat_vector = m_next_deltaP_hat_vector;
+                m_init_deltaP_vector = m_next_deltaP_vector;
+
+
+                m_iteration++;  
+
+                for (int i = 0; i < m_stages; i++) {
+                    m_adj_deltaP_hat_vector[i] = 0.0;
+                    m_adj_lambda_vector[i] = 0.0;
+
+                }
+
+                Logger.Notice << "End Updating..." << std::endl;
             }
-
-            m_init_lambda_vector = m_next_lambda_vector;
-            m_init_deltaP_hat_vector = m_next_deltaP_hat_vector;
-            m_init_deltaP_vector = m_next_deltaP_vector;
-
-
-            m_iteration++;  
-
-            for (int i = 0; i < m_stages; i++) {
-                m_adj_deltaP_hat_vector[i] = 0.0;
-                m_adj_lambda_vector[i] = 0.0;
-
-            }
-
-            Logger.Notice << "End Updating..." << std::endl;
-        }
-
-
-
-
+            
         } // namespace dda
     } // namespace broker
 } // namespace freedm

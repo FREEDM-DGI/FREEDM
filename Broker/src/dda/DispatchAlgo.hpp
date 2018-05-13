@@ -79,6 +79,11 @@ namespace freedm {
                 void HandleIncomingMessage(boost::shared_ptr<const ModuleMessage> msg, CPeerNode peer);
                 void HandlePeerList(const gm::PeerListMessage &m, CPeerNode peer);
                 void HandleUpdate(const DesdStateMessage& msg, CPeerNode peer);
+
+                void FirstRound(const boost::system::error_code & error);
+                void DDAManage(const boost::system::error_code & error);
+                void ScheduleNextRound();
+                void Initialization();
                 
                 ///send received message to adjacent nodes
                 void sendtoAdjList();
@@ -86,17 +91,13 @@ namespace freedm {
                 /// Update functions for DESD and Grid
                 void desdUpdate();
                 void gridUpdate();
+
                 
                 /// Wraps a DesdStateMessage in a ModuleMessage
                 ModuleMessage PrepareForSending(
                                                 const DesdStateMessage& message, std::string recipient = "dda");
 
                 void MyScheduledMethod(const boost::system::error_code& err);
-
-                void ScheduleNextRound();
-                void LoadManage(const boost::system::error_code & error);
-                void FirstRound(const boost::system::error_code & error);
-
                 
                 /// container to store the message from adjacent nodes
                 std::multimap<int, DesdStateMessage> m_adjmessage;
@@ -105,6 +106,7 @@ namespace freedm {
                 void LoadTopology();
                 
                 bool m_startDESDAlgo;
+                bool m_startconsensus;
                 //structure of physical layer
                 AdjacencyListMap m_adjlist;
                 std::map<std::string, std::string> m_strans;
@@ -138,11 +140,6 @@ namespace freedm {
                 float E_full;
                 float E_min;
                 float E_init;
-
-                float demand_profile;
-                float renewable_profile;
-                float SOC;       
-
                 std::vector<float> m_init_power_desd_plus_vector;
                 std::vector<float> m_init_power_desd_minus_vector;
                 std::vector<float> m_next_power_desd_plus_vector;
@@ -179,7 +176,9 @@ namespace freedm {
                 PeerSet m_AllPeers;
 
                 // 
-                std::set<device::CDevice::Pointer> desd;
+                device::CDevice::Pointer desd;
+                
+
             };
             
         } // namespace dda

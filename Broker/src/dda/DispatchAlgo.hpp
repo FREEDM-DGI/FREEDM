@@ -91,7 +91,6 @@ namespace freedm {
                 /// Update functions for DESD and Grid
                 void desdUpdate();
                 void gridUpdate();
-
                 
                 /// Wraps a DesdStateMessage in a ModuleMessage
                 ModuleMessage PrepareForSending(
@@ -140,6 +139,11 @@ namespace freedm {
                 float E_full;
                 float E_min;
                 float E_init;
+
+                float demand_profile;
+                float renewable_profile;
+                float SOC;       
+
                 std::vector<float> m_init_power_desd_plus_vector;
                 std::vector<float> m_init_power_desd_minus_vector;
                 std::vector<float> m_next_power_desd_plus_vector;
@@ -176,9 +180,7 @@ namespace freedm {
                 PeerSet m_AllPeers;
 
                 // 
-                device::CDevice::Pointer desd;
-                
-
+                std::set<device::CDevice::Pointer> desd;
             };
             
         } // namespace dda

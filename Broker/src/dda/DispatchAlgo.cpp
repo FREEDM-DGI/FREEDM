@@ -271,13 +271,6 @@ namespace freedm{
                     m_localratio = 1.0- adjset.size()*epsil;
                     Logger.Notice << "The ratio for local and neighbors are " << m_localratio << " and " << m_adjratio << std::endl;
                     
-                    //Figure out the attached devices in the local DGI
-                    int sstCount = device::CDeviceManager::Instance().GetDevicesOfType("Sst").size();
-
-                    Logger.Notice << "The SST count is " << sstCount << std::endl;
-
-                    if (sstCount == 1)
-                    {
                         if (m_localsymbol == "1") // Grid (SST1)
                         {
                             m_cost = cost[0];
@@ -448,16 +441,6 @@ namespace freedm{
                             m_schedule = schedule_profile[7];
                         } 
                     } 
-                }
-                else if (error == boost::asio::error::operation_aborted)
-                {
-                    Logger.Notice << "DDA Manage Aborted" << std::endl;
-                }
-                else
-                {
-                    Logger.Error << error << std::endl;
-                    throw boost::system::system_error(error);
-                }
 
                 if (m_startDESDAlgo == true)
                 {

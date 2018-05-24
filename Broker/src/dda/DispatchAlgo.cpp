@@ -163,7 +163,7 @@ namespace freedm{
                 }
                 topf.close();
                 
-                Logger.Notice << "The local symbol is " << m_localsymbol << std::endl;
+                Logger.Notice << "-------------The local symbol is----------- " << m_localsymbol << std::endl;
                 unsigned int maxSize = 0;
                 BOOST_FOREACH( const AdjacencyListMap::value_type& mp, m_adjlist)
                 {
@@ -274,7 +274,7 @@ namespace freedm{
                     //Figure out the attached devices in the local DGI
                     int sstCount = device::CDeviceManager::Instance().GetDevicesOfType("Sst").size();
 
-                    Logger.Debug << "The SST count is " << sstCount << std::endl;
+                    Logger.Notice << "The SST count is " << sstCount << std::endl;
 
                     if (sstCount == 1)
                     {

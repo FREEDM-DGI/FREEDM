@@ -296,6 +296,9 @@ namespace freedm{
                             SOC = device::CDeviceManager::Instance().GetNetValue("Desd", "SOC");
 
 
+                            Logger.Notice << "--------------DEMAND VALUE------------" << demand_profile<< std::endl;
+                            Logger.Notice << "--------------RENEWABLE VALUE------------" << renewable_profile<< std::endl;
+                            Logger.Notice << "--------------SOC VALUE------------" << SOC << std::endl;
                             m_init_deltaP_vector[0] = demand_profile - renewable_profile;
                             m_demand_vector[0] = demand_profile;
                             m_renewable_vector[0] = renewable_profile;
@@ -318,6 +321,9 @@ namespace freedm{
                             SOC = device::CDeviceManager::Instance().GetNetValue("Desd", "SOC");
 
 
+                            Logger.Notice << "--------------DEMAND VALUE------------" << demand_profile<< std::endl;
+                            Logger.Notice << "--------------RENEWABLE VALUE------------" << renewable_profile<< std::endl;
+                            Logger.Notice << "--------------SOC VALUE------------" << SOC << std::endl;
                             m_init_deltaP_vector[0] = demand_profile - renewable_profile;
                             m_demand_vector[0] = demand_profile;
                             m_renewable_vector[0] = renewable_profile;
@@ -339,7 +345,9 @@ namespace freedm{
                             renewable_profile = device::CDeviceManager::Instance().GetNetValue("Drer", "generation");
                             SOC = device::CDeviceManager::Instance().GetNetValue("Desd", "SOC");
 
-
+                            Logger.Notice << "--------------DEMAND VALUE------------" << demand_profile<< std::endl;
+                            Logger.Notice << "--------------RENEWABLE VALUE------------" << renewable_profile<< std::endl;
+                            Logger.Notice << "--------------SOC VALUE------------" << SOC << std::endl;
                             m_init_deltaP_vector[0] = demand_profile - renewable_profile;
                             m_demand_vector[0] = demand_profile;
                             m_renewable_vector[0] = renewable_profile;
@@ -359,7 +367,9 @@ namespace freedm{
                             renewable_profile = device::CDeviceManager::Instance().GetNetValue("Drer", "generation");
                             SOC = device::CDeviceManager::Instance().GetNetValue("Desd", "SOC");
 
-
+                            Logger.Notice << "--------------DEMAND VALUE------------" << demand_profile<< std::endl;
+                            Logger.Notice << "--------------RENEWABLE VALUE------------" << renewable_profile<< std::endl;
+                            Logger.Notice << "--------------SOC VALUE------------" << SOC << std::endl;
                             m_init_deltaP_vector[0] = demand_profile - renewable_profile;
                             m_demand_vector[0] = demand_profile;
                             m_renewable_vector[0] = renewable_profile;
@@ -379,7 +389,9 @@ namespace freedm{
                             renewable_profile = device::CDeviceManager::Instance().GetNetValue("Drer", "generation");
                             SOC = device::CDeviceManager::Instance().GetNetValue("Desd", "SOC");
 
-
+                            Logger.Notice << "--------------DEMAND VALUE------------" << demand_profile<< std::endl;
+                            Logger.Notice << "--------------RENEWABLE VALUE------------" << renewable_profile<< std::endl;
+                            Logger.Notice << "--------------SOC VALUE------------" << SOC << std::endl;
                             m_init_deltaP_vector[0] = demand_profile - renewable_profile;
                             m_demand_vector[0] = demand_profile;
                             m_renewable_vector[0] = renewable_profile;
@@ -399,7 +411,9 @@ namespace freedm{
                             renewable_profile = device::CDeviceManager::Instance().GetNetValue("Drer", "generation");
                             SOC = device::CDeviceManager::Instance().GetNetValue("Desd", "SOC");
 
-
+                            Logger.Notice << "--------------DEMAND VALUE------------" << demand_profile<< std::endl;
+                            Logger.Notice << "--------------RENEWABLE VALUE------------" << renewable_profile<< std::endl;
+                            Logger.Notice << "--------------SOC VALUE------------" << SOC << std::endl;
                             m_init_deltaP_vector[0] = demand_profile - renewable_profile;
                             m_demand_vector[0] = demand_profile;
                             m_renewable_vector[0] = renewable_profile;
@@ -419,7 +433,9 @@ namespace freedm{
                             renewable_profile = device::CDeviceManager::Instance().GetNetValue("Drer", "generation");
                             SOC = device::CDeviceManager::Instance().GetNetValue("Desd", "SOC");
 
-
+                            Logger.Notice << "--------------DEMAND VALUE------------" << demand_profile<< std::endl;
+                            Logger.Notice << "--------------RENEWABLE VALUE------------" << renewable_profile<< std::endl;
+                            Logger.Notice << "--------------SOC VALUE------------" << SOC << std::endl;
                             m_init_deltaP_vector[0] = demand_profile - renewable_profile;
                             m_demand_vector[0] = demand_profile;
                             m_renewable_vector[0] = renewable_profile;

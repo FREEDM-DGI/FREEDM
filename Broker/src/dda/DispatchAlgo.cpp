@@ -575,7 +575,7 @@ namespace freedm{
                 {
                     Logger.Notice << "Maximum iteration reached." << std::endl;
                     convergence_flag = 1;
-                    m_sendcommand == false;
+                    m_sendcommand = false;
 
 
                     Logger.Notice << "The Power generation is : " << std::endl;

@@ -249,6 +249,7 @@ namespace freedm{
 
                 m_adjmessage.clear();
                 m_startconsensus = false;
+                m_sendcommand = true;
             }
 
             void DDAAgent::DDAManage(const boost::system::error_code & error)
@@ -570,10 +571,11 @@ namespace freedm{
                     }//end if
                 }//end for
                 //print out results
-                if (m_iteration >= max_iteration)
+                if (m_iteration >= max_iteration && m_sendcommand == true)
                 {
                     Logger.Notice << "Maximum iteration reached." << std::endl;
                     convergence_flag = 1;
+                    m_sendcommand == false;
 
 
                     Logger.Notice << "The Power generation is : " << std::endl;

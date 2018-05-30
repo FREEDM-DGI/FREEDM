@@ -41,7 +41,7 @@ namespace freedm{
             // Profiles
             const float cost[node] = {100,5,5,5,5,5,5,5}; 
 
-            const float schedule_profile[node] = {0, 0, 0, 0, 0, 0, 0, 0};                                                     
+            const float schedule_profile[node] = {145, -10, -15, -20, -15, -30, -10, -15};                                                     
 
 
             namespace {

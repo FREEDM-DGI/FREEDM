@@ -106,6 +106,7 @@ namespace freedm {
                 
                 bool m_startDESDAlgo;
                 bool m_startconsensus;
+                bool m_sendcommand;
                 //structure of physical layer
                 AdjacencyListMap m_adjlist;
                 std::map<std::string, std::string> m_strans;

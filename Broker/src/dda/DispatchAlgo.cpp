@@ -39,9 +39,9 @@ namespace freedm{
             const float Capacity_min = 10;
 
             // Profiles
-            const float cost[node] = {100,5,5,5,5,5,5,5}; 
+            const float cost[node] = {1000,10,20,30,50,20,10,2}; 
 
-            const float schedule_profile[node] = {145, -10, -15, -20, -15, -30, -10, -15};                                                     
+            const float schedule_profile[node] = {115, -10, -15, -20, -15, -30, -10, -15};                                                     
 
 
             namespace {

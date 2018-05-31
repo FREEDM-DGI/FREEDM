@@ -217,7 +217,8 @@ namespace freedm{
             void DDAAgent::Initialization()
             {
                 m_iteration = 1;
-                m_cost = 0.0;            
+                m_cost = 0.0;      
+                rho = 1;
                 // Algorithm tuning parameters
 
 

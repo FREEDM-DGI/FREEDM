@@ -212,18 +212,6 @@ namespace freedm{
                     Logger.Error << error << std::endl;
                     throw boost::system::system_error(error);
                 }
-                
-                Logger.Notice << "--------------m_localsymbol------------" << m_localsymbol << std::endl;
-                Logger.Notice << "--------------m_schedule------------" << m_schedule << std::endl;
-                
-                if (m_localsymbol == "2" || m_localsymbol == "3" || m_localsymbol == "4" || m_localsymbol == "5" || m_localsymbol == "6" || 
-                    m_localsymbol == "7" || m_localsymbol == "8")
-                 {
-                    Logger.Notice << "--------------SEND INITIAL COMMANDS------------" << m_schedule << std::endl;
-                    desd = device::CDeviceManager::Instance().GetDevicesOfType("Desd");
-                    device::CDevice::Pointer dev = *desd.begin();
-                    dev->SetCommand("storage", m_schedule);
-                    }  
             } 
 
             void DDAAgent::Initialization()

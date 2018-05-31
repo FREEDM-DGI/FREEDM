@@ -25,7 +25,7 @@ namespace freedm{
 
             CBroker::TimerHandle m_timer;
             
-            const unsigned int max_iteration = 300;
+            const unsigned int max_iteration = 100;
             const int m_stages = 1;
 
             const float P_max_grid = 1000; // Maximum power from grid

@@ -347,7 +347,7 @@ int main(int argc, char* argv[])
          CDispatcher::Instance().RegisterReadHandler(LB, "lb");
          */
         // Register DESD Dispatch Algorithm module
-        CBroker::Instance().RegisterModule("dda", boost::posix_time::milliseconds(60000));
+        CBroker::Instance().RegisterModule("dda", boost::posix_time::milliseconds(10000));
         CDispatcher::Instance().RegisterReadHandler(DDA, "dda");
         Logger.Notice << "DDA Module registered...... " << std::endl;
         
